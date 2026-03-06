@@ -1,6 +1,6 @@
 # AI Agent Development Team Boilerplate
 
-A structured framework for building projects using AI-assisted development with GitHub Copilot, Claude, or LangGraph agents.
+A structured framework for building projects using AI-assisted development with GitHub Copilot, Claude, or LangGraph agents
 
 ## Overview
 
