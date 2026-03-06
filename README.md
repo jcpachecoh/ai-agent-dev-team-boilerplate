@@ -1,5 +1,4 @@
-
-# AI Agent Dev Team Boilerplate
+# AI Agent Development Team Boilerplate
 
 A structured framework for building projects using AI-assisted development with GitHub Copilot, Claude, or LangGraph agents.
 
@@ -24,6 +23,7 @@ npm install                      # If using Node/Next.js
 ### 2. Define Your Project
 
 Update the documentation files:
+
 - **`docs/ARCHITECTURE.md`** - Describe your tech stack and system design
 - **`docs/ROADMAP.md`** - Outline features and milestones
 - **`tasks/`** - Break down work into detailed task files
@@ -134,8 +134,9 @@ Customize in `docs/ARCHITECTURE.md` for your project.
 ### Agent Configuration
 
 Agents can read and reference:
+
 - `docs/ARCHITECTURE.md` - Technical constraints
-- `docs/ROADMAP.md` - Feature priorities  
+- `docs/ROADMAP.md` - Feature priorities
 - `tasks/` - Detailed requirements
 - `NEXT_TASK.md` - Current focus
 
@@ -158,17 +159,21 @@ Create clear task definitions in `tasks/`:
 # Task: Feature Name
 
 ## Goal
+
 One sentence describing the goal.
 
 ## Requirements
+
 - Requirement 1
 - Requirement 2
 - Acceptance criteria
 
 ## Context
+
 Additional context or constraints.
 
 ## Files to Create/Modify
+
 - src/components/...
 - src/api/...
 ```
@@ -187,16 +192,19 @@ NEXT_TASK.md → tasks/05-ui-components.md
 ## Integration with Tools
 
 **GitHub Copilot (Recommended)**
+
 - Copy task content into VS Code Copilot chat
 - Fast iteration with inline code suggestions
 - Works within your editor
 
 **Claude / ChatGPT**
+
 - Share task files for detailed implementation
 - Use web interface or API integration
 - Good for complex architectural decisions
 
 **LangGraph Agents**
+
 - Create custom agents in `ai-dev-team/agents/`
 - Implement autonomous task execution
 - Integrate with your CI/CD pipeline
@@ -230,23 +238,23 @@ jobs:
           TASK_NUM=$((TASK_NUM + 1))
           ISSUE_NUM=${{ github.event.issue.number }}
           TASK_FILE="tasks/$(printf '%02d' $TASK_NUM)-issue-$ISSUE_NUM.md"
-          
+
           cat > "$TASK_FILE" << 'EOF'
           # ${{ github.event.issue.title }}
-          
+
           **Issue:** #${{ github.event.issue.number }}
           **Created:** ${{ github.event.issue.created_at }}
-          
+
           ## Goal
           ${{ github.event.issue.body }}
-          
+
           ## Acceptance Criteria
           - [ ] Issue requirements met
           - [ ] Tests passing
           - [ ] Code reviewed
           - [ ] Changes merged
           EOF
-          
+
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add "$TASK_FILE"
@@ -288,9 +296,9 @@ jobs:
           ISSUE_TITLE=$(echo "${{ github.event.issue.title }}" | \
             sed 's/[^a-zA-Z0-9]/-/g' | tr '[:upper:]' '[:lower:]' | \
             sed 's/-*$//' | cut -c1-20)
-          
+
           BRANCH_NAME="issue/${ISSUE_NUM}-${ISSUE_TITLE}"
-          
+
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git checkout -b "$BRANCH_NAME"
@@ -331,7 +339,7 @@ jobs:
             // Extract issue number from branch name or PR
             const branch = context.payload.pull_request.head.ref;
             const match = branch.match(/issue\/(\d+)/);
-            
+
             if (match && match[1]) {
               const issueNumber = parseInt(match[1]);
               
@@ -507,6 +515,7 @@ cat docs/AGENTS.md
 ## Support
 
 For questions about the boilerplate:
+
 - Review `docs/AGENTS.md` for agent development
 - Check `docs/ARCHITECTURE.md` for tech decisions
 - See `tasks/` for example task definitions
