@@ -50,12 +50,24 @@ ai-agent-dev-team-boilerplate/
 ├── docs/                        # Project documentation
 │   ├── AGENTS.md               # Agent guidelines
 │   ├── ARCHITECTURE.md         # Tech stack & system design
-│   └── ROADMAP.md              # Feature roadmap
+│   ├── ROADMAP.md              # Feature roadmap
+│   └── adr/                    # Architecture Decision Records
 ├── tasks/                       # Task definitions
 │   ├── 01-project-setup.md
 │   ├── 02-authentication.md
 │   └── ...
-└── ai-dev-team/                # AI automation agents
+├── specs/                       # Feature specifications (Product Agent output)
+├── datasets/                    # Datasets and seed data (Data Agent)
+├── scripts/                     # ETL and automation scripts
+├── agents/                      # AI Agent Development Team
+│   ├── product-agent/          # Product requirements and specs
+│   ├── backend-agent/          # APIs, services, and backend
+│   ├── frontend-agent/         # UI/UX and frontend
+│   ├── data-agent/             # Data ingestion and pipelines
+│   ├── testing-agent/          # Testing and QA
+│   ├── devops-agent/           # Infrastructure and deployment
+│   └── architecture-agent/    # System design and standards
+└── ai-dev-team/                # AI automation agents (LangGraph)
     ├── agents/                 # Agent implementations
     │   └── example_agent.py
     └── graph/                  # LangGraph workflows
@@ -511,6 +523,63 @@ cat docs/AGENTS.md
 - **Document decisions** - Update ARCHITECTURE.md as you learn
 - **Test early** - Add tests before AI implementation
 - **Track progress** - Keep NEXT_TASK.md updated as source of truth
+
+## AI Agent Development Team
+
+This repository provides a collaborative **multi-agent architecture** for AI-assisted software development. Each agent has a well-defined role, a clear set of responsibilities, and structured documentation that enables it to contribute autonomously to the development lifecycle.
+
+### Agent Overview
+
+| Agent | Folder | Responsibility |
+|-------|--------|----------------|
+| **Product Agent** | `agents/product-agent/` | Defines product requirements and generates specs |
+| **Backend Agent** | `agents/backend-agent/` | Builds APIs, services, and backend architecture |
+| **Frontend Agent** | `agents/frontend-agent/` | Builds UI/UX and connects frontend to APIs |
+| **Data Agent** | `agents/data-agent/` | Manages datasets, ETL scripts, and data pipelines |
+| **Testing Agent** | `agents/testing-agent/` | Writes tests and validates acceptance criteria |
+| **DevOps Agent** | `agents/devops-agent/` | Handles Docker, CI/CD, and cloud deployment |
+| **Architecture Agent** | `agents/architecture-agent/` | Defines system architecture and reviews agent outputs |
+
+### How Agents Collaborate
+
+```
+Product Agent → generates specs (specs/) and tasks (tasks/)
+       ↓
+Architecture Agent → reviews feasibility and approves design
+       ↓
+Backend Agent + Frontend Agent + Data Agent → implement in parallel
+       ↓
+Testing Agent → validates all implementations against acceptance criteria
+       ↓
+DevOps Agent → packages and deploys the application
+       ↓
+Architecture Agent → final review and approval
+```
+
+### Agent File Structure
+
+Each agent directory contains three files:
+
+- **`agent.md`** — Defines the agent's role, responsibilities, inputs, outputs, and collaborations.
+- **`prompt.md`** — A system prompt that can be used to configure an AI model to act as this agent.
+- **`tasks.md`** — A list of recurring task types owned by the agent, with templates and guidelines.
+
+### Using an Agent
+
+1. Open the agent's `prompt.md` and use it as the system prompt for your AI assistant (e.g., Claude, GPT, Copilot).
+2. Provide the relevant context: the current task from `NEXT_TASK.md`, the spec from `specs/`, and `docs/ARCHITECTURE.md`.
+3. The agent will produce output according to its role and responsibilities.
+4. Review the output, commit the changes, and update `NEXT_TASK.md`.
+
+### Extending the Team
+
+To add a new agent:
+
+1. Create a new folder under `agents/<agent-name>/`.
+2. Add `agent.md`, `prompt.md`, and `tasks.md` following the patterns in existing agents.
+3. Update this README table and the collaboration diagram.
+
+---
 
 ## Support
 
