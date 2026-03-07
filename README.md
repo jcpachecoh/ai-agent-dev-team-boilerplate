@@ -524,6 +524,46 @@ cat docs/AGENTS.md
 - **Test early** - Add tests before AI implementation
 - **Track progress** - Keep NEXT_TASK.md updated as source of truth
 
+## AI Software Factory Framework
+
+This repository is an **AI Software Factory** — a reusable framework where AI agents collaborate to design, build, test, and deploy software using a task-driven workflow.
+
+The factory is built on top of the multi-agent architecture described below. It adds three new layers:
+
+| Layer | Location | Purpose |
+|---|---|---|
+| **Orchestrator** | `factory/orchestrator.md` | Defines the end-to-end collaboration workflow across all agents |
+| **Task Execution Engine** | `factory/task-executor.md` | Explains how task files in `tasks/` trigger specific agents |
+| **Shared Memory** | `memory/` | Stores project context, decisions, and progress so all agents stay aligned |
+
+### Quick Start with the Factory
+
+1. **Fill in project context** — edit `memory/project-context.md` with your project name, goals, and tech stack.
+2. **Create a spec** — use `templates/spec-template.md` to write a feature spec in `specs/`.
+3. **Generate tasks** — use `templates/task-template.md` to break the spec into tasks in `tasks/`.
+4. **Point to the first task** — update `NEXT_TASK.md` with the path to the first task file.
+5. **Run the Orchestrator** — follow the workflow in `factory/orchestrator.md` to assign tasks to agents and execute them in order.
+6. **Track progress** — update `memory/progress.md` after each task is completed.
+
+### Factory File Structure
+
+```
+factory/
+├── orchestrator.md     # Multi-agent collaboration workflow
+└── task-executor.md    # How tasks trigger agents
+
+memory/
+├── project-context.md  # Project overview, goals, and constraints
+├── decisions.md        # Architectural and product decisions log
+└── progress.md         # Task completion and deployment status
+
+templates/
+├── task-template.md    # Template for creating task files
+└── spec-template.md    # Template for creating feature specs
+```
+
+---
+
 ## AI Agent Development Team
 
 This repository provides a collaborative **multi-agent architecture** for AI-assisted software development. Each agent has a well-defined role, a clear set of responsibilities, and structured documentation that enables it to contribute autonomously to the development lifecycle.
