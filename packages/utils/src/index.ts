@@ -9,16 +9,21 @@ export function formatCurrency(amount: number, currency = "USD"): string {
 }
 
 /**
- * Generate a short unique identifier.
+ * Generate a unique identifier.
  */
 export function generateId(): string {
-  return Math.random().toString(36).substring(2, 15);
+  return crypto.randomUUID();
 }
 
 /**
  * Validate an email address format.
  */
 export function isValidEmail(email: string): boolean {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
+  if (email.length > 254) return false;
+  const atIndex = email.indexOf("@");
+  if (atIndex < 1 || atIndex !== email.lastIndexOf("@")) return false;
+  const local = email.slice(0, atIndex);
+  const domain = email.slice(atIndex + 1);
+  if (local.length > 64 || domain.length === 0) return false;
+  return domain.includes(".");
 }
