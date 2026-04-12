@@ -35,14 +35,17 @@ ComponentName/
 - **No Tailwind CSS** — use SASS/SCSS Modules for all component styling.
 - Use `*.module.scss` files for component-scoped styles.
 - Use the 7-1 SASS architecture for global/shared styles in `packages/ui/src/styles/`.
+- **The 7-1 SASS architecture is used only for `base/` and `abstracts/` to define the look and feel of the application.** These two folders are the single source of truth for design tokens, resets, global typography, and reusable mixins/functions — prioritizing reusability and theme management. All other visual styling must live in component-scoped `*.module.scss` files.
 - Import design tokens (colors, spacing, typography) from `styles/abstracts/` in component SCSS files.
 
 ### 7-1 SASS Architecture
 
+> **Note:** Only `abstracts/` and `base/` are used to define the application's look and feel. They provide the foundation for reusability and theme management. Component-specific styling should use SCSS Modules (`*.module.scss`).
+
 ```
 styles/
-├── abstracts/      # Variables, mixins, functions
-├── base/           # Reset, typography, global base styles
+├── abstracts/      # Variables, mixins, functions — design tokens & reusable helpers
+├── base/           # Reset, typography, global base styles — application look & feel
 ├── components/     # Global component styles (non-module)
 ├── layout/         # Header, footer, grid, navigation
 ├── pages/          # Page-specific styles

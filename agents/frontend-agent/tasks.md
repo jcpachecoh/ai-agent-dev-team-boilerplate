@@ -26,7 +26,8 @@ This file tracks the standard recurring tasks owned by the Frontend Agent.
 - Apply consistent spacing, typography, and color tokens from SASS abstracts
 - Review designs against the project style guide and Storybook
 - Verify responsive behavior on common screen sizes
-- Use the 7-1 SASS architecture for global styles
+- Use the 7-1 SASS architecture **only for `base/` and `abstracts/`** to define the application's look and feel — these folders own resets, global typography, design tokens, mixins, and functions for reusability and theme management
+- All other component styling must use scoped `*.module.scss` files
 - Never use Tailwind CSS or inline utility classes
 
 ### FT-005: Optimize Performance
