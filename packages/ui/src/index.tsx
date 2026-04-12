@@ -1,13 +1,6 @@
-import * as React from "react";
+// Components
+export { Button } from "./components/Button";
+export type { ButtonProps } from "./components/Button";
 
-export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "primary" | "secondary" | "danger";
-}
-
-export function Button({ variant = "primary", children, ...props }: ButtonProps) {
-  return (
-    <button data-variant={variant} {...props}>
-      {children}
-    </button>
-  );
-}
+// Styles — import this in your app entry point for global base styles
+// e.g.: import "@restopsiq/ui/src/styles/main.scss";

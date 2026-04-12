@@ -135,7 +135,7 @@ git commit -m "feat: implement database schema (automated)"
 ### Typical Tech Stack (from ARCHITECTURE.md)
 
 ```
-Frontend:  Next.js + TailwindCSS
+Frontend:  Next.js + SASS/SCSS Modules (7-1 architecture) + Storybook
 Backend:   NestJS or Node.js
 Database:  PostgreSQL + Prisma ORM
 DevOps:    Docker + GitHub Actions
