@@ -33,7 +33,7 @@ This file stores the high-level context of the current project. All agents must 
 
 | Layer | Technology |
 |---|---|
-| Frontend | _e.g., Next.js + TailwindCSS_ |
+| Frontend | _e.g., Next.js + SASS/SCSS Modules (7-1 architecture) + Storybook_ |
 | Backend | _e.g., NestJS / Node.js_ |
 | Database | _e.g., PostgreSQL + Prisma_ |
 | Infrastructure | _e.g., Docker + GitHub Actions_ |

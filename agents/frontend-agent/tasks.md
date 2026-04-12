@@ -6,8 +6,11 @@ This file tracks the standard recurring tasks owned by the Frontend Agent.
 
 ### FT-001: Build UI Components
 - Create reusable components based on the feature spec
-- Follow the project design system and component conventions
+- Follow the SASS/SCSS Module component conventions (see `docs/ARCHITECTURE.md`)
+- Every component must have: `index.ts`, `ComponentName.tsx`, `ComponentName.module.scss`
+- Use design tokens from `styles/abstracts/` for colors, spacing, and typography
 - Export components from a central index file
+- Add a Storybook story for each new component
 
 ### FT-002: Implement Pages and Layouts
 - Create page files for new routes
@@ -20,9 +23,11 @@ This file tracks the standard recurring tasks owned by the Frontend Agent.
 - Use environment variables for API base URLs
 
 ### FT-004: Maintain Design Consistency
-- Apply consistent spacing, typography, and color tokens
-- Review designs against the project style guide
+- Apply consistent spacing, typography, and color tokens from SASS abstracts
+- Review designs against the project style guide and Storybook
 - Verify responsive behavior on common screen sizes
+- Use the 7-1 SASS architecture for global styles
+- Never use Tailwind CSS or inline utility classes
 
 ### FT-005: Optimize Performance
 - Lazy-load components and routes where appropriate

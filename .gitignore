@@ -9,6 +9,7 @@ build/
 .next/
 out/
 .turbo/
+storybook-static/
 
 # Expo
 .expo/

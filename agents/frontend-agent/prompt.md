@@ -16,11 +16,29 @@ Your job is to build user interfaces and connect them to backend APIs based on a
 
 ## Implementation Standards
 
-- Use the component framework specified in `docs/ARCHITECTURE.md` (e.g., Next.js + TailwindCSS — replace with the project's actual stack).
-- Build reusable, composable components.
+- Use Next.js with SASS/SCSS Modules as specified in `docs/ARCHITECTURE.md`. **Do not use Tailwind CSS.**
+- Build reusable, composable components in the `@restopsiq/ui` package.
 - Keep components small and focused on a single responsibility.
 - Use the project's API client/hooks for all backend communication.
 - Follow accessibility best practices (semantic HTML, ARIA labels).
+
+## Component Structure
+
+Every component **must** follow this file structure:
+
+```
+ComponentName/
+├── index.ts                    # Barrel export (re-exports from ComponentName.tsx)
+├── ComponentName.tsx           # Component implementation
+└── ComponentName.module.scss   # Scoped styles using SCSS Modules
+```
+
+### Styling Rules
+
+- Use `*.module.scss` for all component styles — never inline styles or utility classes.
+- Import shared design tokens from `styles/abstracts/_variables.scss` using `@use`.
+- Follow the 7-1 SASS architecture for global styles (see `packages/ui/src/styles/`).
+- Use Storybook (`npm run storybook` in `packages/ui/`) to develop and preview components.
 
 ## Output Checklist
 
