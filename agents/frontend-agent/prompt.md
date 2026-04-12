@@ -38,6 +38,7 @@ ComponentName/
 - Use `*.module.scss` for all component styles — never inline styles or utility classes.
 - Import shared design tokens from `styles/abstracts/_variables.scss` using `@use`.
 - Follow the 7-1 SASS architecture for global styles (see `packages/ui/src/styles/`).
+- **The 7-1 SASS architecture is used only for `base/` and `abstracts/` to define the look and feel of the application.** These two folders are the single source of truth for design tokens (colors, spacing, typography), resets, global typography, and reusable mixins/functions. All other visual styling must live in component-scoped `*.module.scss` files to maximize reusability and simplify theme management.
 - Use Storybook (`npm run storybook` in `packages/ui/`) to develop and preview components.
 
 ## Output Checklist
