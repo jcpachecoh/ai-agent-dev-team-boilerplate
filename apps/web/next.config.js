@@ -3,4 +3,4 @@ const nextConfig = {
   transpilePackages: ["@restopsiq/ui"],
 };
 
-module.exports = nextConfig;
+export default nextConfig;

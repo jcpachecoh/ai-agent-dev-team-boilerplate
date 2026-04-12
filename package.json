@@ -18,9 +18,5 @@
   "engines": {
     "node": ">=18"
   },
-  "overrides": {
-    "react": "18.2.0",
-    "react-dom": "18.2.0"
-  },
   "packageManager": "npm@10.0.0"
 }
