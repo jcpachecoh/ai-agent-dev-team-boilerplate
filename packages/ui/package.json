@@ -1,0 +1,22 @@
+{
+  "name": "@restopsiq/ui",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "typecheck": "tsc --noEmit",
+    "lint": "echo \"No linter configured\""
+  },
+  "devDependencies": {
+    "@restopsiq/tsconfig": "*",
+    "@types/react": "^19.0.0",
+    "react": "^19.0.0",
+    "typescript": "^5.4.0"
+  },
+  "peerDependencies": {
+    "react": "^18.2.0 || ^19.0.0"
+  }
+}

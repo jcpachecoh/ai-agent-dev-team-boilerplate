@@ -1,0 +1,20 @@
+{
+  "name": "@restopsiq/api-client",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "typecheck": "tsc --noEmit",
+    "lint": "echo \"No linter configured\""
+  },
+  "dependencies": {
+    "@restopsiq/types": "*"
+  },
+  "devDependencies": {
+    "@restopsiq/tsconfig": "*",
+    "typescript": "^5.4.0"
+  }
+}
