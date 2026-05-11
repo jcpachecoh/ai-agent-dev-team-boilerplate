@@ -6,7 +6,12 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   variant?: 'primary' | 'secondary' | 'danger';
 }
 
-export function Button({ variant = 'primary', className, children, ...props }: ButtonProps): React.JSX.Element {
+export function Button({
+  variant = 'primary',
+  className,
+  children,
+  ...props
+}: ButtonProps): React.JSX.Element {
   const variantClass = styles[variant] ?? styles.primary;
   const combinedClassName = [styles.button, variantClass, className].filter(Boolean).join(' ');
 

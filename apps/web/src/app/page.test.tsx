@@ -11,8 +11,6 @@ describe('Home', () => {
 
   it('renders welcome message', () => {
     render(<Home />);
-    expect(
-      screen.getByText(/welcome to the restopsiq web application/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/welcome to the restopsiq web application/i)).toBeInTheDocument();
   });
 });

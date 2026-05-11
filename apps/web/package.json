@@ -29,6 +29,7 @@
   "devDependencies": {
     "@restopsiq/tsconfig": "*",
     "@testing-library/jest-dom": "^6.4.0",
+    "eslint-config-next": "^16.2.0",
     "@testing-library/react": "^16.0.0",
     "@testing-library/user-event": "^14.5.0",
     "@types/jest": "^29.5.0",
