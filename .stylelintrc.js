@@ -1,7 +1,8 @@
-{
-  "extends": ["stylelint-config-standard-scss"],
-  "plugins": ["stylelint-order"],
-  "rules": {
+/** @type {import('stylelint').Config} */
+module.exports = {
+  extends: ["stylelint-config-standard-scss"],
+  plugins: ["stylelint-order"],
+  rules: {
     // ── Enforce SCSS Modules naming ────────────────────────────────────────
     // All style files must be *.module.scss (enforced by file pattern in CI)
 
@@ -23,8 +24,8 @@
     "selector-class-pattern": [
       "^[a-z][a-zA-Z0-9]*$",
       {
-        "message": "Class selectors must use camelCase (matches CSS Modules convention)"
-      }
+        message: "Class selectors must use camelCase (matches CSS Modules convention)",
+      },
     ],
     "selector-max-id": 0,
     "selector-no-qualifying-type": true,
@@ -89,7 +90,7 @@
       "transform",
       "animation",
       "overflow",
-      "visibility"
+      "visibility",
     ],
 
     // ── SCSS-specific ─────────────────────────────────────────────────────
@@ -101,15 +102,15 @@
     "max-nesting-depth": [
       3,
       {
-        "message": "Max nesting depth is 3. Refactor deep selectors."
-      }
+        message: "Max nesting depth is 3. Refactor deep selectors.",
+      },
     ],
     "declaration-no-important": true,
     "shorthand-property-no-redundant-values": true,
 
     // ── Disable rules that conflict with SCSS ─────────────────────────────
     "at-rule-no-unknown": null,
-    "scss/at-rule-no-unknown": true
+    "scss/at-rule-no-unknown": true,
   },
-  "ignoreFiles": ["node_modules/**", "dist/**", ".next/**", "coverage/**"]
-}
+  ignoreFiles: ["node_modules/**", "dist/**", ".next/**", "coverage/**"],
+};
