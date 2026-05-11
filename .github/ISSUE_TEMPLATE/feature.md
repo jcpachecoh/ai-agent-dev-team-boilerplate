@@ -2,8 +2,9 @@
 name: Feature Request
 about: Propose a new feature or capability
 title: 'feat: '
-labels: 'enhancement'
+labels: enhancement
 assignees: ''
+
 ---
 
 ## Goal
