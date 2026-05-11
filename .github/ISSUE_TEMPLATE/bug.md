@@ -2,8 +2,9 @@
 name: Bug Report
 about: Report something that is broken or not working as expected
 title: 'fix: '
-labels: 'bug'
+labels: bug
 assignees: ''
+
 ---
 
 ## Summary
