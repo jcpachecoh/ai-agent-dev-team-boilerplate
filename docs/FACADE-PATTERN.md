@@ -65,12 +65,12 @@ src/
 
 ## Import Rules (enforced by ESLint `boundaries` plugin)
 
-| From ↓ / To → | Controller | Service | Repository | Entity | DTO | Interface | Shared |
-|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| **Controller** | ✗ | ✅ | ❌ | ❌ | ✅ | ✅ | ✅ |
-| **Service** | ✗ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Repository** | ✗ | ❌ | ✗ | ✅ | ❌ | ✅ | ✅ |
-| **Entity** | ✗ | ❌ | ✗ | ✗ | ❌ | ❌ | ✅ |
+| From ↓ / To →  | Controller | Service | Repository | Entity | DTO | Interface | Shared |
+| -------------- | :--------: | :-----: | :--------: | :----: | :-: | :-------: | :----: |
+| **Controller** |     ✗      |   ✅    |     ❌     |   ❌   | ✅  |    ✅     |   ✅   |
+| **Service**    |     ✗      |   ✅    |     ✅     |   ✅   | ✅  |    ✅     |   ✅   |
+| **Repository** |     ✗      |   ❌    |     ✗      |   ✅   | ❌  |    ✅     |   ✅   |
+| **Entity**     |     ✗      |   ❌    |     ✗      |   ✗    | ❌  |    ❌     |   ✅   |
 
 > ❌ = **blocked by ESLint** — CI will fail  
 > ✅ = allowed  
@@ -90,7 +90,7 @@ export class OrdersController {
 
   @Post()
   create(@Body() dto: CreateOrderDto): Promise<Order> {
-    return this.ordersService.create(dto);  // ✅ delegate to facade
+    return this.ordersService.create(dto); // ✅ delegate to facade
   }
 }
 ```
@@ -120,7 +120,7 @@ export class OrdersService {
 
   async create(dto: CreateOrderDto): Promise<IOrder> {
     const order = await this.ordersRepository.create(dto); // ✅ service → repo
-    await this.notificationsService.notifyNewOrder(order);  // ✅ service → service
+    await this.notificationsService.notifyNewOrder(order); // ✅ service → service
     return order;
   }
 }
@@ -130,10 +130,10 @@ export class OrdersService {
 
 ## Testing Requirements
 
-| Layer | Test Type | What to Mock |
-|---|---|---|
-| Controller | Unit (`*.controller.spec.ts`) | Mock the Service with `jest.fn()` |
-| Service | Unit (`*.service.spec.ts`) | Mock the Repository with `jest.fn()` |
+| Layer      | Test Type                            | What to Mock                                            |
+| ---------- | ------------------------------------ | ------------------------------------------------------- |
+| Controller | Unit (`*.controller.spec.ts`)        | Mock the Service with `jest.fn()`                       |
+| Service    | Unit (`*.service.spec.ts`)           | Mock the Repository with `jest.fn()`                    |
 | Repository | Integration (`*.repository.spec.ts`) | Use real test DB or `@nestjs/testing` with in-memory DB |
 
 **Every controller method and every service method must have a corresponding test.**

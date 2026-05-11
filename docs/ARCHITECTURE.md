@@ -1,21 +1,24 @@
-
 # System Architecture
 
 Typical stack used with this boilerplate:
 
 Frontend
+
 - Next.js
 - SASS/SCSS Modules (7-1 architecture)
 - Storybook (shared UI component library)
 
 Backend
+
 - NestJS or Node.js
 
 Database
+
 - PostgreSQL
 - Prisma ORM
 
 Infrastructure
+
 - Docker
 - GitHub Actions
 

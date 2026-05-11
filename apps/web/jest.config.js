@@ -7,12 +7,7 @@ module.exports = {
   // ── Test discovery ────────────────────────────────────────────────────────
   testRegex: '.*\\.(test|spec)\\.(ts|tsx)$',
 
-  collectCoverageFrom: [
-    '**/*.{ts,tsx}',
-    '!**/*.d.ts',
-    '!**/index.ts',
-    '!**/__mocks__/**',
-  ],
+  collectCoverageFrom: ['**/*.{ts,tsx}', '!**/*.d.ts', '!**/index.ts', '!**/__mocks__/**'],
 
   // ── Coverage thresholds ───────────────────────────────────────────────────
   coverageThreshold: {

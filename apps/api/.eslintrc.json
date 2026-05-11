@@ -8,15 +8,15 @@
   "settings": {
     "boundaries/elements": [
       { "type": "controller", "pattern": "src/**/api/*.controller.ts" },
-      { "type": "service",    "pattern": "src/**/application/*.service.ts" },
+      { "type": "service", "pattern": "src/**/application/*.service.ts" },
       { "type": "repository", "pattern": "src/**/infrastructure/*.repository.ts" },
-      { "type": "entity",     "pattern": "src/**/entities/*.entity.ts" },
-      { "type": "dto",        "pattern": "src/**/api/dto/*.dto.ts" },
-      { "type": "interface",  "pattern": "src/**/interfaces/*.interface.ts" },
-      { "type": "module",     "pattern": "src/**/*.module.ts" },
-      { "type": "guard",      "pattern": "src/**/*.guard.ts" },
-      { "type": "decorator",  "pattern": "src/**/*.decorator.ts" },
-      { "type": "shared",     "pattern": "src/shared/**/*" }
+      { "type": "entity", "pattern": "src/**/entities/*.entity.ts" },
+      { "type": "dto", "pattern": "src/**/api/dto/*.dto.ts" },
+      { "type": "interface", "pattern": "src/**/interfaces/*.interface.ts" },
+      { "type": "module", "pattern": "src/**/*.module.ts" },
+      { "type": "guard", "pattern": "src/**/*.guard.ts" },
+      { "type": "decorator", "pattern": "src/**/*.decorator.ts" },
+      { "type": "shared", "pattern": "src/shared/**/*" }
     ],
     "boundaries/ignore": ["**/*.spec.ts", "**/*.e2e-spec.ts", "src/main.ts"]
   },
@@ -75,7 +75,21 @@
     // Class naming conventions
     "@typescript-eslint/naming-convention": [
       "error",
-      { "selector": "class", "suffix": ["Controller", "Service", "Repository", "Module", "Guard", "Interceptor", "Pipe", "Filter", "Decorator"], "format": ["PascalCase"] },
+      {
+        "selector": "class",
+        "suffix": [
+          "Controller",
+          "Service",
+          "Repository",
+          "Module",
+          "Guard",
+          "Interceptor",
+          "Pipe",
+          "Filter",
+          "Decorator"
+        ],
+        "format": ["PascalCase"]
+      },
       { "selector": "interface", "prefix": ["I"], "format": ["PascalCase"] },
       { "selector": "typeAlias", "format": ["PascalCase"] },
       { "selector": "enum", "format": ["PascalCase"] },

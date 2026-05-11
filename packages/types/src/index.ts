@@ -7,7 +7,7 @@ export interface User {
   updatedAt: Date;
 }
 
-export type UserRole = "admin" | "manager" | "client" | "rider";
+export type UserRole = 'admin' | 'manager' | 'client' | 'rider';
 
 export interface Restaurant {
   id: string;
@@ -31,13 +31,13 @@ export interface Order {
 }
 
 export type OrderStatus =
-  | "pending"
-  | "confirmed"
-  | "preparing"
-  | "ready"
-  | "picked_up"
-  | "delivered"
-  | "cancelled";
+  | 'pending'
+  | 'confirmed'
+  | 'preparing'
+  | 'ready'
+  | 'picked_up'
+  | 'delivered'
+  | 'cancelled';
 
 export interface OrderItem {
   id: string;

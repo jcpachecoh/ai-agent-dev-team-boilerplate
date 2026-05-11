@@ -59,19 +59,20 @@ git checkout -b feature/42-orders-endpoint
 
 Every PR triggers 9 quality gate jobs. **All must pass** for the merge button to unlock:
 
-| Gate | Tool | Failure = |
-|---|---|---|
-| TypeScript strict | `tsc --noEmit` | Blocked |
-| ESLint (0 warnings) | `eslint --max-warnings 0` | Blocked |
-| Prettier | `prettier --check` | Blocked |
-| Stylelint SCSS | `stylelint` | Blocked |
-| Facade pattern | `validate-structure.js` | Blocked |
-| Unit tests API ≥80% | Jest + coverage | Blocked |
-| Unit tests Web ≥80% | Jest + coverage | Blocked |
-| Integration tests | Jest e2e + Postgres | Blocked |
-| Build | `turbo run build` | Blocked |
+| Gate                | Tool                      | Failure = |
+| ------------------- | ------------------------- | --------- |
+| TypeScript strict   | `tsc --noEmit`            | Blocked   |
+| ESLint (0 warnings) | `eslint --max-warnings 0` | Blocked   |
+| Prettier            | `prettier --check`        | Blocked   |
+| Stylelint SCSS      | `stylelint`               | Blocked   |
+| Facade pattern      | `validate-structure.js`   | Blocked   |
+| Unit tests API ≥80% | Jest + coverage           | Blocked   |
+| Unit tests Web ≥80% | Jest + coverage           | Blocked   |
+| Integration tests   | Jest e2e + Postgres       | Blocked   |
+| Build               | `turbo run build`         | Blocked   |
 
 Additionally:
+
 - **GitHub Copilot** automatically reviews every PR against `docs/copilot-instructions.md`
 - **CODEOWNERS** automatically requests the right team for review (1 approval required)
 - Stale reviews are dismissed on new commits
@@ -105,6 +106,7 @@ Stylelint enforces: camelCase selectors, no ID selectors, max 3 nesting levels, 
 ## Testing Conventions
 
 **API (NestJS):**
+
 ```typescript
 // Unit: mock the layer below
 describe('OrdersService', () => {
@@ -113,10 +115,7 @@ describe('OrdersService', () => {
 
   beforeEach(async () => {
     const module = await Test.createTestingModule({
-      providers: [
-        OrdersService,
-        { provide: OrdersRepository, useValue: { findAll: jest.fn() } },
-      ],
+      providers: [OrdersService, { provide: OrdersRepository, useValue: { findAll: jest.fn() } }],
     }).compile();
     service = module.get(OrdersService);
     repo = module.get(OrdersRepository);
@@ -130,6 +129,7 @@ describe('OrdersService', () => {
 ```
 
 **Web (React):**
+
 ```typescript
 import { render, screen } from '@testing-library/react';
 

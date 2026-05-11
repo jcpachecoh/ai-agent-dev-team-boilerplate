@@ -6,11 +6,7 @@
     "sourceType": "module",
     "project": "./tsconfig.json"
   },
-  "plugins": [
-    "@typescript-eslint",
-    "import",
-    "unused-imports"
-  ],
+  "plugins": ["@typescript-eslint", "import", "unused-imports"],
   "extends": [
     "eslint:recommended",
     "plugin:@typescript-eslint/recommended",
@@ -65,12 +61,7 @@
     "import/order": [
       "error",
       {
-        "groups": [
-          "builtin",
-          "external",
-          "internal",
-          ["parent", "sibling", "index"]
-        ],
+        "groups": ["builtin", "external", "internal", ["parent", "sibling", "index"]],
         "newlines-between": "always",
         "alphabetize": { "order": "asc", "caseInsensitive": true }
       }
@@ -83,13 +74,5 @@
       "typescript": { "alwaysTryTypes": true }
     }
   },
-  "ignorePatterns": [
-    "dist/",
-    ".next/",
-    ".expo/",
-    "node_modules/",
-    "coverage/",
-    "*.js",
-    "*.d.ts"
-  ]
+  "ignorePatterns": ["dist/", ".next/", ".expo/", "node_modules/", "coverage/", "*.js", "*.d.ts"]
 }

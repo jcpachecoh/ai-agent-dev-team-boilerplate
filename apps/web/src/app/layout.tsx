@@ -1,15 +1,11 @@
-import type { Metadata } from "next";
+import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: "RestOpsIQ",
-  description: "Restaurant Operations Intelligence Platform",
+  title: 'RestOpsIQ',
+  description: 'Restaurant Operations Intelligence Platform',
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body>{children}</body>

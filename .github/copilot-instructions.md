@@ -1,4 +1,5 @@
 # GitHub Copilot Code Review Instructions
+
 # RestOpsIQ Platform
 
 When reviewing pull requests in this repository, enforce the following standards.
@@ -11,6 +12,7 @@ Flag any violation as a blocking comment. Do not approve PRs that break these ru
 The Service is the Facade — the single public interface of every module.
 
 **Block if:**
+
 - A Controller imports from `infrastructure/` (repositories) or `entities/` directly
 - A Controller constructs or uses any class other than a Service, Guard, Decorator, or DTO
 - A Repository contains business logic (conditional branching beyond DB queries)
@@ -23,6 +25,7 @@ The Service is the Facade — the single public interface of every module.
 ## 2. TypeScript Strict Mode (BLOCKING)
 
 **Block if:**
+
 - `any` type is used without a comment justifying it
 - A function is missing its return type annotation (especially in services and controllers)
 - `as SomeType` type assertions are used instead of proper type guards
@@ -34,6 +37,7 @@ The Service is the Facade — the single public interface of every module.
 ## 3. Unit Tests Required (BLOCKING)
 
 **Block if:**
+
 - A new Controller method has no corresponding test in `*.controller.spec.ts`
 - A new Service method has no corresponding test in `*.service.spec.ts`
 - A test uses `expect(true).toBe(true)` or other trivially passing assertions
@@ -45,6 +49,7 @@ The Service is the Facade — the single public interface of every module.
 ## 4. Integration Tests Required for Repositories (BLOCKING)
 
 **Block if:**
+
 - A new Repository method has no corresponding integration test
 - Integration tests connect to a production database (must use `DATABASE_URL` from environment with `NODE_ENV=test`)
 
@@ -53,6 +58,7 @@ The Service is the Facade — the single public interface of every module.
 ## 5. SCSS / Styling Rules (BLOCKING)
 
 **Block if:**
+
 - A component's styles are in a `.scss` file that is **not** named `ComponentName.module.scss`
 - A component uses inline `style={{}}` props for anything other than truly dynamic values (colors from API, etc.)
 - Hard-coded color values (hex, rgb, named colors) appear in SCSS — must use variables from `styles/abstracts/`
@@ -62,6 +68,7 @@ The Service is the Facade — the single public interface of every module.
 - `@import` is used instead of `@use` / `@forward` (deprecated SCSS syntax)
 
 **Component folder structure — Block if a new component does NOT follow:**
+
 ```
 ComponentName/
 ├── index.ts                     ← barrel export only
@@ -74,6 +81,7 @@ ComponentName/
 ## 6. Clean Code Rules (BLOCKING)
 
 **Block if:**
+
 - A function/method exceeds 30 lines (extract smaller functions)
 - A function has more than 4 parameters (use a DTO/options object)
 - `console.log` / `console.info` appear in production code (use NestJS Logger or structured logging)
@@ -85,6 +93,7 @@ ComponentName/
 ## 7. Security (BLOCKING)
 
 **Block if:**
+
 - Secrets, API keys, or passwords appear anywhere in the code or tests
 - User input is used in a database query without parameterization / ORM abstraction
 - `eval()` or `new Function()` is used

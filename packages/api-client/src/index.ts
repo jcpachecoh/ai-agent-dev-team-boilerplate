@@ -1,4 +1,4 @@
-import type { ApiResponse } from "@restopsiq/types";
+import type { ApiResponse } from '@restopsiq/types';
 
 export class ApiClient {
   private baseUrl: string;
@@ -17,8 +17,8 @@ export class ApiClient {
 
   async post<T>(path: string, body: unknown): Promise<ApiResponse<T>> {
     const response = await fetch(`${this.baseUrl}${path}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
     if (!response.ok) {

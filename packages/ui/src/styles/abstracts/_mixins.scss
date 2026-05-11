@@ -10,15 +10,25 @@
 
 @mixin respond-to($breakpoint) {
   @if $breakpoint == sm {
-    @media (min-width: $breakpoint-sm) { @content; }
+    @media (min-width: $breakpoint-sm) {
+      @content;
+    }
   } @else if $breakpoint == md {
-    @media (min-width: $breakpoint-md) { @content; }
+    @media (min-width: $breakpoint-md) {
+      @content;
+    }
   } @else if $breakpoint == lg {
-    @media (min-width: $breakpoint-lg) { @content; }
+    @media (min-width: $breakpoint-lg) {
+      @content;
+    }
   } @else if $breakpoint == xl {
-    @media (min-width: $breakpoint-xl) { @content; }
+    @media (min-width: $breakpoint-xl) {
+      @content;
+    }
   } @else if $breakpoint == 2xl {
-    @media (min-width: $breakpoint-2xl) { @content; }
+    @media (min-width: $breakpoint-2xl) {
+      @content;
+    }
   }
 }
 
@@ -32,7 +42,11 @@
   white-space: nowrap;
 }
 
-@mixin text-style($size: $font-size-base, $weight: $font-weight-regular, $line-height: $line-height-base) {
+@mixin text-style(
+  $size: $font-size-base,
+  $weight: $font-weight-regular,
+  $line-height: $line-height-base
+) {
   font-size: $size;
   font-weight: $weight;
   line-height: $line-height;

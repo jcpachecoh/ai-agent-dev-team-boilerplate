@@ -1,8 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  transpilePackages: ["@restopsiq/ui"],
+  transpilePackages: ['@restopsiq/ui'],
   sassOptions: {
-    silenceDeprecations: ["legacy-js-api"],
+    silenceDeprecations: ['legacy-js-api'],
   },
 };
 

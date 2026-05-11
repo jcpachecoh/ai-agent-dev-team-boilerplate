@@ -4,7 +4,6 @@ about: Propose a new feature or capability
 title: 'feat: '
 labels: enhancement
 assignees: ''
-
 ---
 
 ## Goal
@@ -28,6 +27,7 @@ assignees: ''
 ## Files to Create / Modify
 
 <!-- List key files or modules expected to change. -->
+
 - `apps/...`
 - `packages/...`
 

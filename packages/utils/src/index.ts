@@ -1,9 +1,9 @@
 /**
  * Format a price value as currency string.
  */
-export function formatCurrency(amount: number, currency = "USD"): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
+export function formatCurrency(amount: number, currency = 'USD'): string {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
     currency,
   }).format(amount);
 }
@@ -20,10 +20,10 @@ export function generateId(): string {
  */
 export function isValidEmail(email: string): boolean {
   if (email.length > 254) return false;
-  const atIndex = email.indexOf("@");
-  if (atIndex < 1 || atIndex !== email.lastIndexOf("@")) return false;
+  const atIndex = email.indexOf('@');
+  if (atIndex < 1 || atIndex !== email.lastIndexOf('@')) return false;
   const local = email.slice(0, atIndex);
   const domain = email.slice(atIndex + 1);
   if (local.length > 64 || domain.length === 0) return false;
-  return domain.includes(".");
+  return domain.includes('.');
 }

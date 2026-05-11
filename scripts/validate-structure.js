@@ -17,18 +17,25 @@ const VIOLATIONS = [];
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-function log(msg) { process.stdout.write(msg + '\n'); }
-function error(msg) { VIOLATIONS.push(msg); process.stderr.write(`  ✗ ${msg}\n`); }
-function ok(msg) { log(`  ✓ ${msg}`); }
+function log(msg) {
+  process.stdout.write(msg + '\n');
+}
+function error(msg) {
+  VIOLATIONS.push(msg);
+  process.stderr.write(`  ✗ ${msg}\n`);
+}
+function ok(msg) {
+  log(`  ✓ ${msg}`);
+}
 
 function getDirs(dir) {
   if (!fs.existsSync(dir)) return [];
-  return fs.readdirSync(dir).filter(f => fs.statSync(path.join(dir, f)).isDirectory());
+  return fs.readdirSync(dir).filter((f) => fs.statSync(path.join(dir, f)).isDirectory());
 }
 
 function getFiles(dir, ext) {
   if (!fs.existsSync(dir)) return [];
-  return fs.readdirSync(dir).filter(f => f.endsWith(ext));
+  return fs.readdirSync(dir).filter((f) => f.endsWith(ext));
 }
 
 function readFile(filePath) {
@@ -97,7 +104,9 @@ function validateApplicationLayer(featureDir, featureName) {
   }
 
   if (!fs.existsSync(serviceSpec)) {
-    error(`[${featureName}] Missing application/${featureName}.service.spec.ts — unit tests required`);
+    error(
+      `[${featureName}] Missing application/${featureName}.service.spec.ts — unit tests required`,
+    );
   } else {
     ok(`${featureName}: application/${featureName}.service.spec.ts`);
   }
@@ -112,15 +121,15 @@ function validateFacadeImports(featureDir, featureName) {
   if (!content) return;
 
   const forbiddenPatterns = [
-    { pattern: /from ['"].*\/infrastructure\/.*repository/,  label: 'repository' },
-    { pattern: /from ['"].*\/entities\/.*entity/,           label: 'entity'      },
+    { pattern: /from ['"].*\/infrastructure\/.*repository/, label: 'repository' },
+    { pattern: /from ['"].*\/entities\/.*entity/, label: 'entity' },
   ];
 
   for (const { pattern, label } of forbiddenPatterns) {
     if (pattern.test(content)) {
       error(
         `[${featureName}] FACADE VIOLATION: ${featureName}.controller.ts imports from ${label} layer directly. ` +
-        `Controllers must only call the Service (Facade).`
+          `Controllers must only call the Service (Facade).`,
       );
     }
   }
@@ -136,7 +145,7 @@ function validateServiceImports(featureDir, featureName) {
 
   if (/from ['"].*\/api\/.*controller/.test(content)) {
     error(
-      `[${featureName}] Service imports from Controller layer — this is a circular dependency violation.`
+      `[${featureName}] Service imports from Controller layer — this is a circular dependency violation.`,
     );
   }
 }
@@ -152,9 +161,17 @@ function validate() {
   }
 
   // Skip top-level files (main.ts, app.module.ts, app.service.ts, shared/)
-  const SKIP = new Set(['shared', '__mocks__', 'filters', 'interceptors', 'pipes', 'guards', 'decorators']);
+  const SKIP = new Set([
+    'shared',
+    '__mocks__',
+    'filters',
+    'interceptors',
+    'pipes',
+    'guards',
+    'decorators',
+  ]);
 
-  const features = getDirs(API_SRC).filter(d => !SKIP.has(d));
+  const features = getDirs(API_SRC).filter((d) => !SKIP.has(d));
 
   if (features.length === 0) {
     log('ℹ  No feature modules found yet — nothing to validate.\n');

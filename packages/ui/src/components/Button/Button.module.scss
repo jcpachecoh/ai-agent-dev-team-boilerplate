@@ -15,8 +15,11 @@
   border: $border-width solid transparent;
   border-radius: $border-radius-md;
   cursor: pointer;
-  transition: background-color $transition-fast, border-color $transition-fast,
-    color $transition-fast, box-shadow $transition-fast;
+  transition:
+    background-color $transition-fast,
+    border-color $transition-fast,
+    color $transition-fast,
+    box-shadow $transition-fast;
 
   &:focus-visible {
     @include focus-ring;
