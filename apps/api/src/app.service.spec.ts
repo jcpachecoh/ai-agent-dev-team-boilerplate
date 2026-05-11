@@ -1,11 +1,11 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test, type TestingModule } from '@nestjs/testing';
 
 import { AppService } from './app.service';
 
-describe('AppService', () => {
+describe('AppService', (): void => {
   let service: AppService;
 
-  beforeEach(async () => {
+  beforeEach(async (): Promise<void> => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [AppService],
     }).compile();
@@ -13,8 +13,8 @@ describe('AppService', () => {
     service = module.get<AppService>(AppService);
   });
 
-  describe('getHealth', () => {
-    it('should return ok status with service name', () => {
+  describe('getHealth', (): void => {
+    it('should return ok status with service name', (): void => {
       expect(service.getHealth()).toEqual({ status: 'ok', service: 'restopsiq-api' });
     });
   });

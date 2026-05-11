@@ -1,4 +1,6 @@
-export default function Home() {
+import type { ReactElement } from 'react';
+
+export default function Home(): ReactElement {
   return (
     <main>
       <h1>RestOpsIQ Platform</h1>

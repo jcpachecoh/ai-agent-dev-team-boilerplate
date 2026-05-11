@@ -45,7 +45,7 @@ module.exports = {
   },
 
   // ── Setup files ───────────────────────────────────────────────────────────
-  setupFilesAfterFramework: ['<rootDir>/setupTests.ts'],
+  setupFilesAfterEnv: ['<rootDir>/setupTests.ts'],
   clearMocks: true,
   restoreMocks: true,
 };

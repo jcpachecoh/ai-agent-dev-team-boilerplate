@@ -8,12 +8,12 @@
   justify-content: center;
   gap: $spacing-sm;
   padding: $spacing-sm $spacing-md;
+  border: $border-width solid transparent;
+  border-radius: $border-radius-md;
   font-family: $font-family-base;
   font-size: $font-size-base;
   font-weight: $font-weight-medium;
   line-height: $line-height-base;
-  border: $border-width solid transparent;
-  border-radius: $border-radius-md;
   cursor: pointer;
   transition:
     background-color $transition-fast,

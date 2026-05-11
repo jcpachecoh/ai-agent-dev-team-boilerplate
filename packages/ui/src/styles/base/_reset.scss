@@ -11,8 +11,6 @@
 }
 
 html {
-  -webkit-text-size-adjust: 100%;
-  -moz-text-size-adjust: 100%;
   text-size-adjust: 100%;
 }
 
@@ -49,7 +47,7 @@ ol {
 }
 
 button {
-  cursor: pointer;
   background: none;
   border: none;
+  cursor: pointer;
 }
