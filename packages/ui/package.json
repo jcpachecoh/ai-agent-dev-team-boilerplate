@@ -12,7 +12,8 @@
     "build": "tsc --noEmit",
     "clean": "rm -rf dist",
     "typecheck": "tsc --noEmit",
-    "lint": "echo \"No linter configured\"",
+    "lint": "eslint src --ext .ts,.tsx --max-warnings 0",
+    "stylelint": "stylelint \"src/**/*.scss\" --max-warnings 0",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build"
   },

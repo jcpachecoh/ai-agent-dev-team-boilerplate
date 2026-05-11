@@ -6,7 +6,12 @@
     "dev": "nest start --watch",
     "build": "nest build",
     "start": "node dist/main",
-    "lint": "echo \"No linter configured\"",
+    "lint": "eslint src --ext .ts --max-warnings 0",
+    "lint:fix": "eslint src --ext .ts --fix",
+    "test": "jest --passWithNoTests",
+    "test:watch": "jest --watch",
+    "test:cov": "jest --coverage",
+    "test:e2e": "jest --config ./jest.e2e.config.js --passWithNoTests",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist"
   },
@@ -20,9 +25,15 @@
     "rxjs": "^7.8.0"
   },
   "devDependencies": {
+    "@nestjs/testing": "^10.3.0",
     "@nestjs/cli": "^10.3.0",
     "@restopsiq/tsconfig": "*",
+    "@types/jest": "^29.5.0",
     "@types/node": "^20.0.0",
+    "@types/supertest": "^6.0.0",
+    "jest": "^29.7.0",
+    "supertest": "^6.3.0",
+    "ts-jest": "^29.2.0",
     "typescript": "^5.4.0"
   }
 }
