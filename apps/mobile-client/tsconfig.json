@@ -1,0 +1,4 @@
+{
+  "extends": "@restopsiq/tsconfig/expo.json",
+  "include": ["src"]
+}

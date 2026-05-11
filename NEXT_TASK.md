@@ -1,4 +1,3 @@
-
 Current Task
 
 tasks/01-project-setup.md
