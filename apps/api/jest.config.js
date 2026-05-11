@@ -36,11 +36,13 @@ module.exports = {
 
   // ── ts-jest config ────────────────────────────────────────────────────────
   transform: {
-    '^.+\\.(t|j)s$': ['ts-jest', { tsconfig: '<rootDir>/../tsconfig.json' }],
+    '^.+\\.(t|j)s$': ['ts-jest', {
+      tsconfig: { importHelpers: true },
+    }],
   },
 
   // ── Setup ─────────────────────────────────────────────────────────────────
-  setupFilesAfterFramework: [],
+  setupFilesAfterEnv: [],
   clearMocks: true,
   restoreMocks: true,
 };

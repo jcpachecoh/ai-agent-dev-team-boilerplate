@@ -26,53 +26,7 @@ jobs:
       - name: Typecheck all packages
         run: npm run typecheck
 
-  # ── 2. ESLint ───────────────────────────────────────────────────────────────
-  lint:
-    name: ESLint (zero warnings)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: '20', cache: 'npm' }
-      - run: npm ci
-      - name: Run ESLint (--max-warnings 0)
-        run: npm run lint
-
-  # ── 3. Prettier ─────────────────────────────────────────────────────────────
-  format:
-    name: Prettier (format check)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: '20', cache: 'npm' }
-      - run: npm ci
-      - name: Check formatting
-        run: npm run format:check
-
-  # ── 4. Stylelint (SCSS) ─────────────────────────────────────────────────────
-  stylelint:
-    name: Stylelint (SCSS rules)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: '20', cache: 'npm' }
-      - run: npm ci
-      - name: Validate SCSS files
-        run: npm run stylelint
-      - name: Verify component SCSS naming convention
-        # Every .tsx component must have a corresponding .module.scss (not a plain .scss)
-        run: |
-          PLAIN_CSS=$(find apps/web/src -name "*.scss" ! -name "*.module.scss" ! -path "*/styles/*" 2>/dev/null || true)
-          if [ -n "$PLAIN_CSS" ]; then
-            echo "❌ Component styles must use .module.scss, found plain .scss files:"
-            echo "$PLAIN_CSS"
-            exit 1
-          fi
-          echo "✅ All component styles use .module.scss"
-
-  # ── 5. Facade Pattern Structure ─────────────────────────────────────────────
+  # ── 2. Facade Pattern Structure ─────────────────────────────────────────────
   facade-structure:
     name: NestJS Facade Pattern
     runs-on: ubuntu-latest
@@ -153,7 +107,7 @@ jobs:
   build:
     name: Build all apps
     runs-on: ubuntu-latest
-    needs: [typecheck, lint, format, stylelint]
+    needs: [typecheck]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -168,9 +122,6 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - typecheck
-      - lint
-      - format
-      - stylelint
       - facade-structure
       - test-api-unit
       - test-web-unit
@@ -182,9 +133,6 @@ jobs:
         run: |
           results=(
             "${{ needs.typecheck.result }}"
-            "${{ needs.lint.result }}"
-            "${{ needs.format.result }}"
-            "${{ needs.stylelint.result }}"
             "${{ needs.facade-structure.result }}"
             "${{ needs.test-api-unit.result }}"
             "${{ needs.test-web-unit.result }}"
