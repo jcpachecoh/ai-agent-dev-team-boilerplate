@@ -1,7 +1,7 @@
 Current Task
 
-tasks/01-project-setup.md
+tasks/recipes-food-cost/01-prisma-foundation.md
 
 Goal
 
-Initialize the base project structure.
+Initialize Prisma ORM foundation in the API.

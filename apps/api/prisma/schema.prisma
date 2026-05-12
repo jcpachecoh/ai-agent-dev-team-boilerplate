@@ -320,3 +320,66 @@ model Attachment {
 
   @@map("attachments")
 }
+
+enum StockUnit {
+  GRAMS
+  UNIT
+  ML
+  KILOGRAMS
+  LITERS
+}
+
+model Recipe {
+  id             String       @id @default(cuid())
+  tenantId       String
+  productId      String
+  nombre         String
+  porciones      Int
+  notas          String?
+  isActive       Boolean      @default(true)
+  foodCostActual Decimal      @db.Decimal(12, 4)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  items          RecipeItem[]
+  product        Product      @relation(fields: [productId], references: [id])
+
+  @@index([tenantId, productId])
+}
+
+model RecipeItem {
+  id           String     @id @default(cuid())
+  tenantId     String
+  recipeId     String
+  supplyItemId String
+  cantidad     Decimal    @db.Decimal(12, 4)
+  unidad       StockUnit
+  notas        String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  recipe       Recipe     @relation(fields: [recipeId], references: [id])
+  supplyItem   SupplyItem @relation(fields: [supplyItemId], references: [id])
+
+  @@index([tenantId, supplyItemId])
+  @@index([tenantId, recipeId])
+}
+
+// TEMPORARY PLACEHOLDER
+// TODO: Move to dedicated module
+model Product {
+  id       String   @id @default(cuid())
+  tenantId String
+  recipes  Recipe[]
+
+  @@index([tenantId])
+}
+
+// TEMPORARY PLACEHOLDER
+// TODO: Move to dedicated module
+model SupplyItem {
+  id                     String       @id @default(cuid())
+  tenantId               String
+  costoPromedioPonderado Decimal      @db.Decimal(12, 4)
+  recipeItems            RecipeItem[]
+
+  @@index([tenantId])
+}
