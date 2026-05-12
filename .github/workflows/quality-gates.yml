@@ -1,0 +1,158 @@
+name: Quality Gates
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# All jobs below are required status checks.
+# Branch protection is configured to require ALL of them to pass before merge.
+
+jobs:
+  # ── 1. Typecheck ────────────────────────────────────────────────────────────
+  typecheck:
+    name: TypeScript (strict)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20', cache: 'pnpm' }
+      - run: pnpm install --frozen-lockfile
+      - name: Typecheck all packages
+        run: pnpm run typecheck
+
+  # ── 2. Module Structure ──────────────────────────────────────────────────────
+  module-structure:
+    name: NestJS Module Structure
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20', cache: 'pnpm' }
+      - name: Validate module structure
+        run: node scripts/validate-structure.js
+
+  # ── 6. Unit Tests (API) ─────────────────────────────────────────────────────
+  test-api-unit:
+    name: Unit Tests — API (≥80% coverage)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20', cache: 'pnpm' }
+      - run: pnpm install --frozen-lockfile
+      - name: Run unit tests with coverage
+        run: pnpm --filter @restopsiq/api run test:cov
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: api-coverage
+          path: apps/api/coverage/
+
+  # ── 7. Unit Tests (Web) ─────────────────────────────────────────────────────
+  test-web-unit:
+    name: Unit Tests — Web (≥80% coverage)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20', cache: 'pnpm' }
+      - run: pnpm install --frozen-lockfile
+      - name: Run unit tests with coverage
+        run: pnpm --filter @restopsiq/web run test:cov
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: web-coverage
+          path: apps/web/coverage/
+
+  # ── 8. Integration Tests (API) ──────────────────────────────────────────────
+  test-api-e2e:
+    name: Integration Tests — API
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: restopsiq_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    env:
+      DATABASE_URL: postgresql://test:test@localhost:5432/restopsiq_test
+      NODE_ENV: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20', cache: 'pnpm' }
+      - run: pnpm install --frozen-lockfile
+      - name: Run integration tests
+        working-directory: apps/api
+        run: pnpm run test:e2e
+
+  # ── 9. Build ────────────────────────────────────────────────────────────────
+  build:
+    name: Build all apps
+    runs-on: ubuntu-latest
+    needs: [typecheck]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20', cache: 'pnpm' }
+      - run: pnpm install --frozen-lockfile
+      - name: Build packages and apps
+        run: pnpm run build
+
+  # ── Summary gate (all jobs must be green for branch protection) ─────────────
+  quality-gate:
+    name: ✅ All Quality Gates Passed
+    runs-on: ubuntu-latest
+    needs:
+      - typecheck
+      - module-structure
+      - test-api-unit
+      - test-web-unit
+      - test-api-e2e
+      - build
+    if: always()
+    steps:
+      - name: Check all gate results
+        run: |
+          results=(
+            "${{ needs.typecheck.result }}"
+            "${{ needs.module-structure.result }}"
+            "${{ needs.test-api-unit.result }}"
+            "${{ needs.test-web-unit.result }}"
+            "${{ needs.test-api-e2e.result }}"
+            "${{ needs.build.result }}"
+          )
+          failed=0
+          for r in "${results[@]}"; do
+            if [ "$r" != "success" ]; then
+              failed=1
+            fi
+          done
+          if [ $failed -eq 1 ]; then
+            echo "❌ One or more quality gates failed. Merge is blocked."
+            exit 1
+          fi
+          echo "✅ All quality gates passed!"

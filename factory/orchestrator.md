@@ -17,15 +17,15 @@ The Orchestrator ensures that:
 
 ## Agent Roster
 
-| Agent | Folder | Primary Output |
-|---|---|---|
-| **Product Agent** | `agents/product-agent/` | Specs in `specs/`, tasks in `tasks/` |
-| **Architecture Agent** | `agents/architecture-agent/` | Architecture docs, ADRs in `docs/adr/` |
-| **Backend Agent** | `agents/backend-agent/` | APIs, services, database schemas |
-| **Frontend Agent** | `agents/frontend-agent/` | UI components, pages, frontend logic |
-| **Data Agent** | `agents/data-agent/` | Datasets, ETL scripts, data pipelines |
-| **Testing Agent** | `agents/testing-agent/` | Unit tests, integration tests, QA reports |
-| **DevOps Agent** | `agents/devops-agent/` | Docker, CI/CD, infrastructure, deployment |
+| Agent                  | Folder                       | Primary Output                            |
+| ---------------------- | ---------------------------- | ----------------------------------------- |
+| **Product Agent**      | `agents/product-agent/`      | Specs in `specs/`, tasks in `tasks/`      |
+| **Architecture Agent** | `agents/architecture-agent/` | Architecture docs, ADRs in `docs/adr/`    |
+| **Backend Agent**      | `agents/backend-agent/`      | APIs, services, database schemas          |
+| **Frontend Agent**     | `agents/frontend-agent/`     | UI components, pages, frontend logic      |
+| **Data Agent**         | `agents/data-agent/`         | Datasets, ETL scripts, data pipelines     |
+| **Testing Agent**      | `agents/testing-agent/`      | Unit tests, integration tests, QA reports |
+| **DevOps Agent**       | `agents/devops-agent/`       | Docker, CI/CD, infrastructure, deployment |
 
 ---
 
@@ -109,11 +109,11 @@ Data Agent                 (parallel)
 
 The Orchestrator requires all agents to read and write shared memory:
 
-| File | Purpose |
-|---|---|
+| File                        | Purpose                                             |
+| --------------------------- | --------------------------------------------------- |
 | `memory/project-context.md` | High-level project overview, goals, and constraints |
-| `memory/decisions.md` | Architectural and product decisions with rationale |
-| `memory/progress.md` | Task completion status and deployment state |
+| `memory/decisions.md`       | Architectural and product decisions with rationale  |
+| `memory/progress.md`        | Task completion status and deployment state         |
 
 ---
 

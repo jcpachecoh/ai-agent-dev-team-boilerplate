@@ -1,0 +1,10 @@
+{
+  "expo": {
+    "name": "RestOpsIQ Client",
+    "slug": "restopsiq-client",
+    "version": "0.0.1",
+    "orientation": "portrait",
+    "scheme": "restopsiq-client",
+    "platforms": ["ios", "android"]
+  }
+}
