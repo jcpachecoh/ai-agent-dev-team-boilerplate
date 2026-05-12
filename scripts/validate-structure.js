@@ -213,7 +213,6 @@ function validate() {
 
   if (VIOLATIONS.length > 0) {
     log(`\n❌ ${VIOLATIONS.length} violation(s) found. Fix them before merging.\n`);
-    log('See docs/FACADE-PATTERN.md for the architecture guide.\n');
     process.exit(1);
   } else {
     log(`\n✅ All ${features.length} module(s) pass Facade Pattern validation.\n`);

@@ -24,6 +24,8 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: '20', cache: 'pnpm' }
       - run: pnpm install --frozen-lockfile
+      - name: Generate Prisma client
+        run: pnpm --filter @restopsiq/api exec prisma generate
       - name: Typecheck all packages
         run: pnpm run typecheck
 
@@ -49,6 +51,8 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: '20', cache: 'pnpm' }
       - run: pnpm install --frozen-lockfile
+      - name: Generate Prisma client
+        run: pnpm --filter @restopsiq/api exec prisma generate
       - name: Run unit tests with coverage
         run: pnpm --filter @restopsiq/api run test:cov
       - name: Upload coverage
@@ -104,6 +108,11 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: '20', cache: 'pnpm' }
       - run: pnpm install --frozen-lockfile
+      - name: Generate Prisma client
+        run: pnpm --filter @restopsiq/api exec prisma generate
+      - name: Run migrations
+        working-directory: apps/api
+        run: pnpm exec prisma migrate deploy
       - name: Run integration tests
         working-directory: apps/api
         run: pnpm run test:e2e

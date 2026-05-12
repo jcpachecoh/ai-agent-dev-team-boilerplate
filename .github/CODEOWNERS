@@ -7,7 +7,6 @@
 
 # ── Architecture & Docs ────────────────────────────────────────────────────────
 /docs/                              @codenix-ai/architecture
-/docs/FACADE-PATTERN.md             @codenix-ai/architecture
 /.github/                           @codenix-ai/devops @codenix-ai/architecture
 
 # ── API (NestJS) ───────────────────────────────────────────────────────────────
