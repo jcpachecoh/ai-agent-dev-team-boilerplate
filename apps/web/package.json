@@ -17,17 +17,17 @@
     "clean": "rm -rf .next"
   },
   "dependencies": {
-    "@restopsiq/types": "*",
-    "@restopsiq/ui": "*",
-    "@restopsiq/utils": "*",
-    "@restopsiq/api-client": "*",
+    "@restopsiq/types": "workspace:*",
+    "@restopsiq/ui": "workspace:*",
+    "@restopsiq/utils": "workspace:*",
+    "@restopsiq/api-client": "workspace:*",
     "next": "^16.2.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "sass": "^1.77.0"
   },
   "devDependencies": {
-    "@restopsiq/tsconfig": "*",
+    "@restopsiq/tsconfig": "workspace:*",
     "@testing-library/jest-dom": "^6.4.0",
     "eslint-config-next": "^16.2.0",
     "@testing-library/react": "^16.0.0",

@@ -1,10 +1,6 @@
 {
   "name": "restopsiq-platform",
   "private": true,
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
@@ -58,5 +54,5 @@
       "path": "cz-conventional-changelog"
     }
   },
-  "packageManager": "npm@10.0.0"
+  "packageManager": "pnpm@9.15.9"
 }

@@ -11,10 +11,10 @@
     "lint": "echo \"No linter configured\""
   },
   "dependencies": {
-    "@restopsiq/types": "*"
+    "@restopsiq/types": "workspace:*"
   },
   "devDependencies": {
-    "@restopsiq/tsconfig": "*",
+    "@restopsiq/tsconfig": "workspace:*",
     "typescript": "^5.4.0"
   }
 }

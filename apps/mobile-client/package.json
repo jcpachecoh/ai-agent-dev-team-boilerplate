@@ -11,16 +11,16 @@
     "clean": "rm -rf .expo"
   },
   "dependencies": {
-    "@restopsiq/types": "*",
-    "@restopsiq/utils": "*",
-    "@restopsiq/api-client": "*",
+    "@restopsiq/types": "workspace:*",
+    "@restopsiq/utils": "workspace:*",
+    "@restopsiq/api-client": "workspace:*",
     "expo": "~51.0.0",
     "expo-status-bar": "~1.12.1",
     "react": "18.2.0",
     "react-native": "0.74.1"
   },
   "devDependencies": {
-    "@restopsiq/tsconfig": "*",
+    "@restopsiq/tsconfig": "workspace:*",
     "@types/react": "^18.2.0",
     "typescript": "^5.4.0"
   }

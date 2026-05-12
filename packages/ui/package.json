@@ -21,7 +21,7 @@
     "sass": "^1.77.0"
   },
   "devDependencies": {
-    "@restopsiq/tsconfig": "*",
+    "@restopsiq/tsconfig": "workspace:*",
     "@storybook/addon-essentials": "^8.6.17",
     "@storybook/react": "^8.6.17",
     "@storybook/react-vite": "^8.6.17",

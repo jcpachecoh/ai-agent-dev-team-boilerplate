@@ -1,0 +1,10 @@
+.shell {
+  display: flex;
+  height: 100%;
+}
+
+.main {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-5);
+}
