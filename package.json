@@ -16,6 +16,7 @@
     "typecheck": "turbo run typecheck",
     "validate": "turbo run typecheck lint stylelint test",
     "prepare": "husky",
+    "postinstall": "prisma generate --schema apps/api/prisma/schema.prisma",
     "commit": "cz",
     "commitlint": "commitlint --edit"
   },

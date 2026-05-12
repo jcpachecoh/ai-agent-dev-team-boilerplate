@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 /**
- * Facade Pattern Structure Validator
+ * NestJS Module Structure Validator
  * -----------------------------------
  * Validates that the NestJS API src/ directory follows the required
- * per-module folder layout and that no forbidden cross-layer imports exist.
+ * per-module folder layout:
+ *   interfaces/ · repository/ · service/ · controller/ · test/
  *
  * Run: node scripts/validate-structure.js
  * Exit 0 = valid, Exit 1 = violations found
@@ -33,16 +34,11 @@ function getDirs(dir) {
   return fs.readdirSync(dir).filter((f) => fs.statSync(path.join(dir, f)).isDirectory());
 }
 
-function getFiles(dir, ext) {
-  if (!fs.existsSync(dir)) return [];
-  return fs.readdirSync(dir).filter((f) => f.endsWith(ext));
-}
-
 function readFile(filePath) {
   return fs.existsSync(filePath) ? fs.readFileSync(filePath, 'utf8') : '';
 }
 
-// ── Rule: Every module folder must have a *.module.ts ─────────────────────
+// ── Rule: *.module.ts must exist at the module root ───────────────────────
 
 function validateModuleFile(featureDir, featureName) {
   const moduleFile = path.join(featureDir, `${featureName}.module.ts`);
@@ -53,107 +49,163 @@ function validateModuleFile(featureDir, featureName) {
   }
 }
 
-// ── Rule: api/ folder must exist with controller + dto/ ───────────────────
+// ── Rule: interfaces/ must exist with I{Feature}Repository + I{Feature}Service
 
-function validateApiLayer(featureDir, featureName) {
-  const apiDir = path.join(featureDir, 'api');
-
-  if (!fs.existsSync(apiDir)) {
-    error(`[${featureName}] Missing api/ directory`);
+function validateInterfacesLayer(featureDir, featureName) {
+  const dir = path.join(featureDir, 'interfaces');
+  if (!fs.existsSync(dir)) {
+    error(`[${featureName}] Missing interfaces/ directory`);
     return;
   }
 
-  const controller = path.join(apiDir, `${featureName}.controller.ts`);
-  const controllerSpec = path.join(apiDir, `${featureName}.controller.spec.ts`);
-  const dtoDir = path.join(apiDir, 'dto');
+  const file = path.join(dir, `${featureName}.interfaces.ts`);
+  if (!fs.existsSync(file)) {
+    error(`[${featureName}] Missing interfaces/${featureName}.interfaces.ts`);
+    return;
+  }
 
-  if (!fs.existsSync(controller)) {
-    error(`[${featureName}] Missing api/${featureName}.controller.ts`);
+  const content = readFile(file);
+  const cap = featureName.charAt(0).toUpperCase() + featureName.slice(1);
+
+  if (!content.includes(`I${cap}Repository`)) {
+    error(`[${featureName}] interfaces/${featureName}.interfaces.ts is missing I${cap}Repository`);
   } else {
-    ok(`${featureName}: api/${featureName}.controller.ts`);
+    ok(`I${cap}Repository defined`);
+  }
+
+  if (!content.includes(`I${cap}Service`)) {
+    error(`[${featureName}] interfaces/${featureName}.interfaces.ts is missing I${cap}Service`);
+  } else {
+    ok(`I${cap}Service defined`);
+  }
+
+  // Interfaces file must not contain runtime code (classes or decorators)
+  if (/^(export\s+)?(abstract\s+)?class\s+/m.test(content)) {
+    error(`[${featureName}] interfaces/${featureName}.interfaces.ts must not contain classes`);
+  }
+}
+
+// ── Rule: repository/ must exist and implement I{Feature}Repository ────────
+
+function validateRepositoryLayer(featureDir, featureName) {
+  const dir = path.join(featureDir, 'repository');
+  if (!fs.existsSync(dir)) {
+    error(`[${featureName}] Missing repository/ directory`);
+    return;
+  }
+
+  const file = path.join(dir, `${featureName}.repository.ts`);
+  if (!fs.existsSync(file)) {
+    error(`[${featureName}] Missing repository/${featureName}.repository.ts`);
+    return;
+  }
+
+  const content = readFile(file);
+  const cap = featureName.charAt(0).toUpperCase() + featureName.slice(1);
+
+  if (!content.includes(`implements I${cap}Repository`)) {
+    error(`[${featureName}] ${featureName}.repository.ts does not implement I${cap}Repository`);
+  } else {
+    ok(`${featureName}.repository.ts implements I${cap}Repository`);
+  }
+
+  // Repository must not throw HTTP exceptions
+  if (/NotFoundException|ConflictException|BadRequestException/.test(content)) {
+    error(`[${featureName}] repository must not throw HTTP exceptions — move logic to service`);
+  }
+}
+
+// ── Rule: service/ must exist and implement I{Feature}Service ─────────────
+
+function validateServiceLayer(featureDir, featureName) {
+  const dir = path.join(featureDir, 'service');
+  if (!fs.existsSync(dir)) {
+    error(`[${featureName}] Missing service/ directory`);
+    return;
+  }
+
+  const file = path.join(dir, `${featureName}.service.ts`);
+  if (!fs.existsSync(file)) {
+    error(`[${featureName}] Missing service/${featureName}.service.ts`);
+    return;
+  }
+
+  const content = readFile(file);
+  const cap = featureName.charAt(0).toUpperCase() + featureName.slice(1);
+
+  if (!content.includes(`implements I${cap}Service`)) {
+    error(`[${featureName}] ${featureName}.service.ts does not implement I${cap}Service`);
+  } else {
+    ok(`${featureName}.service.ts implements I${cap}Service`);
+  }
+
+  // Service must not inject PrismaService directly
+  if (/PrismaService/.test(content)) {
+    error(
+      `[${featureName}] service must not inject PrismaService directly — use the Repository instead`,
+    );
+  }
+}
+
+// ── Rule: controller/ must exist with controller file and dto/ ────────────
+
+function validateControllerLayer(featureDir, featureName) {
+  const dir = path.join(featureDir, 'controller');
+  if (!fs.existsSync(dir)) {
+    error(`[${featureName}] Missing controller/ directory`);
+    return;
+  }
+
+  const file = path.join(dir, `${featureName}.controller.ts`);
+  if (!fs.existsSync(file)) {
+    error(`[${featureName}] Missing controller/${featureName}.controller.ts`);
+    return;
+  }
+  ok(`${featureName}.controller.ts exists`);
+
+  const dtoDir = path.join(dir, 'dto');
+  if (!fs.existsSync(dtoDir)) {
+    error(`[${featureName}] Missing controller/dto/ directory`);
+  } else {
+    ok(`controller/dto/ exists`);
+  }
+
+  // Controller must not import from repository
+  const content = readFile(file);
+  if (/from ['"].*repository/.test(content)) {
+    error(`[${featureName}] controller must not import from repository — use the Service instead`);
+  }
+}
+
+// ── Rule: test/ must have service spec and controller spec ────────────────
+
+function validateTestLayer(featureDir, featureName) {
+  const dir = path.join(featureDir, 'test');
+  if (!fs.existsSync(dir)) {
+    error(`[${featureName}] Missing test/ directory`);
+    return;
+  }
+
+  const serviceSpec = path.join(dir, `${featureName}.service.spec.ts`);
+  const controllerSpec = path.join(dir, `${featureName}.controller.spec.ts`);
+
+  if (!fs.existsSync(serviceSpec)) {
+    error(`[${featureName}] Missing test/${featureName}.service.spec.ts`);
+  } else {
+    ok(`test/${featureName}.service.spec.ts exists`);
   }
 
   if (!fs.existsSync(controllerSpec)) {
-    error(`[${featureName}] Missing api/${featureName}.controller.spec.ts — unit tests required`);
+    error(`[${featureName}] Missing test/${featureName}.controller.spec.ts`);
   } else {
-    ok(`${featureName}: api/${featureName}.controller.spec.ts`);
-  }
-
-  if (!fs.existsSync(dtoDir)) {
-    error(`[${featureName}] Missing api/dto/ directory`);
-  }
-}
-
-// ── Rule: application/ folder must exist with service ─────────────────────
-
-function validateApplicationLayer(featureDir, featureName) {
-  const appDir = path.join(featureDir, 'application');
-
-  if (!fs.existsSync(appDir)) {
-    error(`[${featureName}] Missing application/ directory`);
-    return;
-  }
-
-  const service = path.join(appDir, `${featureName}.service.ts`);
-  const serviceSpec = path.join(appDir, `${featureName}.service.spec.ts`);
-
-  if (!fs.existsSync(service)) {
-    error(`[${featureName}] Missing application/${featureName}.service.ts`);
-  } else {
-    ok(`${featureName}: application/${featureName}.service.ts`);
-  }
-
-  if (!fs.existsSync(serviceSpec)) {
-    error(
-      `[${featureName}] Missing application/${featureName}.service.spec.ts — unit tests required`,
-    );
-  } else {
-    ok(`${featureName}: application/${featureName}.service.spec.ts`);
-  }
-}
-
-// ── Rule: Controller must not import from repository or entity ─────────────
-
-function validateFacadeImports(featureDir, featureName) {
-  const controllerPath = path.join(featureDir, 'api', `${featureName}.controller.ts`);
-  const content = readFile(controllerPath);
-
-  if (!content) return;
-
-  const forbiddenPatterns = [
-    { pattern: /from ['"].*\/infrastructure\/.*repository/, label: 'repository' },
-    { pattern: /from ['"].*\/entities\/.*entity/, label: 'entity' },
-  ];
-
-  for (const { pattern, label } of forbiddenPatterns) {
-    if (pattern.test(content)) {
-      error(
-        `[${featureName}] FACADE VIOLATION: ${featureName}.controller.ts imports from ${label} layer directly. ` +
-          `Controllers must only call the Service (Facade).`,
-      );
-    }
-  }
-}
-
-// ── Rule: Service must not import from controller ─────────────────────────
-
-function validateServiceImports(featureDir, featureName) {
-  const servicePath = path.join(featureDir, 'application', `${featureName}.service.ts`);
-  const content = readFile(servicePath);
-
-  if (!content) return;
-
-  if (/from ['"].*\/api\/.*controller/.test(content)) {
-    error(
-      `[${featureName}] Service imports from Controller layer — this is a circular dependency violation.`,
-    );
+    ok(`test/${featureName}.controller.spec.ts exists`);
   }
 }
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 function validate() {
-  log('\n🔍 Validating NestJS Facade Pattern structure...\n');
+  log('\n🔍 Validating NestJS module structure...\n');
 
   if (!fs.existsSync(API_SRC)) {
     log(`⚠  API src not found at ${API_SRC} — skipping validation`);
@@ -161,7 +213,6 @@ function validate() {
   }
 
   // Directories that are infrastructure/aggregator modules — skip direct validation.
-  // Their children (e.g. src/testlab/projects) are scanned separately below.
   const SKIP_ROOT = new Set([
     'shared',
     '__mocks__',
@@ -170,7 +221,7 @@ function validate() {
     'pipes',
     'guards',
     'decorators',
-    'prisma', // infrastructure-only, no controller/service facade needed
+    'prisma',
   ]);
 
   // Parent aggregator modules whose children should be validated individually
@@ -185,7 +236,6 @@ function validate() {
     const entryPath = path.join(API_SRC, entry);
 
     if (AGGREGATORS.has(entry)) {
-      // Recurse one level into the aggregator
       for (const child of getDirs(entryPath)) {
         features.push({ dir: path.join(entryPath, child), name: child });
       }
@@ -203,19 +253,21 @@ function validate() {
     log(`\n📦 Module: ${feature}`);
 
     validateModuleFile(featureDir, feature);
-    validateApiLayer(featureDir, feature);
-    validateApplicationLayer(featureDir, feature);
-    validateFacadeImports(featureDir, feature);
-    validateServiceImports(featureDir, feature);
+    validateInterfacesLayer(featureDir, feature);
+    validateRepositoryLayer(featureDir, feature);
+    validateServiceLayer(featureDir, feature);
+    validateControllerLayer(featureDir, feature);
+    validateTestLayer(featureDir, feature);
   }
 
   log('\n' + '─'.repeat(60));
 
   if (VIOLATIONS.length > 0) {
     log(`\n❌ ${VIOLATIONS.length} violation(s) found. Fix them before merging.\n`);
+    log('See docs/MODULE-STRUCTURE.md for the architecture guide.\n');
     process.exit(1);
   } else {
-    log(`\n✅ All ${features.length} module(s) pass Facade Pattern validation.\n`);
+    log(`\n✅ All ${features.length} module(s) pass structure validation.\n`);
     process.exit(0);
   }
 }
