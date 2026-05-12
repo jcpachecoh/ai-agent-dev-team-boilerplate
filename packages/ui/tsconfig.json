@@ -1,8 +1,9 @@
 {
-  "extends": "@restopsiq/tsconfig/react-library.json",
+  "extends": "../../packages/tsconfig/react-library.json",
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": "./src"
   },
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": ["node_modules", "dist", "**/*.stories.tsx", "**/*.stories.ts"]
 }
