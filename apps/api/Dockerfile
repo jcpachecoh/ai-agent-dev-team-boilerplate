@@ -1,5 +1,6 @@
 # ─── Stage 1: prune the monorepo ───────────────────────────────────────────
 FROM node:20-alpine AS pruner
+RUN apk add --no-cache openssl
 RUN corepack enable && corepack prepare pnpm@9.15.9 --activate
 WORKDIR /app
 
@@ -8,6 +9,7 @@ RUN pnpm dlx turbo prune @restopsiq/api --docker
 
 # ─── Stage 2: install deps ──────────────────────────────────────────────────
 FROM node:20-alpine AS installer
+RUN apk add --no-cache openssl
 RUN corepack enable && corepack prepare pnpm@9.15.9 --activate
 WORKDIR /app
 
@@ -29,6 +31,7 @@ RUN pnpm dlx turbo run build --filter=@restopsiq/api
 
 # ─── Stage 3: runtime ───────────────────────────────────────────────────────
 FROM node:20-alpine AS runner
+RUN apk add --no-cache openssl
 RUN corepack enable && corepack prepare pnpm@9.15.9 --activate
 WORKDIR /app
 
