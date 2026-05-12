@@ -65,7 +65,7 @@ Every PR triggers 9 quality gate jobs. **All must pass** for the merge button to
 | ESLint (0 warnings) | `eslint --max-warnings 0` | Blocked   |
 | Prettier            | `prettier --check`        | Blocked   |
 | Stylelint SCSS      | `stylelint`               | Blocked   |
-| Facade pattern      | `validate-structure.js`   | Blocked   |
+| Module structure    | `validate-structure.js`   | Blocked   |
 | Unit tests API ≥80% | Jest + coverage           | Blocked   |
 | Unit tests Web ≥80% | Jest + coverage           | Blocked   |
 | Integration tests   | Jest e2e + Postgres       | Blocked   |
@@ -80,15 +80,17 @@ Additionally:
 
 ---
 
-## NestJS: Facade Pattern
+## NestJS: Module Structure
 
-See [`docs/FACADE-PATTERN.md`](./docs/FACADE-PATTERN.md).
+See [`docs/MODULE-STRUCTURE.md`](./MODULE-STRUCTURE.md).
 
 ```
-Controller → Service (Facade) → Repository/Entity
+Controller → Service → Repository
+    ↑ each layer backed by interfaces/ ↑
 ```
 
-ESLint will **error** if a Controller imports a Repository or Entity directly.
+Every module must have: `interfaces/`, `repository/`, `service/`, `controller/`, `test/`.
+The validator (`node scripts/validate-structure.js`) will block CI if any directory is missing.
 
 ---
 
