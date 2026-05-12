@@ -160,8 +160,9 @@ function validate() {
     process.exit(0);
   }
 
-  // Skip top-level files (main.ts, app.module.ts, app.service.ts, shared/)
-  const SKIP = new Set([
+  // Directories that are infrastructure/aggregator modules — skip direct validation.
+  // Their children (e.g. src/testlab/projects) are scanned separately below.
+  const SKIP_ROOT = new Set([
     'shared',
     '__mocks__',
     'filters',
@@ -169,17 +170,36 @@ function validate() {
     'pipes',
     'guards',
     'decorators',
+    'prisma', // infrastructure-only, no controller/service facade needed
   ]);
 
-  const features = getDirs(API_SRC).filter((d) => !SKIP.has(d));
+  // Parent aggregator modules whose children should be validated individually
+  const AGGREGATORS = new Set(['testlab']);
+
+  // Collect { dir, name } pairs for every feature module to validate
+  const features = [];
+
+  for (const entry of getDirs(API_SRC)) {
+    if (SKIP_ROOT.has(entry)) continue;
+
+    const entryPath = path.join(API_SRC, entry);
+
+    if (AGGREGATORS.has(entry)) {
+      // Recurse one level into the aggregator
+      for (const child of getDirs(entryPath)) {
+        features.push({ dir: path.join(entryPath, child), name: child });
+      }
+    } else {
+      features.push({ dir: entryPath, name: entry });
+    }
+  }
 
   if (features.length === 0) {
     log('ℹ  No feature modules found yet — nothing to validate.\n');
     process.exit(0);
   }
 
-  for (const feature of features) {
-    const featureDir = path.join(API_SRC, feature);
+  for (const { dir: featureDir, name: feature } of features) {
     log(`\n📦 Module: ${feature}`);
 
     validateModuleFile(featureDir, feature);

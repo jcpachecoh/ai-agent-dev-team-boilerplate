@@ -1,5 +1,5 @@
 import { Controller, Get, Post, Param, Body, HttpCode, HttpStatus } from '@nestjs/common';
-import { MilestonesService } from './milestones.service';
+import { MilestonesService } from '../service/milestones.service';
 import { CreateMilestoneDto } from './dto/create-milestone.dto';
 import type { Milestone } from '@prisma/client';
 

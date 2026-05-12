@@ -1,5 +1,5 @@
 {
-  "extends": "@restopsiq/tsconfig/nestjs.json",
+  "extends": "../../packages/tsconfig/nestjs.json",
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": "./src"

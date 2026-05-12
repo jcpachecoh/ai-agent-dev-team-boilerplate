@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
-import { CasesService } from './cases.service';
+import { CasesService } from '../service/cases.service';
 import { CreateCaseDto } from './dto/create-case.dto';
 import { UpdateCaseStatusDto } from './dto/update-case-status.dto';
 

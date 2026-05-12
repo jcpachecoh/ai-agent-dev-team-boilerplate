@@ -1,5 +1,5 @@
 import { Controller, Get, Post, Param, Body, HttpCode, HttpStatus } from '@nestjs/common';
-import { SuitesService } from './suites.service';
+import { SuitesService } from '../service/suites.service';
 import { CreateSuiteDto } from './dto/create-suite.dto';
 import type { TestSuite } from '@prisma/client';
 

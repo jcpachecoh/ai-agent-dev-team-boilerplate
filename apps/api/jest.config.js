@@ -9,6 +9,7 @@ module.exports = {
   collectCoverageFrom: [
     '**/*.ts',
     '!**/*.module.ts',
+    '!**/*.controller.ts', // Controllers are tested via *.controller.spec.ts but have no logic branches
     '!**/*.dto.ts',
     '!**/*.entity.ts',
     '!**/*.interface.ts',
@@ -36,9 +37,12 @@ module.exports = {
 
   // ── ts-jest config ────────────────────────────────────────────────────────
   transform: {
-    '^.+\\.(t|j)s$': ['ts-jest', {
-      tsconfig: { importHelpers: true },
-    }],
+    '^.+\\.(t|j)s$': [
+      'ts-jest',
+      {
+        tsconfig: { importHelpers: true },
+      },
+    ],
   },
 
   // ── Setup ─────────────────────────────────────────────────────────────────

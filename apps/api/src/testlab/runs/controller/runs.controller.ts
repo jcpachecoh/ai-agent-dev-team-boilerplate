@@ -1,5 +1,5 @@
 import { Controller, Get, Post, Param, Body, HttpCode, HttpStatus } from '@nestjs/common';
-import { RunsService } from './runs.service';
+import { RunsService } from '../service/runs.service';
 import { CreateRunDto } from './dto/create-run.dto';
 import type { TestRun } from '@prisma/client';
 

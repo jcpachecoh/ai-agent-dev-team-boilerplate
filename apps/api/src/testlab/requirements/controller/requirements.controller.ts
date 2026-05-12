@@ -1,5 +1,5 @@
 import { Controller, Get, Post, Param, Body, HttpCode, HttpStatus } from '@nestjs/common';
-import { RequirementsService } from './requirements.service';
+import { RequirementsService } from '../service/requirements.service';
 import { CreateRequirementDto } from './dto/create-requirement.dto';
 import type { Requirement } from '@prisma/client';
 

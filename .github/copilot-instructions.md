@@ -7,18 +7,24 @@ Flag any violation as a blocking comment. Do not approve PRs that break these ru
 
 ---
 
-## 1. NestJS Facade Pattern (BLOCKING)
+## 1. NestJS Module Structure (BLOCKING)
 
-The Service is the Facade — the single public interface of every module.
+Every feature module must follow the `interfaces → repository → service → controller → test` layout.
 
 **Block if:**
 
-- A Controller imports from `infrastructure/` (repositories) or `entities/` directly
-- A Controller constructs or uses any class other than a Service, Guard, Decorator, or DTO
-- A Repository contains business logic (conditional branching beyond DB queries)
-- A Service imports from `api/` (controllers or their DTOs are fine, controller class is not)
+- A module is missing any of: `interfaces/`, `repository/`, `service/`, `controller/`, `test/` directories
+- `controller/` imports from `repository/` directly (must go through `service/`)
+- `repository/` contains business logic or throws HTTP exceptions (`NotFoundException`, `ConflictException`, etc.)
+- `service/` injects `PrismaService` directly instead of the module's own Repository
+- `interfaces/` contains classes, decorators, or runtime code (interfaces and type aliases only)
+- `{feature}.interfaces.ts` is missing `I{Feature}Repository` or `I{Feature}Service` definitions
+- A Repository class does not implement `I{Feature}Repository`
+- A Service class does not implement `I{Feature}Service`
+- `module.ts` registers `PrismaService` as a provider instead of importing `PrismaModule`
+- DTOs live outside `controller/dto/`
 
-**Reference:** `docs/FACADE-PATTERN.md`
+**Reference:** `docs/MODULE-STRUCTURE.md`
 
 ---
 

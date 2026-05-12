@@ -1,5 +1,5 @@
 import { Controller, Get, Post, Param, Body, HttpCode, HttpStatus } from '@nestjs/common';
-import { ProjectsService } from './projects.service';
+import { ProjectsService } from '../service/projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import type { Project } from '@prisma/client';
 
