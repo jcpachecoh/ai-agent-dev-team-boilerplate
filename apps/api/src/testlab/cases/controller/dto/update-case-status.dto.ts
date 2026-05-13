@@ -1,4 +1,5 @@
 import { IsEnum } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
 
 export enum ResultStatus {
   UNTESTED = 'UNTESTED',
@@ -10,6 +11,7 @@ export enum ResultStatus {
 }
 
 export class UpdateCaseStatusDto {
+  @ApiProperty({ enum: ResultStatus, example: ResultStatus.PASS })
   @IsEnum(ResultStatus)
   status!: ResultStatus;
 }
