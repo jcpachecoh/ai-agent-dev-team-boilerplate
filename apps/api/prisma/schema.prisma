@@ -22,14 +22,14 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  projectMembers    ProjectMember[]
-  casesCreated      TestCase[]      @relation("CasesCreated")
-  plansCreated      TestPlan[]      @relation("PlansCreated")
-  runsCreated       TestRun[]       @relation("RunsCreated")
-  runsAssigned      TestRun[]       @relation("RunsAssigned")
-  resultsAssigned   TestResult[]    @relation("ResultsAssigned")
-  resultsExecuted   TestResult[]    @relation("ResultsExecuted")
-  attachmentsUploaded Attachment[]  @relation("AttachmentsUploaded")
+  projectMembers      ProjectMember[]
+  casesCreated        TestCase[]      @relation("CasesCreated")
+  plansCreated        TestPlan[]      @relation("PlansCreated")
+  runsCreated         TestRun[]       @relation("RunsCreated")
+  runsAssigned        TestRun[]       @relation("RunsAssigned")
+  resultsAssigned     TestResult[]    @relation("ResultsAssigned")
+  resultsExecuted     TestResult[]    @relation("ResultsExecuted")
+  attachmentsUploaded Attachment[]    @relation("AttachmentsUploaded")
 
   @@map("users")
 }
@@ -211,9 +211,9 @@ model TestRun {
   updatedAt    DateTime  @updatedAt
   closedAt     DateTime?
 
-  plan       TestPlan?  @relation(fields: [planId], references: [id])
-  createdBy  User       @relation("RunsCreated", fields: [createdById], references: [id])
-  assignedTo User?      @relation("RunsAssigned", fields: [assignedToId], references: [id])
+  plan       TestPlan?    @relation(fields: [planId], references: [id])
+  createdBy  User         @relation("RunsCreated", fields: [createdById], references: [id])
+  assignedTo User?        @relation("RunsAssigned", fields: [assignedToId], references: [id])
   results    TestResult[]
 
   @@map("test_runs")
@@ -241,10 +241,10 @@ model TestResult {
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 
-  run        TestRun    @relation(fields: [runId], references: [id], onDelete: Cascade)
-  case       TestCase   @relation(fields: [caseId], references: [id], onDelete: Cascade)
-  assignedTo User?      @relation("ResultsAssigned", fields: [assignedToId], references: [id])
-  executedBy User?      @relation("ResultsExecuted", fields: [executedById], references: [id])
+  run         TestRun      @relation(fields: [runId], references: [id], onDelete: Cascade)
+  case        TestCase     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  assignedTo  User?        @relation("ResultsAssigned", fields: [assignedToId], references: [id])
+  executedBy  User?        @relation("ResultsExecuted", fields: [executedById], references: [id])
   attachments Attachment[]
 
   @@unique([runId, caseId])
@@ -320,4 +320,98 @@ model Attachment {
   uploadedBy User       @relation("AttachmentsUploaded", fields: [uploadedById], references: [id])
 
   @@map("attachments")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SUPPLIERS
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum SupplierTipo {
+  PERSONA_NATURAL
+  PERSONA_JURIDICA
+}
+
+enum CondicionPago {
+  CONTADO
+  DIAS_15
+  DIAS_30
+  DIAS_60
+}
+
+model Supplier {
+  id             String        @id @default(cuid())
+  tenantId       String
+  razonSocial    String
+  nit            String
+  dv             String?
+  tipo           SupplierTipo
+  direccion      String?
+  ciudad         String?
+  telefono       String?
+  email          String?
+  contactoNombre String?
+  condicionPago  CondicionPago
+  cupoCredito    Int
+  calificacion   Decimal
+  isActive       Boolean       @default(true)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  products SupplierProduct[]
+
+  @@unique([tenantId, nit])
+  @@index([tenantId, isActive])
+  @@map("suppliers")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INSUMOS (SUPPLY ITEMS)
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum StockUnit {
+  UNIT
+  GRAMS
+  KILOGRAMS
+  ML
+  LITERS
+}
+
+model Insumo {
+  id        String   @id @default(cuid())
+  tenantId  String
+  nombre    String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  supplierProducts SupplierProduct[]
+
+  @@index([tenantId, isActive])
+  @@map("insumos")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SUPPLIER PRODUCTS
+// ─────────────────────────────────────────────────────────────────────────────
+
+model SupplierProduct {
+  id                   String    @id @default(cuid())
+  tenantId             String
+  supplierId           String
+  insumoId             String
+  precioUnitario       Decimal
+  unidadCompra         StockUnit
+  factorConversion     Decimal
+  tiempoEntregaDias    Int
+  esProveedorPrincipal Boolean   @default(false)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  insumo   Insumo   @relation(fields: [insumoId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, supplierId, insumoId])
+  @@index([tenantId, supplierId])
+  @@index([tenantId, insumoId])
+  @@map("supplier_products")
 }
