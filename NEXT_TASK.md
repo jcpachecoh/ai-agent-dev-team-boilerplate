@@ -1,8 +1,7 @@
-
 Current Task
 
-tasks/01-project-setup.md
+tasks/suppliers-catalog/04-suppliers-module-tests.md
 
 Goal
 
-Initialize the base project structure.
+Implement the NestJS module structure for Suppliers and add unit tests for repository and service.

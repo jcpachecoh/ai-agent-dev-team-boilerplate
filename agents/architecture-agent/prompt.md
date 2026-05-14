@@ -31,15 +31,19 @@ When reviewing agent output, verify:
 # ADR-NNN: <Title>
 
 ## Status
+
 Proposed | Accepted | Deprecated
 
 ## Context
+
 Why is this decision needed?
 
 ## Decision
+
 What was decided?
 
 ## Consequences
+
 What are the trade-offs?
 ```
 

@@ -1,0 +1,75 @@
+@use 'sass:color';
+@use '../../styles/abstracts/variables' as *;
+@use '../../styles/abstracts/mixins' as *;
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-sm;
+  padding: $spacing-sm $spacing-md;
+  font-family: $font-family-base;
+  font-size: $font-size-base;
+  font-weight: $font-weight-medium;
+  line-height: $line-height-base;
+  border: $border-width solid transparent;
+  border-radius: $border-radius-md;
+  cursor: pointer;
+  transition:
+    background-color $transition-fast,
+    border-color $transition-fast,
+    color $transition-fast,
+    box-shadow $transition-fast;
+
+  &:focus-visible {
+    @include focus-ring;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+// Variants
+.primary {
+  background-color: $color-primary;
+  color: $color-text-inverse;
+
+  &:hover:not(:disabled) {
+    background-color: $color-primary-dark;
+  }
+
+  &:active:not(:disabled) {
+    background-color: color.adjust($color-primary-dark, $lightness: -5%);
+  }
+}
+
+.secondary {
+  background-color: transparent;
+  color: $color-primary;
+  border-color: $color-primary;
+
+  &:hover:not(:disabled) {
+    background-color: $color-primary;
+    color: $color-text-inverse;
+  }
+
+  &:active:not(:disabled) {
+    background-color: $color-primary-dark;
+    color: $color-text-inverse;
+  }
+}
+
+.danger {
+  background-color: $color-danger;
+  color: $color-text-inverse;
+
+  &:hover:not(:disabled) {
+    background-color: color.adjust($color-danger, $lightness: -10%);
+  }
+
+  &:active:not(:disabled) {
+    background-color: color.adjust($color-danger, $lightness: -15%);
+  }
+}

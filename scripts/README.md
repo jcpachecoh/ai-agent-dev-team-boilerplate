@@ -15,6 +15,7 @@ scripts/
 ## Script Categories
 
 ### ETL Scripts (Data Agent)
+
 Scripts that extract, transform, and load data between sources and targets.
 
 Naming convention: `etl-<source>-to-<target>.<ext>`
@@ -22,11 +23,13 @@ Naming convention: `etl-<source>-to-<target>.<ext>`
 Example: `etl-csv-to-postgres.py`
 
 ### Seed Scripts (Data Agent)
+
 Scripts that populate development or test databases with sample data.
 
 Example: `seed-database.py`
 
 ### Deployment Scripts (DevOps Agent)
+
 Scripts that automate deployment steps not covered by CI/CD pipelines.
 
 Example: `deploy-staging.sh`

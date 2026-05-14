@@ -1,0 +1,36 @@
+{
+  "name": "@restopsiq/ui",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./src/index.tsx",
+  "types": "./src/index.tsx",
+  "exports": {
+    ".": "./src/index.tsx",
+    "./styles/*": "./src/styles/*"
+  },
+  "scripts": {
+    "build": "tsc --noEmit",
+    "clean": "rm -rf dist",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src --ext .ts,.tsx --max-warnings 0",
+    "stylelint": "stylelint \"src/**/*.scss\" --max-warnings 0",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build"
+  },
+  "dependencies": {
+    "sass": "^1.77.0"
+  },
+  "devDependencies": {
+    "@restopsiq/tsconfig": "workspace:*",
+    "@storybook/addon-essentials": "^8.6.17",
+    "@storybook/react": "^8.6.17",
+    "@storybook/react-vite": "^8.6.17",
+    "@types/react": "^19.0.0",
+    "react": "^19.0.0",
+    "storybook": "^8.6.17",
+    "typescript": "^5.4.0"
+  },
+  "peerDependencies": {
+    "react": "^18.2.0 || ^19.0.0"
+  }
+}

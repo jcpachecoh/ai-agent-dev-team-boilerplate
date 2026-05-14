@@ -1,0 +1,6 @@
+{
+  "installCommand": "cd ../.. && pnpm install --frozen-lockfile",
+  "buildCommand": "cd ../.. && pnpm --filter @restopsiq/web run build",
+  "outputDirectory": ".next",
+  "ignoreCommand": "cd ../.. && npx turbo-ignore @restopsiq/web"
+}

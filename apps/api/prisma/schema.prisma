@@ -1,0 +1,417 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// USERS
+// ─────────────────────────────────────────────────────────────────────────────
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  projectMembers      ProjectMember[]
+  casesCreated        TestCase[]      @relation("CasesCreated")
+  plansCreated        TestPlan[]      @relation("PlansCreated")
+  runsCreated         TestRun[]       @relation("RunsCreated")
+  runsAssigned        TestRun[]       @relation("RunsAssigned")
+  resultsAssigned     TestResult[]    @relation("ResultsAssigned")
+  resultsExecuted     TestResult[]    @relation("ResultsExecuted")
+  attachmentsUploaded Attachment[]    @relation("AttachmentsUploaded")
+
+  @@map("users")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PROJECTS
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Project {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  members      ProjectMember[]
+  suites       TestSuite[]
+  plans        TestPlan[]
+  milestones   Milestone[]
+  requirements Requirement[]
+
+  @@map("projects")
+}
+
+enum ProjectRole {
+  ADMIN
+  LEAD
+  TESTER
+  READONLY
+}
+
+model ProjectMember {
+  id        String      @id @default(cuid())
+  projectId String
+  userId    String
+  role      ProjectRole @default(TESTER)
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+  @@map("project_members")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TEST SUITES, SECTIONS & CASES
+// ─────────────────────────────────────────────────────────────────────────────
+
+model TestSuite {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  projectId   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  project     Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  sections    TestSection[]
+  cases       TestCase[]
+  planEntries TestPlanEntry[]
+
+  @@map("test_suites")
+}
+
+model TestSection {
+  id          String  @id @default(cuid())
+  name        String
+  description String?
+  order       Int     @default(0)
+  parentId    String?
+  suiteId     String
+
+  parent   TestSection?  @relation("SectionChildren", fields: [parentId], references: [id])
+  children TestSection[] @relation("SectionChildren")
+  suite    TestSuite     @relation(fields: [suiteId], references: [id], onDelete: Cascade)
+  cases    TestCase[]
+
+  @@map("test_sections")
+}
+
+enum CasePriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum CaseType {
+  FUNCTIONAL
+  REGRESSION
+  SMOKE
+  EXPLORATORY
+  AUTOMATED
+  ACCEPTANCE
+}
+
+enum CaseTemplate {
+  STEPS
+  BDD
+  EXPLORATORY
+}
+
+model TestCase {
+  id             String       @id @default(cuid())
+  title          String
+  preconditions  String?
+  steps          Json?
+  expectedResult String?
+  priority       CasePriority @default(MEDIUM)
+  type           CaseType     @default(FUNCTIONAL)
+  template       CaseTemplate @default(STEPS)
+  status         ResultStatus @default(UNTESTED)
+  sectionId      String?
+  suiteId        String
+  createdById    String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  section      TestSection?      @relation(fields: [sectionId], references: [id])
+  suite        TestSuite         @relation(fields: [suiteId], references: [id], onDelete: Cascade)
+  createdBy    User              @relation("CasesCreated", fields: [createdById], references: [id])
+  results      TestResult[]
+  requirements RequirementCase[]
+
+  @@map("test_cases")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TEST PLANS & RUNS
+// ─────────────────────────────────────────────────────────────────────────────
+
+model TestPlan {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  projectId   String
+  milestoneId String?
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  project   Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  milestone Milestone?      @relation(fields: [milestoneId], references: [id])
+  createdBy User            @relation("PlansCreated", fields: [createdById], references: [id])
+  entries   TestPlanEntry[]
+  runs      TestRun[]
+
+  @@map("test_plans")
+}
+
+model TestPlanEntry {
+  id      String @id @default(cuid())
+  planId  String
+  suiteId String
+
+  plan  TestPlan  @relation(fields: [planId], references: [id], onDelete: Cascade)
+  suite TestSuite @relation(fields: [suiteId], references: [id], onDelete: Cascade)
+
+  @@unique([planId, suiteId])
+  @@map("test_plan_entries")
+}
+
+enum RunStatus {
+  ACTIVE
+  COMPLETED
+  ARCHIVED
+}
+
+model TestRun {
+  id           String    @id @default(cuid())
+  name         String
+  description  String?
+  planId       String?
+  assignedToId String?
+  status       RunStatus @default(ACTIVE)
+  createdById  String
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  closedAt     DateTime?
+
+  plan       TestPlan?    @relation(fields: [planId], references: [id])
+  createdBy  User         @relation("RunsCreated", fields: [createdById], references: [id])
+  assignedTo User?        @relation("RunsAssigned", fields: [assignedToId], references: [id])
+  results    TestResult[]
+
+  @@map("test_runs")
+}
+
+enum ResultStatus {
+  UNTESTED
+  PASS
+  FAIL
+  BLOCKED
+  RETEST
+  SKIPPED
+}
+
+model TestResult {
+  id           String       @id @default(cuid())
+  runId        String
+  caseId       String
+  status       ResultStatus @default(UNTESTED)
+  comment      String?
+  assignedToId String?
+  executedById String?
+  executedAt   DateTime?
+  elapsed      Int?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  run         TestRun      @relation(fields: [runId], references: [id], onDelete: Cascade)
+  case        TestCase     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  assignedTo  User?        @relation("ResultsAssigned", fields: [assignedToId], references: [id])
+  executedBy  User?        @relation("ResultsExecuted", fields: [executedById], references: [id])
+  attachments Attachment[]
+
+  @@unique([runId, caseId])
+  @@map("test_results")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MILESTONES
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Milestone {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  dueDate     DateTime?
+  projectId   String
+  completed   Boolean   @default(false)
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  project Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  plans   TestPlan[]
+
+  @@map("milestones")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// REQUIREMENTS TRACEABILITY
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Requirement {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  externalId  String?
+  projectId   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  project Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  cases   RequirementCase[]
+
+  @@map("requirements")
+}
+
+model RequirementCase {
+  requirementId String
+  caseId        String
+
+  requirement Requirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+  case        TestCase    @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@id([requirementId, caseId])
+  @@map("requirement_cases")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ATTACHMENTS
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Attachment {
+  id           String   @id @default(cuid())
+  filename     String
+  url          String
+  size         Int
+  mimeType     String
+  resultId     String
+  uploadedById String
+  createdAt    DateTime @default(now())
+
+  result     TestResult @relation(fields: [resultId], references: [id], onDelete: Cascade)
+  uploadedBy User       @relation("AttachmentsUploaded", fields: [uploadedById], references: [id])
+
+  @@map("attachments")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SUPPLIERS
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum SupplierTipo {
+  PERSONA_NATURAL
+  PERSONA_JURIDICA
+}
+
+enum CondicionPago {
+  CONTADO
+  DIAS_15
+  DIAS_30
+  DIAS_60
+}
+
+model Supplier {
+  id             String        @id @default(cuid())
+  tenantId       String
+  razonSocial    String
+  nit            String
+  dv             String?
+  tipo           SupplierTipo
+  direccion      String?
+  ciudad         String?
+  telefono       String?
+  email          String?
+  contactoNombre String?
+  condicionPago  CondicionPago
+  cupoCredito    Int
+  calificacion   Decimal
+  isActive       Boolean       @default(true)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  products SupplierProduct[]
+
+  @@unique([tenantId, nit])
+  @@index([tenantId, isActive])
+  @@map("suppliers")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INSUMOS (SUPPLY ITEMS)
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum StockUnit {
+  UNIT
+  GRAMS
+  KILOGRAMS
+  ML
+  LITERS
+}
+
+model Insumo {
+  id        String   @id @default(cuid())
+  tenantId  String
+  nombre    String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  supplierProducts SupplierProduct[]
+
+  @@index([tenantId, isActive])
+  @@map("insumos")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SUPPLIER PRODUCTS
+// ─────────────────────────────────────────────────────────────────────────────
+
+model SupplierProduct {
+  id                   String    @id @default(cuid())
+  tenantId             String
+  supplierId           String
+  insumoId             String
+  precioUnitario       Decimal
+  unidadCompra         StockUnit
+  factorConversion     Decimal
+  tiempoEntregaDias    Int
+  esProveedorPrincipal Boolean   @default(false)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  insumo   Insumo   @relation(fields: [insumoId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, supplierId, insumoId])
+  @@index([tenantId, supplierId])
+  @@index([tenantId, insumoId])
+  @@map("supplier_products")
+}
