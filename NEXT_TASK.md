@@ -1,7 +1,7 @@
 Current Task
 
-tasks/supply-items-catalog/04-supply-items-service-tests.md
+tasks/supply-items-api/03-supply-item-suppliers-endpoint.md
 
 Goal
 
-Implement the service layer for Supply Items and Categories with unit test coverage.
+Implement the specialized endpoint to view suppliers associated with a specific supply item.
