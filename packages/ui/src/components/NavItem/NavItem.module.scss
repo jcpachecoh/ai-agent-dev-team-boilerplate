@@ -1,0 +1,52 @@
+@use '../../styles/abstracts/variables' as *;
+
+.item {
+  display: flex;
+  gap: $spacing-md;
+  align-items: center;
+  padding: 9px 13px;
+  border-radius: 10px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.icon {
+  width: 15px;
+  height: 15px;
+  min-width: 15px;
+  display: inline-block;
+}
+.icon img {
+  width: 15px;
+  height: 15px;
+  display: block;
+}
+
+.label {
+  font-weight: $font-weight-regular;
+  font-size: 12.8px;
+  line-height: 19.2px;
+  white-space: nowrap;
+}
+
+/* Light variant */
+.light .label {
+  color: #52526a;
+}
+.light {
+  background: transparent;
+}
+
+/* Dark variant */
+.dark .label {
+  color: #8888a0;
+}
+.dark {
+  background: transparent;
+}
+
+.active {
+  background: rgba(212, 160, 23, 0.06);
+  border: $border-width solid rgba(212, 160, 23, 0.15);
+  border-radius: 10px;
+}

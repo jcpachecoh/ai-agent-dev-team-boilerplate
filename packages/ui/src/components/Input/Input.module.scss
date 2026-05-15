@@ -1,0 +1,135 @@
+@use '../../styles/abstracts/variables' as *;
+
+/* Simple, self-contained input styles (avoid dependance on global variables) */
+.wrapper {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 420px;
+  position: relative;
+  background: rgba($color-white, 0.02);
+  border: $border-width solid rgba($color-black, 0.06);
+  padding: 10px 14px;
+  border-radius: $border-radius-lg;
+}
+
+.wrapper--sm {
+  padding: 6px 10px;
+  border-radius: 10px;
+}
+
+.wrapper--md {
+  padding: 10px 14px;
+  border-radius: $border-radius-lg;
+}
+
+.wrapper--lg {
+  padding: 14px 18px;
+  border-radius: $spacing-md;
+}
+
+.wrapper--lg {
+  max-width: 640px;
+}
+
+.left {
+  display: flex;
+  align-items: center;
+  color: rgba($color-white, 0.7);
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.left svg {
+  width: 18px;
+  height: 18px;
+}
+
+.input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: $color-gray-900;
+  font-family: $font-family-base;
+  font-size: $font-size-sm;
+  flex: 1 1 auto;
+  width: 100%;
+}
+
+.wrapper--sm .input {
+  padding-left: 36px;
+}
+.wrapper--md .input {
+  padding-left: 36px;
+}
+.wrapper--lg .input {
+  padding-left: 36px;
+}
+
+.wrapper--sm .input {
+  font-size: 13px;
+}
+.wrapper--md .input {
+  font-size: $font-size-sm;
+}
+.wrapper--lg .input {
+  font-size: $font-size-base;
+}
+
+.right {
+  display: flex;
+  align-items: center;
+}
+
+.adornment {
+  color: rgba($color-black, 0.6);
+}
+
+.iconButton {
+  background: transparent;
+  border: none;
+  color: rgba($color-white, 0.8);
+  cursor: pointer;
+  padding: $spacing-xs;
+}
+
+.iconButton svg {
+  width: 18px;
+  height: 18px;
+}
+
+.theme--dark {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding-left: 36px; /* space for left icon */
+  padding-right: 16px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+.theme--dark .input {
+  color: rgba(237, 237, 245, 0.9);
+}
+.theme--dark .left {
+  color: rgba(237, 237, 245, 0.9);
+}
+
+.theme--light {
+  background: rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 14px;
+  padding-left: 36px;
+  padding-right: 16px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+.theme--light .input {
+  color: rgba(24, 24, 31, 0.9);
+}
+.theme--light .left {
+  color: rgba(24, 24, 31, 0.6);
+}
