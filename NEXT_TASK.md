@@ -1,7 +1,7 @@
 Current Task
 
-tasks/suppliers-catalog/04-suppliers-module-tests.md
+tasks/supply-items-catalog/04-supply-items-service-tests.md
 
 Goal
 
-Implement the NestJS module structure for Suppliers and add unit tests for repository and service.
+Implement the service layer for Supply Items and Categories with unit test coverage.

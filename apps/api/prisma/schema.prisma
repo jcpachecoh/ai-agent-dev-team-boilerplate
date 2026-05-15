@@ -365,6 +365,26 @@ model Supplier {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// SUPPLY CATEGORIES
+// ─────────────────────────────────────────────────────────────────────────────
+
+model SupplyCategory {
+  id          String   @id @default(cuid())
+  tenantId    String
+  nombre      String
+  descripcion String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  items SupplyItem[]
+
+  @@unique([tenantId, nombre])
+  @@index([tenantId, isActive])
+  @@map("supply_categories")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // INSUMOS (SUPPLY ITEMS)
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -376,18 +396,31 @@ enum StockUnit {
   LITERS
 }
 
-model Insumo {
-  id        String   @id @default(cuid())
-  tenantId  String
-  nombre    String
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model SupplyItem {
+  id                     String    @id @default(cuid())
+  tenantId               String
+  nombre                 String
+  codigoInterno          String
+  categoriaId            String
+  descripcion            String?
+  unidadBase             StockUnit
+  factorConversion       Decimal
+  costoPromedioPonderado Decimal
+  stockMinimoBodega      Decimal
+  stockMaximoBodega      Decimal
+  aplicaVencimiento      Boolean   @default(false)
+  aplicaLote             Boolean   @default(false)
+  isActive               Boolean   @default(true)
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
 
+  categoria        SupplyCategory    @relation(fields: [categoriaId], references: [id])
   supplierProducts SupplierProduct[]
 
+  @@unique([tenantId, codigoInterno])
+  @@index([tenantId, categoriaId])
   @@index([tenantId, isActive])
-  @@map("insumos")
+  @@map("supply_items")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -398,7 +431,7 @@ model SupplierProduct {
   id                   String    @id @default(cuid())
   tenantId             String
   supplierId           String
-  insumoId             String
+  supplyItemId         String
   precioUnitario       Decimal
   unidadCompra         StockUnit
   factorConversion     Decimal
@@ -407,11 +440,11 @@ model SupplierProduct {
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
 
-  supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
-  insumo   Insumo   @relation(fields: [insumoId], references: [id], onDelete: Cascade)
+  supplier   Supplier   @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  supplyItem SupplyItem @relation(fields: [supplyItemId], references: [id], onDelete: Cascade)
 
-  @@unique([tenantId, supplierId, insumoId])
+  @@unique([tenantId, supplierId, supplyItemId])
   @@index([tenantId, supplierId])
-  @@index([tenantId, insumoId])
+  @@index([tenantId, supplyItemId])
   @@map("supplier_products")
 }
