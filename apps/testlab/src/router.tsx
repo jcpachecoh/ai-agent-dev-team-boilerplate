@@ -1,5 +1,6 @@
 import { createBrowserRouter, Navigate } from 'react-router';
 import { AppLayout } from '@/components/Layout';
+import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { ProjectsPage } from '@/pages/Projects';
 import { SuitesPage } from '@/pages/Suites';
 import { TestCasesPage } from '@/pages/TestCases';
@@ -7,11 +8,19 @@ import { RunsPage } from '@/pages/Runs';
 import { ReportsPage } from '@/pages/Reports';
 import { MilestonesPage } from '@/pages/Milestones';
 import { RequirementsPage } from '@/pages/Requirements';
+import { LoginPage } from '@/pages/Login';
+import { SignupPage } from '@/pages/Signup';
 
 export const router = createBrowserRouter([
+  { path: 'login', element: <LoginPage /> },
+  { path: 'signup', element: <SignupPage /> },
   {
     path: '/',
-    element: <AppLayout />,
+    element: (
+      <ProtectedRoute>
+        <AppLayout />
+      </ProtectedRoute>
+    ),
     children: [
       { index: true, element: <Navigate to="/projects" replace /> },
       { path: 'projects', element: <ProjectsPage /> },

@@ -1,9 +1,17 @@
 import { Controller, Get, Post, Param, Body, HttpCode, HttpStatus } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiParam, ApiResponse, ApiCreatedResponse } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+  ApiCreatedResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { RunsService } from '../service/runs.service';
 import { CreateRunDto } from './dto/create-run.dto';
 import type { TestRun } from '@prisma/client';
 
+@ApiBearerAuth()
 @ApiTags('runs')
 @Controller('testlab/projects/:projectId/runs')
 export class RunsController {
