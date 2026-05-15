@@ -1,4 +1,5 @@
-const BASE_URL = '/api/testlab';
+const API_ORIGIN = import.meta.env.VITE_API_URL ?? '';
+const BASE_URL = `${API_ORIGIN}/api/testlab`;
 
 export async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${BASE_URL}${path}`, {
