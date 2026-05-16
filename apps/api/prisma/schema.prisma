@@ -16,20 +16,23 @@ datasource db {
 // ─────────────────────────────────────────────────────────────────────────────
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String?
+  passwordHash String
+  refreshToken String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   projectMembers      ProjectMember[]
-  casesCreated        TestCase[]      @relation("CasesCreated")
-  plansCreated        TestPlan[]      @relation("PlansCreated")
-  runsCreated         TestRun[]       @relation("RunsCreated")
-  runsAssigned        TestRun[]       @relation("RunsAssigned")
-  resultsAssigned     TestResult[]    @relation("ResultsAssigned")
-  resultsExecuted     TestResult[]    @relation("ResultsExecuted")
-  attachmentsUploaded Attachment[]    @relation("AttachmentsUploaded")
+  casesCreated        TestCase[]   @relation("CasesCreated")
+  plansCreated        TestPlan[]   @relation("PlansCreated")
+  runsCreated         TestRun[]    @relation("RunsCreated")
+  runsAssigned        TestRun[]    @relation("RunsAssigned")
+  resultsAssigned     TestResult[] @relation("ResultsAssigned")
+  resultsExecuted     TestResult[] @relation("ResultsExecuted")
+  attachmentsUploaded Attachment[] @relation("AttachmentsUploaded")
+  auditLogs           AuditLog[]
 
   @@map("users")
 }
@@ -323,6 +326,26 @@ model Attachment {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// AUDIT LOG
+// ─────────────────────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  action    String
+  entity    String
+  entityId  String
+  payload   Json?
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([entity, entityId])
+  @@index([userId])
+  @@map("audit_logs")
+}
 // SUPPLIERS
 // ─────────────────────────────────────────────────────────────────────────────
 

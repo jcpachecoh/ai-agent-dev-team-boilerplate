@@ -1,9 +1,17 @@
 import { Controller, Get, Post, Param, Body, HttpCode, HttpStatus } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiParam, ApiResponse, ApiCreatedResponse } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+  ApiCreatedResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { SuitesService } from '../service/suites.service';
 import { CreateSuiteDto } from './dto/create-suite.dto';
 import type { TestSuite } from '@prisma/client';
 
+@ApiBearerAuth()
 @ApiTags('suites')
 @Controller('testlab/projects/:projectId/suites')
 export class SuitesController {

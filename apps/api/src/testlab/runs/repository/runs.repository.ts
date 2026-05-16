@@ -35,7 +35,7 @@ export class RunsRepository implements IRunsRepository {
     return this.prisma.user.upsert({
       where: { email: 'system@testlab.local' },
       update: {},
-      create: { email: 'system@testlab.local', name: 'System' },
+      create: { email: 'system@testlab.local', name: 'System', passwordHash: '' },
       select: { id: true },
     });
   }

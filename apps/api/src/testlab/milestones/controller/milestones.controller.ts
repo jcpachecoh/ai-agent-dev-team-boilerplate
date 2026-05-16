@@ -1,9 +1,17 @@
 import { Controller, Get, Post, Param, Body, HttpCode, HttpStatus } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiParam, ApiResponse, ApiCreatedResponse } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+  ApiCreatedResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { MilestonesService } from '../service/milestones.service';
 import { CreateMilestoneDto } from './dto/create-milestone.dto';
 import type { Milestone } from '@prisma/client';
 
+@ApiBearerAuth()
 @ApiTags('milestones')
 @Controller('testlab/projects/:projectId/milestones')
 export class MilestonesController {

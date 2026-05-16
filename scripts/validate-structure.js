@@ -215,6 +215,7 @@ function validate() {
   // Directories that are infrastructure/aggregator modules — skip direct validation.
   const SKIP_ROOT = new Set([
     'shared',
+    'common',
     '__mocks__',
     'filters',
     'interceptors',

@@ -81,7 +81,7 @@ describe('CasesRepository', () => {
       expect(prismaMock.user.upsert).toHaveBeenCalledWith({
         where: { email: 'system@testlab.local' },
         update: {},
-        create: { email: 'system@testlab.local', name: 'System' },
+        create: { email: 'system@testlab.local', name: 'System', passwordHash: '' },
         select: { id: true },
       });
     });
