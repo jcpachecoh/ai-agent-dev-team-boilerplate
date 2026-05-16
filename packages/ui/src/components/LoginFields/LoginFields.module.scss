@@ -1,0 +1,40 @@
+@use '../../styles/abstracts/variables' as *;
+
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label {
+  color: $color-gray-900;
+  font-size: 13px;
+}
+
+.remember {
+  display: flex;
+  gap: $spacing-sm;
+  align-items: center;
+  color: $color-gray-900;
+  font-size: $font-size-sm;
+}
+
+.dark .label {
+  color: rgba($color-white, 0.7);
+}
+.dark .remember {
+  color: rgba($color-white, 0.7);
+}
+
+.light .label {
+  color: $color-gray-900;
+}
+.light .remember {
+  color: $color-gray-900;
+}

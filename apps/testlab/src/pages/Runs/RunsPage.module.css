@@ -1,0 +1,58 @@
+.page { max-width: 860px; }
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-5);
+}
+
+.title { font-size: 1.5rem; font-weight: 600; }
+
+.btnNew {
+  background-color: var(--color-accent);
+  border: none;
+  border-radius: var(--radius-md);
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: var(--space-2) var(--space-4);
+  transition: background-color 0.15s;
+}
+.btnNew:hover { background-color: var(--color-accent-hover); }
+
+.empty { color: var(--color-text-secondary); font-size: 0.875rem; }
+
+.list { list-style: none; display: flex; flex-direction: column; gap: var(--space-2); }
+
+.item {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  transition: border-color 0.15s;
+}
+.item:hover { border-color: var(--color-accent-hover); }
+
+.itemLink {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.itemName { font-weight: 500; }
+
+.itemDesc { font-size: 0.8125rem; color: var(--color-text-secondary); margin-top: var(--space-1); }
+
+.badge {
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 2px var(--space-2);
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.statusACTIVE    { background-color: rgba(31, 111, 235, 0.15); color: #58a6ff; }
+.statusCOMPLETED { background-color: rgba(35, 134, 54, 0.15);  color: #3fb950; }
+.statusARCHIVED  { background-color: rgba(139, 148, 158, 0.15); color: #8b949e; }

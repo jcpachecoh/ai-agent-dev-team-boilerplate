@@ -1,0 +1,150 @@
+@use 'sass:color';
+@use '../../styles/abstracts/variables' as *;
+@use '../../styles/abstracts/mixins' as *;
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-sm;
+  padding: $spacing-sm $spacing-md;
+  font-family: $font-family-base;
+  font-size: $font-size-base;
+  font-weight: $font-weight-medium;
+  line-height: $line-height-base;
+  border: $border-width solid transparent;
+  border-radius: $border-radius-md;
+  cursor: pointer;
+  transition:
+    background-color $transition-fast,
+    border-color $transition-fast,
+    color $transition-fast,
+    box-shadow $transition-fast;
+
+  &:focus-visible {
+    @include focus-ring;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+// Variants
+.primary {
+  background-image: linear-gradient(180deg, #f2c94c 0%, #e4b43a 100%);
+  color: $color-text-inverse;
+  box-shadow: 0 6px 18px rgba(228, 180, 58, 0.28);
+  border: $border-width solid rgba($color-white, 0.06);
+
+  &:hover:not(:disabled) {
+    background-color: $color-primary-dark;
+  }
+
+  &:active:not(:disabled) {
+    background-color: color.adjust($color-primary-dark, $lightness: -5%);
+  }
+}
+
+/* Size modifier */
+.large {
+  padding: $spacing-sm $spacing-sm;
+  font-size: $font-size-lg;
+  border-radius: $border-radius-lg;
+  width: 100%;
+}
+
+.small {
+  padding: $spacing-xs $spacing-sm;
+  font-size: $font-size-sm;
+}
+
+.arrow {
+  display: inline-block;
+  margin-left: $spacing-sm;
+  font-weight: $font-weight-semibold;
+  transform: translateY(1px);
+}
+
+/* loading modifier: center content and reserve space */
+.loading {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* spinner placeholder: buttons shouldn't import Spinner directly to avoid cycles in some setups
+   We style a placeholder element so Button can render it; when Storybook runs, we replace it
+   with the actual Spinner via composition in stories if desired. */
+.spinnerPlaceholder {
+  width: 18px;
+  height: 18px;
+  border-radius: $border-radius-full;
+  border: 3px solid rgba($color-black, 0.12);
+  border-top-color: currentColor;
+  animation: spinner-rotate 1s linear infinite;
+}
+
+.secondary {
+  background-color: transparent;
+  color: $color-primary;
+  border-color: $color-primary;
+
+  &:hover:not(:disabled) {
+    background-color: $color-primary;
+    color: $color-text-inverse;
+  }
+
+  &:active:not(:disabled) {
+    background-color: $color-primary-dark;
+    color: $color-text-inverse;
+  }
+}
+
+.danger {
+  background-color: $color-danger;
+  color: $color-text-inverse;
+
+  &:hover:not(:disabled) {
+    background-color: color.adjust($color-danger, $lightness: -10%);
+  }
+
+  &:active:not(:disabled) {
+    background-color: color.adjust($color-danger, $lightness: -15%);
+  }
+}
+
+/* Cargar variant: gold/pill with dark spinner centered when loading */
+.cargar {
+  background-color: #d4a017;
+  color: #4b3406; /* dark brown for spinner/text */
+  border: 1px solid rgba(75, 52, 6, 0.12);
+  font-weight: $font-weight-semibold;
+
+  &:hover:not(:disabled) {
+    background-color: color.adjust(#d4a017, $lightness: -6%);
+  }
+
+  &:active:not(:disabled) {
+    background-color: color.adjust(#d4a017, $lightness: -10%);
+  }
+
+  /* When loading, center spinner */
+  &.loading {
+    justify-content: center;
+  }
+}
+
+/* Ensure `.cargar` honors the same size modifiers as other variants */
+.cargar.large {
+  padding: $spacing-sm $spacing-sm;
+  font-size: $font-size-lg;
+  border-radius: $border-radius-lg;
+  width: 100%;
+}
+
+.cargar.small {
+  padding: $spacing-xs $spacing-sm;
+  font-size: $font-size-sm;
+}

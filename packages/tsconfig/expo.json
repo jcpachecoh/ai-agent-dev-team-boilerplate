@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "extends": "./base.json",
+  "compilerOptions": {
+    "target": "ESNext",
+    "lib": ["dom", "esnext"],
+    "module": "esnext",
+    "jsx": "react-jsx",
+    "noEmit": true
+  }
+}

@@ -1,0 +1,12 @@
+[build]
+builder = "dockerfile"
+dockerfilePath = "apps/api/Dockerfile"
+buildCommand = ""
+
+[deploy]
+startCommand = ""
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
+
+[[services]]
+name = "api"
