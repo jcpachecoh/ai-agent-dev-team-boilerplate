@@ -1,7 +1,7 @@
 Current Task
 
-tasks/01-project-setup.md
+tasks/supply-items-api/03-supply-item-suppliers-endpoint.md
 
 Goal
 
-Initialize the base project structure.
+Implement the specialized endpoint to view suppliers associated with a specific supply item.

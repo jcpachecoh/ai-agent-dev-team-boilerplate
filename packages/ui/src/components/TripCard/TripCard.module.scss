@@ -1,0 +1,109 @@
+@use '../../styles/abstracts/variables' as *;
+
+.tripCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: $spacing-md $spacing-lg;
+  border-radius: $border-radius-md;
+  box-sizing: border-box;
+}
+
+.light {
+  background: rgba($color-black, 0.02);
+  color: #18181f;
+}
+
+.dark {
+  background: rgba($color-white, 0.02);
+  color: #ededf5;
+}
+
+.left {
+  display: flex;
+  gap: $spacing-md;
+  align-items: center;
+  min-width: 0;
+}
+
+.leftIcon {
+  width: $spacing-xl;
+  height: $spacing-xl;
+  min-width: $spacing-xl;
+  border-radius: 10px;
+  background: rgba(212, 160, 23, 0.1);
+  border: $border-width solid rgba(212, 160, 23, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.leftIcon img {
+  width: 14px;
+  height: 14px;
+  display: block;
+}
+
+.texts {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.title {
+  font-weight: $font-weight-semibold;
+  font-size: 13.6px;
+  line-height: 20.4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.subtitle {
+  font-weight: $font-weight-regular;
+  font-size: 10.4px;
+  line-height: 15.6px;
+  color: rgba(114, 114, 154, 1);
+  white-space: nowrap;
+}
+
+.dark .subtitle {
+  color: rgba(90, 90, 114, 1);
+}
+
+.right {
+  display: flex;
+  gap: $spacing-sm;
+  align-items: center;
+}
+
+.cap {
+  background: rgba($color-success, 0.1);
+  border: $border-width solid rgba($color-success, 0.3);
+  color: $color-success;
+  font-weight: $font-weight-bold;
+  font-size: 9.92px;
+  padding: 2px $spacing-sm;
+  border-radius: $border-radius-full;
+  height: 20.883px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.iconBtn {
+  width: 28px;
+  height: 28px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  padding: 0 7.5px;
+  cursor: pointer;
+}
+
+.iconBtn img {
+  width: 13px;
+  height: 13px;
+  display: block;
+}
