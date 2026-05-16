@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { AuditService } from './audit.service';
-import { PrismaService } from '../prisma/prisma.service';
+import { AuditRepository } from '../repository/audit.repository';
+import { PrismaService } from '../../prisma/prisma.service';
 
 const prismaMock = {
   auditLog: {
@@ -8,22 +8,22 @@ const prismaMock = {
   },
 };
 
-describe('AuditService', () => {
-  let service: AuditService;
+describe('AuditRepository', () => {
+  let repo: AuditRepository;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [AuditService, { provide: PrismaService, useValue: prismaMock }],
+      providers: [AuditRepository, { provide: PrismaService, useValue: prismaMock }],
     }).compile();
 
-    service = module.get<AuditService>(AuditService);
+    repo = module.get<AuditRepository>(AuditRepository);
     jest.clearAllMocks();
   });
 
-  describe('log', () => {
+  describe('create', () => {
     it('creates an audit log record with all fields', async () => {
       prismaMock.auditLog.create.mockResolvedValue({});
-      await service.log({
+      await repo.create({
         action: 'CREATE',
         entity: 'projects',
         entityId: 'proj-1',
@@ -46,7 +46,7 @@ describe('AuditService', () => {
 
     it('stores null for optional fields when not provided', async () => {
       prismaMock.auditLog.create.mockResolvedValue({});
-      await service.log({ action: 'DELETE', entity: 'cases', entityId: 'c-1' });
+      await repo.create({ action: 'DELETE', entity: 'cases', entityId: 'c-1' });
       expect(prismaMock.auditLog.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
           userId: null,

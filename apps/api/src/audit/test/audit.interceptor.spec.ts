@@ -1,7 +1,7 @@
 import { ExecutionContext, CallHandler } from '@nestjs/common';
 import { of } from 'rxjs';
-import { AuditInterceptor } from './audit.interceptor';
-import { AuditService } from './audit.service';
+import { AuditInterceptor } from '../audit.interceptor';
+import { AuditService } from '../service/audit.service';
 
 const auditServiceMock = { log: jest.fn() };
 
