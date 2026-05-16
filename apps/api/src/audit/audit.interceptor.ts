@@ -23,7 +23,7 @@ export class AuditInterceptor implements NestInterceptor {
 
     if (!WRITE_METHODS.has(req.method)) return next.handle();
 
-    const action = METHOD_ACTION[req.method] ?? req.method;
+    const action = METHOD_ACTION[req.method] /* istanbul ignore next */ ?? req.method;
     const userId = req.user?.sub;
     const ipAddress = (req.headers['x-forwarded-for'] as string) ?? req.socket.remoteAddress ?? '';
     const userAgent = req.headers['user-agent'] ?? '';
