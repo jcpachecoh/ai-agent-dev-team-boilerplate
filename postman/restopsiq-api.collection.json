@@ -1,0 +1,1007 @@
+{
+  "info": {
+    "_postman_id": "7c3e5f82-1a9b-4d6e-8f2c-0b5a3d7e9f1c",
+    "name": "RestOpsIQ API",
+    "description": "Complete API test collection for RestOpsIQ.\n\nCovers all 30 live endpoints across Health, Auth, Supply Items, and Testlab modules.\n\nGlobal prefix: /api\nAuth: JwtAuthGuard (APP_GUARD) — collection-level Bearer {{accessToken}}.\nPublic endpoints: GET /api/, POST /api/auth/signup, POST /api/auth/login, POST /api/auth/refresh.\nTenant-scoped endpoints: all /api/supply-items routes (x-tenant-id header).\n\nSee postman/README.md for prerequisites and setup.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Skip auto-login for public auth routes to avoid infinite loops",
+          "const reqUrl = pm.request.url.toString();",
+          "const isPublicAuthRoute =",
+          "  reqUrl.includes('/auth/login') ||",
+          "  reqUrl.includes('/auth/signup') ||",
+          "  reqUrl.includes('/auth/refresh');",
+          "if (isPublicAuthRoute) return;",
+          "",
+          "// Skip if token is still valid",
+          "const expiry = pm.collectionVariables.get('accessTokenExpiresAt');",
+          "if (expiry && Date.now() < Number(expiry)) return;",
+          "",
+          "// Auto-login",
+          "const baseUrl  = pm.collectionVariables.get('baseUrl');",
+          "const email    = pm.collectionVariables.get('email');",
+          "const password = pm.collectionVariables.get('password');",
+          "if (!baseUrl || !email || !password) return;",
+          "",
+          "pm.sendRequest({",
+          "  url: baseUrl + '/api/auth/login',",
+          "  method: 'POST',",
+          "  header: { 'Content-Type': 'application/json' },",
+          "  body: { mode: 'raw', raw: JSON.stringify({ email, password }) }",
+          "}, function (err, res) {",
+          "  if (err || res.code !== 200) return;",
+          "  const b = res.json();",
+          "  pm.collectionVariables.set('accessToken', b.accessToken);",
+          "  pm.collectionVariables.set('refreshToken', b.refreshToken);",
+          "  // Treat token as valid for 14 minutes (access token TTL is 15 min)",
+          "  pm.collectionVariables.set('accessTokenExpiresAt', String(Date.now() + 14 * 60 * 1000));",
+          "});"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3001",
+      "type": "string",
+      "description": "API host — no trailing slash"
+    },
+    {
+      "key": "email",
+      "value": "test@restopsiq.dev",
+      "type": "string",
+      "description": "Seeded test-user email"
+    },
+    {
+      "key": "password",
+      "value": "TestPass123!",
+      "type": "string",
+      "description": "Seeded test-user password"
+    },
+    {
+      "key": "tenantId",
+      "value": "",
+      "type": "string",
+      "description": "UUID of an existing Tenant in the seeded DB"
+    },
+    {
+      "key": "categoryId",
+      "value": "",
+      "type": "string",
+      "description": "UUID of an existing SupplyCategory for the seeded tenant"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string",
+      "description": "Populated at runtime by Login / pre-request script"
+    },
+    {
+      "key": "refreshToken",
+      "value": "",
+      "type": "string",
+      "description": "Populated at runtime by Login"
+    },
+    {
+      "key": "accessTokenExpiresAt",
+      "value": "",
+      "type": "string",
+      "description": "Unix ms timestamp; set by pre-request script"
+    },
+    {
+      "key": "supplyItemId",
+      "value": "",
+      "type": "string",
+      "description": "Captured from Create Supply Item response"
+    },
+    {
+      "key": "supplyItemCode",
+      "value": "",
+      "type": "string",
+      "description": "Generated timestamp-based code before Create Supply Item"
+    },
+    {
+      "key": "projectId",
+      "value": "",
+      "type": "string",
+      "description": "Captured from Create Project response"
+    },
+    {
+      "key": "projectSlug",
+      "value": "",
+      "type": "string",
+      "description": "Generated timestamp-based slug before Create Project"
+    },
+    {
+      "key": "milestoneId",
+      "value": "",
+      "type": "string",
+      "description": "Captured from Create Milestone response"
+    },
+    {
+      "key": "requirementId",
+      "value": "",
+      "type": "string",
+      "description": "Captured from Create Requirement response"
+    },
+    {
+      "key": "suiteId",
+      "value": "",
+      "type": "string",
+      "description": "Captured from Create Suite response"
+    },
+    {
+      "key": "caseId",
+      "value": "",
+      "type": "string",
+      "description": "Captured from Create Case response"
+    },
+    {
+      "key": "runId",
+      "value": "",
+      "type": "string",
+      "description": "Captured from Create Run response"
+    }
+  ],
+  "item": [
+    {
+      "name": "00 Health",
+      "item": [
+        {
+          "name": "GET Health",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/" }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "01 Auth",
+      "item": [
+        {
+          "name": "Signup",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Accept 201 (created) or 409 (user already exists) so the",
+                  "// collection can be run multiple times against the same DB.",
+                  "pm.test('Signup accepted (201) or user already exists (409)', () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([201, 409]);",
+                  "});",
+                  "if (pm.response.code === 201) {",
+                  "  pm.test('Has accessToken on first signup', () => {",
+                  "    pm.expect(pm.response.json()).to.have.property('accessToken');",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"name\": \"Test User\",\n  \"password\": \"{{password}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/api/auth/signup" }
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has accessToken and refreshToken', () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body).to.have.property('accessToken');",
+                  "  pm.expect(body).to.have.property('refreshToken');",
+                  "});",
+                  "const body = pm.response.json();",
+                  "if (body.accessToken) {",
+                  "  pm.collectionVariables.set('accessToken', body.accessToken);",
+                  "  pm.collectionVariables.set('refreshToken', body.refreshToken);",
+                  "  pm.collectionVariables.set('accessTokenExpiresAt', String(Date.now() + 14 * 60 * 1000));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/api/auth/login" }
+          },
+          "response": []
+        },
+        {
+          "name": "Refresh",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has new accessToken', () => {",
+                  "  pm.expect(pm.response.json()).to.have.property('accessToken');",
+                  "});",
+                  "const body = pm.response.json();",
+                  "if (body.accessToken) {",
+                  "  pm.collectionVariables.set('accessToken', body.accessToken);",
+                  "  pm.collectionVariables.set('accessTokenExpiresAt', String(Date.now() + 14 * 60 * 1000));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{refreshToken}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/auth/refresh" }
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/auth/logout" }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "02 Supply Items",
+      "description": "All requests require x-tenant-id: {{tenantId}} header.\nRun order matters: Create first (captures supplyItemId), Delete last.",
+      "item": [
+        {
+          "name": "Create Supply Item",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Generate a unique codigoInterno per run to avoid @@unique([tenantId, codigoInterno]) conflicts",
+                  "pm.collectionVariables.set('supplyItemCode', 'SI-' + Date.now());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Has id', () => pm.expect(pm.response.json()).to.have.property('id'));",
+                  "pm.test('Has codigoInterno', () => pm.expect(pm.response.json()).to.have.property('codigoInterno'));",
+                  "const body = pm.response.json();",
+                  "if (body.id) pm.collectionVariables.set('supplyItemId', body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Aceite de Cocina\",\n  \"codigoInterno\": \"{{supplyItemCode}}\",\n  \"categoriaId\": \"{{categoryId}}\",\n  \"descripcion\": \"Aceite vegetal refinado para cocinar\",\n  \"unidadBase\": \"LITERS\",\n  \"factorConversion\": \"1\",\n  \"costoPromedioPonderado\": \"8500\",\n  \"stockMinimoBodega\": \"5\",\n  \"stockMaximoBodega\": \"50\",\n  \"aplicaVencimiento\": false,\n  \"aplicaLote\": false,\n  \"isActive\": true\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/api/supply-items" }
+          },
+          "response": []
+        },
+        {
+          "name": "List Supply Items",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Is array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "x-tenant-id", "value": "{{tenantId}}" }],
+            "url": { "raw": "{{baseUrl}}/api/supply-items" }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Supply Item",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('ID matches captured supplyItemId', () => {",
+                  "  pm.expect(pm.response.json().id).to.equal(pm.collectionVariables.get('supplyItemId'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "x-tenant-id", "value": "{{tenantId}}" }],
+            "url": { "raw": "{{baseUrl}}/api/supply-items/{{supplyItemId}}" }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Supply Item",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has id', () => pm.expect(pm.response.json()).to.have.property('id'));",
+                  "pm.test('descripcion was updated', () => {",
+                  "  pm.expect(pm.response.json().descripcion).to.equal('Aceite refinado — actualizado');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"descripcion\": \"Aceite refinado — actualizado\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/api/supply-items/{{supplyItemId}}" }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Supply Item Suppliers",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Is array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "x-tenant-id", "value": "{{tenantId}}" }],
+            "url": { "raw": "{{baseUrl}}/api/supply-items/{{supplyItemId}}/suppliers" }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Supply Item Price History",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Is array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "x-tenant-id", "value": "{{tenantId}}" }],
+            "url": { "raw": "{{baseUrl}}/api/supply-items/{{supplyItemId}}/price-history" }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Supply Item",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('ID matches deleted item', () => {",
+                  "  pm.expect(pm.response.json().id).to.equal(pm.collectionVariables.get('supplyItemId'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "x-tenant-id", "value": "{{tenantId}}" }],
+            "url": { "raw": "{{baseUrl}}/api/supply-items/{{supplyItemId}}" }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "03 Testlab",
+      "description": "Testlab requests must run top-to-bottom: Projects → Milestones → Requirements → Suites → Cases → Runs.\nEach POST create captures an ID used by subsequent requests in the same sub-folder.",
+      "item": [
+        {
+          "name": "Projects",
+          "item": [
+            {
+              "name": "Create Project",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "// Slug must be unique — use timestamp to avoid 409 on repeated runs",
+                      "pm.collectionVariables.set('projectSlug', 'proj-' + Date.now());"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                      "pm.test('Has id', () => pm.expect(pm.response.json()).to.have.property('id'));",
+                      "pm.test('Has slug', () => pm.expect(pm.response.json()).to.have.property('slug'));",
+                      "const body = pm.response.json();",
+                      "if (body.id) pm.collectionVariables.set('projectId', body.id);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Test Project\",\n  \"slug\": \"{{projectSlug}}\",\n  \"description\": \"Automated test project\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": { "raw": "{{baseUrl}}/api/testlab/projects" }
+              },
+              "response": []
+            },
+            {
+              "name": "List Projects",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('Is array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{baseUrl}}/api/testlab/projects" }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Project",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('ID matches captured projectId', () => {",
+                      "  pm.expect(pm.response.json().id).to.equal(pm.collectionVariables.get('projectId'));",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{baseUrl}}/api/testlab/projects/{{projectId}}" }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Milestones",
+          "item": [
+            {
+              "name": "Create Milestone",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                      "pm.test('Has id', () => pm.expect(pm.response.json()).to.have.property('id'));",
+                      "pm.test('Has name', () => pm.expect(pm.response.json()).to.have.property('name'));",
+                      "const body = pm.response.json();",
+                      "if (body.id) pm.collectionVariables.set('milestoneId', body.id);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"v1.0 Release\",\n  \"dueDate\": \"2026-12-31\",\n  \"description\": \"First stable release\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": { "raw": "{{baseUrl}}/api/testlab/projects/{{projectId}}/milestones" }
+              },
+              "response": []
+            },
+            {
+              "name": "List Milestones",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('Is array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{baseUrl}}/api/testlab/projects/{{projectId}}/milestones" }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Milestone",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('ID matches captured milestoneId', () => {",
+                      "  pm.expect(pm.response.json().id).to.equal(pm.collectionVariables.get('milestoneId'));",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/testlab/projects/{{projectId}}/milestones/{{milestoneId}}"
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Requirements",
+          "item": [
+            {
+              "name": "Create Requirement",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                      "pm.test('Has id', () => pm.expect(pm.response.json()).to.have.property('id'));",
+                      "pm.test('Has title', () => pm.expect(pm.response.json()).to.have.property('title'));",
+                      "const body = pm.response.json();",
+                      "if (body.id) pm.collectionVariables.set('requirementId', body.id);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"User must be able to log in with email and password\",\n  \"externalId\": \"REQ-001\",\n  \"description\": \"Standard credential-based login flow\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": { "raw": "{{baseUrl}}/api/testlab/projects/{{projectId}}/requirements" }
+              },
+              "response": []
+            },
+            {
+              "name": "List Requirements",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('Is array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{baseUrl}}/api/testlab/projects/{{projectId}}/requirements" }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Requirement",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('ID matches captured requirementId', () => {",
+                      "  pm.expect(pm.response.json().id).to.equal(pm.collectionVariables.get('requirementId'));",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/testlab/projects/{{projectId}}/requirements/{{requirementId}}"
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Suites",
+          "item": [
+            {
+              "name": "Create Suite",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                      "pm.test('Has id', () => pm.expect(pm.response.json()).to.have.property('id'));",
+                      "pm.test('Has name', () => pm.expect(pm.response.json()).to.have.property('name'));",
+                      "const body = pm.response.json();",
+                      "if (body.id) pm.collectionVariables.set('suiteId', body.id);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Authentication Tests\",\n  \"description\": \"All tests related to auth flows\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": { "raw": "{{baseUrl}}/api/testlab/projects/{{projectId}}/suites" }
+              },
+              "response": []
+            },
+            {
+              "name": "List Suites",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('Is array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{baseUrl}}/api/testlab/projects/{{projectId}}/suites" }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Suite",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('ID matches captured suiteId', () => {",
+                      "  pm.expect(pm.response.json().id).to.equal(pm.collectionVariables.get('suiteId'));",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/testlab/projects/{{projectId}}/suites/{{suiteId}}"
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Cases",
+          "item": [
+            {
+              "name": "Create Case",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                      "pm.test('Has id', () => pm.expect(pm.response.json()).to.have.property('id'));",
+                      "pm.test('Has title', () => pm.expect(pm.response.json()).to.have.property('title'));",
+                      "const body = pm.response.json();",
+                      "if (body.id) pm.collectionVariables.set('caseId', body.id);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"Verify login with valid credentials\",\n  \"priority\": \"HIGH\",\n  \"type\": \"FUNCTIONAL\",\n  \"preconditions\": \"User is on the login page\",\n  \"expectedResult\": \"User is redirected to dashboard\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/testlab/projects/{{projectId}}/suites/{{suiteId}}/cases"
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "List Cases",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('Is array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/testlab/projects/{{projectId}}/suites/{{suiteId}}/cases"
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Update Case Status",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('Has id', () => pm.expect(pm.response.json()).to.have.property('id'));",
+                      "pm.test('Status is PASS', () => {",
+                      "  pm.expect(pm.response.json().status).to.equal('PASS');",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "PATCH",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"PASS\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/testlab/projects/{{projectId}}/suites/{{suiteId}}/cases/{{caseId}}/status"
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Runs",
+          "item": [
+            {
+              "name": "Create Run",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                      "pm.test('Has id', () => pm.expect(pm.response.json()).to.have.property('id'));",
+                      "pm.test('Has name', () => pm.expect(pm.response.json()).to.have.property('name'));",
+                      "const body = pm.response.json();",
+                      "if (body.id) pm.collectionVariables.set('runId', body.id);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Regression Run — Sprint 14\",\n  \"description\": \"Full regression pass before release\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": { "raw": "{{baseUrl}}/api/testlab/projects/{{projectId}}/runs" }
+              },
+              "response": []
+            },
+            {
+              "name": "List Runs",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('Is array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{baseUrl}}/api/testlab/projects/{{projectId}}/runs" }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Run",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('ID matches captured runId', () => {",
+                      "  pm.expect(pm.response.json().id).to.equal(pm.collectionVariables.get('runId'));",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{baseUrl}}/api/testlab/projects/{{projectId}}/runs/{{runId}}" }
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

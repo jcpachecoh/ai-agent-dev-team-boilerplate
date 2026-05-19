@@ -35,6 +35,7 @@ yarn-error.log*
 !.vscode/extensions.json
 *.swp
 *.swo
+.cursor/
 
 # OS
 .DS_Store
