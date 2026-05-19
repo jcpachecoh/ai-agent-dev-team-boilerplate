@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { SupplyItem } from '@prisma/client';
+import type { SupplyItem, SupplyItemPriceHistory } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
   ISupplyitemsRepository,
@@ -78,5 +78,42 @@ export class SupplyItemsRepository implements ISupplyitemsRepository {
       tiempoEntregaDias: rel.tiempoEntregaDias,
       esProveedorPrincipal: rel.esProveedorPrincipal,
     }));
+  }
+
+  findPriceHistory(tenantId: string, supplyItemId: string): Promise<SupplyItemPriceHistory[]> {
+    return this.prisma.supplyItemPriceHistory.findMany({
+      where: {
+        tenantId,
+        supplyItemId,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+  }
+
+  async updateCppWithHistory(
+    tenantId: string,
+    id: string,
+    data: {
+      newCpp: any;
+      history: any;
+    },
+  ): Promise<SupplyItem> {
+    const [updatedItem] = await this.prisma.$transaction([
+      this.prisma.supplyItem.update({
+        where: { id, tenantId },
+        data: { costoPromedioPonderado: data.newCpp },
+      }),
+      this.prisma.supplyItemPriceHistory.create({
+        data: {
+          ...data.history,
+          tenantId,
+          supplyItemId: id,
+        },
+      }),
+    ]);
+
+    return updatedItem;
   }
 }

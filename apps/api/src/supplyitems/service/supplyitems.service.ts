@@ -4,18 +4,25 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
-import type { SupplyItem } from '@prisma/client';
+import type { SupplyItem, SupplyItemPriceHistory } from '@prisma/client';
+import { Decimal } from '@prisma/client/runtime/library';
 import { SupplyItemsRepository } from '../repository/supplyitems.repository';
+import { LockService } from '../../lock/service/lock.service';
 import type {
   ISupplyitemsService,
   SupplierWithProductInfo,
+  CppCalculationInput,
+  CppUpdateInput,
 } from '../interfaces/supplyitems.interfaces';
 import type { CreateSupplyItemDto } from '../controller/dto/create-supplyitem.dto';
 import type { UpdateSupplyItemDto } from '../controller/dto/update-supplyitem.dto';
 
 @Injectable()
 export class SupplyItemsService implements ISupplyitemsService {
-  constructor(private readonly supplyItemsRepository: SupplyItemsRepository) {}
+  constructor(
+    private readonly supplyItemsRepository: SupplyItemsRepository,
+    private readonly lockService: LockService,
+  ) {}
 
   findAll(tenantId: string): Promise<SupplyItem[]> {
     return this.supplyItemsRepository.findAll(tenantId);
@@ -53,6 +60,78 @@ export class SupplyItemsService implements ISupplyitemsService {
   async findSuppliers(tenantId: string, id: string): Promise<SupplierWithProductInfo[]> {
     await this.findOne(tenantId, id);
     return this.supplyItemsRepository.findSuppliers(tenantId, id);
+  }
+
+  async findPriceHistory(tenantId: string, id: string): Promise<SupplyItemPriceHistory[]> {
+    await this.findOne(tenantId, id);
+    return this.supplyItemsRepository.findPriceHistory(tenantId, id);
+  }
+
+  async updateCppAtomically(
+    tenantId: string,
+    id: string,
+    input: CppUpdateInput,
+  ): Promise<SupplyItem> {
+    const item = await this.findOne(tenantId, id);
+
+    const lockKey = `supply-item-cpp:${tenantId}:${id}`;
+    const ttlMs = 5000; // 5 seconds lock
+
+    return this.lockService.usingLock(lockKey, ttlMs, async () => {
+      // Re-fetch or use existing item if we trust our initial check and lock
+      // Here we use the initial 'item' found before the lock for costoPrevio.
+
+      const newCpp = this.calculateCpp({
+        stockActual: input.stockActual,
+        costoPrevio: item.costoPromedioPonderado,
+        cantidadRecibida: input.cantidadRecibida,
+        costoNuevo: input.costoNuevo,
+      });
+
+      const stockActual = new Decimal(input.stockActual);
+      const cantidadRecibida = new Decimal(input.cantidadRecibida);
+      const stockNuevo = stockActual.plus(cantidadRecibida);
+
+      return this.supplyItemsRepository.updateCppWithHistory(tenantId, id, {
+        newCpp,
+        history: {
+          costoAnterior: item.costoPromedioPonderado,
+          costoNuevo: newCpp,
+          cantidadRecibida: input.cantidadRecibida,
+          stockAnterior: input.stockActual,
+          stockNuevo: stockNuevo,
+          motivo: 'RECEPCION_MERCANCIA',
+          referenciaTipo: input.referenciaTipo,
+          referenciaId: input.referenciaId,
+          createdBy: input.createdBy,
+        },
+      });
+    });
+  }
+
+  calculateCpp(input: CppCalculationInput): Decimal {
+    const stockActual = new Decimal(input.stockActual);
+    const costoPrevio = new Decimal(input.costoPrevio);
+    const cantidadRecibida = new Decimal(input.cantidadRecibida);
+    const costoNuevo = new Decimal(input.costoNuevo);
+
+    if (cantidadRecibida.lte(0)) {
+      throw new BadRequestException('cantidadRecibida must be greater than 0');
+    }
+    if (stockActual.lt(0)) {
+      throw new BadRequestException('stockActual cannot be negative');
+    }
+    if (costoPrevio.lt(0)) {
+      throw new BadRequestException('costoPrevio cannot be negative');
+    }
+    if (costoNuevo.lt(0)) {
+      throw new BadRequestException('costoNuevo cannot be negative');
+    }
+
+    const totalStock = stockActual.plus(cantidadRecibida);
+    const totalCost = stockActual.mul(costoPrevio).plus(cantidadRecibida.mul(costoNuevo));
+
+    return totalCost.div(totalStock);
   }
 
   private async validateBusinessRules(

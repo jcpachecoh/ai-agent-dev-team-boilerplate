@@ -18,6 +18,7 @@ const serviceMock = {
   update: jest.fn(),
   remove: jest.fn(),
   findSuppliers: jest.fn(),
+  findPriceHistory: jest.fn(),
 };
 
 describe('SupplyItemsController', () => {
@@ -91,6 +92,18 @@ describe('SupplyItemsController', () => {
 
       expect(result).toEqual(mockSuppliers);
       expect(serviceMock.findSuppliers).toHaveBeenCalledWith(tenantId, 'item-1');
+    });
+  });
+
+  describe('findPriceHistory', () => {
+    it('should call service with tenantId and id', async () => {
+      const mockHistory = [{ id: 'hist-1', costoNuevo: '105.0' }];
+      serviceMock.findPriceHistory.mockResolvedValue(mockHistory);
+
+      const result = await controller.findPriceHistory('item-1', tenantId);
+
+      expect(result).toEqual(mockHistory);
+      expect(serviceMock.findPriceHistory).toHaveBeenCalledWith(tenantId, 'item-1');
     });
   });
 });

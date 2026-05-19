@@ -18,7 +18,7 @@ import {
   ApiCreatedResponse,
   ApiHeader,
 } from '@nestjs/swagger';
-import type { SupplyItem } from '@prisma/client';
+import type { SupplyItem, SupplyItemPriceHistory } from '@prisma/client';
 import { SupplyItemsService } from '../service/supplyitems.service';
 import { CreateSupplyItemDto } from './dto/create-supplyitem.dto';
 import { UpdateSupplyItemDto } from './dto/update-supplyitem.dto';
@@ -89,5 +89,17 @@ export class SupplyItemsController {
     @Headers('x-tenant-id') tenantId: string,
   ): Promise<SupplierWithProductInfo[]> {
     return this.supplyItemsService.findSuppliers(tenantId, id);
+  }
+
+  @ApiOperation({ summary: 'Get price history for a supply item' })
+  @ApiParam({ name: 'id', description: 'Supply item ID' })
+  @ApiResponse({ status: 200, description: 'Array of price history records' })
+  @ApiResponse({ status: 404, description: 'Supply item not found' })
+  @Get(':id/price-history')
+  findPriceHistory(
+    @Param('id') id: string,
+    @Headers('x-tenant-id') tenantId: string,
+  ): Promise<SupplyItemPriceHistory[]> {
+    return this.supplyItemsService.findPriceHistory(tenantId, id);
   }
 }
