@@ -1,0 +1,82 @@
+@use '../../styles/abstracts/variables' as *;
+
+.container {
+  position: relative;
+  width: 262px;
+  background: $color-gray-900;
+  border: $border-width solid rgba($color-white, 0.07);
+  border-radius: 14px;
+  padding: $spacing-md;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 28px;
+}
+
+.title {
+  font-size: 11.2px;
+  line-height: 16.8px;
+  text-transform: uppercase;
+  letter-spacing: 0.672px;
+  font-weight: $font-weight-regular;
+}
+
+.icon {
+  color: inherit;
+}
+
+.icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.count {
+  margin-top: $spacing-sm;
+  font-size: 25.6px;
+  line-height: 25.6px;
+  font-weight: $font-weight-bold;
+}
+
+.footer {
+  margin-top: $spacing-sm;
+  font-size: 11.2px;
+}
+
+/* Light theme (Figma node 5:286) */
+.light {
+  background: $color-white;
+  border: $border-width solid rgba($color-black, 0.09);
+  color: #18181f; /* default text color for light */
+}
+
+.light .title {
+  color: #72729a;
+}
+.light .count {
+  color: #18181f;
+}
+.light .footer {
+  color: #a855f7;
+}
+
+/* Dark theme (Figma node 1:272) */
+.dark {
+  background: $color-gray-900;
+  border: $border-width solid rgba($color-white, 0.07);
+  color: #ededf5;
+}
+
+.dark .title {
+  color: #5a5a72;
+}
+.dark .count {
+  color: #ededf5;
+}
+.dark .footer {
+  color: #a855f7;
+}

@@ -3,13 +3,13 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { Button } from './Button';
 
 const meta: Meta<typeof Button> = {
-  title: 'Components/Button',
+  title: 'Atomos/Button',
   component: Button,
   tags: ['autodocs'],
   argTypes: {
     variant: {
       control: 'select',
-      options: ['primary', 'secondary', 'danger'],
+      options: ['primary', 'secondary', 'danger', 'cargar'],
       description: 'The visual style of the button',
     },
     disabled: {
@@ -28,22 +28,31 @@ type Story = StoryObj<typeof Button>;
 
 export const Primary: Story = {
   args: {
+    children: 'Iniciar Sesión',
     variant: 'primary',
-    children: 'Primary Button',
+    arrow: true,
   },
 };
 
 export const Secondary: Story = {
   args: {
+    children: 'Cancelar',
     variant: 'secondary',
-    children: 'Secondary Button',
   },
 };
 
 export const Danger: Story = {
   args: {
+    children: 'Eliminar',
     variant: 'danger',
-    children: 'Danger Button',
+  },
+};
+
+export const CargarLoading: Story = {
+  args: {
+    children: 'Cargando',
+    variant: 'cargar',
+    loading: true,
   },
 };
 

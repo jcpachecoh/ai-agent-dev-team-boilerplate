@@ -1,9 +1,17 @@
 import { Controller, Get, Post, Param, Body, HttpCode, HttpStatus } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiParam, ApiResponse, ApiCreatedResponse } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+  ApiCreatedResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { RequirementsService } from '../service/requirements.service';
 import { CreateRequirementDto } from './dto/create-requirement.dto';
 import type { Requirement } from '@prisma/client';
 
+@ApiBearerAuth()
 @ApiTags('requirements')
 @Controller('testlab/projects/:projectId/requirements')
 export class RequirementsController {

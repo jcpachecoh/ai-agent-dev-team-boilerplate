@@ -1,0 +1,32 @@
+@use '../../styles/abstracts/variables' as *;
+
+.container {
+  padding: $spacing-md;
+  border-radius: $border-radius-lg;
+  width: 260px;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+.item {
+}
+
+.light {
+  background: $color-white;
+}
+.dark {
+  background: #0f1724;
+}
+
+.dark .item .label {
+  color: #cbd5e1;
+}
+.light .item .label {
+  color: #374151;
+}

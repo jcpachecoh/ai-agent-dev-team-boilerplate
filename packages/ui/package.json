@@ -18,7 +18,8 @@
     "build-storybook": "storybook build"
   },
   "dependencies": {
-    "sass": "^1.77.0"
+    "sass": "^1.77.0",
+    "lucide-react": "^0.511.0"
   },
   "devDependencies": {
     "@restopsiq/tsconfig": "workspace:*",
