@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import NavList from '.';
 
 const meta: Meta<typeof NavList> = {
-  title: 'Molecules/NavList',
+  title: 'Moleculas/NavList',
   component: NavList,
   tags: ['autodocs'],
 };

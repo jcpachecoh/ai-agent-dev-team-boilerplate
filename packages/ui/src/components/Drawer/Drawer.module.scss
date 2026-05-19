@@ -1,0 +1,147 @@
+@use '../../styles/abstracts/variables' as *;
+
+.overlay {
+  background-color: rgba(0, 0, 0, 0.5);
+  position: fixed;
+  inset: 0;
+  z-index: 110;
+  backdrop-filter: blur(6px) saturate(1.05);
+}
+
+.content {
+  background-color: $color-bg-primary;
+  box-shadow: 0 36px 80px rgba($color-black, 0.6);
+  position: fixed;
+  z-index: 111;
+  display: flex;
+  flex-direction: column;
+  padding: $spacing-md;
+  color: $color-text-primary;
+  outline: none;
+  border-left: 1px solid rgba(255, 255, 255, 0.03);
+  min-height: 100px;
+}
+
+/* Sides */
+.side--right {
+  top: 0;
+  right: 0;
+  bottom: 0;
+  border-top-left-radius: $border-radius-lg;
+  border-bottom-left-radius: $border-radius-lg;
+}
+
+.side--left {
+  top: 0;
+  left: 0;
+  bottom: 0;
+  border-top-right-radius: $border-radius-lg;
+  border-bottom-right-radius: $border-radius-lg;
+}
+
+.side--bottom {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-top-left-radius: $border-radius-lg;
+  border-top-right-radius: $border-radius-lg;
+}
+
+.side--top {
+  left: 0;
+  right: 0;
+  top: 0;
+  border-bottom-left-radius: $border-radius-lg;
+  border-bottom-right-radius: $border-radius-lg;
+}
+
+/* Sizes for Left/Right */
+.side--right.size--sm,
+.side--left.size--sm {
+  width: 320px;
+}
+.side--right.size--md,
+.side--left.size--md {
+  width: 480px;
+}
+.side--right.size--lg,
+.side--left.size--lg {
+  width: 640px;
+}
+
+/* Sizes for Bottom / Top (fixed pixel sizes per request) */
+.side--bottom.size--sm {
+  height: 320px;
+}
+.side--bottom.size--md {
+  height: 480px;
+}
+.side--bottom.size--lg {
+  height: 640px;
+}
+
+.side--top.size--sm {
+  height: 320px;
+}
+.side--top.size--md {
+  height: 480px;
+}
+.side--top.size--lg {
+  height: 640px;
+}
+
+.header {
+  margin: 0 0 $spacing-md 0;
+  padding-right: $spacing-xl; /* space for close button */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.title {
+  margin: 0;
+  font-weight: $font-weight-bold;
+  font-size: $font-size-lg;
+}
+
+.description {
+  margin: $spacing-xs 0 0 0;
+  color: $color-text-secondary;
+  font-size: $font-size-sm;
+}
+
+.body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding-bottom: $spacing-md;
+}
+
+.footer {
+  margin-top: $spacing-md;
+  display: flex;
+  justify-content: flex-end;
+  gap: $spacing-sm;
+  padding-top: $spacing-sm;
+  border-top: 1px solid rgba(255, 255, 255, 0.02);
+}
+
+.closeButton {
+  position: absolute;
+  top: $spacing-md;
+  right: $spacing-md;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  padding: $spacing-xs;
+  color: $color-text-secondary;
+  &:hover {
+    color: $color-text-primary;
+  }
+}
+
+/* Sticky footer so actions are visible on tall content */
+.content .footer {
+  position: sticky;
+  bottom: 0;
+  background: transparent;
+}
