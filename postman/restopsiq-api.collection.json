@@ -176,10 +176,12 @@
             }
           ],
           "request": {
-            "auth": { "type": "noauth" },
+            "auth": {
+              "type": "noauth"
+            },
             "method": "GET",
             "header": [],
-            "url": { "raw": "{{baseUrl}}/api/" }
+            "url": "{{baseUrl}}/api/"
           },
           "response": []
         }
@@ -211,15 +213,26 @@
             }
           ],
           "request": {
-            "auth": { "type": "noauth" },
+            "auth": {
+              "type": "noauth"
+            },
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"email\": \"{{email}}\",\n  \"name\": \"Test User\",\n  \"password\": \"{{password}}\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
-            "url": { "raw": "{{baseUrl}}/api/auth/signup" }
+            "url": "{{baseUrl}}/api/auth/signup"
           },
           "response": []
         },
@@ -248,15 +261,26 @@
             }
           ],
           "request": {
-            "auth": { "type": "noauth" },
+            "auth": {
+              "type": "noauth"
+            },
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
-            "url": { "raw": "{{baseUrl}}/api/auth/login" }
+            "url": "{{baseUrl}}/api/auth/login"
           },
           "response": []
         },
@@ -284,11 +308,17 @@
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [{ "key": "token", "value": "{{refreshToken}}", "type": "string" }]
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{refreshToken}}",
+                  "type": "string"
+                }
+              ]
             },
             "method": "POST",
             "header": [],
-            "url": { "raw": "{{baseUrl}}/api/auth/refresh" }
+            "url": "{{baseUrl}}/api/auth/refresh"
           },
           "response": []
         },
@@ -306,7 +336,7 @@
           "request": {
             "method": "POST",
             "header": [],
-            "url": { "raw": "{{baseUrl}}/api/auth/logout" }
+            "url": "{{baseUrl}}/api/auth/logout"
           },
           "response": []
         }
@@ -346,15 +376,25 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"nombre\": \"Aceite de Cocina\",\n  \"codigoInterno\": \"{{supplyItemCode}}\",\n  \"categoriaId\": \"{{categoryId}}\",\n  \"descripcion\": \"Aceite vegetal refinado para cocinar\",\n  \"unidadBase\": \"LITERS\",\n  \"factorConversion\": \"1\",\n  \"costoPromedioPonderado\": \"8500\",\n  \"stockMinimoBodega\": \"5\",\n  \"stockMaximoBodega\": \"50\",\n  \"aplicaVencimiento\": false,\n  \"aplicaLote\": false,\n  \"isActive\": true\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
-            "url": { "raw": "{{baseUrl}}/api/supply-items" }
+            "url": "{{baseUrl}}/api/supply-items"
           },
           "response": []
         },
@@ -374,8 +414,13 @@
           ],
           "request": {
             "method": "GET",
-            "header": [{ "key": "x-tenant-id", "value": "{{tenantId}}" }],
-            "url": { "raw": "{{baseUrl}}/api/supply-items" }
+            "header": [
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/supply-items"
           },
           "response": []
         },
@@ -397,8 +442,13 @@
           ],
           "request": {
             "method": "GET",
-            "header": [{ "key": "x-tenant-id", "value": "{{tenantId}}" }],
-            "url": { "raw": "{{baseUrl}}/api/supply-items/{{supplyItemId}}" }
+            "header": [
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/supply-items/{{supplyItemId}}"
           },
           "response": []
         },
@@ -422,15 +472,25 @@
           "request": {
             "method": "PATCH",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"descripcion\": \"Aceite refinado — actualizado\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
-            "url": { "raw": "{{baseUrl}}/api/supply-items/{{supplyItemId}}" }
+            "url": "{{baseUrl}}/api/supply-items/{{supplyItemId}}"
           },
           "response": []
         },
@@ -450,8 +510,13 @@
           ],
           "request": {
             "method": "GET",
-            "header": [{ "key": "x-tenant-id", "value": "{{tenantId}}" }],
-            "url": { "raw": "{{baseUrl}}/api/supply-items/{{supplyItemId}}/suppliers" }
+            "header": [
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/supply-items/{{supplyItemId}}/suppliers"
           },
           "response": []
         },
@@ -471,8 +536,13 @@
           ],
           "request": {
             "method": "GET",
-            "header": [{ "key": "x-tenant-id", "value": "{{tenantId}}" }],
-            "url": { "raw": "{{baseUrl}}/api/supply-items/{{supplyItemId}}/price-history" }
+            "header": [
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/supply-items/{{supplyItemId}}/price-history"
           },
           "response": []
         },
@@ -494,8 +564,13 @@
           ],
           "request": {
             "method": "DELETE",
-            "header": [{ "key": "x-tenant-id", "value": "{{tenantId}}" }],
-            "url": { "raw": "{{baseUrl}}/api/supply-items/{{supplyItemId}}" }
+            "header": [
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/supply-items/{{supplyItemId}}"
           },
           "response": []
         }
@@ -537,13 +612,22 @@
               ],
               "request": {
                 "method": "POST",
-                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"name\": \"Test Project\",\n  \"slug\": \"{{projectSlug}}\",\n  \"description\": \"Automated test project\"\n}",
-                  "options": { "raw": { "language": "json" } }
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
                 },
-                "url": { "raw": "{{baseUrl}}/api/testlab/projects" }
+                "url": "{{baseUrl}}/api/testlab/projects"
               },
               "response": []
             },
@@ -564,7 +648,7 @@
               "request": {
                 "method": "GET",
                 "header": [],
-                "url": { "raw": "{{baseUrl}}/api/testlab/projects" }
+                "url": "{{baseUrl}}/api/testlab/projects"
               },
               "response": []
             },
@@ -587,7 +671,7 @@
               "request": {
                 "method": "GET",
                 "header": [],
-                "url": { "raw": "{{baseUrl}}/api/testlab/projects/{{projectId}}" }
+                "url": "{{baseUrl}}/api/testlab/projects/{{projectId}}"
               },
               "response": []
             }
@@ -615,13 +699,22 @@
               ],
               "request": {
                 "method": "POST",
-                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"name\": \"v1.0 Release\",\n  \"dueDate\": \"2026-12-31\",\n  \"description\": \"First stable release\"\n}",
-                  "options": { "raw": { "language": "json" } }
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
                 },
-                "url": { "raw": "{{baseUrl}}/api/testlab/projects/{{projectId}}/milestones" }
+                "url": "{{baseUrl}}/api/testlab/projects/{{projectId}}/milestones"
               },
               "response": []
             },
@@ -642,7 +735,7 @@
               "request": {
                 "method": "GET",
                 "header": [],
-                "url": { "raw": "{{baseUrl}}/api/testlab/projects/{{projectId}}/milestones" }
+                "url": "{{baseUrl}}/api/testlab/projects/{{projectId}}/milestones"
               },
               "response": []
             },
@@ -665,9 +758,7 @@
               "request": {
                 "method": "GET",
                 "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/api/testlab/projects/{{projectId}}/milestones/{{milestoneId}}"
-                }
+                "url": "{{baseUrl}}/api/testlab/projects/{{projectId}}/milestones/{{milestoneId}}"
               },
               "response": []
             }
@@ -695,13 +786,22 @@
               ],
               "request": {
                 "method": "POST",
-                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"title\": \"User must be able to log in with email and password\",\n  \"externalId\": \"REQ-001\",\n  \"description\": \"Standard credential-based login flow\"\n}",
-                  "options": { "raw": { "language": "json" } }
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
                 },
-                "url": { "raw": "{{baseUrl}}/api/testlab/projects/{{projectId}}/requirements" }
+                "url": "{{baseUrl}}/api/testlab/projects/{{projectId}}/requirements"
               },
               "response": []
             },
@@ -722,7 +822,7 @@
               "request": {
                 "method": "GET",
                 "header": [],
-                "url": { "raw": "{{baseUrl}}/api/testlab/projects/{{projectId}}/requirements" }
+                "url": "{{baseUrl}}/api/testlab/projects/{{projectId}}/requirements"
               },
               "response": []
             },
@@ -745,9 +845,7 @@
               "request": {
                 "method": "GET",
                 "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/api/testlab/projects/{{projectId}}/requirements/{{requirementId}}"
-                }
+                "url": "{{baseUrl}}/api/testlab/projects/{{projectId}}/requirements/{{requirementId}}"
               },
               "response": []
             }
@@ -775,13 +873,22 @@
               ],
               "request": {
                 "method": "POST",
-                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"name\": \"Authentication Tests\",\n  \"description\": \"All tests related to auth flows\"\n}",
-                  "options": { "raw": { "language": "json" } }
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
                 },
-                "url": { "raw": "{{baseUrl}}/api/testlab/projects/{{projectId}}/suites" }
+                "url": "{{baseUrl}}/api/testlab/projects/{{projectId}}/suites"
               },
               "response": []
             },
@@ -802,7 +909,7 @@
               "request": {
                 "method": "GET",
                 "header": [],
-                "url": { "raw": "{{baseUrl}}/api/testlab/projects/{{projectId}}/suites" }
+                "url": "{{baseUrl}}/api/testlab/projects/{{projectId}}/suites"
               },
               "response": []
             },
@@ -825,9 +932,7 @@
               "request": {
                 "method": "GET",
                 "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/api/testlab/projects/{{projectId}}/suites/{{suiteId}}"
-                }
+                "url": "{{baseUrl}}/api/testlab/projects/{{projectId}}/suites/{{suiteId}}"
               },
               "response": []
             }
@@ -855,15 +960,22 @@
               ],
               "request": {
                 "method": "POST",
-                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"title\": \"Verify login with valid credentials\",\n  \"priority\": \"HIGH\",\n  \"type\": \"FUNCTIONAL\",\n  \"preconditions\": \"User is on the login page\",\n  \"expectedResult\": \"User is redirected to dashboard\"\n}",
-                  "options": { "raw": { "language": "json" } }
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
                 },
-                "url": {
-                  "raw": "{{baseUrl}}/api/testlab/projects/{{projectId}}/suites/{{suiteId}}/cases"
-                }
+                "url": "{{baseUrl}}/api/testlab/projects/{{projectId}}/suites/{{suiteId}}/cases"
               },
               "response": []
             },
@@ -884,9 +996,7 @@
               "request": {
                 "method": "GET",
                 "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/api/testlab/projects/{{projectId}}/suites/{{suiteId}}/cases"
-                }
+                "url": "{{baseUrl}}/api/testlab/projects/{{projectId}}/suites/{{suiteId}}/cases"
               },
               "response": []
             },
@@ -909,15 +1019,22 @@
               ],
               "request": {
                 "method": "PATCH",
-                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"status\": \"PASS\"\n}",
-                  "options": { "raw": { "language": "json" } }
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
                 },
-                "url": {
-                  "raw": "{{baseUrl}}/api/testlab/projects/{{projectId}}/suites/{{suiteId}}/cases/{{caseId}}/status"
-                }
+                "url": "{{baseUrl}}/api/testlab/projects/{{projectId}}/suites/{{suiteId}}/cases/{{caseId}}/status"
               },
               "response": []
             }
@@ -945,13 +1062,22 @@
               ],
               "request": {
                 "method": "POST",
-                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"name\": \"Regression Run — Sprint 14\",\n  \"description\": \"Full regression pass before release\"\n}",
-                  "options": { "raw": { "language": "json" } }
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
                 },
-                "url": { "raw": "{{baseUrl}}/api/testlab/projects/{{projectId}}/runs" }
+                "url": "{{baseUrl}}/api/testlab/projects/{{projectId}}/runs"
               },
               "response": []
             },
@@ -972,7 +1098,7 @@
               "request": {
                 "method": "GET",
                 "header": [],
-                "url": { "raw": "{{baseUrl}}/api/testlab/projects/{{projectId}}/runs" }
+                "url": "{{baseUrl}}/api/testlab/projects/{{projectId}}/runs"
               },
               "response": []
             },
@@ -995,7 +1121,7 @@
               "request": {
                 "method": "GET",
                 "header": [],
-                "url": { "raw": "{{baseUrl}}/api/testlab/projects/{{projectId}}/runs/{{runId}}" }
+                "url": "{{baseUrl}}/api/testlab/projects/{{projectId}}/runs/{{runId}}"
               },
               "response": []
             }
