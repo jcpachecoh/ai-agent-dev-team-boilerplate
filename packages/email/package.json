@@ -1,0 +1,29 @@
+{
+  "name": "@restopsiq/email",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts",
+    "dev": "tsup src/index.ts --watch",
+    "preview": "email dev --dir src/templates --port 3333",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@react-email/components": "^0.0.22",
+    "@react-email/render": "^0.0.13",
+    "bullmq": "^5.0.0",
+    "react": "^18.0.0",
+    "resend": "^3.0.0"
+  },
+  "devDependencies": {
+    "@restopsiq/tsconfig": "workspace:*",
+    "@types/react": "^18.0.0",
+    "react-email": "^2.1.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.4.0"
+  }
+}

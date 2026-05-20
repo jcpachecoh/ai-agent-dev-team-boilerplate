@@ -9,9 +9,10 @@ import { AuditModule } from './audit/audit.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { AuditInterceptor } from './audit/audit.interceptor';
 import { SupplyItemsModule } from './supplyitems/supplyitems.module';
+import { LockModule } from './lock/lock.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule, AuditModule, TestlabModule, SupplyItemsModule],
+  imports: [PrismaModule, AuthModule, AuditModule, TestlabModule, SupplyItemsModule, LockModule],
   controllers: [AppController],
   providers: [
     AppService,

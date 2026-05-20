@@ -3,6 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { StockUnit } from '@prisma/client';
 import { SupplyItemsService } from '../service/supplyitems.service';
 import { SupplyItemsRepository } from '../repository/supplyitems.repository';
+import { LockService } from '../../lock/service/lock.service';
 import { CreateSupplyItemDto } from '../controller/dto/create-supplyitem.dto';
 
 const tenantId = 'tenant-123';
@@ -33,7 +34,13 @@ const repoMock = {
   update: jest.fn(),
   delete: jest.fn(),
   findSuppliers: jest.fn(),
+  findPriceHistory: jest.fn(),
+  updateCppWithHistory: jest.fn(),
   findCategoryById: jest.fn(),
+};
+
+const lockServiceMock = {
+  usingLock: jest.fn((key, ttl, cb) => cb()),
 };
 
 describe('SupplyItemsService', () => {
@@ -41,7 +48,11 @@ describe('SupplyItemsService', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [SupplyItemsService, { provide: SupplyItemsRepository, useValue: repoMock }],
+      providers: [
+        SupplyItemsService,
+        { provide: SupplyItemsRepository, useValue: repoMock },
+        { provide: LockService, useValue: lockServiceMock },
+      ],
     }).compile();
 
     service = module.get<SupplyItemsService>(SupplyItemsService);
@@ -153,6 +164,75 @@ describe('SupplyItemsService', () => {
       repoMock.findById.mockResolvedValue(null);
 
       await expect(service.findSuppliers(tenantId, 'unknown')).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('findPriceHistory', () => {
+    const mockPriceHistory = [
+      {
+        id: 'hist-1',
+        tenantId,
+        supplyItemId: 'item-1',
+        costoAnterior: '100.0',
+        costoNuevo: '105.0',
+        createdAt: new Date(),
+      },
+    ];
+
+    it('should return price history for the supply item', async () => {
+      repoMock.findById.mockResolvedValue(mockSupplyItem);
+      repoMock.findPriceHistory.mockResolvedValue(mockPriceHistory);
+
+      const result = await service.findPriceHistory(tenantId, 'item-1');
+
+      expect(result).toEqual(mockPriceHistory);
+      expect(repoMock.findById).toHaveBeenCalledWith(tenantId, 'item-1');
+      expect(repoMock.findPriceHistory).toHaveBeenCalledWith(tenantId, 'item-1');
+    });
+
+    it('should throw NotFoundException if item does not exist or belongs to another tenant', async () => {
+      repoMock.findById.mockResolvedValue(null);
+
+      await expect(service.findPriceHistory(tenantId, 'unknown')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
+
+  describe('updateCppAtomically', () => {
+    const input = {
+      stockActual: '10',
+      cantidadRecibida: '10',
+      costoNuevo: '7',
+      referenciaTipo: 'RECEPCION',
+      referenciaId: 'rec-1',
+      createdBy: 'user-1',
+    };
+
+    it('should acquire lock and update CPP with history', async () => {
+      repoMock.findById.mockResolvedValue(mockSupplyItem);
+      repoMock.updateCppWithHistory.mockResolvedValue({
+        ...mockSupplyItem,
+        costoPromedioPonderado: '6',
+      });
+
+      const result = await service.updateCppAtomically(tenantId, 'item-1', input);
+
+      expect(lockServiceMock.usingLock).toHaveBeenCalledWith(
+        'supply-item-cpp:tenant-123:item-1',
+        5000,
+        expect.any(Function),
+      );
+      expect(repoMock.updateCppWithHistory).toHaveBeenCalled();
+      expect(result.costoPromedioPonderado).toBe('6');
+    });
+
+    it('should throw NotFoundException if item not found', async () => {
+      repoMock.findById.mockResolvedValue(null);
+
+      await expect(service.updateCppAtomically(tenantId, 'item-1', input)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 });

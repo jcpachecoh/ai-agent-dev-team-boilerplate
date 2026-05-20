@@ -39,6 +39,8 @@
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "passport-local": "^1.0.0",
+    "ioredis": "^5.10.1",
+    "redlock": "4.2.0",
     "reflect-metadata": "^0.2.0",
     "rxjs": "^7.8.0",
     "swagger-ui-express": "^5.0.1"
@@ -52,6 +54,7 @@
     "@types/node": "^20.0.0",
     "@types/passport-jwt": "^4.0.1",
     "@types/passport-local": "^1.0.38",
+    "@types/redlock": "^4.0.8",
     "@types/supertest": "^6.0.0",
     "jest": "^29.7.0",
     "prisma": "^5.22.0",
@@ -60,6 +63,7 @@
     "typescript": "^5.4.0"
   },
   "prisma": {
-    "schema": "prisma/schema.prisma"
+    "schema": "prisma/schema.prisma",
+    "seed": "npx tsx prisma/seed.ts"
   }
 }

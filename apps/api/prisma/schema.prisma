@@ -24,14 +24,14 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  projectMembers      ProjectMember[]
-  casesCreated        TestCase[]   @relation("CasesCreated")
-  plansCreated        TestPlan[]   @relation("PlansCreated")
-  runsCreated         TestRun[]    @relation("RunsCreated")
-  runsAssigned        TestRun[]    @relation("RunsAssigned")
-  resultsAssigned     TestResult[] @relation("ResultsAssigned")
-  resultsExecuted     TestResult[] @relation("ResultsExecuted")
-  attachmentsUploaded Attachment[] @relation("AttachmentsUploaded")
+  projectMembers        ProjectMember[]
+  casesCreated          TestCase[]   @relation("CasesCreated")
+  plansCreated          TestPlan[]   @relation("PlansCreated")
+  runsCreated           TestRun[]    @relation("RunsCreated")
+  runsAssigned          TestRun[]    @relation("RunsAssigned")
+  resultsAssigned       TestResult[] @relation("ResultsAssigned")
+  resultsExecuted       TestResult[] @relation("ResultsExecuted")
+  attachmentsUploaded Attachment[]   @relation("AttachmentsUploaded")
   auditLogs           AuditLog[]
 
   @@map("users")
@@ -346,6 +346,8 @@ model AuditLog {
   @@index([userId])
   @@map("audit_logs")
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
 // SUPPLIERS
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -437,8 +439,9 @@ model SupplyItem {
   createdAt              DateTime  @default(now())
   updatedAt              DateTime  @updatedAt
 
-  categoria        SupplyCategory    @relation(fields: [categoriaId], references: [id])
+  categoria        SupplyCategory           @relation(fields: [categoriaId], references: [id])
   supplierProducts SupplierProduct[]
+  priceHistory     SupplyItemPriceHistory[]
 
   @@unique([tenantId, codigoInterno])
   @@index([tenantId, categoriaId])
@@ -470,4 +473,30 @@ model SupplierProduct {
   @@index([tenantId, supplierId])
   @@index([tenantId, supplyItemId])
   @@map("supplier_products")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PRICE HISTORY
+// ─────────────────────────────────────────────────────────────────────────────
+
+model SupplyItemPriceHistory {
+  id               String   @id @default(cuid())
+  tenantId         String
+  supplyItemId     String
+  costoAnterior    Decimal
+  costoNuevo       Decimal
+  cantidadRecibida Decimal?
+  stockAnterior    Decimal?
+  stockNuevo       Decimal?
+  motivo           String?
+  referenciaTipo   String?
+  referenciaId     String?
+  createdBy        String?
+  createdAt        DateTime @default(now())
+
+  supplyItem SupplyItem @relation(fields: [supplyItemId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, supplyItemId])
+  @@index([tenantId, createdAt])
+  @@map("supply_item_price_history")
 }

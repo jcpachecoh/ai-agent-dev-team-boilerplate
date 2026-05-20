@@ -1,0 +1,44 @@
+{
+  "id": "e1f2a3b4-c5d6-7890-efab-cd1234567890",
+  "name": "RestOpsIQ — Local",
+  "values": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3001",
+      "type": "default",
+      "enabled": true,
+      "description": "API host — no trailing slash. PORT is set by apps/api process.env.PORT (default 3001)."
+    },
+    {
+      "key": "email",
+      "value": "test@restopsiq.dev",
+      "type": "default",
+      "enabled": true,
+      "description": "Email of the seeded test user. Must exist in the local database before running the collection."
+    },
+    {
+      "key": "password",
+      "value": "TestPass123!",
+      "type": "secret",
+      "enabled": true,
+      "description": "Password for the seeded test user. Min 8 chars (SignupDto constraint). Do NOT commit real passwords here."
+    },
+    {
+      "key": "tenantId",
+      "value": "REPLACE_WITH_SEEDED_TENANT_UUID",
+      "type": "default",
+      "enabled": true,
+      "description": "CUID/UUID of an existing Tenant row in the local database. Required by all /supply-items routes via x-tenant-id header."
+    },
+    {
+      "key": "categoryId",
+      "value": "REPLACE_WITH_SEEDED_CATEGORY_UUID",
+      "type": "default",
+      "enabled": true,
+      "description": "CUID/UUID of an existing SupplyCategory row belonging to the above tenant. Required by the Create Supply Item body field categoriaId."
+    }
+  ],
+  "_postman_variable_scope": "environment",
+  "_postman_exported_at": "2026-05-19T00:00:00.000Z",
+  "_postman_exported_using": "restopsiq-platform/postman"
+}
