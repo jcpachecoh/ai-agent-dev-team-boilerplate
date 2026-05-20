@@ -9,6 +9,22 @@
 
 .title { font-size: 1.5rem; font-weight: 600; }
 
+.headerActions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.btnAddCase {
+  background-color: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: var(--space-2) var(--space-4);
+}
+
 .btnNew {
   background-color: var(--color-accent);
   border: none;
@@ -20,6 +36,12 @@
   transition: background-color 0.15s;
 }
 .btnNew:hover { background-color: var(--color-accent-hover); }
+
+.contextHint {
+  margin-bottom: var(--space-3);
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+}
 
 .empty { color: var(--color-text-secondary); font-size: 0.875rem; }
 
