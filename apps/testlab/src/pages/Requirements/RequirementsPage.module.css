@@ -51,3 +51,44 @@
 }
 
 .itemDesc { font-size: 0.8125rem; color: var(--color-text-secondary); margin-top: var(--space-1); }
+
+.btnCases {
+  margin-top: var(--space-2);
+  align-self: flex-start;
+  background-color: transparent;
+  color: var(--color-accent);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  padding: 2px var(--space-2);
+}
+
+.casesWrap {
+  margin-top: var(--space-2);
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-2);
+}
+
+.casesEmpty {
+  color: var(--color-text-secondary);
+  font-size: 0.8125rem;
+}
+
+.casesList {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.caseItem {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  font-size: 0.8125rem;
+}
+
+.caseMeta {
+  font-family: var(--font-mono);
+  color: var(--color-text-secondary);
+}

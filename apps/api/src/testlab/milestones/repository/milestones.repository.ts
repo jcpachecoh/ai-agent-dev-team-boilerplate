@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { Milestone } from '@prisma/client';
+import type { Milestone, TestCase } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
 import type {
   IMilestonesRepository,
@@ -23,5 +23,24 @@ export class MilestonesRepository implements IMilestonesRepository {
 
   create(data: CreateMilestoneData): Promise<Milestone> {
     return this.prisma.milestone.create({ data });
+  }
+
+  findCases(projectId: string, id: string): Promise<TestCase[]> {
+    return this.prisma.testCase.findMany({
+      where: {
+        suite: {
+          projectId,
+          planEntries: {
+            some: {
+              plan: {
+                projectId,
+                milestoneId: id,
+              },
+            },
+          },
+        },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
   }
 }

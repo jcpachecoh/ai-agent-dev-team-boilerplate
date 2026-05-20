@@ -17,6 +17,22 @@ const repoMock = {
   findAll: jest.fn(),
   findOne: jest.fn(),
   create: jest.fn(),
+  findCases: jest.fn(),
+};
+
+const mockCase = {
+  id: 'case-1',
+  title: 'Login works',
+  priority: 'MEDIUM',
+  type: 'FUNCTIONAL',
+  status: 'UNTESTED',
+  preconditions: null,
+  expectedResult: null,
+  sectionId: null,
+  suiteId: 'suite-1',
+  createdById: 'user-1',
+  createdAt: new Date(),
+  updatedAt: new Date(),
 };
 
 describe('RequirementsService', () => {
@@ -60,6 +76,22 @@ describe('RequirementsService', () => {
       const result = await service.create('proj-1', dto as any);
       expect(result).toEqual(mockReq);
       expect(repoMock.create).toHaveBeenCalledWith({ ...dto, projectId: 'proj-1' });
+    });
+  });
+
+  describe('findCases', () => {
+    it('returns linked test cases when requirement exists', async () => {
+      repoMock.findOne.mockResolvedValue(mockReq);
+      repoMock.findCases.mockResolvedValue([mockCase]);
+      const result = await service.findCases('proj-1', 'req-1');
+      expect(result).toEqual([mockCase]);
+      expect(repoMock.findCases).toHaveBeenCalledWith('proj-1', 'req-1');
+    });
+
+    it('throws NotFoundException when requirement does not exist', async () => {
+      repoMock.findOne.mockResolvedValue(null);
+      await expect(service.findCases('proj-1', 'missing')).rejects.toThrow(NotFoundException);
+      expect(repoMock.findCases).not.toHaveBeenCalled();
     });
   });
 });

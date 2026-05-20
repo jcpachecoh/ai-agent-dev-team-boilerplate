@@ -18,6 +18,22 @@ const serviceMock = {
   findAll: jest.fn(),
   findOne: jest.fn(),
   create: jest.fn(),
+  findCases: jest.fn(),
+};
+
+const mockCase = {
+  id: 'case-1',
+  title: 'Checkout works',
+  priority: 'MEDIUM',
+  type: 'FUNCTIONAL',
+  status: 'UNTESTED',
+  preconditions: null,
+  expectedResult: null,
+  sectionId: null,
+  suiteId: 'suite-1',
+  createdById: 'user-1',
+  createdAt: new Date(),
+  updatedAt: new Date(),
 };
 
 describe('MilestonesController', () => {
@@ -53,5 +69,12 @@ describe('MilestonesController', () => {
     const result = await controller.create('proj-1', dto);
     expect(result).toEqual(mockMilestone);
     expect(serviceMock.create).toHaveBeenCalledWith('proj-1', dto);
+  });
+
+  it('findCases delegates to service', async () => {
+    serviceMock.findCases.mockResolvedValue([mockCase]);
+    const result = await controller.findCases('proj-1', 'ms-1');
+    expect(result).toEqual([mockCase]);
+    expect(serviceMock.findCases).toHaveBeenCalledWith('proj-1', 'ms-1');
   });
 });

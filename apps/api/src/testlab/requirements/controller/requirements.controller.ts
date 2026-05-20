@@ -9,7 +9,7 @@ import {
 } from '@nestjs/swagger';
 import { RequirementsService } from '../service/requirements.service';
 import { CreateRequirementDto } from './dto/create-requirement.dto';
-import type { Requirement } from '@prisma/client';
+import type { Requirement, TestCase } from '@prisma/client';
 
 @ApiBearerAuth()
 @ApiTags('requirements')
@@ -33,6 +33,16 @@ export class RequirementsController {
   @Get(':id')
   findOne(@Param('projectId') projectId: string, @Param('id') id: string): Promise<Requirement> {
     return this.requirementsService.findOne(projectId, id);
+  }
+
+  @ApiOperation({ summary: 'List test cases linked to a requirement' })
+  @ApiParam({ name: 'projectId', description: 'Project UUID' })
+  @ApiParam({ name: 'id', description: 'Requirement UUID' })
+  @ApiResponse({ status: 200, description: 'Array of linked test cases' })
+  @ApiResponse({ status: 404, description: 'Requirement not found' })
+  @Get(':id/cases')
+  findCases(@Param('projectId') projectId: string, @Param('id') id: string): Promise<TestCase[]> {
+    return this.requirementsService.findCases(projectId, id);
   }
 
   @ApiOperation({ summary: 'Create a new requirement' })

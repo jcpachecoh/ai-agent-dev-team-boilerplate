@@ -12,6 +12,13 @@ export interface Milestone {
   updatedAt: string;
 }
 
+export interface MilestoneCase {
+  id: string;
+  title: string;
+  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  status: 'UNTESTED' | 'PASS' | 'FAIL' | 'BLOCKED' | 'RETEST' | 'SKIPPED';
+}
+
 export const milestonesService = {
   list: (projectId: string): Promise<Milestone[]> =>
     http.request<Milestone[]>(`/projects/${projectId}/milestones`),
@@ -23,4 +30,6 @@ export const milestonesService = {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
+  getCases: (projectId: string, milestoneId: string): Promise<MilestoneCase[]> =>
+    http.request<MilestoneCase[]>(`/projects/${projectId}/milestones/${milestoneId}/cases`),
 };

@@ -8,6 +8,9 @@ const prismaMock = {
     findFirst: jest.fn(),
     create: jest.fn(),
   },
+  testCase: {
+    findMany: jest.fn(),
+  },
 };
 
 describe('MilestonesRepository', () => {
@@ -49,6 +52,29 @@ describe('MilestonesRepository', () => {
       prismaMock.milestone.create.mockResolvedValue({ id: 'ms-1', ...data });
       await repository.create(data as any);
       expect(prismaMock.milestone.create).toHaveBeenCalledWith({ data });
+    });
+  });
+
+  describe('findCases', () => {
+    it('queries testCase.findMany for milestone-linked cases in project', async () => {
+      prismaMock.testCase.findMany.mockResolvedValue([]);
+      await repository.findCases('proj-1', 'ms-1');
+      expect(prismaMock.testCase.findMany).toHaveBeenCalledWith({
+        where: {
+          suite: {
+            projectId: 'proj-1',
+            planEntries: {
+              some: {
+                plan: {
+                  projectId: 'proj-1',
+                  milestoneId: 'ms-1',
+                },
+              },
+            },
+          },
+        },
+        orderBy: { createdAt: 'asc' },
+      });
     });
   });
 });

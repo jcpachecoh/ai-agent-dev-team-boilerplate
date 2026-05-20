@@ -26,6 +26,7 @@ function dueStatus(
 export function MilestonesPage(): JSX.Element {
   const { projectId } = useParams<{ projectId: string }>();
   const [showModal, setShowModal] = useState(false);
+  const [selectedMilestoneId, setSelectedMilestoneId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   const { data: milestones = [], isLoading } = useQuery({
@@ -45,6 +46,12 @@ export function MilestonesPage(): JSX.Element {
       void queryClient.invalidateQueries({ queryKey: ['milestones', projectId] });
       setShowModal(false);
     },
+  });
+
+  const { data: milestoneCases = [], isLoading: isCasesLoading } = useQuery({
+    queryKey: ['milestone-cases', projectId, selectedMilestoneId],
+    queryFn: () => milestonesService.getCases(projectId!, selectedMilestoneId!),
+    enabled: Boolean(projectId && selectedMilestoneId),
   });
 
   return (
@@ -78,6 +85,34 @@ export function MilestonesPage(): JSX.Element {
                 {m.dueDate && <span>Due {formatDate(m.dueDate)}</span>}
                 {m.description && <span className={styles.itemDesc}>{m.description}</span>}
               </div>
+              <button
+                className={styles.btnCases}
+                onClick={() => setSelectedMilestoneId((prevId) => (prevId === m.id ? null : m.id))}
+              >
+                {selectedMilestoneId === m.id ? 'Hide test cases' : 'Show test cases'}
+              </button>
+              {selectedMilestoneId === m.id && (
+                <div className={styles.casesWrap}>
+                  {isCasesLoading && (
+                    <p className={styles.casesEmpty}>Loading linked test cases…</p>
+                  )}
+                  {!isCasesLoading && milestoneCases.length === 0 && (
+                    <p className={styles.casesEmpty}>No linked test cases.</p>
+                  )}
+                  {!isCasesLoading && milestoneCases.length > 0 && (
+                    <ul className={styles.casesList}>
+                      {milestoneCases.map((testCase) => (
+                        <li key={testCase.id} className={styles.caseItem}>
+                          <span>{testCase.title}</span>
+                          <code className={styles.caseMeta}>
+                            {testCase.priority} · {testCase.status}
+                          </code>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
             </li>
           );
         })}

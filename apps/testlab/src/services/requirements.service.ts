@@ -10,6 +10,13 @@ export interface Requirement {
   updatedAt: string;
 }
 
+export interface RequirementCase {
+  id: string;
+  title: string;
+  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  status: 'UNTESTED' | 'PASS' | 'FAIL' | 'BLOCKED' | 'RETEST' | 'SKIPPED';
+}
+
 export const requirementsService = {
   list: (projectId: string): Promise<Requirement[]> =>
     http.request<Requirement[]>(`/projects/${projectId}/requirements`),
@@ -21,4 +28,6 @@ export const requirementsService = {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
+  getCases: (projectId: string, requirementId: string): Promise<RequirementCase[]> =>
+    http.request<RequirementCase[]>(`/projects/${projectId}/requirements/${requirementId}/cases`),
 };

@@ -9,7 +9,7 @@ import {
 } from '@nestjs/swagger';
 import { MilestonesService } from '../service/milestones.service';
 import { CreateMilestoneDto } from './dto/create-milestone.dto';
-import type { Milestone } from '@prisma/client';
+import type { Milestone, TestCase } from '@prisma/client';
 
 @ApiBearerAuth()
 @ApiTags('milestones')
@@ -33,6 +33,16 @@ export class MilestonesController {
   @Get(':id')
   findOne(@Param('projectId') projectId: string, @Param('id') id: string): Promise<Milestone> {
     return this.milestonesService.findOne(projectId, id);
+  }
+
+  @ApiOperation({ summary: 'List test cases linked to a milestone' })
+  @ApiParam({ name: 'projectId', description: 'Project UUID' })
+  @ApiParam({ name: 'id', description: 'Milestone UUID' })
+  @ApiResponse({ status: 200, description: 'Array of linked test cases' })
+  @ApiResponse({ status: 404, description: 'Milestone not found' })
+  @Get(':id/cases')
+  findCases(@Param('projectId') projectId: string, @Param('id') id: string): Promise<TestCase[]> {
+    return this.milestonesService.findCases(projectId, id);
   }
 
   @ApiOperation({ summary: 'Create a new milestone' })

@@ -66,3 +66,44 @@
 .s_overdue  { background-color: rgba(218, 54, 51, 0.15);   color: #f85149; }
 .s_upcoming { background-color: rgba(210, 153, 34, 0.15);  color: #e3b341; }
 .s_none     { background-color: rgba(139, 148, 158, 0.1);  color: #8b949e; }
+
+.btnCases {
+  margin-top: var(--space-2);
+  align-self: flex-start;
+  background-color: transparent;
+  color: var(--color-accent);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  padding: 2px var(--space-2);
+}
+
+.casesWrap {
+  margin-top: var(--space-2);
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-2);
+}
+
+.casesEmpty {
+  color: var(--color-text-secondary);
+  font-size: 0.8125rem;
+}
+
+.casesList {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.caseItem {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  font-size: 0.8125rem;
+}
+
+.caseMeta {
+  font-family: var(--font-mono);
+  color: var(--color-text-secondary);
+}
