@@ -1,5 +1,5 @@
-import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
+
 import NavItem from '.';
 
 const meta: Meta<typeof NavItem> = {

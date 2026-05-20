@@ -2,27 +2,43 @@
 
 .item {
   display: flex;
-  gap: $spacing-md;
   align-items: center;
-  padding: 9px 13px;
+  gap: $spacing-md;
+  min-height: 40px;
+  padding: 8px 13px;
   border-radius: 10px;
   cursor: pointer;
   user-select: none;
 }
 
 .icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 15px;
   height: 15px;
   min-width: 15px;
-  display: inline-block;
+  color: currentColor;
+  line-height: 0;
 }
+
 .icon img {
+  display: block;
   width: 15px;
   height: 15px;
+}
+
+.icon svg {
   display: block;
+  width: 17px;
+  height: 17px;
+  color: currentColor;
+  stroke: currentColor;
+  stroke-width: 2;
 }
 
 .label {
+  color: currentColor;
   font-weight: $font-weight-regular;
   font-size: 12.8px;
   line-height: 19.2px;
@@ -30,23 +46,34 @@
 }
 
 /* Light variant */
-.light .label {
-  color: #52526a;
-}
 .light {
-  background: transparent;
+  color: #52526a;
 }
 
 /* Dark variant */
-.dark .label {
-  color: #8888a0;
-}
 .dark {
   background: transparent;
+  color: #f8fafc;
+}
+
+.dark .icon img {
+  filter: brightness(0) invert(1);
+  opacity: 0.92;
 }
 
 .active {
   background: rgba(212, 160, 23, 0.06);
   border: $border-width solid rgba(212, 160, 23, 0.15);
   border-radius: 10px;
+  color: #d4a017;
+}
+
+.light.active {
+  background: rgba(212, 160, 23, 0.1);
+  border-color: rgba(212, 160, 23, 0.26);
+  color: #18181f;
+}
+
+.light.active .icon {
+  color: #d4a017;
 }

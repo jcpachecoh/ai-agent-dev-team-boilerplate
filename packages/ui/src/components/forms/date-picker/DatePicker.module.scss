@@ -1,0 +1,247 @@
+@use '../../../styles/abstracts/variables' as *;
+
+.container {
+  --control-width: 320px;
+
+  width: min(100%, var(--control-width));
+}
+
+.size--sm {
+  --control-width: 220px;
+}
+.size--md {
+  --control-width: 320px;
+}
+.size--xl {
+  --control-width: 480px;
+}
+
+.size--sm .inputWrapper {
+  height: 32px;
+}
+.size--md .inputWrapper {
+  height: 40px;
+}
+.size--xl .inputWrapper {
+  height: 52px;
+  padding: 0 $spacing-md;
+}
+
+.size--sm .input {
+  font-size: $font-size-xs;
+}
+.size--xl .input {
+  font-size: $font-size-base;
+}
+
+.inputWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 40px;
+  border-radius: $border-radius-md;
+  padding: 0 $spacing-sm;
+  background-color: transparent;
+  border: $border-width solid rgba($color-black, 0.16);
+  transition: all $transition-fast;
+}
+
+.input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  font-family: $font-family-base;
+  font-size: $font-size-sm;
+  color: inherit;
+  outline: none;
+
+  &::placeholder {
+    color: $color-text-secondary;
+    opacity: 0.6;
+  }
+}
+
+.trigger {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: $spacing-xs;
+  color: $color-text-secondary;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover:not(:disabled) {
+    color: $color-primary;
+  }
+}
+
+.popoverContent {
+  z-index: 1000;
+  background-color: $color-white;
+  border-radius: $border-radius-lg;
+  border: $border-width solid $color-border;
+  box-shadow: $shadow-lg;
+  padding: $spacing-md;
+  min-width: 304px;
+  color: $color-text-primary;
+  animation: slideDownAndFade 0.2s ease-out;
+
+  :global(.dark) & {
+    background-color: $color-gray-900;
+    border-color: rgba($color-white, 0.1);
+    color: $color-text-inverse;
+  }
+}
+
+@keyframes slideDownAndFade {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// DayPicker Styles
+.months {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+.month {
+  margin-top: $spacing-sm;
+}
+.caption {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  align-items: center;
+  height: 32px;
+}
+.captionLabel {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+}
+.nav {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+.navButton {
+  height: 28px;
+  width: 28px;
+  background-color: transparent;
+  padding: 0;
+  opacity: 0.85;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-sm;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  &:hover {
+    opacity: 1;
+    background-color: $color-gray-100;
+  }
+  :global(.dark) &:hover {
+    background-color: rgba($color-white, 0.1);
+  }
+}
+.navButtonPrevious {
+  position: absolute;
+  left: 1px;
+}
+.navButtonNext {
+  position: absolute;
+  right: 1px;
+}
+.table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 2px;
+  margin-top: $spacing-sm;
+}
+.headRow,
+.row {
+  display: grid;
+  grid-template-columns: repeat(7, 36px);
+  justify-content: center;
+  width: 100%;
+}
+.headCell {
+  color: $color-text-secondary;
+  border-radius: $border-radius-md;
+  width: 36px;
+  font-weight: $font-weight-regular;
+  font-size: 0.8rem;
+  text-align: center;
+}
+.cell {
+  position: relative;
+  padding: 0;
+  text-align: center;
+  font-size: $font-size-sm;
+  width: 36px;
+  height: 36px;
+}
+.day {
+  height: 36px;
+  width: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: $border-radius-md;
+  cursor: pointer;
+  transition: all $transition-fast;
+  color: inherit;
+  &:hover {
+    background-color: $color-gray-100;
+    color: $color-text-primary;
+  }
+  :global(.dark) &:hover {
+    background-color: rgba($color-white, 0.1);
+    color: $color-text-inverse;
+  }
+}
+.daySelected {
+  background-color: #d4a017 !important;
+  color: $color-black !important;
+}
+.dayToday {
+  font-weight: $font-weight-bold;
+  color: #d4a017;
+}
+.dayOutside {
+  opacity: 0.3;
+  pointer-events: none;
+}
+.dayDisabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+// Themes
+.theme--dark {
+  .inputWrapper {
+    background-color: rgba($color-white, 0.05);
+    border-color: rgba($color-white, 0.1);
+    color: $color-text-inverse;
+    &:focus-within {
+      border-color: #d4a017;
+    }
+  }
+}
+
+.theme--light {
+  .inputWrapper {
+    background-color: $color-white;
+    border-color: rgba($color-black, 0.16);
+    color: $color-text-primary;
+    &:focus-within {
+      border-color: #d4a017;
+    }
+  }
+}
