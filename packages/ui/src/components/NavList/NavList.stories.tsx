@@ -7,6 +7,15 @@ const meta: Meta<typeof NavList> = {
   title: 'Moleculas/NavList',
   component: NavList,
   tags: ['autodocs'],
+  args: {
+    theme: 'light',
+  },
+  argTypes: {
+    theme: {
+      control: 'radio',
+      options: ['light', 'dark'],
+    },
+  },
 };
 
 export default meta;

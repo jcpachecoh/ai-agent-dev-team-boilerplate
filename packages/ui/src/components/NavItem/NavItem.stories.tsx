@@ -6,6 +6,15 @@ const meta: Meta<typeof NavItem> = {
   title: 'Atomos/NavItem',
   component: NavItem,
   tags: ['autodocs'],
+  args: {
+    variant: 'light',
+  },
+  argTypes: {
+    variant: {
+      control: 'radio',
+      options: ['light', 'dark'],
+    },
+  },
 };
 
 export default meta;

@@ -24,3 +24,9 @@ export * from './components/forms/file-upload';
 
 // Styles — import this in your app entry point for global base styles
 // e.g.: import "@restopsiq/ui/src/styles/main.scss";
+
+export * from './components/data-display/data-list';
+export * from './components/data-display/data-table';
+export * from './components/data-display/kpi-card';
+export * from './components/data-display/status-badge';
+export * from './components/data-display/timeline';
