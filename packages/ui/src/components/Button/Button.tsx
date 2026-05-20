@@ -28,6 +28,8 @@ export function Button({
   return (
     <button
       className={combinedClassName}
+      data-variant={variant}
+      data-size={size}
       disabled={loading || props.disabled}
       {...props}
       aria-busy={loading}

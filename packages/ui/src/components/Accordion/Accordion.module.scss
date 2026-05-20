@@ -1,0 +1,401 @@
+@use '../../styles/abstracts/variables' as *;
+
+// ─── Design tokens (override/extend from variables) ──────────────────────────
+// These mirror the RestOpsIQ dark-theme palette visible in the dashboard.
+// If your variables already expose these, replace the fallback values.
+$acc-bg-surface: var(--color-surface, #1a1a1a);
+$acc-bg-trigger: var(--color-surface-raised, #1f1f1f);
+$acc-bg-content: var(--color-surface-deep, #161616);
+$acc-border-default: var(--color-border, rgba(255, 255, 255, 0.07));
+$acc-radius: 12px;
+$acc-accent-width: 3px; // slim left-bar — cleaner on dark bg
+
+// Semantic accent colours (match the badge/tag colours in the UI)
+$acc-color-primary: var(--color-warning, #f5a623); // amber  — urgente
+$acc-color-success: var(--color-success, #4caf7d); // green  — completed
+$acc-color-warning: var(--color-primary, #7c6af7); // violet — info / FEFO
+
+// ─── Root ────────────────────────────────────────────────────────────────────
+.root {
+  border-radius: $border-radius-md;
+  width: 100%;
+  background-color: transparent;
+  overflow: hidden;
+}
+
+// ─── Item ────────────────────────────────────────────────────────────────────
+.item {
+  overflow: hidden;
+  margin-top: 8px;
+  border-radius: $acc-radius;
+  background: $acc-bg-surface;
+  border: $border-width solid $acc-border-default;
+  transition:
+    border-color 200ms ease,
+    box-shadow 200ms ease;
+
+  &:first-child {
+    margin-top: 0;
+  }
+
+  &:hover {
+    /* Size helpers: affect trigger height/spacing and item width */
+    .triggerSm {
+      padding: $spacing-sm;
+      font-size: $font-size-sm;
+      min-height: 40px;
+    }
+    .triggerMd {
+      padding: $spacing-md;
+      font-size: $font-size-base;
+      min-height: 56px;
+    }
+    .triggerLg {
+      padding: $spacing-lg;
+      font-size: $font-size-lg;
+      min-height: 72px;
+    }
+
+    .itemSm {
+      max-width: 360px;
+    }
+    .itemMd {
+      max-width: 720px;
+    }
+    .itemLg {
+      max-width: 1080px;
+    }
+    border-color: rgba(255, 255, 255, 0.12);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+  }
+}
+
+// ── Variant borders (thin left accent via box-shadow inset) ──────────────────
+.item--primary {
+  border-color: rgba($acc-color-primary, 0.25);
+  box-shadow: inset #{$acc-accent-width} 0 0 $acc-color-primary;
+
+  &:hover {
+    box-shadow:
+      inset #{$acc-accent-width} 0 0 $acc-color-primary,
+      0 2px 14px rgba(0, 0, 0, 0.4);
+  }
+}
+.item--success {
+  border-color: rgba($acc-color-success, 0.22);
+  box-shadow: inset #{$acc-accent-width} 0 0 $acc-color-success;
+
+  &:hover {
+    box-shadow:
+      inset #{$acc-accent-width} 0 0 $acc-color-success,
+      0 2px 14px rgba(0, 0, 0, 0.4);
+  }
+}
+.item--warning {
+  border-color: rgba($acc-color-warning, 0.2);
+  box-shadow: inset #{$acc-accent-width} 0 0 $acc-color-warning;
+
+  &:hover {
+    box-shadow:
+      inset #{$acc-accent-width} 0 0 $acc-color-warning,
+      0 2px 14px rgba(0, 0, 0, 0.4);
+  }
+}
+
+// ─── Header ──────────────────────────────────────────────────────────────────
+.header {
+  display: flex;
+  margin: 0;
+}
+
+// ─── Trigger ─────────────────────────────────────────────────────────────────
+.trigger {
+  font-family: inherit;
+  background-color: $acc-bg-trigger;
+  padding: 14px 18px 14px 16px;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: $font-size-base;
+  font-weight: $font-weight-medium;
+  color: $color-text-primary;
+  border: none;
+  cursor: pointer;
+  border-top-left-radius: $acc-radius;
+  border-top-right-radius: $acc-radius;
+  transition: background-color $transition-fast;
+  user-select: none;
+
+  // Closed state: square bottom corners so item looks sealed
+  &[data-state='closed'] {
+    border-bottom-left-radius: $acc-radius;
+    border-bottom-right-radius: $acc-radius;
+  }
+  &[data-state='open'] {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.04);
+  }
+  &:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.25);
+    outline-offset: -2px;
+  }
+}
+
+/* Size helpers */
+.triggerSm {
+  padding: 8px 12px;
+  font-size: $font-size-sm;
+}
+.triggerMd {
+  padding: 14px 18px 14px 16px;
+  font-size: $font-size-base;
+}
+.triggerLg {
+  padding: 18px 22px;
+  font-size: $font-size-lg;
+}
+
+/* Size helpers similar to BadgeButton */
+.triggerSm {
+  padding: 8px 12px;
+  font-size: $font-size-sm;
+}
+.triggerMd {
+  padding: 14px 18px 14px 16px;
+  font-size: $font-size-base;
+}
+.triggerLg {
+  padding: 18px 22px;
+  font-size: $font-size-lg;
+}
+
+// ── Accent pill (kept for backward compat, visually slimmed down) ─────────────
+.accent {
+  display: inline-block;
+  width: 6px;
+  height: 28px;
+  border-radius: 4px;
+  flex: 0 0 auto;
+  opacity: 0.85;
+}
+
+.item--primary .accent {
+  background: linear-gradient(
+    180deg,
+    $acc-color-primary,
+    color-mix(in srgb, $acc-color-primary 80%, black)
+  );
+}
+.item--success .accent {
+  background: linear-gradient(
+    180deg,
+    $acc-color-success,
+    color-mix(in srgb, $acc-color-success 80%, black)
+  );
+}
+.item--warning .accent {
+  background: linear-gradient(
+    180deg,
+    $acc-color-warning,
+    color-mix(in srgb, $acc-color-warning 80%, black)
+  );
+}
+
+// ── Chevron icon ──────────────────────────────────────────────────────────────
+.icon {
+  color: rgba(255, 255, 255, 0.35);
+  flex-shrink: 0;
+  transition:
+    transform 240ms cubic-bezier(0.16, 1, 0.3, 1),
+    color 200ms ease;
+
+  .trigger:hover & {
+    color: rgba(255, 255, 255, 0.6);
+  }
+}
+.trigger[data-state='open'] .icon {
+  transform: rotate(180deg);
+  color: rgb(250, 250, 250);
+}
+
+// ── Trigger left group (accent + label) ──────────────────────────────────────
+.triggerLabel {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.triggerTitle {
+  font-size: $font-size-base;
+  font-weight: $font-weight-medium;
+  color: $color-gray-300;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+// Optional meta row (weight · volume · time) matching the card style in image
+.triggerMeta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 2px;
+  font-size: $font-size-xs;
+  color: rgba(255, 255, 255, 0.4);
+  white-space: nowrap;
+
+  span {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+}
+
+// ── Badges (URGENTE / FEFO / Alta / Media) ────────────────────────────────────
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 5px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 1.6;
+  flex-shrink: 0;
+}
+.badge--urgente {
+  background: rgba(239, 68, 68, 0.18);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.28);
+}
+.badge--fefo {
+  background: rgba(245, 166, 35, 0.14);
+  color: $acc-color-primary;
+  border: 1px solid rgba(245, 166, 35, 0.24);
+}
+.badge--alta {
+  background: rgba(239, 68, 68, 0.14);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.22);
+}
+.badge--media {
+  background: rgba(245, 166, 35, 0.12);
+  color: $acc-color-primary;
+  border: 1px solid rgba(245, 166, 35, 0.2);
+}
+.badge--baja {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+// ─── Content (animated panel) ────────────────────────────────────────────────
+.content {
+  overflow: hidden;
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+  background-color: transparent;
+}
+.content[data-state='open'] {
+  animation: slideDown 260ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.content[data-state='closed'] {
+  animation: slideUp 260ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+// ─── Content inner ───────────────────────────────────────────────────────────
+.contentInner {
+  padding: $spacing-sm $spacing-md $spacing-md;
+  background-color: $acc-bg-content;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom-left-radius: $acc-radius;
+  border-bottom-right-radius: $acc-radius;
+
+  // Subtle top-edge glow that matches the variant
+  .item--primary & {
+    box-shadow: inset 0 1px 0 rgba($acc-color-primary, 0.12);
+  }
+  .item--success & {
+    box-shadow: inset 0 1px 0 rgba($acc-color-success, 0.1);
+  }
+  .item--warning & {
+    box-shadow: inset 0 1px 0 rgba($acc-color-warning, 0.1);
+  }
+}
+
+// ── Progress bar (Peso / Volumen style from Viaje panel) ──────────────────────
+.progressRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 10px;
+  gap: 12px;
+  font-size: $font-size-xs;
+  color: rgba(255, 255, 255, 0.4);
+}
+.progressBar {
+  flex: 1;
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+
+  &__fill {
+    height: 100%;
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.22);
+    transition: width 400ms cubic-bezier(0.16, 1, 0.3, 1);
+
+    .item--primary & {
+      background: $acc-color-primary;
+    }
+    .item--success & {
+      background: $acc-color-success;
+    }
+    .item--warning & {
+      background: $acc-color-warning;
+    }
+  }
+}
+
+// ─── Animations ──────────────────────────────────────────────────────────────
+@keyframes slideDown {
+  from {
+    height: 0;
+  }
+  to {
+    height: var(--radix-accordion-content-height);
+  }
+}
+@keyframes slideUp {
+  from {
+    height: var(--radix-accordion-content-height);
+  }
+  to {
+    height: 0;
+  }
+}
+
+// ─── Reduced motion ──────────────────────────────────────────────────────────
+@media (prefers-reduced-motion: reduce) {
+  .content[data-state='open'],
+  .content[data-state='closed'] {
+    animation: none;
+  }
+  .icon {
+    transition: none;
+  }
+  .progressBar__fill {
+    transition: none;
+  }
+}

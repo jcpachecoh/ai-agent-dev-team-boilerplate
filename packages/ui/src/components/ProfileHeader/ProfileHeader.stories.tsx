@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import ProfileHeader from '.';
 
 const meta: Meta<typeof ProfileHeader> = {
-  title: 'Molecules/ProfileHeader',
+  title: 'Moleculas/ProfileHeader',
   component: ProfileHeader,
   tags: ['autodocs'],
 };

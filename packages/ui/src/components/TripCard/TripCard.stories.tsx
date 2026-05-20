@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import TripCard from './';
 
 const meta: Meta<typeof TripCard> = {
-  title: 'Molecules/TripCard',
+  title: 'Moleculas/TripCard',
   component: TripCard,
   tags: ['autodocs'],
 };

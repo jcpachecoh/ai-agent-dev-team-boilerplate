@@ -1,0 +1,5 @@
+{
+  "buildCommand": "cd ../.. && pnpm --filter @restopsiq/ui run build",
+  "outputDirectory": "storybook-static",
+  "installCommand": "pnpm install --frozen-lockfile"
+}
