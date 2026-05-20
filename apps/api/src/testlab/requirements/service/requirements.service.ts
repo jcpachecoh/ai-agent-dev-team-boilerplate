@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import type { Requirement } from '@prisma/client';
+import type { Requirement, TestCase } from '@prisma/client';
 import { RequirementsRepository } from '../repository/requirements.repository';
 import { CreateRequirementDto } from '../controller/dto/create-requirement.dto';
 import type { IRequirementsService } from '../interfaces/requirements.interfaces';
@@ -20,5 +20,10 @@ export class RequirementsService implements IRequirementsService {
 
   async create(projectId: string, dto: CreateRequirementDto): Promise<Requirement> {
     return this.requirementsRepository.create({ ...dto, projectId });
+  }
+
+  async findCases(projectId: string, id: string): Promise<TestCase[]> {
+    await this.findOne(projectId, id);
+    return this.requirementsRepository.findCases(projectId, id);
   }
 }

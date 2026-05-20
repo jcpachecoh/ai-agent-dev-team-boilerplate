@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useParams } from 'react-router';
+import { useState, type JSX } from 'react';
+import { Link, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { SimpleModal } from '../../components/SimpleModal/SimpleModal';
 import { casesService, type CaseStatus, type TestCase } from '../../services/cases.service';
@@ -131,6 +131,21 @@ export function TestCasesPage(): JSX.Element {
                   <span className={styles.metaLabel}>Expected:</span> {tc.expectedResult}
                 </p>
               )}
+              <div className={styles.itemActions}>
+                <span className={styles.actionsLabel}>Link this test case:</span>
+                <Link
+                  className={styles.actionLink}
+                  to={`/projects/${projectId}/milestones?caseId=${tc.id}`}
+                >
+                  Milestone
+                </Link>
+                <Link
+                  className={styles.actionLink}
+                  to={`/projects/${projectId}/requirements?caseId=${tc.id}`}
+                >
+                  Requirement
+                </Link>
+              </div>
             </li>
           ))}
         </ul>

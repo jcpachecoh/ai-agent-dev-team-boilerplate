@@ -1,4 +1,5 @@
 import * as React from 'react';
+
 import styles from './NavItem.module.scss';
 
 export interface NavItemProps extends React.HTMLAttributes<HTMLDivElement> {

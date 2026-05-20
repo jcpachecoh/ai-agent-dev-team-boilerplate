@@ -1,0 +1,38 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../../../styles/abstracts/mixins' as *;
+
+.wrapper {
+  --chart-width: 100%;
+  --chart-min-width: 220px;
+  --chart-min-height: 40px;
+
+  width: var(--chart-width);
+  min-width: var(--chart-min-width);
+  min-height: var(--chart-min-height);
+
+  display: flex;
+  align-items: center;
+}
+
+.sm {
+  --chart-min-width: 220px;
+  --chart-min-height: 40px;
+}
+
+.md {
+  --chart-min-width: 320px;
+  --chart-min-height: 56px;
+}
+
+.xl {
+  --chart-min-width: 480px;
+  --chart-min-height: 72px;
+}
+
+.light {
+  background: transparent;
+}
+
+.dark {
+  background: transparent;
+}

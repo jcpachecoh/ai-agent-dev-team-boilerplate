@@ -6,6 +6,15 @@ const meta: Meta<typeof InitialCount> = {
   title: 'Atomos/InitialCount',
   component: InitialCount,
   tags: ['autodocs'],
+  args: {
+    theme: 'light',
+  },
+  argTypes: {
+    theme: {
+      control: 'radio',
+      options: ['light', 'dark'],
+    },
+  },
 };
 
 export default meta;

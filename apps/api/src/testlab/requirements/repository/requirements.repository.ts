@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { Requirement } from '@prisma/client';
+import type { Requirement, TestCase } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
 import type {
   IRequirementsRepository,
@@ -23,5 +23,20 @@ export class RequirementsRepository implements IRequirementsRepository {
 
   create(data: CreateRequirementData): Promise<Requirement> {
     return this.prisma.requirement.create({ data });
+  }
+
+  findCases(projectId: string, id: string): Promise<TestCase[]> {
+    return this.prisma.testCase.findMany({
+      where: {
+        suite: { projectId },
+        requirements: {
+          some: {
+            requirementId: id,
+            requirement: { projectId },
+          },
+        },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
   }
 }

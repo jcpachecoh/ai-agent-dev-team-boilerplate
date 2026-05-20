@@ -6,6 +6,15 @@ const meta: Meta<typeof ProfileHeader> = {
   title: 'Moleculas/ProfileHeader',
   component: ProfileHeader,
   tags: ['autodocs'],
+  args: {
+    theme: 'light',
+  },
+  argTypes: {
+    theme: {
+      control: 'radio',
+      options: ['light', 'dark'],
+    },
+  },
 };
 
 export default meta;

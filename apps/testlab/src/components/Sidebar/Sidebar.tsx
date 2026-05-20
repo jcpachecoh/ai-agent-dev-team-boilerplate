@@ -1,3 +1,4 @@
+import type { JSX } from 'react';
 import { NavLink, useParams } from 'react-router';
 import styles from './Sidebar.module.css';
 

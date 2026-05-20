@@ -1,3 +1,4 @@
+import type { JSX } from 'react';
 import { useParams } from 'react-router';
 import styles from './ReportsPage.module.css';
 

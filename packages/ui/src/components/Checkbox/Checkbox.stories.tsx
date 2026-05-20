@@ -6,6 +6,15 @@ const meta: Meta<typeof Checkbox> = {
   title: 'Atomos/Checkbox',
   component: Checkbox,
   tags: ['autodocs'],
+  args: {
+    variant: 'light',
+  },
+  argTypes: {
+    variant: {
+      control: 'radio',
+      options: ['light', 'dark'],
+    },
+  },
 };
 
 export default meta;

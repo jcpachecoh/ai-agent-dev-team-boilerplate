@@ -1,11 +1,20 @@
-import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
+
 import NavItem from '.';
 
 const meta: Meta<typeof NavItem> = {
   title: 'Atomos/NavItem',
   component: NavItem,
   tags: ['autodocs'],
+  args: {
+    variant: 'light',
+  },
+  argTypes: {
+    variant: {
+      control: 'radio',
+      options: ['light', 'dark'],
+    },
+  },
 };
 
 export default meta;

@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import type { Milestone } from '@prisma/client';
+import type { Milestone, TestCase } from '@prisma/client';
 import { MilestonesRepository } from '../repository/milestones.repository';
 import { CreateMilestoneDto } from '../controller/dto/create-milestone.dto';
 import type { IMilestonesService } from '../interfaces/milestones.interfaces';
@@ -25,5 +25,10 @@ export class MilestonesService implements IMilestonesService {
       dueDate: dto.dueDate ? new Date(dto.dueDate) : undefined,
       projectId,
     });
+  }
+
+  async findCases(projectId: string, id: string): Promise<TestCase[]> {
+    await this.findOne(projectId, id);
+    return this.milestonesRepository.findCases(projectId, id);
   }
 }

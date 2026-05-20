@@ -1,0 +1,108 @@
+@use '../../../styles/abstracts/variables' as *;
+
+.progressContainer {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  width: 100%;
+}
+
+.track {
+  flex: 1;
+  background-color: rgba($color-gray-400, 0.2);
+  border-radius: $border-radius-full;
+  overflow: hidden;
+  height: 8px;
+}
+
+.fill {
+  height: 100%;
+  transition: width $transition-base;
+  border-radius: $border-radius-full;
+}
+
+.label {
+  font-family: $font-family-base;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  color: $color-text-primary;
+  min-width: 32px;
+  text-align: right;
+}
+
+// Variants
+.success .fill,
+.success .indicator {
+  stroke: $color-success;
+  background-color: $color-success;
+}
+.warning .fill,
+.warning .indicator {
+  stroke: $color-warning;
+  background-color: $color-warning;
+}
+.danger .fill,
+.danger .indicator {
+  stroke: $color-danger;
+  background-color: $color-danger;
+}
+.info .fill,
+.info .indicator {
+  stroke: $color-info;
+  background-color: $color-info;
+}
+
+// Sizes
+.small .track {
+  height: 4px;
+}
+.medium .track {
+  height: 8px;
+}
+.large .track {
+  height: 12px;
+}
+
+// Circular
+.circular {
+  display: inline-flex;
+  position: relative;
+  justify-content: center;
+  width: auto;
+
+  .svg {
+    transform: rotate(-90deg);
+  }
+
+  .background {
+    fill: none;
+    stroke: rgba($color-gray-400, 0.2);
+  }
+
+  .indicator {
+    fill: none;
+    transition: stroke-dashoffset $transition-base;
+    stroke-linecap: round;
+  }
+
+  .label {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    margin: 0;
+    text-align: center;
+  }
+}
+
+// Dark Mode
+:global(.dark) {
+  .label {
+    color: $color-text-inverse;
+  }
+  .track,
+  .background {
+    stroke: rgba($color-white, 0.1);
+    background-color: rgba($color-white, 0.1);
+  }
+}

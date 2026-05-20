@@ -1,4 +1,4 @@
-import { useRef, useEffect, type FormEvent, type ReactNode } from 'react';
+import { useRef, useEffect, type FormEvent, type ReactNode, type JSX } from 'react';
 import styles from './SimpleModal.module.css';
 
 interface SelectOption {

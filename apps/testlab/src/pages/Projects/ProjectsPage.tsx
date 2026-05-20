@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type JSX } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { projectsService } from '@/services/projects.service';
 import { NewProjectModal } from '@/components/NewProjectModal';

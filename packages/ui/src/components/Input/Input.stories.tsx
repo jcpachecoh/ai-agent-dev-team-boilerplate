@@ -7,8 +7,15 @@ const meta: Meta<typeof Input> = {
   title: 'Atomos/Input',
   component: Input,
   tags: ['autodocs'],
+  args: {
+    theme: 'light',
+  },
   argTypes: {
     showIcon: { control: 'boolean', description: 'Toggle left icon visibility' },
+    theme: {
+      control: 'radio',
+      options: ['light', 'dark'],
+    },
   },
 };
 
@@ -21,7 +28,7 @@ export const Email: Story = {
     leftIcon: <Mail />,
     showIcon: true,
     size: 'md',
-    theme: 'dark',
+    theme: 'light',
   },
 };
 
@@ -33,7 +40,7 @@ export const Password: Story = {
     showIcon: true,
     showPasswordToggle: true,
     size: 'md',
-    theme: 'dark',
+    theme: 'light',
   },
 };
 

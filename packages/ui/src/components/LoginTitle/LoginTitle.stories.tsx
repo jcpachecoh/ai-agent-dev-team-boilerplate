@@ -6,6 +6,15 @@ const meta: Meta<typeof LoginTitle> = {
   title: 'Atomos/LoginTitle',
   component: LoginTitle,
   tags: ['autodocs'],
+  args: {
+    variant: 'light',
+  },
+  argTypes: {
+    variant: {
+      control: 'radio',
+      options: ['light', 'dark'],
+    },
+  },
 };
 
 export default meta;

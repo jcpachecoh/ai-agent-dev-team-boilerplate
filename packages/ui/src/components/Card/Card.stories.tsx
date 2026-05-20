@@ -3,8 +3,18 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { Card } from './Card';
 
 const meta: Meta<typeof Card> = {
-  title: 'Molecules/Card',
+  title: 'Moleculas/Card',
   component: Card,
+  tags: ['autodocs'],
+  args: {
+    theme: 'light',
+  },
+  argTypes: {
+    theme: {
+      control: 'radio',
+      options: ['light', 'dark'],
+    },
+  },
 };
 
 export default meta;

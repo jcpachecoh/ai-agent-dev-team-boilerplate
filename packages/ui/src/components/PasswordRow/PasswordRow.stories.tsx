@@ -6,6 +6,15 @@ const meta: Meta<typeof PasswordRow> = {
   title: 'Atomos/PasswordRow',
   component: PasswordRow,
   tags: ['autodocs'],
+  args: {
+    variant: 'light',
+  },
+  argTypes: {
+    variant: {
+      control: 'radio',
+      options: ['light', 'dark'],
+    },
+  },
 };
 
 export default meta;
