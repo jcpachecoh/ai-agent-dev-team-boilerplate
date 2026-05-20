@@ -113,6 +113,9 @@ importers:
       class-validator:
         specifier: ^0.15.1
         version: 0.15.1
+      dotenv:
+        specifier: ^16.4.7
+        version: 16.4.7
       ioredis:
         specifier: ^5.10.1
         version: 5.10.1
