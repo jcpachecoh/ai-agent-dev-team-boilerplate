@@ -25,7 +25,8 @@
     "clsx": "^2.1.1",
     "framer-motion": "^12.38.0",
     "lucide-react": "^0.511.0",
-    "sass": "^1.77.0"
+    "sass": "^1.77.0",
+    "sonner": "^2.0.7"
   },
   "devDependencies": {
     "@restopsiq/tsconfig": "workspace:*",

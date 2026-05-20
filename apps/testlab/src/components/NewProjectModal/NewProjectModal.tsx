@@ -1,4 +1,4 @@
-import { useRef, useEffect, type FormEvent, type ChangeEvent } from 'react';
+import { useRef, useEffect, type FormEvent, type ChangeEvent, type JSX } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { projectsService, type CreateProjectPayload } from '@/services/projects.service';
 import styles from './NewProjectModal.module.css';
