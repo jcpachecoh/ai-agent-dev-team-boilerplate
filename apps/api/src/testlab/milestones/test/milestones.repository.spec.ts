@@ -182,15 +182,11 @@ describeIntegration('MilestonesRepository integration', () => {
       expect(cases.map(({ id }) => id)).toEqual([linkedCase.id]);
       expect(cases.find(({ id }) => id === unlinkedCase.id)).toBeUndefined();
     } finally {
-      const planIds = [planId, otherPlanId].filter(
-        (id): id is string => typeof id === 'string',
-      );
+      const planIds = [planId, otherPlanId].filter((id): id is string => typeof id === 'string');
       const testCaseIds = [linkedCaseId, unlinkedCaseId].filter(
         (id): id is string => typeof id === 'string',
       );
-      const suiteIds = [suiteId, otherSuiteId].filter(
-        (id): id is string => typeof id === 'string',
-      );
+      const suiteIds = [suiteId, otherSuiteId].filter((id): id is string => typeof id === 'string');
       const milestoneIds = [milestoneId, otherMilestoneId].filter(
         (id): id is string => typeof id === 'string',
       );
