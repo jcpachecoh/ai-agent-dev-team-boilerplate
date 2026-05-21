@@ -13,6 +13,10 @@ const prismaMock = {
   testCase: {
     findMany: jest.fn(),
   },
+  caseMilestone: {
+    create: jest.fn(),
+    delete: jest.fn(),
+  },
 };
 
 const integrationDatabaseUrl = process.env.TEST_DATABASE_URL ?? process.env.DATABASE_URL;
@@ -68,24 +72,35 @@ describe('MilestonesRepository', () => {
   });
 
   describe('findCases', () => {
-    it('queries testCase.findMany for milestone-linked cases in project', async () => {
+    it('queries testCase.findMany using caseMilestones join table', async () => {
       prismaMock.testCase.findMany.mockResolvedValue([]);
       await repository.findCases('proj-1', 'ms-1');
       expect(prismaMock.testCase.findMany).toHaveBeenCalledWith({
         where: {
-          suite: {
-            projectId: 'proj-1',
-            planEntries: {
-              some: {
-                plan: {
-                  projectId: 'proj-1',
-                  milestoneId: 'ms-1',
-                },
-              },
-            },
-          },
+          caseMilestones: { some: { milestoneId: 'ms-1' } },
+          suite: { projectId: 'proj-1' },
         },
         orderBy: { createdAt: 'asc' },
+      });
+    });
+  });
+
+  describe('linkCase', () => {
+    it('calls caseMilestone.create with milestoneId and caseId', async () => {
+      prismaMock.caseMilestone.create.mockResolvedValue({});
+      await repository.linkCase('ms-1', 'case-1');
+      expect(prismaMock.caseMilestone.create).toHaveBeenCalledWith({
+        data: { milestoneId: 'ms-1', caseId: 'case-1' },
+      });
+    });
+  });
+
+  describe('unlinkCase', () => {
+    it('calls caseMilestone.delete with composite key', async () => {
+      prismaMock.caseMilestone.delete.mockResolvedValue({});
+      await repository.unlinkCase('ms-1', 'case-1');
+      expect(prismaMock.caseMilestone.delete).toHaveBeenCalledWith({
+        where: { milestoneId_caseId: { milestoneId: 'ms-1', caseId: 'case-1' } },
       });
     });
   });
@@ -105,18 +120,15 @@ describeIntegration('MilestonesRepository integration', () => {
     await prisma.$disconnect();
   });
 
-  it('returns only cases linked to the milestone through plan entries', async () => {
+  it('returns only cases directly linked to the milestone via CaseMilestone join table', async () => {
     const suffix = randomUUID();
     let userId: string | undefined;
     let projectId: string | undefined;
     let milestoneId: string | undefined;
     let otherMilestoneId: string | undefined;
     let suiteId: string | undefined;
-    let otherSuiteId: string | undefined;
     let linkedCaseId: string | undefined;
     let unlinkedCaseId: string | undefined;
-    let planId: string | undefined;
-    let otherPlanId: string | undefined;
 
     try {
       const user = await prisma.user.create({
@@ -136,72 +148,47 @@ describeIntegration('MilestonesRepository integration', () => {
       milestoneId = milestone.id;
       otherMilestoneId = otherMilestone.id;
 
-      const [suite, otherSuite] = await Promise.all([
-        prisma.testSuite.create({ data: { name: `Suite-${suffix}`, projectId: project.id } }),
-        prisma.testSuite.create({ data: { name: `Other Suite-${suffix}`, projectId: project.id } }),
-      ]);
+      const suite = await prisma.testSuite.create({
+        data: { name: `Suite-${suffix}`, projectId: project.id },
+      });
       suiteId = suite.id;
-      otherSuiteId = otherSuite.id;
 
       const [linkedCase, unlinkedCase] = await Promise.all([
         prisma.testCase.create({
           data: { title: `Linked case ${suffix}`, suiteId: suite.id, createdById: user.id },
         }),
         prisma.testCase.create({
-          data: { title: `Unlinked case ${suffix}`, suiteId: otherSuite.id, createdById: user.id },
+          data: { title: `Unlinked case ${suffix}`, suiteId: suite.id, createdById: user.id },
         }),
       ]);
       linkedCaseId = linkedCase.id;
       unlinkedCaseId = unlinkedCase.id;
 
-      const [plan, otherPlan] = await Promise.all([
-        prisma.testPlan.create({
-          data: {
-            name: `Plan-${suffix}`,
-            projectId: project.id,
-            milestoneId: milestone.id,
-            createdById: user.id,
-          },
-        }),
-        prisma.testPlan.create({
-          data: {
-            name: `Other Plan-${suffix}`,
-            projectId: project.id,
-            milestoneId: otherMilestone.id,
-            createdById: user.id,
-          },
-        }),
-      ]);
-      planId = plan.id;
-      otherPlanId = otherPlan.id;
-
-      await prisma.testPlanEntry.create({ data: { planId: plan.id, suiteId: suite.id } });
-      await prisma.testPlanEntry.create({ data: { planId: otherPlan.id, suiteId: otherSuite.id } });
+      // Link only the first case to the milestone via CaseMilestone
+      await prisma.caseMilestone.create({
+        data: { milestoneId: milestone.id, caseId: linkedCase.id },
+      });
 
       const cases = await repository.findCases(project.id, milestone.id);
       expect(cases.map(({ id }) => id)).toEqual([linkedCase.id]);
       expect(cases.find(({ id }) => id === unlinkedCase.id)).toBeUndefined();
     } finally {
-      const planIds = [planId, otherPlanId].filter((id): id is string => typeof id === 'string');
       const testCaseIds = [linkedCaseId, unlinkedCaseId].filter(
         (id): id is string => typeof id === 'string',
       );
-      const suiteIds = [suiteId, otherSuiteId].filter((id): id is string => typeof id === 'string');
       const milestoneIds = [milestoneId, otherMilestoneId].filter(
         (id): id is string => typeof id === 'string',
       );
 
-      if (planIds.length > 0) {
-        await prisma.testPlanEntry.deleteMany({ where: { planId: { in: planIds } } });
-        await prisma.testPlan.deleteMany({ where: { id: { in: planIds } } });
-      }
-
       if (testCaseIds.length > 0) {
+        await prisma.caseMilestone.deleteMany({
+          where: { caseId: { in: testCaseIds } },
+        });
         await prisma.testCase.deleteMany({ where: { id: { in: testCaseIds } } });
       }
 
-      if (suiteIds.length > 0) {
-        await prisma.testSuite.deleteMany({ where: { id: { in: suiteIds } } });
+      if (suiteId !== undefined) {
+        await prisma.testSuite.delete({ where: { id: suiteId } });
       }
 
       if (milestoneIds.length > 0) {

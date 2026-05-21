@@ -5,6 +5,8 @@ import { RunsModule } from './runs/runs.module';
 import { RequirementsModule } from './requirements/requirements.module';
 import { MilestonesModule } from './milestones/milestones.module';
 import { CasesModule } from './cases/cases.module';
+import { GenerationModule } from './generation/generation.module';
+import { JiraModule } from './jira/jira.module';
 
 @Module({
   imports: [
@@ -14,6 +16,8 @@ import { CasesModule } from './cases/cases.module';
     RequirementsModule,
     MilestonesModule,
     CasesModule,
+    GenerationModule,
+    JiraModule,
   ],
 })
 export class TestlabModule {}

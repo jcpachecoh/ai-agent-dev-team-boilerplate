@@ -1,4 +1,6 @@
 import { request } from './http';
+import { milestonesService, type Milestone } from './milestones.service';
+import { requirementsService, type Requirement } from './requirements.service';
 
 export type CasePriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 export type CaseType =
@@ -52,4 +54,50 @@ export const casesService = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status }),
     }),
+
+  /** Option B: fetches all milestones then filters by case membership (client-side). */
+  listMilestones: async (
+    projectId: string,
+    _suiteId: string,
+    caseId: string,
+  ): Promise<Milestone[]> => {
+    const allMilestones = await milestonesService.list(projectId);
+    const results = await Promise.all(
+      allMilestones.map((m) =>
+        milestonesService
+          .getCases(projectId, m.id)
+          .then((cases) => (cases.some((c) => c.id === caseId) ? m : null)),
+      ),
+    );
+    return results.filter((m): m is Milestone => m !== null);
+  },
+
+  linkMilestone: (projectId: string, milestoneId: string, caseId: string): Promise<void> =>
+    milestonesService.linkCase(projectId, milestoneId, caseId),
+
+  unlinkMilestone: (projectId: string, milestoneId: string, caseId: string): Promise<void> =>
+    milestonesService.unlinkCase(projectId, milestoneId, caseId),
+
+  /** Option B: fetches all requirements then filters by case membership (client-side). */
+  listRequirements: async (
+    projectId: string,
+    _suiteId: string,
+    caseId: string,
+  ): Promise<Requirement[]> => {
+    const allReqs = await requirementsService.list(projectId);
+    const results = await Promise.all(
+      allReqs.map((r) =>
+        requirementsService
+          .getCases(projectId, r.id)
+          .then((cases) => (cases.some((c) => c.id === caseId) ? r : null)),
+      ),
+    );
+    return results.filter((r): r is Requirement => r !== null);
+  },
+
+  linkRequirement: (projectId: string, requirementId: string, caseId: string): Promise<void> =>
+    requirementsService.linkCase(projectId, requirementId, caseId),
+
+  unlinkRequirement: (projectId: string, requirementId: string, caseId: string): Promise<void> =>
+    requirementsService.unlinkCase(projectId, requirementId, caseId),
 };

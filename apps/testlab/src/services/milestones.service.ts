@@ -32,4 +32,15 @@ export const milestonesService = {
     }),
   getCases: (projectId: string, milestoneId: string): Promise<MilestoneCase[]> =>
     http.request<MilestoneCase[]>(`/projects/${projectId}/milestones/${milestoneId}/cases`),
+
+  linkCase: (projectId: string, milestoneId: string, caseId: string): Promise<void> =>
+    http.request<void>(`/projects/${projectId}/milestones/${milestoneId}/cases`, {
+      method: 'POST',
+      body: JSON.stringify({ caseId }),
+    }),
+
+  unlinkCase: (projectId: string, milestoneId: string, caseId: string): Promise<void> =>
+    http.request<void>(`/projects/${projectId}/milestones/${milestoneId}/cases/${caseId}`, {
+      method: 'DELETE',
+    }),
 };

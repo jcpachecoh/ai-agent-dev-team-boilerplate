@@ -3,6 +3,17 @@ import { Link, useParams, useSearchParams } from 'react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { requirementsService } from '@/services/requirements.service';
 import { SimpleModal } from '@/components/SimpleModal';
+import { LinearChip } from '@/components/LinearChip';
+import { LinearIssuePickerModal } from '@/components/LinearIssuePickerModal';
+import { GenerationPanel } from '@/components/GenerationPanel';
+import {
+  useProjectLinearLinks,
+  useLinkLinearIssue,
+  useUnlinkLinearIssue,
+} from '@/hooks/useLinearLinks';
+import { useGenerateFromLinear, useConfirmGeneration } from '@/hooks/useGenerateFromLinear';
+import type { GenerationPreview } from '@/services/generation.service';
+import type { LinearIssue } from '@/services/linear.service';
 import styles from './RequirementsPage.module.css';
 
 export function RequirementsPage(): JSX.Element {
@@ -12,6 +23,15 @@ export function RequirementsPage(): JSX.Element {
   const [selectedRequirementId, setSelectedRequirementId] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const fromCaseId = searchParams.get('caseId');
+
+  // Linear linking state
+  const [linearLinkTarget, setLinearLinkTarget] = useState<string | null>(null); // requirementId
+  const [linearLinkError, setLinearLinkError] = useState<string | null>(null);
+
+  // Generation state
+  const [showGeneratePicker, setShowGeneratePicker] = useState(false);
+  const [generationPreview, setGenerationPreview] = useState<GenerationPreview | null>(null);
+  const [generationError, setGenerationError] = useState<string | null>(null);
 
   const { data: requirements = [], isLoading } = useQuery({
     queryKey: ['requirements', projectId],
@@ -38,11 +58,62 @@ export function RequirementsPage(): JSX.Element {
     enabled: Boolean(projectId && selectedRequirementId),
   });
 
+  const { data: allLinearLinks = [] } = useProjectLinearLinks(projectId ?? '');
+  const linkLinear = useLinkLinearIssue(projectId ?? '');
+  const unlinkLinear = useUnlinkLinearIssue(projectId ?? '');
+  const { generate } = useGenerateFromLinear(projectId ?? '');
+  const confirmGeneration = useConfirmGeneration(projectId ?? '', '');
+
+  function handleLinearLink(issue: LinearIssue): void {
+    if (!linearLinkTarget) return;
+    setLinearLinkError(null);
+    linkLinear.mutate(
+      {
+        issueId: issue.identifier,
+        entityType: 'requirement',
+        entityId: linearLinkTarget,
+        issueTitle: issue.title,
+        issueUrl: issue.url,
+      },
+      {
+        onSuccess: () => setLinearLinkTarget(null),
+        onError: () => setLinearLinkError('Failed to link issue.'),
+      },
+    );
+  }
+
+  function handleGenerateSelect(issue: LinearIssue): void {
+    setShowGeneratePicker(false);
+    setGenerationError(null);
+    generate.mutate(issue.id, {
+      onSuccess: (preview) => setGenerationPreview(preview),
+      onError: (err) => setGenerationError((err as Error).message ?? 'Generation failed.'),
+    });
+  }
+
+  function handleConfirmGeneration(filtered: GenerationPreview): void {
+    setGenerationError(null);
+    confirmGeneration.mutate(filtered, {
+      onSuccess: () => {
+        setGenerationPreview(null);
+        setGenerationError(null);
+      },
+      onError: (err) => setGenerationError((err as Error).message ?? 'Confirm failed.'),
+    });
+  }
+
   return (
     <div className={styles.page}>
       <header className={styles.header}>
         <h1 className={styles.title}>Requirements</h1>
         <div className={styles.headerActions}>
+          <button
+            className={styles.btnGenerate}
+            onClick={() => setShowGeneratePicker(true)}
+            disabled={generate.isPending}
+          >
+            {generate.isPending ? 'Generating…' : '✦ Generate from Linear'}
+          </button>
           <Link className={styles.btnAddCase} to={`/projects/${projectId}/suites`}>
             + Add Test Case
           </Link>
@@ -56,6 +127,7 @@ export function RequirementsPage(): JSX.Element {
           Select a requirement to review where test case <code>{fromCaseId}</code> should be linked.
         </p>
       )}
+      {generationError && <p className={styles.genError}>{generationError}</p>}
       {isLoading && <p className={styles.empty}>Loading…</p>}
       {!isLoading && requirements.length === 0 && (
         <p className={styles.empty}>No requirements yet.</p>
@@ -96,6 +168,30 @@ export function RequirementsPage(): JSX.Element {
                 )}
               </div>
             )}
+            <div className={styles.linearSection}>
+              <span className={styles.linearLabel}>Linear</span>
+              <div className={styles.linearChips}>
+                {allLinearLinks
+                  .filter((l) => l.entityType === 'requirement' && l.entityId === req.id)
+                  .map((l) => (
+                    <LinearChip
+                      key={l.id}
+                      link={l}
+                      onUnlink={() => unlinkLinear.mutate(l.id)}
+                      isUnlinking={unlinkLinear.isPending}
+                    />
+                  ))}
+                <button
+                  className={styles.btnLinkLinear}
+                  onClick={() => {
+                    setLinearLinkError(null);
+                    setLinearLinkTarget(req.id);
+                  }}
+                >
+                  + Link
+                </button>
+              </div>
+            </div>
           </li>
         ))}
       </ul>
@@ -118,6 +214,33 @@ export function RequirementsPage(): JSX.Element {
           error={mutation.isError ? (mutation.error as Error).message : null}
           onClose={() => setShowModal(false)}
           onSubmit={(data) => mutation.mutate(data)}
+        />
+      )}
+
+      {linearLinkTarget && (
+        <LinearIssuePickerModal
+          onSelect={handleLinearLink}
+          onClose={() => setLinearLinkTarget(null)}
+          isPending={linkLinear.isPending}
+          error={linearLinkError}
+        />
+      )}
+
+      {showGeneratePicker && (
+        <LinearIssuePickerModal
+          onSelect={handleGenerateSelect}
+          onClose={() => setShowGeneratePicker(false)}
+          isPending={generate.isPending}
+        />
+      )}
+
+      {generationPreview && (
+        <GenerationPanel
+          preview={generationPreview}
+          isPending={confirmGeneration.isPending}
+          error={generationError}
+          onConfirm={handleConfirmGeneration}
+          onClose={() => setGenerationPreview(null)}
         />
       )}
     </div>

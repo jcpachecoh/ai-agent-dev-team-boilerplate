@@ -24,6 +24,7 @@
     "db:seed": "npx prisma@5 db seed"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^3.0.64",
     "@nestjs/common": "^10.3.0",
     "@nestjs/core": "^10.3.0",
     "@nestjs/jwt": "^11.0.2",
@@ -33,18 +34,21 @@
     "@prisma/client": "^5.22.0",
     "@restopsiq/types": "workspace:*",
     "@restopsiq/utils": "workspace:*",
+    "ai": "^6.0.189",
     "bcrypt": "^6.0.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
     "dotenv": "^16.4.7",
+    "ioredis": "^5.10.1",
+    "jira.js": "^5.3.1",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "passport-local": "^1.0.0",
-    "ioredis": "^5.10.1",
     "redlock": "4.2.0",
     "reflect-metadata": "^0.2.0",
     "rxjs": "^7.8.0",
-    "swagger-ui-express": "^5.0.1"
+    "swagger-ui-express": "^5.0.1",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.3.0",

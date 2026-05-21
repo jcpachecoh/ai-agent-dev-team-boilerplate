@@ -1,8 +1,20 @@
 import { useState, type JSX } from 'react';
-import { Link, useParams } from 'react-router';
+import { useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { SimpleModal } from '../../components/SimpleModal/SimpleModal';
+import { CaseTraceabilityBadges } from '../../components/CaseTraceabilityBadges';
+import { LinearChip } from '../../components/LinearChip';
+import { LinearIssuePickerModal } from '../../components/LinearIssuePickerModal';
+import { GenerationPanel } from '../../components/GenerationPanel';
 import { casesService, type CaseStatus, type TestCase } from '../../services/cases.service';
+import {
+  useProjectLinearLinks,
+  useLinkLinearIssue,
+  useUnlinkLinearIssue,
+} from '../../hooks/useLinearLinks';
+import { useGenerateFromLinear, useConfirmGeneration } from '../../hooks/useGenerateFromLinear';
+import type { GenerationPreview } from '../../services/generation.service';
+import type { LinearIssue } from '../../services/linear.service';
 import styles from './TestCasesPage.module.css';
 
 const PRIORITY_OPTIONS = [
@@ -43,6 +55,24 @@ export function TestCasesPage(): JSX.Element {
   const [showModal, setShowModal] = useState(false);
   const [modalError, setModalError] = useState<string | null>(null);
 
+  // Linear linking state
+  const [linearLinkTarget, setLinearLinkTarget] = useState<string | null>(null); // caseId
+  const [linearLinkError, setLinearLinkError] = useState<string | null>(null);
+
+  // Generation state
+  const [showGeneratePicker, setShowGeneratePicker] = useState(false);
+  const [generationPreview, setGenerationPreview] = useState<GenerationPreview | null>(null);
+  const [generationError, setGenerationError] = useState<string | null>(null);
+
+  // Linear hooks
+  const { data: allLinearLinks = [] } = useProjectLinearLinks(projectId);
+  const linkLinear = useLinkLinearIssue(projectId);
+  const unlinkLinear = useUnlinkLinearIssue(projectId);
+
+  // Generation hooks
+  const { generate } = useGenerateFromLinear(projectId);
+  const confirmGeneration = useConfirmGeneration(projectId, suiteId);
+
   const { data: cases = [], isLoading } = useQuery({
     queryKey: ['cases', projectId, suiteId],
     queryFn: () => casesService.list(projectId, suiteId),
@@ -80,14 +110,63 @@ export function TestCasesPage(): JSX.Element {
     statusMutation.mutate({ caseId, status });
   }
 
+  function handleLinearLink(issue: LinearIssue): void {
+    if (!linearLinkTarget) return;
+    setLinearLinkError(null);
+    linkLinear.mutate(
+      {
+        issueId: issue.identifier,
+        entityType: 'testCase',
+        entityId: linearLinkTarget,
+        issueTitle: issue.title,
+        issueUrl: issue.url,
+      },
+      {
+        onSuccess: () => setLinearLinkTarget(null),
+        onError: () => setLinearLinkError('Failed to link issue.'),
+      },
+    );
+  }
+
+  function handleGenerateSelect(issue: LinearIssue): void {
+    setShowGeneratePicker(false);
+    setGenerationError(null);
+    generate.mutate(issue.id, {
+      onSuccess: (preview) => setGenerationPreview(preview),
+      onError: (err) => setGenerationError((err as Error).message ?? 'Generation failed.'),
+    });
+  }
+
+  function handleConfirmGeneration(filtered: GenerationPreview): void {
+    setGenerationError(null);
+    confirmGeneration.mutate(filtered, {
+      onSuccess: () => {
+        setGenerationPreview(null);
+        setGenerationError(null);
+      },
+      onError: (err) => setGenerationError((err as Error).message ?? 'Confirm failed.'),
+    });
+  }
+
   return (
     <div className={styles.page}>
       <div className={styles.header}>
         <h1 className={styles.title}>Test Cases</h1>
-        <button className={styles.btnNew} onClick={() => setShowModal(true)}>
-          + New Case
-        </button>
+        <div className={styles.headerActions}>
+          <button
+            className={styles.btnGenerate}
+            onClick={() => setShowGeneratePicker(true)}
+            disabled={generate.isPending}
+          >
+            {generate.isPending ? 'Generating…' : '✦ Generate from Linear'}
+          </button>
+          <button className={styles.btnNew} onClick={() => setShowModal(true)}>
+            + New Case
+          </button>
+        </div>
       </div>
+
+      {generationError && <p className={styles.genError}>{generationError}</p>}
 
       {isLoading && <p className={styles.empty}>Loading…</p>}
       {!isLoading && cases.length === 0 && (
@@ -132,19 +211,31 @@ export function TestCasesPage(): JSX.Element {
                 </p>
               )}
               <div className={styles.itemActions}>
-                <span className={styles.actionsLabel}>Link this test case:</span>
-                <Link
-                  className={styles.actionLink}
-                  to={`/projects/${projectId}/milestones?caseId=${tc.id}`}
-                >
-                  Milestone
-                </Link>
-                <Link
-                  className={styles.actionLink}
-                  to={`/projects/${projectId}/requirements?caseId=${tc.id}`}
-                >
-                  Requirement
-                </Link>
+                <CaseTraceabilityBadges projectId={projectId} suiteId={suiteId} caseId={tc.id} />
+                <div className={styles.linearSection}>
+                  <span className={styles.linearLabel}>Linear</span>
+                  <div className={styles.linearChips}>
+                    {allLinearLinks
+                      .filter((l) => l.entityType === 'testCase' && l.entityId === tc.id)
+                      .map((l) => (
+                        <LinearChip
+                          key={l.id}
+                          link={l}
+                          onUnlink={() => unlinkLinear.mutate(l.id)}
+                          isUnlinking={unlinkLinear.isPending}
+                        />
+                      ))}
+                    <button
+                      className={styles.btnLinkLinear}
+                      onClick={() => {
+                        setLinearLinkError(null);
+                        setLinearLinkTarget(tc.id);
+                      }}
+                    >
+                      + Link
+                    </button>
+                  </div>
+                </div>
               </div>
             </li>
           ))}
@@ -181,6 +272,33 @@ export function TestCasesPage(): JSX.Element {
             { name: 'preconditions', label: 'Preconditions', type: 'textarea' },
             { name: 'expectedResult', label: 'Expected Result', type: 'textarea' },
           ]}
+        />
+      )}
+
+      {linearLinkTarget && (
+        <LinearIssuePickerModal
+          onSelect={handleLinearLink}
+          onClose={() => setLinearLinkTarget(null)}
+          isPending={linkLinear.isPending}
+          error={linearLinkError}
+        />
+      )}
+
+      {showGeneratePicker && (
+        <LinearIssuePickerModal
+          onSelect={handleGenerateSelect}
+          onClose={() => setShowGeneratePicker(false)}
+          isPending={generate.isPending}
+        />
+      )}
+
+      {generationPreview && (
+        <GenerationPanel
+          preview={generationPreview}
+          isPending={confirmGeneration.isPending}
+          error={generationError}
+          onConfirm={handleConfirmGeneration}
+          onClose={() => setGenerationPreview(null)}
         />
       )}
     </div>
