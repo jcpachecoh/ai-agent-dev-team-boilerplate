@@ -90,17 +90,46 @@ export interface SendEmailOptions {
   tenantLogoUrl?: string;
   primaryColor?: string;
   attachments?: EmailAttachment[];
+  priority?: 'normal' | 'urgent';
+  metadata?: Record<string, string>;
 }
 
 export interface EmailJobPayload {
   options: SendEmailOptions;
   renderedHtml: string;
+  resendMessageId?: string;
 }
 
 export interface EmailServiceConfig {
   redisUrl: string;
   resendApiKey: string;
   from: string;
+}
+
+// ---------------------------------------------------------------------------
+// Worker config and event types
+// ---------------------------------------------------------------------------
+
+export interface EmailWorkerConfig {
+  redisUrl: string;
+  resendApiKey: string;
+  fromAddress: string;
+}
+
+export interface EmailFailedEvent {
+  jobId: string;
+  tenantId: string;
+  templateType: string;
+  errorCode: string;
+  errorMessage: string;
+  attempts: number;
+  timestamp: string;
+}
+
+export interface TenantRateLimitResult {
+  allowed: boolean;
+  remaining: number;
+  resetAt: number;
 }
 
 // ---------------------------------------------------------------------------

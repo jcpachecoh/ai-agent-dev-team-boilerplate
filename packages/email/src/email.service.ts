@@ -2,6 +2,7 @@ import { Queue } from 'bullmq';
 import { renderAsync } from '@react-email/render';
 
 import { EMAIL_JOB_NAME, EMAIL_QUEUE_NAME } from './email.queue';
+import { EMAIL_JOB_OPTIONS, JOB_PRIORITY, URGENT_TEMPLATE_TYPES } from './email.worker.config';
 import { renderTemplateElement } from './templates/template-registry';
 import { EmailQueueError } from './types';
 import type { EmailJobPayload, EmailServiceConfig, EmailTemplate, SendEmailOptions } from './types';
@@ -19,12 +20,7 @@ export class EmailService {
   constructor(config: EmailServiceConfig) {
     this.queue = new Queue<EmailJobPayload>(EMAIL_QUEUE_NAME, {
       connection: { url: config.redisUrl },
-      defaultJobOptions: {
-        attempts: 3,
-        backoff: { type: 'exponential' as const, delay: 1_000 },
-        removeOnComplete: { count: 100 },
-        removeOnFail: { count: 500 },
-      },
+      defaultJobOptions: EMAIL_JOB_OPTIONS,
     });
   }
 
@@ -54,8 +50,12 @@ export class EmailService {
 
     const payload: EmailJobPayload = { options, renderedHtml };
 
+    const isUrgent =
+      URGENT_TEMPLATE_TYPES.has(options.template.type) || options.priority === 'urgent';
+    const priority = isUrgent ? JOB_PRIORITY.URGENT : JOB_PRIORITY.NORMAL;
+
     try {
-      const job = await this.queue.add(EMAIL_JOB_NAME, payload);
+      const job = await this.queue.add(EMAIL_JOB_NAME, payload, { priority });
       return { jobId: job.id ?? crypto.randomUUID() };
     } catch (error) {
       throw new EmailQueueError(

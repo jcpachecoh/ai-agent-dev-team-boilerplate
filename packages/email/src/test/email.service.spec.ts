@@ -75,7 +75,7 @@ describe('EmailService.send()', () => {
 
   it('enqueues job with EMAIL_JOB_NAME as the job name', async () => {
     await service.send(welcomeOptions);
-    expect(mockAdd).toHaveBeenCalledWith(EMAIL_JOB_NAME, expect.any(Object));
+    expect(mockAdd).toHaveBeenCalledWith(EMAIL_JOB_NAME, expect.any(Object), expect.any(Object));
   });
 
   it('includes renderedHtml in the job payload', async () => {
@@ -83,6 +83,7 @@ describe('EmailService.send()', () => {
     expect(mockAdd).toHaveBeenCalledWith(
       expect.any(String),
       expect.objectContaining({ renderedHtml: MOCK_HTML }),
+      expect.any(Object),
     );
   });
 
@@ -93,6 +94,7 @@ describe('EmailService.send()', () => {
       expect.objectContaining({
         options: expect.objectContaining({ tenantId: 'tenant-1' }),
       }),
+      expect.any(Object),
     );
   });
 
@@ -118,6 +120,110 @@ describe('EmailService.send()', () => {
     const result = await service.send(welcomeOptions);
     expect(typeof result.jobId).toBe('string');
     expect(result.jobId.length).toBeGreaterThan(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// send() — priority
+// ---------------------------------------------------------------------------
+
+describe('EmailService.send() — priority', () => {
+  async function sendTemplate(
+    templateType: string,
+    priorityOverride?: 'normal' | 'urgent',
+  ): Promise<void> {
+    const templateMap: Record<string, SendEmailOptions['template']> = {
+      welcome: { type: 'welcome', props: { userName: 'A', role: 'owner', loginUrl: 'u' } },
+      'reset-password': {
+        type: 'reset-password',
+        props: { userName: 'A', resetUrl: 'u', expiresAt: 'tomorrow' },
+      },
+      'verify-email': {
+        type: 'verify-email',
+        props: { userName: 'A', otpCode: '123456', expiresInMinutes: 15 },
+      },
+      'invite-user': {
+        type: 'invite-user',
+        props: {
+          inviteeName: 'B',
+          inviterName: 'C',
+          workspaceName: 'W',
+          acceptUrl: 'u',
+          role: 'manager',
+          expiresAt: 'en 48h',
+        },
+      },
+    };
+
+    const options: SendEmailOptions = {
+      ...welcomeOptions,
+      template: templateMap[templateType],
+      ...(priorityOverride ? { priority: priorityOverride } : {}),
+    };
+
+    await service.send(options);
+  }
+
+  it('enqueues reset-password with priority 1 (URGENT)', async () => {
+    await sendTemplate('reset-password');
+    expect(mockAdd).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.any(Object),
+      expect.objectContaining({ priority: 1 }),
+    );
+  });
+
+  it('enqueues verify-email with priority 1 (URGENT)', async () => {
+    await sendTemplate('verify-email');
+    expect(mockAdd).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.any(Object),
+      expect.objectContaining({ priority: 1 }),
+    );
+  });
+
+  it('enqueues welcome with priority 10 (NORMAL)', async () => {
+    await sendTemplate('welcome');
+    expect(mockAdd).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.any(Object),
+      expect.objectContaining({ priority: 10 }),
+    );
+  });
+
+  it('enqueues invite-user with priority 10 (NORMAL)', async () => {
+    await sendTemplate('invite-user');
+    expect(mockAdd).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.any(Object),
+      expect.objectContaining({ priority: 10 }),
+    );
+  });
+
+  it('enqueues welcome with priority 1 when options.priority === "urgent"', async () => {
+    await sendTemplate('welcome', 'urgent');
+    expect(mockAdd).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.any(Object),
+      expect.objectContaining({ priority: 1 }),
+    );
+  });
+
+  it('still returns { jobId } with priority set', async () => {
+    const result = await service.send({
+      ...welcomeOptions,
+      template: {
+        type: 'reset-password',
+        props: { userName: 'A', resetUrl: 'u', expiresAt: 'tomorrow' },
+      },
+    });
+    expect(result).toEqual({ jobId: MOCK_JOB_ID });
+  });
+
+  it('still does not call Resend when priority is URGENT', async () => {
+    const spy = jest.spyOn(ResendClient.prototype, 'sendEmail');
+    await sendTemplate('reset-password');
+    expect(spy).not.toHaveBeenCalled();
   });
 });
 
