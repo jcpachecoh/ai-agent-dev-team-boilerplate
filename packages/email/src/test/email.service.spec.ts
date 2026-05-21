@@ -29,8 +29,8 @@ const welcomeOptions: SendEmailOptions = {
   template: {
     type: 'welcome',
     props: {
-      firstName: 'Alice',
-      tenantName: 'Burger Palace',
+      userName: 'Alice',
+      role: 'owner',
       loginUrl: 'https://app.restopsiq.co/login',
     },
   },
@@ -138,12 +138,19 @@ describe('EmailService.render()', () => {
 
   it('produces a string for each template type', async () => {
     const types: Array<SendEmailOptions['template']> = [
-      { type: 'welcome', props: { firstName: 'A', tenantName: 'T', loginUrl: 'u' } },
-      { type: 'reset-password', props: { firstName: 'A', resetUrl: 'u', expiresInMinutes: 60 } },
-      { type: 'verify-email', props: { firstName: 'A', otp: '123456', expiresInMinutes: 15 } },
+      { type: 'welcome', props: { userName: 'A', role: 'owner', loginUrl: 'u' } },
+      { type: 'reset-password', props: { userName: 'A', resetUrl: 'u', expiresAt: 'mañana' } },
+      { type: 'verify-email', props: { userName: 'A', otpCode: '123456', expiresInMinutes: 15 } },
       {
         type: 'invite-user',
-        props: { inviterName: 'B', tenantName: 'T', inviteUrl: 'u', role: 'manager' },
+        props: {
+          inviteeName: 'B',
+          inviterName: 'C',
+          workspaceName: 'T',
+          acceptUrl: 'u',
+          role: 'manager',
+          expiresAt: 'en 48 horas',
+        },
       },
       {
         type: 'dian-invoice',
