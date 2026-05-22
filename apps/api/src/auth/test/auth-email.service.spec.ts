@@ -5,6 +5,19 @@ import { AuthRepository } from '../repository/auth.repository';
 import { AuthEmailRepository } from '../repository/auth-email.repository';
 import { EmailService } from '@restopsiq/email';
 import type { TenantContext } from '../interfaces/auth.interfaces';
+import Redis from 'ioredis';
+
+jest.mock('ioredis', () => {
+  const MockRedis = jest.fn().mockImplementation(() => ({
+    set: jest.fn().mockResolvedValue('OK'),
+    get: jest.fn().mockResolvedValue(null),
+    del: jest.fn().mockResolvedValue(1),
+    quit: jest.fn().mockResolvedValue('OK'),
+  }));
+  return MockRedis;
+});
+
+const MockRedis = Redis as unknown as jest.Mock;
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -209,6 +222,15 @@ describe('AuthEmailService — sendResetPassword', () => {
     await expect(
       service.sendResetPassword('alice@example.com', mockTenant),
     ).resolves.toBeUndefined();
+  });
+
+  it('uses email as userName fallback when user.name is null', async () => {
+    authRepoMock.findByEmail.mockResolvedValue({ ...mockUser, name: null });
+
+    await service.sendResetPassword('alice@example.com', mockTenant);
+
+    const [sendCall] = emailServiceMock.send.mock.calls;
+    expect(sendCall[0].template.props.userName).toBe('alice@example.com');
   });
 
   it('propagates error when authEmailRepository.createResetToken rejects', async () => {
@@ -577,6 +599,67 @@ describe('AuthEmailService — sendWelcome & sendInvitation', () => {
 
       // emailService.send was called, not a direct HTTP client
       expect(emailServiceMock.send).toHaveBeenCalledTimes(1);
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Lifecycle hooks
+// ---------------------------------------------------------------------------
+
+describe('AuthEmailService — lifecycle hooks', () => {
+  let service: AuthEmailService;
+
+  beforeEach(async () => {
+    MockRedis.mockClear();
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        AuthEmailService,
+        { provide: AuthRepository, useValue: { findByEmail: jest.fn() } },
+        {
+          provide: AuthEmailRepository,
+          useValue: { deleteExpiredResetTokens: jest.fn(), createResetToken: jest.fn() },
+        },
+        { provide: EmailService, useValue: { send: jest.fn() } },
+      ],
+    }).compile();
+
+    service = module.get<AuthEmailService>(AuthEmailService);
+  });
+
+  describe('onModuleInit', () => {
+    it('creates Redis with the REDIS_URL env var when set', () => {
+      const original = process.env.REDIS_URL;
+      process.env.REDIS_URL = 'redis://custom-host:6380';
+
+      service.onModuleInit();
+
+      expect(MockRedis).toHaveBeenCalledWith('redis://custom-host:6380');
+
+      process.env.REDIS_URL = original;
+    });
+
+    it('falls back to default redis://localhost:6379 when REDIS_URL is not set', () => {
+      const original = process.env.REDIS_URL;
+      delete process.env.REDIS_URL;
+
+      service.onModuleInit();
+
+      expect(MockRedis).toHaveBeenCalledWith('redis://localhost:6379');
+
+      if (original !== undefined) process.env.REDIS_URL = original;
+    });
+  });
+
+  describe('onModuleDestroy', () => {
+    it('calls redis.quit exactly once', async () => {
+      const quitMock = jest.fn().mockResolvedValue('OK');
+      (service as any)['redis'] = { quit: quitMock };
+
+      await service.onModuleDestroy();
+
+      expect(quitMock).toHaveBeenCalledTimes(1);
     });
   });
 });

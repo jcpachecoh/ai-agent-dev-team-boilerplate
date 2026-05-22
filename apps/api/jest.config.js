@@ -31,16 +31,17 @@ module.exports = {
 
   // ── Module path aliases ───────────────────────────────────────────────────
   moduleNameMapper: {
+    '^@restopsiq/email(.*)$': '<rootDir>/../../../packages/email/src$1',
     '^@restopsiq/types(.*)$': '<rootDir>/../../packages/types/src$1',
     '^@restopsiq/utils(.*)$': '<rootDir>/../../packages/utils/src$1',
   },
 
   // ── ts-jest config ────────────────────────────────────────────────────────
   transform: {
-    '^.+\\.(t|j)s$': [
+    '^.+\\.(t|j)sx?$': [
       'ts-jest',
       {
-        tsconfig: { importHelpers: true },
+        tsconfig: { importHelpers: true, jsx: 'react-jsx' },
       },
     ],
   },
