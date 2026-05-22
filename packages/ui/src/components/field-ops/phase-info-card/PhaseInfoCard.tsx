@@ -14,7 +14,7 @@ export interface PhaseInfoCardProps {
   className?: string;
 }
 
-export const PhaseInfoCard: React.FC<PhaseInfoCardProps> = ({
+export function PhaseInfoCard({
   opId,
   phaseLabel,
   productName,
@@ -22,7 +22,7 @@ export const PhaseInfoCard: React.FC<PhaseInfoCardProps> = ({
   theme = 'light',
   size = 'md',
   className,
-}) => {
+}: PhaseInfoCardProps): React.JSX.Element {
   const themeClass = theme === 'light' ? styles['theme--light'] : styles['theme--dark'];
   const sizeClass = styles[`size--${size}`];
 
@@ -44,6 +44,6 @@ export const PhaseInfoCard: React.FC<PhaseInfoCardProps> = ({
       <p className={styles.productName}>{productName}</p>
     </article>
   );
-};
+}
 
 export default PhaseInfoCard;

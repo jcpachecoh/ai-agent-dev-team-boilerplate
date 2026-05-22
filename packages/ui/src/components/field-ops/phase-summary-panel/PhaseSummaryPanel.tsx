@@ -22,14 +22,14 @@ export interface PhaseSummaryPanelProps {
   className?: string;
 }
 
-export const PhaseSummaryPanel: React.FC<PhaseSummaryPanelProps> = ({
+export function PhaseSummaryPanel({
   title = 'Resumen de fase',
   rows,
   loading = false,
   theme = 'light',
   size = 'md',
   className,
-}) => {
+}: PhaseSummaryPanelProps): React.JSX.Element {
   const themeClass = theme === 'light' ? styles['theme--light'] : styles['theme--dark'];
   const sizeClass = styles[`size--${size}`];
 
@@ -68,6 +68,6 @@ export const PhaseSummaryPanel: React.FC<PhaseSummaryPanelProps> = ({
       </dl>
     </section>
   );
-};
+}
 
 export default PhaseSummaryPanel;

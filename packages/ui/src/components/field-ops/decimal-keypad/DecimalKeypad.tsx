@@ -20,14 +20,14 @@ export interface DecimalKeypadProps {
   decimalSeparator?: string;
 }
 
-export const DecimalKeypad: React.FC<DecimalKeypadProps> = ({
+export function DecimalKeypad({
   onKeyPress,
   onBackspace,
   theme = 'light',
   size = 'md',
   className,
   decimalSeparator = '.',
-}) => {
+}: DecimalKeypadProps): React.JSX.Element {
   const themeClass = theme === 'light' ? styles['theme--light'] : styles['theme--dark'];
   const sizeClass = styles[`size--${size}`];
 
@@ -97,6 +97,6 @@ export const DecimalKeypad: React.FC<DecimalKeypadProps> = ({
       </div>
     </div>
   );
-};
+}
 
 export default DecimalKeypad;

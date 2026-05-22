@@ -12,13 +12,13 @@ export interface PhaseCompletionHeaderProps {
   className?: string;
 }
 
-export const PhaseCompletionHeader: React.FC<PhaseCompletionHeaderProps> = ({
+export function PhaseCompletionHeader({
   title = 'Completar fase',
   icon,
   theme = 'light',
   size = 'md',
   className,
-}) => {
+}: PhaseCompletionHeaderProps): React.JSX.Element {
   const themeClass = theme === 'light' ? styles['theme--light'] : styles['theme--dark'];
   const sizeClass = styles[`size--${size}`];
   const iconSize = size === 'sm' ? 28 : size === 'xl' ? 48 : 36;
@@ -31,6 +31,6 @@ export const PhaseCompletionHeader: React.FC<PhaseCompletionHeaderProps> = ({
       <h2 className={styles.title}>{title}</h2>
     </header>
   );
-};
+}
 
 export default PhaseCompletionHeader;

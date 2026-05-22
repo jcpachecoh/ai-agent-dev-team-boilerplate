@@ -18,7 +18,7 @@ export interface QuantityUnitToggleProps {
   'aria-label'?: string;
 }
 
-export const QuantityUnitToggle: React.FC<QuantityUnitToggleProps> = ({
+export function QuantityUnitToggle({
   options,
   value,
   onChange,
@@ -26,7 +26,7 @@ export const QuantityUnitToggle: React.FC<QuantityUnitToggleProps> = ({
   size = 'md',
   className,
   'aria-label': ariaLabel = 'Unidad de medida',
-}) => {
+}: QuantityUnitToggleProps): React.JSX.Element {
   const themeClass = theme === 'light' ? styles['theme--light'] : styles['theme--dark'];
   const sizeClass = styles[`size--${size}`];
 
@@ -56,6 +56,6 @@ export const QuantityUnitToggle: React.FC<QuantityUnitToggleProps> = ({
       })}
     </div>
   );
-};
+}
 
 export default QuantityUnitToggle;

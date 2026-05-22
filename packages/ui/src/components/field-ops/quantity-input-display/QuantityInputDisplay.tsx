@@ -15,7 +15,7 @@ export interface QuantityInputDisplayProps {
   className?: string;
 }
 
-export const QuantityInputDisplay: React.FC<QuantityInputDisplayProps> = ({
+export function QuantityInputDisplay({
   label = 'Cantidad real producida',
   value,
   unit = 'kg',
@@ -24,7 +24,7 @@ export const QuantityInputDisplay: React.FC<QuantityInputDisplayProps> = ({
   theme = 'light',
   size = 'md',
   className,
-}) => {
+}: QuantityInputDisplayProps): React.JSX.Element {
   const themeClass = theme === 'light' ? styles['theme--light'] : styles['theme--dark'];
   const sizeClass = styles[`size--${size}`];
 
@@ -49,6 +49,6 @@ export const QuantityInputDisplay: React.FC<QuantityInputDisplayProps> = ({
       {hint && <p className={styles.hint}>{hint}</p>}
     </div>
   );
-};
+}
 
 export default QuantityInputDisplay;

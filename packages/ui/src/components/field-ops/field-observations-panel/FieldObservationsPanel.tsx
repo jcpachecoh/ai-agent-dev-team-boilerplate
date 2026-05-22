@@ -26,7 +26,7 @@ export const FieldObservationsPanel = React.forwardRef<
     ...props
   },
   ref,
-) {
+): React.JSX.Element {
   const themeClass = theme === 'light' ? styles['theme--light'] : styles['theme--dark'];
   const sizeClass = styles[`size--${size}`];
   const textareaId = React.useId();

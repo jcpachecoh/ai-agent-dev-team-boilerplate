@@ -25,7 +25,7 @@ export const PhaseBackButton = React.forwardRef<HTMLButtonElement, PhaseBackButt
       ...props
     },
     ref,
-  ) {
+  ): React.JSX.Element {
     const themeClass = theme === 'light' ? styles['theme--light'] : styles['theme--dark'];
     const sizeClass = styles[`size--${size}`];
     const iconSize = size === 'sm' ? 16 : size === 'xl' ? 22 : 18;

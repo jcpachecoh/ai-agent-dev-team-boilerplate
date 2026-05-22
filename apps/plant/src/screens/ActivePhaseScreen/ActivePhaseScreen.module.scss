@@ -1,0 +1,312 @@
+@use '@/styles/tokens' as *;
+
+$color-gold: #c7a86d;
+$color-teal: #4fd1c5;
+$color-muted: rgba($color-operator-text, 0.55);
+$layout-gap: 1rem;
+$header-h: 3.25rem;
+// Aprox. desde el borde superior de .main hasta el botón Completar fase (sidebar sin tocar)
+$complete-btn-offset-from-main: 24.5rem;
+$phase-intro-block: 9.5rem;
+
+.screen {
+  height: 100dvh;
+  max-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #000;
+  color: $color-operator-text;
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.topBar {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: $layout-gap;
+  min-height: $header-h;
+  padding: 0.65rem 1.25rem;
+  border-bottom: 1px solid rgba($color-operator-text, 0.08);
+}
+
+.topBarLeft,
+.topBarRight {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.topBarRight {
+  justify-content: flex-end;
+}
+
+.plantBrand {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: $color-muted;
+}
+
+.topBarCenter {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-align: center;
+  color: rgba($color-operator-text, 0.75);
+  white-space: nowrap;
+}
+
+.operatorMeta {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: $color-operator-text;
+}
+
+.clock {
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  color: $color-muted;
+}
+
+.main {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(280px, 1fr);
+  align-items: stretch;
+  gap: 1.25rem;
+  padding: 1.25rem;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.primaryColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  min-width: 0;
+  height: auto;
+  align-self: start;
+}
+
+.phaseIntro {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.phaseMetaRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.urgentBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #fff;
+  background: rgba($color-danger, 0.2);
+  border: 1px solid rgba($color-danger, 0.55);
+  animation: urgent-pulse 1.4s ease-in-out infinite;
+}
+
+.urgentDot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: $color-danger;
+}
+
+@keyframes urgent-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba($color-danger, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba($color-danger, 0);
+  }
+}
+
+.opBadge {
+  display: inline-flex;
+  padding: 0.2rem 0.55rem;
+  border-radius: 0.35rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: rgba($color-operator-text, 0.9);
+  background: rgba($color-gold, 0.12);
+  border: 1px solid rgba($color-gold, 0.35);
+}
+
+.phaseHeading {
+  margin: 0;
+  font-size: clamp(1.35rem, 2.4vw, 1.85rem);
+  font-weight: 700;
+  line-height: 1.15;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.activeOperator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0.35rem 0.75rem;
+  width: fit-content;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: $color-teal;
+  border: 1px solid rgba($color-teal, 0.45);
+  background: rgba($color-teal, 0.08);
+}
+
+.activeOperatorDot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: $color-success;
+}
+
+.instructionsPanel {
+  flex: 0 1 auto;
+  width: 100%;
+  --display-width: 100%;
+  min-height: 15.5rem !important;
+  max-height: max(21rem, calc(#{$complete-btn-offset-from-main} - #{$phase-intro-block} - 0.85rem));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  :global([class*='body']) {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+  }
+}
+
+.instructionIndex {
+  font-weight: 700;
+  color: $color-muted;
+  margin-right: 0.25rem;
+}
+
+.referenceRow {
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: minmax(140px, 1fr) minmax(0, 1.4fr);
+  gap: $layout-gap;
+  align-items: stretch;
+  margin-top: 0;
+}
+
+.visualRef {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  height: 100%;
+  min-height: 7rem;
+  padding: $layout-gap;
+  border-radius: 0.5rem;
+  border: 1px dashed rgba($color-operator-text, 0.2);
+  background: rgba($color-operator-text, 0.04);
+  color: $color-muted;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.visualRefImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 0.35rem;
+}
+
+.safetyBanner {
+  height: 100%;
+  min-height: 7rem;
+}
+
+.sideColumn {
+  display: flex;
+  flex-direction: column;
+  gap: $layout-gap;
+  min-width: 0;
+  align-self: start;
+}
+
+.sideActions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.quantityCard {
+  width: 100%;
+}
+
+.actionRow {
+  display: flex;
+  gap: 0.65rem;
+}
+
+.actionHalf {
+  flex: 1;
+  min-width: 0;
+}
+
+.actionFull {
+  width: 100%;
+}
+
+.actionButton {
+  width: 100%;
+}
+
+.completeButton {
+  width: 100%;
+}
+
+@media (max-width: 900px) {
+  .screen {
+    height: auto;
+    max-height: none;
+    overflow: auto;
+  }
+
+  .main {
+    grid-template-columns: 1fr;
+    overflow: auto;
+  }
+
+  .primaryColumn {
+    height: auto;
+  }
+
+  .instructionsPanel {
+    flex: 0 0 auto;
+    max-height: min(40vh, 400px);
+
+    :global([class*='body']) {
+      overflow-y: auto;
+    }
+  }
+}
