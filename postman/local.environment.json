@@ -36,6 +36,34 @@
       "type": "default",
       "enabled": true,
       "description": "CUID/UUID of an existing SupplyCategory row belonging to the above tenant. Required by the Create Supply Item body field categoriaId."
+    },
+    {
+      "key": "authEmail",
+      "value": "test@restopsiq.dev",
+      "type": "default",
+      "enabled": true,
+      "description": "RES-226 — Email used for forgot-password and resend-verification requests. Must match a user that exists in the local database."
+    },
+    {
+      "key": "resetToken",
+      "value": "",
+      "type": "default",
+      "enabled": true,
+      "description": "RES-226 — Raw reset token extracted from the password-reset email URL. Set manually before running Reset Password requests."
+    },
+    {
+      "key": "otpCode",
+      "value": "",
+      "type": "default",
+      "enabled": true,
+      "description": "RES-226 — 6-digit OTP from the verification email. Set manually before running Verify Email requests."
+    },
+    {
+      "key": "newPassword",
+      "value": "NewPassword456!",
+      "type": "default",
+      "enabled": true,
+      "description": "RES-226 — New password used in the Reset Password body. Must be at least 8 characters."
     }
   ],
   "_postman_variable_scope": "environment",

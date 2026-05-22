@@ -102,8 +102,8 @@ export interface EmailJobPayload {
 
 export interface EmailServiceConfig {
   redisUrl: string;
-  resendApiKey: string;
-  from: string;
+  resendApiKey?: string;
+  from?: string;
 }
 
 // ---------------------------------------------------------------------------

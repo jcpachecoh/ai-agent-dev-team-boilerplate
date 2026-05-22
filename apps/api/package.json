@@ -31,6 +31,7 @@
     "@nestjs/platform-express": "^10.3.0",
     "@nestjs/swagger": "^7.4.2",
     "@prisma/client": "^5.22.0",
+    "@restopsiq/email": "workspace:*",
     "@restopsiq/types": "workspace:*",
     "@restopsiq/utils": "workspace:*",
     "bcrypt": "^6.0.0",

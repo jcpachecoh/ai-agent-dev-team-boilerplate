@@ -2,7 +2,7 @@
 
 Automated API test collection for the RestOpsIQ platform.
 
-- **30 live endpoints** across Health, Auth, Supply Items, and Testlab modules.
+- **38 live endpoints** across Health, Auth, Supply Items, and Testlab modules.
 - **Postman Collection v2.1** — importable into Postman Desktop or runnable via Newman CLI.
 - **Dynamic variable capture** — POST create responses feed IDs into subsequent requests automatically.
 - **Auto-login pre-request script** — access token is refreshed transparently before any protected request.
@@ -13,7 +13,7 @@ Automated API test collection for the RestOpsIQ platform.
 
 | File                            | Purpose                                             |
 | ------------------------------- | --------------------------------------------------- |
-| `restopsiq-api.collection.json` | Main Postman collection (v2.1) with all 30 requests |
+| `restopsiq-api.collection.json` | Main Postman collection (v2.1) with all 38 requests |
 | `local.environment.json`        | Environment variables for `http://localhost:3001`   |
 | `README.md`                     | This file                                           |
 
@@ -124,11 +124,19 @@ RestOpsIQ API
 ├── 00 Health          (1 request)
 │   └── GET /api/
 │
-├── 01 Auth            (4 requests)
+├── 01 Auth            (12 requests)
 │   ├── POST /api/auth/signup
-│   ├── POST /api/auth/login       → captures accessToken, refreshToken
-│   ├── POST /api/auth/refresh     → uses refreshToken, captures new accessToken
-│   └── POST /api/auth/logout
+│   ├── POST /api/auth/login                → captures accessToken, refreshToken
+│   ├── POST /api/auth/refresh              → uses refreshToken, captures new accessToken
+│   ├── POST /api/auth/logout
+│   ├── POST /api/auth/forgot-password      → public, always 200 (anti-enumeration)
+│   ├── POST /api/auth/reset-password       → public, consumes {{resetToken}}
+│   ├── POST /api/auth/reset-password (invalid token — negative)
+│   ├── POST /api/auth/reset-password (reused token — negative)
+│   ├── POST /api/auth/resend-verification  → public, always 200 (anti-enumeration)
+│   ├── POST /api/auth/verify-email         → public, consumes {{otpCode}}
+│   ├── POST /api/auth/verify-email (invalid OTP — negative)
+│   └── ── RES-226 email endpoints require Redis + BullMQ queue running ──
 │
 ├── 02 Supply Items    (7 requests — x-tenant-id: {{tenantId}} on every request)
 │   ├── POST   /api/supply-items              → captures supplyItemId
@@ -160,6 +168,7 @@ All requests inherit `Authorization: Bearer {{accessToken}}` from the collection
 
 - `Signup` and `Login` — auth type `noauth` (endpoints are `@Public`).
 - `Refresh` — auth type `bearer` with `{{refreshToken}}` (uses `JwtRefreshGuard`).
+- `Forgot Password`, `Reset Password`, `Resend Verification`, `Verify Email` — auth type `noauth` (all four are `@Public` per RES-226).
 
 ### Auto-login pre-request script
 
@@ -215,35 +224,60 @@ Login
 
 ## Environment Variables Reference
 
-| Variable               | Required before run    | Set by                            |
-| ---------------------- | ---------------------- | --------------------------------- |
-| `baseUrl`              | Yes                    | `local.environment.json`          |
-| `email`                | Yes                    | `local.environment.json`          |
-| `password`             | Yes                    | `local.environment.json`          |
-| `tenantId`             | Yes                    | `local.environment.json` (manual) |
-| `categoryId`           | Yes (for Supply Items) | `local.environment.json` (manual) |
-| `accessToken`          | Auto                   | Pre-request script / Login test   |
-| `refreshToken`         | Auto                   | Login test                        |
-| `accessTokenExpiresAt` | Auto                   | Pre-request script / Login test   |
-| `supplyItemId`         | Auto                   | Create Supply Item test           |
-| `supplyItemCode`       | Auto                   | Create Supply Item pre-request    |
-| `projectId`            | Auto                   | Create Project test               |
-| `projectSlug`          | Auto                   | Create Project pre-request        |
-| `milestoneId`          | Auto                   | Create Milestone test             |
-| `requirementId`        | Auto                   | Create Requirement test           |
-| `suiteId`              | Auto                   | Create Suite test                 |
-| `caseId`               | Auto                   | Create Case test                  |
-| `runId`                | Auto                   | Create Run test                   |
+| Variable               | Required before run               | Set by                                                   |
+| ---------------------- | --------------------------------- | -------------------------------------------------------- |
+| `baseUrl`              | Yes                               | `local.environment.json`                                 |
+| `email`                | Yes                               | `local.environment.json`                                 |
+| `password`             | Yes                               | `local.environment.json`                                 |
+| `tenantId`             | Yes                               | `local.environment.json` (manual)                        |
+| `categoryId`           | Yes (for Supply Items)            | `local.environment.json` (manual)                        |
+| `authEmail`            | Yes (for RES-226 email endpoints) | `local.environment.json` (defaults to seeded user)       |
+| `resetToken`           | Manual (for Reset Password)       | Extracted from password-reset email URL                  |
+| `otpCode`              | Manual (for Verify Email)         | Extracted from verification email or Redis               |
+| `newPassword`          | Yes (for Reset Password)          | `local.environment.json` (defaults to `NewPassword456!`) |
+| `accessToken`          | Auto                              | Pre-request script / Login test                          |
+| `refreshToken`         | Auto                              | Login test                                               |
+| `accessTokenExpiresAt` | Auto                              | Pre-request script / Login test                          |
+| `supplyItemId`         | Auto                              | Create Supply Item test                                  |
+| `supplyItemCode`       | Auto                              | Create Supply Item pre-request                           |
+| `projectId`            | Auto                              | Create Project test                                      |
+| `projectSlug`          | Auto                              | Create Project pre-request                               |
+| `milestoneId`          | Auto                              | Create Milestone test                                    |
+| `requirementId`        | Auto                              | Create Requirement test                                  |
+| `suiteId`              | Auto                              | Create Suite test                                        |
+| `caseId`               | Auto                              | Create Case test                                         |
+| `runId`                | Auto                              | Create Run test                                          |
+
+### RES-226 email endpoint manual setup
+
+The `reset-password` and `verify-email` happy-path requests depend on tokens delivered out-of-band (via email). Before running them:
+
+1. **Forgot Password / Resend Verification** — run either request to trigger token generation.
+2. **Retrieve `resetToken`** — open the email dev inbox (Resend test mode) or query the DB:
+   ```sql
+   SELECT id, user_id, token_hash, expires_at FROM password_reset_tokens ORDER BY created_at DESC LIMIT 1;
+   ```
+   The raw token is not stored in the DB — it is embedded in the email link URL. Copy the token query-parameter value and paste it into `{{resetToken}}`.
+3. **Retrieve `otpCode`** — check the email or inspect Redis:
+   ```bash
+   # List OTP keys (hashed keys — for audit only)
+   redis-cli KEYS 'otp:*'
+   ```
+   The OTP code is delivered in the email body. Copy the 6-digit value and paste it into `{{otpCode}}`.
+4. Run `Reset Password` or `Verify Email` within the token TTL (reset: 60 min, OTP: 15 min).
 
 ---
 
 ## Troubleshooting
 
-| Symptom                                  | Likely cause                                             | Fix                                                |
-| ---------------------------------------- | -------------------------------------------------------- | -------------------------------------------------- |
-| All supply-items requests return 403/404 | `tenantId` is wrong or empty                             | Set a real tenant UUID in the environment          |
-| `Create Supply Item` returns 400         | `categoryId` is wrong or empty                           | Set a real SupplyCategory UUID for the same tenant |
-| `Create Supply Item` returns 409         | `codigoInterno` already exists (timestamp collision)     | Extremely unlikely; re-run                         |
-| Testlab GET returns 404                  | POST create ran after GET (wrong order)                  | Run collection in folder order                     |
-| `Refresh` returns 401                    | `refreshToken` is stale or was invalidated by Logout     | Run Login again before Refresh                     |
-| Pre-request auto-login silently fails    | `email`/`password` vars are empty or DB has no such user | Seed the user and set correct env vars             |
+| Symptom                                  | Likely cause                                             | Fix                                                     |
+| ---------------------------------------- | -------------------------------------------------------- | ------------------------------------------------------- |
+| All supply-items requests return 403/404 | `tenantId` is wrong or empty                             | Set a real tenant UUID in the environment               |
+| `Create Supply Item` returns 400         | `categoryId` is wrong or empty                           | Set a real SupplyCategory UUID for the same tenant      |
+| `Create Supply Item` returns 409         | `codigoInterno` already exists (timestamp collision)     | Extremely unlikely; re-run                              |
+| Testlab GET returns 404                  | POST create ran after GET (wrong order)                  | Run collection in folder order                          |
+| `Refresh` returns 401                    | `refreshToken` is stale or was invalidated by Logout     | Run Login again before Refresh                          |
+| Pre-request auto-login silently fails    | `email`/`password` vars are empty or DB has no such user | Seed the user and set correct env vars                  |
+| `Reset Password` returns 400 (not found) | `{{resetToken}}` is empty or already used                | Re-run Forgot Password, extract fresh token from email  |
+| `Verify Email` returns 400 (expired)     | `{{otpCode}}` is expired (TTL 15 min) or already used    | Re-run Resend Verification, copy fresh OTP from email   |
+| Email requests succeed but no email sent | Redis is not running or BullMQ worker is not started     | `docker compose up -d redis` and start the email worker |

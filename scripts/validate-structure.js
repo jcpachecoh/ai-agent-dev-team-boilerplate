@@ -223,6 +223,7 @@ function validate() {
     'guards',
     'decorators',
     'prisma',
+    'email',
   ]);
 
   // Parent aggregator modules whose children should be validated individually
