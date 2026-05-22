@@ -117,17 +117,17 @@
 
 /* Cargar variant: gold/pill with dark spinner centered when loading */
 .cargar {
-  background-color: #d4a017;
+  background-color: #c7a86d;
   color: #4b3406; /* dark brown for spinner/text */
   border: 1px solid rgba(75, 52, 6, 0.12);
   font-weight: $font-weight-semibold;
 
   &:hover:not(:disabled) {
-    background-color: color.adjust(#d4a017, $lightness: -6%);
+    background-color: color.adjust(#c7a86d, $lightness: -6%);
   }
 
   &:active:not(:disabled) {
-    background-color: color.adjust(#d4a017, $lightness: -10%);
+    background-color: color.adjust(#c7a86d, $lightness: -10%);
   }
 
   /* When loading, center spinner */

@@ -1,0 +1,155 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../../../styles/abstracts/mixins' as *;
+@use '../shared/field-ops-theme' as fo;
+
+.button {
+  @include fo.field-ops-control-sizes;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--control-gap);
+  box-sizing: border-box;
+  width: min(100%, var(--control-width));
+  min-height: var(--control-min-height);
+  padding: var(--control-padding-y) var(--control-padding-x);
+  border-radius: $border-radius-md;
+  font-family: $font-family-base;
+  font-weight: $font-weight-bold;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition:
+    background-color $transition-fast,
+    border-color $transition-fast,
+    transform $transition-fast,
+    box-shadow $transition-fast;
+
+  &:focus-visible {
+    outline: 2px solid var(--fo-focus-ring);
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.variant--default {
+  flex-direction: row;
+  border: 2px solid fo.$field-ops-teal;
+  background-color: rgba(fo.$field-ops-teal, 0.12);
+  color: fo.$field-ops-teal;
+  font-size: var(--control-font-size);
+
+  &:hover:not(:disabled) {
+    background-color: rgba(fo.$field-ops-teal, 0.22);
+  }
+
+  &:active:not(:disabled) {
+    transform: scale(0.99);
+  }
+
+  &:focus-visible {
+    outline-color: fo.$field-ops-teal;
+  }
+}
+
+.variant--confirm {
+  flex-direction: column;
+  gap: $spacing-xs;
+  border: $border-width solid rgba(fo.$field-ops-success-on-solid, 0.08);
+  background-color: fo.$field-ops-success-solid;
+  color: fo.$field-ops-success-on-solid;
+  box-shadow: 0 4px 20px rgba(fo.$field-ops-success-solid, 0.25);
+  padding-top: calc(var(--control-padding-y) + #{$spacing-xs});
+  padding-bottom: var(--control-padding-y);
+  line-height: 1.15;
+
+  &:hover:not(:disabled) {
+    filter: brightness(1.05);
+    box-shadow: 0 6px 24px rgba(fo.$field-ops-success-solid, 0.32);
+  }
+
+  &:active:not(:disabled) {
+    transform: scale(0.99);
+    filter: brightness(0.98);
+  }
+
+  &:focus-visible {
+    outline-color: fo.$field-ops-success-solid;
+  }
+
+  .label {
+    max-width: 18ch;
+    text-align: center;
+    font-size: var(--confirm-font-size);
+    letter-spacing: 0.06em;
+  }
+}
+
+.confirmIcon {
+  flex-shrink: 0;
+  opacity: 0.9;
+}
+
+.icon {
+  flex-shrink: 0;
+}
+
+.label {
+  line-height: 1.2;
+}
+
+.size--xl {
+  width: 100%;
+  max-width: none;
+}
+
+.size--sm {
+  max-width: 220px;
+
+  &.variant--confirm .label {
+    max-width: 14ch;
+    font-size: 0.65rem;
+  }
+}
+
+.size--md {
+  max-width: 360px;
+
+  &.variant--confirm {
+    --confirm-font-size: #{$font-size-sm};
+    min-height: 72px;
+  }
+}
+
+.size--xl.variant--confirm {
+  --confirm-font-size: #{$font-size-base};
+  min-height: 88px;
+}
+
+.loading {
+  @include flex-center;
+}
+
+.theme--dark {
+  @include fo.field-ops-theme-dark;
+
+  &.variant--default:hover:not(:disabled) {
+    background-color: rgba(fo.$field-ops-teal, 0.22);
+  }
+}
+
+.theme--light {
+  @include fo.field-ops-theme-light;
+
+  &.variant--default:hover:not(:disabled) {
+    background-color: rgba(fo.$field-ops-teal, 0.18);
+  }
+
+  &.variant--confirm {
+    background-color: #22c55e;
+    color: fo.$field-ops-success-on-solid;
+  }
+}

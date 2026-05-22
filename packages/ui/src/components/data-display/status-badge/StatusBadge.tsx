@@ -1,4 +1,4 @@
-import * as React from 'react';
+import type { JSX } from 'react';
 
 import styles from './StatusBadge.module.scss';
 
@@ -50,14 +50,14 @@ const statusMap: Record<StatusType, { color: string; label: string }> = {
   CRITICAL: { color: 'red', label: 'Crítico' },
 };
 
-export const StatusBadge: React.FC<StatusBadgeProps> = ({
+export function StatusBadge({
   status,
   variant = 'pill',
   animated = false,
   className,
   theme = 'dark',
   size = 'md',
-}) => {
+}: StatusBadgeProps): JSX.Element {
   const config = statusMap[status] || { color: 'gray', label: status };
   const themeClass = theme === 'light' ? styles['theme--light'] : styles['theme--dark'];
   const sizeClass = styles[`size--${size}`];
@@ -79,6 +79,6 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
       {variant === 'pill' && <span className={styles.label}>{config.label}</span>}
     </div>
   );
-};
+}
 
 export default StatusBadge;
