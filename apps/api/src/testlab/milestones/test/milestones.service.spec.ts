@@ -1,4 +1,4 @@
-import { NotFoundException } from '@nestjs/common';
+import { ConflictException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MilestonesService } from '../service/milestones.service';
 import { MilestonesRepository } from '../repository/milestones.repository';
@@ -20,6 +20,8 @@ const repoMock = {
   findOne: jest.fn(),
   create: jest.fn(),
   findCases: jest.fn(),
+  linkCase: jest.fn(),
+  unlinkCase: jest.fn(),
 };
 
 const mockCase = {
@@ -107,6 +109,88 @@ describe('MilestonesService', () => {
       repoMock.findOne.mockResolvedValue(null);
       await expect(service.findCases('proj-1', 'missing')).rejects.toThrow(NotFoundException);
       expect(repoMock.findCases).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('linkCase', () => {
+    it('links a case when milestone exists', async () => {
+      repoMock.findOne.mockResolvedValue(mockMilestone);
+      repoMock.linkCase.mockResolvedValue(undefined);
+      await expect(service.linkCase('proj-1', 'ms-1', 'case-1')).resolves.toBeUndefined();
+      expect(repoMock.linkCase).toHaveBeenCalledWith('ms-1', 'case-1');
+    });
+
+    it('throws NotFoundException when milestone does not exist', async () => {
+      repoMock.findOne.mockResolvedValue(null);
+      await expect(service.linkCase('proj-1', 'bad', 'case-1')).rejects.toThrow(NotFoundException);
+      expect(repoMock.linkCase).not.toHaveBeenCalled();
+    });
+
+    it('throws ConflictException when link already exists (P2002)', async () => {
+      const { Prisma } = jest.requireActual('@prisma/client') as typeof import('@prisma/client');
+      const prismaError = new Prisma.PrismaClientKnownRequestError('Unique constraint', {
+        code: 'P2002',
+        clientVersion: '5.x',
+      });
+      repoMock.findOne.mockResolvedValue(mockMilestone);
+      repoMock.linkCase.mockRejectedValue(prismaError);
+      await expect(service.linkCase('proj-1', 'ms-1', 'case-1')).rejects.toThrow(ConflictException);
+    });
+
+    it('throws NotFoundException when test case not found (P2025)', async () => {
+      const { Prisma } = jest.requireActual('@prisma/client') as typeof import('@prisma/client');
+      const prismaError = new Prisma.PrismaClientKnownRequestError('Not found', {
+        code: 'P2025',
+        clientVersion: '5.x',
+      });
+      repoMock.findOne.mockResolvedValue(mockMilestone);
+      repoMock.linkCase.mockRejectedValue(prismaError);
+      await expect(service.linkCase('proj-1', 'ms-1', 'case-1')).rejects.toThrow(NotFoundException);
+    });
+
+    it('rethrows unknown errors from linkCase', async () => {
+      repoMock.findOne.mockResolvedValue(mockMilestone);
+      repoMock.linkCase.mockRejectedValue(new Error('Unexpected DB error'));
+      await expect(service.linkCase('proj-1', 'ms-1', 'case-1')).rejects.toThrow(
+        'Unexpected DB error',
+      );
+    });
+  });
+
+  describe('unlinkCase', () => {
+    it('unlinks a case when milestone and link exist', async () => {
+      repoMock.findOne.mockResolvedValue(mockMilestone);
+      repoMock.unlinkCase.mockResolvedValue(undefined);
+      await expect(service.unlinkCase('proj-1', 'ms-1', 'case-1')).resolves.toBeUndefined();
+      expect(repoMock.unlinkCase).toHaveBeenCalledWith('ms-1', 'case-1');
+    });
+
+    it('throws NotFoundException when milestone does not exist', async () => {
+      repoMock.findOne.mockResolvedValue(null);
+      await expect(service.unlinkCase('proj-1', 'bad', 'case-1')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('throws NotFoundException when link does not exist (P2025)', async () => {
+      const { Prisma } = jest.requireActual('@prisma/client') as typeof import('@prisma/client');
+      const prismaError = new Prisma.PrismaClientKnownRequestError('Not found', {
+        code: 'P2025',
+        clientVersion: '5.x',
+      });
+      repoMock.findOne.mockResolvedValue(mockMilestone);
+      repoMock.unlinkCase.mockRejectedValue(prismaError);
+      await expect(service.unlinkCase('proj-1', 'ms-1', 'case-1')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('rethrows unknown errors from unlinkCase', async () => {
+      repoMock.findOne.mockResolvedValue(mockMilestone);
+      repoMock.unlinkCase.mockRejectedValue(new Error('Unexpected DB error'));
+      await expect(service.unlinkCase('proj-1', 'ms-1', 'case-1')).rejects.toThrow(
+        'Unexpected DB error',
+      );
     });
   });
 });

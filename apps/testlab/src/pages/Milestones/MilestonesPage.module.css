@@ -125,7 +125,96 @@
   font-size: 0.8125rem;
 }
 
+.caseItemActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
 .caseMeta {
   font-family: var(--font-mono);
   color: var(--color-text-secondary);
+}
+
+.btnUnlink {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 1px var(--space-2);
+  cursor: pointer;
+}
+.btnUnlink:hover:not(:disabled) { color: #f85149; border-color: #f85149; }
+.btnUnlink:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btnLinkCase {
+  margin-top: var(--space-2);
+  font-size: 0.75rem;
+  color: var(--color-accent);
+  background: none;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 2px var(--space-3);
+  cursor: pointer;
+}
+.btnLinkCase:hover { border-color: var(--color-accent); }
+
+/* Generate button */
+.btnGenerate {
+  padding: var(--space-2) var(--space-4);
+  background: transparent;
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-md);
+  color: var(--color-accent);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btnGenerate:hover:not(:disabled) {
+  background: rgba(88, 166, 255, 0.08);
+}
+.btnGenerate:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Linear section per milestone */
+.linearSection {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.linearLabel {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+  padding-top: 3px;
+}
+
+.linearChips {
+  display: flex;
+  gap: var(--space-1);
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.btnLinkLinear {
+  background: none;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  cursor: pointer;
+}
+.btnLinkLinear:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
 }

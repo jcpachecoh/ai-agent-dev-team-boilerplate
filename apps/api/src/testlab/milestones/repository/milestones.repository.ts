@@ -28,19 +28,20 @@ export class MilestonesRepository implements IMilestonesRepository {
   findCases(projectId: string, id: string): Promise<TestCase[]> {
     return this.prisma.testCase.findMany({
       where: {
-        suite: {
-          projectId,
-          planEntries: {
-            some: {
-              plan: {
-                projectId,
-                milestoneId: id,
-              },
-            },
-          },
-        },
+        caseMilestones: { some: { milestoneId: id } },
+        suite: { projectId },
       },
       orderBy: { createdAt: 'asc' },
+    });
+  }
+
+  async linkCase(milestoneId: string, caseId: string): Promise<void> {
+    await this.prisma.caseMilestone.create({ data: { milestoneId, caseId } });
+  }
+
+  async unlinkCase(milestoneId: string, caseId: string): Promise<void> {
+    await this.prisma.caseMilestone.delete({
+      where: { milestoneId_caseId: { milestoneId, caseId } },
     });
   }
 }

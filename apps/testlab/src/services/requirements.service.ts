@@ -30,4 +30,15 @@ export const requirementsService = {
     }),
   getCases: (projectId: string, requirementId: string): Promise<RequirementCase[]> =>
     http.request<RequirementCase[]>(`/projects/${projectId}/requirements/${requirementId}/cases`),
+
+  linkCase: (projectId: string, requirementId: string, caseId: string): Promise<void> =>
+    http.request<void>(`/projects/${projectId}/requirements/${requirementId}/cases`, {
+      method: 'POST',
+      body: JSON.stringify({ caseId }),
+    }),
+
+  unlinkCase: (projectId: string, requirementId: string, caseId: string): Promise<void> =>
+    http.request<void>(`/projects/${projectId}/requirements/${requirementId}/cases/${caseId}`, {
+      method: 'DELETE',
+    }),
 };

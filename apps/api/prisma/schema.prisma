@@ -54,8 +54,31 @@ model Project {
   plans        TestPlan[]
   milestones   Milestone[]
   requirements Requirement[]
+  jiraLinks    JiraLink[]
 
   @@map("projects")
+}
+
+model JiraLink {
+  id           String         @id @default(cuid())
+  projectId    String
+  issueKey     String
+  entityType   JiraEntityType
+  entityId     String
+  issueSummary String
+  issueUrl     String
+  createdAt    DateTime       @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, issueKey, entityType, entityId])
+  @@map("jira_links")
+}
+
+enum JiraEntityType {
+  testCase
+  milestone
+  requirement
 }
 
 enum ProjectRole {
@@ -156,7 +179,8 @@ model TestCase {
   suite        TestSuite         @relation(fields: [suiteId], references: [id], onDelete: Cascade)
   createdBy    User              @relation("CasesCreated", fields: [createdById], references: [id])
   results      TestResult[]
-  requirements RequirementCase[]
+  requirements    RequirementCase[]
+  caseMilestones  CaseMilestone[]
 
   @@map("test_cases")
 }
@@ -269,8 +293,9 @@ model Milestone {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  project Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  plans   TestPlan[]
+  project        Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  plans          TestPlan[]
+  caseMilestones CaseMilestone[]
 
   @@map("milestones")
 }
@@ -304,6 +329,15 @@ model RequirementCase {
   @@id([requirementId, caseId])
   @@map("requirement_cases")
 }
+model CaseMilestone {
+  milestoneId String
+  caseId      String
+  milestone   Milestone @relation(fields: [milestoneId], references: [id], onDelete: Cascade)
+  case        TestCase  @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  @@id([milestoneId, caseId])
+  @@map("case_milestones")
+}
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ATTACHMENTS
@@ -500,3 +534,5 @@ model SupplyItemPriceHistory {
   @@index([tenantId, createdAt])
   @@map("supply_item_price_history")
 }
+
+
