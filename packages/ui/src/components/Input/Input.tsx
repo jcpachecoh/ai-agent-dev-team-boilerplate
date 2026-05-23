@@ -13,15 +13,18 @@ export interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElem
   theme?: 'light' | 'dark';
 }
 
-export function Input({
-  leftIcon,
-  rightIcon,
-  showPasswordToggle = false,
-  showIcon = true,
-  type = 'text',
-  size = 'md',
-  ...props
-}: InputProps) {
+export const Input = React.forwardRef<HTMLInputElement, InputProps>(function Input(
+  {
+    leftIcon,
+    rightIcon,
+    showPasswordToggle = false,
+    showIcon = true,
+    type = 'text',
+    size = 'md',
+    ...props
+  },
+  ref,
+) {
   const [visible, setVisible] = React.useState(false);
   const isPassword = type === 'password';
   const shownType = isPassword && showPasswordToggle ? (visible ? 'text' : 'password') : type;
@@ -38,7 +41,7 @@ export function Input({
   return (
     <div className={[styles.wrapper, sizeClass, themeClass].filter(Boolean).join(' ')}>
       {leftIcon && showIcon && <div className={styles.left}>{leftIcon}</div>}
-      <input className={styles.input} type={shownType} {...props} />
+      <input ref={ref} className={styles.input} type={shownType} {...props} />
       <div className={styles.right}>
         {isPassword && showPasswordToggle ? (
           <button
@@ -55,6 +58,6 @@ export function Input({
       </div>
     </div>
   );
-}
+});
 
 export default Input;
