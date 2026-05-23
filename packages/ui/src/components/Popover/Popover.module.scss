@@ -1,32 +1,82 @@
 @use '../../styles/abstracts/variables' as *;
 
 .content {
-  border-radius: 10px;
-  padding: $spacing-sm;
-  box-shadow: 0 12px 30px rgba($color-black, 0.12);
+  border-radius: 12px;
   z-index: 140;
-  max-width: 320px;
-  background-color: $color-bg-primary;
-  border: $border-width solid rgba($color-black, 0.04);
-  color: $color-text-primary;
-  animation: slideUpAndFade 260ms cubic-bezier(0.16, 1, 0.3, 1);
+  animation: popoverIn 240ms cubic-bezier(0.16, 1, 0.3, 1);
   will-change: transform, opacity;
+
+  &:focus-visible {
+    outline: 2px solid $color-primary;
+    outline-offset: 2px;
+  }
 }
 
-.arrow {
-  fill: $color-bg-primary;
-  stroke: rgba($color-black, 0.04);
-  stroke-width: 1px;
+.content--sm {
+  min-width: 160px;
+  max-width: 220px;
 }
 
-@keyframes slideUpAndFade {
+.content--md {
+  min-width: 220px;
+  max-width: 300px;
+}
+
+.content--lg {
+  min-width: 280px;
+  max-width: 380px;
+}
+
+.content--light {
+  background-color: $color-white;
+  border: $border-width solid rgba($color-black, 0.08);
+  color: $color-gray-900;
+  box-shadow:
+    0 4px 6px rgba($color-black, 0.04),
+    0 16px 40px rgba($color-black, 0.12);
+}
+
+.content--dark {
+  background-color: #16161f;
+  border: $border-width solid rgba($color-white, 0.1);
+  color: #ededf5;
+  box-shadow:
+    0 0 0 1px rgba($color-white, 0.04),
+    0 20px 48px rgba($color-black, 0.55);
+}
+
+.inner {
+  padding: $spacing-md;
+}
+
+.content--sm .inner {
+  padding: $spacing-sm;
+  font-size: $font-size-xs;
+}
+
+.content--lg .inner {
+  padding: $spacing-lg;
+  font-size: $font-size-sm;
+}
+
+.arrow--light {
+  fill: $color-white;
+  filter: drop-shadow(0 -1px 0 rgba($color-black, 0.06));
+}
+
+.arrow--dark {
+  fill: #16161f;
+  filter: drop-shadow(0 -1px 0 rgba($color-white, 0.08));
+}
+
+@keyframes popoverIn {
   from {
     opacity: 0;
-    transform: translateY(2px);
+    transform: translateY(4px) scale(0.98);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 

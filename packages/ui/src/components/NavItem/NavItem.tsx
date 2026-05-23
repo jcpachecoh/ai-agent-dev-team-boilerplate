@@ -1,44 +1,48 @@
 import * as React from 'react';
+import { LayoutDashboard } from 'lucide-react';
 
 import styles from './NavItem.module.scss';
 
 export interface NavItemProps extends React.HTMLAttributes<HTMLDivElement> {
   label: string;
   icon?: React.ReactNode;
+  /** @deprecated Use `icon` with a Lucide (or other) React node instead. */
   iconUrl?: string;
-  variant?: 'light' | 'dark';
+  theme?: 'light' | 'dark';
   active?: boolean;
+  size?: 'sm' | 'md' | 'lg';
 }
 
-const DEFAULT_ICON_LIGHT =
-  'https://www.figma.com/api/mcp/asset/24e8248a-ca97-46a3-902f-45e60ea39c15';
-const DEFAULT_ICON_DARK =
-  'https://www.figma.com/api/mcp/asset/27587bd9-9696-4add-b08e-4dd5d356c2b2';
+const DEFAULT_ICON = <LayoutDashboard aria-hidden />;
 
 export function NavItem({
   label,
   icon,
   iconUrl,
-  variant = 'light',
+  theme = 'light',
   active = false,
+  size = 'md',
   className,
   ...props
 }: NavItemProps) {
+  const sizeClass = size === 'sm' ? styles.sm : size === 'lg' ? styles.lg : styles.md;
+
   const cls = [
     styles.item,
-    variant === 'dark' ? styles.dark : styles.light,
+    sizeClass,
+    theme === 'dark' ? styles.dark : styles.light,
     active ? styles.active : '',
     className,
   ]
     .filter(Boolean)
     .join(' ');
 
-  const src = iconUrl ?? (variant === 'dark' ? DEFAULT_ICON_DARK : DEFAULT_ICON_LIGHT);
+  const iconContent = icon ?? (iconUrl ? <img src={iconUrl} alt="" /> : DEFAULT_ICON);
 
   return (
     <div className={cls} role="button" tabIndex={0} {...props}>
       <div className={styles.icon} aria-hidden>
-        {icon ? icon : <img src={src} alt="" />}
+        {iconContent}
       </div>
       <div className={styles.label}>{label}</div>
     </div>

@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 
+import { darkCanvas, lightCanvas } from '../../../.storybook/canvas';
 import { Button } from './Button';
 
 const meta: Meta<typeof Button> = {
@@ -10,16 +11,14 @@ const meta: Meta<typeof Button> = {
     variant: {
       control: 'select',
       options: ['primary', 'secondary', 'danger', 'cargar'],
-      description: 'The visual style of the button',
     },
-    disabled: {
-      control: 'boolean',
-      description: 'Whether the button is disabled',
+    size: {
+      control: 'radio',
+      options: ['small', 'medium', 'large'],
     },
-    children: {
-      control: 'text',
-      description: 'Button content',
-    },
+    disabled: { control: 'boolean' },
+    loading: { control: 'boolean' },
+    arrow: { control: 'boolean' },
   },
 };
 
@@ -54,6 +53,48 @@ export const CargarLoading: Story = {
     variant: 'cargar',
     loading: true,
   },
+};
+
+export const AllSizes: Story = {
+  render: () => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'flex-start' }}>
+      <Button size="small">Small</Button>
+      <Button size="medium">Medium</Button>
+      <Button size="large">Large</Button>
+    </div>
+  ),
+};
+
+export const ThemeOnDarkCanvas: Story = {
+  decorators: [darkCanvas],
+  render: () => (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+      <Button variant="primary" arrow>
+        Primary
+      </Button>
+      <Button variant="secondary">Secondary</Button>
+      <Button variant="danger">Danger</Button>
+      <Button variant="cargar" loading>
+        Cargar
+      </Button>
+    </div>
+  ),
+};
+
+export const ThemeOnLightCanvas: Story = {
+  decorators: [lightCanvas],
+  render: () => (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+      <Button variant="primary" arrow>
+        Primary
+      </Button>
+      <Button variant="secondary">Secondary</Button>
+      <Button variant="danger">Danger</Button>
+      <Button variant="cargar" loading>
+        Cargar
+      </Button>
+    </div>
+  ),
 };
 
 export const Disabled: Story = {

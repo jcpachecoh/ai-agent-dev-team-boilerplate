@@ -5,7 +5,7 @@ export interface PasswordRowProps extends React.HTMLAttributes<HTMLDivElement> {
   label?: string;
   actionText?: string;
   onAction?: () => void;
-  variant?: 'light' | 'dark';
+  theme?: 'light' | 'dark';
   size?: 'sm' | 'md' | 'lg';
 }
 
@@ -13,13 +13,13 @@ export function PasswordRow({
   label = 'Contraseña',
   actionText = '¿Olvidaste tu contraseña?',
   onAction,
-  variant = 'light',
+  theme = 'light',
   size = 'md',
   className,
   ...props
 }: PasswordRowProps) {
   const sizeClass = size === 'sm' ? styles.sm : size === 'lg' ? styles.lg : styles.md;
-  const cls = [styles.row, variant === 'dark' ? styles.dark : styles.light, sizeClass, className]
+  const cls = [styles.row, theme === 'dark' ? styles.dark : styles.light, sizeClass, className]
     .filter(Boolean)
     .join(' ');
 

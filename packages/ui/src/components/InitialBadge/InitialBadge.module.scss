@@ -32,3 +32,20 @@
   padding: $spacing-sm 10px;
   font-size: $font-size-xs;
 }
+
+.light {
+  background-image: linear-gradient(135deg, #d4a017 0%, #f0c040 100%);
+
+  .label {
+    color: $color-gray-900;
+  }
+}
+
+.dark {
+  background-image: linear-gradient(135deg, #8a6510 0%, #d4a017 100%);
+  border: $border-width solid rgba($color-white, 0.08);
+
+  .label {
+    color: #ededf5;
+  }
+}

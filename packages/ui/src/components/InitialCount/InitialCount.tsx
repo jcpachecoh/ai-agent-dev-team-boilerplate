@@ -19,7 +19,7 @@ export function InitialCount({
   label,
   letter = '',
   number = 0,
-  numberColor = '#2F82FF',
+  numberColor,
   labelColor,
   theme = 'light',
   size = 'md',
@@ -27,9 +27,10 @@ export function InitialCount({
   ...props
 }: InitialCountProps) {
   const finalLabel = label ?? letter ?? '';
-  const finalLabelColor = labelColor ?? (theme === 'dark' ? '#5A5A72' : '#72729A');
+  const finalLabelColor = labelColor ?? undefined;
   const sizeClass = size === 'sm' ? styles.sm : size === 'lg' ? styles.lg : styles.md;
-  const cls = [styles.wrapper, sizeClass, className].filter(Boolean).join(' ');
+  const themeClass = theme === 'dark' ? styles.dark : styles.light;
+  const cls = [styles.wrapper, sizeClass, themeClass, className].filter(Boolean).join(' ');
 
   return (
     <div className={cls} {...props}>
@@ -37,7 +38,11 @@ export function InitialCount({
         {number}
       </span>
       {finalLabel ? (
-        <span className={styles.label} style={{ color: finalLabelColor }} aria-hidden>
+        <span
+          className={styles.label}
+          style={finalLabelColor ? { color: finalLabelColor } : undefined}
+          aria-hidden
+        >
           {finalLabel}
         </span>
       ) : null}

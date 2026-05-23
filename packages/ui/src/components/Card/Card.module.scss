@@ -27,7 +27,17 @@
 }
 
 .icon {
-  color: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.light .icon {
+  color: $color-warning;
+}
+
+.dark .icon {
+  color: $color-secondary-light;
 }
 
 .icon svg {

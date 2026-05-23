@@ -22,7 +22,7 @@ export function Card({
       <div className={styles.header}>
         <div className={styles.title}>{title}</div>
         <div className={styles.icon}>
-          <Truck />
+          <Truck size={18} aria-hidden />
         </div>
       </div>
 

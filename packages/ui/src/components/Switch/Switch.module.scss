@@ -1,9 +1,14 @@
 @use '../../styles/abstracts/variables' as *;
+@use '../../styles/abstracts/mixins' as *;
 
 .switch {
   display: inline-flex;
   align-items: center;
   cursor: pointer;
+
+  &:has(.input:focus-visible) .track {
+    @include focus-ring;
+  }
 }
 
 .input {
@@ -109,4 +114,29 @@
 .disabled {
   cursor: not-allowed;
   opacity: 0.6;
+}
+
+/* Theme: estado apagado (mejor contraste según superficie) */
+.theme--light:not(.checked) .variant--default .track {
+  background: $color-gray-200;
+}
+
+.theme--light:not(.checked) .variant--default .thumb {
+  background: $color-gray-600;
+}
+
+.theme--dark:not(.checked) .variant--default .track {
+  background: rgba($color-white, 0.14);
+}
+
+.theme--dark:not(.checked) .variant--default .thumb {
+  background: rgba($color-white, 0.55);
+}
+
+.theme--dark.checked .variant--default .track {
+  background: #e4b43a;
+}
+
+.theme--dark.checked .variant--default .thumb {
+  background: #0b0b0b;
 }

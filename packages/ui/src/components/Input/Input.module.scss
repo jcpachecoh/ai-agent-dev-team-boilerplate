@@ -1,4 +1,5 @@
 @use '../../styles/abstracts/variables' as *;
+@use '../../styles/abstracts/mixins' as *;
 
 /* Simple, self-contained input styles (avoid dependance on global variables) */
 .wrapper {
@@ -16,22 +17,24 @@
 }
 
 .wrapper--sm {
-  padding: 6px 10px;
+  min-height: 36px;
+  padding: 6px 10px 6px 36px;
   border-radius: 10px;
+  max-width: 320px;
 }
 
 .wrapper--md {
-  padding: 10px 14px;
+  min-height: 44px;
+  padding: 10px 14px 10px 40px;
   border-radius: $border-radius-lg;
+  max-width: 420px;
 }
 
 .wrapper--lg {
-  padding: 14px 18px;
-  border-radius: $spacing-md;
-}
-
-.wrapper--lg {
-  max-width: 640px;
+  min-height: 52px;
+  padding: 14px 18px 14px 44px;
+  border-radius: 14px;
+  max-width: 520px;
 }
 
 .left {
@@ -44,9 +47,25 @@
   transform: translateY(-50%);
 }
 
-.left svg {
+.wrapper--sm .left {
+  left: 10px;
+}
+.wrapper--sm .left svg {
+  width: 14px;
+  height: 14px;
+}
+
+.wrapper--md .left svg {
   width: 18px;
   height: 18px;
+}
+
+.wrapper--lg .left {
+  left: 14px;
+}
+.wrapper--lg .left svg {
+  width: 20px;
+  height: 20px;
 }
 
 .input {
@@ -61,22 +80,15 @@
 }
 
 .wrapper--sm .input {
-  padding-left: 36px;
-}
-.wrapper--md .input {
-  padding-left: 36px;
-}
-.wrapper--lg .input {
-  padding-left: 36px;
-}
-
-.wrapper--sm .input {
+  padding-left: 0;
   font-size: 13px;
 }
 .wrapper--md .input {
+  padding-left: 0;
   font-size: $font-size-sm;
 }
 .wrapper--lg .input {
+  padding-left: 0;
   font-size: $font-size-base;
 }
 
@@ -132,4 +144,26 @@
 }
 .theme--light .left {
   color: rgba(24, 24, 31, 0.6);
+}
+
+.theme--light .iconButton {
+  color: rgba(24, 24, 31, 0.6);
+}
+
+.wrapper--error {
+  border-color: $color-danger !important;
+}
+
+.wrapper--error .input::placeholder {
+  color: rgba($color-danger, 0.7);
+}
+
+.wrapper--disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.iconButton:focus-visible {
+  @include focus-ring;
+  border-radius: $border-radius-sm;
 }

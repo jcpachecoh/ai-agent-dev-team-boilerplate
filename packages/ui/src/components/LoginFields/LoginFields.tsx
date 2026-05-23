@@ -57,7 +57,11 @@ export function LoginFields({
     onRememberChange?.(e.target.checked);
   };
 
-  const wrapperClass = [styles.wrapper, theme === 'dark' ? styles.dark : styles.light]
+  const wrapperClass = [
+    styles.wrapper,
+    styles[`size--${size}`],
+    theme === 'dark' ? styles.dark : styles.light,
+  ]
     .filter(Boolean)
     .join(' ');
 
@@ -79,7 +83,12 @@ export function LoginFields({
       </label>
 
       <div className={styles.field}>
-        <PasswordRow variant={theme} label="Contraseña" actionText="¿Olvidaste tu contraseña?" />
+        <PasswordRow
+          theme={theme}
+          size={size}
+          label="Contraseña"
+          actionText="¿Olvidaste tu contraseña?"
+        />
         <Input
           id="login-password"
           name="password"
@@ -102,7 +111,7 @@ export function LoginFields({
             setRemember(v);
             onRememberChange?.(v);
           }}
-          variant={theme}
+          theme={theme}
           label="Recordar mi sesión"
         />
       </div>

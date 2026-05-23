@@ -1,25 +1,92 @@
 @use '../../styles/abstracts/variables' as *;
 
 .container {
-  width: 260px;
-  padding: $spacing-md;
-  border-radius: $border-radius-lg;
+  box-sizing: border-box;
+  border-radius: 14px;
+  overflow: hidden;
 }
 
-.list {
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-sm;
-  padding: 0;
-  margin: 0;
-  list-style: none;
+.size--sm {
+  width: 200px;
+  padding: $spacing-sm;
+}
+
+.size--md {
+  width: 260px;
+  padding: $spacing-md;
+}
+
+.size--lg {
+  width: 300px;
+  padding: $spacing-lg;
 }
 
 .light {
   background: $color-white;
+  border: $border-width solid rgba($color-black, 0.08);
+  box-shadow: $shadow-sm;
 }
 
 .dark {
   background: #0f1724;
   border: $border-width solid rgba($color-white, 0.07);
+}
+
+.scrollArea {
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 2px;
+  margin-right: -2px;
+
+  scrollbar-width: thin;
+  scrollbar-color: rgba($color-white, 0.2) transparent;
+}
+
+.light .scrollArea {
+  scrollbar-color: rgba($color-black, 0.2) transparent;
+}
+
+.scrollArea::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollArea::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 4px 0;
+}
+
+.dark .scrollArea::-webkit-scrollbar-thumb {
+  background: rgba($color-white, 0.15);
+  border-radius: 6px;
+}
+
+.dark .scrollArea::-webkit-scrollbar-thumb:hover {
+  background: rgba($color-white, 0.25);
+}
+
+.light .scrollArea::-webkit-scrollbar-thumb {
+  background: rgba($color-black, 0.15);
+  border-radius: 6px;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.size--sm .list {
+  gap: 2px;
+}
+
+.size--lg .list {
+  gap: $spacing-sm;
+}
+
+.item {
+  margin: 0;
+  padding: 0;
 }

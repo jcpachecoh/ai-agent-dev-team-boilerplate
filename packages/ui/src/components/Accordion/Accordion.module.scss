@@ -3,10 +3,10 @@
 // ─── Design tokens (override/extend from variables) ──────────────────────────
 // These mirror the RestOpsIQ dark-theme palette visible in the dashboard.
 // If your variables already expose these, replace the fallback values.
-$acc-bg-surface: var(--color-surface, #1a1a1a);
-$acc-bg-trigger: var(--color-surface-raised, #1f1f1f);
-$acc-bg-content: var(--color-surface-deep, #161616);
-$acc-border-default: var(--color-border, rgba(255, 255, 255, 0.07));
+$acc-bg-surface: var(--acc-bg-surface, #1a1a1a);
+$acc-bg-trigger: var(--acc-bg-trigger, #1f1f1f);
+$acc-bg-content: var(--acc-bg-content, #161616);
+$acc-border-default: var(--acc-border-default, rgba(255, 255, 255, 0.07));
 $acc-radius: 12px;
 $acc-accent-width: 3px; // slim left-bar — cleaner on dark bg
 
@@ -21,6 +21,26 @@ $acc-color-warning: var(--color-primary, #7c6af7); // violet — info / FEFO
   width: 100%;
   background-color: transparent;
   overflow: hidden;
+}
+
+.root--light {
+  --acc-bg-surface: #{$color-bg-primary};
+  --acc-bg-trigger: #{$color-gray-100};
+  --acc-bg-content: #{$color-gray-100};
+  --acc-border-default: #{rgba($color-black, 0.08)};
+  --acc-text: #{$color-text-primary};
+  --acc-text-muted: #{$color-text-secondary};
+  --acc-icon: #{rgba($color-black, 0.35)};
+}
+
+.root--dark {
+  --acc-bg-surface: #{$color-gray-900};
+  --acc-bg-trigger: #1f1f1f;
+  --acc-bg-content: #161616;
+  --acc-border-default: #{rgba($color-white, 0.07)};
+  --acc-text: #{$color-gray-100};
+  --acc-text-muted: #{rgba($color-white, 0.4)};
+  --acc-icon: #{rgba($color-white, 0.35)};
 }
 
 // ─── Item ────────────────────────────────────────────────────────────────────
@@ -39,35 +59,24 @@ $acc-color-warning: var(--color-primary, #7c6af7); // violet — info / FEFO
   }
 
   &:hover {
-    /* Size helpers: affect trigger height/spacing and item width */
-    .triggerSm {
-      padding: $spacing-sm;
-      font-size: $font-size-sm;
-      min-height: 40px;
-    }
-    .triggerMd {
-      padding: $spacing-md;
-      font-size: $font-size-base;
-      min-height: 56px;
-    }
-    .triggerLg {
-      padding: $spacing-lg;
-      font-size: $font-size-lg;
-      min-height: 72px;
-    }
-
-    .itemSm {
-      max-width: 360px;
-    }
-    .itemMd {
-      max-width: 720px;
-    }
-    .itemLg {
-      max-width: 1080px;
-    }
     border-color: rgba(255, 255, 255, 0.12);
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
   }
+}
+
+.root--light .item:hover {
+  border-color: rgba($color-black, 0.12);
+  box-shadow: $shadow-sm;
+}
+
+.itemSm {
+  max-width: 360px;
+}
+.itemMd {
+  max-width: 720px;
+}
+.itemLg {
+  max-width: 1080px;
 }
 
 // ── Variant borders (thin left accent via box-shadow inset) ──────────────────
@@ -120,7 +129,7 @@ $acc-color-warning: var(--color-primary, #7c6af7); // violet — info / FEFO
   gap: 12px;
   font-size: $font-size-base;
   font-weight: $font-weight-medium;
-  color: $color-text-primary;
+  color: var(--acc-text, $color-text-primary);
   border: none;
   cursor: pointer;
   border-top-left-radius: $acc-radius;
@@ -148,20 +157,6 @@ $acc-color-warning: var(--color-primary, #7c6af7); // violet — info / FEFO
 }
 
 /* Size helpers */
-.triggerSm {
-  padding: 8px 12px;
-  font-size: $font-size-sm;
-}
-.triggerMd {
-  padding: 14px 18px 14px 16px;
-  font-size: $font-size-base;
-}
-.triggerLg {
-  padding: 18px 22px;
-  font-size: $font-size-lg;
-}
-
-/* Size helpers similar to BadgeButton */
 .triggerSm {
   padding: 8px 12px;
   font-size: $font-size-sm;
@@ -208,8 +203,15 @@ $acc-color-warning: var(--color-primary, #7c6af7); // violet — info / FEFO
 }
 
 // ── Chevron icon ──────────────────────────────────────────────────────────────
+.leftIcon {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  color: var(--acc-icon, rgba(255, 255, 255, 0.35));
+}
+
 .icon {
-  color: rgba(255, 255, 255, 0.35);
+  color: var(--acc-icon, rgba(255, 255, 255, 0.35));
   flex-shrink: 0;
   transition:
     transform 240ms cubic-bezier(0.16, 1, 0.3, 1),
@@ -236,7 +238,7 @@ $acc-color-warning: var(--color-primary, #7c6af7); // violet — info / FEFO
 .triggerTitle {
   font-size: $font-size-base;
   font-weight: $font-weight-medium;
-  color: $color-gray-300;
+  color: var(--acc-text, $color-gray-300);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -249,7 +251,7 @@ $acc-color-warning: var(--color-primary, #7c6af7); // violet — info / FEFO
   gap: 14px;
   margin-top: 2px;
   font-size: $font-size-xs;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--acc-text-muted, rgba(255, 255, 255, 0.4));
   white-space: nowrap;
 
   span {
