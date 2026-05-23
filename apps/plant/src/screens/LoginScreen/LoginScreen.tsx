@@ -1,5 +1,5 @@
-import { FieldAlertBanner, PinKeypad } from '@restopsiq/ui';
-import { useCallback, useEffect, useState } from 'react';
+import { Button, FieldAlertBanner, Input, PinKeypad } from '@restopsiq/ui';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import {
   authenticateOperatorPin,
@@ -7,6 +7,11 @@ import {
   OperatorAuthError,
   shouldShowDemoPinHint,
 } from '@/services/auth.service';
+import {
+  isValidStationId,
+  normalizeStationId,
+  setStationId as persistStationId,
+} from '@/services/station.service';
 import { useSessionStore } from '@/stores/session.store';
 import styles from './LoginScreen.module.scss';
 
@@ -109,10 +114,80 @@ export function LoginScreen({
 
   const showDemoHint = shouldShowDemoPinHint();
 
+  // ── Station ID setup form ──────────────────────────────────────────────────
+  const setStationIdStore = useSessionStore((s) => s.setStationId);
+  const [stationInput, setStationInput] = useState('');
+  const [stationError, setStationError] = useState<string | null>(null);
+  const [stationSaving, setStationSaving] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!stationId) inputRef.current?.focus();
+  }, [stationId]);
+
+  const handleStationSubmit = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      const value = stationInput.trim();
+      if (!isValidStationId(value)) {
+        setStationError('ID inválido. Usa letras, números, guiones (ej. EST-01).');
+        return;
+      }
+      setStationError(null);
+      setStationSaving(true);
+      try {
+        await persistStationId(value);
+        setStationIdStore(normalizeStationId(value));
+      } catch {
+        setStationError('No se pudo guardar el ID de estación.');
+      } finally {
+        setStationSaving(false);
+      }
+    },
+    [stationInput, setStationIdStore],
+  );
+
   if (!stationId) {
     return (
       <div className={`screen-operator ${styles.screen}`}>
-        <p className={styles.setupMessage}>Configure el ID de estación para continuar.</p>
+        <div className={styles.setupCard}>
+          <p className={styles.setupTitle}>Configurar estación</p>
+          <p className={styles.setupMessage}>Ingresa el ID de esta estación para comenzar.</p>
+          <form onSubmit={handleStationSubmit} className={styles.setupForm} noValidate>
+            <Input
+              ref={inputRef}
+              theme="dark"
+              size="md"
+              inputMode="text"
+              autoCapitalize="characters"
+              autoComplete="off"
+              spellCheck={false}
+              placeholder="Ej. EST-01"
+              value={stationInput}
+              onChange={(e) => {
+                setStationInput(e.target.value.toUpperCase());
+                setStationError(null);
+              }}
+              aria-label="ID de estación"
+              aria-describedby={stationError ? 'station-error' : undefined}
+            />
+            {stationError && (
+              <p id="station-error" className={styles.setupError} role="alert">
+                {stationError}
+              </p>
+            )}
+            <Button
+              type="submit"
+              variant="primary"
+              size="medium"
+              loading={stationSaving}
+              disabled={stationSaving || stationInput.trim() === ''}
+              className={styles.setupButton}
+            >
+              Confirmar
+            </Button>
+          </form>
+        </div>
       </div>
     );
   }

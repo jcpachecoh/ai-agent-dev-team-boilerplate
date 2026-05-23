@@ -1,6 +1,6 @@
 import { request } from './http';
-import { milestonesService, type Milestone } from './milestones.service';
-import { requirementsService, type Requirement } from './requirements.service';
+import type { Milestone } from './milestones.service';
+import type { Requirement } from './requirements.service';
 
 export type CasePriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 export type CaseType =
@@ -55,49 +55,29 @@ export const casesService = {
       body: JSON.stringify({ status }),
     }),
 
-  /** Option B: fetches all milestones then filters by case membership (client-side). */
-  listMilestones: async (
-    projectId: string,
-    _suiteId: string,
-    caseId: string,
-  ): Promise<Milestone[]> => {
-    const allMilestones = await milestonesService.list(projectId);
-    const results = await Promise.all(
-      allMilestones.map((m) =>
-        milestonesService
-          .getCases(projectId, m.id)
-          .then((cases) => (cases.some((c) => c.id === caseId) ? m : null)),
-      ),
-    );
-    return results.filter((m): m is Milestone => m !== null);
-  },
+  listMilestones: (projectId: string, suiteId: string, caseId: string): Promise<Milestone[]> =>
+    request<Milestone[]>(`/projects/${projectId}/suites/${suiteId}/cases/${caseId}/milestones`),
 
   linkMilestone: (projectId: string, milestoneId: string, caseId: string): Promise<void> =>
-    milestonesService.linkCase(projectId, milestoneId, caseId),
+    request<void>(`/projects/${projectId}/milestones/${milestoneId}/cases/${caseId}`, {
+      method: 'POST',
+    }),
 
   unlinkMilestone: (projectId: string, milestoneId: string, caseId: string): Promise<void> =>
-    milestonesService.unlinkCase(projectId, milestoneId, caseId),
+    request<void>(`/projects/${projectId}/milestones/${milestoneId}/cases/${caseId}`, {
+      method: 'DELETE',
+    }),
 
-  /** Option B: fetches all requirements then filters by case membership (client-side). */
-  listRequirements: async (
-    projectId: string,
-    _suiteId: string,
-    caseId: string,
-  ): Promise<Requirement[]> => {
-    const allReqs = await requirementsService.list(projectId);
-    const results = await Promise.all(
-      allReqs.map((r) =>
-        requirementsService
-          .getCases(projectId, r.id)
-          .then((cases) => (cases.some((c) => c.id === caseId) ? r : null)),
-      ),
-    );
-    return results.filter((r): r is Requirement => r !== null);
-  },
+  listRequirements: (projectId: string, suiteId: string, caseId: string): Promise<Requirement[]> =>
+    request<Requirement[]>(`/projects/${projectId}/suites/${suiteId}/cases/${caseId}/requirements`),
 
   linkRequirement: (projectId: string, requirementId: string, caseId: string): Promise<void> =>
-    requirementsService.linkCase(projectId, requirementId, caseId),
+    request<void>(`/projects/${projectId}/requirements/${requirementId}/cases/${caseId}`, {
+      method: 'POST',
+    }),
 
   unlinkRequirement: (projectId: string, requirementId: string, caseId: string): Promise<void> =>
-    requirementsService.unlinkCase(projectId, requirementId, caseId),
+    request<void>(`/projects/${projectId}/requirements/${requirementId}/cases/${caseId}`, {
+      method: 'DELETE',
+    }),
 };

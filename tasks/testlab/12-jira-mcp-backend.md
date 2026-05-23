@@ -145,7 +145,7 @@ console.log((await jira.myself.getCurrentUser()).emailAddress);
 - [ ] `GET /testlab/jira/issues?projectKey=:key&query=:jql&limit=25` — searches issues via JQL.
       Default JQL when no query param: `project = :key ORDER BY updated DESC`.
 - [ ] `GET /testlab/jira/issues/:issueKey` — returns `{ key, summary, description, priority,
-    status, labels, url, storyPoints }`. `description` is ADF → plain text.
+  status, labels, url, storyPoints }`. `description` is ADF → plain text.
 - [ ] `POST /testlab/projects/:projectId/jira-links` — body `{ issueKey, entityType, entityId }`.
       Caches `issueSummary` and `issueUrl` fetched from Jira. Returns `201`. Returns `409` if
       the same `(projectId, issueKey, entityType, entityId)` already exists.

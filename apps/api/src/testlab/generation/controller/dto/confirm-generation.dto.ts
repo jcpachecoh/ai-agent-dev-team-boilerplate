@@ -1,25 +1,56 @@
-import { IsString, IsNotEmpty, IsOptional, IsArray, IsIn, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
+import { IsArray, IsEnum, IsNotEmpty, IsOptional, IsString, ValidateNested } from 'class-validator';
 
 class MilestoneDto {
-  @IsString() name!: string;
-  @IsString() description!: string;
-  @IsString() @IsOptional() dueDate?: string;
+  @IsString()
+  @IsNotEmpty()
+  name!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  description!: string;
+
+  @IsString()
+  @IsOptional()
+  dueDate?: string;
 }
 
 class RequirementDto {
-  @IsString() title!: string;
-  @IsString() description!: string;
-  @IsString() externalId!: string;
+  @IsString()
+  @IsNotEmpty()
+  title!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  description!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  externalId!: string;
 }
 
 class TestCaseDto {
-  @IsString() title!: string;
-  @IsString() preconditions!: string;
-  @IsString() steps!: string;
-  @IsString() expectedResult!: string;
-  @IsIn(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']) priority!: string;
-  @IsIn(['FUNCTIONAL', 'REGRESSION', 'SMOKE', 'ACCEPTANCE']) type!: string;
+  @IsString()
+  @IsNotEmpty()
+  title!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  preconditions!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  steps!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  expectedResult!: string;
+
+  @IsEnum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'])
+  priority!: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+
+  @IsEnum(['FUNCTIONAL', 'REGRESSION', 'SMOKE', 'ACCEPTANCE'])
+  type!: 'FUNCTIONAL' | 'REGRESSION' | 'SMOKE' | 'ACCEPTANCE';
 }
 
 export class ConfirmGenerationDto {
@@ -27,9 +58,9 @@ export class ConfirmGenerationDto {
   @IsNotEmpty()
   suiteId!: string;
 
+  @IsOptional()
   @ValidateNested()
   @Type(() => MilestoneDto)
-  @IsOptional()
   milestone?: MilestoneDto;
 
   @IsArray()

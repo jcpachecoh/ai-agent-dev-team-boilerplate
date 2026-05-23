@@ -1,10 +1,50 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import * as authService from '@/services/auth.service';
+import * as stationService from '@/services/station.service';
 import { useSessionStore } from '@/stores/session.store';
 import { LoginScreen } from './LoginScreen';
+
+// lucide-react v0.511 targets React 19 — stub UI components to avoid incompatibility in jsdom/React 18
+vi.mock('@restopsiq/ui', () => ({
+  PinKeypad: ({
+    onKeyPress,
+    onConfirm,
+  }: {
+    onKeyPress?: (key: string) => void;
+    onConfirm?: () => void;
+  }) => (
+    <div role="group" aria-label="Teclado PIN">
+      {['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'].map((d) => (
+        <button key={d} onClick={() => onKeyPress?.(d)} aria-label={`Tecla ${d}`}>
+          {d}
+        </button>
+      ))}
+      <button onClick={() => onKeyPress?.('backspace')} aria-label="Tecla borrar">
+        ←
+      </button>
+      <button onClick={onConfirm} aria-label="OK">
+        OK
+      </button>
+    </div>
+  ),
+  FieldAlertBanner: ({ children }: { children: React.ReactNode }) => (
+    <div role="alert">{children}</div>
+  ),
+  Input: React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(
+    (props, ref) => <input ref={ref} {...props} />,
+  ),
+  Button: ({
+    children,
+    loading,
+    ...props
+  }: React.ButtonHTMLAttributes<HTMLButtonElement> & { loading?: boolean }) => (
+    <button {...props}>{loading ? 'Guardando…' : children}</button>
+  ),
+}));
 
 vi.mock('@/services/auth.service', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/services/auth.service')>();
@@ -13,6 +53,14 @@ vi.mock('@/services/auth.service', async (importOriginal) => {
     authenticateOperatorPin: vi.fn(),
     shouldShowDemoPinHint: vi.fn(() => true),
     getDemoPinHint: vi.fn(() => '1234'),
+  };
+});
+
+vi.mock('@/services/station.service', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/services/station.service')>();
+  return {
+    ...actual,
+    setStationId: vi.fn().mockResolvedValue(undefined),
   };
 });
 
@@ -106,6 +154,34 @@ describe('LoginScreen', () => {
   it('prompts for station setup when stationId is missing', () => {
     useSessionStore.setState({ stationId: null });
     render(<LoginScreen />);
-    expect(screen.getByText(/configure el id de estación/i)).toBeInTheDocument();
+    expect(screen.getByText(/configurar estación/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/est-01/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /confirmar/i })).toBeInTheDocument();
+  });
+
+  it('shows validation error for invalid station ID', async () => {
+    const user = userEvent.setup();
+    useSessionStore.setState({ stationId: null });
+    render(<LoginScreen />);
+
+    await user.type(screen.getByPlaceholderText(/est-01/i), 'X');
+    await user.click(screen.getByRole('button', { name: /confirmar/i }));
+
+    expect(await screen.findByRole('alert')).toBeInTheDocument();
+    expect(stationService.setStationId).not.toHaveBeenCalled();
+  });
+
+  it('saves and applies a valid station ID on submit', async () => {
+    const user = userEvent.setup();
+    useSessionStore.setState({ stationId: null });
+    render(<LoginScreen />);
+
+    await user.type(screen.getByPlaceholderText(/est-01/i), 'EST-05');
+    await user.click(screen.getByRole('button', { name: /confirmar/i }));
+
+    await waitFor(() => {
+      expect(stationService.setStationId).toHaveBeenCalledWith('EST-05');
+    });
+    expect(useSessionStore.getState().stationId).toBe('EST-05');
   });
 });
