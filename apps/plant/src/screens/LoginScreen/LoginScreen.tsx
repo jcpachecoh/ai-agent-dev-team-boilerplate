@@ -16,7 +16,11 @@ import { useSessionStore } from '@/stores/session.store';
 import styles from './LoginScreen.module.scss';
 
 const PIN_LENGTH = 4;
+const CEDULA_MIN_LENGTH = 6;
+const CEDULA_MAX_LENGTH = 12;
 const SUCCESS_DISPLAY_MS = 1800;
+
+type LoginStep = 'cedula' | 'pin';
 
 export interface LoginScreenProps {
   /** Work area title, e.g. "Corte y deshuese" */
@@ -43,6 +47,8 @@ export function LoginScreen({
   const stationId = useSessionStore((s) => s.stationId);
   const login = useSessionStore((s) => s.login);
 
+  const [step, setStep] = useState<LoginStep>('cedula');
+  const [cedula, setCedula] = useState('');
   const [pin, setPin] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -56,7 +62,11 @@ export function LoginScreen({
       setError(null);
 
       if (key === 'backspace') {
-        setPin((current) => current.slice(0, -1));
+        if (step === 'cedula') {
+          setCedula((c) => c.slice(0, -1));
+        } else {
+          setPin((p) => p.slice(0, -1));
+        }
         return;
       }
 
@@ -64,10 +74,31 @@ export function LoginScreen({
         return;
       }
 
-      setPin((current) => (current.length < PIN_LENGTH ? current + key : current));
+      if (step === 'cedula') {
+        setCedula((c) => (c.length < CEDULA_MAX_LENGTH ? c + key : c));
+      } else {
+        setPin((p) => (p.length < PIN_LENGTH ? p + key : p));
+      }
     },
-    [successName, isSubmitting],
+    [step, successName, isSubmitting],
   );
+
+  const submitCedula = useCallback(() => {
+    if (cedula.length < CEDULA_MIN_LENGTH) {
+      setError('Ingrese un número de cédula válido (mín. 6 dígitos)');
+      vibratePinError();
+      setShakeKeypad(true);
+      return;
+    }
+    setError(null);
+    setStep('pin');
+  }, [cedula]);
+
+  const backToCedula = useCallback(() => {
+    setStep('cedula');
+    setPin('');
+    setError(null);
+  }, []);
 
   const submitPin = useCallback(async () => {
     if (pin.length !== PIN_LENGTH || !stationId || isSubmitting || successName) {
@@ -78,25 +109,25 @@ export function LoginScreen({
     setError(null);
 
     try {
-      const result = await authenticateOperatorPin(stationId, pin);
+      const result = await authenticateOperatorPin(stationId, cedula, pin);
       login({ operatorId: result.operatorId, operatorName: result.operatorName });
       setSuccessName(result.operatorName);
       setPin('');
     } catch (err) {
       if (err instanceof OperatorAuthError) {
-        setError('PIN incorrecto');
+        setError('Cédula o PIN incorrecto');
         setPin('');
         vibratePinError();
         setShakeKeypad(true);
       } else {
-        setError('PIN incorrecto');
+        setError('Cédula o PIN incorrecto');
         vibratePinError();
         setShakeKeypad(true);
       }
     } finally {
       setIsSubmitting(false);
     }
-  }, [pin, stationId, isSubmitting, successName, login]);
+  }, [pin, cedula, stationId, isSubmitting, successName, login]);
 
   useEffect(() => {
     if (!shakeKeypad) return;
@@ -206,41 +237,91 @@ export function LoginScreen({
         </header>
 
         <h1 className={styles.areaTitle}>{areaName}</h1>
-        <p className={styles.instruction}>Ingrese su PIN de operador</p>
 
-        <div className={styles.pinDots} role="group" aria-label="Dígitos ingresados">
-          {Array.from({ length: PIN_LENGTH }).map((_, index) => (
-            <span
-              key={index}
-              className={[styles.dot, index < pin.length && styles.dotFilled]
+        {step === 'cedula' ? (
+          <>
+            <p className={styles.instruction}>Ingrese su número de cédula</p>
+
+            <div
+              className={styles.cedulaDisplay}
+              role="group"
+              aria-label="Número de cédula ingresado"
+            >
+              {cedula ? (
+                <span className={styles.cedulaText}>{cedula}</span>
+              ) : (
+                <span className={styles.cedulaPlaceholder}>_ _ _ _ _ _</span>
+              )}
+            </div>
+
+            {error && (
+              <div className={styles.errorBanner}>
+                <FieldAlertBanner variant="danger" theme="dark" size="md">
+                  {error}
+                </FieldAlertBanner>
+              </div>
+            )}
+
+            <div
+              className={[styles.keypadWrap, shakeKeypad && styles.keypadShake]
                 .filter(Boolean)
                 .join(' ')}
-              aria-hidden
-            />
-          ))}
-        </div>
+            >
+              <PinKeypad
+                theme="dark"
+                size="sm"
+                confirmLabel="OK"
+                onKeyPress={handleKeyPress}
+                onConfirm={submitCedula}
+              />
+            </div>
+          </>
+        ) : (
+          <>
+            <p className={styles.instruction}>Ingrese su PIN de operador</p>
+            <p className={styles.cedulaLabel}>
+              Cédula: <span className={styles.cedulaLabelValue}>{cedula}</span>
+            </p>
 
-        {error && (
-          <div className={styles.errorBanner}>
-            <FieldAlertBanner variant="danger" theme="dark" size="md">
-              {error}
-            </FieldAlertBanner>
-          </div>
+            <div className={styles.pinDots} role="group" aria-label="Dígitos ingresados">
+              {Array.from({ length: PIN_LENGTH }).map((_, index) => (
+                <span
+                  key={index}
+                  className={[styles.dot, index < pin.length && styles.dotFilled]
+                    .filter(Boolean)
+                    .join(' ')}
+                  aria-hidden
+                />
+              ))}
+            </div>
+
+            {error && (
+              <div className={styles.errorBanner}>
+                <FieldAlertBanner variant="danger" theme="dark" size="md">
+                  {error}
+                </FieldAlertBanner>
+              </div>
+            )}
+
+            <div
+              className={[styles.keypadWrap, shakeKeypad && styles.keypadShake]
+                .filter(Boolean)
+                .join(' ')}
+            >
+              <PinKeypad
+                theme="dark"
+                size="sm"
+                confirmLabel="OK"
+                onKeyPress={handleKeyPress}
+                onConfirm={() => void submitPin()}
+              />
+            </div>
+
+            <button type="button" className={styles.backLink} onClick={backToCedula}>
+              Cambiar cédula
+            </button>
+          </>
         )}
-
-        <div
-          className={[styles.keypadWrap, shakeKeypad && styles.keypadShake]
-            .filter(Boolean)
-            .join(' ')}
-        >
-          <PinKeypad
-            theme="dark"
-            size="sm"
-            confirmLabel="OK"
-            onKeyPress={handleKeyPress}
-            onConfirm={() => void submitPin()}
-          />
-        </div>
 
         {showDemoHint && <p className={styles.demoHint}>DEMO: PIN correcto = {getDemoPinHint()}</p>}
 

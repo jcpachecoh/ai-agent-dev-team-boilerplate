@@ -170,6 +170,65 @@ $color-muted: rgba($color-operator-text, 0.55);
   color: $color-muted;
 }
 
+.cedulaDisplay {
+  min-width: 200px;
+  padding: 0.5rem 1.25rem;
+  border-bottom: 2px solid rgba($color-operator-text, 0.3);
+  text-align: center;
+  min-height: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: $layout-gap-sm 0;
+}
+
+.cedulaText {
+  font-family: ui-monospace, 'Fira Code', monospace;
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: $color-operator-text;
+}
+
+.cedulaPlaceholder {
+  font-family: ui-monospace, 'Fira Code', monospace;
+  font-size: 1rem;
+  letter-spacing: 0.2em;
+  color: rgba($color-operator-text, 0.2);
+}
+
+.cedulaLabel {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: $color-muted;
+}
+
+.cedulaLabelValue {
+  font-family: ui-monospace, 'Fira Code', monospace;
+  color: $color-gold;
+}
+
+.backLink {
+  background: none;
+  border: none;
+  padding: 0.25rem 0.5rem;
+  color: $color-muted;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+
+  &:hover {
+    color: $color-operator-text;
+  }
+}
+
 .statusFooter {
   display: flex;
   align-items: center;
