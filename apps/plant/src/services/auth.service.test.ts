@@ -12,16 +12,23 @@ describe('auth.service', () => {
     vi.clearAllMocks();
   });
 
-  it('authenticates with demo PIN in dev without calling API', async () => {
-    const result = await authenticateOperatorPin('EST-02', '1234');
+  it('authenticates with any cédula and PIN in demo mode without calling API', async () => {
+    const result = await authenticateOperatorPin('EST-02', '12345678', '9999');
     expect(plantApi.plantFetch).not.toHaveBeenCalled();
-    expect(result.operatorName).toBe('Carlos Mendoza');
+    expect(result.operatorId).toBe('OP-DEMO-12345678');
+    expect(result.operatorName).toBe('Operador 12345678');
   });
 
-  it('throws OperatorAuthError for wrong PIN in dev', async () => {
-    await expect(authenticateOperatorPin('EST-02', '0000')).rejects.toBeInstanceOf(
-      OperatorAuthError,
-    );
-    expect(plantApi.plantFetch).not.toHaveBeenCalled();
+  it('calls API with cédula and PIN outside demo mode', async () => {
+    vi.stubEnv('DEV', false);
+    vi.stubEnv('VITE_ENABLE_DEMO_PIN', 'false');
+    vi.mocked(plantApi.plantFetch).mockResolvedValueOnce({
+      operatorId: 'OP-001',
+      operatorName: 'Juan Pérez',
+    });
+    const result = await authenticateOperatorPin('EST-02', '12345678', '5678');
+    expect(plantApi.plantFetch).toHaveBeenCalledTimes(1);
+    expect(result.operatorName).toBe('Juan Pérez');
+    vi.unstubAllEnvs();
   });
 });
