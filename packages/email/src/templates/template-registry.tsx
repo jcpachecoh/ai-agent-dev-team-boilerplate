@@ -4,7 +4,7 @@ import { Heading, Link, Section, Text } from '@react-email/components';
 import { BaseLayout } from './base-layout';
 import { WelcomeEmail } from './welcome';
 import { ResetPasswordEmail } from './reset-password';
-import { VerifyEmailTemplate } from './verify-email';
+import { VerifyEmailEmail } from './verify-email';
 import { InviteUserEmail } from './invite-user';
 import type { EmailTemplate } from '../types';
 
@@ -51,7 +51,7 @@ export function renderTemplateElement(
 
     case 'verify-email':
       return (
-        <VerifyEmailTemplate
+        <VerifyEmailEmail
           {...template.props}
           tenantName={layoutProps.tenantName}
           tenantLogoUrl={layoutProps.tenantLogoUrl}

@@ -7,7 +7,7 @@ export type { ResendSendPayload } from './resend.client';
 export { BaseLayout, RESTOPSIQ_LOGO_URL } from './templates/base-layout';
 export { WelcomeEmail } from './templates/welcome';
 export { ResetPasswordEmail } from './templates/reset-password';
-export { VerifyEmailTemplate } from './templates/verify-email';
+export { VerifyEmailEmail } from './templates/verify-email';
 export { InviteUserEmail } from './templates/invite-user';
 
 // Queue constants

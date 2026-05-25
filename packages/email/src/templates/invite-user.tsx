@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import type { CSSProperties, ReactElement } from 'react';
 import { Button, Heading, Section, Text } from '@react-email/components';
 
 import { BaseLayout } from './base-layout';
@@ -22,7 +22,7 @@ export function InviteUserEmail({
   tenantName,
   tenantLogoUrl,
   primaryColor = DEFAULT_PRIMARY_COLOR,
-}: InviteUserEmailProps) {
+}: InviteUserEmailProps): ReactElement {
   return (
     <BaseLayout
       tenantName={tenantName}
@@ -58,7 +58,7 @@ export function InviteUserEmail({
   );
 }
 
-export default function InviteUserEmailPreview() {
+export default function InviteUserEmailPreview(): ReactElement {
   return (
     <InviteUserEmail
       inviteeName="Carlos Mendoza"

@@ -1,19 +1,19 @@
 import { createElement } from 'react';
 import { render as renderEmail } from '@react-email/render';
 
-import { VerifyEmailTemplate } from '../templates/verify-email';
+import { VerifyEmailEmail } from '../templates/verify-email';
 import { RESTOPSIQ_LOGO_URL } from '../templates/base-layout';
-import type { VerifyEmailTemplateProps } from '../templates/verify-email';
+import type { VerifyEmailEmailProps } from '../templates/verify-email';
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-type RenderOverrides = Partial<VerifyEmailTemplateProps>;
+type RenderOverrides = Partial<VerifyEmailEmailProps>;
 
 function render(overrides: RenderOverrides = {}): string {
   return renderEmail(
-    createElement(VerifyEmailTemplate, {
+    createElement(VerifyEmailEmail, {
       userName: overrides.userName ?? 'Ana López',
       otpCode: overrides.otpCode ?? '123 456',
       expiresInMinutes: overrides.expiresInMinutes ?? 15,
@@ -28,7 +28,7 @@ function render(overrides: RenderOverrides = {}): string {
 // Tests
 // ---------------------------------------------------------------------------
 
-describe('VerifyEmailTemplate', () => {
+describe('VerifyEmailEmail', () => {
   describe('greeting', () => {
     it('renders a personalized greeting with userName', () => {
       const html = render({ userName: 'Jorge Pérez' });

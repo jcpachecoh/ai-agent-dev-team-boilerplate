@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import type { CSSProperties, ReactElement } from 'react';
 import { Heading, Text } from '@react-email/components';
 
 import { BaseLayout } from './base-layout';
@@ -6,20 +6,20 @@ import type { VerifyEmailProps } from '../types';
 
 const DEFAULT_PRIMARY_COLOR = '#E8943A';
 
-export interface VerifyEmailTemplateProps extends VerifyEmailProps {
+export interface VerifyEmailEmailProps extends VerifyEmailProps {
   tenantName: string;
   tenantLogoUrl?: string;
   primaryColor?: string;
 }
 
-export function VerifyEmailTemplate({
+export function VerifyEmailEmail({
   userName,
   otpCode,
   expiresInMinutes,
   tenantName,
   tenantLogoUrl,
   primaryColor = DEFAULT_PRIMARY_COLOR,
-}: VerifyEmailTemplateProps) {
+}: VerifyEmailEmailProps): ReactElement {
   return (
     <BaseLayout
       tenantName={tenantName}
@@ -52,9 +52,9 @@ export function VerifyEmailTemplate({
   );
 }
 
-export default function VerifyEmailPreview() {
+export default function VerifyEmailPreview(): ReactElement {
   return (
-    <VerifyEmailTemplate
+    <VerifyEmailEmail
       userName="Laura Martínez"
       otpCode="847 291"
       expiresInMinutes={15}
@@ -85,7 +85,7 @@ const textStyle: CSSProperties = {
 function otpStyle(primaryColor: string): CSSProperties {
   return {
     color: primaryColor,
-    fontSize: '40px',
+    fontSize: '36px',
     fontWeight: '700',
     fontFamily: 'monospace, "Courier New", Courier',
     letterSpacing: '8px',

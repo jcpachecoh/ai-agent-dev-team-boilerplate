@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import type { CSSProperties, ReactElement } from 'react';
 import { Button, Heading, Section, Text } from '@react-email/components';
 
 import { BaseLayout } from './base-layout';
@@ -20,7 +20,7 @@ export function ResetPasswordEmail({
   tenantName,
   tenantLogoUrl,
   primaryColor = DEFAULT_PRIMARY_COLOR,
-}: ResetPasswordEmailProps) {
+}: ResetPasswordEmailProps): ReactElement {
   return (
     <BaseLayout
       tenantName={tenantName}
@@ -58,7 +58,7 @@ export function ResetPasswordEmail({
   );
 }
 
-export default function ResetPasswordEmailPreview() {
+export default function ResetPasswordEmailPreview(): ReactElement {
   return (
     <ResetPasswordEmail
       userName="Carlos Ruiz"

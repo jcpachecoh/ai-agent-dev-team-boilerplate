@@ -38,9 +38,9 @@ describe('WelcomeEmail', () => {
   });
 
   describe('CTA', () => {
-    it('renders the CTA text "Acceder a mi workspace"', () => {
+    it('renders the CTA text "Acceder a mi espacio de trabajo"', () => {
       const html = render();
-      expect(html).toContain('Acceder a mi workspace');
+      expect(html).toContain('Acceder a mi espacio de trabajo');
     });
 
     it('includes loginUrl in the rendered output', () => {
@@ -119,6 +119,35 @@ describe('WelcomeEmail', () => {
     it('renders cashier-specific tip', () => {
       const html = render({ role: 'cashier' });
       expect(html).toContain('cajero');
+    });
+  });
+
+  describe('primerosPasos', () => {
+    it('renders the "Primeros pasos" section heading', () => {
+      const html = render();
+      expect(html).toContain('Primeros pasos');
+    });
+
+    it('renders 3 step bullets for the owner role', () => {
+      const html = render({ role: 'owner' });
+      const matches = html.match(/•/g);
+      expect(matches).not.toBeNull();
+      expect(matches!.length).toBeGreaterThanOrEqual(3);
+    });
+
+    it('renders role-specific steps for manager', () => {
+      const html = render({ role: 'manager' });
+      expect(html).toContain('turnos');
+    });
+
+    it('renders role-specific steps for cashier', () => {
+      const html = render({ role: 'cashier' });
+      expect(html).toContain('punto de venta');
+    });
+
+    it('renders role-specific steps for accountant', () => {
+      const html = render({ role: 'accountant' });
+      expect(html).toContain('conciliación');
     });
   });
 
