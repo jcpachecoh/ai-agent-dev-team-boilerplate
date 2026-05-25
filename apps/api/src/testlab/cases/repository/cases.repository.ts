@@ -27,7 +27,7 @@ export class CasesRepository implements ICasesRepository {
   }
 
   findOrCreateSystemUser(): Promise<{ id: string }> {
-    return this.prisma.user.upsert({
+    return this.prisma.userTestLab.upsert({
       where: { email: 'system@testlab.local' },
       update: {},
       create: { email: 'system@testlab.local', name: 'System', passwordHash: '' },

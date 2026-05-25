@@ -1,11 +1,11 @@
-import type { User, PasswordResetToken } from '@prisma/client';
+import type { UserTestLab, PasswordResetToken } from '@prisma/client';
 import type { SignupDto } from '../controller/dto/signup.dto';
 import type { LoginDto } from '../controller/dto/login.dto';
 
 export interface IAuthRepository {
-  findByEmail(email: string): Promise<User | null>;
-  findById(id: string): Promise<User | null>;
-  createUser(data: { email: string; name: string; passwordHash: string }): Promise<User>;
+  findByEmail(email: string): Promise<UserTestLab | null>;
+  findById(id: string): Promise<UserTestLab | null>;
+  createUser(data: { email: string; name: string; passwordHash: string }): Promise<UserTestLab>;
   saveRefreshToken(userId: string, hashedToken: string | null): Promise<void>;
   updatePassword(userId: string, passwordHash: string): Promise<void>;
 }
@@ -26,7 +26,7 @@ export interface IAuthService {
   refresh(userId: string, refreshToken: string): Promise<AuthTokens>;
   logout(userId: string): Promise<void>;
   resetPassword(rawToken: string, newPassword: string): Promise<void>;
-  findByEmail(email: string): Promise<User | null>;
+  findByEmail(email: string): Promise<UserTestLab | null>;
 }
 
 // ---------------------------------------------------------------------------

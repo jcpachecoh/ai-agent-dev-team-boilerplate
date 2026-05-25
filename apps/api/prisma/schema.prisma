@@ -15,7 +15,7 @@ datasource db {
 // USERS
 // ─────────────────────────────────────────────────────────────────────────────
 
-model User {
+model UserTestLab {
   id           String   @id @default(cuid())
   email        String   @unique
   name         String?
@@ -94,8 +94,8 @@ model ProjectMember {
   userId    String
   role      ProjectRole @default(TESTER)
 
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    UserTestLab  @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([projectId, userId])
   @@map("project_members")
@@ -177,7 +177,7 @@ model TestCase {
 
   section      TestSection?      @relation(fields: [sectionId], references: [id])
   suite        TestSuite         @relation(fields: [suiteId], references: [id], onDelete: Cascade)
-  createdBy    User              @relation("CasesCreated", fields: [createdById], references: [id])
+  createdBy    UserTestLab       @relation("CasesCreated", fields: [createdById], references: [id])
   results      TestResult[]
   requirements    RequirementCase[]
   caseMilestones  CaseMilestone[]
@@ -201,7 +201,7 @@ model TestPlan {
 
   project   Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
   milestone Milestone?      @relation(fields: [milestoneId], references: [id])
-  createdBy User            @relation("PlansCreated", fields: [createdById], references: [id])
+  createdBy UserTestLab     @relation("PlansCreated", fields: [createdById], references: [id])
   entries   TestPlanEntry[]
   runs      TestRun[]
 
@@ -239,8 +239,8 @@ model TestRun {
   closedAt     DateTime?
 
   plan       TestPlan?    @relation(fields: [planId], references: [id])
-  createdBy  User         @relation("RunsCreated", fields: [createdById], references: [id])
-  assignedTo User?        @relation("RunsAssigned", fields: [assignedToId], references: [id])
+  createdBy  UserTestLab  @relation("RunsCreated", fields: [createdById], references: [id])
+  assignedTo UserTestLab? @relation("RunsAssigned", fields: [assignedToId], references: [id])
   results    TestResult[]
 
   @@map("test_runs")
@@ -270,8 +270,8 @@ model TestResult {
 
   run         TestRun      @relation(fields: [runId], references: [id], onDelete: Cascade)
   case        TestCase     @relation(fields: [caseId], references: [id], onDelete: Cascade)
-  assignedTo  User?        @relation("ResultsAssigned", fields: [assignedToId], references: [id])
-  executedBy  User?        @relation("ResultsExecuted", fields: [executedById], references: [id])
+  assignedTo  UserTestLab? @relation("ResultsAssigned", fields: [assignedToId], references: [id])
+  executedBy  UserTestLab? @relation("ResultsExecuted", fields: [executedById], references: [id])
   attachments Attachment[]
 
   @@unique([runId, caseId])
@@ -354,7 +354,7 @@ model Attachment {
   createdAt    DateTime @default(now())
 
   result     TestResult @relation(fields: [resultId], references: [id], onDelete: Cascade)
-  uploadedBy User       @relation("AttachmentsUploaded", fields: [uploadedById], references: [id])
+  uploadedBy UserTestLab @relation("AttachmentsUploaded", fields: [uploadedById], references: [id])
 
   @@map("attachments")
 }
@@ -374,7 +374,7 @@ model AuditLog {
   userAgent String?
   createdAt DateTime @default(now())
 
-  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user UserTestLab? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([entity, entityId])
   @@index([userId])

@@ -35,7 +35,9 @@ export class EmailWorker {
   private readonly fromAddress: string;
 
   constructor(config: EmailWorkerConfig) {
-    this.fromAddress = config.fromAddress;
+    this.fromAddress = config.fromName
+      ? `${config.fromName} <${config.fromAddress}>`
+      : config.fromAddress;
     this.resendClient = new ResendClient(config.resendApiKey);
     // maxRetriesPerRequest: null is required by BullMQ when using a shared ioredis instance
     this.redis = new Redis(config.redisUrl, { maxRetriesPerRequest: null });

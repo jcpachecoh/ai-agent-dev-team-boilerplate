@@ -114,6 +114,7 @@ export interface EmailWorkerConfig {
   redisUrl: string;
   resendApiKey: string;
   fromAddress: string;
+  fromName?: string;
 }
 
 export interface EmailFailedEvent {

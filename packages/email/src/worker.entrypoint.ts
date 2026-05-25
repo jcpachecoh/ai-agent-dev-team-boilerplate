@@ -6,9 +6,10 @@
  *   pnpm --filter=@restopsiq/email start:worker
  *
  * Required env vars (read from process.env or apps/api/.env):
- *   REDIS_URL       — e.g. redis://localhost:6379
- *   RESEND_API_KEY  — Resend API key
- *   EMAIL_FROM      — From address, e.g. no-reply@example.com
+ *   REDIS_URL          — e.g. redis://localhost:6379
+ *   RESEND_API_KEY     — Resend API key
+ *   EMAIL_FROM         — From address, e.g. no-reply@example.com
+ *   RESEND_FROM_NAME   — (optional) Sender display name, e.g. "RestOpsIQ"
  */
 
 import path from 'path';
@@ -53,6 +54,7 @@ import { EmailWorker } from './email.worker';
 const redisUrl = process.env.REDIS_URL ?? 'redis://localhost:6379';
 const resendApiKey = process.env.RESEND_API_KEY ?? '';
 const fromAddress = process.env.EMAIL_FROM ?? '';
+const fromName = process.env.RESEND_FROM_NAME;
 
 if (!resendApiKey) {
   console.error('[EmailWorker] ERROR: RESEND_API_KEY is not set. Emails will fail.');
@@ -63,12 +65,14 @@ if (!fromAddress) {
   process.exit(1);
 }
 
+const displayFrom = fromName ? `${fromName} <${fromAddress}>` : fromAddress;
+
 console.log(`[EmailWorker] Starting...`);
 console.log(`[EmailWorker]   Redis     : ${redisUrl}`);
-console.log(`[EmailWorker]   From      : ${fromAddress}`);
+console.log(`[EmailWorker]   From      : ${displayFrom}`);
 console.log(`[EmailWorker]   Queue     : email-queue`);
 
-const worker = new EmailWorker({ redisUrl, resendApiKey, fromAddress });
+const worker = new EmailWorker({ redisUrl, resendApiKey, fromAddress, fromName });
 
 console.log('[EmailWorker] Ready — listening for jobs on email-queue');
 

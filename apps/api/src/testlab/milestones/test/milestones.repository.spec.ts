@@ -131,7 +131,7 @@ describeIntegration('MilestonesRepository integration', () => {
     let unlinkedCaseId: string | undefined;
 
     try {
-      const user = await prisma.user.create({
+      const user = await prisma.userTestLab.create({
         data: { email: `milestones-${suffix}@example.com`, passwordHash: 'hash' },
       });
       userId = user.id;
@@ -200,7 +200,7 @@ describeIntegration('MilestonesRepository integration', () => {
       }
 
       if (userId !== undefined) {
-        await prisma.user.delete({ where: { id: userId } });
+        await prisma.userTestLab.delete({ where: { id: userId } });
       }
     }
   });
