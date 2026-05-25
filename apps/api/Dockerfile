@@ -42,6 +42,10 @@ COPY --from=installer /app/apps/api/prisma ./prisma
 COPY --from=installer /app/apps/api/package.json ./package.json
 COPY --from=installer /app/node_modules ./node_modules
 COPY --from=installer /app/apps/api/node_modules ./apps/api/node_modules
+# Workspace packages — pnpm symlinks in node_modules point to these paths
+COPY --from=installer /app/packages/email ./packages/email
+COPY --from=installer /app/packages/types ./packages/types
+COPY --from=installer /app/packages/utils ./packages/utils
 
 EXPOSE 3000
 
