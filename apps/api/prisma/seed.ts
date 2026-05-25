@@ -27,7 +27,7 @@ async function main() {
   // ── Test user ────────────────────────────────────────────────────────────
   const passwordHash = await bcrypt.hash('TestPass123!', SALT_ROUNDS);
 
-  const user = await prisma.user.upsert({
+  const user = await prisma.userTestLab.upsert({
     where: { email: 'test@restopsiq.dev' },
     update: { passwordHash },
     create: {

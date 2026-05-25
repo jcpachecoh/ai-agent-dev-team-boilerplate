@@ -11,7 +11,7 @@ const prismaMock = {
   project: {
     findUnique: jest.fn(),
   },
-  user: {
+  userTestLab: {
     upsert: jest.fn(),
   },
 };
@@ -78,10 +78,10 @@ describe('RunsRepository', () => {
 
   describe('findOrCreateSystemUser', () => {
     it('upserts system user and selects id', async () => {
-      prismaMock.user.upsert.mockResolvedValue({ id: 'sys-1' });
+      prismaMock.userTestLab.upsert.mockResolvedValue({ id: 'sys-1' });
       const result = await repository.findOrCreateSystemUser();
       expect(result).toEqual({ id: 'sys-1' });
-      expect(prismaMock.user.upsert).toHaveBeenCalledWith({
+      expect(prismaMock.userTestLab.upsert).toHaveBeenCalledWith({
         where: { email: 'system@testlab.local' },
         update: {},
         create: { email: 'system@testlab.local', name: 'System', passwordHash: '' },

@@ -12,16 +12,19 @@ import { PrismaModule } from '../../prisma/prisma.module';
     GenerationRepository,
     {
       provide: JIRA_CLIENT,
-      useFactory: (): Version3Client =>
-        new Version3Client({
-          host: process.env.JIRA_URL ?? '',
+      useFactory: (): Version3Client | null => {
+        const host = process.env.JIRA_URL ?? '';
+        if (!host || !host.startsWith('http')) return null;
+        return new Version3Client({
+          host,
           authentication: {
             basic: {
               email: process.env.JIRA_USERNAME ?? '',
               apiToken: process.env.JIRA_API_TOKEN ?? '',
             },
           },
-        }),
+        });
+      },
     },
     GenerationService,
   ],

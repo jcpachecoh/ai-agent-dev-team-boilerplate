@@ -25,14 +25,14 @@
     },
     {
       "key": "tenantId",
-      "value": "REPLACE_WITH_SEEDED_TENANT_UUID",
+      "value": "aaaaaaaa-0000-0000-0000-000000000001",
       "type": "default",
       "enabled": true,
       "description": "CUID/UUID of an existing Tenant row in the local database. Required by all /supply-items routes via x-tenant-id header."
     },
     {
       "key": "categoryId",
-      "value": "REPLACE_WITH_SEEDED_CATEGORY_UUID",
+      "value": "bbbbbbbb-0000-0000-0000-000000000002",
       "type": "default",
       "enabled": true,
       "description": "CUID/UUID of an existing SupplyCategory row belonging to the above tenant. Required by the Create Supply Item body field categoriaId."

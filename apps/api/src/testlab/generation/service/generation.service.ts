@@ -1,4 +1,9 @@
-import { Injectable, Inject, UnprocessableEntityException } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  ServiceUnavailableException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import { generateObject } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import { z } from 'zod';
@@ -51,11 +56,16 @@ const generationSchema = z.object({
 @Injectable()
 export class GenerationService implements IGenerationService {
   constructor(
-    @Inject(JIRA_CLIENT) private readonly jiraClient: Version3Client,
+    @Inject(JIRA_CLIENT) private readonly jiraClient: Version3Client | null,
     private readonly generationRepository: GenerationRepository,
   ) {}
 
   async generate(projectId: string, issueKey: string): Promise<GenerationPreview> {
+    if (!this.jiraClient) {
+      throw new ServiceUnavailableException(
+        'Jira integration is not configured. Set JIRA_URL, JIRA_USERNAME and JIRA_API_TOKEN.',
+      );
+    }
     const raw = await this.jiraClient.issues.getIssue({ issueIdOrKey: issueKey });
 
     const description = extractAdfText(raw.fields.description);

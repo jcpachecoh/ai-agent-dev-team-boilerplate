@@ -37,20 +37,22 @@ The API must be reachable at `http://localhost:3001` (default `PORT`).
 
 The collection requires three pieces of data to exist in the local database before a full run:
 
-| Variable             | What it must be                                  | How to obtain                                                      |
-| -------------------- | ------------------------------------------------ | ------------------------------------------------------------------ |
-| `email` / `password` | A registered user                                | Run `POST /api/auth/signup` once manually, **or** create a DB seed |
-| `tenantId`           | A `Tenant` record UUID                           | Insert via seed script or Prisma Studio                            |
-| `categoryId`         | A `SupplyCategory` UUID belonging to that tenant | Insert via seed script or Prisma Studio                            |
+| Variable             | What it must be                                           | How to obtain                                        |
+| -------------------- | --------------------------------------------------------- | ---------------------------------------------------- |
+| `email` / `password` | A registered user (`test@restopsiq.dev` / `TestPass123!`) | Run `pnpm db:seed` from `apps/api/`                  |
+| `tenantId`           | `aaaaaaaa-0000-0000-0000-000000000001`                    | Pre-populated in `local.environment.json` after seed |
+| `categoryId`         | `bbbbbbbb-0000-0000-0000-000000000002`                    | Pre-populated in `local.environment.json` after seed |
 
 > The signup request in the collection accepts both `201` (first run) and `409` (user already exists), so it is safe to run repeatedly.
 
-Replace the placeholder values in `local.environment.json`:
+The `local.environment.json` already ships with the deterministic seed values:
 
 ```json
-"tenantId":   "REPLACE_WITH_SEEDED_TENANT_UUID"
-"categoryId": "REPLACE_WITH_SEEDED_CATEGORY_UUID"
+"tenantId":   "aaaaaaaa-0000-0000-0000-000000000001"
+"categoryId": "bbbbbbbb-0000-0000-0000-000000000002"
 ```
+
+These match the fixed IDs in `apps/api/prisma/seed.ts`. Run `pnpm db:seed` and these values will work immediately.
 
 ### 3. Newman installed (for CLI runs)
 
