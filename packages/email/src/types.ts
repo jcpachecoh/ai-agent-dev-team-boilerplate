@@ -11,32 +11,36 @@ export interface EmailAttachment {
 }
 
 // ---------------------------------------------------------------------------
-// Template props — minimal stubs, expanded in later tickets
+// Template props
 // ---------------------------------------------------------------------------
 
 export interface WelcomeProps {
-  firstName: string;
-  tenantName: string;
+  userName: string;
+  role: 'owner' | 'manager' | 'cashier' | 'accountant';
   loginUrl: string;
+  temporaryPassword?: string;
 }
 
 export interface ResetPasswordProps {
-  firstName: string;
+  userName: string;
   resetUrl: string;
-  expiresInMinutes: number;
+  expiresAt: string;
+  ipAddress?: string;
 }
 
 export interface VerifyEmailProps {
-  firstName: string;
-  otp: string;
+  userName: string;
+  otpCode: string;
   expiresInMinutes: number;
 }
 
 export interface InviteUserProps {
+  inviteeName: string;
   inviterName: string;
-  tenantName: string;
-  inviteUrl: string;
   role: string;
+  workspaceName: string;
+  acceptUrl: string;
+  expiresAt: string;
 }
 
 export interface DianInvoiceProps {
@@ -86,17 +90,46 @@ export interface SendEmailOptions {
   tenantLogoUrl?: string;
   primaryColor?: string;
   attachments?: EmailAttachment[];
+  priority?: 'normal' | 'urgent';
+  metadata?: Record<string, string>;
 }
 
 export interface EmailJobPayload {
   options: SendEmailOptions;
   renderedHtml: string;
+  resendMessageId?: string;
 }
 
 export interface EmailServiceConfig {
   redisUrl: string;
+  resendApiKey?: string;
+  from?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Worker config and event types
+// ---------------------------------------------------------------------------
+
+export interface EmailWorkerConfig {
+  redisUrl: string;
   resendApiKey: string;
-  from: string;
+  fromAddress: string;
+}
+
+export interface EmailFailedEvent {
+  jobId: string;
+  tenantId: string;
+  templateType: string;
+  errorCode: string;
+  errorMessage: string;
+  attempts: number;
+  timestamp: string;
+}
+
+export interface TenantRateLimitResult {
+  allowed: boolean;
+  remaining: number;
+  resetAt: number;
 }
 
 // ---------------------------------------------------------------------------

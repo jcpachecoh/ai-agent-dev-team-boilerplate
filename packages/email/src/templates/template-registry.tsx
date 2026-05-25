@@ -1,7 +1,11 @@
 import type { CSSProperties, ReactElement } from 'react';
-import { Button, Heading, Link, Section, Text } from '@react-email/components';
+import { Heading, Link, Section, Text } from '@react-email/components';
 
 import { BaseLayout } from './base-layout';
+import { WelcomeEmail } from './welcome';
+import { ResetPasswordEmail } from './reset-password';
+import { VerifyEmailEmail } from './verify-email';
+import { InviteUserEmail } from './invite-user';
 import type { EmailTemplate } from '../types';
 
 const DEFAULT_PRIMARY_COLOR = '#E8943A';
@@ -27,68 +31,42 @@ export function renderTemplateElement(
   switch (template.type) {
     case 'welcome':
       return (
-        <BaseLayout {...layoutProps} previewText={`Bienvenido a ${template.props.tenantName}`}>
-          <Heading style={headingStyle}>¡Bienvenido, {template.props.firstName}!</Heading>
-          <Text style={textStyle}>
-            Tu cuenta en <strong>{template.props.tenantName}</strong> ha sido creada exitosamente.
-            Ya puedes iniciar sesión.
-          </Text>
-          <Section style={ctaStyle}>
-            <Button href={template.props.loginUrl} style={buttonStyle(color)}>
-              Iniciar sesión
-            </Button>
-          </Section>
-        </BaseLayout>
+        <WelcomeEmail
+          {...template.props}
+          tenantName={layoutProps.tenantName}
+          tenantLogoUrl={layoutProps.tenantLogoUrl}
+          primaryColor={color}
+        />
       );
 
     case 'reset-password':
       return (
-        <BaseLayout {...layoutProps} previewText="Restablece tu contraseña">
-          <Heading style={headingStyle}>Restablece tu contraseña</Heading>
-          <Text style={textStyle}>
-            Hola {template.props.firstName}, haz clic en el botón para restablecer tu contraseña. El
-            enlace expira en {template.props.expiresInMinutes} minutos.
-          </Text>
-          <Section style={ctaStyle}>
-            <Button href={template.props.resetUrl} style={buttonStyle(color)}>
-              Restablecer contraseña
-            </Button>
-          </Section>
-        </BaseLayout>
+        <ResetPasswordEmail
+          {...template.props}
+          tenantName={layoutProps.tenantName}
+          tenantLogoUrl={layoutProps.tenantLogoUrl}
+          primaryColor={color}
+        />
       );
 
     case 'verify-email':
       return (
-        <BaseLayout {...layoutProps} previewText="Verifica tu correo electrónico">
-          <Heading style={headingStyle}>Verifica tu correo</Heading>
-          <Text style={textStyle}>
-            Hola {template.props.firstName}, usa el siguiente código para verificar tu correo
-            electrónico:
-          </Text>
-          <Text style={otpStyle(color)}>{template.props.otp}</Text>
-          <Text style={{ ...textStyle, color: '#71717a', fontSize: '14px' }}>
-            El código expira en {template.props.expiresInMinutes} minutos.
-          </Text>
-        </BaseLayout>
+        <VerifyEmailEmail
+          {...template.props}
+          tenantName={layoutProps.tenantName}
+          tenantLogoUrl={layoutProps.tenantLogoUrl}
+          primaryColor={color}
+        />
       );
 
     case 'invite-user':
       return (
-        <BaseLayout
-          {...layoutProps}
-          previewText={`${template.props.inviterName} te invita a ${template.props.tenantName}`}
-        >
-          <Heading style={headingStyle}>Invitación a {template.props.tenantName}</Heading>
-          <Text style={textStyle}>
-            <strong>{template.props.inviterName}</strong> te ha invitado a unirte como{' '}
-            <strong>{template.props.role}</strong>.
-          </Text>
-          <Section style={ctaStyle}>
-            <Button href={template.props.inviteUrl} style={buttonStyle(color)}>
-              Aceptar invitación
-            </Button>
-          </Section>
-        </BaseLayout>
+        <InviteUserEmail
+          {...template.props}
+          tenantName={layoutProps.tenantName}
+          tenantLogoUrl={layoutProps.tenantLogoUrl}
+          primaryColor={color}
+        />
       );
 
     case 'dian-invoice':
@@ -185,30 +163,6 @@ const ctaStyle: CSSProperties = {
   margin: '24px 0',
   textAlign: 'center',
 };
-
-function buttonStyle(primaryColor: string): CSSProperties {
-  return {
-    backgroundColor: primaryColor,
-    borderRadius: '6px',
-    color: '#ffffff',
-    display: 'inline-block',
-    fontSize: '14px',
-    fontWeight: '600',
-    padding: '12px 24px',
-    textDecoration: 'none',
-  };
-}
-
-function otpStyle(primaryColor: string): CSSProperties {
-  return {
-    color: primaryColor,
-    fontSize: '36px',
-    fontWeight: '700',
-    letterSpacing: '8px',
-    margin: '16px 0',
-    textAlign: 'center',
-  };
-}
 
 function linkStyle(primaryColor: string): CSSProperties {
   return {

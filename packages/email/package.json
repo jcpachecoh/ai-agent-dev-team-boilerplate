@@ -6,7 +6,10 @@
   "types": "./dist/index.d.ts",
   "scripts": {
     "build": "tsup src/index.ts --format cjs,esm --dts",
+    "build:worker": "tsup src/worker.entrypoint.ts --format cjs --outDir dist --no-dts",
+    "start:worker": "pnpm build:worker && node dist/worker.entrypoint.js",
     "dev": "tsup src/index.ts --watch",
+    "dev:worker": "tsup src/worker.entrypoint.ts --format cjs --outDir dist --no-dts --watch --onSuccess 'node dist/worker.entrypoint.js'",
     "preview": "email dev --dir src/templates --port 3333",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist",

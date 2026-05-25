@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "7c3e5f82-1a9b-4d6e-8f2c-0b5a3d7e9f1c",
     "name": "RestOpsIQ API",
-    "description": "Complete API test collection for RestOpsIQ.\n\nCovers all 30 live endpoints across Health, Auth, Supply Items, and Testlab modules.\n\nGlobal prefix: /api\nAuth: JwtAuthGuard (APP_GUARD) — collection-level Bearer {{accessToken}}.\nPublic endpoints: GET /api/, POST /api/auth/signup, POST /api/auth/login, POST /api/auth/refresh.\nTenant-scoped endpoints: all /api/supply-items routes (x-tenant-id header).\n\nSee postman/README.md for prerequisites and setup.",
+    "description": "Complete API test collection for RestOpsIQ.\n\nCovers all 38 live endpoints across Health, Auth, Supply Items, and Testlab modules.\n\nGlobal prefix: /api\nAuth: JwtAuthGuard (APP_GUARD) — collection-level Bearer {{accessToken}}.\nPublic endpoints: GET /api/, POST /api/auth/signup, POST /api/auth/login, POST /api/auth/refresh, POST /api/auth/forgot-password, POST /api/auth/reset-password, POST /api/auth/verify-email, POST /api/auth/resend-verification.\nTenant-scoped endpoints: all /api/supply-items routes (x-tenant-id header).\n\nRES-226 email auth endpoints require Redis and the @restopsiq/email BullMQ queue to be running.\nreset-password and verify-email tokens are delivered via email — set {{resetToken}} and {{otpCode}} manually before running those requests.\n\nSee postman/README.md for prerequisites and setup.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -26,7 +26,11 @@
           "const isPublicAuthRoute =",
           "  reqUrl.includes('/auth/login') ||",
           "  reqUrl.includes('/auth/signup') ||",
-          "  reqUrl.includes('/auth/refresh');",
+          "  reqUrl.includes('/auth/refresh') ||",
+          "  reqUrl.includes('/auth/forgot-password') ||",
+          "  reqUrl.includes('/auth/reset-password') ||",
+          "  reqUrl.includes('/auth/verify-email') ||",
+          "  reqUrl.includes('/auth/resend-verification');",
           "if (isPublicAuthRoute) return;",
           "",
           "// Skip if token is still valid",
@@ -158,6 +162,30 @@
       "value": "",
       "type": "string",
       "description": "Captured from Create Run response"
+    },
+    {
+      "key": "authEmail",
+      "value": "test@restopsiq.dev",
+      "type": "string",
+      "description": "Email used for RES-226 auth email flows (forgot-password, resend-verification). Defaults to the seeded test user."
+    },
+    {
+      "key": "resetToken",
+      "value": "",
+      "type": "string",
+      "description": "Raw reset token extracted from the password-reset email link. Must be set manually before running Reset Password requests."
+    },
+    {
+      "key": "otpCode",
+      "value": "",
+      "type": "string",
+      "description": "6-digit OTP code from the verification email or Redis (GET otp:{sha256(code)}). Must be set manually before running Verify Email requests."
+    },
+    {
+      "key": "newPassword",
+      "value": "NewPassword456!",
+      "type": "string",
+      "description": "New password used in Reset Password request. Must meet MinLength(8) constraint."
     }
   ],
   "item": [
@@ -337,6 +365,310 @@
             "method": "POST",
             "header": [],
             "url": "{{baseUrl}}/api/auth/logout"
+          },
+          "response": []
+        },
+        {
+          "name": "Forgot Password",
+          "description": "RES-226 — Request a password reset email.\n\nPublic endpoint — no Authorization header required.\nAlways returns 200 regardless of whether the email exists (anti-enumeration).\nA BullMQ job is enqueued to send the email via Resend when the user exists.\nThe raw reset token is embedded in the email URL; extract it and set {{resetToken}} before running Reset Password.",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has message property', () => {",
+                  "  pm.expect(pm.response.json()).to.have.property('message');",
+                  "});",
+                  "pm.test('Returns same message regardless of email existence (anti-enumeration)', () => {",
+                  "  const msg = pm.response.json().message;",
+                  "  pm.expect(msg).to.be.a('string').and.to.have.length.greaterThan(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{authEmail}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/auth/forgot-password"
+          },
+          "response": []
+        },
+        {
+          "name": "Reset Password",
+          "description": "RES-226 — Reset the user's password using a valid single-use token.\n\nPublic endpoint — no Authorization header required.\nPrerequisite: run Forgot Password first, extract the raw token from the email link, and set {{resetToken}}.\nExpected: 200 { message: 'Password updated successfully.' }\nThe token row in password_reset_tokens will have usedAt set after this call.",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has message property', () => {",
+                  "  pm.expect(pm.response.json()).to.have.property('message');",
+                  "});",
+                  "pm.test('Message confirms password update', () => {",
+                  "  pm.expect(pm.response.json().message).to.equal('Password updated successfully.');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{resetToken}}\",\n  \"newPassword\": \"{{newPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/auth/reset-password"
+          },
+          "response": []
+        },
+        {
+          "name": "Reset Password — Invalid Token (negative)",
+          "description": "RES-226 negative case — attempt to reset password with a token that does not exist.\n\nPublic endpoint — no Authorization header required.\nExpected: 400 BadRequest with descriptive error message.",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Has error message', () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body).to.have.property('message');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"00000000000000000000000000000000000000000000000000000000000000000\",\n  \"newPassword\": \"{{newPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/auth/reset-password"
+          },
+          "response": []
+        },
+        {
+          "name": "Reset Password — Reused Token (negative)",
+          "description": "RES-226 negative case — attempt to reuse a token that was already consumed by Reset Password.\n\nPublic endpoint — no Authorization header required.\nPrerequisite: run Reset Password successfully first ({{resetToken}} must be consumed).\nExpected: 400 BadRequest 'Reset token has already been used'.",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 400 for reused token', () => pm.response.to.have.status(400));",
+                  "pm.test('Error message mentions already used', () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body).to.have.property('message');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{resetToken}}\",\n  \"newPassword\": \"{{newPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/auth/reset-password"
+          },
+          "response": []
+        },
+        {
+          "name": "Resend Verification",
+          "description": "RES-226 — Resend the email verification OTP to an existing user.\n\nPublic endpoint — no Authorization header required.\nAlways returns 200 regardless of whether the email exists (anti-enumeration).\nA 6-digit OTP is stored in Redis under otp:{sha256(otpCode)} with a 15-minute TTL.\nExtract the OTP from the email or Redis (redis-cli KEYS 'otp:*') and set {{otpCode}} before running Verify Email.",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has message property', () => {",
+                  "  pm.expect(pm.response.json()).to.have.property('message');",
+                  "});",
+                  "pm.test('Returns same message regardless of email existence (anti-enumeration)', () => {",
+                  "  const msg = pm.response.json().message;",
+                  "  pm.expect(msg).to.be.a('string').and.to.have.length.greaterThan(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{authEmail}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/auth/resend-verification"
+          },
+          "response": []
+        },
+        {
+          "name": "Verify Email",
+          "description": "RES-226 — Verify the user's email address using the 6-digit OTP.\n\nPublic endpoint — no Authorization header required.\nPrerequisite: run Resend Verification (or Signup which triggers sendVerifyEmail), then set {{otpCode}} from the email or Redis.\nExpected: 200 { message: 'Email verified successfully.' }\nThe Redis key otp:{sha256(otpCode)} is deleted after successful verification.",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has message property', () => {",
+                  "  pm.expect(pm.response.json()).to.have.property('message');",
+                  "});",
+                  "pm.test('Message confirms email verified', () => {",
+                  "  pm.expect(pm.response.json().message).to.equal('Email verified successfully.');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"otpCode\": \"{{otpCode}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/auth/verify-email"
+          },
+          "response": []
+        },
+        {
+          "name": "Verify Email — Invalid OTP (negative)",
+          "description": "RES-226 negative case — attempt to verify email with a wrong 6-digit OTP.\n\nPublic endpoint — no Authorization header required.\nExpected: 400 BadRequest 'Invalid or expired verification code'.",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 400 for invalid OTP', () => pm.response.to.have.status(400));",
+                  "pm.test('Has error message', () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body).to.have.property('message');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"otpCode\": \"000000\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/auth/verify-email"
           },
           "response": []
         }

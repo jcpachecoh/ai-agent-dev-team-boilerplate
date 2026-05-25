@@ -8,7 +8,8 @@ import { renderAsync } from '@react-email/render';
 import { EmailService } from '../email.service';
 import { ResendClient } from '../resend.client';
 import { EmailQueueError } from '../types';
-import { EMAIL_JOB_NAME } from '../email.queue';
+import { EMAIL_JOB_NAME, EMAIL_QUEUE_NAME } from '../email.queue';
+import { EMAIL_JOB_OPTIONS } from '../email.worker.config';
 import type { EmailServiceConfig, SendEmailOptions } from '../types';
 
 // ---------------------------------------------------------------------------
@@ -29,8 +30,8 @@ const welcomeOptions: SendEmailOptions = {
   template: {
     type: 'welcome',
     props: {
-      firstName: 'Alice',
-      tenantName: 'Burger Palace',
+      userName: 'Alice',
+      role: 'owner',
       loginUrl: 'https://app.restopsiq.co/login',
     },
   },
@@ -75,7 +76,7 @@ describe('EmailService.send()', () => {
 
   it('enqueues job with EMAIL_JOB_NAME as the job name', async () => {
     await service.send(welcomeOptions);
-    expect(mockAdd).toHaveBeenCalledWith(EMAIL_JOB_NAME, expect.any(Object));
+    expect(mockAdd).toHaveBeenCalledWith(EMAIL_JOB_NAME, expect.any(Object), expect.any(Object));
   });
 
   it('includes renderedHtml in the job payload', async () => {
@@ -83,6 +84,7 @@ describe('EmailService.send()', () => {
     expect(mockAdd).toHaveBeenCalledWith(
       expect.any(String),
       expect.objectContaining({ renderedHtml: MOCK_HTML }),
+      expect.any(Object),
     );
   });
 
@@ -93,6 +95,7 @@ describe('EmailService.send()', () => {
       expect.objectContaining({
         options: expect.objectContaining({ tenantId: 'tenant-1' }),
       }),
+      expect.any(Object),
     );
   });
 
@@ -122,6 +125,139 @@ describe('EmailService.send()', () => {
 });
 
 // ---------------------------------------------------------------------------
+// send() — priority
+// ---------------------------------------------------------------------------
+
+describe('EmailService.send() — priority', () => {
+  async function sendTemplate(
+    templateType: string,
+    priorityOverride?: 'normal' | 'urgent',
+  ): Promise<void> {
+    const templateMap: Record<string, SendEmailOptions['template']> = {
+      welcome: { type: 'welcome', props: { userName: 'A', role: 'owner', loginUrl: 'u' } },
+      'reset-password': {
+        type: 'reset-password',
+        props: { userName: 'A', resetUrl: 'u', expiresAt: 'tomorrow' },
+      },
+      'verify-email': {
+        type: 'verify-email',
+        props: { userName: 'A', otpCode: '123456', expiresInMinutes: 15 },
+      },
+      'invite-user': {
+        type: 'invite-user',
+        props: {
+          inviteeName: 'B',
+          inviterName: 'C',
+          workspaceName: 'W',
+          acceptUrl: 'u',
+          role: 'manager',
+          expiresAt: 'en 48h',
+        },
+      },
+    };
+
+    const options: SendEmailOptions = {
+      ...welcomeOptions,
+      template: templateMap[templateType],
+      ...(priorityOverride ? { priority: priorityOverride } : {}),
+    };
+
+    await service.send(options);
+  }
+
+  it('enqueues reset-password with priority 1 (URGENT)', async () => {
+    await sendTemplate('reset-password');
+    expect(mockAdd).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.any(Object),
+      expect.objectContaining({ priority: 1 }),
+    );
+  });
+
+  it('enqueues verify-email with priority 1 (URGENT)', async () => {
+    await sendTemplate('verify-email');
+    expect(mockAdd).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.any(Object),
+      expect.objectContaining({ priority: 1 }),
+    );
+  });
+
+  it('enqueues welcome with priority 10 (NORMAL)', async () => {
+    await sendTemplate('welcome');
+    expect(mockAdd).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.any(Object),
+      expect.objectContaining({ priority: 10 }),
+    );
+  });
+
+  it('enqueues invite-user with priority 10 (NORMAL)', async () => {
+    await sendTemplate('invite-user');
+    expect(mockAdd).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.any(Object),
+      expect.objectContaining({ priority: 10 }),
+    );
+  });
+
+  it('enqueues welcome with priority 1 when options.priority === "urgent"', async () => {
+    await sendTemplate('welcome', 'urgent');
+    expect(mockAdd).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.any(Object),
+      expect.objectContaining({ priority: 1 }),
+    );
+  });
+
+  it('still returns { jobId } with priority set', async () => {
+    const result = await service.send({
+      ...welcomeOptions,
+      template: {
+        type: 'reset-password',
+        props: { userName: 'A', resetUrl: 'u', expiresAt: 'tomorrow' },
+      },
+    });
+    expect(result).toEqual({ jobId: MOCK_JOB_ID });
+  });
+
+  it('still does not call Resend when priority is URGENT', async () => {
+    const spy = jest.spyOn(ResendClient.prototype, 'sendEmail');
+    await sendTemplate('reset-password');
+    expect(spy).not.toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Queue construction — retry / backoff configuration (Gap G3)
+// ---------------------------------------------------------------------------
+
+describe('EmailService constructor — Queue configuration', () => {
+  it('constructs Queue with EMAIL_QUEUE_NAME and defaultJobOptions from EMAIL_JOB_OPTIONS', () => {
+    // The outer beforeEach already called new EmailService(config), which triggered new Queue().
+    // Use the most recent constructor call (at(-1)) so this passes regardless of test order.
+    const queueMock = Queue as unknown as jest.Mock;
+    const [queueName, queueOptions] = queueMock.mock.calls.at(-1) as [
+      string,
+      { connection: { url: string }; defaultJobOptions: unknown },
+    ];
+
+    expect(queueName).toBe(EMAIL_QUEUE_NAME);
+    expect(queueOptions).toMatchObject({
+      connection: { url: config.redisUrl },
+      defaultJobOptions: EMAIL_JOB_OPTIONS,
+    });
+  });
+
+  it('defaultJobOptions has attempts: 3 and exponential backoff with delay 5000', () => {
+    expect(EMAIL_JOB_OPTIONS).toMatchObject({
+      attempts: 3,
+      backoff: { type: 'exponential', delay: 5_000 },
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
 // render()
 // ---------------------------------------------------------------------------
 
@@ -136,14 +272,46 @@ describe('EmailService.render()', () => {
     expect(renderAsync).toHaveBeenCalledTimes(1);
   });
 
+  it('rendered HTML contains the tenant primaryColor (real renderer)', async () => {
+    // renderAsync internally uses dynamic ES module imports that require --experimental-vm-modules.
+    // Use the sync `render` from the real module, wrapped in a Promise, to exercise the full
+    // React → HTML template pipeline without the dynamic-import restriction.
+    // BullMQ Queue is still mocked via jest.mock('bullmq') so no Redis connection occurs.
+    const { render: realRender } = jest.requireActual('@react-email/render') as {
+      render: (element: React.ReactElement) => string;
+    };
+    (renderAsync as jest.Mock).mockImplementationOnce((element: React.ReactElement) =>
+      Promise.resolve(realRender(element)),
+    );
+
+    const html = await service.render(
+      {
+        type: 'welcome',
+        props: { userName: 'Test User', role: 'owner', loginUrl: 'https://app.example.com/login' },
+      },
+      { ...welcomeOptions, primaryColor: '#123ABC' },
+    );
+
+    expect(typeof html).toBe('string');
+    expect(html).toContain('<html');
+    expect(html).toContain('#123ABC');
+  });
+
   it('produces a string for each template type', async () => {
     const types: Array<SendEmailOptions['template']> = [
-      { type: 'welcome', props: { firstName: 'A', tenantName: 'T', loginUrl: 'u' } },
-      { type: 'reset-password', props: { firstName: 'A', resetUrl: 'u', expiresInMinutes: 60 } },
-      { type: 'verify-email', props: { firstName: 'A', otp: '123456', expiresInMinutes: 15 } },
+      { type: 'welcome', props: { userName: 'A', role: 'owner', loginUrl: 'u' } },
+      { type: 'reset-password', props: { userName: 'A', resetUrl: 'u', expiresAt: 'mañana' } },
+      { type: 'verify-email', props: { userName: 'A', otpCode: '123456', expiresInMinutes: 15 } },
       {
         type: 'invite-user',
-        props: { inviterName: 'B', tenantName: 'T', inviteUrl: 'u', role: 'manager' },
+        props: {
+          inviteeName: 'B',
+          inviterName: 'C',
+          workspaceName: 'T',
+          acceptUrl: 'u',
+          role: 'manager',
+          expiresAt: 'en 48 horas',
+        },
       },
       {
         type: 'dian-invoice',

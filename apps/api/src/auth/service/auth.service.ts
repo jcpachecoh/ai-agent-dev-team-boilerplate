@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
@@ -6,8 +7,10 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 import type { AuthTokens, IAuthService, JwtPayload } from '../interfaces/auth.interfaces';
 import { AuthRepository } from '../repository/auth.repository';
+import { AuthEmailRepository } from '../repository/auth-email.repository';
 import type { SignupDto } from '../controller/dto/signup.dto';
 import type { LoginDto } from '../controller/dto/login.dto';
 
@@ -19,6 +22,7 @@ const REFRESH_TOKEN_TTL = '7d';
 export class AuthService implements IAuthService {
   constructor(
     private readonly authRepository: AuthRepository,
+    private readonly authEmailRepository: AuthEmailRepository,
     private readonly jwtService: JwtService,
   ) {}
 
@@ -62,6 +66,23 @@ export class AuthService implements IAuthService {
 
   async logout(userId: string): Promise<void> {
     await this.authRepository.saveRefreshToken(userId, null);
+  }
+
+  findByEmail(email: string) {
+    return this.authRepository.findByEmail(email);
+  }
+
+  async resetPassword(rawToken: string, newPassword: string): Promise<void> {
+    const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+    const record = await this.authEmailRepository.findResetToken(tokenHash);
+
+    if (!record) throw new BadRequestException('Invalid or expired reset token');
+    if (record.usedAt) throw new BadRequestException('Reset token has already been used');
+    if (record.expiresAt < new Date()) throw new BadRequestException('Reset token has expired');
+
+    await this.authEmailRepository.markResetTokenUsed(record.id);
+    const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
+    await this.authRepository.updatePassword(record.userId, passwordHash);
   }
 
   private async issueTokens(userId: string, email: string): Promise<AuthTokens> {
