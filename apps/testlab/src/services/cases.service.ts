@@ -1,4 +1,6 @@
 import { request } from './http';
+import type { Milestone } from './milestones.service';
+import type { Requirement } from './requirements.service';
 
 export type CasePriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 export type CaseType =
@@ -51,5 +53,31 @@ export const casesService = {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status }),
+    }),
+
+  listMilestones: (projectId: string, suiteId: string, caseId: string): Promise<Milestone[]> =>
+    request<Milestone[]>(`/projects/${projectId}/suites/${suiteId}/cases/${caseId}/milestones`),
+
+  linkMilestone: (projectId: string, milestoneId: string, caseId: string): Promise<void> =>
+    request<void>(`/projects/${projectId}/milestones/${milestoneId}/cases/${caseId}`, {
+      method: 'POST',
+    }),
+
+  unlinkMilestone: (projectId: string, milestoneId: string, caseId: string): Promise<void> =>
+    request<void>(`/projects/${projectId}/milestones/${milestoneId}/cases/${caseId}`, {
+      method: 'DELETE',
+    }),
+
+  listRequirements: (projectId: string, suiteId: string, caseId: string): Promise<Requirement[]> =>
+    request<Requirement[]>(`/projects/${projectId}/suites/${suiteId}/cases/${caseId}/requirements`),
+
+  linkRequirement: (projectId: string, requirementId: string, caseId: string): Promise<void> =>
+    request<void>(`/projects/${projectId}/requirements/${requirementId}/cases/${caseId}`, {
+      method: 'POST',
+    }),
+
+  unlinkRequirement: (projectId: string, requirementId: string, caseId: string): Promise<void> =>
+    request<void>(`/projects/${projectId}/requirements/${requirementId}/cases/${caseId}`, {
+      method: 'DELETE',
     }),
 };

@@ -1,5 +1,7 @@
 import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
+
+import { darkCanvas, lightCanvas } from '../../../.storybook/canvas';
 import LoginTitle from '.';
 
 const meta: Meta<typeof LoginTitle> = {
@@ -14,6 +16,10 @@ const meta: Meta<typeof LoginTitle> = {
       control: 'radio',
       options: ['light', 'dark'],
     },
+    titleSize: {
+      control: 'radio',
+      options: ['sm', 'md', 'lg'],
+    },
   },
 };
 
@@ -21,18 +27,28 @@ export default meta;
 type Story = StoryObj<typeof LoginTitle>;
 
 export const Light: Story = {
-  args: {
-    variant: 'light',
-  },
+  decorators: [lightCanvas],
+  args: { variant: 'light' },
 };
 
 export const Dark: Story = {
-  args: {
-    variant: 'dark',
-  },
+  decorators: [darkCanvas],
+  args: { variant: 'dark' },
 };
 
-export const WithStatus: Story = {
+export const TitleSizeMatrix: Story = {
+  decorators: [darkCanvas],
+  render: () => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      <LoginTitle variant="dark" titleSize="sm" />
+      <LoginTitle variant="dark" titleSize="md" />
+      <LoginTitle variant="dark" titleSize="lg" />
+    </div>
+  ),
+};
+
+export const WithStatusDot: Story = {
+  decorators: [darkCanvas],
   args: {
     variant: 'dark',
     title: 'Planificación de Despachos',

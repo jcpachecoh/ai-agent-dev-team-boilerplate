@@ -16,6 +16,7 @@ interface TimerState extends TimerSnapshot {
   pause: () => void;
   resume: () => void;
   reset: () => void;
+  setElapsedMs: (ms: number) => void;
   tick: () => void;
   hydrate: () => void;
   persist: () => void;
@@ -90,6 +91,11 @@ export const useTimerStore = create<TimerState>((set, get) => ({
       lastTickAt: null,
       intervalId: null,
     });
+    get().persist();
+  },
+
+  setElapsedMs: (ms: number) => {
+    set({ elapsedMs: Math.max(0, ms) });
     get().persist();
   },
 

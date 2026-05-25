@@ -7,6 +7,7 @@ export interface BadgeButtonProps extends React.ButtonHTMLAttributes<HTMLButtonE
   /** primary color used to derive text/icon/border and a lighter background */
   color?: string;
   size?: 'sm' | 'md' | 'lg';
+  theme?: 'light' | 'dark';
 }
 
 const hexToRgba = (hex?: string, alpha = 1) => {
@@ -32,11 +33,14 @@ export function BadgeButton({
   leftIcon,
   color,
   size = 'md',
+  theme,
   className,
   ...props
 }: BadgeButtonProps) {
   const sizeClass = size === 'sm' ? styles.sm : size === 'lg' ? styles.lg : styles.md;
-  const cls = [styles.button, sizeClass, className].filter(Boolean).join(' ');
+  const themeClass =
+    theme === 'dark' ? styles['theme-dark'] : theme === 'light' ? styles['theme-light'] : '';
+  const cls = [styles.button, sizeClass, themeClass, className].filter(Boolean).join(' ');
 
   const derivedBorder = color ? `1px solid ${hexToRgba(color, 0.15)}` : undefined;
   const derivedBg = color ? hexToRgba(color, 0.06) : undefined;

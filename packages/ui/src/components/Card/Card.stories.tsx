@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
-
+import { darkBackground, lightBackground, themeComparison } from '../../storybook/theme-helpers';
 import { Card } from './Card';
 
 const meta: Meta<typeof Card> = {
@@ -21,10 +21,20 @@ export default meta;
 
 type Story = StoryObj<typeof Card>;
 
-export const Default: Story = {
-  args: {
-    theme: 'light',
-  },
+export const Playground: Story = {};
+
+export const LightMode: Story = {
+  args: { theme: 'light' },
+  ...lightBackground,
+};
+
+export const DarkMode: Story = {
+  args: { theme: 'dark' },
+  ...darkBackground,
+};
+
+export const ThemeComparison: Story = {
+  render: themeComparison(Card),
 };
 
 export const CustomValues: Story = {
@@ -32,13 +42,7 @@ export const CustomValues: Story = {
     count: 8,
     total: 12,
     title: 'Vehículos Disponibles',
+    theme: 'light',
   },
-};
-
-export const Dark: Story = {
-  args: {
-    theme: 'dark',
-    count: 3,
-    total: 4,
-  },
+  ...lightBackground,
 };

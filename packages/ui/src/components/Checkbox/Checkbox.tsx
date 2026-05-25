@@ -9,8 +9,9 @@ export interface CheckboxProps extends Omit<
   label?: string;
   checked?: boolean;
   onChange?: (checked: boolean) => void;
-  variant?: 'light' | 'dark';
+  theme?: 'light' | 'dark';
   size?: 'sm' | 'md';
+  disabled?: boolean;
 }
 
 export function Checkbox({
@@ -18,8 +19,9 @@ export function Checkbox({
   label = 'Recordar mi sesión',
   checked: checkedProp,
   onChange,
-  variant = 'light',
+  theme = 'light',
   size = 'md',
+  disabled = false,
   className,
   ...props
 }: CheckboxProps) {
@@ -37,8 +39,9 @@ export function Checkbox({
 
   const cls = [
     styles.wrapper,
-    variant === 'dark' ? styles.dark : styles.light,
+    theme === 'dark' ? styles.dark : styles.light,
     size === 'sm' ? styles.sm : styles.md,
+    disabled ? styles.disabled : '',
     className,
   ]
     .filter(Boolean)
@@ -54,6 +57,7 @@ export function Checkbox({
         type="checkbox"
         checked={checked}
         onChange={handleChange}
+        disabled={disabled}
       />
       <span className={styles.box} aria-hidden />
       {label && <span className={styles.label}>{label}</span>}

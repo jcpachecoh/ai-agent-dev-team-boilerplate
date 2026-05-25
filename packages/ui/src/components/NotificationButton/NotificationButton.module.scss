@@ -1,4 +1,5 @@
 @use '../../styles/abstracts/variables' as *;
+@use '../../styles/abstracts/mixins' as *;
 
 .btn {
   position: relative;
@@ -12,28 +13,60 @@
   box-sizing: border-box;
   border: $border-width solid transparent;
   background: transparent;
+  cursor: pointer;
+
+  &:focus-visible {
+    @include focus-ring;
+  }
 }
 
-.dark {
-  background: rgba($color-white, 0.04);
-  border-color: rgba($color-white, 0.07);
+.sm {
+  width: 30px;
+  height: 30px;
+
+  .icon svg {
+    width: 12px;
+    height: 12px;
+  }
 }
 
+.lg {
+  width: 44px;
+  height: 44px;
+
+  .icon svg {
+    width: 18px;
+  }
+}
+
+/* Para superficies claras */
 .light {
-  background: rgba($color-black, 0.04);
-  border-color: rgba($color-black, 0.09);
+  background: rgba($color-black, 0.06);
+  border-color: rgba($color-black, 0.14);
+
+  .icon {
+    color: $color-gray-900;
+  }
+}
+
+/* Para superficies oscuras */
+.dark {
+  background: rgba($color-white, 0.1);
+  border-color: rgba($color-white, 0.2);
+
+  .icon {
+    color: #f8fafc;
+  }
 }
 
 .icon {
-  position: absolute;
-  left: $spacing-sm;
-  top: $spacing-sm;
-  width: 14px;
-  height: 14px;
-  display: block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
 }
 
-.icon img {
+.icon svg {
   width: 14px;
   height: 14px;
   display: block;
@@ -57,23 +90,17 @@
   padding: 0;
 }
 
-/* Alternate style variant similar to Figma sample (accent/gold) */
 .gold {
   background: linear-gradient(180deg, #f5c042, #f0b120);
   border-color: rgba(212, 160, 23, 0.18);
-  color: $color-gray-900;
-}
 
-.gold .icon {
-  left: 10px;
-  top: 10px;
-}
-.gold .icon img {
-  filter: none;
-}
+  .icon {
+    color: $color-gray-900;
+  }
 
-.gold .badge {
-  background: #d4a017;
-  color: $color-gray-900;
-  border: $border-width solid rgba($color-black, 0.06);
+  .badge {
+    background: #d4a017;
+    color: $color-gray-900;
+    border: $border-width solid rgba($color-black, 0.06);
+  }
 }

@@ -1,5 +1,7 @@
 import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
+
+import { darkCanvas, lightCanvas } from '../../../.storybook/canvas';
 import Checkbox from '.';
 
 const meta: Meta<typeof Checkbox> = {
@@ -7,12 +9,13 @@ const meta: Meta<typeof Checkbox> = {
   component: Checkbox,
   tags: ['autodocs'],
   args: {
-    variant: 'light',
+    theme: 'light',
+    label: 'Recordar mi sesión',
   },
   argTypes: {
-    variant: {
+    size: {
       control: 'radio',
-      options: ['light', 'dark'],
+      options: ['sm', 'md'],
     },
   },
 };
@@ -21,15 +24,36 @@ export default meta;
 type Story = StoryObj<typeof Checkbox>;
 
 export const Light: Story = {
-  args: {
-    label: 'Recordar mi sesión',
-    variant: 'light',
-  },
+  decorators: [lightCanvas],
+  args: { theme: 'light' },
 };
 
 export const Dark: Story = {
-  args: {
-    label: 'Recordar mi sesión',
-    variant: 'dark',
+  decorators: [darkCanvas],
+  args: { theme: 'dark' },
+};
+
+export const Sm: Story = {
+  decorators: [lightCanvas],
+  args: { size: 'sm', checked: true },
+};
+
+export const Md: Story = {
+  decorators: [lightCanvas],
+  args: { size: 'md' },
+};
+
+export const Disabled: Story = {
+  decorators: [lightCanvas],
+  args: { disabled: true, checked: true },
+};
+
+export const Controlled: Story = {
+  decorators: [darkCanvas],
+  render: function ControlledStory() {
+    const [checked, setChecked] = React.useState(false);
+    return (
+      <Checkbox theme="dark" label="Recordar mi sesión" checked={checked} onChange={setChecked} />
+    );
   },
 };

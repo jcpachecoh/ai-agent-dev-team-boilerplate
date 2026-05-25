@@ -5,12 +5,10 @@ import clsx from 'clsx';
 import { X } from 'lucide-react';
 import styles from './Drawer.module.scss';
 
-// Let's create a simple hook inline just for mobile detection if needed, or rely on css.
-// Since we don't have the hook ready, we'll just implement the layout logic.
-
 export interface DrawerProps extends DialogPrimitive.DialogProps {
   side?: 'left' | 'right' | 'bottom' | 'top';
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg' | 'xl';
+  theme?: 'light' | 'dark';
   title?: React.ReactNode;
   description?: React.ReactNode;
   children?: React.ReactNode;
@@ -27,6 +25,7 @@ const slideVariants = {
 export function Drawer({
   side = 'right',
   size = 'md',
+  theme = 'light',
   title,
   description,
   children,
@@ -35,7 +34,6 @@ export function Drawer({
   onOpenChange,
   ...props
 }: DrawerProps) {
-  const isMobile = typeof window !== 'undefined' ? window.innerWidth < 768 : false;
   const actualSide = side;
 
   return (
@@ -45,7 +43,7 @@ export function Drawer({
           <DialogPrimitive.Portal forceMount>
             <DialogPrimitive.Overlay asChild>
               <motion.div
-                className={styles.overlay}
+                className={clsx(styles.overlay, styles[`overlay--${theme}`])}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
@@ -58,6 +56,7 @@ export function Drawer({
                   styles.content,
                   styles[`side--${actualSide}`],
                   styles[`size--${size}`],
+                  styles[`content--${theme}`],
                 )}
                 initial={slideVariants[actualSide].initial}
                 animate={slideVariants[actualSide].animate}
@@ -72,20 +71,16 @@ export function Drawer({
                 }
                 dragConstraints={undefined}
                 dragElastic={0.2}
-                onDragEnd={(e, { offset, velocity }) => {
-                  // Bottom: swipe down to close
+                onDragEnd={(_e, { offset, velocity }) => {
                   if (actualSide === 'bottom' && (offset.y > 100 || velocity.y > 500)) {
                     onOpenChange?.(false);
                   }
-                  // Top: swipe up to close (negative offset)
                   if (actualSide === 'top' && (offset.y < -100 || velocity.y < -500)) {
                     onOpenChange?.(false);
                   }
-                  // Right: swipe right to close
                   if (actualSide === 'right' && (offset.x > 100 || velocity.x > 500)) {
                     onOpenChange?.(false);
                   }
-                  // Left: swipe left to close (negative offset)
                   if (actualSide === 'left' && (offset.x < -100 || velocity.x < -500)) {
                     onOpenChange?.(false);
                   }
@@ -110,8 +105,8 @@ export function Drawer({
 
                 {footer && <div className={styles.footer}>{footer}</div>}
 
-                <DialogPrimitive.Close className={styles.closeButton} aria-label="Close">
-                  <X size={16} />
+                <DialogPrimitive.Close className={styles.closeButton} aria-label="Cerrar">
+                  <X size={size === 'xl' || size === 'lg' ? 20 : 16} aria-hidden />
                 </DialogPrimitive.Close>
               </motion.div>
             </DialogPrimitive.Content>

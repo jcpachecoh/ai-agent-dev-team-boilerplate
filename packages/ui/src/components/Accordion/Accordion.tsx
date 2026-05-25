@@ -3,31 +3,29 @@ import * as AccordionPrimitive from '@radix-ui/react-accordion';
 import clsx from 'clsx';
 import { ChevronDown } from 'lucide-react';
 import styles from './Accordion.module.scss';
-import tripStyles from '../TripCard/TripCard.module.scss';
+
+const CHEVRON_SIZES = { sm: 16, md: 20, lg: 24 } as const;
 
 export interface AccordionProps {
   type?: 'single' | 'multiple';
   collapsible?: boolean;
   defaultValue?: string | string[];
   value?: string | string[];
-  onValueChange?: (value: any) => void;
-  /** global size for triggers */
+  onValueChange?: (value: string | string[]) => void;
   size?: 'sm' | 'md' | 'lg';
-  /** global color used as fallback for items (hex or CSS color) */
+  theme?: 'light' | 'dark';
   color?: string;
-
   items: {
     value: string;
     trigger: React.ReactNode;
     content: React.ReactNode;
     disabled?: boolean;
     variant?: 'primary' | 'success' | 'warning' | 'neutral';
-    /** optional hex color (e.g. #f6c661) to override variant colors */
     color?: string;
     size?: 'sm' | 'md' | 'lg';
     subtitle?: string;
     capText?: string;
-    leftIcon?: string;
+    leftIcon?: React.ReactNode;
   }[];
   className?: string;
   icon?: React.ReactNode;
@@ -39,7 +37,8 @@ export function Accordion({
   items,
   className,
   size = 'md',
-  icon = <ChevronDown className={styles.icon} aria-hidden />,
+  theme = 'dark',
+  icon,
   color,
   defaultValue,
   value,
@@ -63,6 +62,12 @@ export function Accordion({
     }
     return hex;
   };
+
+  const chevronSize = CHEVRON_SIZES[size];
+  const defaultIcon = icon ?? (
+    <ChevronDown size={chevronSize} className={styles.icon} aria-hidden />
+  );
+
   const singleProps: Partial<AccordionPrimitive.AccordionSingleProps> = {};
   const multipleProps: Partial<AccordionPrimitive.AccordionMultipleProps> = {};
 
@@ -91,7 +96,7 @@ export function Accordion({
 
   return (
     <AccordionPrimitive.Root
-      className={clsx(styles.root, className)}
+      className={clsx(styles.root, styles[`root--${theme}`], className)}
       {...(type === 'single'
         ? (singleProps as AccordionPrimitive.AccordionSingleProps)
         : (multipleProps as AccordionPrimitive.AccordionMultipleProps))}
@@ -116,7 +121,6 @@ export function Accordion({
               : styles.triggerMd;
         const itemSizeClass =
           itemSize === 'sm' ? styles.itemSm : itemSize === 'lg' ? styles.itemLg : styles.itemMd;
-        // derived colors similar to BadgeButton
         const derivedBg = finalColor ? hexToRgba(finalColor, 0.06) : undefined;
         const textColor = finalColor ?? undefined;
         const triggerStyle: React.CSSProperties = {};
@@ -146,15 +150,21 @@ export function Accordion({
                 style={triggerStyle}
               >
                 <span className={styles.accent} style={accentStyle} aria-hidden />
+                {item.leftIcon && <span className={styles.leftIcon}>{item.leftIcon}</span>}
                 <div className={styles.triggerLabel}>
                   <span className={styles.triggerTitle} style={labelStyle}>
                     {item.trigger}
                   </span>
                   {item.subtitle && <div className={styles.triggerMeta}>{item.subtitle}</div>}
                 </div>
-                {React.isValidElement(icon)
-                  ? React.cloneElement(icon as any, { style: iconStyle })
-                  : icon}
+                {React.isValidElement(defaultIcon)
+                  ? React.cloneElement(
+                      defaultIcon as React.ReactElement<{ style?: React.CSSProperties }>,
+                      {
+                        style: iconStyle,
+                      },
+                    )
+                  : defaultIcon}
               </AccordionPrimitive.Trigger>
             </AccordionPrimitive.Header>
             <AccordionPrimitive.Content className={styles.content}>

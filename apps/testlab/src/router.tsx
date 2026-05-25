@@ -10,6 +10,7 @@ import { MilestonesPage } from '@/pages/Milestones';
 import { RequirementsPage } from '@/pages/Requirements';
 import { LoginPage } from '@/pages/Login';
 import { SignupPage } from '@/pages/Signup';
+import { ProfilePage } from '@/pages/Profile';
 
 export const router = createBrowserRouter([
   { path: 'login', element: <LoginPage /> },
@@ -30,6 +31,7 @@ export const router = createBrowserRouter([
       { path: 'projects/:projectId/runs/:runId/report', element: <ReportsPage /> },
       { path: 'projects/:projectId/milestones', element: <MilestonesPage /> },
       { path: 'projects/:projectId/requirements', element: <RequirementsPage /> },
+      { path: 'profile', element: <ProfilePage /> },
     ],
   },
 ]);

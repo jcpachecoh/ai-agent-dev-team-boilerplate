@@ -7,6 +7,7 @@ export interface SwitchProps extends Omit<React.LabelHTMLAttributes<HTMLLabelEle
   defaultChecked?: boolean;
   onChange?: (checked: boolean) => void;
   size?: 'sm' | 'md' | 'lg';
+  theme?: 'light' | 'dark';
   variant?: 'default' | 'success' | 'danger' | 'info';
   disabled?: boolean;
   loading?: boolean;
@@ -18,6 +19,7 @@ export function Switch({
   defaultChecked,
   onChange,
   size = 'md',
+  theme = 'light',
   variant = 'default',
   disabled = false,
   loading = false,
@@ -41,6 +43,7 @@ export function Switch({
   const cls = [
     styles.switch,
     styles[`size--${size}`],
+    theme === 'dark' ? styles['theme--dark'] : styles['theme--light'],
     styles[`variant--${variant}`],
     currentChecked ? styles.checked : '',
     disabled ? styles.disabled : '',
@@ -65,6 +68,7 @@ export function Switch({
           {loading ? (
             <Spinner
               size={size === 'lg' ? 'lg' : size === 'sm' ? 'sm' : 'md'}
+              theme={theme}
               color={variant === 'default' ? '#4b3406' : undefined}
             />
           ) : null}

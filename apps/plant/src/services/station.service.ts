@@ -113,5 +113,15 @@ export async function hydrateStationSession(
     setStationIdStore(existing);
     return { stationId: existing, needsSetup: false };
   }
+
+  const demoStationId = import.meta.env.VITE_DEMO_STATION_ID ?? 'EST-02';
+  const isDemoMode = import.meta.env.DEV || import.meta.env.VITE_ENABLE_DEMO_PIN === 'true';
+  if (isDemoMode) {
+    const normalized = normalizeStationId(demoStationId);
+    await setStationId(normalized);
+    setStationIdStore(normalized);
+    return { stationId: normalized, needsSetup: false };
+  }
+
   return { stationId: null, needsSetup: true };
 }

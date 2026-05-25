@@ -1,0 +1,168 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../../../styles/abstracts/mixins' as *;
+@use '../shared/field-ops-theme' as fo;
+
+$fo-operator-teal: #4fd1c5;
+$fo-operator-blue: #5b8def;
+$fo-operator-purple: #a78bfa;
+
+.panel {
+  width: min(100%, var(--display-width));
+  min-height: var(--display-min-height);
+  border-radius: $border-radius-lg;
+  border: $border-width solid var(--fo-border);
+  background-color: var(--fo-surface-elevated);
+  overflow: hidden;
+  font-family: $font-family-base;
+  box-sizing: border-box;
+}
+
+.header {
+  padding: var(--panel-header-padding);
+  padding-bottom: var(--panel-header-padding-bottom);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--panel-title-size);
+  font-weight: $font-weight-semibold;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--fo-text-secondary);
+}
+
+.list {
+  margin: 0;
+  padding: 0 var(--panel-body-padding-x) var(--panel-body-padding-bottom);
+  list-style: none;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--row-gap);
+  padding: var(--row-padding-y) 0;
+}
+
+.rowBorder {
+  border-bottom: $border-width solid var(--fo-border);
+}
+
+.avatar {
+  @include flex-center;
+  width: var(--avatar-size);
+  height: var(--avatar-size);
+  border-radius: $border-radius-md;
+  border: 2px solid currentColor;
+  font-size: var(--avatar-font-size);
+  font-weight: $font-weight-bold;
+  letter-spacing: 0.02em;
+  background-color: transparent;
+}
+
+.accent--blue {
+  color: $fo-operator-blue;
+  background-color: rgba($fo-operator-blue, 0.1);
+}
+
+.accent--gold {
+  color: fo.$field-ops-gold;
+  background-color: rgba(fo.$field-ops-gold, 0.1);
+}
+
+.accent--purple {
+  color: $fo-operator-purple;
+  background-color: rgba($fo-operator-purple, 0.1);
+}
+
+.accent--teal {
+  color: $fo-operator-teal;
+  background-color: rgba($fo-operator-teal, 0.1);
+}
+
+.name {
+  font-size: var(--name-font-size);
+  font-weight: $font-weight-medium;
+  color: var(--fo-text-primary);
+  @include text-truncate;
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-xs;
+  flex-shrink: 0;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: $border-radius-full;
+  background-color: $fo-operator-teal;
+  box-shadow: 0 0 6px rgba($fo-operator-teal, 0.45);
+}
+
+.timer {
+  font-family: $font-family-mono;
+  font-size: var(--timer-font-size);
+  font-weight: $font-weight-semibold;
+  color: $fo-operator-teal;
+  font-variant-numeric: tabular-nums;
+}
+
+.size--sm {
+  --display-width: 220px;
+  --display-min-height: 140px;
+  --panel-header-padding: #{$spacing-sm} #{$spacing-md} 0;
+  --panel-header-padding-bottom: #{$spacing-xs};
+  --panel-body-padding-x: #{$spacing-md};
+  --panel-body-padding-bottom: #{$spacing-sm};
+  --panel-title-size: 10px;
+  --row-gap: #{$spacing-sm};
+  --row-padding-y: #{$spacing-xs};
+  --avatar-size: 28px;
+  --avatar-font-size: 10px;
+  --name-font-size: #{$font-size-xs};
+  --timer-font-size: #{$font-size-xs};
+}
+
+.size--md {
+  --display-width: 320px;
+  --display-min-height: 180px;
+  --panel-header-padding: #{$spacing-md} #{$spacing-md} 0;
+  --panel-header-padding-bottom: #{$spacing-sm};
+  --panel-body-padding-x: #{$spacing-md};
+  --panel-body-padding-bottom: #{$spacing-md};
+  --panel-title-size: #{$font-size-xs};
+  --row-gap: #{$spacing-md};
+  --row-padding-y: #{$spacing-sm};
+  --avatar-size: 32px;
+  --avatar-font-size: #{$font-size-xs};
+  --name-font-size: #{$font-size-sm};
+  --timer-font-size: #{$font-size-sm};
+}
+
+.size--xl {
+  --display-width: 100%;
+  --display-min-height: 220px;
+  --panel-header-padding: #{$spacing-lg} #{$spacing-lg} 0;
+  --panel-header-padding-bottom: #{$spacing-md};
+  --panel-body-padding-x: #{$spacing-lg};
+  --panel-body-padding-bottom: #{$spacing-lg};
+  --panel-title-size: #{$font-size-sm};
+  --row-gap: #{$spacing-md};
+  --row-padding-y: #{$spacing-md};
+  --avatar-size: 40px;
+  --avatar-font-size: #{$font-size-sm};
+  --name-font-size: #{$font-size-base};
+  --timer-font-size: #{$font-size-base};
+}
+
+.theme--dark {
+  @include fo.field-ops-theme-dark;
+}
+
+.theme--light {
+  @include fo.field-ops-theme-light;
+}

@@ -123,3 +123,76 @@
 .st_blocked  { background-color: rgba(189, 71, 0, 0.15);     color: #f0883e; }
 .st_retest   { background-color: rgba(56, 139, 253, 0.15);   color: #58a6ff; }
 .st_skipped  { background-color: rgba(139, 148, 158, 0.08);  color: #8b949e; }
+
+
+/* Header actions layout */
+.headerActions {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+/* Generate button */
+.btnGenerate {
+  padding: var(--space-2) var(--space-4);
+  background: transparent;
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-md);
+  color: var(--color-accent);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btnGenerate:hover:not(:disabled) {
+  background: rgba(var(--color-accent-rgb, 88, 166, 255), 0.08);
+}
+.btnGenerate:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Generation error */
+.genError {
+  font-size: 0.875rem;
+  color: var(--color-danger, #e53e3e);
+  margin: 0 0 var(--space-2);
+}
+
+/* Linear section per case */
+.linearSection {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.linearLabel {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+  padding-top: 3px;
+}
+
+.linearChips {
+  display: flex;
+  gap: var(--space-1);
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.btnLinkLinear {
+  background: none;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  cursor: pointer;
+}
+.btnLinkLinear:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}

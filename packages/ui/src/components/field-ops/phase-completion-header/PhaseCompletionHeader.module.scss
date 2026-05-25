@@ -1,0 +1,62 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../../../styles/abstracts/mixins' as *;
+@use '../shared/field-ops-theme' as fo;
+
+.header {
+  @include flex-center;
+  flex-direction: column;
+  gap: var(--header-gap);
+  width: min(100%, var(--display-width));
+  min-height: var(--display-min-height);
+  font-family: $font-family-base;
+  text-align: center;
+}
+
+.iconWrap {
+  @include flex-center;
+  color: fo.$field-ops-success-solid;
+  filter: drop-shadow(0 0 12px rgba(fo.$field-ops-success-solid, 0.35));
+}
+
+.title {
+  margin: 0;
+  font-size: var(--title-size);
+  font-weight: $font-weight-bold;
+  line-height: $line-height-tight;
+  color: fo.$field-ops-success-solid;
+  text-transform: capitalize;
+}
+
+.size--sm {
+  --display-width: 220px;
+  --display-min-height: 72px;
+  --header-gap: #{$spacing-xs};
+  --title-size: #{$font-size-lg};
+}
+
+.size--md {
+  --display-width: 320px;
+  --display-min-height: 96px;
+  --header-gap: #{$spacing-sm};
+  --title-size: #{$font-size-2xl};
+}
+
+.size--xl {
+  --display-width: 100%;
+  --display-min-height: 120px;
+  --header-gap: #{$spacing-md};
+  --title-size: #{$font-size-3xl};
+}
+
+.theme--dark {
+  @include fo.field-ops-theme-dark;
+}
+
+.theme--light {
+  @include fo.field-ops-theme-light;
+
+  .title,
+  .iconWrap {
+    color: #22c55e;
+  }
+}

@@ -1,18 +1,30 @@
 import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
+import { Bell } from 'lucide-react';
+
+import { darkCanvas, themeCanvas } from '../../../.storybook/canvas';
 import NotificationButton from '.';
 
 const meta: Meta<typeof NotificationButton> = {
   title: 'Atomos/NotificationButton',
   component: NotificationButton,
   tags: ['autodocs'],
+  decorators: [themeCanvas],
   args: {
-    variant: 'light',
+    theme: 'light',
+    count: 3,
+    showBadge: true,
+    gold: false,
+    size: 'md',
   },
   argTypes: {
-    variant: {
+    size: {
       control: 'radio',
-      options: ['light', 'dark'],
+      options: ['sm', 'md', 'lg'],
+    },
+    gold: {
+      control: 'boolean',
+      description: 'Estilo dorado (accent)',
     },
   },
 };
@@ -20,18 +32,42 @@ const meta: Meta<typeof NotificationButton> = {
 export default meta;
 type Story = StoryObj<typeof NotificationButton>;
 
-export const Default: Story = {
+export const Default: Story = {};
+
+export const Gold: Story = {
   args: {
-    variant: 'light',
+    gold: true,
+    theme: 'light',
     count: 3,
-    icon: 'https://www.figma.com/api/mcp/asset/dc1445a7-d665-44fb-a51d-efb224fde504',
+  },
+  decorators: [darkCanvas],
+};
+
+export const CustomLucideIcon: Story = {
+  args: {
+    theme: 'dark',
+    icon: <Bell strokeWidth={2.5} />,
+    count: 5,
   },
 };
 
-export const Dark: Story = {
+export const AllSizes: Story = {
+  parameters: {
+    docs: { disable: true },
+  },
+  decorators: [darkCanvas],
+  render: () => (
+    <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+      <NotificationButton theme="dark" size="sm" count={2} />
+      <NotificationButton theme="dark" size="md" count={3} />
+      <NotificationButton theme="dark" size="lg" count={9} />
+    </div>
+  ),
+};
+
+export const WithBadgeCount: Story = {
   args: {
-    variant: 'dark',
-    count: 3,
-    icon: 'https://www.figma.com/api/mcp/asset/35f0c90d-e431-41b1-860b-43280c92aee5',
+    theme: 'light',
+    count: 12,
   },
 };

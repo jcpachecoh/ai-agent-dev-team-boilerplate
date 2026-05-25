@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { ArrowRight } from 'lucide-react';
 
 import styles from './Button.module.scss';
 import Spinner from '../Spinner';
@@ -20,7 +21,8 @@ export function Button({
   ...props
 }: ButtonProps): React.JSX.Element {
   const variantClass = styles[variant] ?? styles.primary;
-  const sizeClass = size === 'large' ? styles.large : size === 'small' ? styles.small : '';
+  const sizeClass =
+    size === 'large' ? styles.large : size === 'small' ? styles.small : styles.medium;
   const loadingClass = loading ? styles.loading : '';
   const combinedClassName = [styles.button, variantClass, sizeClass, loadingClass, className]
     .filter(Boolean)
@@ -46,7 +48,7 @@ export function Button({
           {children}
           {arrow && (
             <span className={styles.arrow} aria-hidden>
-              →
+              <ArrowRight size={16} strokeWidth={2.5} />
             </span>
           )}
         </>

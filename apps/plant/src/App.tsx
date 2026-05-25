@@ -1,21 +1,20 @@
 import { useEffect, useState } from 'react';
+
 import { bootstrapPlantApp, type BootstrapResult } from '@/bootstrap';
-import { useSessionStore } from '@/stores/session.store';
-import { useConnectivityStore } from '@/stores/connectivity.store';
-import { useTimerStore, formatElapsed } from '@/stores/timer.store';
 import { usePlantSocket } from '@/hooks/usePlantSocket';
 import { useWakeLock } from '@/hooks/useWakeLock';
+import { ActivePhaseScreen } from '@/screens/ActivePhaseScreen';
+import { CompletePhaseScreen } from '@/screens/CompletePhaseScreen';
+import { LoginScreen } from '@/screens/LoginScreen';
+import { usePhaseStore } from '@/stores/phase.store';
+import { useSessionStore } from '@/stores/session.store';
 
-/**
- * Minimal dev shell until operator/supervisor screens (tasks 03, 10–12).
- */
+type OperatorScreen = 'active' | 'complete';
+
 export function App() {
   const [boot, setBoot] = useState<BootstrapResult | null>(null);
-  const stationId = useSessionStore((s) => s.stationId);
-  const isOnline = useConnectivityStore((s) => s.isOnline);
-  const syncQueueCount = useConnectivityStore((s) => s.syncQueueCount);
-  const elapsedMs = useTimerStore((s) => s.elapsedMs);
-  const timerStatus = useTimerStore((s) => s.status);
+  const [screen, setScreen] = useState<OperatorScreen>('active');
+  const isAuthenticated = useSessionStore((s) => s.isAuthenticated);
 
   useWakeLock();
   usePlantSocket();
@@ -23,6 +22,16 @@ export function App() {
   useEffect(() => {
     void bootstrapPlantApp().then(setBoot);
   }, []);
+
+  const handleLoginSuccess = () => {
+    usePhaseStore.getState().hydrateDemoPhase();
+    setScreen('active');
+  };
+
+  const handleCompleteSuccess = () => {
+    usePhaseStore.getState().hydrateDemoPhase();
+    setScreen('active');
+  };
 
   if (!boot) {
     return (
@@ -32,18 +41,18 @@ export function App() {
     );
   }
 
-  return (
-    <div className="screen-operator app-shell">
-      <h1 className="app-shell__title">RestOpsIQ Plant KDS</h1>
-      <p className="app-shell__meta">
-        Estación: {stationId ?? '—'} {boot.needsSetup ? '(requiere configuración)' : ''}
-      </p>
-      <p className="app-shell__meta">
-        Red: {isOnline ? 'en línea' : 'sin conexión'} · Cola: {syncQueueCount}
-      </p>
-      <p className="app-shell__meta">
-        Cronómetro ({timerStatus}): {formatElapsed(elapsedMs)}
-      </p>
-    </div>
-  );
+  if (!isAuthenticated) {
+    return <LoginScreen onLoginSuccess={handleLoginSuccess} />;
+  }
+
+  if (screen === 'complete') {
+    return (
+      <CompletePhaseScreen
+        onBack={() => setScreen('active')}
+        onCompleteSuccess={handleCompleteSuccess}
+      />
+    );
+  }
+
+  return <ActivePhaseScreen onCompletePhase={() => setScreen('complete')} />;
 }

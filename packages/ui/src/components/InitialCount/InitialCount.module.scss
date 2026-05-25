@@ -41,3 +41,19 @@
 .lg .label {
   font-size: $font-size-sm;
 }
+
+.light .number {
+  color: #2f82ff;
+}
+
+.light .label {
+  color: #72729a;
+}
+
+.dark .number {
+  color: #6ba3ff;
+}
+
+.dark .label {
+  color: #8888a0;
+}

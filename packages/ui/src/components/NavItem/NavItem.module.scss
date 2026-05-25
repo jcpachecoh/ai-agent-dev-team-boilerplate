@@ -1,4 +1,5 @@
 @use '../../styles/abstracts/variables' as *;
+@use '../../styles/abstracts/mixins' as *;
 
 .item {
   display: flex;
@@ -9,6 +10,35 @@
   border-radius: 10px;
   cursor: pointer;
   user-select: none;
+
+  &:focus-visible {
+    @include focus-ring;
+  }
+}
+
+.sm {
+  min-height: 32px;
+  padding: 6px 10px;
+  gap: $spacing-sm;
+
+  .icon svg {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+.lg {
+  min-height: 48px;
+  padding: 10px 16px;
+
+  .icon svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .label {
+    font-size: $font-size-sm;
+  }
 }
 
 .icon {

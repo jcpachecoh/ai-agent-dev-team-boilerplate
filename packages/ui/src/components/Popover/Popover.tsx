@@ -5,6 +5,8 @@ import styles from './Popover.module.scss';
 
 export interface PopoverProps extends React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Root> {
   content: React.ReactNode;
+  theme?: 'light' | 'dark';
+  size?: 'sm' | 'md' | 'lg';
   align?: PopoverPrimitive.PopoverContentProps['align'];
   side?: PopoverPrimitive.PopoverContentProps['side'];
   sideOffset?: number;
@@ -14,9 +16,11 @@ export interface PopoverProps extends React.ComponentPropsWithoutRef<typeof Popo
 export function Popover({
   children,
   content,
+  theme = 'light',
+  size = 'md',
   align = 'center',
   side = 'bottom',
-  sideOffset = 5,
+  sideOffset = 8,
   showArrow = true,
   ...props
 }: PopoverProps) {
@@ -28,11 +32,17 @@ export function Popover({
           align={align}
           side={side}
           sideOffset={sideOffset}
-          className={styles.content}
+          className={clsx(styles.content, styles[`content--${theme}`], styles[`content--${size}`])}
           collisionPadding={10}
         >
-          {content}
-          {showArrow && <PopoverPrimitive.Arrow className={styles.arrow} width={11} height={5} />}
+          <div className={styles.inner}>{content}</div>
+          {showArrow && (
+            <PopoverPrimitive.Arrow
+              className={clsx(styles.arrow, styles[`arrow--${theme}`])}
+              width={12}
+              height={6}
+            />
+          )}
         </PopoverPrimitive.Content>
       </PopoverPrimitive.Portal>
     </PopoverPrimitive.Root>

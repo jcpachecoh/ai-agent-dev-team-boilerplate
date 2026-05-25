@@ -1,0 +1,64 @@
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 2px 6px 2px 4px;
+  background: rgba(94, 106, 210, 0.1);
+  border: 1px solid rgba(94, 106, 210, 0.3);
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  max-width: 280px;
+}
+
+.chipLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--color-text-primary);
+  text-decoration: none;
+  overflow: hidden;
+}
+
+.chipLink:hover {
+  text-decoration: underline;
+}
+
+.identifier {
+  font-family: monospace;
+  color: #5E6AD2;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-text-secondary);
+}
+
+.externalIcon {
+  flex-shrink: 0;
+  color: var(--color-text-secondary);
+  opacity: 0.7;
+}
+
+.btnUnlink {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+  line-height: 1;
+  padding: 0 2px;
+  flex-shrink: 0;
+}
+
+.btnUnlink:hover:not(:disabled) {
+  color: var(--color-danger, #e53e3e);
+}
+
+.btnUnlink:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

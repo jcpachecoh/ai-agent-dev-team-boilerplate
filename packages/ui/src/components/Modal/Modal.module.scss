@@ -1,17 +1,21 @@
 @use '../../styles/abstracts/variables' as *;
 
 .overlay {
-  background-color: rgba(0, 0, 0, 0.45);
   position: fixed;
   inset: 0;
   z-index: 120;
-  backdrop-filter: blur(4px) saturate(1.05);
+  backdrop-filter: blur(6px) saturate(1.05);
+}
+
+.overlay--light {
+  background-color: rgba($color-black, 0.45);
+}
+
+.overlay--dark {
+  background-color: rgba($color-black, 0.72);
 }
 
 .content {
-  background-color: $color-bg-primary;
-  border-radius: 12px;
-  box-shadow: 0 18px 50px rgba($color-black, 0.35);
   position: fixed;
   top: 50%;
   left: 50%;
@@ -20,80 +24,153 @@
   display: flex;
   flex-direction: column;
   max-height: 90vh;
-  padding: $spacing-lg;
-  color: $color-text-primary;
-  border: 1px solid rgba($color-black, 0.04);
+  border-radius: 18px;
+  box-sizing: border-box;
+}
+
+.content--light {
+  background-color: $color-white;
+  color: $color-gray-900;
+  border: $border-width solid rgba($color-black, 0.08);
+  box-shadow: 0 24px 64px rgba($color-black, 0.18);
+}
+
+.content--dark {
+  background-color: #111118;
+  color: #ededf5;
+  border: $border-width solid rgba($color-white, 0.08);
+  box-shadow: 0 40px 80px rgba($color-black, 0.55);
 }
 
 .content--sm {
-  width: 342px;
-  padding: 48px 28px 24px;
-  border-radius: 18px;
+  width: min(100vw - 32px, 400px);
+  padding: $spacing-lg;
 }
-.content--sm {
-  width: 520px;
-  padding: 96px 36px 32px;
-  border-radius: 20px;
-}
+
 .content--md {
-  width: 560px;
+  width: min(100vw - 32px, 560px);
+  padding: $spacing-lg;
 }
+
 .content--lg {
-  width: 720px;
+  width: min(100vw - 32px, 640px);
+  padding: $spacing-xl;
 }
+
 .content--xl {
-  width: 960px;
+  width: min(100vw - 32px, 720px);
+  padding: $spacing-xl;
 }
+
 .content--fullscreen {
   width: 100vw;
   height: 100vh;
   max-width: 100vw;
   max-height: 100vh;
   border-radius: 0;
+  padding: $spacing-xl;
 }
 
-/* Dark delete modal variant (from Figma node 41:3431) */
-.content--danger {
-  background: #111118;
-  color: $color-text-primary;
-  border-radius: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  box-shadow: 0 40px 40px rgba(0, 0, 0, 0.55);
+/* Confirm / alert layout */
+.content--confirm {
+  width: min(100vw - 32px, 402px);
   padding: 28px 28px 24px;
-  width: 402px;
 }
 
-.badgeIcon--danger {
-  position: absolute;
-  top: 28px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 52px;
-  height: 52px;
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.header--centered {
+  align-items: center;
+  text-align: center;
+  gap: 0;
+}
+
+.headerIcon {
+  width: 56px;
+  height: 56px;
   border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.2);
-  z-index: 20;
+  margin: 0 auto $spacing-md;
+  flex-shrink: 0;
 }
 
-.content--danger .title {
+.headerIcon--warning {
+  background: rgba($color-warning, 0.12);
+  border: $border-width solid rgba($color-warning, 0.28);
+  color: $color-warning;
+}
+
+.headerIcon--danger {
+  background: rgba($color-danger, 0.12);
+  border: $border-width solid rgba($color-danger, 0.28);
+  color: $color-danger;
+  box-shadow: 0 0 24px rgba($color-danger, 0.15);
+}
+
+.title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: $font-weight-semibold;
+  line-height: 1.35;
+}
+
+.content--dark .title {
   color: #ededf5;
 }
-.content--danger .description {
+
+.description {
+  margin: $spacing-xs 0 0 0;
+  font-size: 12.8px;
+  line-height: 1.5;
+  color: $color-text-secondary;
+}
+
+.content--dark .description {
   color: #5a5a72;
 }
-.content--danger .footer {
-  margin-top: 22px;
+
+.header--centered .description {
+  margin-top: $spacing-sm;
+}
+
+.body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  margin-top: $spacing-md;
+  min-height: 0;
+}
+
+.content--confirm .body {
+  margin-top: 0;
 }
 
 .footer {
   margin-top: $spacing-lg;
   display: flex;
-  justify-content: flex-end;
   gap: $spacing-sm;
+  flex-wrap: wrap;
+}
+
+.footer--stacked {
+  flex-direction: row;
+
+  button {
+    flex: 1;
+    min-height: 42px;
+    border-radius: 10px;
+  }
+}
+
+.content--dark .footer--stacked button[data-variant='secondary'] {
+  background: rgba($color-white, 0.04);
+  border: $border-width solid rgba($color-primary, 0.45);
+  color: rgba($color-primary-light, 0.95);
 }
 
 .closeButton {
@@ -104,51 +181,142 @@
   background: transparent;
   border: none;
   padding: $spacing-xs;
-  color: $color-text-secondary;
-  &:hover {
-    color: $color-text-primary;
+  border-radius: $border-radius-sm;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  &:focus-visible {
+    outline: 2px solid $color-primary;
+    outline-offset: 2px;
   }
 }
 
-/* Top badge / icon used by ConfirmModal design */
-/* duplicate old badge styles removed to prefer updated badgeIcon above */
+.content--light .closeButton {
+  color: $color-gray-500;
 
-/* Small modal specific adjustments */
-.content--sm .header {
+  &:hover {
+    color: $color-gray-900;
+  }
+}
+
+.content--dark .closeButton {
+  color: #5a5a72;
+
+  &:hover {
+    color: #ededf5;
+  }
+}
+
+/* Report novedad body */
+.reportHeader {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-lg;
+}
+
+.reportHeaderIcon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba($color-danger, 0.12);
+  border: $border-width solid rgba($color-danger, 0.25);
+  color: $color-danger;
+  flex-shrink: 0;
+}
+
+.reportTitle {
+  margin: 0;
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+}
+
+.sectionLabel {
+  font-size: 10px;
+  font-weight: $font-weight-semibold;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #5a5a72;
+  margin: 0 0 $spacing-sm 0;
+}
+
+.typeGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: $spacing-sm;
+  margin-bottom: $spacing-lg;
+}
+
+.typeOption {
+  display: flex;
   flex-direction: column;
   align-items: center;
-  text-align: center;
-  gap: 8px;
-  margin-top: 8px;
-}
-.content--sm .title {
-  font-size: 16px;
-  font-weight: 600;
-  color: $color-text-primary;
-}
-.content--sm .description {
-  font-size: 12.8px;
-  color: rgba(90, 90, 114, 1);
+  justify-content: center;
+  gap: 6px;
+  min-height: 72px;
+  padding: $spacing-sm;
+  border-radius: 12px;
+  background: rgba($color-white, 0.03);
+  border: $border-width solid rgba($color-white, 0.08);
+  color: #a0a0b8;
+  font-size: 11px;
+  font-weight: $font-weight-medium;
+  cursor: pointer;
+  transition:
+    border-color 150ms ease,
+    color 150ms ease,
+    box-shadow 150ms ease;
+
+  &:hover {
+    border-color: rgba($color-white, 0.14);
+  }
+  &:focus-visible {
+    outline: 2px solid $color-primary;
+    outline-offset: 2px;
+  }
 }
 
-/* Footer buttons sizing for small confirm modal */
-.content--sm .footer {
-  margin-top: 18px;
+.typeOption--selected {
+  border-color: rgba($color-danger, 0.55);
+  color: $color-danger;
+  background: rgba($color-danger, 0.08);
+  box-shadow: 0 0 20px rgba($color-danger, 0.12);
+}
+
+.textarea {
+  width: 100%;
+  min-height: 88px;
+  padding: $spacing-md;
+  border-radius: 12px;
+  background: rgba($color-white, 0.03);
+  border: $border-width solid rgba($color-white, 0.08);
+  color: #ededf5;
+  font-family: inherit;
+  font-size: $font-size-sm;
+  resize: vertical;
+  box-sizing: border-box;
+
+  &::placeholder {
+    color: #5a5a72;
+  }
+  &:focus {
+    outline: none;
+    border-color: rgba($color-white, 0.16);
+  }
+}
+
+.reportFooter {
   display: flex;
-  gap: 10px;
-}
-.content--sm .footer button {
-  flex: 1;
-  height: 42px;
-  border-radius: 10px;
-}
-.content--sm .footer button[data-variant='secondary'] {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: rgba(255, 255, 255, 0.65);
-}
-.content--sm .footer button[data-variant='primary'],
-.content--sm .footer button[data-variant='danger'] {
-  background: #d4a017;
-  color: white;
+  gap: $spacing-sm;
+  margin-top: $spacing-lg;
+
+  button {
+    flex: 1;
+    min-height: 42px;
+    border-radius: 10px;
+  }
 }

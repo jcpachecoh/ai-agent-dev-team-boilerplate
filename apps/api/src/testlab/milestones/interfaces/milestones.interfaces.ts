@@ -13,6 +13,8 @@ export interface IMilestonesRepository {
   findOne(projectId: string, id: string): Promise<Milestone | null>;
   create(data: CreateMilestoneData): Promise<Milestone>;
   findCases(projectId: string, id: string): Promise<TestCase[]>;
+  linkCase(milestoneId: string, caseId: string): Promise<void>;
+  unlinkCase(milestoneId: string, caseId: string): Promise<void>;
 }
 
 export interface IMilestonesService {
@@ -20,4 +22,6 @@ export interface IMilestonesService {
   findOne(projectId: string, id: string): Promise<Milestone>;
   create(projectId: string, dto: CreateMilestoneDto): Promise<Milestone>;
   findCases(projectId: string, id: string): Promise<TestCase[]>;
+  linkCase(projectId: string, id: string, caseId: string): Promise<void>;
+  unlinkCase(projectId: string, id: string, caseId: string): Promise<void>;
 }

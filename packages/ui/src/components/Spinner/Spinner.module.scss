@@ -4,9 +4,21 @@
   display: inline-block;
   box-sizing: border-box;
   border-radius: $border-radius-full;
-  border: 3px solid rgba($color-black, 0.08);
+  border: 3px solid transparent;
   border-top-color: var(--spinner-color, currentColor);
   animation: spinner-rotate 1s linear infinite;
+}
+
+.light {
+  color: $color-gray-900;
+  border-color: rgba($color-black, 0.1);
+  border-top-color: var(--spinner-color, currentColor);
+}
+
+.dark {
+  color: #ededf5;
+  border-color: rgba($color-white, 0.14);
+  border-top-color: var(--spinner-color, currentColor);
 }
 
 .sm {

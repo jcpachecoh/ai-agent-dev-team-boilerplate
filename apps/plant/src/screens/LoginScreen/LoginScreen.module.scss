@@ -1,0 +1,386 @@
+@use '@/styles/tokens' as *;
+
+$layout-gap-lg: 1.5rem;
+$layout-gap-md: 1rem;
+$layout-gap-sm: 0.5rem;
+$content-max: 420px;
+$color-gold: #c7a86d;
+$color-muted: rgba($color-operator-text, 0.55);
+
+.screen {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: $layout-gap-lg $layout-gap-md;
+  padding-top: max($layout-gap-lg, env(safe-area-inset-top));
+  padding-bottom: max($layout-gap-lg, env(safe-area-inset-bottom));
+  background: $color-operator-bg;
+  position: relative;
+}
+
+.content {
+  width: 100%;
+  max-width: $content-max;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $layout-gap-md;
+}
+
+.brandHeader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $layout-gap-sm;
+  text-align: center;
+}
+
+.flameIcon {
+  display: block;
+  width: 1.25rem;
+  height: 1.25rem;
+  background: linear-gradient(180deg, #f5a623 0%, #e67e22 100%);
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2'%3E%3Cpath d='M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z'/%3E%3C/svg%3E");
+  mask-size: contain;
+  mask-repeat: no-repeat;
+  mask-position: center;
+}
+
+.brandLine {
+  margin: 0;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: $color-muted;
+}
+
+.brandName {
+  color: $color-gold;
+}
+
+.brandDot {
+  margin: 0 0.35rem;
+  opacity: 0.6;
+}
+
+.plantLabel {
+  opacity: 0.85;
+}
+
+.stationBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.2rem 0.65rem;
+  border: 1px solid rgba($color-gold, 0.55);
+  border-radius: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: $color-gold;
+}
+
+.areaTitle {
+  margin: $layout-gap-sm 0 0;
+  font-size: clamp(1.5rem, 4vw, 2rem);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  text-align: center;
+  line-height: 1.15;
+  color: $color-operator-text;
+}
+
+.instruction {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: $color-muted;
+}
+
+.pinDots {
+  display: flex;
+  gap: 1rem;
+  margin: $layout-gap-sm 0;
+}
+
+.dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgba($color-operator-text, 0.35);
+  background: transparent;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    transform 150ms ease;
+}
+
+.dotFilled {
+  background: $color-operator-text;
+  border-color: $color-operator-text;
+  transform: scale(1.05);
+}
+
+.errorBanner {
+  width: 100%;
+  max-width: 360px;
+}
+
+.keypadWrap {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+
+  button {
+    min-width: $keypad-key-min-w;
+    min-height: $keypad-key-min-h;
+    width: $keypad-key-min-w;
+    height: $keypad-key-min-h;
+  }
+}
+
+@keyframes keypad-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20%,
+  60% {
+    transform: translateX(-8px);
+  }
+  40%,
+  80% {
+    transform: translateX(8px);
+  }
+}
+
+.keypadShake {
+  animation: keypad-shake 0.45s ease-in-out;
+}
+
+.demoHint {
+  margin: 0;
+  font-size: 0.75rem;
+  color: $color-muted;
+}
+
+.cedulaDisplay {
+  min-width: 200px;
+  padding: 0.5rem 1.25rem;
+  border-bottom: 2px solid rgba($color-operator-text, 0.3);
+  text-align: center;
+  min-height: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: $layout-gap-sm 0;
+}
+
+.cedulaText {
+  font-family: ui-monospace, 'Fira Code', monospace;
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: $color-operator-text;
+}
+
+.cedulaPlaceholder {
+  font-family: ui-monospace, 'Fira Code', monospace;
+  font-size: 1rem;
+  letter-spacing: 0.2em;
+  color: rgba($color-operator-text, 0.2);
+}
+
+.cedulaLabel {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: $color-muted;
+}
+
+.cedulaLabelValue {
+  font-family: ui-monospace, 'Fira Code', monospace;
+  color: $color-gold;
+}
+
+.backLink {
+  background: none;
+  border: none;
+  padding: 0.25rem 0.5rem;
+  color: $color-muted;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+
+  &:hover {
+    color: $color-operator-text;
+  }
+}
+
+.statusFooter {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: $layout-gap-sm;
+}
+
+.statusDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: $color-success;
+  box-shadow: 0 0 8px rgba($color-success, 0.5);
+  flex-shrink: 0;
+}
+
+.statusText {
+  font-family: ui-monospace, 'Fira Code', monospace;
+  font-size: 0.65rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: $color-muted;
+}
+
+.setupMessage {
+  margin: 0;
+  font-size: 0.9rem;
+  text-align: center;
+  color: $color-muted;
+}
+
+.setupCard {
+  width: 100%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 2rem 1.5rem;
+  border: 1px solid rgba($color-gold, 0.2);
+  border-radius: 0.75rem;
+  background: rgba($color-operator-bg, 0.6);
+}
+
+.setupTitle {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: $color-gold;
+}
+
+.setupForm {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.setupInput {
+  // reserved — Input component from @restopsiq/ui is used; add overrides here if needed
+}
+
+$color-error: #e05252;
+
+.setupError {
+  margin: 0;
+  font-size: 0.78rem;
+  color: $color-error;
+  text-align: center;
+}
+
+.setupButton {
+  width: 100%;
+}
+
+.successOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba($color-operator-bg, 0.92);
+  animation: fade-in 200ms ease-out;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.successCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $layout-gap-md;
+  padding: 2rem 2.5rem;
+  text-align: center;
+  animation: success-pop 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes success-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.successIcon {
+  width: 4rem;
+  height: 4rem;
+  border-radius: 50%;
+  border: 3px solid $color-success;
+  background: rgba($color-success, 0.15);
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 46%;
+    width: 14px;
+    height: 24px;
+    border: solid $color-success;
+    border-width: 0 3px 3px 0;
+    transform: translate(-50%, -50%) rotate(45deg);
+  }
+}
+
+.successTitle {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: $color-success;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.successName {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: $color-operator-text;
+}

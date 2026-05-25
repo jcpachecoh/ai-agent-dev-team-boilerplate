@@ -1,42 +1,58 @@
 import * as React from 'react';
+import { Pencil, Trash2, Truck } from 'lucide-react';
 import styles from './TripCard.module.scss';
+
+const ICON_SIZES = { sm: 16, md: 20, lg: 24 } as const;
 
 export interface TripCardProps extends React.HTMLAttributes<HTMLDivElement> {
   title: string;
   subtitle?: string;
   capText?: string;
+  /** @deprecated Prefer `theme` — kept for backward compatibility */
   variant?: 'light' | 'dark';
-  leftIcon?: string; // image URL
-  actionIcon1?: string;
-  actionIcon2?: string;
+  theme?: 'light' | 'dark';
+  size?: 'sm' | 'md' | 'lg';
+  /** Custom left icon slot (Lucide or other React node). */
+  leftIcon?: React.ReactNode;
+  /** Custom edit action icon. */
+  actionIcon1?: React.ReactNode;
+  /** Custom delete action icon. */
+  actionIcon2?: React.ReactNode;
 }
-
-const DEFAULT_LEFT_ICON =
-  'https://www.figma.com/api/mcp/asset/5fe710bb-f45b-4f07-8cfd-c7ee561779b0';
-const DEFAULT_ACTION_1 = 'https://www.figma.com/api/mcp/asset/5a5814e9-342a-449d-af34-788e1b0b24d1';
-const DEFAULT_ACTION_2 = 'https://www.figma.com/api/mcp/asset/ec682839-e625-4500-884c-158d9b5f8e6c';
 
 export function TripCard({
   title,
   subtitle,
   capText = '0% cap.',
-  variant = 'light',
+  variant,
+  theme,
+  size = 'md',
   leftIcon,
   actionIcon1,
   actionIcon2,
   className,
   ...props
 }: TripCardProps) {
-  const cls = [styles.tripCard, variant === 'dark' ? styles.dark : styles.light, className]
+  const resolvedTheme = theme ?? variant ?? 'light';
+  const iconSize = ICON_SIZES[size];
+
+  const cls = [
+    styles.tripCard,
+    styles[`size--${size}`],
+    resolvedTheme === 'dark' ? styles.dark : styles.light,
+    className,
+  ]
     .filter(Boolean)
     .join(' ');
+
+  const defaultLeft = <Truck size={iconSize} aria-hidden />;
+  const defaultEdit = <Pencil size={iconSize - 4} aria-hidden />;
+  const defaultDelete = <Trash2 size={iconSize - 4} aria-hidden />;
 
   return (
     <div className={cls} {...props}>
       <div className={styles.left}>
-        <div className={styles.leftIcon}>
-          <img src={leftIcon ?? DEFAULT_LEFT_ICON} alt="icon" />
-        </div>
+        <div className={styles.leftIcon}>{leftIcon ?? defaultLeft}</div>
         <div className={styles.texts}>
           <div className={styles.title}>{title}</div>
           {subtitle && <div className={styles.subtitle}>{subtitle}</div>}
@@ -46,12 +62,12 @@ export function TripCard({
       <div className={styles.right}>
         <div className={styles.cap}>{capText}</div>
 
-        <button className={styles.iconBtn} aria-label="action-1">
-          <img src={actionIcon1 ?? DEFAULT_ACTION_1} alt="action" />
+        <button type="button" className={styles.iconBtn} aria-label="Editar viaje">
+          {actionIcon1 ?? defaultEdit}
         </button>
 
-        <button className={styles.iconBtn} aria-label="action-2">
-          <img src={actionIcon2 ?? DEFAULT_ACTION_2} alt="action" />
+        <button type="button" className={styles.iconBtn} aria-label="Eliminar viaje">
+          {actionIcon2 ?? defaultDelete}
         </button>
       </div>
     </div>

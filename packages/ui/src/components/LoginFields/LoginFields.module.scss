@@ -3,7 +3,43 @@
 .wrapper {
   display: flex;
   flex-direction: column;
+  width: 100%;
+}
+
+.size--sm {
+  gap: $spacing-sm;
+  max-width: 320px;
+
+  .label {
+    font-size: 11px;
+  }
+  .remember {
+    font-size: 11px;
+  }
+}
+
+.size--md {
   gap: $spacing-md;
+  max-width: 420px;
+
+  .label {
+    font-size: 13px;
+  }
+  .remember {
+    font-size: $font-size-sm;
+  }
+}
+
+.size--lg {
+  gap: $spacing-lg;
+  max-width: 520px;
+
+  .label {
+    font-size: $font-size-base;
+  }
+  .remember {
+    font-size: $font-size-base;
+  }
 }
 
 .field {
@@ -13,16 +49,13 @@
 }
 
 .label {
-  color: $color-gray-900;
-  font-size: 13px;
+  font-weight: $font-weight-medium;
 }
 
 .remember {
   display: flex;
   gap: $spacing-sm;
   align-items: center;
-  color: $color-gray-900;
-  font-size: $font-size-sm;
 }
 
 .dark .label {
@@ -33,8 +66,8 @@
 }
 
 .light .label {
-  color: $color-gray-900;
+  color: $color-gray-700;
 }
 .light .remember {
-  color: $color-gray-900;
+  color: $color-gray-700;
 }

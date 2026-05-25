@@ -1,0 +1,1 @@
+export { CaseTraceabilityBadges } from './CaseTraceabilityBadges';

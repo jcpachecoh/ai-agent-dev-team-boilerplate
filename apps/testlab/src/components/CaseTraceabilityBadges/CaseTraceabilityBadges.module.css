@@ -1,0 +1,83 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.section {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.sectionLabel {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  min-width: 80px;
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.hint {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+}
+
+.empty {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  padding: 2px var(--space-2);
+  border-radius: 999px;
+  background-color: rgba(56, 139, 253, 0.12);
+  color: var(--color-accent);
+  white-space: nowrap;
+}
+
+.pillRemove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: inherit;
+  font-size: 0.875rem;
+  line-height: 1;
+  padding: 0;
+  opacity: 0.7;
+
+  &:hover:not(:disabled) {
+    opacity: 1;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+  }
+}
+
+.btnLink {
+  font-size: 0.75rem;
+  color: var(--color-accent);
+  background: none;
+  border: 1px dashed var(--color-border);
+  border-radius: 999px;
+  padding: 1px var(--space-2);
+  cursor: pointer;
+
+  &:hover {
+    border-color: var(--color-accent);
+    background-color: rgba(56, 139, 253, 0.06);
+  }
+}

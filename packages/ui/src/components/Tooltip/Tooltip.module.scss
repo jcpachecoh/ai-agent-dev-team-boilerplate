@@ -3,7 +3,6 @@
 .content {
   border-radius: 8px;
   padding: $spacing-xs $spacing-sm;
-  font-size: $font-size-xs;
   line-height: $line-height-base;
   max-width: 200px;
   word-wrap: break-word;
@@ -13,32 +12,50 @@
   will-change: transform, opacity;
 }
 
+.size--sm {
+  font-size: 0.65rem;
+  max-width: 160px;
+}
+
+.size--md {
+  font-size: $font-size-xs;
+  max-width: 200px;
+}
+
+.size--lg {
+  font-size: $font-size-sm;
+  max-width: 280px;
+  padding: $spacing-sm $spacing-md;
+}
+
 .variant--dark {
   background-color: $color-gray-900;
   color: $color-white;
   border: 1px solid rgba($color-white, 0.06);
-  .arrow {
-    fill: $color-gray-900;
-  }
+}
+
+.arrow--dark {
+  fill: $color-gray-900;
 }
 
 .variant--light {
   background-color: $color-white;
   color: $color-gray-900;
   border: 1px solid rgba($color-black, 0.04);
-  .arrow {
-    fill: $color-white;
-  }
 }
 
-/* Brand variant uses the yellow used across modals/buttons */
+.arrow--light {
+  fill: $color-white;
+}
+
 .variant--brand {
   background-color: #d4a017;
   color: $color-white;
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  .arrow {
-    fill: #d4a017;
-  }
+  border: 1px solid rgba($color-black, 0.06);
+}
+
+.arrow--brand {
+  fill: #d4a017;
 }
 
 @keyframes slideUpAndFade {
