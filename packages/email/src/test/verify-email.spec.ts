@@ -51,6 +51,12 @@ describe('VerifyEmailTemplate', () => {
       const html = render({ primaryColor: undefined });
       expect(html).toContain('#E8943A');
     });
+
+    it('renders the OTP code with a monospace font-family and large font-size', () => {
+      const html = render({ otpCode: '123456' });
+      expect(html).toMatch(/font-family[^"]*monospace/);
+      expect(html).toMatch(/font-size\s*:\s*40px/);
+    });
   });
 
   describe('expiration', () => {

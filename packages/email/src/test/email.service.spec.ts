@@ -8,7 +8,8 @@ import { renderAsync } from '@react-email/render';
 import { EmailService } from '../email.service';
 import { ResendClient } from '../resend.client';
 import { EmailQueueError } from '../types';
-import { EMAIL_JOB_NAME } from '../email.queue';
+import { EMAIL_JOB_NAME, EMAIL_QUEUE_NAME } from '../email.queue';
+import { EMAIL_JOB_OPTIONS } from '../email.worker.config';
 import type { EmailServiceConfig, SendEmailOptions } from '../types';
 
 // ---------------------------------------------------------------------------
@@ -228,6 +229,35 @@ describe('EmailService.send() — priority', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Queue construction — retry / backoff configuration (Gap G3)
+// ---------------------------------------------------------------------------
+
+describe('EmailService constructor — Queue configuration', () => {
+  it('constructs Queue with EMAIL_QUEUE_NAME and defaultJobOptions from EMAIL_JOB_OPTIONS', () => {
+    // The outer beforeEach already called new EmailService(config), which triggered new Queue().
+    // Use the most recent constructor call (at(-1)) so this passes regardless of test order.
+    const queueMock = Queue as unknown as jest.Mock;
+    const [queueName, queueOptions] = queueMock.mock.calls.at(-1) as [
+      string,
+      { connection: { url: string }; defaultJobOptions: unknown },
+    ];
+
+    expect(queueName).toBe(EMAIL_QUEUE_NAME);
+    expect(queueOptions).toMatchObject({
+      connection: { url: config.redisUrl },
+      defaultJobOptions: EMAIL_JOB_OPTIONS,
+    });
+  });
+
+  it('defaultJobOptions has attempts: 3 and exponential backoff with delay 5000', () => {
+    expect(EMAIL_JOB_OPTIONS).toMatchObject({
+      attempts: 3,
+      backoff: { type: 'exponential', delay: 5_000 },
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
 // render()
 // ---------------------------------------------------------------------------
 
@@ -240,6 +270,31 @@ describe('EmailService.render()', () => {
   it('calls renderAsync exactly once', async () => {
     await service.render(welcomeOptions.template, welcomeOptions);
     expect(renderAsync).toHaveBeenCalledTimes(1);
+  });
+
+  it('rendered HTML contains the tenant primaryColor (real renderer)', async () => {
+    // renderAsync internally uses dynamic ES module imports that require --experimental-vm-modules.
+    // Use the sync `render` from the real module, wrapped in a Promise, to exercise the full
+    // React → HTML template pipeline without the dynamic-import restriction.
+    // BullMQ Queue is still mocked via jest.mock('bullmq') so no Redis connection occurs.
+    const { render: realRender } = jest.requireActual('@react-email/render') as {
+      render: (element: React.ReactElement) => string;
+    };
+    (renderAsync as jest.Mock).mockImplementationOnce((element: React.ReactElement) =>
+      Promise.resolve(realRender(element)),
+    );
+
+    const html = await service.render(
+      {
+        type: 'welcome',
+        props: { userName: 'Test User', role: 'owner', loginUrl: 'https://app.example.com/login' },
+      },
+      { ...welcomeOptions, primaryColor: '#123ABC' },
+    );
+
+    expect(typeof html).toBe('string');
+    expect(html).toContain('<html');
+    expect(html).toContain('#123ABC');
   });
 
   it('produces a string for each template type', async () => {
