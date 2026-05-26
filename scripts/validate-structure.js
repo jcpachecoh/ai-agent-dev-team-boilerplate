@@ -38,6 +38,14 @@ function readFile(filePath) {
   return fs.existsSync(filePath) ? fs.readFileSync(filePath, 'utf8') : '';
 }
 
+/** mes-auth → MesAuth, supplyitems → Supplyitems */
+function toPascalCase(featureName) {
+  return featureName
+    .split(/[-_]/)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join('');
+}
+
 // ── Rule: *.module.ts must exist at the module root ───────────────────────
 
 function validateModuleFile(featureDir, featureName) {
@@ -65,7 +73,7 @@ function validateInterfacesLayer(featureDir, featureName) {
   }
 
   const content = readFile(file);
-  const cap = featureName.charAt(0).toUpperCase() + featureName.slice(1);
+  const cap = toPascalCase(featureName);
 
   if (!content.includes(`I${cap}Repository`)) {
     error(`[${featureName}] interfaces/${featureName}.interfaces.ts is missing I${cap}Repository`);
@@ -101,7 +109,7 @@ function validateRepositoryLayer(featureDir, featureName) {
   }
 
   const content = readFile(file);
-  const cap = featureName.charAt(0).toUpperCase() + featureName.slice(1);
+  const cap = toPascalCase(featureName);
 
   if (!content.includes(`implements I${cap}Repository`)) {
     error(`[${featureName}] ${featureName}.repository.ts does not implement I${cap}Repository`);
@@ -131,7 +139,7 @@ function validateServiceLayer(featureDir, featureName) {
   }
 
   const content = readFile(file);
-  const cap = featureName.charAt(0).toUpperCase() + featureName.slice(1);
+  const cap = toPascalCase(featureName);
 
   if (!content.includes(`implements I${cap}Service`)) {
     error(`[${featureName}] ${featureName}.service.ts does not implement I${cap}Service`);
@@ -227,7 +235,7 @@ function validate() {
   ]);
 
   // Parent aggregator modules whose children should be validated individually
-  const AGGREGATORS = new Set(['testlab']);
+  const AGGREGATORS = new Set(['testlab', 'mes']);
 
   // Collect { dir, name } pairs for every feature module to validate
   const features = [];
@@ -239,7 +247,9 @@ function validate() {
 
     if (AGGREGATORS.has(entry)) {
       for (const child of getDirs(entryPath)) {
-        features.push({ dir: path.join(entryPath, child), name: child });
+        const childDir = path.join(entryPath, child);
+        const name = entry === 'mes' && child === 'auth' ? 'mes-auth' : child;
+        features.push({ dir: childDir, name });
       }
     } else {
       features.push({ dir: entryPath, name: entry });

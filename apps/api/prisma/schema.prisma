@@ -24,14 +24,14 @@ model UserTestLab {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  projectMembers        ProjectMember[]
-  casesCreated          TestCase[]   @relation("CasesCreated")
-  plansCreated          TestPlan[]   @relation("PlansCreated")
-  runsCreated           TestRun[]    @relation("RunsCreated")
-  runsAssigned          TestRun[]    @relation("RunsAssigned")
-  resultsAssigned       TestResult[] @relation("ResultsAssigned")
-  resultsExecuted       TestResult[] @relation("ResultsExecuted")
-  attachmentsUploaded Attachment[]   @relation("AttachmentsUploaded")
+  projectMembers      ProjectMember[]
+  casesCreated        TestCase[]      @relation("CasesCreated")
+  plansCreated        TestPlan[]      @relation("PlansCreated")
+  runsCreated         TestRun[]       @relation("RunsCreated")
+  runsAssigned        TestRun[]       @relation("RunsAssigned")
+  resultsAssigned     TestResult[]    @relation("ResultsAssigned")
+  resultsExecuted     TestResult[]    @relation("ResultsExecuted")
+  attachmentsUploaded Attachment[]    @relation("AttachmentsUploaded")
   auditLogs           AuditLog[]
 
   @@map("users")
@@ -94,8 +94,8 @@ model ProjectMember {
   userId    String
   role      ProjectRole @default(TESTER)
 
-  project Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  user    UserTestLab  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    UserTestLab @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([projectId, userId])
   @@map("project_members")
@@ -175,12 +175,12 @@ model TestCase {
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
-  section      TestSection?      @relation(fields: [sectionId], references: [id])
-  suite        TestSuite         @relation(fields: [suiteId], references: [id], onDelete: Cascade)
-  createdBy    UserTestLab       @relation("CasesCreated", fields: [createdById], references: [id])
-  results      TestResult[]
-  requirements    RequirementCase[]
-  caseMilestones  CaseMilestone[]
+  section        TestSection?      @relation(fields: [sectionId], references: [id])
+  suite          TestSuite         @relation(fields: [suiteId], references: [id], onDelete: Cascade)
+  createdBy      UserTestLab       @relation("CasesCreated", fields: [createdById], references: [id])
+  results        TestResult[]
+  requirements   RequirementCase[]
+  caseMilestones CaseMilestone[]
 
   @@map("test_cases")
 }
@@ -329,15 +329,16 @@ model RequirementCase {
   @@id([requirementId, caseId])
   @@map("requirement_cases")
 }
+
 model CaseMilestone {
   milestoneId String
   caseId      String
   milestone   Milestone @relation(fields: [milestoneId], references: [id], onDelete: Cascade)
   case        TestCase  @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
   @@id([milestoneId, caseId])
   @@map("case_milestones")
 }
-
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ATTACHMENTS
@@ -353,7 +354,7 @@ model Attachment {
   uploadedById String
   createdAt    DateTime @default(now())
 
-  result     TestResult @relation(fields: [resultId], references: [id], onDelete: Cascade)
+  result     TestResult  @relation(fields: [resultId], references: [id], onDelete: Cascade)
   uploadedBy UserTestLab @relation("AttachmentsUploaded", fields: [uploadedById], references: [id])
 
   @@map("attachments")
@@ -550,4 +551,36 @@ model PasswordResetToken {
 
   @@index([tenantId, userId])
   @@map("password_reset_tokens")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MES OPERATIONAL USERS (cédula + PIN auth)
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum OperationalRole {
+  OWNER
+  SUPERVISOR
+  MANAGER
+  OPERATOR
+}
+
+model OperationalUser {
+  id            String          @id @default(cuid())
+  cedulaHash    String
+  pinHash       String
+  role          OperationalRole
+  tenantId      String
+  sedeId        String?
+  isActive      Boolean         @default(true)
+  loginAttempts Int             @default(0)
+  lockedUntil   DateTime?
+  lastLoginAt   DateTime?
+  refreshToken  String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@unique([tenantId, cedulaHash])
+  @@index([tenantId])
+  @@index([tenantId, role])
+  @@map("operational_users")
 }

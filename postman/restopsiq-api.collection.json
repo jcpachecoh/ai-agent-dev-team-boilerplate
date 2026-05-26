@@ -21,8 +21,9 @@
       "script": {
         "type": "text/javascript",
         "exec": [
-          "// Skip auto-login for public auth routes to avoid infinite loops",
+          "// Skip auto-login for MES auth and public TestLab auth routes",
           "const reqUrl = pm.request.url.toString();",
+          "if (reqUrl.includes('/mes/auth/') || reqUrl.includes('/mes/users/')) return;",
           "const isPublicAuthRoute =",
           "  reqUrl.includes('/auth/login') ||",
           "  reqUrl.includes('/auth/signup') ||",
@@ -186,6 +187,54 @@
       "value": "NewPassword456!",
       "type": "string",
       "description": "New password used in Reset Password request. Must meet MinLength(8) constraint."
+    },
+    {
+      "key": "mesTenantId",
+      "value": "palos-de-lena",
+      "type": "string",
+      "description": "MES tenant — x-tenant-id header on POST /api/mes/auth/login (local/dev seed only)"
+    },
+    {
+      "key": "mesOwnerCedula",
+      "value": "12345678",
+      "type": "string",
+      "description": "Synthetic cédula for seeded MES OWNER (local/dev only)"
+    },
+    {
+      "key": "mesOwnerPin",
+      "value": "1234",
+      "type": "string",
+      "description": "Synthetic PIN for seeded MES OWNER (local/dev only)"
+    },
+    {
+      "key": "mesOperatorCedula",
+      "value": "87654321",
+      "type": "string",
+      "description": "Synthetic cédula for seeded MES OPERATOR (local/dev only)"
+    },
+    {
+      "key": "mesOperatorPin",
+      "value": "4321",
+      "type": "string",
+      "description": "Synthetic PIN for seeded MES OPERATOR (local/dev only)"
+    },
+    {
+      "key": "mesAccessToken",
+      "value": "",
+      "type": "string",
+      "description": "MES JWT access token — set by MES Login Owner"
+    },
+    {
+      "key": "mesRefreshToken",
+      "value": "",
+      "type": "string",
+      "description": "MES JWT refresh token — set by MES Login Owner"
+    },
+    {
+      "key": "mesUserId",
+      "value": "",
+      "type": "string",
+      "description": "Operational user id — set from JWT sub or GET /api/mes/auth/me"
     }
   ],
   "item": [
@@ -669,6 +718,259 @@
               }
             },
             "url": "{{baseUrl}}/api/auth/verify-email"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "MES Auth",
+      "description": "MES operational auth (cédula + PIN). Separate from TestLab email/password auth.\n\nPrerequisites: Redis running, pnpm db:seed (see postman/README.md).\nAll login requests require header x-tenant-id: {{mesTenantId}}.\nProtected requests use Bearer {{mesAccessToken}} (not {{accessToken}}).\nSynthetic credentials are local/dev only — see apps/api/prisma/seed.ts header.",
+      "item": [
+        {
+          "name": "Login Owner",
+          "description": "POST /api/mes/auth/login with seeded OWNER credentials.\nRequires x-tenant-id: {{mesTenantId}}.\nCaptures mesAccessToken, mesRefreshToken, and mesUserId (from JWT sub).",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Has accessToken', () => pm.expect(body).to.have.property('accessToken'));",
+                  "pm.test('Has refreshToken', () => pm.expect(body).to.have.property('refreshToken'));",
+                  "if (body.accessToken) {",
+                  "  pm.collectionVariables.set('mesAccessToken', body.accessToken);",
+                  "  pm.environment.set('mesAccessToken', body.accessToken);",
+                  "  try {",
+                  "    const payload = JSON.parse(atob(body.accessToken.split('.')[1]));",
+                  "    if (payload.sub) {",
+                  "      pm.collectionVariables.set('mesUserId', payload.sub);",
+                  "      pm.environment.set('mesUserId', payload.sub);",
+                  "    }",
+                  "  } catch (e) { /* ignore decode errors */ }",
+                  "}",
+                  "if (body.refreshToken) {",
+                  "  pm.collectionVariables.set('mesRefreshToken', body.refreshToken);",
+                  "  pm.environment.set('mesRefreshToken', body.refreshToken);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{mesTenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cedula\": \"{{mesOwnerCedula}}\",\n  \"pin\": \"{{mesOwnerPin}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/mes/auth/login"
+          },
+          "response": []
+        },
+        {
+          "name": "Me",
+          "description": "GET /api/mes/auth/me — current operational user profile.",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Has id', () => pm.expect(body).to.have.property('id'));",
+                  "pm.test('Has role', () => pm.expect(body).to.have.property('role'));",
+                  "pm.test('Has tenantId', () => pm.expect(body).to.have.property('tenantId'));",
+                  "if (body.id) {",
+                  "  pm.collectionVariables.set('mesUserId', body.id);",
+                  "  pm.environment.set('mesUserId', body.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{mesAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/mes/auth/me"
+          },
+          "response": []
+        },
+        {
+          "name": "Get User Role",
+          "description": "GET /api/mes/users/:userId/role — OWNER role required.\nUses {{mesUserId}} from Login Owner or Me.",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has role', () => pm.expect(pm.response.json()).to.have.property('role'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{mesAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/mes/users/{{mesUserId}}/role"
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "description": "POST /api/mes/auth/logout — clears refresh token and blacklists JWT jti when present.",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has message', () => pm.expect(pm.response.json()).to.have.property('message'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{mesAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/mes/auth/logout"
+          },
+          "response": []
+        },
+        {
+          "name": "Login — Wrong PIN (negative)",
+          "description": "Negative case — invalid PIN returns generic 401.",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 401', () => pm.response.to.have.status(401));",
+                  "const body = pm.response.json();",
+                  "if (body && body.message) {",
+                  "  pm.test('Generic error message', () => {",
+                  "    pm.expect(body.message).to.equal('Cédula o PIN incorrecto');",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{mesTenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cedula\": \"{{mesOwnerCedula}}\",\n  \"pin\": \"9999\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/mes/auth/login"
+          },
+          "response": []
+        },
+        {
+          "name": "Login — Missing x-tenant-id (negative)",
+          "description": "Negative case — login without x-tenant-id header returns 400.",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Status 400', () => pm.response.to.have.status(400));"]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cedula\": \"{{mesOwnerCedula}}\",\n  \"pin\": \"{{mesOwnerPin}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/mes/auth/login"
           },
           "response": []
         }

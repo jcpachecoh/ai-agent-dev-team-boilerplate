@@ -64,6 +64,62 @@
       "type": "default",
       "enabled": true,
       "description": "RES-226 — New password used in the Reset Password body. Must be at least 8 characters."
+    },
+    {
+      "key": "mesTenantId",
+      "value": "palos-de-lena",
+      "type": "default",
+      "enabled": true,
+      "description": "MES tenant for x-tenant-id on POST /api/mes/auth/login (local/dev seed only)"
+    },
+    {
+      "key": "mesOwnerCedula",
+      "value": "12345678",
+      "type": "default",
+      "enabled": true,
+      "description": "Synthetic cédula for seeded MES OWNER (local/dev only — never use in production)"
+    },
+    {
+      "key": "mesOwnerPin",
+      "value": "1234",
+      "type": "secret",
+      "enabled": true,
+      "description": "Synthetic PIN for seeded MES OWNER (local/dev only)"
+    },
+    {
+      "key": "mesOperatorCedula",
+      "value": "87654321",
+      "type": "default",
+      "enabled": true,
+      "description": "Synthetic cédula for seeded MES OPERATOR (local/dev only)"
+    },
+    {
+      "key": "mesOperatorPin",
+      "value": "4321",
+      "type": "secret",
+      "enabled": true,
+      "description": "Synthetic PIN for seeded MES OPERATOR (local/dev only)"
+    },
+    {
+      "key": "mesAccessToken",
+      "value": "",
+      "type": "default",
+      "enabled": true,
+      "description": "MES JWT access token — set by MES Auth / Login Owner"
+    },
+    {
+      "key": "mesRefreshToken",
+      "value": "",
+      "type": "default",
+      "enabled": true,
+      "description": "MES JWT refresh token — set by MES Auth / Login Owner"
+    },
+    {
+      "key": "mesUserId",
+      "value": "",
+      "type": "default",
+      "enabled": true,
+      "description": "Operational user id — set from JWT sub or GET /api/mes/auth/me"
     }
   ],
   "_postman_variable_scope": "environment",
