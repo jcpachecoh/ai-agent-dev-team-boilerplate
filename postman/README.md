@@ -2,7 +2,7 @@
 
 Automated API test collection for the RestOpsIQ platform.
 
-- **38 live endpoints** across Health, Auth, Supply Items, and Testlab modules.
+- **44 live endpoints** across Health, Auth, MES Auth, Supply Items, and Testlab modules.
 - **Postman Collection v2.1** — importable into Postman Desktop or runnable via Newman CLI.
 - **Dynamic variable capture** — POST create responses feed IDs into subsequent requests automatically.
 - **Auto-login pre-request script** — access token is refreshed transparently before any protected request.
@@ -13,7 +13,7 @@ Automated API test collection for the RestOpsIQ platform.
 
 | File                            | Purpose                                             |
 | ------------------------------- | --------------------------------------------------- |
-| `restopsiq-api.collection.json` | Main Postman collection (v2.1) with all 38 requests |
+| `restopsiq-api.collection.json` | Main Postman collection (v2.1) with all 44 requests |
 | `local.environment.json`        | Environment variables for `http://localhost:3001`   |
 | `README.md`                     | This file                                           |
 
@@ -37,20 +37,39 @@ The API must be reachable at `http://localhost:3001` (default `PORT`).
 
 The collection requires three pieces of data to exist in the local database before a full run:
 
-| Variable             | What it must be                                  | How to obtain                                                      |
-| -------------------- | ------------------------------------------------ | ------------------------------------------------------------------ |
-| `email` / `password` | A registered user                                | Run `POST /api/auth/signup` once manually, **or** create a DB seed |
-| `tenantId`           | A `Tenant` record UUID                           | Insert via seed script or Prisma Studio                            |
-| `categoryId`         | A `SupplyCategory` UUID belonging to that tenant | Insert via seed script or Prisma Studio                            |
+| Variable             | What it must be                                           | How to obtain                                        |
+| -------------------- | --------------------------------------------------------- | ---------------------------------------------------- |
+| `email` / `password` | A registered user (`test@restopsiq.dev` / `TestPass123!`) | Run `pnpm db:seed` from `apps/api/`                  |
+| `tenantId`           | `aaaaaaaa-0000-0000-0000-000000000001`                    | Pre-populated in `local.environment.json` after seed |
+| `categoryId`         | `bbbbbbbb-0000-0000-0000-000000000002`                    | Pre-populated in `local.environment.json` after seed |
 
 > The signup request in the collection accepts both `201` (first run) and `409` (user already exists), so it is safe to run repeatedly.
 
-Replace the placeholder values in `local.environment.json`:
+The `local.environment.json` already ships with the deterministic seed values:
 
 ```json
-"tenantId":   "REPLACE_WITH_SEEDED_TENANT_UUID"
-"categoryId": "REPLACE_WITH_SEEDED_CATEGORY_UUID"
+"tenantId":   "aaaaaaaa-0000-0000-0000-000000000001"
+"categoryId": "bbbbbbbb-0000-0000-0000-000000000002"
 ```
+
+These match the fixed IDs in `apps/api/prisma/seed.ts`. Run `pnpm db:seed` and these values will work immediately.
+
+**MES operational users** (separate from TestLab auth) are also seeded for tenant `palos-de-lena`:
+
+```bash
+cd apps/api && npx prisma db seed
+# or: pnpm db:seed
+```
+
+| Variable            | Seeded value (local/dev only) |
+| ------------------- | ----------------------------- |
+| `mesTenantId`       | `palos-de-lena`               |
+| `mesOwnerCedula`    | `12345678` (OWNER)            |
+| `mesOwnerPin`       | `1234`                        |
+| `mesOperatorCedula` | `87654321` (OPERATOR)         |
+| `mesOperatorPin`    | `4321`                        |
+
+Credentials are **synthetic** and documented in `apps/api/prisma/seed.ts` — never use real production cédulas in Postman.
 
 ### 3. Newman installed (for CLI runs)
 
@@ -97,6 +116,11 @@ newman run postman/restopsiq-api.collection.json \
 newman run postman/restopsiq-api.collection.json \
   --environment postman/local.environment.json \
   --folder "02 Supply Items"
+
+# MES Auth only
+newman run postman/restopsiq-api.collection.json \
+  --environment postman/local.environment.json \
+  --folder "MES Auth"
 ```
 
 To save a JSON report:
@@ -118,8 +142,8 @@ newman run postman/restopsiq-api.collection.json \
 ```
 RestOpsIQ API
 │
-│  Pre-request: auto-login (skipped for /auth/* public routes)
-│  Auth: Bearer {{accessToken}}
+│  Pre-request: auto-login (skipped for /mes/* and /auth/* public routes)
+│  Auth: Bearer {{accessToken}} (MES requests override with {{mesAccessToken}})
 │
 ├── 00 Health          (1 request)
 │   └── GET /api/
@@ -137,6 +161,14 @@ RestOpsIQ API
 │   ├── POST /api/auth/verify-email         → public, consumes {{otpCode}}
 │   ├── POST /api/auth/verify-email (invalid OTP — negative)
 │   └── ── RES-226 email endpoints require Redis + BullMQ queue running ──
+│
+├── MES Auth           (6 requests — separate from TestLab auth)
+│   ├── POST /api/mes/auth/login (Owner)     → x-tenant-id: {{mesTenantId}}, captures mesAccessToken
+│   ├── GET  /api/mes/auth/me                → Bearer {{mesAccessToken}}
+│   ├── GET  /api/mes/users/:id/role         → Bearer {{mesAccessToken}}, uses {{mesUserId}}
+│   ├── POST /api/mes/auth/logout            → Bearer {{mesAccessToken}}
+│   ├── POST /api/mes/auth/login (wrong PIN) → negative, 401
+│   └── POST /api/mes/auth/login (no tenant) → negative, 400
 │
 ├── 02 Supply Items    (7 requests — x-tenant-id: {{tenantId}} on every request)
 │   ├── POST   /api/supply-items              → captures supplyItemId
@@ -179,6 +211,45 @@ The collection-level pre-request script fires before every non-auth request:
 3. Stores the returned `accessToken`, `refreshToken`, and a 14-minute expiry window.
 
 This means the **Login request in the `01 Auth` folder is also the canonical setup step** — running it first ensures all subsequent requests have a valid token without relying on the pre-request script alone.
+
+MES routes (`/mes/auth/*`, `/mes/users/*`) are **excluded** from the auto-login script so they never overwrite `{{mesAccessToken}}` with a TestLab token.
+
+---
+
+## MES Auth
+
+MES (Manufacturing Execution System) auth uses **cédula + PIN** for operational users. It is independent of TestLab email/password auth.
+
+### Prerequisites
+
+1. API running at `{{baseUrl}}` (default `http://localhost:3001`).
+2. Redis running (rate limiting and JWT blacklist).
+3. Database seeded with MES operational users:
+
+   ```bash
+   cd apps/api && npx prisma db seed
+   ```
+
+### Local test flow
+
+Run these requests **in order** inside the **MES Auth** folder:
+
+1. **Login Owner** — sends `x-tenant-id: {{mesTenantId}}` and owner cédula/PIN; sets `mesAccessToken`, `mesRefreshToken`, and `mesUserId`.
+2. **Me** — `GET /api/mes/auth/me` with `Authorization: Bearer {{mesAccessToken}}`.
+3. **Get User Role** — `GET /api/mes/users/{{mesUserId}}/role` (OWNER role required).
+4. **Logout** — `POST /api/mes/auth/logout`.
+
+Negative cases (wrong PIN, missing `x-tenant-id`) can be run independently; they use `noauth` and do not require a prior login.
+
+### Headers and tokens
+
+- **`x-tenant-id`** is required on `POST /api/mes/auth/login`. Use `{{mesTenantId}}` (`palos-de-lena` after seed).
+- Protected MES endpoints use **`Bearer {{mesAccessToken}}`**, not `{{accessToken}}`.
+- Login requests use **`noauth`** so the collection-level TestLab bearer token is not sent.
+
+### Credentials
+
+All MES Postman credentials are **synthetic local/dev values** from the seed script. Do not hardcode or use real production cédulas.
 
 ---
 
@@ -247,6 +318,14 @@ Login
 | `suiteId`              | Auto                              | Create Suite test                                        |
 | `caseId`               | Auto                              | Create Case test                                         |
 | `runId`                | Auto                              | Create Run test                                          |
+| `mesTenantId`          | Yes (MES login)                   | `local.environment.json`                                 |
+| `mesOwnerCedula`       | Yes (MES login)                   | `local.environment.json` (synthetic, dev only)           |
+| `mesOwnerPin`          | Yes (MES login)                   | `local.environment.json` (synthetic, dev only)           |
+| `mesOperatorCedula`    | Optional (operator login)         | `local.environment.json` (synthetic, dev only)           |
+| `mesOperatorPin`       | Optional (operator login)         | `local.environment.json` (synthetic, dev only)           |
+| `mesAccessToken`       | Auto                              | MES Login Owner test                                     |
+| `mesRefreshToken`      | Auto                              | MES Login Owner test                                     |
+| `mesUserId`            | Auto                              | MES Login Owner / Me test                                |
 
 ### RES-226 email endpoint manual setup
 

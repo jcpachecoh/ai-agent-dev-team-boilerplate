@@ -11,12 +11,14 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { AuditInterceptor } from './audit/audit.interceptor';
 import { SupplyItemsModule } from './supplyitems/supplyitems.module';
 import { LockModule } from './lock/lock.module';
+import { MesAuthModule } from './mes/auth/mes-auth.module';
 
 @Module({
   imports: [
     PrismaModule,
     EmailModule,
     AuthModule,
+    MesAuthModule,
     AuditModule,
     TestlabModule,
     SupplyItemsModule,

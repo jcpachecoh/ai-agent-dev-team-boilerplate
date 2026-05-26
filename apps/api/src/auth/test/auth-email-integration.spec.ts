@@ -43,7 +43,7 @@ const mockTokenRecord = {
 // ---------------------------------------------------------------------------
 
 const prismaMock = {
-  user: {
+  userTestLab: {
     findUnique: jest.fn(),
     create: jest.fn(),
     update: jest.fn(),
@@ -108,8 +108,8 @@ describe('Auth Email Integration — G4 wiring (AuthController → AuthEmailServ
     (authEmailService as unknown as { redis: typeof redisMock }).redis = redisMock;
 
     // Default: user not found, emailService resolves, no tokens exist
-    prismaMock.user.findUnique.mockResolvedValue(null);
-    prismaMock.user.update.mockResolvedValue(mockUser);
+    prismaMock.userTestLab.findUnique.mockResolvedValue(null);
+    prismaMock.userTestLab.update.mockResolvedValue(mockUser);
     prismaMock.passwordResetToken.deleteMany.mockResolvedValue({ count: 0 });
     prismaMock.passwordResetToken.create.mockResolvedValue(mockTokenRecord);
     prismaMock.passwordResetToken.findUnique.mockResolvedValue(null);
@@ -125,7 +125,7 @@ describe('Auth Email Integration — G4 wiring (AuthController → AuthEmailServ
   // POST /auth/forgot-password: returns 200 even when email does not exist
 
   it('forgot-password returns 200 response even when the email is not registered', async () => {
-    prismaMock.user.findUnique.mockResolvedValue(null);
+    prismaMock.userTestLab.findUnique.mockResolvedValue(null);
 
     const result = await controller.forgotPassword({ email: 'nobody@example.com' });
 
@@ -137,7 +137,7 @@ describe('Auth Email Integration — G4 wiring (AuthController → AuthEmailServ
   // POST /auth/forgot-password: enqueues the email job in BullMQ (G4 — core gap)
 
   it('forgot-password enqueues a reset-password email job via EmailService.send', async () => {
-    prismaMock.user.findUnique.mockResolvedValue(mockUser);
+    prismaMock.userTestLab.findUnique.mockResolvedValue(mockUser);
 
     await controller.forgotPassword({ email: 'alice@example.com' });
 
@@ -159,7 +159,7 @@ describe('Auth Email Integration — G4 wiring (AuthController → AuthEmailServ
 
     await controller.resetPassword({ token: 'raw-valid-token', newPassword: 'newpassword123' });
 
-    expect(prismaMock.user.update).toHaveBeenCalledWith(
+    expect(prismaMock.userTestLab.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: mockTokenRecord.userId },
         data: expect.objectContaining({ passwordHash: expect.any(String) }),
@@ -228,7 +228,7 @@ describe('Auth Email Integration — G4 wiring (AuthController → AuthEmailServ
   // Reset token is stored as SHA-256, not plaintext, in DB
 
   it('forgot-password stores a SHA-256 tokenHash (not the raw token) in passwordResetToken.create', async () => {
-    prismaMock.user.findUnique.mockResolvedValue(mockUser);
+    prismaMock.userTestLab.findUnique.mockResolvedValue(mockUser);
 
     let capturedTokenHash: string | undefined;
     let capturedResetUrl: string | undefined;

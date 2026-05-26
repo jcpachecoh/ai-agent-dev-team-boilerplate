@@ -13,7 +13,7 @@ const mockUser = {
 };
 
 const prismaMock = {
-  user: {
+  userTestLab: {
     findUnique: jest.fn(),
     create: jest.fn(),
     update: jest.fn(),
@@ -34,16 +34,16 @@ describe('AuthRepository', () => {
 
   describe('findByEmail', () => {
     it('returns user when found', async () => {
-      prismaMock.user.findUnique.mockResolvedValue(mockUser);
+      prismaMock.userTestLab.findUnique.mockResolvedValue(mockUser);
       const result = await repository.findByEmail('test@example.com');
       expect(result).toEqual(mockUser);
-      expect(prismaMock.user.findUnique).toHaveBeenCalledWith({
+      expect(prismaMock.userTestLab.findUnique).toHaveBeenCalledWith({
         where: { email: 'test@example.com' },
       });
     });
 
     it('returns null when not found', async () => {
-      prismaMock.user.findUnique.mockResolvedValue(null);
+      prismaMock.userTestLab.findUnique.mockResolvedValue(null);
       const result = await repository.findByEmail('nobody@example.com');
       expect(result).toBeNull();
     });
@@ -51,16 +51,16 @@ describe('AuthRepository', () => {
 
   describe('findById', () => {
     it('returns user when found', async () => {
-      prismaMock.user.findUnique.mockResolvedValue(mockUser);
+      prismaMock.userTestLab.findUnique.mockResolvedValue(mockUser);
       const result = await repository.findById('user-1');
       expect(result).toEqual(mockUser);
-      expect(prismaMock.user.findUnique).toHaveBeenCalledWith({
+      expect(prismaMock.userTestLab.findUnique).toHaveBeenCalledWith({
         where: { id: 'user-1' },
       });
     });
 
     it('returns null when not found', async () => {
-      prismaMock.user.findUnique.mockResolvedValue(null);
+      prismaMock.userTestLab.findUnique.mockResolvedValue(null);
       const result = await repository.findById('unknown');
       expect(result).toBeNull();
     });
@@ -68,28 +68,28 @@ describe('AuthRepository', () => {
 
   describe('createUser', () => {
     it('creates and returns user', async () => {
-      prismaMock.user.create.mockResolvedValue(mockUser);
+      prismaMock.userTestLab.create.mockResolvedValue(mockUser);
       const data = { email: 'test@example.com', name: 'Test User', passwordHash: 'hashed' };
       const result = await repository.createUser(data);
       expect(result).toEqual(mockUser);
-      expect(prismaMock.user.create).toHaveBeenCalledWith({ data });
+      expect(prismaMock.userTestLab.create).toHaveBeenCalledWith({ data });
     });
   });
 
   describe('saveRefreshToken', () => {
     it('updates user with hashed refresh token', async () => {
-      prismaMock.user.update.mockResolvedValue(mockUser);
+      prismaMock.userTestLab.update.mockResolvedValue(mockUser);
       await repository.saveRefreshToken('user-1', 'hashed-refresh');
-      expect(prismaMock.user.update).toHaveBeenCalledWith({
+      expect(prismaMock.userTestLab.update).toHaveBeenCalledWith({
         where: { id: 'user-1' },
         data: { refreshToken: 'hashed-refresh' },
       });
     });
 
     it('clears refresh token when null passed', async () => {
-      prismaMock.user.update.mockResolvedValue(mockUser);
+      prismaMock.userTestLab.update.mockResolvedValue(mockUser);
       await repository.saveRefreshToken('user-1', null);
-      expect(prismaMock.user.update).toHaveBeenCalledWith({
+      expect(prismaMock.userTestLab.update).toHaveBeenCalledWith({
         where: { id: 'user-1' },
         data: { refreshToken: null },
       });
