@@ -323,4 +323,37 @@ describe('MesAuthService', () => {
       expect(redisMock.blacklistToken).not.toHaveBeenCalled();
     });
   });
+
+  describe('assertCredentialsFormat (via login)', () => {
+    it('throws UnauthorizedException when cédula has an invalid format', async () => {
+      await expect(
+        service.login({ cedula: 'abc', pin: VALID_PIN }, '192.168.1.1', TENANT_ID),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('throws UnauthorizedException when PIN has an invalid format', async () => {
+      await expect(
+        service.login({ cedula: VALID_CEDULA, pin: 'ab' }, '192.168.1.1', TENANT_ID),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+  });
+
+  describe('hashCedula with HMAC secret', () => {
+    it('uses HMAC-SHA256 when CEDULA_HMAC_SECRET env var is set', async () => {
+      process.env.CEDULA_HMAC_SECRET = 'my-secret';
+
+      const hmacHash = crypto.createHmac('sha256', 'my-secret').update(VALID_CEDULA).digest('hex');
+
+      repoMock.findByCedulaHash.mockResolvedValue({
+        ...baseUser,
+        cedulaHash: hmacHash,
+      });
+
+      await service.login({ cedula: VALID_CEDULA, pin: VALID_PIN }, '192.168.1.1', TENANT_ID);
+
+      expect(repoMock.findByCedulaHash).toHaveBeenCalledWith(TENANT_ID, hmacHash);
+
+      delete process.env.CEDULA_HMAC_SECRET;
+    });
+  });
 });

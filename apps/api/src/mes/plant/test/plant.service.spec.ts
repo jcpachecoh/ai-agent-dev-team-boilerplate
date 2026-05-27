@@ -242,6 +242,263 @@ describe('PlantService', () => {
     });
   });
 
+  describe('createWorkStation', () => {
+    it('throws ConflictException when code already exists', async () => {
+      repoMock.findWorkStationByCode.mockResolvedValue(mockWorkStation);
+
+      await expect(
+        service.createWorkStation(tenantId, {
+          name: 'Duplicate',
+          code: 'LINE-01',
+        }),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('creates work station when code is available', async () => {
+      repoMock.findWorkStationByCode.mockResolvedValue(null);
+      repoMock.createWorkStation.mockResolvedValue(mockWorkStation);
+
+      const result = await service.createWorkStation(tenantId, {
+        name: 'Línea 1',
+        code: 'LINE-01',
+      });
+
+      expect(result).toEqual(mockWorkStation);
+      expect(repoMock.createWorkStation).toHaveBeenCalledWith(
+        expect.objectContaining({ tenantId, code: 'LINE-01' }),
+      );
+    });
+  });
+
+  describe('updateWorkStation', () => {
+    it('throws NotFoundException when station does not exist', async () => {
+      repoMock.findWorkStationById.mockResolvedValue(null);
+
+      await expect(
+        service.updateWorkStation(tenantId, 'missing', { name: 'Updated' }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('throws ConflictException when code belongs to another station', async () => {
+      repoMock.findWorkStationById.mockResolvedValue(mockWorkStation);
+      repoMock.findWorkStationByCode.mockResolvedValue({ ...mockWorkStation, id: 'ws-2' });
+
+      await expect(
+        service.updateWorkStation(tenantId, 'ws-1', { code: 'LINE-02' }),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('updates station when code is unchanged or unique', async () => {
+      repoMock.findWorkStationById.mockResolvedValue(mockWorkStation);
+      repoMock.updateWorkStation.mockResolvedValue({ ...mockWorkStation, name: 'Updated' });
+
+      const result = await service.updateWorkStation(tenantId, 'ws-1', { name: 'Updated' });
+
+      expect(result.name).toBe('Updated');
+    });
+  });
+
+  describe('findAllWorkStations and findAllRecipes', () => {
+    it('delegates findAllWorkStations to repository', async () => {
+      repoMock.findAllWorkStations.mockResolvedValue([mockWorkStation]);
+      await expect(service.findAllWorkStations(tenantId)).resolves.toEqual([mockWorkStation]);
+    });
+
+    it('delegates findAllRecipes to repository', async () => {
+      repoMock.findAllRecipes.mockResolvedValue([mockRecipe]);
+      await expect(service.findAllRecipes(tenantId)).resolves.toEqual([mockRecipe]);
+    });
+  });
+
+  describe('updateRecipe', () => {
+    it('deactivates conflicting active recipe and bumps version when renaming', async () => {
+      repoMock.findRecipeById.mockResolvedValue(mockRecipe);
+      repoMock.findActiveRecipeByName.mockResolvedValue({
+        ...mockRecipe,
+        id: 'recipe-other',
+        name: 'New name',
+        version: 2,
+      });
+      repoMock.updateRecipe.mockResolvedValue({ ...mockRecipe, name: 'New name', version: 3 });
+
+      await service.updateRecipe(tenantId, 'recipe-1', { name: 'New name' });
+
+      expect(repoMock.updateRecipe).toHaveBeenCalledWith(
+        tenantId,
+        'recipe-other',
+        expect.objectContaining({ isActive: false }),
+      );
+      expect(repoMock.updateRecipe).toHaveBeenCalledWith(
+        tenantId,
+        'recipe-1',
+        expect.objectContaining({ name: 'New name', version: 3 }),
+      );
+    });
+  });
+
+  describe('cloneRecipe', () => {
+    it('throws NotFoundException when source recipe is missing', async () => {
+      repoMock.findRecipeDetailById.mockResolvedValue(null);
+
+      await expect(service.cloneRecipe(tenantId, 'missing')).rejects.toThrow(NotFoundException);
+    });
+
+    it('clones recipe and deactivates prior active clone name', async () => {
+      repoMock.findRecipeDetailById.mockResolvedValue({
+        ...mockRecipe,
+        phases: [],
+      });
+      repoMock.findActiveRecipeByName.mockResolvedValue({
+        ...mockRecipe,
+        id: 'recipe-old-clone',
+        name: 'Pan integral (copia)',
+        version: 1,
+      });
+      repoMock.updateRecipe.mockResolvedValue({});
+      repoMock.cloneRecipeTx.mockResolvedValue({ ...mockRecipe, id: 'recipe-clone' });
+
+      const result = await service.cloneRecipe(tenantId, 'recipe-1');
+
+      expect(repoMock.updateRecipe).toHaveBeenCalledWith(tenantId, 'recipe-old-clone', {
+        isActive: false,
+      });
+      expect(repoMock.cloneRecipeTx).toHaveBeenCalledWith(
+        tenantId,
+        'recipe-1',
+        expect.objectContaining({ name: 'Pan integral (copia)', version: 2 }),
+      );
+      expect(result.id).toBe('recipe-clone');
+    });
+  });
+
+  describe('softDeleteRecipe', () => {
+    it('soft-deletes existing recipe', async () => {
+      repoMock.findRecipeById.mockResolvedValue(mockRecipe);
+      repoMock.softDeleteRecipe.mockResolvedValue({ ...mockRecipe, isActive: false });
+
+      const result = await service.softDeleteRecipe(tenantId, 'recipe-1');
+
+      expect(result.isActive).toBe(false);
+    });
+  });
+
+  describe('reorderPhases validation', () => {
+    beforeEach(() => {
+      repoMock.findRecipeById.mockResolvedValue(mockRecipe);
+      repoMock.findPhasesByRecipeId.mockResolvedValue([
+        { id: 'phase-1', order: 1 },
+        { id: 'phase-2', order: 2 },
+      ]);
+    });
+
+    it('throws when reorder list length does not match phase count', async () => {
+      await expect(
+        service.reorderPhases(tenantId, 'recipe-1', [{ phaseId: 'phase-1', newOrder: 1 }]),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('throws when newOrder values are duplicated', async () => {
+      await expect(
+        service.reorderPhases(tenantId, 'recipe-1', [
+          { phaseId: 'phase-1', newOrder: 1 },
+          { phaseId: 'phase-2', newOrder: 1 },
+        ]),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('throws when newOrder is not a contiguous sequence', async () => {
+      await expect(
+        service.reorderPhases(tenantId, 'recipe-1', [
+          { phaseId: 'phase-1', newOrder: 1 },
+          { phaseId: 'phase-2', newOrder: 3 },
+        ]),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('createRecipe validation', () => {
+    it('throws when phase orders are duplicated', async () => {
+      await expect(
+        service.createRecipe(tenantId, {
+          ...createRecipeInput,
+          phases: [
+            { ...createRecipeInput.phases[0], order: 1 },
+            { ...createRecipeInput.phases[0], order: 1, name: 'Duplicado' },
+          ],
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('throws when minOperators exceeds maxOperators', async () => {
+      repoMock.findWorkStationById.mockResolvedValue(mockWorkStation);
+
+      await expect(
+        service.createRecipe(tenantId, {
+          ...createRecipeInput,
+          phases: [{ ...createRecipeInput.phases[0], minOperators: 5, maxOperators: 2 }],
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('throws when work station is inactive', async () => {
+      repoMock.findWorkStationById.mockResolvedValue({ ...mockWorkStation, isActive: false });
+
+      await expect(service.createRecipe(tenantId, createRecipeInput)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('throws when work station does not exist', async () => {
+      repoMock.findWorkStationById.mockResolvedValue(null);
+
+      await expect(service.createRecipe(tenantId, createRecipeInput)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
+
+  describe('removePhaseInput', () => {
+    it('throws NotFoundException when input does not belong to phase', async () => {
+      repoMock.findPhaseById.mockResolvedValue({
+        id: 'phase-1',
+        tenantId,
+        recipeId: 'recipe-1',
+      });
+      repoMock.findPhaseInputById.mockResolvedValue({
+        id: 'input-1',
+        phaseId: 'other-phase',
+        tenantId,
+      });
+
+      await expect(service.removePhaseInput(tenantId, 'phase-1', 'input-1')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('deletes input when it belongs to the phase', async () => {
+      const existingInput = {
+        id: 'input-1',
+        tenantId,
+        phaseId: 'phase-1',
+        supplyItemId: 'supply-1',
+        quantityPerBatch: new Decimal('1'),
+        unit: StockUnit.KILOGRAMS,
+        isOptional: false,
+      };
+      repoMock.findPhaseById.mockResolvedValue({
+        id: 'phase-1',
+        tenantId,
+        recipeId: 'recipe-1',
+      });
+      repoMock.findPhaseInputById.mockResolvedValue(existingInput);
+      repoMock.deletePhaseInput.mockResolvedValue(existingInput);
+
+      await expect(service.removePhaseInput(tenantId, 'phase-1', 'input-1')).resolves.toEqual(
+        existingInput,
+      );
+    });
+  });
+
   describe('addPhaseInput', () => {
     const phaseInput = {
       supplyItemId: 'supply-1',
