@@ -17,6 +17,7 @@ export interface MesLoginInput {
 export interface MesAuthTokens {
   accessToken: string;
   refreshToken: string;
+  operator: MesMeResponse;
 }
 
 export interface MesMeResponse {

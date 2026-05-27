@@ -4,6 +4,7 @@ import { MesAuthRedisService } from '../service/mes-auth-redis.service';
 
 jest.mock('ioredis', () => {
   const MockRedis = jest.fn().mockImplementation(() => ({
+    on: jest.fn(),
     incr: jest.fn(),
     expire: jest.fn(),
     ttl: jest.fn(),
@@ -19,6 +20,7 @@ const MockRedis = Redis as unknown as jest.Mock;
 describe('MesAuthRedisService', () => {
   let service: MesAuthRedisService;
   let redisMock: {
+    on: jest.Mock;
     incr: jest.Mock;
     expire: jest.Mock;
     ttl: jest.Mock;
@@ -38,6 +40,7 @@ describe('MesAuthRedisService', () => {
     await service.onModuleInit();
 
     redisMock = {
+      on: jest.fn(),
       incr: jest.fn(),
       expire: jest.fn(),
       ttl: jest.fn(),
@@ -45,7 +48,8 @@ describe('MesAuthRedisService', () => {
       exists: jest.fn(),
       quit: jest.fn().mockResolvedValue('OK'),
     };
-    (service as unknown as { redis: typeof redisMock }).redis = redisMock;
+    (service as unknown as { redis: typeof redisMock; redisReady: boolean }).redis = redisMock;
+    (service as unknown as { redisReady: boolean }).redisReady = true;
   });
 
   // ── checkRateLimit ─────────────────────────────────────────────────────────
@@ -137,6 +141,33 @@ describe('MesAuthRedisService', () => {
 
       expect(redisMock.set).toHaveBeenCalledWith('mes:auth:blacklist:jti-abc-123', '1', 'EX', 3600);
     });
+
+    it('returns early without calling Redis when not ready and fail-open is enabled', async () => {
+      (service as unknown as { redisReady: boolean }).redisReady = false;
+      process.env.NODE_ENV = 'development';
+
+      await service.blacklistToken('jti-skip', 3600);
+
+      expect(redisMock.set).not.toHaveBeenCalled();
+      delete process.env.NODE_ENV;
+    });
+
+    it('silently ignores Redis error when fail-open is enabled', async () => {
+      process.env.MES_AUTH_REDIS_OPTIONAL = 'true';
+      redisMock.set.mockRejectedValue(new Error('Redis timeout'));
+
+      await expect(service.blacklistToken('jti-fail', 3600)).resolves.toBeUndefined();
+
+      delete process.env.MES_AUTH_REDIS_OPTIONAL;
+    });
+
+    it('rethrows Redis error when fail-open is disabled', async () => {
+      process.env.NODE_ENV = 'production';
+      delete process.env.MES_AUTH_REDIS_OPTIONAL;
+      redisMock.set.mockRejectedValue(new Error('Redis timeout'));
+
+      await expect(service.blacklistToken('jti-fail', 3600)).rejects.toThrow('Redis timeout');
+    });
   });
 
   // ── isTokenBlacklisted ─────────────────────────────────────────────────────
@@ -158,6 +189,35 @@ describe('MesAuthRedisService', () => {
 
       expect(result).toBe(false);
     });
+
+    it('returns false without calling Redis when not ready and fail-open is enabled', async () => {
+      (service as unknown as { redisReady: boolean }).redisReady = false;
+      process.env.NODE_ENV = 'development';
+
+      const result = await service.isTokenBlacklisted('jti-skip');
+
+      expect(result).toBe(false);
+      expect(redisMock.exists).not.toHaveBeenCalled();
+      delete process.env.NODE_ENV;
+    });
+
+    it('returns false on Redis error when fail-open is enabled', async () => {
+      process.env.MES_AUTH_REDIS_OPTIONAL = 'true';
+      redisMock.exists.mockRejectedValue(new Error('Redis timeout'));
+
+      const result = await service.isTokenBlacklisted('jti-fail');
+
+      expect(result).toBe(false);
+      delete process.env.MES_AUTH_REDIS_OPTIONAL;
+    });
+
+    it('rethrows Redis error when fail-open is disabled', async () => {
+      process.env.NODE_ENV = 'production';
+      delete process.env.MES_AUTH_REDIS_OPTIONAL;
+      redisMock.exists.mockRejectedValue(new Error('Redis timeout'));
+
+      await expect(service.isTokenBlacklisted('jti-fail')).rejects.toThrow('Redis timeout');
+    });
   });
 
   // ── lifecycle ──────────────────────────────────────────────────────────────
@@ -167,6 +227,111 @@ describe('MesAuthRedisService', () => {
       await service.onModuleDestroy();
 
       expect(redisMock.quit).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  // ── onModuleInit event handlers ────────────────────────────────────────────
+
+  describe('onModuleInit event handlers', () => {
+    it('sets redisReady to true when "ready" event fires', async () => {
+      let readyCallback: () => void = () => {};
+      const mockInstance = {
+        on: jest.fn().mockImplementation((event: string, cb: () => void) => {
+          if (event === 'ready') readyCallback = cb;
+        }),
+        quit: jest.fn().mockResolvedValue('OK'),
+      };
+      MockRedis.mockImplementationOnce(() => mockInstance);
+
+      const freshService = new (
+        await import('../service/mes-auth-redis.service')
+      ).MesAuthRedisService();
+      freshService.onModuleInit();
+
+      (freshService as unknown as { redisReady: boolean }).redisReady = false;
+      readyCallback();
+
+      expect((freshService as unknown as { redisReady: boolean }).redisReady).toBe(true);
+    });
+
+    it('sets redisReady to false and logs warning when "error" event fires', async () => {
+      let errorCallback: (err: Error) => void = () => {};
+      const mockInstance = {
+        on: jest.fn().mockImplementation((event: string, cb: (err: Error) => void) => {
+          if (event === 'error') errorCallback = cb;
+        }),
+        quit: jest.fn().mockResolvedValue('OK'),
+      };
+      MockRedis.mockImplementationOnce(() => mockInstance);
+
+      const freshService = new (
+        await import('../service/mes-auth-redis.service')
+      ).MesAuthRedisService();
+      freshService.onModuleInit();
+      (freshService as unknown as { redisReady: boolean }).redisReady = true;
+
+      errorCallback(new Error('ECONNREFUSED'));
+
+      expect((freshService as unknown as { redisReady: boolean }).redisReady).toBe(false);
+    });
+
+    it('only logs the first Redis error (deduplicates repeated errors)', async () => {
+      let errorCallback: (err: Error) => void = () => {};
+      const mockInstance = {
+        on: jest.fn().mockImplementation((event: string, cb: (err: Error) => void) => {
+          if (event === 'error') errorCallback = cb;
+        }),
+        quit: jest.fn().mockResolvedValue('OK'),
+      };
+      MockRedis.mockImplementationOnce(() => mockInstance);
+
+      const freshService = new (
+        await import('../service/mes-auth-redis.service')
+      ).MesAuthRedisService();
+      freshService.onModuleInit();
+
+      const loggerWarnSpy = jest
+        .spyOn((freshService as unknown as { logger: { warn: jest.Mock } }).logger, 'warn')
+        .mockImplementation(() => {});
+
+      errorCallback(new Error('first'));
+      errorCallback(new Error('second'));
+
+      expect(loggerWarnSpy).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  // ── checkRateLimit fail-open ────────────────────────────────────────────────
+
+  describe('checkRateLimit fail-open scenarios', () => {
+    it('returns fail-open result when Redis is not ready and fail-open is enabled', async () => {
+      (service as unknown as { redisReady: boolean }).redisReady = false;
+      process.env.NODE_ENV = 'development';
+
+      const result = await service.checkRateLimit('10.0.0.1');
+
+      expect(result.allowed).toBe(true);
+      expect(result.remaining).toBe(5);
+      expect(redisMock.incr).not.toHaveBeenCalled();
+      delete process.env.NODE_ENV;
+    });
+
+    it('returns fail-open result on Redis incr error when fail-open is enabled', async () => {
+      process.env.MES_AUTH_REDIS_OPTIONAL = 'true';
+      redisMock.incr.mockRejectedValue(new Error('Redis timeout'));
+
+      const result = await service.checkRateLimit('10.0.0.1');
+
+      expect(result.allowed).toBe(true);
+      delete process.env.MES_AUTH_REDIS_OPTIONAL;
+    });
+
+    it('rethrows Redis incr error when fail-open is disabled', async () => {
+      process.env.NODE_ENV = 'production';
+      delete process.env.MES_AUTH_REDIS_OPTIONAL;
+      redisMock.incr.mockRejectedValue(new Error('Redis timeout'));
+
+      await expect(service.checkRateLimit('10.0.0.1')).rejects.toThrow('Redis timeout');
     });
   });
 });

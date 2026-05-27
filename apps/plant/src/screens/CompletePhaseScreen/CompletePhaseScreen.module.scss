@@ -67,6 +67,24 @@ $primary-stack-gap: 0.65rem;
   background: rgba($color-gold, 0.08);
 }
 
+.logoutButton {
+  padding: 0.2rem 0.5rem;
+  border: 1px solid rgba($color-operator-text, 0.18);
+  border-radius: 999px;
+  background: transparent;
+  color: rgba($color-operator-text, 0.75);
+  cursor: pointer;
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+}
+
 .topBarCenter {
   margin: 0;
   text-align: center;

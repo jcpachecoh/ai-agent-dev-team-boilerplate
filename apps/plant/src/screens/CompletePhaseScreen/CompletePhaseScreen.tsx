@@ -40,6 +40,8 @@ const UNIT_OPTIONS: QuantityUnitOption[] = [
 export interface CompletePhaseScreenProps {
   onBack?: () => void;
   onCompleteSuccess?: () => void;
+  onLogout?: () => void;
+  isLoggingOut?: boolean;
 }
 
 function formatClockTime(date: Date): string {
@@ -54,6 +56,8 @@ function formatClockTime(date: Date): string {
 export function CompletePhaseScreen({
   onBack,
   onCompleteSuccess,
+  onLogout,
+  isLoggingOut = false,
 }: CompletePhaseScreenProps): React.JSX.Element {
   const stationId = useSessionStore((s) => s.stationId);
 
@@ -160,6 +164,17 @@ export function CompletePhaseScreen({
         <div className={styles.topBarLeft}>
           <span className={styles.plantBrand}>RestOpsIQ PLANT</span>
           <span className={styles.stationBadge}>{stationLabel}</span>
+          {onLogout && (
+            <button
+              type="button"
+              className={styles.logoutButton}
+              onClick={onLogout}
+              disabled={isLoggingOut}
+              data-testid="logout-button"
+            >
+              {isLoggingOut ? 'Saliendo…' : 'Salir'}
+            </button>
+          )}
         </div>
         <p className={styles.topBarCenter}>
           <span className={styles.headerTitle}>{headerTitle}</span>

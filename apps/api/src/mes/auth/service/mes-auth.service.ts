@@ -64,7 +64,7 @@ export class MesAuthService implements IMesAuthService {
     }
 
     if (!user.isActive) {
-      throw new UnauthorizedException(GENERIC_AUTH_MESSAGE);
+      throw new ForbiddenException('Access denied');
     }
 
     if (user.lockedUntil && user.lockedUntil > new Date()) {
@@ -174,6 +174,15 @@ export class MesAuthService implements IMesAuthService {
     const hashedRefresh = await bcrypt.hash(refreshToken, SALT_ROUNDS);
     await this.mesAuthRepository.saveRefreshToken(user.id, hashedRefresh);
 
-    return { accessToken, refreshToken };
+    return {
+      accessToken,
+      refreshToken,
+      operator: {
+        id: user.id,
+        role: user.role,
+        tenantId: user.tenantId,
+        sedeId: user.sedeId,
+      },
+    };
   }
 }

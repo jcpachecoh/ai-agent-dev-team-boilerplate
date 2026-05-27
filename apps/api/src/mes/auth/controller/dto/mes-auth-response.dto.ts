@@ -21,14 +21,6 @@ export class MesUserResponseDto {
   sedeId!: string | null;
 }
 
-export class MesAuthResponseDto {
-  @ApiProperty({ example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' })
-  accessToken!: string;
-
-  @ApiProperty({ example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' })
-  refreshToken!: string;
-}
-
 export class MesMeResponseDto {
   @ApiProperty({ example: 'clxyz123' })
   id!: string;
@@ -41,6 +33,17 @@ export class MesMeResponseDto {
 
   @ApiProperty({ example: 'sede-uuid', nullable: true, required: false })
   sedeId!: string | null;
+}
+
+export class MesAuthResponseDto {
+  @ApiProperty({ example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' })
+  accessToken!: string;
+
+  @ApiProperty({ example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' })
+  refreshToken!: string;
+
+  @ApiProperty({ type: () => MesMeResponseDto })
+  operator!: MesMeResponseDto;
 }
 
 export class MesRoleResponseDto {

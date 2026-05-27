@@ -8,8 +8,8 @@ let backoffMs = PING_INTERVAL_MS;
 
 function getHealthUrl(): string {
   const base = import.meta.env.VITE_PLANT_API_URL ?? '';
-  if (!base) return '/api/health';
-  return `${base.replace(/\/$/, '')}/health`;
+  if (!base) return '/api';
+  return `${base.replace(/\/$/, '')}/api`;
 }
 
 interface ConnectivityState {

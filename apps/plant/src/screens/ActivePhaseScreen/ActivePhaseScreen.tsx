@@ -1,6 +1,7 @@
 import {
   CompletePhaseButton,
   FieldAlertBanner,
+  LogoutButton,
   OpsInfoPanel,
   StatusBadge,
   TripActionButton,
@@ -27,6 +28,8 @@ const DEMO_ELAPSED_MS = 12 * 60 * 1000 + 45 * 1000;
 export interface ActivePhaseScreenProps {
   onCompletePhase?: () => void;
   onReportIssue?: () => void;
+  onLogout?: () => void;
+  isLoggingOut?: boolean;
 }
 
 function formatClockTime(date: Date): string {
@@ -41,6 +44,8 @@ function formatClockTime(date: Date): string {
 export function ActivePhaseScreen({
   onCompletePhase,
   onReportIssue,
+  onLogout,
+  isLoggingOut = false,
 }: ActivePhaseScreenProps): React.JSX.Element {
   const stationId = useSessionStore((s) => s.stationId);
   const operatorName = useSessionStore((s) => s.operator?.operatorName);
@@ -144,6 +149,18 @@ export function ActivePhaseScreen({
         <div className={styles.topBarRight}>
           <StatusBadge status="WARNING" variant="pill" animated theme="dark" size="sm" />
           <span className={styles.operatorMeta}>{operatorName ?? activeOperatorName}</span>
+          {onLogout && (
+            <LogoutButton
+              theme="dark"
+              size="sm"
+              variant="default"
+              label="Salir"
+              onClick={onLogout}
+              loading={isLoggingOut}
+              className={styles.logoutButton}
+              data-testid="logout-button"
+            />
+          )}
           <time className={styles.clock} dateTime={clock}>
             {clock}
           </time>

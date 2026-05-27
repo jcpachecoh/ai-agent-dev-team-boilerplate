@@ -48,6 +48,7 @@ export * from './components/field-ops/decimal-keypad';
 export * from './components/field-ops/field-observations-panel';
 export * from './components/field-ops/phase-summary-panel';
 export * from './components/field-ops/phase-back-button';
+export * from './components/field-ops/logout-button';
 
 export * from './components/receta/receta-metric-card';
 export * from './components/receta/receta-search';
