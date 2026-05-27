@@ -27,13 +27,16 @@ export const UpdateSupplierSchema = CreateSupplierSchema.partial().extend({
 export const CreateRecipeSchema = z.object({
   name: z.string().min(2, 'Recipe name must be at least 2 characters').max(200),
   description: z.string().max(1000).optional(),
-  phases: z.array(
-    z.object({
-      name: z.string().min(1).max(100),
-      order: z.number().int().min(0),
-      steps: z.array(z.string()).optional(),
-    }),
-  ).optional().default([]),
+  phases: z
+    .array(
+      z.object({
+        name: z.string().min(1).max(100),
+        order: z.number().int().min(0),
+        steps: z.array(z.string()).optional().default([]),
+      }),
+    )
+    .optional()
+    .default([]),
   yieldAmount: z.number().min(0).optional(),
   yieldUnit: z.string().max(30).optional(),
 });
