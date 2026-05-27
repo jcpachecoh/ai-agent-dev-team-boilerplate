@@ -2,20 +2,22 @@
  * Development seed — creates deterministic fixtures for local testing and
  * the Postman collection.
  *
- * IDs are fixed so the Postman environment values never change:
- *   tenantId   = SEED_TENANT_ID   (used as x-tenant-id header)
- *   categoryId = SEED_CATEGORY_ID (used in POST /api/supply-items body)
+ * TestLab (no operational tenant):
  *   user email = test@restopsiq.dev  /  password = TestPass123!
  *
+ * Operational tenant palos-de-lena (supply catalog + MES + plant):
+ *   tenantId / mesTenantId = palos-de-lena  (x-tenant-id on supply-items & MES login)
+ *   categoryId = SEED_CATEGORY_ID (POST /api/supply-items body)
+ *   supplyItemId = SEED_SUPPLY_ITEM_ID (optional; also captured by Create Supply Item)
+ *
  * MES operational users (local/dev only — synthetic cédulas, never use in production):
- *   tenantId = palos-de-lena  (send as x-tenant-id on POST /api/mes/auth/login)
  *   owner:    cédula 12345678 / PIN 1234  (OWNER)
  *   operator: cédula 87654321 / PIN 4321  (OPERATOR, sede sede-principal)
  *
  * Run:  cd apps/api && pnpm db:seed
  */
 
-import { OperationalRole, PrismaClient } from '@prisma/client';
+import { OperationalRole, PrismaClient, StockUnit } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 
@@ -23,11 +25,13 @@ const prisma = new PrismaClient();
 
 const SALT_ROUNDS = 12;
 
-const SEED_TENANT_ID = 'aaaaaaaa-0000-0000-0000-000000000001';
+/** Shared tenant for supply items, MES auth, and plant master data. */
+const OPERATIONAL_TENANT_ID = 'palos-de-lena';
+
 const SEED_CATEGORY_ID = 'bbbbbbbb-0000-0000-0000-000000000002';
 const SEED_USER_ID = 'cccccccc-0000-0000-0000-000000000003';
+const SEED_SUPPLY_ITEM_ID = 'ffffffff-0000-0000-0000-000000000006';
 
-const MES_TENANT_ID = 'palos-de-lena';
 const MES_OWNER_ID = 'dddddddd-0000-0000-0000-000000000004';
 const MES_OPERATOR_ID = 'eeeeeeee-0000-0000-0000-000000000005';
 
@@ -43,7 +47,7 @@ function hashCedula(cedula: string): string {
 async function main() {
   console.log('Seeding database…');
 
-  // ── Test user ────────────────────────────────────────────────────────────
+  // ── TestLab user (email/password — not tied to operational tenant) ───────
   const passwordHash = await bcrypt.hash('TestPass123!', SALT_ROUNDS);
 
   const user = await prisma.userTestLab.upsert({
@@ -58,25 +62,59 @@ async function main() {
   });
   console.log('User:', user.email, '—', user.id);
 
-  // ── Supply category ───────────────────────────────────────────────────────
+  // ── Supply category (operational tenant) ─────────────────────────────────
   const category = await prisma.supplyCategory.upsert({
     where: { id: SEED_CATEGORY_ID },
-    update: {},
+    update: { tenantId: OPERATIONAL_TENANT_ID, nombre: 'Abarrotes' },
     create: {
       id: SEED_CATEGORY_ID,
-      tenantId: SEED_TENANT_ID,
+      tenantId: OPERATIONAL_TENANT_ID,
       nombre: 'Abarrotes',
     },
   });
-  console.log('SupplyCategory:', category.nombre, '—', category.id);
+  console.log(
+    'SupplyCategory:',
+    category.nombre,
+    '—',
+    category.id,
+    `(tenant ${category.tenantId})`,
+  );
 
-  // ── MES operational users (palos-de-lena) ─────────────────────────────────
+  // ── Sample supply item (for MES phase inputs + Postman) ───────────────────
+  const supplyItem = await prisma.supplyItem.upsert({
+    where: { id: SEED_SUPPLY_ITEM_ID },
+    update: {
+      tenantId: OPERATIONAL_TENANT_ID,
+      categoriaId: SEED_CATEGORY_ID,
+      nombre: 'Aceite de Cocina (seed)',
+      isActive: true,
+    },
+    create: {
+      id: SEED_SUPPLY_ITEM_ID,
+      tenantId: OPERATIONAL_TENANT_ID,
+      nombre: 'Aceite de Cocina (seed)',
+      codigoInterno: 'SEED-ACEITE',
+      categoriaId: SEED_CATEGORY_ID,
+      descripcion: 'Aceite vegetal refinado — fixture local',
+      unidadBase: StockUnit.LITERS,
+      factorConversion: 1,
+      costoPromedioPonderado: 8500,
+      stockMinimoBodega: 5,
+      stockMaximoBodega: 50,
+      aplicaVencimiento: false,
+      aplicaLote: false,
+      isActive: true,
+    },
+  });
+  console.log('SupplyItem:', supplyItem.codigoInterno, '—', supplyItem.id);
+
+  // ── MES operational users ─────────────────────────────────────────────────
   const ownerPinHash = await bcrypt.hash('1234', SALT_ROUNDS);
   const ownerCedulaHash = hashCedula('12345678');
 
   const owner = await prisma.operationalUser.upsert({
     where: {
-      tenantId_cedulaHash: { tenantId: MES_TENANT_ID, cedulaHash: ownerCedulaHash },
+      tenantId_cedulaHash: { tenantId: OPERATIONAL_TENANT_ID, cedulaHash: ownerCedulaHash },
     },
     update: {
       pinHash: ownerPinHash,
@@ -87,7 +125,7 @@ async function main() {
     },
     create: {
       id: MES_OWNER_ID,
-      tenantId: MES_TENANT_ID,
+      tenantId: OPERATIONAL_TENANT_ID,
       cedulaHash: ownerCedulaHash,
       pinHash: ownerPinHash,
       role: OperationalRole.OWNER,
@@ -102,7 +140,7 @@ async function main() {
 
   const operator = await prisma.operationalUser.upsert({
     where: {
-      tenantId_cedulaHash: { tenantId: MES_TENANT_ID, cedulaHash: operatorCedulaHash },
+      tenantId_cedulaHash: { tenantId: OPERATIONAL_TENANT_ID, cedulaHash: operatorCedulaHash },
     },
     update: {
       pinHash: operatorPinHash,
@@ -114,7 +152,7 @@ async function main() {
     },
     create: {
       id: MES_OPERATOR_ID,
-      tenantId: MES_TENANT_ID,
+      tenantId: OPERATIONAL_TENANT_ID,
       cedulaHash: operatorCedulaHash,
       pinHash: operatorPinHash,
       role: OperationalRole.OPERATOR,
@@ -124,13 +162,14 @@ async function main() {
   });
   console.log('MES operational user:', operator.role, '—', operator.id);
 
-  console.log('\n✅ Postman environment values:');
-  console.log('  tenantId  =', SEED_TENANT_ID);
-  console.log('  categoryId=', SEED_CATEGORY_ID);
+  console.log('\n✅ TestLab (email auth, no tenant):');
   console.log('  email     = test@restopsiq.dev');
   console.log('  password  = TestPass123!');
+  console.log('\n✅ Operational tenant (supply-items, MES, plant):');
+  console.log('  tenantId / mesTenantId =', OPERATIONAL_TENANT_ID);
+  console.log('  categoryId             =', SEED_CATEGORY_ID);
+  console.log('  supplyItemId           =', SEED_SUPPLY_ITEM_ID);
   console.log('\n✅ MES auth (local/dev only):');
-  console.log('  x-tenant-id =', MES_TENANT_ID);
   console.log('  See file header for synthetic cédula + PIN test credentials');
 }
 

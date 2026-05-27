@@ -24,18 +24,88 @@
       "description": "Password for the seeded test user. Min 8 chars (SignupDto constraint). Do NOT commit real passwords here."
     },
     {
-      "key": "tenantId",
-      "value": "aaaaaaaa-0000-0000-0000-000000000001",
+      "key": "accessToken",
+      "value": "",
       "type": "default",
       "enabled": true,
-      "description": "CUID/UUID of an existing Tenant row in the local database. Required by all /supply-items routes via x-tenant-id header."
+      "description": "TestLab JWT — set by 01 Auth / Login or collection pre-request script."
+    },
+    {
+      "key": "refreshToken",
+      "value": "",
+      "type": "default",
+      "enabled": true,
+      "description": "TestLab refresh token — set by 01 Auth / Login."
+    },
+    {
+      "key": "accessTokenExpiresAt",
+      "value": "",
+      "type": "default",
+      "enabled": true,
+      "description": "Unix ms expiry for TestLab access token — set by pre-request script."
+    },
+    {
+      "key": "tenantId",
+      "value": "palos-de-lena",
+      "type": "default",
+      "enabled": true,
+      "description": "Operational tenant (supply-items x-tenant-id). MUST be palos-de-lena after seed — NOT aaaaaaaa-..."
+    },
+    {
+      "key": "debugEnvName",
+      "value": "",
+      "type": "default",
+      "enabled": true,
+      "description": "DEBUG — filled by Create Supply Item pre-request (active Postman environment name)"
+    },
+    {
+      "key": "debugResolvedTenantId",
+      "value": "",
+      "type": "default",
+      "enabled": true,
+      "description": "DEBUG — tenantId actually sent as x-tenant-id on last Create Supply Item"
+    },
+    {
+      "key": "debugResolvedCategoryId",
+      "value": "",
+      "type": "default",
+      "enabled": true,
+      "description": "DEBUG — categoryId sent in body on last Create Supply Item"
+    },
+    {
+      "key": "debugExpectedTenantId",
+      "value": "palos-de-lena",
+      "type": "default",
+      "enabled": true,
+      "description": "DEBUG — category bbbbbbbb-... exists only under this tenant in DB"
     },
     {
       "key": "categoryId",
       "value": "bbbbbbbb-0000-0000-0000-000000000002",
       "type": "default",
       "enabled": true,
-      "description": "CUID/UUID of an existing SupplyCategory row belonging to the above tenant. Required by the Create Supply Item body field categoriaId."
+      "description": "SupplyCategory id for tenant palos-de-lena. Used in Create Supply Item categoriaId."
+    },
+    {
+      "key": "supplyItemId",
+      "value": "ffffffff-0000-0000-0000-000000000006",
+      "type": "default",
+      "enabled": true,
+      "description": "Seeded supply item (SEED-ACEITE). Overwritten when 02 Supply Items → Create runs. Used by MES Plant Add Phase Input."
+    },
+    {
+      "key": "supplyItemCode",
+      "value": "SEED-ACEITE",
+      "type": "default",
+      "enabled": true,
+      "description": "codigoInterno of seeded supply item. Create Supply Item pre-request overwrites with SI-<timestamp>."
+    },
+    {
+      "key": "testLabUserId",
+      "value": "cccccccc-0000-0000-0000-000000000003",
+      "type": "default",
+      "enabled": true,
+      "description": "Seeded UserTestLab id (test@restopsiq.dev). Reference only — TestLab routes use JWT, not this header."
     },
     {
       "key": "authEmail",
@@ -70,7 +140,7 @@
       "value": "palos-de-lena",
       "type": "default",
       "enabled": true,
-      "description": "MES tenant for x-tenant-id on POST /api/mes/auth/login (local/dev seed only)"
+      "description": "Operational tenant for MES login (x-tenant-id). Same value as tenantId — supply catalog and plant share this tenant."
     },
     {
       "key": "mesOwnerCedula",
@@ -116,10 +186,129 @@
     },
     {
       "key": "mesUserId",
+      "value": "dddddddd-0000-0000-0000-000000000004",
+      "type": "default",
+      "enabled": true,
+      "description": "Seeded MES OWNER id. Overwritten by Login Owner (JWT sub) or Me."
+    },
+    {
+      "key": "mesOwnerId",
+      "value": "dddddddd-0000-0000-0000-000000000004",
+      "type": "default",
+      "enabled": true,
+      "description": "Fixed id of seeded MES OWNER — same as mesUserId after Login Owner."
+    },
+    {
+      "key": "mesOperatorId",
+      "value": "eeeeeeee-0000-0000-0000-000000000005",
+      "type": "default",
+      "enabled": true,
+      "description": "Fixed id of seeded MES OPERATOR (cédula 87654321)."
+    },
+    {
+      "key": "workstationId",
       "value": "",
       "type": "default",
       "enabled": true,
-      "description": "Operational user id — set from JWT sub or GET /api/mes/auth/me"
+      "description": "MES plant — captured from POST /api/plant/workstations"
+    },
+    {
+      "key": "recipeId",
+      "value": "",
+      "type": "default",
+      "enabled": true,
+      "description": "MES plant — captured from POST /api/plant/recipes"
+    },
+    {
+      "key": "clonedRecipeId",
+      "value": "",
+      "type": "default",
+      "enabled": true,
+      "description": "MES plant — captured from POST /api/plant/recipes/:id/clone"
+    },
+    {
+      "key": "phaseId1",
+      "value": "",
+      "type": "default",
+      "enabled": true,
+      "description": "MES plant — first phase id from GET recipe detail"
+    },
+    {
+      "key": "phaseId2",
+      "value": "",
+      "type": "default",
+      "enabled": true,
+      "description": "MES plant — second phase id from GET recipe detail"
+    },
+    {
+      "key": "phaseInputId",
+      "value": "",
+      "type": "default",
+      "enabled": true,
+      "description": "MES plant — captured from POST phase input"
+    },
+    {
+      "key": "plantWorkStationCode",
+      "value": "",
+      "type": "default",
+      "enabled": true,
+      "description": "MES plant — unique workstation code generated per run"
+    },
+    {
+      "key": "plantRecipeName",
+      "value": "",
+      "type": "default",
+      "enabled": true,
+      "description": "MES plant — unique recipe name generated per run"
+    },
+    {
+      "key": "projectId",
+      "value": "",
+      "type": "default",
+      "enabled": true,
+      "description": "TestLab — captured from POST /api/testlab/projects"
+    },
+    {
+      "key": "projectSlug",
+      "value": "",
+      "type": "default",
+      "enabled": true,
+      "description": "TestLab — generated as proj-<timestamp> before Create Project"
+    },
+    {
+      "key": "milestoneId",
+      "value": "",
+      "type": "default",
+      "enabled": true,
+      "description": "TestLab — captured from Create Milestone"
+    },
+    {
+      "key": "requirementId",
+      "value": "",
+      "type": "default",
+      "enabled": true,
+      "description": "TestLab — captured from Create Requirement"
+    },
+    {
+      "key": "suiteId",
+      "value": "",
+      "type": "default",
+      "enabled": true,
+      "description": "TestLab — captured from Create Suite"
+    },
+    {
+      "key": "caseId",
+      "value": "",
+      "type": "default",
+      "enabled": true,
+      "description": "TestLab — captured from Create Case"
+    },
+    {
+      "key": "runId",
+      "value": "",
+      "type": "default",
+      "enabled": true,
+      "description": "TestLab — captured from Create Run"
     }
   ],
   "_postman_variable_scope": "environment",
