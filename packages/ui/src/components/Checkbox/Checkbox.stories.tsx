@@ -47,13 +47,3 @@ export const Disabled: Story = {
   decorators: [lightCanvas],
   args: { disabled: true, checked: true },
 };
-
-export const Controlled: Story = {
-  decorators: [darkCanvas],
-  render: function ControlledStory() {
-    const [checked, setChecked] = React.useState(false);
-    return (
-      <Checkbox theme="dark" label="Recordar mi sesión" checked={checked} onChange={setChecked} />
-    );
-  },
-};

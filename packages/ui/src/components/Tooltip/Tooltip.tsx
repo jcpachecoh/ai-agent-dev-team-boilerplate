@@ -9,9 +9,11 @@ const TRIGGER_BUTTON_SIZE: Record<'sm' | 'md' | 'lg', 'small' | 'medium' | 'larg
   lg: 'large',
 };
 
+export type TooltipTheme = 'dark' | 'light' | 'brand';
+
 export interface TooltipProps extends React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Root> {
   content: React.ReactNode;
-  variant?: 'dark' | 'light' | 'brand';
+  theme?: TooltipTheme;
   size?: 'sm' | 'md' | 'lg';
   /** Scales the trigger child (e.g. Button) when it accepts a `size` prop */
   triggerSize?: 'sm' | 'md' | 'lg';
@@ -39,7 +41,7 @@ function enhanceTrigger(
 export function Tooltip({
   children,
   content,
-  variant = 'brand',
+  theme = 'brand',
   size = 'md',
   triggerSize,
   delayDuration = 300,
@@ -60,11 +62,11 @@ export function Tooltip({
         <TooltipPrimitive.Trigger asChild>{triggerChild}</TooltipPrimitive.Trigger>
         <TooltipPrimitive.Portal>
           <TooltipPrimitive.Content
-            className={clsx(styles.content, styles[`variant--${variant}`], styles[`size--${size}`])}
+            className={clsx(styles.content, styles[`content--${theme}`], styles[`size--${size}`])}
             sideOffset={6}
           >
             {content}
-            <TooltipPrimitive.Arrow className={clsx(styles.arrow, styles[`arrow--${variant}`])} />
+            <TooltipPrimitive.Arrow className={clsx(styles.arrow, styles[`arrow--${theme}`])} />
           </TooltipPrimitive.Content>
         </TooltipPrimitive.Portal>
       </TooltipPrimitive.Root>

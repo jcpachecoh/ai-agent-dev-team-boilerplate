@@ -23,3 +23,15 @@ export const themeCanvas: Decorator = (Story, { args }) => {
     </div>
   );
 };
+
+/** Syncs preview background with `variant` (and global `theme`) for autodocs controls. */
+export const variantCanvas: Decorator = (Story, { args }) => {
+  const a = args as { variant?: 'light' | 'dark'; theme?: 'light' | 'dark' };
+  const variant = a.variant ?? a.theme ?? 'light';
+  const background = variant === 'dark' ? '#111111' : '#f8f6f1';
+  return (
+    <div style={{ padding: 24, background }}>
+      <Story />
+    </div>
+  );
+};

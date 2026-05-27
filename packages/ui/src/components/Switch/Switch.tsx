@@ -2,6 +2,23 @@ import * as React from 'react';
 import styles from './Switch.module.scss';
 import Spinner from '../Spinner';
 
+type SwitchVariant = 'default' | 'success' | 'danger' | 'info';
+type SwitchTheme = 'light' | 'dark';
+
+function getLoadingSpinnerColor(
+  variant: SwitchVariant,
+  checked: boolean,
+  theme: SwitchTheme,
+): string {
+  if (variant === 'success' || variant === 'danger' || variant === 'info') {
+    return '#ffffff';
+  }
+  if (checked) {
+    return theme === 'dark' ? '#f2c94c' : '#e4b43a';
+  }
+  return theme === 'dark' ? '#f5f5f0' : '#1a1a1a';
+}
+
 export interface SwitchProps extends Omit<React.LabelHTMLAttributes<HTMLLabelElement>, 'onChange'> {
   checked?: boolean;
   defaultChecked?: boolean;
@@ -47,13 +64,16 @@ export function Switch({
     styles[`variant--${variant}`],
     currentChecked ? styles.checked : '',
     disabled ? styles.disabled : '',
+    loading ? styles.loading : '',
     className,
   ]
     .filter(Boolean)
     .join(' ');
 
+  const spinnerSize = size === 'lg' ? 'lg' : size === 'sm' ? 'sm' : 'md';
+
   return (
-    <label className={cls} aria-disabled={disabled} {...props}>
+    <label className={cls} aria-disabled={disabled} aria-busy={loading || undefined} {...props}>
       <input
         type="checkbox"
         className={styles.input}
@@ -67,9 +87,10 @@ export function Switch({
         <span className={styles.thumb}>
           {loading ? (
             <Spinner
-              size={size === 'lg' ? 'lg' : size === 'sm' ? 'sm' : 'md'}
+              className={styles.loadingSpinner}
+              size={spinnerSize}
               theme={theme}
-              color={variant === 'default' ? '#4b3406' : undefined}
+              color={getLoadingSpinnerColor(variant, currentChecked, theme)}
             />
           ) : null}
         </span>

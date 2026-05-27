@@ -116,6 +116,55 @@
   opacity: 0.6;
 }
 
+.loading {
+  cursor: wait;
+
+  .track {
+    animation: switch-track-pulse 1.1s ease-in-out infinite;
+  }
+
+  .thumb {
+    box-shadow:
+      0 0 0 2px rgba($color-white, 0.35),
+      0 0 10px rgba($color-white, 0.12);
+  }
+}
+
+.loadingSpinner {
+  flex-shrink: 0;
+  border-width: 2.5px !important;
+}
+
+.size--sm .loadingSpinner {
+  width: 10px !important;
+  height: 10px !important;
+  border-width: 2px !important;
+}
+
+.size--md .loadingSpinner {
+  width: 14px !important;
+  height: 14px !important;
+}
+
+.size--lg .loadingSpinner {
+  width: 20px !important;
+  height: 20px !important;
+  border-width: 3px !important;
+}
+
+@keyframes switch-track-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    filter: brightness(1);
+  }
+
+  50% {
+    opacity: 0.82;
+    filter: brightness(1.08);
+  }
+}
+
 /* Theme: estado apagado (mejor contraste según superficie) */
 .theme--light:not(.checked) .variant--default .track {
   background: $color-gray-200;
