@@ -16,7 +16,14 @@ describe('ActivePhaseScreen', () => {
     vi.clearAllMocks();
     useSessionStore.setState({
       stationId: 'EST-02',
-      operator: { operatorId: '1', operatorName: 'C. Mendoza' },
+      operator: {
+        operatorId: '1',
+        operatorName: 'C. Mendoza',
+        accessToken: 'access-token',
+        role: 'OPERATOR',
+        tenantId: 'tenant-abc',
+        sedeId: 'EST-02',
+      },
       isAuthenticated: true,
       sessionStartedAt: Date.now(),
     });

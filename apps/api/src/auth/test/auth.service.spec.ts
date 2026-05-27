@@ -152,6 +152,21 @@ describe('AuthService', () => {
     });
   });
 
+  describe('findByEmail', () => {
+    it('delegates to AuthRepository.findByEmail and returns the user', async () => {
+      repoMock.findByEmail.mockResolvedValue(mockUser);
+      const result = await service.findByEmail('test@example.com');
+      expect(result).toEqual(mockUser);
+      expect(repoMock.findByEmail).toHaveBeenCalledWith('test@example.com');
+    });
+
+    it('returns null when no user exists with that email', async () => {
+      repoMock.findByEmail.mockResolvedValue(null);
+      const result = await service.findByEmail('nobody@example.com');
+      expect(result).toBeNull();
+    });
+  });
+
   describe('resetPassword', () => {
     const validToken = {
       id: 'token-001',

@@ -1,0 +1,143 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/receta-theme' as receta;
+
+.card {
+  @include receta.receta-control-base;
+
+  display: grid;
+  align-items: start;
+  gap: $spacing-md;
+  width: 100%;
+  max-width: 792px;
+  min-height: 112px;
+  padding: $spacing-md;
+  background: #0d0d0d;
+  border-radius: $border-radius-sm;
+  grid-template-columns: 18px 32px minmax(0, 1fr) auto;
+}
+
+.themeLight {
+  @include receta.receta-theme-light;
+
+  background: var(--receta-surface-raised);
+}
+
+.themeDark {
+  @include receta.receta-theme-dark;
+}
+
+.selected {
+  border-color: receta.$receta-purple;
+  border-left-width: 3px;
+}
+
+.dragIcon {
+  width: 18px;
+  height: 78px;
+  align-self: center;
+  color: var(--receta-muted);
+}
+
+.stepNumber {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: rgba(receta.$receta-purple, 0.12);
+  border: $border-width solid rgba(receta.$receta-purple, 0.3);
+  border-radius: $border-radius-sm;
+  font-family: $font-family-mono;
+  font-size: 0.8125rem;
+  font-weight: $font-weight-bold;
+  line-height: 1.5;
+  color: receta.$receta-purple;
+}
+
+.content {
+  min-width: 0;
+}
+
+.title {
+  margin: 0 0 5px;
+  font-size: 0.9375rem;
+  font-weight: $font-weight-semibold;
+  line-height: 1.5;
+  color: var(--receta-text);
+}
+
+.description {
+  margin: 0 0 $spacing-sm;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--receta-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-md;
+}
+
+.metaItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--receta-muted);
+
+  svg {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+.actions {
+  display: flex;
+  gap: $spacing-sm;
+}
+
+.iconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: $border-width solid var(--receta-border);
+  border-radius: 3px;
+  color: var(--receta-muted);
+  cursor: pointer;
+
+  svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  &:hover {
+    background: var(--receta-hover);
+    color: var(--receta-text);
+  }
+
+  &:focus-visible {
+    @include receta.receta-focus-ring;
+  }
+}
+
+@media (width <= 640px) {
+  .card {
+    grid-template-columns: 32px minmax(0, 1fr);
+  }
+
+  .dragIcon {
+    display: none;
+  }
+
+  .actions {
+    grid-column: 2;
+  }
+}

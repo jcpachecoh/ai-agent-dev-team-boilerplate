@@ -34,4 +34,11 @@ describe('JwtRefreshStrategy', () => {
     const result = strategy.validate(req, payload);
     expect(result.refreshToken).toBe('');
   });
+
+  it('stores empty string when Authorization header returns undefined', () => {
+    const payload = { sub: 'user-1', email: 'a@b.com' };
+    const req = { get: () => undefined } as never;
+    const result = strategy.validate(req, payload);
+    expect(result.refreshToken).toBe('');
+  });
 });

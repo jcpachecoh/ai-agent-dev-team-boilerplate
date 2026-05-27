@@ -174,6 +174,15 @@ export class MesAuthService implements IMesAuthService {
     const hashedRefresh = await bcrypt.hash(refreshToken, SALT_ROUNDS);
     await this.mesAuthRepository.saveRefreshToken(user.id, hashedRefresh);
 
-    return { accessToken, refreshToken };
+    return {
+      accessToken,
+      refreshToken,
+      operator: {
+        id: user.id,
+        role: user.role,
+        tenantId: user.tenantId,
+        sedeId: user.sedeId,
+      },
+    };
   }
 }

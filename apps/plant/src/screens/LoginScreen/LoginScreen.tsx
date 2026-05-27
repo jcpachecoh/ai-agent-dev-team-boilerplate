@@ -1,9 +1,10 @@
 import { Button, FieldAlertBanner, Input, PinKeypad } from '@restopsiq/ui';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import {
-  authenticateOperatorPin,
   getDemoPinHint,
+  loginOperator,
   OperatorAuthError,
   shouldShowDemoPinHint,
 } from '@/services/auth.service';
@@ -44,6 +45,7 @@ export function LoginScreen({
   statusLine = 'Sistema operativo · Turno 1 · 06:00-14:00 · Bogotá',
   onLoginSuccess,
 }: LoginScreenProps): React.JSX.Element {
+  const queryClient = useQueryClient();
   const stationId = useSessionStore((s) => s.stationId);
   const login = useSessionStore((s) => s.login);
 
@@ -51,9 +53,46 @@ export function LoginScreen({
   const [cedula, setCedula] = useState('');
   const [pin, setPin] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoginPending, setIsLoginPending] = useState(false);
   const [successName, setSuccessName] = useState<string | null>(null);
   const [shakeKeypad, setShakeKeypad] = useState(false);
+
+  const loginMutation = useMutation({
+    mutationFn: loginOperator,
+    onSuccess: (result, variables) => {
+      setIsLoginPending(false);
+      const operatorName = result.operator.name ?? `Operario ${variables.cedula.slice(-4)}`;
+      login({
+        operatorId: result.operator.id,
+        operatorName,
+        accessToken: result.accessToken,
+        refreshToken: result.refreshToken,
+        role: result.operator.role,
+        tenantId: result.operator.tenantId,
+        sedeId: result.operator.sedeId,
+      });
+      setSuccessName(operatorName);
+      setPin('');
+      void queryClient.invalidateQueries({ queryKey: ['mes-auth', 'me'] });
+      void queryClient.invalidateQueries({ queryKey: ['plant-session'] });
+    },
+    onError: (err) => {
+      setIsLoginPending(false);
+      const message =
+        err instanceof OperatorAuthError
+          ? (err.fieldErrors?.pin ?? err.fieldErrors?.cedula ?? err.message)
+          : 'No pudimos iniciar sesión. Intente nuevamente.';
+      if (err instanceof OperatorAuthError && err.fieldErrors?.cedula) {
+        setStep('cedula');
+      }
+      setError(message);
+      setPin('');
+      vibratePinError();
+      setShakeKeypad(true);
+    },
+  });
+
+  const isSubmitting = isLoginPending || loginMutation.status === 'pending';
 
   const handleKeyPress = useCallback(
     (key: string) => {
@@ -100,34 +139,15 @@ export function LoginScreen({
     setError(null);
   }, []);
 
-  const submitPin = useCallback(async () => {
+  const submitPin = useCallback(() => {
     if (pin.length !== PIN_LENGTH || !stationId || isSubmitting || successName) {
       return;
     }
 
-    setIsSubmitting(true);
     setError(null);
-
-    try {
-      const result = await authenticateOperatorPin(stationId, cedula, pin);
-      login({ operatorId: result.operatorId, operatorName: result.operatorName });
-      setSuccessName(result.operatorName);
-      setPin('');
-    } catch (err) {
-      if (err instanceof OperatorAuthError) {
-        setError('Cédula o PIN incorrecto');
-        setPin('');
-        vibratePinError();
-        setShakeKeypad(true);
-      } else {
-        setError('Cédula o PIN incorrecto');
-        vibratePinError();
-        setShakeKeypad(true);
-      }
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, [pin, cedula, stationId, isSubmitting, successName, login]);
+    setIsLoginPending(true);
+    loginMutation.mutate({ stationId, cedula, pin });
+  }, [pin, stationId, isSubmitting, successName, loginMutation, cedula]);
 
   useEffect(() => {
     if (!shakeKeypad) return;
@@ -262,6 +282,12 @@ export function LoginScreen({
               </div>
             )}
 
+            {isSubmitting && (
+              <p className={styles.loadingText} role="status" aria-live="polite">
+                Validando credenciales…
+              </p>
+            )}
+
             <div
               className={[styles.keypadWrap, shakeKeypad && styles.keypadShake]
                 .filter(Boolean)
@@ -301,6 +327,12 @@ export function LoginScreen({
                   {error}
                 </FieldAlertBanner>
               </div>
+            )}
+
+            {isSubmitting && (
+              <p className={styles.loadingText} role="status" aria-live="polite">
+                Validando credenciales…
+              </p>
             )}
 
             <div

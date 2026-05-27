@@ -3,6 +3,11 @@ import { create } from 'zustand';
 export interface OperatorSession {
   operatorId: string;
   operatorName: string;
+  accessToken: string;
+  refreshToken?: string;
+  role: 'OWNER' | 'SUPERVISOR' | 'MANAGER' | 'OPERATOR';
+  tenantId: string;
+  sedeId?: string | null;
 }
 
 interface SessionState {

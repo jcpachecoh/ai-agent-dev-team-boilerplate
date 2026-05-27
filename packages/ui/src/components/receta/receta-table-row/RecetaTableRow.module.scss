@@ -1,0 +1,83 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/receta-theme' as receta;
+
+.row {
+  @include receta.receta-theme-classes;
+
+  display: grid;
+  grid-template-columns: 110px minmax(180px, 1.5fr) minmax(130px, 0.8fr) 120px 100px 120px 110px;
+  align-items: center;
+  width: min(100%, var(--row-width));
+  min-height: var(--row-height);
+  padding: 0 var(--row-padding-x);
+  border-bottom: $border-width solid var(--receta-border);
+  background: var(--receta-surface);
+  color: var(--receta-text);
+  box-sizing: border-box;
+  font-family: $font-family-base;
+  overflow-x: auto;
+}
+
+.size--sm {
+  --row-width: 720px;
+  --row-height: 48px;
+  --row-padding-x: #{$spacing-sm};
+}
+
+.size--md {
+  --row-width: 960px;
+  --row-height: 60px;
+  --row-padding-x: #{$spacing-md};
+}
+
+.size--xl {
+  --row-width: 100%;
+  --row-height: 72px;
+  --row-padding-x: #{$spacing-lg};
+}
+
+.code,
+.duration,
+.portions,
+.updated {
+  font-family: $font-family-mono;
+  font-size: $font-size-xs;
+  color: var(--receta-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.code {
+  font-weight: $font-weight-bold;
+  color: receta.$receta-purple;
+}
+
+.name {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+  color: var(--receta-text);
+}
+
+.category {
+  font-size: $font-size-xs;
+  color: var(--receta-text-secondary);
+}
+
+.portions,
+.status,
+.actions {
+  justify-self: center;
+}
+
+.actions {
+  justify-self: end;
+}
+
+.updated {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .row {
+    grid-template-columns: 90px minmax(160px, 1fr) 110px 96px 84px 100px 92px;
+  }
+}

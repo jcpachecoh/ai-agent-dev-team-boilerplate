@@ -114,6 +114,12 @@ describe('MesAuthService', () => {
       expect(result).toEqual({
         accessToken: 'access-token',
         refreshToken: 'refresh-token',
+        operator: {
+          id: baseUser.id,
+          role: baseUser.role,
+          tenantId: baseUser.tenantId,
+          sedeId: baseUser.sedeId,
+        },
       });
     });
 

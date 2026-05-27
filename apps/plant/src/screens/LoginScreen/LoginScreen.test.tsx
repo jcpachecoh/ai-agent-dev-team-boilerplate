@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
@@ -50,7 +51,7 @@ vi.mock('@/services/auth.service', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/services/auth.service')>();
   return {
     ...actual,
-    authenticateOperatorPin: vi.fn(),
+    loginOperator: vi.fn(),
     shouldShowDemoPinHint: vi.fn(() => true),
     getDemoPinHint: vi.fn(() => '1234'),
   };
@@ -63,6 +64,28 @@ vi.mock('@/services/station.service', async (importOriginal) => {
     setStationId: vi.fn().mockResolvedValue(undefined),
   };
 });
+
+function createTestQueryClient(): QueryClient {
+  return new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+      mutations: { retry: false },
+    },
+  });
+}
+
+function renderLoginScreen(ui: React.ReactElement): QueryClient {
+  const queryClient = createTestQueryClient();
+  render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
+  return queryClient;
+}
+
+async function enterCedula(user: ReturnType<typeof userEvent.setup>, cedula = '12345678') {
+  for (const digit of cedula) {
+    await user.click(screen.getByRole('button', { name: `Tecla ${digit}` }));
+  }
+  await user.click(screen.getByRole('button', { name: 'OK' }));
+}
 
 describe('LoginScreen', () => {
   beforeEach(() => {
@@ -81,65 +104,116 @@ describe('LoginScreen', () => {
   });
 
   it('renders station badge, area title, four pin dots and keypad', () => {
-    render(<LoginScreen areaName="Corte y deshuese" />);
+    renderLoginScreen(<LoginScreen areaName="Corte y deshuese" />);
 
     expect(screen.getByText('EST-02')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /corte y deshuese/i })).toBeInTheDocument();
-    expect(screen.getByText(/ingrese su pin de operador/i)).toBeInTheDocument();
-    expect(screen.getByRole('group', { name: /dígitos ingresados/i }).children).toHaveLength(4);
+    expect(screen.getByText(/ingrese su número de cédula/i)).toBeInTheDocument();
     expect(screen.getByRole('group', { name: /teclado pin/i })).toBeInTheDocument();
   });
 
   it('does not submit when PIN is incomplete', async () => {
     const user = userEvent.setup();
-    vi.mocked(authService.authenticateOperatorPin).mockResolvedValue({
-      operatorId: 'op1',
-      operatorName: 'Ana',
+    vi.mocked(authService.loginOperator).mockResolvedValue({
+      accessToken: 'access-token',
+      operator: {
+        id: 'op1',
+        name: 'Ana',
+        role: 'OPERATOR',
+        tenantId: 'tenant-abc',
+        sedeId: 'EST-02',
+      },
     });
 
-    render(<LoginScreen />);
+    renderLoginScreen(<LoginScreen />);
+    await enterCedula(user);
     await user.click(screen.getByRole('button', { name: 'Tecla 1' }));
     await user.click(screen.getByRole('button', { name: 'OK' }));
 
-    expect(authService.authenticateOperatorPin).not.toHaveBeenCalled();
+    expect(authService.loginOperator).not.toHaveBeenCalled();
   });
 
   it('shows generic error and vibrates on wrong PIN', async () => {
     const user = userEvent.setup();
-    vi.mocked(authService.authenticateOperatorPin).mockRejectedValue(
-      new authService.OperatorAuthError(),
+    vi.mocked(authService.loginOperator).mockRejectedValue(
+      new authService.OperatorAuthError('Cédula o PIN incorrecto.', 401),
     );
 
-    render(<LoginScreen />);
+    renderLoginScreen(<LoginScreen />);
+    await enterCedula(user);
 
     for (const digit of ['9', '9', '9', '9']) {
       await user.click(screen.getByRole('button', { name: `Tecla ${digit}` }));
     }
     await user.click(screen.getByRole('button', { name: 'OK' }));
 
-    expect(await screen.findByText('PIN incorrecto')).toBeInTheDocument();
+    expect(await screen.findByText('Cédula o PIN incorrecto.')).toBeInTheDocument();
     expect(navigator.vibrate).toHaveBeenCalled();
+  });
+
+  it('shows loading feedback while login mutation is pending', async () => {
+    const user = userEvent.setup();
+    vi.mocked(authService.loginOperator).mockImplementation(
+      () => new Promise<Awaited<ReturnType<typeof authService.loginOperator>>>(() => undefined),
+    );
+
+    renderLoginScreen(<LoginScreen />);
+    await enterCedula(user);
+
+    for (const digit of ['1', '2', '3', '4']) {
+      await user.click(screen.getByRole('button', { name: `Tecla ${digit}` }));
+    }
+    await waitFor(() => {
+      expect(
+        screen
+          .getByRole('group', { name: /dígitos ingresados/i })
+          .querySelectorAll('span[class*="dotFilled"]'),
+      ).toHaveLength(4);
+    });
+    await user.click(screen.getByRole('button', { name: 'OK' }));
+
+    await waitFor(() => expect(authService.loginOperator).toHaveBeenCalled());
+    expect(await screen.findByRole('status')).toHaveTextContent('Validando credenciales…');
   });
 
   it('calls session login and success callback on valid PIN', async () => {
     const user = userEvent.setup();
     const onLoginSuccess = vi.fn();
 
-    vi.mocked(authService.authenticateOperatorPin).mockResolvedValue({
-      operatorId: 'op1',
-      operatorName: 'Carlos Mendoza',
+    vi.mocked(authService.loginOperator).mockResolvedValue({
+      accessToken: 'access-token',
+      refreshToken: 'refresh-token',
+      operator: {
+        id: 'op1',
+        name: 'Carlos Mendoza',
+        role: 'OPERATOR',
+        tenantId: 'tenant-abc',
+        sedeId: 'EST-02',
+      },
     });
 
-    render(<LoginScreen onLoginSuccess={onLoginSuccess} />);
+    const queryClient = renderLoginScreen(<LoginScreen onLoginSuccess={onLoginSuccess} />);
+    const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
+    await enterCedula(user);
 
     for (const digit of ['1', '2', '3', '4']) {
       await user.click(screen.getByRole('button', { name: `Tecla ${digit}` }));
     }
     await user.click(screen.getByRole('button', { name: 'OK' }));
 
-    expect(authService.authenticateOperatorPin).toHaveBeenCalledWith('EST-02', '1234');
-    expect(useSessionStore.getState().isAuthenticated).toBe(true);
+    expect(authService.loginOperator).toHaveBeenCalledWith(
+      {
+        stationId: 'EST-02',
+        cedula: '12345678',
+        pin: '1234',
+      },
+      expect.any(Object),
+    );
+    await waitFor(() => expect(useSessionStore.getState().isAuthenticated).toBe(true));
     expect(useSessionStore.getState().operator?.operatorName).toBe('Carlos Mendoza');
+    expect(useSessionStore.getState().operator?.accessToken).toBe('access-token');
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['mes-auth', 'me'] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['plant-session'] });
 
     await waitFor(
       () => {
@@ -153,7 +227,7 @@ describe('LoginScreen', () => {
 
   it('prompts for station setup when stationId is missing', () => {
     useSessionStore.setState({ stationId: null });
-    render(<LoginScreen />);
+    renderLoginScreen(<LoginScreen />);
     expect(screen.getByText(/configurar estación/i)).toBeInTheDocument();
     expect(screen.getByPlaceholderText(/est-01/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /confirmar/i })).toBeInTheDocument();
@@ -162,7 +236,7 @@ describe('LoginScreen', () => {
   it('shows validation error for invalid station ID', async () => {
     const user = userEvent.setup();
     useSessionStore.setState({ stationId: null });
-    render(<LoginScreen />);
+    renderLoginScreen(<LoginScreen />);
 
     await user.type(screen.getByPlaceholderText(/est-01/i), 'X');
     await user.click(screen.getByRole('button', { name: /confirmar/i }));
@@ -174,7 +248,7 @@ describe('LoginScreen', () => {
   it('saves and applies a valid station ID on submit', async () => {
     const user = userEvent.setup();
     useSessionStore.setState({ stationId: null });
-    render(<LoginScreen />);
+    renderLoginScreen(<LoginScreen />);
 
     await user.type(screen.getByPlaceholderText(/est-01/i), 'EST-05');
     await user.click(screen.getByRole('button', { name: /confirmar/i }));

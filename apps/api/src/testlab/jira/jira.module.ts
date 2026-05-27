@@ -12,16 +12,23 @@ import { PrismaModule } from '../../prisma/prisma.module';
     JiraRepository,
     {
       provide: JIRA_CLIENT,
-      useFactory: (): Version3Client =>
-        new Version3Client({
-          host: process.env.JIRA_URL ?? '',
+      useFactory: (): Version3Client => {
+        const configuredHost = process.env.JIRA_URL?.trim();
+        // Keep API booting in local/dev even when Jira env is missing.
+        const host =
+          configuredHost && /^https?:\/\//.test(configuredHost)
+            ? configuredHost
+            : 'https://example.atlassian.net';
+        return new Version3Client({
+          host,
           authentication: {
             basic: {
               email: process.env.JIRA_USERNAME ?? '',
               apiToken: process.env.JIRA_API_TOKEN ?? '',
             },
           },
-        }),
+        });
+      },
     },
     JiraService,
   ],

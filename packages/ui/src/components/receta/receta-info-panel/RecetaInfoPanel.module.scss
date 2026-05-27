@@ -1,0 +1,86 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/receta-theme' as receta;
+
+.panel {
+  @include receta.receta-control-base;
+
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  width: 100%;
+  max-width: 842px;
+  min-height: 288px;
+  padding: 24px;
+  border-radius: $border-radius-sm;
+}
+
+.themeLight {
+  @include receta.receta-theme-light;
+}
+
+.themeDark {
+  @include receta.receta-theme-dark;
+}
+
+.title {
+  margin: 0 $spacing-xs $spacing-sm 0;
+  font-family: $font-family-mono;
+  font-size: 0.6875rem;
+  font-weight: $font-weight-bold;
+  line-height: 1.5;
+  color: var(--receta-text);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(180px, 1fr);
+  gap: $spacing-md;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  min-width: 0;
+}
+
+.label {
+  font-size: 0.75rem;
+  font-weight: $font-weight-medium;
+  line-height: 1.5;
+  color: var(--receta-muted);
+}
+
+.input {
+  @include receta.receta-control-base;
+
+  width: 100%;
+  min-height: 43px;
+  padding: 10px 12px;
+  background: var(--receta-input);
+  border-radius: $border-radius-sm;
+  font-size: $font-size-sm;
+  line-height: 1.5;
+  color: rgb(245 245 240 / 50%);
+
+  &:focus-visible {
+    @include receta.receta-focus-ring;
+  }
+}
+
+.themeLight .input {
+  color: rgb(17 17 17 / 55%);
+}
+
+.textarea {
+  min-height: 85px;
+  resize: vertical;
+}
+
+@media (width <= 720px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}

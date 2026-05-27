@@ -1,0 +1,60 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/receta-theme' as receta;
+
+.header {
+  --control-width: 100%;
+  --control-min-height: 52px;
+  --control-padding-x: #{$spacing-lg};
+  --control-radius: #{$border-radius-md};
+  --header-font-size: 0.625rem;
+
+  @include receta.receta-control-base;
+
+  display: grid;
+  grid-template-columns: var(--receta-columns);
+  align-items: center;
+  width: 100%;
+  padding: 0 var(--control-padding-x);
+  border-radius: var(--control-radius) var(--control-radius) 0 0;
+  overflow-x: auto;
+}
+
+.themeLight {
+  @include receta.receta-theme-light;
+}
+
+.themeDark {
+  @include receta.receta-theme-dark;
+}
+
+.sizeSm {
+  --header-font-size: 0.5rem;
+}
+.sizeMd {
+  --header-font-size: 0.5625rem;
+}
+.sizeXl {
+  --header-font-size: 0.625rem;
+}
+
+.cell {
+  min-width: 0;
+  font-family: $font-family-mono;
+  font-size: var(--header-font-size);
+  font-weight: $font-weight-bold;
+  line-height: 1;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--receta-muted);
+}
+
+.alignLeft {
+  text-align: left;
+}
+.alignCenter {
+  text-align: center;
+}
+.alignRight {
+  text-align: right;
+}
