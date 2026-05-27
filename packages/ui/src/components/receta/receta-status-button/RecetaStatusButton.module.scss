@@ -1,0 +1,58 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/receta-theme' as receta;
+
+.button {
+  @include receta.receta-control-base;
+  @include receta.receta-theme-classes;
+  @include receta.receta-size-vars;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--control-gap) * 0.75);
+  width: auto;
+  min-width: var(--status-width);
+  padding: calc(var(--control-padding-y) * 0.65) var(--control-padding-x);
+  font-family: $font-family-mono;
+  font-size: 0.625rem;
+  font-weight: $font-weight-bold;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+
+  &:focus-visible {
+    @include receta.receta-focus-ring;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+}
+
+.size--sm {
+  --status-width: 72px;
+}
+.size--md {
+  --status-width: 84px;
+}
+.size--xl {
+  --status-width: 108px;
+}
+
+.icon {
+  width: 12px;
+  height: 12px;
+}
+
+.status--active {
+  border-color: receta.$receta-teal;
+  background: rgba(receta.$receta-teal, 0.12);
+  color: receta.$receta-teal;
+}
+
+.status--inactive {
+  border-color: var(--receta-border);
+  background: rgba(receta.$receta-failed, 0.08);
+  color: receta.$receta-failed;
+}
