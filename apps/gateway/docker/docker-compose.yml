@@ -1,0 +1,33 @@
+services:
+  gateway:
+    build:
+      context: ../..
+      dockerfile: apps/gateway/docker/Dockerfile
+    ports:
+      - "4000:4000"
+    env_file: ../.env
+    environment:
+      DATABASE_URL: postgresql://restopsiq:restopsiq@postgres:5432/restopsiq
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      - postgres
+      - redis
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: restopsiq
+      POSTGRES_PASSWORD: restopsiq
+      POSTGRES_DB: restopsiq
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+volumes:
+  postgres_data:
