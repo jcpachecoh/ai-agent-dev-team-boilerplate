@@ -1,0 +1,45 @@
+@use './tokens' as t;
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: t.$font-family-base;
+  font-size: t.$font-size-base;
+  font-weight: t.$font-weight-normal;
+  line-height: t.$line-height-base;
+  background-color: t.$color-bg-primary;
+  color: t.$color-text-primary;
+  min-height: 100dvh;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+
+a {
+  color: t.$color-accent;
+  text-decoration: none;
+
+  &:hover {
+    color: t.$color-accent-hover;
+    text-decoration: underline;
+  }
+}
+
+ul,
+ol {
+  list-style: none;
+}
