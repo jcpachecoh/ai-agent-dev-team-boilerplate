@@ -2,6 +2,6 @@
   "installCommand": "cd ../.. && pnpm install --frozen-lockfile",
   "buildCommand": "cd ../.. && pnpm --filter @restopsiq/testlab run build",
   "outputDirectory": "dist",
-  "ignoreCommand": "cd ../.. && npx turbo-ignore @restopsiq/testlab",
+  "ignoreCommand": "[ \"$VERCEL_GIT_COMMIT_REF\" != \"main\" ] && exit 0; cd ../.. && npx turbo-ignore @restopsiq/testlab",
   "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
 }
