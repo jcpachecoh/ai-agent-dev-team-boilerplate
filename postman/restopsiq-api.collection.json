@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "7c3e5f82-1a9b-4d6e-8f2c-0b5a3d7e9f1c",
     "name": "RestOpsIQ API",
-    "description": "Complete API test collection for RestOpsIQ.\n\nCovers all 38 live endpoints across Health, Auth, Supply Items, and Testlab modules.\n\nGlobal prefix: /api\nAuth: JwtAuthGuard (APP_GUARD) — collection-level Bearer {{accessToken}}.\nPublic endpoints: GET /api/, POST /api/auth/signup, POST /api/auth/login, POST /api/auth/refresh, POST /api/auth/forgot-password, POST /api/auth/reset-password, POST /api/auth/verify-email, POST /api/auth/resend-verification.\nTenant-scoped endpoints: all /api/supply-items routes (x-tenant-id header).\n\nRES-226 email auth endpoints require Redis and the @restopsiq/email BullMQ queue to be running.\nreset-password and verify-email tokens are delivered via email — set {{resetToken}} and {{otpCode}} manually before running those requests.\n\nSee postman/README.md for prerequisites and setup.",
+    "description": "Complete API test collection for RestOpsIQ.\n\nCovers Health, Auth, MES Auth, MES Plant, Plant Production Orders (MES-05), Supply Items, and Testlab modules.\n\nGlobal prefix: /api\nOperational tenant (supply-items + MES + plant): {{tenantId}} = {{mesTenantId}} = palos-de-lena after seed.\nTestLab: email auth only (no tenant).\nMES plant: Bearer {{mesAccessToken}} (no x-tenant-id).\nSupply-items: Bearer {{accessToken}} + x-tenant-id {{tenantId}}.\n\nPhase completion is internal (no POST /api/plant/phases/complete). See postman/README.md.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -23,7 +23,7 @@
         "exec": [
           "// Skip auto-login for MES auth and public TestLab auth routes",
           "const reqUrl = pm.request.url.toString();",
-          "if (reqUrl.includes('/mes/auth/') || reqUrl.includes('/mes/users/')) return;",
+          "if (reqUrl.includes('/mes/auth/') || reqUrl.includes('/mes/users/') || reqUrl.includes('/plant/')) return;",
           "const isPublicAuthRoute =",
           "  reqUrl.includes('/auth/login') ||",
           "  reqUrl.includes('/auth/signup') ||",
@@ -82,15 +82,15 @@
     },
     {
       "key": "tenantId",
-      "value": "",
+      "value": "palos-de-lena",
       "type": "string",
-      "description": "UUID of an existing Tenant in the seeded DB"
+      "description": "Operational tenant for supply-items (x-tenant-id). Same as mesTenantId after seed."
     },
     {
       "key": "categoryId",
-      "value": "",
+      "value": "bbbbbbbb-0000-0000-0000-000000000002",
       "type": "string",
-      "description": "UUID of an existing SupplyCategory for the seeded tenant"
+      "description": "SupplyCategory id for tenant palos-de-lena (seed)"
     },
     {
       "key": "accessToken",
@@ -112,9 +112,9 @@
     },
     {
       "key": "supplyItemId",
-      "value": "",
+      "value": "ffffffff-0000-0000-0000-000000000006",
       "type": "string",
-      "description": "Captured from Create Supply Item response"
+      "description": "Seeded supply item id; overwritten by Create Supply Item response"
     },
     {
       "key": "supplyItemCode",
@@ -232,9 +232,105 @@
     },
     {
       "key": "mesUserId",
+      "value": "dddddddd-0000-0000-0000-000000000004",
+      "type": "string",
+      "description": "Seeded MES OWNER id; overwritten by Login Owner (JWT sub) or Me"
+    },
+    {
+      "key": "mesOwnerId",
+      "value": "dddddddd-0000-0000-0000-000000000004",
+      "type": "string",
+      "description": "Seeded MES OWNER id (alias for mesUserId after login)"
+    },
+    {
+      "key": "mesOperatorId",
+      "value": "eeeeeeee-0000-0000-0000-000000000005",
+      "type": "string",
+      "description": "Seeded MES OPERATOR id"
+    },
+    {
+      "key": "testLabUserId",
+      "value": "cccccccc-0000-0000-0000-000000000003",
+      "type": "string",
+      "description": "Seeded UserTestLab id (test@restopsiq.dev)"
+    },
+    {
+      "key": "plantWorkStationCode",
       "value": "",
       "type": "string",
-      "description": "Operational user id — set from JWT sub or GET /api/mes/auth/me"
+      "description": "Unique work station code per Postman run"
+    },
+    {
+      "key": "plantRecipeName",
+      "value": "",
+      "type": "string",
+      "description": "Unique recipe name per Postman run"
+    },
+    {
+      "key": "workstationId",
+      "value": "",
+      "type": "string",
+      "description": "Captured from Create Work Station"
+    },
+    {
+      "key": "recipeId",
+      "value": "",
+      "type": "string",
+      "description": "Captured from Create Recipe"
+    },
+    {
+      "key": "clonedRecipeId",
+      "value": "",
+      "type": "string",
+      "description": "Captured from Clone Recipe"
+    },
+    {
+      "key": "phaseId1",
+      "value": "",
+      "type": "string",
+      "description": "First phase id from recipe detail"
+    },
+    {
+      "key": "phaseId2",
+      "value": "",
+      "type": "string",
+      "description": "Second phase id from recipe detail"
+    },
+    {
+      "key": "phaseInputId",
+      "value": "",
+      "type": "string",
+      "description": "Captured from Add Phase Input"
+    },
+    {
+      "key": "orderId",
+      "value": "",
+      "type": "string",
+      "description": "MES production order — captured from POST /api/plant/orders"
+    },
+    {
+      "key": "executionId",
+      "value": "",
+      "type": "string",
+      "description": "Phase execution id — captured from GET order detail (first execution or QA path)"
+    },
+    {
+      "key": "ordersRecipeId",
+      "value": "",
+      "type": "string",
+      "description": "5-phase recipe for production orders smoke — captured in Plant — Production Orders setup"
+    },
+    {
+      "key": "orderPlannedStartAt",
+      "value": "",
+      "type": "string",
+      "description": "ISO plannedStartAt for Create Production Order pre-request"
+    },
+    {
+      "key": "orderPlannedEndAt",
+      "value": "",
+      "type": "string",
+      "description": "ISO plannedEndAt for Create Production Order pre-request"
     }
   ],
   "item": [
@@ -977,6 +1073,1171 @@
       ]
     },
     {
+      "name": "MES Plant",
+      "description": "MES plant master data (workstations, recipes, phases, inputs).\n\nPrerequisites: run **MES Auth → Login Owner** first (sets {{mesAccessToken}}).\n\nAuth: Bearer {{mesAccessToken}} only — do **not** send x-tenant-id (tenant comes from JWT, palos-de-lena).\n\nRun in folder order. Use {{supplyItemId}} from seed or **02 Supply Items → Create** (same operational tenant as MES).",
+      "item": [
+        {
+          "name": "Create Work Station",
+          "description": "POST /api/plant/workstations — unique code per run.",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('plantWorkStationCode', 'WS-' + Date.now());",
+                  "pm.environment.set('plantWorkStationCode', pm.collectionVariables.get('plantWorkStationCode'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('Has id', () => pm.expect(body).to.have.property('id'));",
+                  "if (body.id) {",
+                  "  pm.collectionVariables.set('workstationId', body.id);",
+                  "  pm.environment.set('workstationId', body.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{mesAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/plant/workstations",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Línea Postman\",\n  \"code\": \"{{plantWorkStationCode}}\",\n  \"description\": \"Estación de prueba\",\n  \"location\": \"Planta A\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Work Stations",
+          "description": "",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Is array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{mesAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/plant/workstations"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Recipe (nested)",
+          "description": "POST /api/plant/recipes — 2 phases, no inputs (supply is tenant-scoped).",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('plantRecipeName', 'Receta Postman ' + Date.now());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('Has id', () => pm.expect(body).to.have.property('id'));",
+                  "if (body.id) {",
+                  "  pm.collectionVariables.set('recipeId', body.id);",
+                  "  pm.environment.set('recipeId', body.id);",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Has name', () => pm.expect(pm.response.json()).to.have.property('name'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{mesAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/plant/recipes",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{plantRecipeName}}\",\n  \"finishedProductId\": \"product-demo-1\",\n  \"batchSize\": \"10.000\",\n  \"batchUnit\": \"UNIT\",\n  \"estimatedMinutes\": 60,\n  \"notes\": \"Creada desde Postman\",\n  \"phases\": [\n    {\n      \"order\": 1,\n      \"name\": \"Mezclado\",\n      \"workStationId\": \"{{workstationId}}\",\n      \"standardMinutes\": 15,\n      \"inputs\": []\n    },\n    {\n      \"order\": 2,\n      \"name\": \"Horneado\",\n      \"workStationId\": \"{{workstationId}}\",\n      \"standardMinutes\": 25,\n      \"inputs\": []\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Recipes",
+          "description": "",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{mesAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/plant/recipes"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Recipe Detail",
+          "description": "GET detail — captures phaseId1/phaseId2 and asserts totalStandardMinutes.",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Has totalStandardMinutes', () => pm.expect(body).to.have.property('totalStandardMinutes'));",
+                  "pm.test('totalStandardMinutes is 40', () => pm.expect(body.totalStandardMinutes).to.equal(40));",
+                  "pm.test('Has phases array', () => pm.expect(body.phases).to.be.an('array').with.lengthOf(2));",
+                  "if (body.phases && body.phases.length >= 2) {",
+                  "  const sorted = [...body.phases].sort((a, b) => a.order - b.order);",
+                  "  pm.collectionVariables.set('phaseId1', sorted[0].id);",
+                  "  pm.environment.set('phaseId1', sorted[0].id);",
+                  "  pm.collectionVariables.set('phaseId2', sorted[1].id);",
+                  "  pm.environment.set('phaseId2', sorted[1].id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{mesAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/plant/recipes/{{recipeId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Reorder Phases",
+          "description": "PATCH reorder — body is a JSON array [{ phaseId, newOrder }].",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Status 204', () => pm.response.to.have.status(204));"]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{mesAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/plant/recipes/{{recipeId}}/phases/reorder",
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  { \"phaseId\": \"{{phaseId1}}\", \"newOrder\": 2 },\n  { \"phaseId\": \"{{phaseId2}}\", \"newOrder\": 1 }\n]",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Recipe Detail (after reorder)",
+          "description": "",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const phases = pm.response.json().phases;",
+                  "pm.test('First phase order is 1', () => {",
+                  "  const first = phases.find(p => p.id === pm.collectionVariables.get('phaseId2'));",
+                  "  pm.expect(first.order).to.equal(1);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{mesAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/plant/recipes/{{recipeId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Recipe",
+          "description": "",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{mesAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/plant/recipes/{{recipeId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"notes\": \"Actualizada desde Postman\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Clone Recipe",
+          "description": "",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('Has id', () => pm.expect(body).to.have.property('id'));",
+                  "if (body.id) {",
+                  "  pm.collectionVariables.set('clonedRecipeId', body.id);",
+                  "  pm.environment.set('clonedRecipeId', body.id);",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Name contains copia', () => {",
+                  "  pm.expect(pm.response.json().name).to.include('(copia)');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{mesAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/plant/recipes/{{recipeId}}/clone"
+          },
+          "response": []
+        },
+        {
+          "name": "Add Phase Input — invalid supply (negative)",
+          "description": "POST with unknown supplyItemId — expect 404 (tenant from MES JWT).",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Status 404', () => pm.response.to.have.status(404));"]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{mesAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"supplyItemId\": \"00000000-0000-0000-0000-000000000099\",\n  \"quantityPerBatch\": \"1.000\",\n  \"unit\": \"UNIT\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/plant/phases/{{phaseId1}}/inputs"
+          },
+          "response": []
+        },
+        {
+          "name": "Add Phase Input",
+          "description": "Happy path — uses {{supplyItemId}} (seeded or from 02 Supply Items → Create). Must belong to operational tenant palos-de-lena.",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('Has id', () => pm.expect(body).to.have.property('id'));",
+                  "if (body.id) {",
+                  "  pm.collectionVariables.set('phaseInputId', body.id);",
+                  "  pm.environment.set('phaseInputId', body.id);",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Accept 201 or 404 when supplyItemId is from another tenant",
+                  "const code = pm.response.code;",
+                  "pm.test('Status 201 or 404', () => pm.expect([201, 404]).to.include(code));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{mesAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/plant/phases/{{phaseId1}}/inputs",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"supplyItemId\": \"{{supplyItemId}}\",\n  \"quantityPerBatch\": \"2.500\",\n  \"unit\": \"KILOGRAMS\",\n  \"isOptional\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Phase Input",
+          "description": "Runs after Add Phase Input when 201; may 404 if prior step failed.",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const code = pm.response.code;",
+                  "pm.test('Status 200 or 404', () => pm.expect([200, 404]).to.include(code));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{mesAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/api/plant/phases/{{phaseId1}}/inputs/{{phaseInputId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Soft Delete Recipe",
+          "description": "",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{mesAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/api/plant/recipes/{{recipeId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Soft Delete Cloned Recipe",
+          "description": "",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{mesAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/api/plant/recipes/{{clonedRecipeId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Work Station",
+          "description": "",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{mesAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/plant/workstations/{{workstationId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Actualizada desde Postman\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Soft Delete Work Station",
+          "description": "Soft delete — blocked with 409 if active phase executions exist on station.",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const code = pm.response.code;",
+                  "pm.test('Status 200 or 409', () => pm.expect([200, 409]).to.include(code));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{mesAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/api/plant/workstations/{{workstationId}}"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Plant — Production Orders",
+      "description": "MES-05 production order lifecycle + QA approve.\n\nPrerequisites: **MES Auth → Login Owner** (sets {{mesAccessToken}}).\n\nRun this folder top-to-bottom. Setup creates a 5-phase recipe (phase 2 requires QA).\n\n**No** `POST /api/plant/phases/complete` — chain completion is internal (`PhaseChainService`). Use unit tests or a dev script before **QA Approve Execution**.\n\nPause/resume require order status `IN_PROCESS` (operator runtime — not in MES-05 HTTP); those requests accept 200 or 409.",
+      "item": [
+        {
+          "name": "Setup — Create Work Station (Orders)",
+          "description": "Creates a workstation for the 5-phase orders recipe.",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('plantWorkStationCode', 'WS-ORD-' + Date.now());",
+                  "pm.environment.set('plantWorkStationCode', pm.collectionVariables.get('plantWorkStationCode'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "if (body.id) {",
+                  "  pm.collectionVariables.set('workstationId', body.id);",
+                  "  pm.environment.set('workstationId', body.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{mesAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/plant/workstations",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Línea OP Postman\",\n  \"code\": \"{{plantWorkStationCode}}\",\n  \"description\": \"Estación para órdenes de producción\",\n  \"location\": \"Planta B\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Setup — Create 5-Phase Recipe (Orders)",
+          "description": "5 phases; phase 2 has requiresQA=true for QA approve smoke.",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('plantRecipeName', 'Receta OP Postman ' + Date.now());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('Has id', () => pm.expect(body).to.have.property('id'));",
+                  "if (body.id) {",
+                  "  pm.collectionVariables.set('ordersRecipeId', body.id);",
+                  "  pm.environment.set('ordersRecipeId', body.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{mesAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/plant/recipes",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{plantRecipeName}}\",\n  \"finishedProductId\": \"product-op-demo\",\n  \"batchSize\": \"10.000\",\n  \"batchUnit\": \"UNIT\",\n  \"estimatedMinutes\": 120,\n  \"phases\": [\n    { \"order\": 1, \"name\": \"Prep\", \"workStationId\": \"{{workstationId}}\", \"standardMinutes\": 10, \"requiresQA\": false },\n    { \"order\": 2, \"name\": \"Mezclado\", \"workStationId\": \"{{workstationId}}\", \"standardMinutes\": 15, \"requiresQA\": true },\n    { \"order\": 3, \"name\": \"Reposo\", \"workStationId\": \"{{workstationId}}\", \"standardMinutes\": 20, \"requiresQA\": false },\n    { \"order\": 4, \"name\": \"Horneado\", \"workStationId\": \"{{workstationId}}\", \"standardMinutes\": 25, \"requiresQA\": false },\n    { \"order\": 5, \"name\": \"Empaque\", \"workStationId\": \"{{workstationId}}\", \"standardMinutes\": 12, \"requiresQA\": false }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Production Order",
+          "description": "POST /api/plant/orders — creates OP + 5 PENDING executions.",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const start = new Date();",
+                  "start.setUTCMinutes(start.getUTCMinutes() + 5);",
+                  "const end = new Date(start.getTime() + 8 * 60 * 60 * 1000);",
+                  "pm.collectionVariables.set('orderPlannedStartAt', start.toISOString());",
+                  "pm.collectionVariables.set('orderPlannedEndAt', end.toISOString());",
+                  "pm.environment.set('orderPlannedStartAt', start.toISOString());",
+                  "pm.environment.set('orderPlannedEndAt', end.toISOString());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('Has id', () => pm.expect(body).to.have.property('id'));",
+                  "pm.test('Status DRAFT', () => pm.expect(body.status).to.eql('DRAFT'));",
+                  "pm.test('Five executions', () => pm.expect(body.executions).to.have.lengthOf(5));",
+                  "pm.test('All executions PENDING', () => {",
+                  "  body.executions.forEach((ex) => pm.expect(ex.status).to.eql('PENDING'));",
+                  "});",
+                  "if (body.id) {",
+                  "  pm.collectionVariables.set('orderId', body.id);",
+                  "  pm.environment.set('orderId', body.id);",
+                  "}",
+                  "if (body.executions && body.executions.length) {",
+                  "  const qaExec = body.executions.find((ex) => ex.requiresQA === true) || body.executions[0];",
+                  "  pm.collectionVariables.set('executionId', qaExec.id);",
+                  "  pm.environment.set('executionId', qaExec.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{mesAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/plant/orders",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"recipeId\": \"{{ordersRecipeId}}\",\n  \"batchCount\": 2,\n  \"shift\": \"MORNING\",\n  \"priority\": \"NORMAL\",\n  \"plannedStartAt\": \"{{orderPlannedStartAt}}\",\n  \"plannedEndAt\": \"{{orderPlannedEndAt}}\",\n  \"notes\": \"OP creada desde Postman (MES-05)\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Production Orders",
+          "description": "GET /api/plant/orders",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Is array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{mesAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/plant/orders?status=DRAFT&shift=MORNING",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "plant", "orders"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "DRAFT"
+                },
+                {
+                  "key": "shift",
+                  "value": "MORNING"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Production Order Detail",
+          "description": "GET /api/plant/orders/:id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Matches orderId', () => pm.expect(body.id).to.eql(pm.environment.get('orderId')));",
+                  "pm.test('Five executions', () => pm.expect(body.executions).to.have.lengthOf(5));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{mesAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/plant/orders/{{orderId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Plan Production Order",
+          "description": "PATCH /api/plant/orders/:id/plan — first phase → READY.",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Status PLANNED', () => pm.expect(body.status).to.eql('PLANNED'));",
+                  "const first = body.executions.find((ex) => ex.phaseOrder === 1);",
+                  "pm.test('First execution READY', () => pm.expect(first.status).to.eql('READY'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{mesAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [],
+            "url": "{{baseUrl}}/api/plant/orders/{{orderId}}/plan"
+          },
+          "response": []
+        },
+        {
+          "name": "Pause Production Order",
+          "description": "POST /api/plant/orders/:id/pause — requires order IN_PROCESS (409 if still PLANNED).",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200 or 409', () => pm.expect([200, 409]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{mesAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/plant/orders/{{orderId}}/pause",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Pausa de prueba Postman\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Resume Production Order",
+          "description": "POST /api/plant/orders/:id/resume — requires order PAUSED.",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200 or 409', () => pm.expect([200, 409]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{mesAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/plant/orders/{{orderId}}/resume"
+          },
+          "response": []
+        },
+        {
+          "name": "QA Approve Execution",
+          "description": "POST /api/plant/executions/:id/qa-approve — run after internal completeExecution + COMPLETED QA phase (see README).",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const code = pm.response.code;",
+                  "pm.test('Status 200 or expected client error', () => pm.expect([200, 400, 404, 409]).to.include(code));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{mesAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/plant/executions/{{executionId}}/qa-approve",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"notes\": \"QA aprobada desde Postman\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Cancel Production Order",
+          "description": "POST /api/plant/orders/:id/cancel — after plan (PLANNED) reason only; add consumedInputsAction when IN_PROCESS/PAUSED.",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Status CANCELLED', () => pm.expect(body.status).to.eql('CANCELLED'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{mesAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/plant/orders/{{orderId}}/cancel",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Cancelación de prueba Postman\",\n  \"consumedInputsAction\": \"SCRAP\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
       "name": "02 Supply Items",
       "description": "All requests require x-tenant-id: {{tenantId}} header.\nRun order matters: Create first (captures supplyItemId), Delete last.",
       "item": [
@@ -989,7 +2250,23 @@
                 "type": "text/javascript",
                 "exec": [
                   "// Generate a unique codigoInterno per run to avoid @@unique([tenantId, codigoInterno]) conflicts",
-                  "pm.collectionVariables.set('supplyItemCode', 'SI-' + Date.now());"
+                  "pm.collectionVariables.set('supplyItemCode', 'SI-' + Date.now());",
+                  "",
+                  "// Debug: resolved values sent on this request (see Postman Console)",
+                  "const tenantId = pm.variables.get('tenantId');",
+                  "const categoryId = pm.variables.get('categoryId');",
+                  "const envName = pm.environment.name || '(no environment)';",
+                  "pm.environment.set('debugEnvName', envName);",
+                  "pm.environment.set('debugResolvedTenantId', tenantId || '(empty)');",
+                  "pm.environment.set('debugResolvedCategoryId', categoryId || '(empty)');",
+                  "pm.environment.set('debugExpectedTenantId', 'palos-de-lena');",
+                  "console.log('[Create Supply Item] environment:', envName);",
+                  "console.log('[Create Supply Item] x-tenant-id (tenantId):', tenantId);",
+                  "console.log('[Create Supply Item] body categoriaId (categoryId):', categoryId);",
+                  "console.log('[Create Supply Item] category must exist with SAME tenantId in DB (seed: palos-de-lena)');",
+                  "if (tenantId !== 'palos-de-lena') {",
+                  "  console.warn('⚠️ tenantId is NOT palos-de-lena — category lookup will fail with 400');",
+                  "}"
                 ]
               }
             },
@@ -998,6 +2275,12 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
+                  "const tenantId = pm.variables.get('tenantId');",
+                  "const categoryId = pm.variables.get('categoryId');",
+                  "if (pm.response.code === 400) {",
+                  "  console.error('400 — tenant/category mismatch. Sent x-tenant-id:', tenantId, '| categoriaId:', categoryId);",
+                  "  console.error('Fix: set tenantId = palos-de-lena in your Postman environment (must match category tenant in DB).');",
+                  "}",
                   "pm.test('Status 201', () => pm.response.to.have.status(201));",
                   "pm.test('Has id', () => pm.expect(pm.response.json()).to.have.property('id'));",
                   "pm.test('Has codigoInterno', () => pm.expect(pm.response.json()).to.have.property('codigoInterno'));",

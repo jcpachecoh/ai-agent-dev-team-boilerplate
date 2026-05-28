@@ -194,7 +194,7 @@ describe('MesAuthService', () => {
 
       await expect(
         service.login({ cedula: VALID_CEDULA, pin: VALID_PIN }, '192.168.1.1', TENANT_ID),
-      ).rejects.toThrow(new ForbiddenException('Access denied'));
+      ).rejects.toThrow(new UnauthorizedException(GENERIC_AUTH_MESSAGE));
 
       expect(bcryptMock.compare).not.toHaveBeenCalled();
     });

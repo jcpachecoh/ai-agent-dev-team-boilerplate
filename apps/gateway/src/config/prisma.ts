@@ -31,8 +31,7 @@ function createPrismaClient(): PrismaClient {
   return client;
 }
 
-export const prisma: PrismaClient =
-  global.__prisma ?? (global.__prisma = createPrismaClient());
+export const prisma: PrismaClient = global.__prisma ?? (global.__prisma = createPrismaClient());
 
 if (process.env['NODE_ENV'] !== 'production') {
   global.__prisma = prisma;

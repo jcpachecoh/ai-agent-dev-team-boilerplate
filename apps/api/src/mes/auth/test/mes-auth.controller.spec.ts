@@ -4,14 +4,14 @@ import type { Request } from 'express';
 import { MesAuthController } from '../controller/mes-auth.controller';
 import { MesAuthService } from '../service/mes-auth.service';
 
+const tokens = { accessToken: 'access-token', refreshToken: 'refresh-token' };
+
 const meResponse = {
   id: 'op-user-1',
   role: OperationalRole.OPERATOR,
   tenantId: 'tenant-abc',
   sedeId: null,
 };
-
-const tokens = { accessToken: 'access-token', refreshToken: 'refresh-token', operator: meResponse };
 
 const serviceMock = {
   login: jest.fn(),

@@ -2,7 +2,7 @@
 
 Automated API test collection for the RestOpsIQ platform.
 
-- **44 live endpoints** across Health, Auth, MES Auth, Supply Items, and Testlab modules.
+- **70 live endpoints** across Health, Auth, MES Auth, MES Plant, Plant Production Orders (MES-05), Supply Items, and Testlab modules.
 - **Postman Collection v2.1** — importable into Postman Desktop or runnable via Newman CLI.
 - **Dynamic variable capture** — POST create responses feed IDs into subsequent requests automatically.
 - **Auto-login pre-request script** — access token is refreshed transparently before any protected request.
@@ -13,7 +13,7 @@ Automated API test collection for the RestOpsIQ platform.
 
 | File                            | Purpose                                             |
 | ------------------------------- | --------------------------------------------------- |
-| `restopsiq-api.collection.json` | Main Postman collection (v2.1) with all 44 requests |
+| `restopsiq-api.collection.json` | Main Postman collection (v2.1) with all 70 requests |
 | `local.environment.json`        | Environment variables for `http://localhost:3001`   |
 | `README.md`                     | This file                                           |
 
@@ -40,36 +40,39 @@ The collection requires three pieces of data to exist in the local database befo
 | Variable             | What it must be                                           | How to obtain                                        |
 | -------------------- | --------------------------------------------------------- | ---------------------------------------------------- |
 | `email` / `password` | A registered user (`test@restopsiq.dev` / `TestPass123!`) | Run `pnpm db:seed` from `apps/api/`                  |
-| `tenantId`           | `aaaaaaaa-0000-0000-0000-000000000001`                    | Pre-populated in `local.environment.json` after seed |
-| `categoryId`         | `bbbbbbbb-0000-0000-0000-000000000002`                    | Pre-populated in `local.environment.json` after seed |
+| `tenantId`           | `palos-de-lena` (operational tenant)                      | Pre-populated in `local.environment.json` after seed |
+| `mesTenantId`        | `palos-de-lena` (same as `tenantId`)                      | Pre-populated after seed                             |
+| `categoryId`         | `bbbbbbbb-0000-0000-0000-000000000002`                    | Pre-populated after seed                             |
+| `supplyItemId`       | `ffffffff-0000-0000-0000-000000000006` (optional)         | Seeded item; overwritten by Create Supply Item       |
 
 > The signup request in the collection accepts both `201` (first run) and `409` (user already exists), so it is safe to run repeatedly.
 
-The `local.environment.json` already ships with the deterministic seed values:
+**TestLab** uses email/password auth only (no tenant). **Supply items, MES, and plant** share the operational tenant `palos-de-lena`.
+
+The `local.environment.json` ships with deterministic seed values:
 
 ```json
-"tenantId":   "aaaaaaaa-0000-0000-0000-000000000001"
-"categoryId": "bbbbbbbb-0000-0000-0000-000000000002"
+"tenantId":       "palos-de-lena"
+"mesTenantId":    "palos-de-lena"
+"categoryId":     "bbbbbbbb-0000-0000-0000-000000000002"
+"supplyItemId":   "ffffffff-0000-0000-0000-000000000006"
+"supplyItemCode": "SEED-ACEITE"
+"testLabUserId":  "cccccccc-0000-0000-0000-000000000003"
+"mesOwnerId":     "dddddddd-0000-0000-0000-000000000004"
+"mesOperatorId":  "eeeeeeee-0000-0000-0000-000000000005"
+"mesUserId":      "dddddddd-0000-0000-0000-000000000004"
 ```
 
-These match the fixed IDs in `apps/api/prisma/seed.ts`. Run `pnpm db:seed` and these values will work immediately.
-
-**MES operational users** (separate from TestLab auth) are also seeded for tenant `palos-de-lena`:
-
-```bash
-cd apps/api && npx prisma db seed
-# or: pnpm db:seed
-```
+Run `pnpm db:seed` from `apps/api/` and these values work immediately.
 
 | Variable            | Seeded value (local/dev only) |
 | ------------------- | ----------------------------- |
-| `mesTenantId`       | `palos-de-lena`               |
 | `mesOwnerCedula`    | `12345678` (OWNER)            |
 | `mesOwnerPin`       | `1234`                        |
 | `mesOperatorCedula` | `87654321` (OPERATOR)         |
 | `mesOperatorPin`    | `4321`                        |
 
-Credentials are **synthetic** and documented in `apps/api/prisma/seed.ts` — never use real production cédulas in Postman.
+MES credentials are **synthetic** and documented in `apps/api/prisma/seed.ts` — never use real production cédulas in Postman.
 
 ### 3. Newman installed (for CLI runs)
 
@@ -85,9 +88,9 @@ npm install -g newman
 2. Click **Import** → **Upload Files**.
 3. Select both files:
    - `postman/restopsiq-api.collection.json`
-   - `postman/local.environment.json`
+   - `postman/local.environment.json` (or `postman/recipes-local.environment.json` — same values, name **RestOpsIQ — Recipes Local**)
 4. In the top-right environment selector, choose **RestOpsIQ — Local**.
-5. Set `tenantId` and `categoryId` in the environment to real values from your local DB.
+5. After `pnpm db:seed`, `tenantId`, `mesTenantId`, `categoryId`, and `supplyItemId` are pre-filled in the environment.
 6. Click **Runner** → select the collection → **Run**.
 
 ---
@@ -121,6 +124,16 @@ newman run postman/restopsiq-api.collection.json \
 newman run postman/restopsiq-api.collection.json \
   --environment postman/local.environment.json \
   --folder "MES Auth"
+
+# MES Plant only (run MES Auth / Login Owner first)
+newman run postman/restopsiq-api.collection.json \
+  --environment postman/local.environment.json \
+  --folder "MES Plant"
+
+# Plant — Production Orders (MES-05; run MES Auth / Login Owner first)
+newman run postman/restopsiq-api.collection.json \
+  --environment postman/local.environment.json \
+  --folder "Plant — Production Orders"
 ```
 
 To save a JSON report:
@@ -142,8 +155,8 @@ newman run postman/restopsiq-api.collection.json \
 ```
 RestOpsIQ API
 │
-│  Pre-request: auto-login (skipped for /mes/* and /auth/* public routes)
-│  Auth: Bearer {{accessToken}} (MES requests override with {{mesAccessToken}})
+│  Pre-request: auto-login (skipped for /mes/*, /plant/*, and /auth/* public routes)
+│  Auth: Bearer {{accessToken}} (MES + Plant override with {{mesAccessToken}})
 │
 ├── 00 Health          (1 request)
 │   └── GET /api/
@@ -169,6 +182,34 @@ RestOpsIQ API
 │   ├── POST /api/mes/auth/logout            → Bearer {{mesAccessToken}}
 │   ├── POST /api/mes/auth/login (wrong PIN) → negative, 401
 │   └── POST /api/mes/auth/login (no tenant) → negative, 400
+│
+├── MES Plant          (16 requests — Bearer {{mesAccessToken}} only, no x-tenant-id)
+│   ├── POST   /api/plant/workstations              → captures workstationId
+│   ├── GET    /api/plant/workstations
+│   ├── POST   /api/plant/recipes (nested)          → captures recipeId
+│   ├── GET    /api/plant/recipes
+│   ├── GET    /api/plant/recipes/:id               → totalStandardMinutes, phaseId1/2
+│   ├── PATCH  /api/plant/recipes/:id/phases/reorder
+│   ├── PATCH  /api/plant/recipes/:id
+│   ├── POST   /api/plant/recipes/:id/clone         → captures clonedRecipeId
+│   ├── POST   /api/plant/phases/:id/inputs (invalid) → negative 404
+│   ├── POST   /api/plant/phases/:id/inputs
+│   ├── DELETE /api/plant/phases/:id/inputs/:inputId
+│   ├── DELETE /api/plant/recipes/:id
+│   ├── PATCH  /api/plant/workstations/:id
+│   └── DELETE /api/plant/workstations/:id          ← last (may 409 if active executions)
+│
+├── Plant — Production Orders (10 requests — MES-05; Bearer {{mesAccessToken}})
+│   ├── Setup: POST /api/plant/workstations
+│   ├── Setup: POST /api/plant/recipes (5 phases, phase 2 requiresQA)
+│   ├── POST   /api/plant/orders                    → captures orderId
+│   ├── GET    /api/plant/orders
+│   ├── GET    /api/plant/orders/:id                → captures executionId (QA phase preferred)
+│   ├── PATCH  /api/plant/orders/:id/plan           → first phase READY
+│   ├── POST   /api/plant/orders/:id/pause          → 200 or 409 (needs IN_PROCESS)
+│   ├── POST   /api/plant/orders/:id/resume         → 200 or 409 (needs PAUSED)
+│   ├── POST   /api/plant/executions/:id/qa-approve → after internal chain complete
+│   └── POST   /api/plant/orders/:id/cancel
 │
 ├── 02 Supply Items    (7 requests — x-tenant-id: {{tenantId}} on every request)
 │   ├── POST   /api/supply-items              → captures supplyItemId
@@ -212,7 +253,7 @@ The collection-level pre-request script fires before every non-auth request:
 
 This means the **Login request in the `01 Auth` folder is also the canonical setup step** — running it first ensures all subsequent requests have a valid token without relying on the pre-request script alone.
 
-MES routes (`/mes/auth/*`, `/mes/users/*`) are **excluded** from the auto-login script so they never overwrite `{{mesAccessToken}}` with a TestLab token.
+MES routes (`/mes/auth/*`, `/mes/users/*`) and plant routes (`/plant/*`) are **excluded** from the auto-login script so they never overwrite `{{mesAccessToken}}` with a TestLab token.
 
 ---
 
@@ -253,19 +294,129 @@ All MES Postman credentials are **synthetic local/dev values** from the seed scr
 
 ---
 
+## MES Plant (master data)
+
+Plant routes use the **MES JWT** only. Tenant scope comes from the token (`palos-de-lena` after seed), not from `x-tenant-id`.
+
+### Flow
+
+1. Run **MES Auth → Login Owner** (sets `{{mesAccessToken}}`).
+2. Run the **MES Plant** folder in order (workstation → recipe → reorder → cleanup).
+
+### Headers
+
+| Route group                | Auth                                                   | Tenant                        |
+| -------------------------- | ------------------------------------------------------ | ----------------------------- |
+| `POST /api/mes/auth/login` | `noauth` + `x-tenant-id: {{mesTenantId}}`              | `palos-de-lena` (header)      |
+| `/api/plant/*`             | `Bearer {{mesAccessToken}}`                            | JWT claim (`palos-de-lena`)   |
+| `/api/supply-items/*`      | `Bearer {{accessToken}}` + `x-tenant-id: {{tenantId}}` | `palos-de-lena` (same tenant) |
+
+### Phase inputs and supply items
+
+`POST /api/plant/phases/:id/inputs` validates `supplyItemId` with `SupplyItemsService.findOne` using the tenant from the MES JWT. Use `{{supplyItemId}}` from the seed or from **02 Supply Items → Create** (both under `palos-de-lena`).
+
+The collection includes:
+
+- **Add Phase Input — invalid supply (negative)** — always expects 404.
+- **Add Phase Input** — expects 201 when `{{supplyItemId}}` exists for the operational tenant.
+
+### Smoke checklist (manual)
+
+| Scenario                                      | How to verify                                                                     |
+| --------------------------------------------- | --------------------------------------------------------------------------------- |
+| Nested recipe + `totalStandardMinutes`        | Create Recipe → Get Recipe Detail asserts `totalStandardMinutes === 40` (15 + 25) |
+| Phase reorder                                 | Reorder Phases → Get Recipe Detail (after reorder) checks swapped `order`         |
+| Invalid supply on input                       | Add Phase Input — invalid supply → 404                                            |
+| Workstation soft delete with active execution | Create execution in DB, then DELETE workstation → expect 409                      |
+
+---
+
+## Plant — Production Orders (MES-05)
+
+Production order lifecycle endpoints use the **MES JWT** (`Bearer {{mesAccessToken}}`). Tenant scope comes from the token, not `x-tenant-id`.
+
+### HTTP routes (ticket scope)
+
+| Method | Path                                   | Notes                                                                                 |
+| ------ | -------------------------------------- | ------------------------------------------------------------------------------------- |
+| POST   | `/api/plant/orders`                    | Creates order + one execution per recipe phase (all `PENDING`)                        |
+| GET    | `/api/plant/orders`                    | Filters: `status`, `shift`, `priority`, date range                                    |
+| GET    | `/api/plant/orders/:id`                | Order detail + executions                                                             |
+| PATCH  | `/api/plant/orders/:id/plan`           | `DRAFT` → `PLANNED`; first phase → `READY`                                            |
+| POST   | `/api/plant/orders/:id/pause`          | Requires `IN_PROCESS`; body: `{ "reason": "..." }`                                    |
+| POST   | `/api/plant/orders/:id/resume`         | Requires `PAUSED`                                                                     |
+| POST   | `/api/plant/orders/:id/cancel`         | Body: `{ "reason": "..." }`; add `consumedInputsAction` when `IN_PROCESS` or `PAUSED` |
+| POST   | `/api/plant/executions/:id/qa-approve` | QA supervisor approval after phase reaches `COMPLETED`                                |
+
+**Not in MES-05:** there is no `POST /api/plant/phases/complete`. Phase chain progression is handled internally by `PhaseChainService.completeExecution` until a later ticket exposes operator HTTP.
+
+### Postman flow
+
+1. **MES Auth → Login Owner** (sets `{{mesAccessToken}}`).
+2. Run **Plant — Production Orders** top-to-bottom (includes setup workstation + 5-phase recipe).
+3. **QA Approve Execution** expects a prior internal `completeExecution` (unit tests or dev script). Without it, the request may return 409/400.
+4. **Pause / Resume** accept `200` or `409` in tests — MES-05 does not expose HTTP to move the order to `IN_PROCESS` (operator runtime).
+
+### Cancel rules
+
+| Order status           | `reason` | `consumedInputsAction`         |
+| ---------------------- | -------- | ------------------------------ |
+| `DRAFT`, `PLANNED`     | Required | Optional                       |
+| `IN_PROCESS`, `PAUSED` | Required | Required (`KEEP` or `REVERSE`) |
+
+### WebSocket — `phase:status_changed`
+
+Connect to the API WebSocket namespace with the MES JWT (same token as HTTP). The server joins clients to tenant rooms.
+
+**Event:** `phase:status_changed`
+
+**Payload:**
+
+```json
+{
+  "orderId": "order-uuid",
+  "phaseId": "phase-uuid",
+  "stationId": "work-station-uuid",
+  "status": "READY"
+}
+```
+
+Emitted on plan, pause, resume, cancel, internal chain complete, and qa-approve. Use a Socket.IO client or browser devtools to observe events during manual smoke.
+
+### Smoke scenarios
+
+| Scenario            | How to verify                                                                   |
+| ------------------- | ------------------------------------------------------------------------------- |
+| Create → detail     | 5 executions, all `PENDING`                                                     |
+| Plan                | Order `PLANNED`; execution with `order=1` is `READY`                            |
+| Cancel (PLANNED)    | `reason` only → order `CANCELLED`                                               |
+| Cancel (IN_PROCESS) | `reason` + `consumedInputsAction`                                               |
+| QA path             | Run `PhaseChainService.completeExecution` in tests/dev, then Postman qa-approve |
+| WebSocket           | Observe `phase:status_changed` on plan / qa-approve                             |
+
+---
+
 ## Dynamic Variable Capture
 
 Every `POST` create request captures the returned `id` in its `Tests` script:
 
-| Request                                         | Variable set    |
-| ----------------------------------------------- | --------------- |
-| POST /api/supply-items                          | `supplyItemId`  |
-| POST /api/testlab/projects                      | `projectId`     |
-| POST /api/testlab/projects/:id/milestones       | `milestoneId`   |
-| POST /api/testlab/projects/:id/requirements     | `requirementId` |
-| POST /api/testlab/projects/:id/suites           | `suiteId`       |
-| POST /api/testlab/projects/:id/suites/:id/cases | `caseId`        |
-| POST /api/testlab/projects/:id/runs             | `runId`         |
+| Request                                         | Variable set           |
+| ----------------------------------------------- | ---------------------- |
+| POST /api/supply-items                          | `supplyItemId`         |
+| POST /api/testlab/projects                      | `projectId`            |
+| POST /api/testlab/projects/:id/milestones       | `milestoneId`          |
+| POST /api/testlab/projects/:id/requirements     | `requirementId`        |
+| POST /api/testlab/projects/:id/suites           | `suiteId`              |
+| POST /api/testlab/projects/:id/suites/:id/cases | `caseId`               |
+| POST /api/testlab/projects/:id/runs             | `runId`                |
+| POST /api/plant/workstations                    | `workstationId`        |
+| POST /api/plant/recipes                         | `recipeId`             |
+| POST /api/plant/recipes/:id/clone               | `clonedRecipeId`       |
+| GET /api/plant/recipes/:id                      | `phaseId1`, `phaseId2` |
+| POST /api/plant/phases/:id/inputs               | `phaseInputId`         |
+| POST /api/plant/orders (MES-05 setup recipe)    | `ordersRecipeId`       |
+| POST /api/plant/orders                          | `orderId`              |
+| GET /api/plant/orders/:id                       | `executionId`          |
 
 **Uniqueness note:**
 
@@ -295,37 +446,52 @@ Login
 
 ## Environment Variables Reference
 
-| Variable               | Required before run               | Set by                                                   |
-| ---------------------- | --------------------------------- | -------------------------------------------------------- |
-| `baseUrl`              | Yes                               | `local.environment.json`                                 |
-| `email`                | Yes                               | `local.environment.json`                                 |
-| `password`             | Yes                               | `local.environment.json`                                 |
-| `tenantId`             | Yes                               | `local.environment.json` (manual)                        |
-| `categoryId`           | Yes (for Supply Items)            | `local.environment.json` (manual)                        |
-| `authEmail`            | Yes (for RES-226 email endpoints) | `local.environment.json` (defaults to seeded user)       |
-| `resetToken`           | Manual (for Reset Password)       | Extracted from password-reset email URL                  |
-| `otpCode`              | Manual (for Verify Email)         | Extracted from verification email or Redis               |
-| `newPassword`          | Yes (for Reset Password)          | `local.environment.json` (defaults to `NewPassword456!`) |
-| `accessToken`          | Auto                              | Pre-request script / Login test                          |
-| `refreshToken`         | Auto                              | Login test                                               |
-| `accessTokenExpiresAt` | Auto                              | Pre-request script / Login test                          |
-| `supplyItemId`         | Auto                              | Create Supply Item test                                  |
-| `supplyItemCode`       | Auto                              | Create Supply Item pre-request                           |
-| `projectId`            | Auto                              | Create Project test                                      |
-| `projectSlug`          | Auto                              | Create Project pre-request                               |
-| `milestoneId`          | Auto                              | Create Milestone test                                    |
-| `requirementId`        | Auto                              | Create Requirement test                                  |
-| `suiteId`              | Auto                              | Create Suite test                                        |
-| `caseId`               | Auto                              | Create Case test                                         |
-| `runId`                | Auto                              | Create Run test                                          |
-| `mesTenantId`          | Yes (MES login)                   | `local.environment.json`                                 |
-| `mesOwnerCedula`       | Yes (MES login)                   | `local.environment.json` (synthetic, dev only)           |
-| `mesOwnerPin`          | Yes (MES login)                   | `local.environment.json` (synthetic, dev only)           |
-| `mesOperatorCedula`    | Optional (operator login)         | `local.environment.json` (synthetic, dev only)           |
-| `mesOperatorPin`       | Optional (operator login)         | `local.environment.json` (synthetic, dev only)           |
-| `mesAccessToken`       | Auto                              | MES Login Owner test                                     |
-| `mesRefreshToken`      | Auto                              | MES Login Owner test                                     |
-| `mesUserId`            | Auto                              | MES Login Owner / Me test                                |
+| Variable                | Required before run               | Set by                                                     |
+| ----------------------- | --------------------------------- | ---------------------------------------------------------- |
+| `baseUrl`               | Yes                               | `local.environment.json`                                   |
+| `email`                 | Yes                               | `local.environment.json`                                   |
+| `password`              | Yes                               | `local.environment.json`                                   |
+| `tenantId`              | Yes                               | `local.environment.json` (`palos-de-lena` after seed)      |
+| `categoryId`            | Yes (for Supply Items)            | `local.environment.json` (seed id)                         |
+| `supplyItemId`          | Yes (MES phase input)             | `local.environment.json` (seed id)                         |
+| `supplyItemCode`        | Auto / seed reference             | `SEED-ACEITE`; pre-request uses `SI-<timestamp>` on create |
+| `testLabUserId`         | Reference                         | Seeded `UserTestLab` id                                    |
+| `mesOwnerId`            | Reference / MES role tests        | Seeded OWNER id                                            |
+| `mesOperatorId`         | Reference                         | Seeded OPERATOR id                                         |
+| `authEmail`             | Yes (for RES-226 email endpoints) | `local.environment.json` (defaults to seeded user)         |
+| `resetToken`            | Manual (for Reset Password)       | Extracted from password-reset email URL                    |
+| `otpCode`               | Manual (for Verify Email)         | Extracted from verification email or Redis                 |
+| `newPassword`           | Yes (for Reset Password)          | `local.environment.json` (defaults to `NewPassword456!`)   |
+| `accessToken`           | Auto                              | Pre-request script / Login test                            |
+| `refreshToken`          | Auto                              | Login test                                                 |
+| `accessTokenExpiresAt`  | Auto                              | Pre-request script / Login test                            |
+| `projectId`             | Auto                              | Create Project test                                        |
+| `projectSlug`           | Auto                              | Create Project pre-request                                 |
+| `milestoneId`           | Auto                              | Create Milestone test                                      |
+| `requirementId`         | Auto                              | Create Requirement test                                    |
+| `suiteId`               | Auto                              | Create Suite test                                          |
+| `caseId`                | Auto                              | Create Case test                                           |
+| `runId`                 | Auto                              | Create Run test                                            |
+| `mesTenantId`           | Yes (MES login)                   | `local.environment.json`                                   |
+| `mesOwnerCedula`        | Yes (MES login)                   | `local.environment.json` (synthetic, dev only)             |
+| `mesOwnerPin`           | Yes (MES login)                   | `local.environment.json` (synthetic, dev only)             |
+| `mesOperatorCedula`     | Optional (operator login)         | `local.environment.json` (synthetic, dev only)             |
+| `mesOperatorPin`        | Optional (operator login)         | `local.environment.json` (synthetic, dev only)             |
+| `mesAccessToken`        | Auto                              | MES Login Owner test                                       |
+| `mesRefreshToken`       | Auto                              | MES Login Owner test                                       |
+| `mesUserId`             | Auto                              | MES Login Owner / Me test                                  |
+| `workstationId`         | Auto                              | MES Plant / Create Work Station                            |
+| `recipeId`              | Auto                              | MES Plant / Create Recipe                                  |
+| `clonedRecipeId`        | Auto                              | MES Plant / Clone Recipe                                   |
+| `phaseId1` / `phaseId2` | Auto                              | MES Plant / Get Recipe Detail                              |
+| `phaseInputId`          | Auto                              | MES Plant / Add Phase Input                                |
+| `plantWorkStationCode`  | Auto                              | MES Plant pre-request (unique code)                        |
+| `plantRecipeName`       | Auto                              | MES Plant pre-request (unique name)                        |
+| `ordersRecipeId`        | Auto                              | Plant — Production Orders / setup recipe                   |
+| `orderId`               | Auto                              | Plant — Production Orders / Create Production Order        |
+| `executionId`           | Auto                              | Plant — Production Orders / Get Order Detail               |
+| `orderPlannedStartAt`   | Auto                              | Create Production Order pre-request                        |
+| `orderPlannedEndAt`     | Auto                              | Create Production Order pre-request                        |
 
 ### RES-226 email endpoint manual setup
 
@@ -349,14 +515,15 @@ The `reset-password` and `verify-email` happy-path requests depend on tokens del
 
 ## Troubleshooting
 
-| Symptom                                  | Likely cause                                             | Fix                                                     |
-| ---------------------------------------- | -------------------------------------------------------- | ------------------------------------------------------- |
-| All supply-items requests return 403/404 | `tenantId` is wrong or empty                             | Set a real tenant UUID in the environment               |
-| `Create Supply Item` returns 400         | `categoryId` is wrong or empty                           | Set a real SupplyCategory UUID for the same tenant      |
-| `Create Supply Item` returns 409         | `codigoInterno` already exists (timestamp collision)     | Extremely unlikely; re-run                              |
-| Testlab GET returns 404                  | POST create ran after GET (wrong order)                  | Run collection in folder order                          |
-| `Refresh` returns 401                    | `refreshToken` is stale or was invalidated by Logout     | Run Login again before Refresh                          |
-| Pre-request auto-login silently fails    | `email`/`password` vars are empty or DB has no such user | Seed the user and set correct env vars                  |
-| `Reset Password` returns 400 (not found) | `{{resetToken}}` is empty or already used                | Re-run Forgot Password, extract fresh token from email  |
-| `Verify Email` returns 400 (expired)     | `{{otpCode}}` is expired (TTL 15 min) or already used    | Re-run Resend Verification, copy fresh OTP from email   |
-| Email requests succeed but no email sent | Redis is not running or BullMQ worker is not started     | `docker compose up -d redis` and start the email worker |
+| Symptom                                  | Likely cause                                             | Fix                                                                                                                                 |
+| ---------------------------------------- | -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| All supply-items requests return 403/404 | `tenantId` is wrong or empty                             | Use `palos-de-lena` (same as `mesTenantId`) after seed                                                                              |
+| `Create Supply Item` returns 400         | `x-tenant-id` ≠ `palos-de-lena` (category tenant in DB)  | Set `tenantId` = `palos-de-lena` in **active** environment; re-import `recipes-local.environment.json` if you use **Recipes Local** |
+| `Create Supply Item` 400 after seed      | Old env still has `tenantId: aaaaaaaa-...`               | Open environment → `tenantId` must be `palos-de-lena`; check `debugResolvedTenantId` after running request (Console + env vars)     |
+| `Create Supply Item` returns 409         | `codigoInterno` already exists (timestamp collision)     | Extremely unlikely; re-run                                                                                                          |
+| Testlab GET returns 404                  | POST create ran after GET (wrong order)                  | Run collection in folder order                                                                                                      |
+| `Refresh` returns 401                    | `refreshToken` is stale or was invalidated by Logout     | Run Login again before Refresh                                                                                                      |
+| Pre-request auto-login silently fails    | `email`/`password` vars are empty or DB has no such user | Seed the user and set correct env vars                                                                                              |
+| `Reset Password` returns 400 (not found) | `{{resetToken}}` is empty or already used                | Re-run Forgot Password, extract fresh token from email                                                                              |
+| `Verify Email` returns 400 (expired)     | `{{otpCode}}` is expired (TTL 15 min) or already used    | Re-run Resend Verification, copy fresh OTP from email                                                                               |
+| Email requests succeed but no email sent | Redis is not running or BullMQ worker is not started     | `docker compose up -d redis` and start the email worker                                                                             |

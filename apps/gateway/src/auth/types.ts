@@ -11,9 +11,9 @@ export enum UserRole {
 // ─── JWT payload ─────────────────────────────────────────────────────────────
 
 export interface JwtPayload {
-  sub: string;       // OperationalUser id
+  sub: string; // OperationalUser id
   tenantId: string;
-  role: string;      // UserRole value
+  role: string; // UserRole value
   sedeId?: string;
   iat: number;
   exp: number;

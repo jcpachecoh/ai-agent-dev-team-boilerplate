@@ -64,7 +64,7 @@ export class MesAuthService implements IMesAuthService {
     }
 
     if (!user.isActive) {
-      throw new ForbiddenException('Access denied');
+      throw new UnauthorizedException(GENERIC_AUTH_MESSAGE);
     }
 
     if (user.lockedUntil && user.lockedUntil > new Date()) {
