@@ -1,1 +1,0 @@
-export { LinearChip } from './LinearChip';

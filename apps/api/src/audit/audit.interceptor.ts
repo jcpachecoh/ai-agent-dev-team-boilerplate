@@ -28,7 +28,7 @@ export class AuditInterceptor implements NestInterceptor {
     const ipAddress = (req.headers['x-forwarded-for'] as string) ?? req.socket.remoteAddress ?? '';
     const userAgent = req.headers['user-agent'] ?? '';
 
-    // Extract entity + entityId from the URL: /api/testlab/{entity}/{id}
+    // Extract entity + entityId from the URL: /api/{entity}/{id}
     const segments = req.path
       .replace(/^\/api\//, '')
       .split('/')

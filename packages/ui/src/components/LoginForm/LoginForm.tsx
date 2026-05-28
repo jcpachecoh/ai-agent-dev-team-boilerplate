@@ -47,7 +47,7 @@ export function LoginForm({
 
   return (
     <form className={styles.container} onSubmit={handleSubmit}>
-      <LoginTitle variant={theme} />
+      <LoginTitle theme={theme} />
 
       <div className={cardClass}>
         <LoginFields

@@ -1,11 +1,15 @@
 import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
-import { Mail, Lock } from 'lucide-react';
+import { Mail, Lock, Search } from 'lucide-react';
 
 import { darkCanvas, lightCanvas, themeCanvas } from '../../../.storybook/canvas';
 import { Input } from './Input';
 
-const meta: Meta<typeof Input> = {
+type InputStoryArgs = React.ComponentProps<typeof Input> & {
+  showRightIcon?: boolean;
+};
+
+const meta: Meta<InputStoryArgs> = {
   title: 'Atomos/Input',
   component: Input,
   tags: ['autodocs'],
@@ -14,10 +18,14 @@ const meta: Meta<typeof Input> = {
     theme: 'light',
     size: 'md',
     showIcon: true,
+    showRightIcon: false,
     placeholder: 'Correo electrónico',
   },
   argTypes: {
+    leftIcon: { control: false, table: { disable: true } },
+    rightIcon: { control: false, table: { disable: true } },
     showIcon: { control: 'boolean', description: 'Toggle left icon visibility' },
+    showRightIcon: { control: 'boolean', description: 'Toggle right icon visibility' },
     size: {
       control: 'radio',
       options: ['sm', 'md', 'lg'],
@@ -26,7 +34,13 @@ const meta: Meta<typeof Input> = {
     disabled: { control: 'boolean' },
     error: { control: 'boolean' },
   },
-  render: (args) => <Input {...args} leftIcon={<Mail />} />,
+  render: ({ showRightIcon, leftIcon: _leftIcon, rightIcon: _rightIcon, ...args }) => (
+    <Input
+      {...args}
+      leftIcon={<Mail />}
+      rightIcon={showRightIcon ? <Search aria-hidden /> : undefined}
+    />
+  ),
 };
 
 export default meta;
@@ -72,7 +86,9 @@ export const Password: Story = {
     showPasswordToggle: true,
     theme: 'dark',
   },
-  render: (args) => <Input {...args} leftIcon={<Lock />} />,
+  render: ({ leftIcon: _leftIcon, rightIcon: _rightIcon, ...args }) => (
+    <Input {...args} leftIcon={<Lock />} />
+  ),
   decorators: [darkCanvas],
 };
 

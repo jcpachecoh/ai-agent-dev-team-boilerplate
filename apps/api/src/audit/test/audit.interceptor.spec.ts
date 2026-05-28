@@ -49,7 +49,7 @@ describe('AuditInterceptor', () => {
   });
 
   it('passes through GET requests without logging', (done) => {
-    const context = buildContext('GET', '/api/testlab/projects');
+    const context = buildContext('GET', '/api/supply-items');
     interceptor.intercept(context, buildHandler([])).subscribe(() => {
       expect(auditServiceMock.log).not.toHaveBeenCalled();
       done();
@@ -57,7 +57,7 @@ describe('AuditInterceptor', () => {
   });
 
   it('logs CREATE action for POST requests with x-forwarded-for header', async () => {
-    const context = buildContext('POST', '/api/testlab/projects', {
+    const context = buildContext('POST', '/api/supply-items', {
       user: { sub: 'user-1' },
       xForwardedFor: '10.0.0.1',
       userAgent: 'jest',
@@ -74,7 +74,7 @@ describe('AuditInterceptor', () => {
   });
 
   it('logs UPDATE action for PATCH requests', async () => {
-    const context = buildContext('PATCH', '/api/testlab/projects/proj-1', {
+    const context = buildContext('PATCH', '/api/supply-items/item-1', {
       xForwardedFor: '10.0.0.1',
       userAgent: 'jest',
     });
@@ -90,7 +90,7 @@ describe('AuditInterceptor', () => {
   });
 
   it('logs UPDATE action for PUT requests', async () => {
-    const context = buildContext('PUT', '/api/testlab/projects/proj-1', {
+    const context = buildContext('PUT', '/api/supply-items/item-1', {
       xForwardedFor: '10.0.0.1',
       userAgent: 'jest',
     });
@@ -106,7 +106,7 @@ describe('AuditInterceptor', () => {
   });
 
   it('logs DELETE action for DELETE requests', async () => {
-    const context = buildContext('DELETE', '/api/testlab/projects/proj-1', {
+    const context = buildContext('DELETE', '/api/supply-items/item-1', {
       xForwardedFor: '10.0.0.1',
       userAgent: 'jest',
     });
@@ -122,7 +122,7 @@ describe('AuditInterceptor', () => {
   });
 
   it('uses socket.remoteAddress when x-forwarded-for header is absent', async () => {
-    const context = buildContext('POST', '/api/testlab/projects', {
+    const context = buildContext('POST', '/api/supply-items', {
       remoteAddress: '192.168.1.1',
       userAgent: 'jest',
     });
@@ -138,7 +138,7 @@ describe('AuditInterceptor', () => {
   });
 
   it('uses empty string when user-agent header is absent', async () => {
-    const context = buildContext('POST', '/api/testlab/projects', {
+    const context = buildContext('POST', '/api/supply-items', {
       xForwardedFor: '10.0.0.1',
     });
     await new Promise<void>((resolve) =>
@@ -153,7 +153,7 @@ describe('AuditInterceptor', () => {
   });
 
   it('extracts first element when x-forwarded-for is an array', async () => {
-    const context = buildContext('POST', '/api/testlab/projects', {
+    const context = buildContext('POST', '/api/supply-items', {
       xForwardedFor: ['10.0.0.1', '10.0.0.2'],
       userAgent: 'jest',
     });
@@ -169,7 +169,7 @@ describe('AuditInterceptor', () => {
   });
 
   it('extracts first element when user-agent is an array', async () => {
-    const context = buildContext('POST', '/api/testlab/projects', {
+    const context = buildContext('POST', '/api/supply-items', {
       xForwardedFor: '10.0.0.1',
       userAgent: ['bot/1.0', 'bot/2.0'],
     });
@@ -185,7 +185,7 @@ describe('AuditInterceptor', () => {
   });
 
   it('uses unknown entityId when response has no id', async () => {
-    const context = buildContext('POST', '/api/testlab/projects', {
+    const context = buildContext('POST', '/api/supply-items', {
       xForwardedFor: '10.0.0.1',
       userAgent: 'jest',
     });
@@ -214,7 +214,7 @@ describe('AuditInterceptor', () => {
   });
 
   it('logs without userId when user is not attached to request', async () => {
-    const context = buildContext('POST', '/api/testlab/projects', {
+    const context = buildContext('POST', '/api/supply-items', {
       xForwardedFor: '10.0.0.1',
       userAgent: 'jest',
     });

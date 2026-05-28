@@ -1,18 +1,19 @@
-import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
 
-import { darkCanvas, lightCanvas } from '../../../.storybook/canvas';
+import { darkCanvas, lightCanvas, themeCanvas } from '../../../.storybook/canvas';
 import LoginTitle from '.';
 
 const meta: Meta<typeof LoginTitle> = {
   title: 'Atomos/LoginTitle',
   component: LoginTitle,
   tags: ['autodocs'],
+  decorators: [themeCanvas],
   args: {
-    variant: 'light',
+    theme: 'light',
+    titleSize: 'md',
   },
   argTypes: {
-    variant: {
+    theme: {
       control: 'radio',
       options: ['light', 'dark'],
     },
@@ -26,23 +27,25 @@ const meta: Meta<typeof LoginTitle> = {
 export default meta;
 type Story = StoryObj<typeof LoginTitle>;
 
+export const Default: Story = {};
+
 export const Light: Story = {
   decorators: [lightCanvas],
-  args: { variant: 'light' },
+  args: { theme: 'light' },
 };
 
 export const Dark: Story = {
   decorators: [darkCanvas],
-  args: { variant: 'dark' },
+  args: { theme: 'dark' },
 };
 
 export const TitleSizeMatrix: Story = {
   decorators: [darkCanvas],
   render: () => (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      <LoginTitle variant="dark" titleSize="sm" />
-      <LoginTitle variant="dark" titleSize="md" />
-      <LoginTitle variant="dark" titleSize="lg" />
+      <LoginTitle theme="dark" titleSize="sm" />
+      <LoginTitle theme="dark" titleSize="md" />
+      <LoginTitle theme="dark" titleSize="lg" />
     </div>
   ),
 };
@@ -50,7 +53,7 @@ export const TitleSizeMatrix: Story = {
 export const WithStatusDot: Story = {
   decorators: [darkCanvas],
   args: {
-    variant: 'dark',
+    theme: 'dark',
     title: 'Planificación de Despachos',
     subtitle: 'Sistema operativo · Lunes, 11 de Mayo 2026',
     statusColor: '#00c950',

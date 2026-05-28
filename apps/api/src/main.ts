@@ -28,17 +28,11 @@ async function bootstrap() {
 
   const config = new DocumentBuilder()
     .setTitle('RestOpsIQ API')
-    .setDescription('RestOpsIQ Testlab — test management platform API')
+    .setDescription('RestOpsIQ platform API')
     .setVersion('1.0')
     .addBearerAuth()
     .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT' }, 'refresh-token')
     .addTag('auth', 'Authentication')
-    .addTag('projects', 'Testlab projects')
-    .addTag('milestones', 'Project milestones')
-    .addTag('requirements', 'Project requirements')
-    .addTag('suites', 'Test suites')
-    .addTag('cases', 'Test cases')
-    .addTag('runs', 'Test runs')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
