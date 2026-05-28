@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { StockUnit } from '@prisma/client';
+import { PhaseExecutionStatus, ProductionOrderStatus, StockUnit } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { PlantRepository } from '../repository/plant.repository';
@@ -14,12 +14,20 @@ const txMock = {
   },
   productionPhase: {
     create: jest.fn(),
+    findMany: jest.fn(),
     updateMany: jest.fn(),
   },
   phaseInput: {
     create: jest.fn(),
     findFirst: jest.fn(),
     delete: jest.fn(),
+  },
+  productionOrder: {
+    create: jest.fn(),
+  },
+  phaseExecution: {
+    create: jest.fn(),
+    findFirst: jest.fn(),
   },
 };
 
@@ -49,6 +57,15 @@ const prismaMock = {
   },
   phaseExecution: {
     findFirst: jest.fn(),
+    update: jest.fn(),
+  },
+  productionOrder: {
+    findMany: jest.fn(),
+    findFirst: jest.fn(),
+    update: jest.fn(),
+  },
+  operatorSession: {
+    findMany: jest.fn(),
   },
   $transaction: jest.fn(),
 };
@@ -116,6 +133,18 @@ describe('PlantRepository', () => {
       expect(prismaMock.workStation.update).toHaveBeenCalledWith({
         where: { id: 'ws-1' },
         data: { isActive: false },
+      });
+    });
+
+    it('hasActiveExecutionsForWorkStation queries non-terminal executions by tenant and station', async () => {
+      prismaMock.phaseExecution.findFirst.mockResolvedValue({ id: 'exec-1' });
+      await repository.hasActiveExecutionsForWorkStation(tenantId, 'ws-1');
+      expect(prismaMock.phaseExecution.findFirst).toHaveBeenCalledWith({
+        where: {
+          tenantId,
+          workStationId: 'ws-1',
+          status: { not: PhaseExecutionStatus.COMPLETED },
+        },
       });
     });
 
@@ -369,6 +398,174 @@ describe('PlantRepository', () => {
 
       expect(prismaMock.phaseInput.delete).toHaveBeenCalledWith({ where: { id: 'input-1' } });
       expect(result).toEqual({ id: 'input-1' });
+    });
+  });
+
+  describe('production orders', () => {
+    it('createOrderWithExecutionsTx creates order and one PENDING execution per phase', async () => {
+      const plannedStartAt = new Date('2026-05-27T08:00:00Z');
+      const plannedEndAt = new Date('2026-05-27T12:00:00Z');
+      const order = { id: 'order-1', tenantId, number: '2026-1' };
+
+      txMock.productionOrder.create.mockResolvedValue(order);
+      txMock.productionPhase.findMany.mockResolvedValue([
+        {
+          id: 'phase-1',
+          workStationId: 'ws-1',
+          standardMinutes: 15,
+        },
+        {
+          id: 'phase-2',
+          workStationId: 'ws-2',
+          standardMinutes: 25,
+        },
+      ]);
+      txMock.phaseExecution.create
+        .mockResolvedValueOnce({ id: 'exec-1', status: PhaseExecutionStatus.PENDING })
+        .mockResolvedValueOnce({ id: 'exec-2', status: PhaseExecutionStatus.PENDING });
+
+      const result = await repository.createOrderWithExecutionsTx({
+        tenantId,
+        number: '2026-1',
+        recipeId: 'recipe-1',
+        recipeVersion: 1,
+        batchCount: 2,
+        shift: 'MORNING' as never,
+        priority: 'NORMAL' as never,
+        plannedQuantity: new Decimal('20'),
+        unit: StockUnit.UNIT,
+        plannedStartAt,
+        plannedEndAt,
+        supervisorId: null,
+        notes: null,
+      });
+
+      expect(txMock.productionOrder.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          tenantId,
+          number: '2026-1',
+          status: 'DRAFT',
+        }),
+      });
+      expect(txMock.phaseExecution.create).toHaveBeenCalledTimes(2);
+      expect(txMock.phaseExecution.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          tenantId,
+          orderId: 'order-1',
+          phaseId: 'phase-1',
+          status: PhaseExecutionStatus.PENDING,
+          plannedMinutes: 30,
+        }),
+      });
+      expect(result.executions).toHaveLength(2);
+    });
+
+    it('findOrders scopes by tenant and optional filters', async () => {
+      prismaMock.productionOrder.findMany.mockResolvedValue([]);
+      const from = new Date('2026-05-01T00:00:00Z');
+      const to = new Date('2026-05-31T23:59:59Z');
+
+      await repository.findOrders(tenantId, {
+        status: 'DRAFT' as never,
+        shift: 'MORNING' as never,
+        priority: 'NORMAL' as never,
+        plannedStartFrom: from,
+        plannedStartTo: to,
+      });
+
+      expect(prismaMock.productionOrder.findMany).toHaveBeenCalledWith({
+        where: {
+          tenantId,
+          status: ProductionOrderStatus.DRAFT,
+          shift: 'MORNING',
+          priority: 'NORMAL',
+          plannedStartAt: { gte: from, lte: to },
+        },
+        orderBy: { plannedStartAt: 'desc' },
+      });
+    });
+
+    it('findOrderDetailById returns order with sessions', async () => {
+      prismaMock.productionOrder.findFirst.mockResolvedValue({
+        id: 'order-1',
+        tenantId,
+        recipe: { id: 'recipe-1', name: 'Pan' },
+        executions: [],
+      });
+      prismaMock.operatorSession.findMany.mockResolvedValue([
+        {
+          id: 'session-1',
+          workStationId: 'ws-1',
+          operatorUserId: 'op-1',
+          phaseExecutionId: 'exec-1',
+          startedAt: new Date(),
+        },
+      ]);
+
+      const result = await repository.findOrderDetailById(tenantId, 'order-1');
+
+      expect(result?.activeSessions).toHaveLength(1);
+      expect(prismaMock.operatorSession.findMany).toHaveBeenCalled();
+    });
+
+    it('updateOrder throws when order is missing', async () => {
+      prismaMock.productionOrder.findFirst.mockResolvedValue(null);
+
+      await expect(
+        repository.updateOrder(tenantId, 'missing', { status: ProductionOrderStatus.CANCELLED }),
+      ).rejects.toThrow('Production order not found: missing');
+    });
+
+    it('updateExecution throws when execution is missing', async () => {
+      prismaMock.phaseExecution.findFirst.mockResolvedValue(null);
+
+      await expect(
+        repository.updateExecution(tenantId, 'missing', {
+          status: PhaseExecutionStatus.COMPLETED,
+        }),
+      ).rejects.toThrow('Phase execution not found: missing');
+    });
+
+    it('findExecutionById scopes by tenant and id', async () => {
+      prismaMock.phaseExecution.findFirst.mockResolvedValue(null);
+      await repository.findExecutionById(tenantId, 'exec-1');
+      expect(prismaMock.phaseExecution.findFirst).toHaveBeenCalledWith({
+        where: { id: 'exec-1', tenantId },
+      });
+    });
+
+    it('updateOrder updates existing order', async () => {
+      prismaMock.productionOrder.findFirst.mockResolvedValue({ id: 'order-1', tenantId });
+      prismaMock.productionOrder.update.mockResolvedValue({
+        id: 'order-1',
+        status: ProductionOrderStatus.CANCELLED,
+      });
+
+      const result = await repository.updateOrder(tenantId, 'order-1', {
+        status: ProductionOrderStatus.CANCELLED,
+      });
+
+      expect(result.status).toBe(ProductionOrderStatus.CANCELLED);
+    });
+
+    it('updateExecution updates existing execution', async () => {
+      prismaMock.phaseExecution.findFirst.mockResolvedValue({ id: 'exec-1', tenantId });
+      prismaMock.phaseExecution.update.mockResolvedValue({
+        id: 'exec-1',
+        status: PhaseExecutionStatus.READY,
+      });
+
+      const result = await repository.updateExecution(tenantId, 'exec-1', {
+        status: PhaseExecutionStatus.READY,
+      });
+
+      expect(result.status).toBe(PhaseExecutionStatus.READY);
+    });
+
+    it('findOrderDetailById returns null when order is missing', async () => {
+      prismaMock.productionOrder.findFirst.mockResolvedValue(null);
+
+      await expect(repository.findOrderDetailById(tenantId, 'missing')).resolves.toBeNull();
     });
   });
 });

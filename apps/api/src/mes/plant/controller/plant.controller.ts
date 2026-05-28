@@ -9,6 +9,7 @@ import {
   ParseArrayPipe,
   Patch,
   Post,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -21,26 +22,51 @@ import {
   ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
-import type { PhaseInput, ProductionRecipe, WorkStation } from '@prisma/client';
+import {
+  OperationalRole,
+  type PhaseInput,
+  type ProductionRecipe,
+  type WorkStation,
+} from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 import type { Request } from 'express';
 import { Public } from '../../../common/decorators/public.decorator';
+import { Roles } from '../../auth/decorators/roles.decorator';
 import { MesJwtGuard } from '../../auth/guards/mes-jwt.guard';
+import { MesRolesGuard } from '../../auth/guards/mes-roles.guard';
 import type { MesJwtPayload } from '../../auth/interfaces/mes-auth.interfaces';
 import type {
+  ChainResult,
+  CreateOrderInput,
   CreatePhaseInputInput,
   CreateRecipeWithPhasesInput,
+  ListOrdersFilters,
+  OrderDetailResponse,
+  OrderListItemResponse,
   RecipeDetailResponse,
   UpdateRecipeInput,
 } from '../interfaces/plant.interfaces';
+import { PhaseChainService } from '../service/phase-chain.service';
 import { PlantService } from '../service/plant.service';
+import { CancelOrderDto } from './dto/cancel-order.dto';
+import { CreateOrderDto } from './dto/create-order.dto';
 import { CreatePhaseInputDto } from './dto/create-phase-input.dto';
 import { CreateRecipeDto } from './dto/create-recipe.dto';
 import { CreateWorkstationDto } from './dto/create-workstation.dto';
+import { ListOrdersQueryDto } from './dto/list-orders-query.dto';
+import { OrderDetailResponseDto, OrderListItemResponseDto } from './dto/order-detail.response';
+import { PauseOrderDto } from './dto/pause-order.dto';
+import { QaApproveDto } from './dto/qa-approve.dto';
 import { ReorderPhaseItemDto } from './dto/reorder-phases.dto';
 import { RecipeDetailResponseDto } from './dto/recipe-detail.response';
 import { UpdateRecipeDto } from './dto/update-recipe.dto';
 import { UpdateWorkstationDto } from './dto/update-workstation.dto';
+
+const SUPERVISOR_ROLES = [
+  OperationalRole.SUPERVISOR,
+  OperationalRole.MANAGER,
+  OperationalRole.OWNER,
+] as const;
 
 type MesRequest = Request & { user: MesJwtPayload };
 
@@ -50,7 +76,10 @@ type MesRequest = Request & { user: MesJwtPayload };
 @UseGuards(MesJwtGuard)
 @ApiBearerAuth()
 export class PlantController {
-  constructor(private readonly plantService: PlantService) {}
+  constructor(
+    private readonly plantService: PlantService,
+    private readonly phaseChainService: PhaseChainService,
+  ) {}
 
   // ── Workstations ─────────────────────────────────────────────────────────────
 
@@ -192,6 +221,98 @@ export class PlantController {
     return this.plantService.removePhaseInput(req.user.tenantId, phaseId, inputId);
   }
 
+  // ── Production orders ────────────────────────────────────────────────────────
+
+  @ApiOperation({ summary: 'Create a production order with phase executions' })
+  @ApiCreatedResponse({ type: OrderDetailResponseDto })
+  @Post('orders')
+  @HttpCode(HttpStatus.CREATED)
+  @UseGuards(MesJwtGuard, MesRolesGuard)
+  @Roles(...SUPERVISOR_ROLES)
+  createOrder(@Req() req: MesRequest, @Body() dto: CreateOrderDto): Promise<OrderDetailResponse> {
+    return this.plantService.createOrder(req.user.tenantId, this.toCreateOrderInput(dto));
+  }
+
+  @ApiOperation({ summary: 'List production orders' })
+  @ApiOkResponse({ type: [OrderListItemResponseDto] })
+  @Get('orders')
+  findOrders(
+    @Req() req: MesRequest,
+    @Query() query: ListOrdersQueryDto,
+  ): Promise<OrderListItemResponse[]> {
+    return this.plantService.findOrders(req.user.tenantId, this.toListOrdersFilters(query));
+  }
+
+  @ApiOperation({ summary: 'Get production order detail' })
+  @ApiParam({ name: 'id', description: 'Production order ID' })
+  @ApiOkResponse({ type: OrderDetailResponseDto })
+  @Get('orders/:id')
+  findOrderById(@Req() req: MesRequest, @Param('id') id: string): Promise<OrderDetailResponse> {
+    return this.plantService.findOrderById(req.user.tenantId, id);
+  }
+
+  @ApiOperation({ summary: 'Plan a draft production order' })
+  @ApiParam({ name: 'id', description: 'Production order ID' })
+  @ApiOkResponse({ type: OrderDetailResponseDto })
+  @Patch('orders/:id/plan')
+  @UseGuards(MesJwtGuard, MesRolesGuard)
+  @Roles(...SUPERVISOR_ROLES)
+  planOrder(@Req() req: MesRequest, @Param('id') id: string): Promise<OrderDetailResponse> {
+    return this.plantService.planOrder(req.user.tenantId, id);
+  }
+
+  @ApiOperation({ summary: 'Pause an in-process production order' })
+  @ApiParam({ name: 'id', description: 'Production order ID' })
+  @ApiOkResponse({ type: OrderDetailResponseDto })
+  @Post('orders/:id/pause')
+  @UseGuards(MesJwtGuard, MesRolesGuard)
+  @Roles(...SUPERVISOR_ROLES)
+  pauseOrder(
+    @Req() req: MesRequest,
+    @Param('id') id: string,
+    @Body() dto: PauseOrderDto,
+  ): Promise<OrderDetailResponse> {
+    return this.plantService.pauseOrder(req.user.tenantId, id, dto);
+  }
+
+  @ApiOperation({ summary: 'Resume a paused production order' })
+  @ApiParam({ name: 'id', description: 'Production order ID' })
+  @ApiOkResponse({ type: OrderDetailResponseDto })
+  @Post('orders/:id/resume')
+  @UseGuards(MesJwtGuard, MesRolesGuard)
+  @Roles(...SUPERVISOR_ROLES)
+  resumeOrder(@Req() req: MesRequest, @Param('id') id: string): Promise<OrderDetailResponse> {
+    return this.plantService.resumeOrder(req.user.tenantId, id);
+  }
+
+  @ApiOperation({ summary: 'Cancel a production order' })
+  @ApiParam({ name: 'id', description: 'Production order ID' })
+  @ApiOkResponse({ type: OrderDetailResponseDto })
+  @Post('orders/:id/cancel')
+  @UseGuards(MesJwtGuard, MesRolesGuard)
+  @Roles(...SUPERVISOR_ROLES)
+  cancelOrder(
+    @Req() req: MesRequest,
+    @Param('id') id: string,
+    @Body() dto: CancelOrderDto,
+  ): Promise<OrderDetailResponse> {
+    return this.plantService.cancelOrder(req.user.tenantId, id, dto, req.user.sub);
+  }
+
+  @ApiOperation({ summary: 'Supervisor QA approval for a completed phase execution' })
+  @ApiParam({ name: 'id', description: 'Phase execution ID' })
+  @ApiOkResponse({ description: 'QA approved; next QA_PENDING execution promoted to READY' })
+  @Post('executions/:id/qa-approve')
+  @UseGuards(MesJwtGuard, MesRolesGuard)
+  @Roles(...SUPERVISOR_ROLES)
+  qaApproveExecution(
+    @Req() req: MesRequest,
+    @Param('id') id: string,
+    @Body() dto: QaApproveDto,
+  ): Promise<ChainResult> {
+    return this.phaseChainService.qaApproveExecution(req.user.tenantId, id, req.user.sub, dto);
+  }
+
   // ── DTO mappers (decimal strings → Prisma Decimal) ───────────────────────────
 
   private toCreateRecipeInput(dto: CreateRecipeDto): CreateRecipeWithPhasesInput {
@@ -239,6 +360,29 @@ export class PlantController {
       quantityPerBatch: new Decimal(dto.quantityPerBatch),
       unit: dto.unit,
       isOptional: dto.isOptional,
+    };
+  }
+
+  private toCreateOrderInput(dto: CreateOrderDto): CreateOrderInput {
+    return {
+      recipeId: dto.recipeId,
+      batchCount: dto.batchCount,
+      shift: dto.shift,
+      priority: dto.priority,
+      plannedStartAt: new Date(dto.plannedStartAt),
+      plannedEndAt: new Date(dto.plannedEndAt),
+      supervisorId: dto.supervisorId ?? null,
+      notes: dto.notes ?? null,
+    };
+  }
+
+  private toListOrdersFilters(query: ListOrdersQueryDto): ListOrdersFilters {
+    return {
+      status: query.status,
+      shift: query.shift,
+      priority: query.priority,
+      plannedStartFrom: query.plannedStartFrom ? new Date(query.plannedStartFrom) : undefined,
+      plannedStartTo: query.plannedStartTo ? new Date(query.plannedStartTo) : undefined,
     };
   }
 }

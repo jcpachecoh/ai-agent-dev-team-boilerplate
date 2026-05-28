@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "7c3e5f82-1a9b-4d6e-8f2c-0b5a3d7e9f1c",
     "name": "RestOpsIQ API",
-    "description": "Complete API test collection for RestOpsIQ.\n\nCovers Health, Auth, MES Auth, MES Plant, Supply Items, and Testlab modules.\n\nGlobal prefix: /api\nOperational tenant (supply-items + MES + plant): {{tenantId}} = {{mesTenantId}} = palos-de-lena after seed.\nTestLab: email auth only (no tenant).\nMES plant: Bearer {{mesAccessToken}} (no x-tenant-id).\nSupply-items: Bearer {{accessToken}} + x-tenant-id {{tenantId}}.\n\nSee postman/README.md for prerequisites and setup.",
+    "description": "Complete API test collection for RestOpsIQ.\n\nCovers Health, Auth, MES Auth, MES Plant, Plant Production Orders (MES-05), Supply Items, and Testlab modules.\n\nGlobal prefix: /api\nOperational tenant (supply-items + MES + plant): {{tenantId}} = {{mesTenantId}} = palos-de-lena after seed.\nTestLab: email auth only (no tenant).\nMES plant: Bearer {{mesAccessToken}} (no x-tenant-id).\nSupply-items: Bearer {{accessToken}} + x-tenant-id {{tenantId}}.\n\nPhase completion is internal (no POST /api/plant/phases/complete). See postman/README.md.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -301,6 +301,36 @@
       "value": "",
       "type": "string",
       "description": "Captured from Add Phase Input"
+    },
+    {
+      "key": "orderId",
+      "value": "",
+      "type": "string",
+      "description": "MES production order — captured from POST /api/plant/orders"
+    },
+    {
+      "key": "executionId",
+      "value": "",
+      "type": "string",
+      "description": "Phase execution id — captured from GET order detail (first execution or QA path)"
+    },
+    {
+      "key": "ordersRecipeId",
+      "value": "",
+      "type": "string",
+      "description": "5-phase recipe for production orders smoke — captured in Plant — Production Orders setup"
+    },
+    {
+      "key": "orderPlannedStartAt",
+      "value": "",
+      "type": "string",
+      "description": "ISO plannedStartAt for Create Production Order pre-request"
+    },
+    {
+      "key": "orderPlannedEndAt",
+      "value": "",
+      "type": "string",
+      "description": "ISO plannedEndAt for Create Production Order pre-request"
     }
   ],
   "item": [
@@ -1716,6 +1746,492 @@
             "method": "DELETE",
             "header": [],
             "url": "{{baseUrl}}/api/plant/workstations/{{workstationId}}"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Plant — Production Orders",
+      "description": "MES-05 production order lifecycle + QA approve.\n\nPrerequisites: **MES Auth → Login Owner** (sets {{mesAccessToken}}).\n\nRun this folder top-to-bottom. Setup creates a 5-phase recipe (phase 2 requires QA).\n\n**No** `POST /api/plant/phases/complete` — chain completion is internal (`PhaseChainService`). Use unit tests or a dev script before **QA Approve Execution**.\n\nPause/resume require order status `IN_PROCESS` (operator runtime — not in MES-05 HTTP); those requests accept 200 or 409.",
+      "item": [
+        {
+          "name": "Setup — Create Work Station (Orders)",
+          "description": "Creates a workstation for the 5-phase orders recipe.",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('plantWorkStationCode', 'WS-ORD-' + Date.now());",
+                  "pm.environment.set('plantWorkStationCode', pm.collectionVariables.get('plantWorkStationCode'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "if (body.id) {",
+                  "  pm.collectionVariables.set('workstationId', body.id);",
+                  "  pm.environment.set('workstationId', body.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{mesAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/plant/workstations",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Línea OP Postman\",\n  \"code\": \"{{plantWorkStationCode}}\",\n  \"description\": \"Estación para órdenes de producción\",\n  \"location\": \"Planta B\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Setup — Create 5-Phase Recipe (Orders)",
+          "description": "5 phases; phase 2 has requiresQA=true for QA approve smoke.",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('plantRecipeName', 'Receta OP Postman ' + Date.now());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('Has id', () => pm.expect(body).to.have.property('id'));",
+                  "if (body.id) {",
+                  "  pm.collectionVariables.set('ordersRecipeId', body.id);",
+                  "  pm.environment.set('ordersRecipeId', body.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{mesAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/plant/recipes",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{plantRecipeName}}\",\n  \"finishedProductId\": \"product-op-demo\",\n  \"batchSize\": \"10.000\",\n  \"batchUnit\": \"UNIT\",\n  \"estimatedMinutes\": 120,\n  \"phases\": [\n    { \"order\": 1, \"name\": \"Prep\", \"workStationId\": \"{{workstationId}}\", \"standardMinutes\": 10, \"requiresQA\": false },\n    { \"order\": 2, \"name\": \"Mezclado\", \"workStationId\": \"{{workstationId}}\", \"standardMinutes\": 15, \"requiresQA\": true },\n    { \"order\": 3, \"name\": \"Reposo\", \"workStationId\": \"{{workstationId}}\", \"standardMinutes\": 20, \"requiresQA\": false },\n    { \"order\": 4, \"name\": \"Horneado\", \"workStationId\": \"{{workstationId}}\", \"standardMinutes\": 25, \"requiresQA\": false },\n    { \"order\": 5, \"name\": \"Empaque\", \"workStationId\": \"{{workstationId}}\", \"standardMinutes\": 12, \"requiresQA\": false }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Production Order",
+          "description": "POST /api/plant/orders — creates OP + 5 PENDING executions.",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const start = new Date();",
+                  "start.setUTCMinutes(start.getUTCMinutes() + 5);",
+                  "const end = new Date(start.getTime() + 8 * 60 * 60 * 1000);",
+                  "pm.collectionVariables.set('orderPlannedStartAt', start.toISOString());",
+                  "pm.collectionVariables.set('orderPlannedEndAt', end.toISOString());",
+                  "pm.environment.set('orderPlannedStartAt', start.toISOString());",
+                  "pm.environment.set('orderPlannedEndAt', end.toISOString());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('Has id', () => pm.expect(body).to.have.property('id'));",
+                  "pm.test('Status DRAFT', () => pm.expect(body.status).to.eql('DRAFT'));",
+                  "pm.test('Five executions', () => pm.expect(body.executions).to.have.lengthOf(5));",
+                  "pm.test('All executions PENDING', () => {",
+                  "  body.executions.forEach((ex) => pm.expect(ex.status).to.eql('PENDING'));",
+                  "});",
+                  "if (body.id) {",
+                  "  pm.collectionVariables.set('orderId', body.id);",
+                  "  pm.environment.set('orderId', body.id);",
+                  "}",
+                  "if (body.executions && body.executions.length) {",
+                  "  const qaExec = body.executions.find((ex) => ex.requiresQA === true) || body.executions[0];",
+                  "  pm.collectionVariables.set('executionId', qaExec.id);",
+                  "  pm.environment.set('executionId', qaExec.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{mesAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/plant/orders",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"recipeId\": \"{{ordersRecipeId}}\",\n  \"batchCount\": 2,\n  \"shift\": \"MORNING\",\n  \"priority\": \"NORMAL\",\n  \"plannedStartAt\": \"{{orderPlannedStartAt}}\",\n  \"plannedEndAt\": \"{{orderPlannedEndAt}}\",\n  \"notes\": \"OP creada desde Postman (MES-05)\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Production Orders",
+          "description": "GET /api/plant/orders",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Is array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{mesAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/plant/orders?status=DRAFT&shift=MORNING",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "plant", "orders"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "DRAFT"
+                },
+                {
+                  "key": "shift",
+                  "value": "MORNING"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Production Order Detail",
+          "description": "GET /api/plant/orders/:id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Matches orderId', () => pm.expect(body.id).to.eql(pm.environment.get('orderId')));",
+                  "pm.test('Five executions', () => pm.expect(body.executions).to.have.lengthOf(5));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{mesAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/plant/orders/{{orderId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Plan Production Order",
+          "description": "PATCH /api/plant/orders/:id/plan — first phase → READY.",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Status PLANNED', () => pm.expect(body.status).to.eql('PLANNED'));",
+                  "const first = body.executions.find((ex) => ex.phaseOrder === 1);",
+                  "pm.test('First execution READY', () => pm.expect(first.status).to.eql('READY'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{mesAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [],
+            "url": "{{baseUrl}}/api/plant/orders/{{orderId}}/plan"
+          },
+          "response": []
+        },
+        {
+          "name": "Pause Production Order",
+          "description": "POST /api/plant/orders/:id/pause — requires order IN_PROCESS (409 if still PLANNED).",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200 or 409', () => pm.expect([200, 409]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{mesAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/plant/orders/{{orderId}}/pause",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Pausa de prueba Postman\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Resume Production Order",
+          "description": "POST /api/plant/orders/:id/resume — requires order PAUSED.",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200 or 409', () => pm.expect([200, 409]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{mesAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/plant/orders/{{orderId}}/resume"
+          },
+          "response": []
+        },
+        {
+          "name": "QA Approve Execution",
+          "description": "POST /api/plant/executions/:id/qa-approve — run after internal completeExecution + COMPLETED QA phase (see README).",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const code = pm.response.code;",
+                  "pm.test('Status 200 or expected client error', () => pm.expect([200, 400, 404, 409]).to.include(code));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{mesAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/plant/executions/{{executionId}}/qa-approve",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"notes\": \"QA aprobada desde Postman\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Cancel Production Order",
+          "description": "POST /api/plant/orders/:id/cancel — after plan (PLANNED) reason only; add consumedInputsAction when IN_PROCESS/PAUSED.",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Status CANCELLED', () => pm.expect(body.status).to.eql('CANCELLED'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{mesAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/plant/orders/{{orderId}}/cancel",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Cancelación de prueba Postman\",\n  \"consumedInputsAction\": \"SCRAP\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
           },
           "response": []
         }

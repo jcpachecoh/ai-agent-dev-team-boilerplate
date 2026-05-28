@@ -1,11 +1,19 @@
 import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { StockUnit } from '@prisma/client';
+import {
+  PhaseExecutionStatus,
+  ProductionOrderStatus,
+  ProductionPriority,
+  ProductionShift,
+  StockUnit,
+} from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 import { SupplyItemsService } from '../../../supplyitems/service/supplyitems.service';
 import { PlantRepository } from '../repository/plant.repository';
+import { PlantEventsService } from '../service/plant-events.service';
 import { PlantService } from '../service/plant.service';
 import type { CreateRecipeWithPhasesInput } from '../interfaces/plant.interfaces';
+import { ConsumedInputsAction } from '../interfaces/plant.interfaces';
 
 const tenantId = 'palos-de-lena';
 
@@ -74,10 +82,20 @@ const repoMock = {
   findPhaseInputById: jest.fn(),
   createPhaseInput: jest.fn(),
   deletePhaseInput: jest.fn(),
+  createOrderWithExecutionsTx: jest.fn(),
+  findOrders: jest.fn(),
+  findOrderDetailById: jest.fn(),
+  updateOrder: jest.fn(),
+  updateExecution: jest.fn(),
 };
 
 const supplyItemsServiceMock = {
   findOne: jest.fn(),
+};
+
+const plantEventsServiceMock = {
+  emitPhaseStatusChanges: jest.fn(),
+  emitPhaseStatusChanged: jest.fn(),
 };
 
 describe('PlantService', () => {
@@ -89,6 +107,7 @@ describe('PlantService', () => {
         PlantService,
         { provide: PlantRepository, useValue: repoMock },
         { provide: SupplyItemsService, useValue: supplyItemsServiceMock },
+        { provide: PlantEventsService, useValue: plantEventsServiceMock },
       ],
     }).compile();
 
@@ -549,6 +568,534 @@ describe('PlantService', () => {
         NotFoundException,
       );
       expect(repoMock.createPhaseInput).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('production orders', () => {
+    const plannedStartAt = new Date('2026-05-27T08:00:00Z');
+    const plannedEndAt = new Date('2026-05-27T12:00:00Z');
+
+    const recipeWithPhases = {
+      ...mockRecipe,
+      phases: [
+        {
+          id: 'phase-1',
+          tenantId,
+          recipeId: 'recipe-1',
+          workStationId: 'ws-1',
+          order: 1,
+          name: 'Mezclado',
+          description: null,
+          standardMinutes: 15,
+          minOperators: 1,
+          maxOperators: 4,
+          requiresQA: false,
+          inputs: [],
+        },
+        {
+          id: 'phase-2',
+          tenantId,
+          recipeId: 'recipe-1',
+          workStationId: 'ws-1',
+          order: 2,
+          name: 'Horneado',
+          description: null,
+          standardMinutes: 25,
+          minOperators: 1,
+          maxOperators: 4,
+          requiresQA: false,
+          inputs: [],
+        },
+      ],
+    };
+
+    const buildOrderDetail = (
+      status: ProductionOrderStatus,
+      executionStatuses: PhaseExecutionStatus[],
+    ) => ({
+      id: 'order-1',
+      tenantId,
+      number: '2026-1',
+      recipeId: 'recipe-1',
+      recipeVersion: 1,
+      status,
+      priority: ProductionPriority.NORMAL,
+      shift: ProductionShift.MORNING,
+      batchCount: 2,
+      plannedQuantity: new Decimal('20'),
+      producedQuantity: null,
+      unit: StockUnit.UNIT,
+      plannedStartAt,
+      plannedEndAt,
+      actualStartAt: null,
+      actualEndAt: null,
+      supervisorId: null,
+      notes: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      recipe: { id: 'recipe-1', name: 'Pan integral' },
+      executions: executionStatuses.map((executionStatus, index) => ({
+        id: `exec-${index + 1}`,
+        tenantId,
+        orderId: 'order-1',
+        phaseId: `phase-${index + 1}`,
+        workStationId: 'ws-1',
+        status: executionStatus,
+        plannedMinutes: 30,
+        actualMinutes: null,
+        producedQuantity: null,
+        qaApprovedAt: null,
+        qaApprovedBy: null,
+        completedAt: null,
+        notes: null,
+        createdAt: new Date(),
+        phase: {
+          id: `phase-${index + 1}`,
+          order: index + 1,
+          name: index === 0 ? 'Mezclado' : 'Horneado',
+          requiresQA: false,
+          workStationId: 'ws-1',
+        },
+      })),
+      activeSessions: [],
+    });
+
+    it('createOrder creates N PENDING executions for N recipe phases', async () => {
+      repoMock.findRecipeDetailById.mockResolvedValue(recipeWithPhases);
+      repoMock.findOrders.mockResolvedValue([]);
+      repoMock.createOrderWithExecutionsTx.mockResolvedValue({
+        order: { id: 'order-1' },
+        executions: [
+          {
+            id: 'exec-1',
+            orderId: 'order-1',
+            status: PhaseExecutionStatus.PENDING,
+          },
+          {
+            id: 'exec-2',
+            orderId: 'order-1',
+            status: PhaseExecutionStatus.PENDING,
+          },
+        ],
+      });
+      repoMock.findOrderDetailById.mockResolvedValue(
+        buildOrderDetail(ProductionOrderStatus.DRAFT, [
+          PhaseExecutionStatus.PENDING,
+          PhaseExecutionStatus.PENDING,
+        ]),
+      );
+
+      const result = await service.createOrder(tenantId, {
+        recipeId: 'recipe-1',
+        batchCount: 2,
+        shift: ProductionShift.MORNING,
+        plannedStartAt,
+        plannedEndAt,
+      });
+
+      expect(repoMock.createOrderWithExecutionsTx).toHaveBeenCalledWith(
+        expect.objectContaining({
+          tenantId,
+          recipeId: 'recipe-1',
+          batchCount: 2,
+        }),
+      );
+      expect(result.executions).toHaveLength(2);
+      expect(
+        result.executions.every((execution) => execution.status === PhaseExecutionStatus.PENDING),
+      ).toBe(true);
+    });
+
+    it('planOrder promotes first execution to READY and emits websocket event', async () => {
+      const draftDetail = buildOrderDetail(ProductionOrderStatus.DRAFT, [
+        PhaseExecutionStatus.PENDING,
+        PhaseExecutionStatus.PENDING,
+      ]);
+      const plannedDetail = buildOrderDetail(ProductionOrderStatus.PLANNED, [
+        PhaseExecutionStatus.READY,
+        PhaseExecutionStatus.PENDING,
+      ]);
+
+      repoMock.findOrderDetailById
+        .mockResolvedValueOnce(draftDetail)
+        .mockResolvedValueOnce(plannedDetail);
+
+      await service.planOrder(tenantId, 'order-1');
+
+      expect(repoMock.updateOrder).toHaveBeenCalledWith(tenantId, 'order-1', {
+        status: ProductionOrderStatus.PLANNED,
+      });
+      expect(repoMock.updateExecution).toHaveBeenCalledWith(tenantId, 'exec-1', {
+        status: PhaseExecutionStatus.READY,
+      });
+      expect(plantEventsServiceMock.emitPhaseStatusChanges).toHaveBeenCalledWith(tenantId, [
+        expect.objectContaining({
+          id: 'exec-1',
+          status: PhaseExecutionStatus.READY,
+        }),
+      ]);
+    });
+
+    it('cancelOrder throws BadRequestException for IN_PROCESS without consumedInputsAction', async () => {
+      repoMock.findOrderDetailById.mockResolvedValue(
+        buildOrderDetail(ProductionOrderStatus.IN_PROCESS, [
+          PhaseExecutionStatus.IN_PROCESS,
+          PhaseExecutionStatus.PENDING,
+        ]),
+      );
+
+      await expect(
+        service.cancelOrder(tenantId, 'order-1', { reason: 'Cliente canceló' }, 'supervisor-1'),
+      ).rejects.toThrow(BadRequestException);
+
+      expect(repoMock.updateOrder).not.toHaveBeenCalled();
+    });
+
+    it('cancelOrder persists audit metadata and sets order CANCELLED', async () => {
+      const inProcessDetail = buildOrderDetail(ProductionOrderStatus.IN_PROCESS, [
+        PhaseExecutionStatus.IN_PROCESS,
+        PhaseExecutionStatus.PENDING,
+      ]);
+      const cancelledDetail = {
+        ...inProcessDetail,
+        status: ProductionOrderStatus.CANCELLED,
+        notes: JSON.stringify({
+          cancel: {
+            reason: 'Cliente canceló',
+            consumedInputsAction: 'SCRAP',
+            cancelledAt: '2026-05-27T12:00:00.000Z',
+            cancelledBy: 'supervisor-1',
+          },
+        }),
+      };
+
+      repoMock.findOrderDetailById
+        .mockResolvedValueOnce(inProcessDetail)
+        .mockResolvedValueOnce(cancelledDetail);
+
+      const result = await service.cancelOrder(
+        tenantId,
+        'order-1',
+        { reason: 'Cliente canceló', consumedInputsAction: ConsumedInputsAction.SCRAP },
+        'supervisor-1',
+      );
+
+      expect(repoMock.updateOrder).toHaveBeenCalledWith(
+        tenantId,
+        'order-1',
+        expect.objectContaining({
+          status: ProductionOrderStatus.CANCELLED,
+          notes: expect.stringContaining('"consumedInputsAction":"SCRAP"'),
+        }),
+      );
+      expect(result.status).toBe(ProductionOrderStatus.CANCELLED);
+    });
+
+    it('pauseOrder pauses IN_PROCESS executions and emits events', async () => {
+      const inProcessDetail = buildOrderDetail(ProductionOrderStatus.IN_PROCESS, [
+        PhaseExecutionStatus.IN_PROCESS,
+        PhaseExecutionStatus.PENDING,
+      ]);
+      const pausedDetail = buildOrderDetail(ProductionOrderStatus.PAUSED, [
+        PhaseExecutionStatus.PAUSED,
+        PhaseExecutionStatus.PENDING,
+      ]);
+
+      repoMock.findOrderDetailById
+        .mockResolvedValueOnce(inProcessDetail)
+        .mockResolvedValueOnce(pausedDetail);
+
+      await service.pauseOrder(tenantId, 'order-1', { reason: 'Falla eléctrica' });
+
+      expect(repoMock.updateOrder).toHaveBeenCalledWith(
+        tenantId,
+        'order-1',
+        expect.objectContaining({ status: ProductionOrderStatus.PAUSED }),
+      );
+      expect(repoMock.updateExecution).toHaveBeenCalledWith(tenantId, 'exec-1', {
+        status: PhaseExecutionStatus.PAUSED,
+      });
+      expect(plantEventsServiceMock.emitPhaseStatusChanges).toHaveBeenCalled();
+    });
+
+    it('resumeOrder resumes PAUSED executions and emits events', async () => {
+      const pausedDetail = buildOrderDetail(ProductionOrderStatus.PAUSED, [
+        PhaseExecutionStatus.PAUSED,
+        PhaseExecutionStatus.PENDING,
+      ]);
+      const resumedDetail = buildOrderDetail(ProductionOrderStatus.IN_PROCESS, [
+        PhaseExecutionStatus.IN_PROCESS,
+        PhaseExecutionStatus.PENDING,
+      ]);
+
+      repoMock.findOrderDetailById
+        .mockResolvedValueOnce(pausedDetail)
+        .mockResolvedValueOnce(resumedDetail);
+
+      await service.resumeOrder(tenantId, 'order-1');
+
+      expect(repoMock.updateOrder).toHaveBeenCalledWith(tenantId, 'order-1', {
+        status: ProductionOrderStatus.IN_PROCESS,
+      });
+      expect(repoMock.updateExecution).toHaveBeenCalledWith(tenantId, 'exec-1', {
+        status: PhaseExecutionStatus.IN_PROCESS,
+      });
+      expect(plantEventsServiceMock.emitPhaseStatusChanges).toHaveBeenCalled();
+    });
+
+    it('findOrders maps list items from repository', async () => {
+      repoMock.findOrders.mockResolvedValue([
+        {
+          id: 'order-1',
+          tenantId,
+          number: '2026-1',
+          status: ProductionOrderStatus.DRAFT,
+          priority: ProductionPriority.NORMAL,
+          shift: ProductionShift.MORNING,
+          plannedStartAt,
+          recipeId: 'recipe-1',
+        },
+      ]);
+
+      const result = await service.findOrders(tenantId, {});
+
+      expect(result).toEqual([
+        expect.objectContaining({
+          id: 'order-1',
+          number: '2026-1',
+          status: ProductionOrderStatus.DRAFT,
+        }),
+      ]);
+    });
+
+    it('createOrder throws when recipe is inactive', async () => {
+      repoMock.findRecipeDetailById.mockResolvedValue({ ...recipeWithPhases, isActive: false });
+
+      await expect(
+        service.createOrder(tenantId, {
+          recipeId: 'recipe-1',
+          batchCount: 2,
+          shift: ProductionShift.MORNING,
+          plannedStartAt,
+          plannedEndAt,
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('planOrder throws ConflictException when order is not DRAFT', async () => {
+      repoMock.findOrderDetailById.mockResolvedValue(
+        buildOrderDetail(ProductionOrderStatus.PLANNED, [
+          PhaseExecutionStatus.READY,
+          PhaseExecutionStatus.PENDING,
+        ]),
+      );
+
+      await expect(service.planOrder(tenantId, 'order-1')).rejects.toThrow(ConflictException);
+    });
+
+    it('cancelOrder throws when reason is missing', async () => {
+      repoMock.findOrderDetailById.mockResolvedValue(
+        buildOrderDetail(ProductionOrderStatus.DRAFT, [PhaseExecutionStatus.PENDING]),
+      );
+
+      await expect(
+        service.cancelOrder(tenantId, 'order-1', { reason: '   ' }, 'supervisor-1'),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('cancelOrder throws ConflictException for COMPLETED orders', async () => {
+      repoMock.findOrderDetailById.mockResolvedValue(
+        buildOrderDetail(ProductionOrderStatus.COMPLETED, [
+          PhaseExecutionStatus.COMPLETED,
+          PhaseExecutionStatus.COMPLETED,
+        ]),
+      );
+
+      await expect(
+        service.cancelOrder(
+          tenantId,
+          'order-1',
+          { reason: 'Too late', consumedInputsAction: ConsumedInputsAction.SCRAP },
+          'supervisor-1',
+        ),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('pauseOrder throws when reason is missing', async () => {
+      repoMock.findOrderDetailById.mockResolvedValue(
+        buildOrderDetail(ProductionOrderStatus.IN_PROCESS, [PhaseExecutionStatus.IN_PROCESS]),
+      );
+
+      await expect(service.pauseOrder(tenantId, 'order-1', { reason: '  ' })).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('resumeOrder throws when order is not PAUSED', async () => {
+      repoMock.findOrderDetailById.mockResolvedValue(
+        buildOrderDetail(ProductionOrderStatus.IN_PROCESS, [PhaseExecutionStatus.IN_PROCESS]),
+      );
+
+      await expect(service.resumeOrder(tenantId, 'order-1')).rejects.toThrow(ConflictException);
+    });
+
+    it('findOrderById throws NotFoundException when order is missing', async () => {
+      repoMock.findOrderDetailById.mockResolvedValue(null);
+
+      await expect(service.findOrderById(tenantId, 'missing')).rejects.toThrow(NotFoundException);
+    });
+
+    it('createOrder throws NotFoundException when recipe is missing', async () => {
+      repoMock.findRecipeDetailById.mockResolvedValue(null);
+
+      await expect(
+        service.createOrder(tenantId, {
+          recipeId: 'missing',
+          batchCount: 2,
+          shift: ProductionShift.MORNING,
+          plannedStartAt,
+          plannedEndAt,
+        }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('createOrder throws ConflictException when execution count mismatches phases', async () => {
+      repoMock.findRecipeDetailById.mockResolvedValue(recipeWithPhases);
+      repoMock.findOrders.mockResolvedValue([]);
+      repoMock.createOrderWithExecutionsTx.mockResolvedValue({
+        order: { id: 'order-1' },
+        executions: [{ id: 'exec-1', orderId: 'order-1', status: PhaseExecutionStatus.PENDING }],
+      });
+
+      await expect(
+        service.createOrder(tenantId, {
+          recipeId: 'recipe-1',
+          batchCount: 2,
+          shift: ProductionShift.MORNING,
+          plannedStartAt,
+          plannedEndAt,
+        }),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('cancelOrder throws BadRequestException for PAUSED without consumedInputsAction', async () => {
+      repoMock.findOrderDetailById.mockResolvedValue(
+        buildOrderDetail(ProductionOrderStatus.PAUSED, [PhaseExecutionStatus.PAUSED]),
+      );
+
+      await expect(
+        service.cancelOrder(tenantId, 'order-1', { reason: 'Stop' }, 'supervisor-1'),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('cancelOrder throws ConflictException when order is already cancelled', async () => {
+      repoMock.findOrderDetailById.mockResolvedValue(
+        buildOrderDetail(ProductionOrderStatus.CANCELLED, [PhaseExecutionStatus.PENDING]),
+      );
+
+      await expect(
+        service.cancelOrder(tenantId, 'order-1', { reason: 'Again' }, 'supervisor-1'),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('createOrder throws when plannedStartAt is not before plannedEndAt', async () => {
+      await expect(
+        service.createOrder(tenantId, {
+          recipeId: 'recipe-1',
+          batchCount: 2,
+          shift: ProductionShift.MORNING,
+          plannedStartAt: plannedEndAt,
+          plannedEndAt: plannedStartAt,
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('createOrder increments order number sequence for current year', async () => {
+      repoMock.findRecipeDetailById.mockResolvedValue(recipeWithPhases);
+      repoMock.findOrders.mockResolvedValue([{ number: `${new Date().getFullYear()}-7` }]);
+      repoMock.createOrderWithExecutionsTx.mockResolvedValue({
+        order: { id: 'order-1' },
+        executions: [
+          { id: 'exec-1', orderId: 'order-1', status: PhaseExecutionStatus.PENDING },
+          { id: 'exec-2', orderId: 'order-1', status: PhaseExecutionStatus.PENDING },
+        ],
+      });
+      repoMock.findOrderDetailById.mockResolvedValue(
+        buildOrderDetail(ProductionOrderStatus.DRAFT, [
+          PhaseExecutionStatus.PENDING,
+          PhaseExecutionStatus.PENDING,
+        ]),
+      );
+
+      await service.createOrder(tenantId, {
+        recipeId: 'recipe-1',
+        batchCount: 2,
+        shift: ProductionShift.MORNING,
+        plannedStartAt,
+        plannedEndAt,
+      });
+
+      expect(repoMock.createOrderWithExecutionsTx).toHaveBeenCalledWith(
+        expect.objectContaining({
+          number: `${new Date().getFullYear()}-8`,
+        }),
+      );
+    });
+
+    it('planOrder throws when first execution is not PENDING', async () => {
+      repoMock.findOrderDetailById.mockResolvedValue(
+        buildOrderDetail(ProductionOrderStatus.DRAFT, [
+          PhaseExecutionStatus.READY,
+          PhaseExecutionStatus.PENDING,
+        ]),
+      );
+
+      await expect(service.planOrder(tenantId, 'order-1')).rejects.toThrow(ConflictException);
+    });
+
+    it('cancelOrder throws BadRequestException for invalid consumedInputsAction', async () => {
+      repoMock.findOrderDetailById.mockResolvedValue(
+        buildOrderDetail(ProductionOrderStatus.IN_PROCESS, [PhaseExecutionStatus.IN_PROCESS]),
+      );
+
+      await expect(
+        service.cancelOrder(
+          tenantId,
+          'order-1',
+          { reason: 'Stop', consumedInputsAction: 'INVALID' as ConsumedInputsAction },
+          'supervisor-1',
+        ),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('cancelOrder merges cancel metadata with existing plain-text notes', async () => {
+      const inProcessDetail = {
+        ...buildOrderDetail(ProductionOrderStatus.IN_PROCESS, [PhaseExecutionStatus.IN_PROCESS]),
+        notes: 'Notas del supervisor',
+      };
+      const cancelledDetail = {
+        ...inProcessDetail,
+        status: ProductionOrderStatus.CANCELLED,
+      };
+
+      repoMock.findOrderDetailById
+        .mockResolvedValueOnce(inProcessDetail)
+        .mockResolvedValueOnce(cancelledDetail);
+
+      await service.cancelOrder(
+        tenantId,
+        'order-1',
+        { reason: 'Cliente canceló', consumedInputsAction: ConsumedInputsAction.HOLD_FOR_REVIEW },
+        'supervisor-1',
+      );
+
+      expect(repoMock.updateOrder).toHaveBeenCalledWith(
+        tenantId,
+        'order-1',
+        expect.objectContaining({
+          notes: expect.stringContaining('"userNotes":"Notas del supervisor"'),
+        }),
+      );
     });
   });
 });

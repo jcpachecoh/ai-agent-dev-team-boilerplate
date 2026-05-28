@@ -1,9 +1,12 @@
-import { OperationalRole, StockUnit } from '@prisma/client';
+import { OperationalRole, ProductionOrderStatus, ProductionShift, StockUnit } from '@prisma/client';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Decimal } from '@prisma/client/runtime/library';
+import { MES_ROLES_KEY } from '../../auth/decorators/roles.decorator';
 import { MesJwtGuard } from '../../auth/guards/mes-jwt.guard';
+import { MesRolesGuard } from '../../auth/guards/mes-roles.guard';
 import type { MesJwtPayload } from '../../auth/interfaces/mes-auth.interfaces';
 import { PlantController } from '../controller/plant.controller';
+import { PhaseChainService } from '../service/phase-chain.service';
 import { PlantService } from '../service/plant.service';
 
 const tenantId = 'palos-de-lena';
@@ -32,6 +35,17 @@ const serviceMock = {
   reorderPhases: jest.fn(),
   addPhaseInput: jest.fn(),
   removePhaseInput: jest.fn(),
+  createOrder: jest.fn(),
+  findOrders: jest.fn(),
+  findOrderById: jest.fn(),
+  planOrder: jest.fn(),
+  pauseOrder: jest.fn(),
+  resumeOrder: jest.fn(),
+  cancelOrder: jest.fn(),
+};
+
+const phaseChainServiceMock = {
+  qaApproveExecution: jest.fn(),
 };
 
 describe('PlantController', () => {
@@ -40,9 +54,14 @@ describe('PlantController', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [PlantController],
-      providers: [{ provide: PlantService, useValue: serviceMock }],
+      providers: [
+        { provide: PlantService, useValue: serviceMock },
+        { provide: PhaseChainService, useValue: phaseChainServiceMock },
+      ],
     })
       .overrideGuard(MesJwtGuard)
+      .useValue({ canActivate: jest.fn().mockReturnValue(true) })
+      .overrideGuard(MesRolesGuard)
       .useValue({ canActivate: jest.fn().mockReturnValue(true) })
       .compile();
 
@@ -213,6 +232,129 @@ describe('PlantController', () => {
       await controller.removePhaseInput(buildReq(), 'phase-1', 'input-1');
 
       expect(serviceMock.removePhaseInput).toHaveBeenCalledWith(tenantId, 'phase-1', 'input-1');
+    });
+  });
+
+  describe('production orders', () => {
+    it('createOrder passes tenantId from JWT user', async () => {
+      const dto = {
+        recipeId: 'recipe-1',
+        batchCount: 2,
+        shift: ProductionShift.MORNING,
+        plannedStartAt: '2026-05-27T08:00:00.000Z',
+        plannedEndAt: '2026-05-27T12:00:00.000Z',
+      };
+      serviceMock.createOrder.mockResolvedValue({ id: 'order-1' });
+
+      await controller.createOrder(buildReq(), dto);
+
+      expect(serviceMock.createOrder).toHaveBeenCalledWith(
+        tenantId,
+        expect.objectContaining({
+          recipeId: 'recipe-1',
+          batchCount: 2,
+          plannedStartAt: expect.any(Date),
+          plannedEndAt: expect.any(Date),
+        }),
+      );
+    });
+
+    it('findOrders passes tenantId and mapped filters', async () => {
+      serviceMock.findOrders.mockResolvedValue([]);
+
+      await controller.findOrders(buildReq(), {
+        status: ProductionOrderStatus.DRAFT,
+        shift: ProductionShift.MORNING,
+      });
+
+      expect(serviceMock.findOrders).toHaveBeenCalledWith(tenantId, {
+        status: ProductionOrderStatus.DRAFT,
+        shift: ProductionShift.MORNING,
+        priority: undefined,
+        plannedStartFrom: undefined,
+        plannedStartTo: undefined,
+      });
+    });
+
+    it('planOrder passes tenantId and order id', async () => {
+      serviceMock.planOrder.mockResolvedValue({ id: 'order-1' });
+
+      await controller.planOrder(buildReq(), 'order-1');
+
+      expect(serviceMock.planOrder).toHaveBeenCalledWith(tenantId, 'order-1');
+    });
+
+    it('resumeOrder passes tenantId and order id', async () => {
+      serviceMock.resumeOrder.mockResolvedValue({ id: 'order-1' });
+
+      await controller.resumeOrder(buildReq(), 'order-1');
+
+      expect(serviceMock.resumeOrder).toHaveBeenCalledWith(tenantId, 'order-1');
+    });
+
+    it('pauseOrder passes tenantId, order id, and dto', async () => {
+      const dto = { reason: 'Mantenimiento' };
+      serviceMock.pauseOrder.mockResolvedValue({ id: 'order-1' });
+
+      await controller.pauseOrder(buildReq(), 'order-1', dto);
+
+      expect(serviceMock.pauseOrder).toHaveBeenCalledWith(tenantId, 'order-1', dto);
+    });
+
+    it('findOrderById passes tenantId and order id', async () => {
+      serviceMock.findOrderById.mockResolvedValue({ id: 'order-1' });
+
+      await controller.findOrderById(buildReq(), 'order-1');
+
+      expect(serviceMock.findOrderById).toHaveBeenCalledWith(tenantId, 'order-1');
+    });
+
+    it('cancelOrder passes tenantId, order id, dto, and supervisor sub', async () => {
+      const dto = { reason: 'Cliente canceló', consumedInputsAction: 'SCRAP' as never };
+      serviceMock.cancelOrder.mockResolvedValue({ id: 'order-1' });
+
+      await controller.cancelOrder(buildReq(), 'order-1', dto);
+
+      expect(serviceMock.cancelOrder).toHaveBeenCalledWith(tenantId, 'order-1', dto, mesUser.sub);
+    });
+  });
+
+  describe('qa approve', () => {
+    it('qaApproveExecution passes tenantId, execution id, and supervisor sub', async () => {
+      phaseChainServiceMock.qaApproveExecution.mockResolvedValue({
+        orderId: 'order-1',
+        changedExecutions: [],
+      });
+
+      await controller.qaApproveExecution(buildReq(), 'exec-1', {});
+
+      expect(phaseChainServiceMock.qaApproveExecution).toHaveBeenCalledWith(
+        tenantId,
+        'exec-1',
+        mesUser.sub,
+        {},
+      );
+    });
+
+    it('requires supervisor roles via Roles decorator', () => {
+      const roles = Reflect.getMetadata(MES_ROLES_KEY, controller.qaApproveExecution);
+
+      expect(roles).toEqual(
+        expect.arrayContaining([
+          OperationalRole.SUPERVISOR,
+          OperationalRole.MANAGER,
+          OperationalRole.OWNER,
+        ]),
+      );
+    });
+  });
+
+  describe('route surface', () => {
+    it('does not expose completePhase HTTP handler', () => {
+      expect(Object.prototype.hasOwnProperty.call(PlantController.prototype, 'completePhase')).toBe(
+        false,
+      );
+      expect('completePhase' in controller).toBe(false);
     });
   });
 });

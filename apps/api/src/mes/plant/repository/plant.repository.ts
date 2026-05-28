@@ -1,13 +1,28 @@
 import { Injectable } from '@nestjs/common';
-import type { PhaseInput, ProductionPhase, ProductionRecipe, WorkStation } from '@prisma/client';
+import {
+  PhaseExecutionStatus,
+  ProductionOrderStatus,
+  type PhaseExecution,
+  type PhaseInput,
+  type ProductionOrder,
+  type ProductionPhase,
+  type ProductionRecipe,
+  type WorkStation,
+} from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
 import type {
+  CreateOrderWithExecutionsTxInput,
   CreatePhaseInputData,
   CreateRecipeWithPhasesTxInput,
   CreateWorkStationData,
   IPlantRepository,
+  ListOrdersFilters,
+  OrderDetail,
+  OrderWithExecutions,
   RecipeWithPhasesAndInputs,
   ReorderPhaseItem,
+  UpdateExecutionData,
+  UpdateOrderData,
   UpdateRecipeInput,
   UpdateWorkStationData,
 } from '../interfaces/plant.interfaces';
@@ -68,9 +83,8 @@ export class PlantRepository implements IPlantRepository {
     const execution = await this.prisma.phaseExecution.findFirst({
       where: {
         tenantId,
-        completedAt: null,
-        startedAt: { not: null },
-        phase: { workStationId },
+        workStationId,
+        status: { not: PhaseExecutionStatus.COMPLETED },
       },
     });
     return execution !== null;
@@ -314,6 +328,163 @@ export class PlantRepository implements IPlantRepository {
     }
     return this.prisma.phaseInput.delete({
       where: { id: inputId },
+    });
+  }
+
+  // ── Production orders ──────────────────────────────────────────────────────
+
+  async createOrderWithExecutionsTx(
+    input: CreateOrderWithExecutionsTxInput,
+  ): Promise<OrderWithExecutions> {
+    return this.prisma.$transaction(async (tx) => {
+      const order = await tx.productionOrder.create({
+        data: {
+          tenantId: input.tenantId,
+          number: input.number,
+          recipeId: input.recipeId,
+          recipeVersion: input.recipeVersion,
+          batchCount: input.batchCount,
+          shift: input.shift,
+          priority: input.priority,
+          plannedQuantity: input.plannedQuantity,
+          unit: input.unit,
+          plannedStartAt: input.plannedStartAt,
+          plannedEndAt: input.plannedEndAt,
+          supervisorId: input.supervisorId ?? null,
+          notes: input.notes ?? null,
+          status: ProductionOrderStatus.DRAFT,
+        },
+      });
+
+      const phases = await tx.productionPhase.findMany({
+        where: { tenantId: input.tenantId, recipeId: input.recipeId },
+        orderBy: { order: 'asc' },
+      });
+
+      const executions: PhaseExecution[] = [];
+      for (const phase of phases) {
+        const execution = await tx.phaseExecution.create({
+          data: {
+            tenantId: input.tenantId,
+            orderId: order.id,
+            phaseId: phase.id,
+            workStationId: phase.workStationId,
+            status: PhaseExecutionStatus.PENDING,
+            plannedMinutes: phase.standardMinutes * input.batchCount,
+          },
+        });
+        executions.push(execution);
+      }
+
+      return { order, executions };
+    });
+  }
+
+  findOrders(tenantId: string, filters: ListOrdersFilters): Promise<ProductionOrder[]> {
+    const plannedStartAt =
+      filters.plannedStartFrom || filters.plannedStartTo
+        ? {
+            ...(filters.plannedStartFrom ? { gte: filters.plannedStartFrom } : {}),
+            ...(filters.plannedStartTo ? { lte: filters.plannedStartTo } : {}),
+          }
+        : undefined;
+
+    return this.prisma.productionOrder.findMany({
+      where: {
+        tenantId,
+        ...(filters.status ? { status: filters.status } : {}),
+        ...(filters.shift ? { shift: filters.shift } : {}),
+        ...(filters.priority ? { priority: filters.priority } : {}),
+        ...(plannedStartAt ? { plannedStartAt } : {}),
+      },
+      orderBy: { plannedStartAt: 'desc' },
+    });
+  }
+
+  async findOrderDetailById(tenantId: string, id: string): Promise<OrderDetail | null> {
+    const order = await this.prisma.productionOrder.findFirst({
+      where: { id, tenantId },
+      include: {
+        recipe: { select: { id: true, name: true } },
+        executions: {
+          orderBy: { phase: { order: 'asc' } },
+          include: {
+            phase: {
+              select: {
+                id: true,
+                order: true,
+                name: true,
+                requiresQA: true,
+                workStationId: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!order) {
+      return null;
+    }
+
+    const activeSessions = await this.prisma.operatorSession.findMany({
+      where: {
+        tenantId,
+        endedAt: null,
+        phaseExecution: { orderId: id, tenantId },
+      },
+      select: {
+        id: true,
+        workStationId: true,
+        operatorUserId: true,
+        phaseExecutionId: true,
+        startedAt: true,
+      },
+    });
+
+    return {
+      ...order,
+      recipe: order.recipe,
+      executions: order.executions,
+      activeSessions,
+    };
+  }
+
+  async updateOrder(tenantId: string, id: string, data: UpdateOrderData): Promise<ProductionOrder> {
+    const existing = await this.prisma.productionOrder.findFirst({
+      where: { id, tenantId },
+    });
+    if (!existing) {
+      throw new Error(`Production order not found: ${id}`);
+    }
+
+    return this.prisma.productionOrder.update({
+      where: { id },
+      data,
+    });
+  }
+
+  findExecutionById(tenantId: string, id: string): Promise<PhaseExecution | null> {
+    return this.prisma.phaseExecution.findFirst({
+      where: { id, tenantId },
+    });
+  }
+
+  async updateExecution(
+    tenantId: string,
+    id: string,
+    data: UpdateExecutionData,
+  ): Promise<PhaseExecution> {
+    const existing = await this.prisma.phaseExecution.findFirst({
+      where: { id, tenantId },
+    });
+    if (!existing) {
+      throw new Error(`Phase execution not found: ${id}`);
+    }
+
+    return this.prisma.phaseExecution.update({
+      where: { id },
+      data,
     });
   }
 }

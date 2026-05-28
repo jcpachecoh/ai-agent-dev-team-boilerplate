@@ -2,7 +2,7 @@
 
 Automated API test collection for the RestOpsIQ platform.
 
-- **60 live endpoints** across Health, Auth, MES Auth, MES Plant, Supply Items, and Testlab modules.
+- **70 live endpoints** across Health, Auth, MES Auth, MES Plant, Plant Production Orders (MES-05), Supply Items, and Testlab modules.
 - **Postman Collection v2.1** — importable into Postman Desktop or runnable via Newman CLI.
 - **Dynamic variable capture** — POST create responses feed IDs into subsequent requests automatically.
 - **Auto-login pre-request script** — access token is refreshed transparently before any protected request.
@@ -13,7 +13,7 @@ Automated API test collection for the RestOpsIQ platform.
 
 | File                            | Purpose                                             |
 | ------------------------------- | --------------------------------------------------- |
-| `restopsiq-api.collection.json` | Main Postman collection (v2.1) with all 60 requests |
+| `restopsiq-api.collection.json` | Main Postman collection (v2.1) with all 70 requests |
 | `local.environment.json`        | Environment variables for `http://localhost:3001`   |
 | `README.md`                     | This file                                           |
 
@@ -129,6 +129,11 @@ newman run postman/restopsiq-api.collection.json \
 newman run postman/restopsiq-api.collection.json \
   --environment postman/local.environment.json \
   --folder "MES Plant"
+
+# Plant — Production Orders (MES-05; run MES Auth / Login Owner first)
+newman run postman/restopsiq-api.collection.json \
+  --environment postman/local.environment.json \
+  --folder "Plant — Production Orders"
 ```
 
 To save a JSON report:
@@ -193,6 +198,18 @@ RestOpsIQ API
 │   ├── DELETE /api/plant/recipes/:id
 │   ├── PATCH  /api/plant/workstations/:id
 │   └── DELETE /api/plant/workstations/:id          ← last (may 409 if active executions)
+│
+├── Plant — Production Orders (10 requests — MES-05; Bearer {{mesAccessToken}})
+│   ├── Setup: POST /api/plant/workstations
+│   ├── Setup: POST /api/plant/recipes (5 phases, phase 2 requiresQA)
+│   ├── POST   /api/plant/orders                    → captures orderId
+│   ├── GET    /api/plant/orders
+│   ├── GET    /api/plant/orders/:id                → captures executionId (QA phase preferred)
+│   ├── PATCH  /api/plant/orders/:id/plan           → first phase READY
+│   ├── POST   /api/plant/orders/:id/pause          → 200 or 409 (needs IN_PROCESS)
+│   ├── POST   /api/plant/orders/:id/resume         → 200 or 409 (needs PAUSED)
+│   ├── POST   /api/plant/executions/:id/qa-approve → after internal chain complete
+│   └── POST   /api/plant/orders/:id/cancel
 │
 ├── 02 Supply Items    (7 requests — x-tenant-id: {{tenantId}} on every request)
 │   ├── POST   /api/supply-items              → captures supplyItemId
@@ -314,6 +331,71 @@ The collection includes:
 
 ---
 
+## Plant — Production Orders (MES-05)
+
+Production order lifecycle endpoints use the **MES JWT** (`Bearer {{mesAccessToken}}`). Tenant scope comes from the token, not `x-tenant-id`.
+
+### HTTP routes (ticket scope)
+
+| Method | Path                                   | Notes                                                                                 |
+| ------ | -------------------------------------- | ------------------------------------------------------------------------------------- |
+| POST   | `/api/plant/orders`                    | Creates order + one execution per recipe phase (all `PENDING`)                        |
+| GET    | `/api/plant/orders`                    | Filters: `status`, `shift`, `priority`, date range                                    |
+| GET    | `/api/plant/orders/:id`                | Order detail + executions                                                             |
+| PATCH  | `/api/plant/orders/:id/plan`           | `DRAFT` → `PLANNED`; first phase → `READY`                                            |
+| POST   | `/api/plant/orders/:id/pause`          | Requires `IN_PROCESS`; body: `{ "reason": "..." }`                                    |
+| POST   | `/api/plant/orders/:id/resume`         | Requires `PAUSED`                                                                     |
+| POST   | `/api/plant/orders/:id/cancel`         | Body: `{ "reason": "..." }`; add `consumedInputsAction` when `IN_PROCESS` or `PAUSED` |
+| POST   | `/api/plant/executions/:id/qa-approve` | QA supervisor approval after phase reaches `COMPLETED`                                |
+
+**Not in MES-05:** there is no `POST /api/plant/phases/complete`. Phase chain progression is handled internally by `PhaseChainService.completeExecution` until a later ticket exposes operator HTTP.
+
+### Postman flow
+
+1. **MES Auth → Login Owner** (sets `{{mesAccessToken}}`).
+2. Run **Plant — Production Orders** top-to-bottom (includes setup workstation + 5-phase recipe).
+3. **QA Approve Execution** expects a prior internal `completeExecution` (unit tests or dev script). Without it, the request may return 409/400.
+4. **Pause / Resume** accept `200` or `409` in tests — MES-05 does not expose HTTP to move the order to `IN_PROCESS` (operator runtime).
+
+### Cancel rules
+
+| Order status           | `reason` | `consumedInputsAction`         |
+| ---------------------- | -------- | ------------------------------ |
+| `DRAFT`, `PLANNED`     | Required | Optional                       |
+| `IN_PROCESS`, `PAUSED` | Required | Required (`KEEP` or `REVERSE`) |
+
+### WebSocket — `phase:status_changed`
+
+Connect to the API WebSocket namespace with the MES JWT (same token as HTTP). The server joins clients to tenant rooms.
+
+**Event:** `phase:status_changed`
+
+**Payload:**
+
+```json
+{
+  "orderId": "order-uuid",
+  "phaseId": "phase-uuid",
+  "stationId": "work-station-uuid",
+  "status": "READY"
+}
+```
+
+Emitted on plan, pause, resume, cancel, internal chain complete, and qa-approve. Use a Socket.IO client or browser devtools to observe events during manual smoke.
+
+### Smoke scenarios
+
+| Scenario            | How to verify                                                                   |
+| ------------------- | ------------------------------------------------------------------------------- |
+| Create → detail     | 5 executions, all `PENDING`                                                     |
+| Plan                | Order `PLANNED`; execution with `order=1` is `READY`                            |
+| Cancel (PLANNED)    | `reason` only → order `CANCELLED`                                               |
+| Cancel (IN_PROCESS) | `reason` + `consumedInputsAction`                                               |
+| QA path             | Run `PhaseChainService.completeExecution` in tests/dev, then Postman qa-approve |
+| WebSocket           | Observe `phase:status_changed` on plan / qa-approve                             |
+
+---
+
 ## Dynamic Variable Capture
 
 Every `POST` create request captures the returned `id` in its `Tests` script:
@@ -332,6 +414,9 @@ Every `POST` create request captures the returned `id` in its `Tests` script:
 | POST /api/plant/recipes/:id/clone               | `clonedRecipeId`       |
 | GET /api/plant/recipes/:id                      | `phaseId1`, `phaseId2` |
 | POST /api/plant/phases/:id/inputs               | `phaseInputId`         |
+| POST /api/plant/orders (MES-05 setup recipe)    | `ordersRecipeId`       |
+| POST /api/plant/orders                          | `orderId`              |
+| GET /api/plant/orders/:id                       | `executionId`          |
 
 **Uniqueness note:**
 
@@ -402,6 +487,11 @@ Login
 | `phaseInputId`          | Auto                              | MES Plant / Add Phase Input                                |
 | `plantWorkStationCode`  | Auto                              | MES Plant pre-request (unique code)                        |
 | `plantRecipeName`       | Auto                              | MES Plant pre-request (unique name)                        |
+| `ordersRecipeId`        | Auto                              | Plant — Production Orders / setup recipe                   |
+| `orderId`               | Auto                              | Plant — Production Orders / Create Production Order        |
+| `executionId`           | Auto                              | Plant — Production Orders / Get Order Detail               |
+| `orderPlannedStartAt`   | Auto                              | Create Production Order pre-request                        |
+| `orderPlannedEndAt`     | Auto                              | Create Production Order pre-request                        |
 
 ### RES-226 email endpoint manual setup
 

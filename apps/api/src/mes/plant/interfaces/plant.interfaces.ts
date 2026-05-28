@@ -1,7 +1,13 @@
 import type {
+  PhaseExecution,
+  PhaseExecutionStatus,
   PhaseInput,
+  ProductionOrder,
+  ProductionOrderStatus,
   ProductionPhase,
+  ProductionPriority,
   ProductionRecipe,
+  ProductionShift,
   StockUnit,
   WorkStation,
 } from '@prisma/client';
@@ -138,6 +144,184 @@ export interface CreatePhaseInputData extends CreatePhaseInputInput {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Production orders
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Supervisor decision when cancelling an in-progress order (audit-only in MES-05). */
+export enum ConsumedInputsAction {
+  SCRAP = 'SCRAP',
+  RETURN_TO_STOCK = 'RETURN_TO_STOCK',
+  HOLD_FOR_REVIEW = 'HOLD_FOR_REVIEW',
+}
+
+export interface CreateOrderInput {
+  recipeId: string;
+  batchCount: number;
+  shift: ProductionShift;
+  priority?: ProductionPriority;
+  plannedStartAt: Date;
+  plannedEndAt: Date;
+  supervisorId?: string | null;
+  notes?: string | null;
+}
+
+export interface CreateOrderWithExecutionsTxInput {
+  tenantId: string;
+  number: string;
+  recipeId: string;
+  recipeVersion: number;
+  batchCount: number;
+  shift: ProductionShift;
+  priority: ProductionPriority;
+  plannedQuantity: Decimal;
+  unit: StockUnit;
+  plannedStartAt: Date;
+  plannedEndAt: Date;
+  supervisorId?: string | null;
+  notes?: string | null;
+}
+
+export interface ListOrdersFilters {
+  status?: ProductionOrderStatus;
+  shift?: ProductionShift;
+  priority?: ProductionPriority;
+  plannedStartFrom?: Date;
+  plannedStartTo?: Date;
+}
+
+export interface UpdateOrderData {
+  status?: ProductionOrderStatus;
+  notes?: string | null;
+  actualStartAt?: Date | null;
+  actualEndAt?: Date | null;
+  producedQuantity?: Decimal | null;
+}
+
+export interface UpdateExecutionData {
+  status?: PhaseExecutionStatus;
+  actualMinutes?: number | null;
+  producedQuantity?: Decimal | null;
+  qaApprovedAt?: Date | null;
+  qaApprovedBy?: string | null;
+  completedAt?: Date | null;
+  notes?: string | null;
+}
+
+export interface PauseOrderInput {
+  reason: string;
+}
+
+export interface CancelOrderInput {
+  reason: string;
+  consumedInputsAction?: ConsumedInputsAction;
+}
+
+export interface QaApproveInput {
+  notes?: string | null;
+}
+
+export interface CompleteExecutionInput {
+  producedQuantity?: Decimal | null;
+  actualMinutes?: number | null;
+  notes?: string | null;
+}
+
+export interface OrderListItemResponse {
+  id: string;
+  tenantId: string;
+  number: string;
+  status: ProductionOrderStatus;
+  priority: ProductionPriority;
+  shift: ProductionShift;
+  plannedStartAt: Date;
+  recipeId: string;
+  recipeName?: string;
+}
+
+export type OrderExecutionDetail = PhaseExecution & {
+  phase: Pick<ProductionPhase, 'id' | 'order' | 'name' | 'requiresQA' | 'workStationId'>;
+};
+
+export type ActiveOperatorSessionDetail = {
+  id: string;
+  workStationId: string;
+  operatorUserId: string;
+  phaseExecutionId: string | null;
+  startedAt: Date;
+};
+
+export type OrderDetail = ProductionOrder & {
+  recipe: Pick<ProductionRecipe, 'id' | 'name'>;
+  executions: OrderExecutionDetail[];
+  activeSessions: ActiveOperatorSessionDetail[];
+};
+
+export interface OrderDetailResponse {
+  id: string;
+  tenantId: string;
+  number: string;
+  recipeId: string;
+  recipeName: string;
+  recipeVersion: number;
+  status: ProductionOrderStatus;
+  priority: ProductionPriority;
+  shift: ProductionShift;
+  batchCount: number;
+  plannedQuantity: string;
+  producedQuantity: string | null;
+  unit: StockUnit;
+  plannedStartAt: Date;
+  plannedEndAt: Date;
+  actualStartAt: Date | null;
+  actualEndAt: Date | null;
+  supervisorId: string | null;
+  notes: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  executions: Array<{
+    id: string;
+    phaseId: string;
+    phaseOrder: number;
+    phaseName: string;
+    requiresQA: boolean;
+    workStationId: string;
+    status: PhaseExecutionStatus;
+    plannedMinutes: number;
+    actualMinutes: number | null;
+    producedQuantity: string | null;
+    qaApprovedAt: Date | null;
+    qaApprovedBy: string | null;
+    completedAt: Date | null;
+    notes: string | null;
+  }>;
+  activeOperators: Array<{
+    sessionId: string;
+    operatorUserId: string;
+    workStationId: string;
+    phaseExecutionId: string | null;
+    startedAt: Date;
+  }>;
+}
+
+export type OrderWithExecutions = {
+  order: ProductionOrder;
+  executions: PhaseExecution[];
+};
+
+export interface PhaseStatusChange {
+  id: string;
+  orderId: string;
+  phaseId: string;
+  workStationId: string;
+  status: PhaseExecutionStatus;
+}
+
+export interface ChainResult {
+  orderId: string;
+  changedExecutions: PhaseStatusChange[];
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Repository
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -186,6 +370,16 @@ export interface IPlantRepository {
   findPhaseInputById(tenantId: string, id: string): Promise<PhaseInput | null>;
   createPhaseInput(data: CreatePhaseInputData): Promise<PhaseInput>;
   deletePhaseInput(tenantId: string, phaseId: string, inputId: string): Promise<PhaseInput>;
+
+  // Production orders
+  createOrderWithExecutionsTx(
+    input: CreateOrderWithExecutionsTxInput,
+  ): Promise<OrderWithExecutions>;
+  findOrders(tenantId: string, filters: ListOrdersFilters): Promise<ProductionOrder[]>;
+  findOrderDetailById(tenantId: string, id: string): Promise<OrderDetail | null>;
+  updateOrder(tenantId: string, id: string, data: UpdateOrderData): Promise<ProductionOrder>;
+  findExecutionById(tenantId: string, id: string): Promise<PhaseExecution | null>;
+  updateExecution(tenantId: string, id: string, data: UpdateExecutionData): Promise<PhaseExecution>;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -221,4 +415,33 @@ export interface IPlantService {
     input: CreatePhaseInputInput,
   ): Promise<PhaseInput>;
   removePhaseInput(tenantId: string, phaseId: string, inputId: string): Promise<PhaseInput>;
+
+  // Production orders — POST/GET /plant/orders, lifecycle routes
+  createOrder(tenantId: string, input: CreateOrderInput): Promise<OrderDetailResponse>;
+  findOrders(tenantId: string, filters: ListOrdersFilters): Promise<OrderListItemResponse[]>;
+  findOrderById(tenantId: string, id: string): Promise<OrderDetailResponse>;
+  planOrder(tenantId: string, id: string): Promise<OrderDetailResponse>;
+  pauseOrder(tenantId: string, id: string, input: PauseOrderInput): Promise<OrderDetailResponse>;
+  resumeOrder(tenantId: string, id: string): Promise<OrderDetailResponse>;
+  cancelOrder(
+    tenantId: string,
+    id: string,
+    input: CancelOrderInput,
+    cancelledBy: string,
+  ): Promise<OrderDetailResponse>;
+}
+
+/** Internal phase chain — no HTTP route in MES-05. */
+export interface IPhaseChainService {
+  completeExecution(
+    tenantId: string,
+    executionId: string,
+    input: CompleteExecutionInput,
+  ): Promise<ChainResult>;
+  qaApproveExecution(
+    tenantId: string,
+    executionId: string,
+    supervisorId: string,
+    input?: QaApproveInput,
+  ): Promise<ChainResult>;
 }

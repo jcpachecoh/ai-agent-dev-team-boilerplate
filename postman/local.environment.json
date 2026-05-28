@@ -262,6 +262,41 @@
       "description": "MES plant — unique recipe name generated per run"
     },
     {
+      "key": "orderId",
+      "value": "",
+      "type": "default",
+      "enabled": true,
+      "description": "MES production order id — captured from POST /api/plant/orders"
+    },
+    {
+      "key": "executionId",
+      "value": "",
+      "type": "default",
+      "enabled": true,
+      "description": "Phase execution id for QA approve — from order detail (QA phase preferred)"
+    },
+    {
+      "key": "ordersRecipeId",
+      "value": "",
+      "type": "default",
+      "enabled": true,
+      "description": "5-phase recipe id for Plant — Production Orders setup"
+    },
+    {
+      "key": "orderPlannedStartAt",
+      "value": "2026-05-28T08:00:00.000Z",
+      "type": "default",
+      "enabled": true,
+      "description": "plannedStartAt ISO UTC — turno MORNING; inicio 08:00 UTC (03:00 Colombia)"
+    },
+    {
+      "key": "orderPlannedEndAt",
+      "value": "2026-05-28T16:00:00.000Z",
+      "type": "default",
+      "enabled": true,
+      "description": "plannedEndAt ISO UTC — debe ser posterior a orderPlannedStartAt (8h ventana)"
+    },
+    {
       "key": "projectId",
       "value": "",
       "type": "default",

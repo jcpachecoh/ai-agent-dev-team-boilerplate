@@ -4,27 +4,47 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import type { PhaseInput, ProductionPhase, ProductionRecipe, WorkStation } from '@prisma/client';
+import {
+  PhaseExecutionStatus,
+  ProductionOrderStatus,
+  ProductionPriority,
+  type PhaseInput,
+  type ProductionPhase,
+  type ProductionRecipe,
+  type WorkStation,
+} from '@prisma/client';
+import { Decimal } from '@prisma/client/runtime/library';
 import { SupplyItemsService } from '../../../supplyitems/service/supplyitems.service';
 import { PlantRepository } from '../repository/plant.repository';
 import type {
+  CancelOrderInput,
+  CreateOrderInput,
   CreatePhaseInputInput,
   CreatePhaseNestedInput,
   CreateRecipeWithPhasesInput,
   CreateRecipeWithPhasesTxInput,
   CreateWorkStationInput,
   IPlantService,
+  ListOrdersFilters,
+  OrderDetail,
+  OrderDetailResponse,
+  OrderListItemResponse,
+  PauseOrderInput,
+  PhaseStatusChange,
   RecipeDetailResponse,
   ReorderPhaseItem,
   UpdateRecipeInput,
   UpdateWorkStationInput,
 } from '../interfaces/plant.interfaces';
+import { ConsumedInputsAction } from '../interfaces/plant.interfaces';
+import { PlantEventsService } from './plant-events.service';
 
 @Injectable()
 export class PlantService implements IPlantService {
   constructor(
     private readonly plantRepository: PlantRepository,
     private readonly supplyItemsService: SupplyItemsService,
+    private readonly plantEventsService: PlantEventsService,
   ) {}
 
   // ── Workstations ───────────────────────────────────────────────────────────
@@ -209,6 +229,251 @@ export class PlantService implements IPlantService {
     return this.plantRepository.deletePhaseInput(tenantId, phaseId, inputId);
   }
 
+  // ── Production orders ────────────────────────────────────────────────────────
+
+  async createOrder(tenantId: string, input: CreateOrderInput): Promise<OrderDetailResponse> {
+    this.validateOrderDates(input.plannedStartAt, input.plannedEndAt);
+    this.validateBatchCount(input.batchCount);
+
+    const recipe = await this.plantRepository.findRecipeDetailById(tenantId, input.recipeId);
+    if (!recipe) {
+      throw new NotFoundException(`Production recipe with ID "${input.recipeId}" not found`);
+    }
+    if (!recipe.isActive) {
+      throw new BadRequestException('Production recipe is inactive and cannot be used for orders');
+    }
+
+    const number = await this.generateOrderNumber(tenantId);
+    const plannedQuantity = new Decimal(input.batchCount).mul(recipe.batchSize);
+
+    const { executions } = await this.plantRepository.createOrderWithExecutionsTx({
+      tenantId,
+      number,
+      recipeId: recipe.id,
+      recipeVersion: recipe.version,
+      batchCount: input.batchCount,
+      shift: input.shift,
+      priority: input.priority ?? ProductionPriority.NORMAL,
+      plannedQuantity,
+      unit: recipe.batchUnit,
+      plannedStartAt: input.plannedStartAt,
+      plannedEndAt: input.plannedEndAt,
+      supervisorId: input.supervisorId ?? null,
+      notes: input.notes ?? null,
+    });
+
+    if (executions.length !== recipe.phases.length) {
+      throw new ConflictException(
+        'Order creation failed: execution count does not match recipe phase count',
+      );
+    }
+    if (!executions.every((execution) => execution.status === PhaseExecutionStatus.PENDING)) {
+      throw new ConflictException('Order creation failed: executions must all be PENDING');
+    }
+
+    const detail = await this.plantRepository.findOrderDetailById(tenantId, executions[0].orderId);
+    if (!detail) {
+      throw new NotFoundException('Created production order could not be loaded');
+    }
+
+    return this.mapOrderDetail(detail);
+  }
+
+  async findOrders(tenantId: string, filters: ListOrdersFilters): Promise<OrderListItemResponse[]> {
+    const orders = await this.plantRepository.findOrders(tenantId, filters);
+
+    return orders.map((order) => ({
+      id: order.id,
+      tenantId: order.tenantId,
+      number: order.number,
+      status: order.status,
+      priority: order.priority,
+      shift: order.shift,
+      plannedStartAt: order.plannedStartAt,
+      recipeId: order.recipeId,
+    }));
+  }
+
+  async findOrderById(tenantId: string, id: string): Promise<OrderDetailResponse> {
+    const detail = await this.requireOrderDetail(tenantId, id);
+    return this.mapOrderDetail(detail);
+  }
+
+  async planOrder(tenantId: string, id: string): Promise<OrderDetailResponse> {
+    const detail = await this.requireOrderDetail(tenantId, id);
+
+    if (detail.status !== ProductionOrderStatus.DRAFT) {
+      throw new ConflictException(`Cannot plan order in status ${detail.status}`);
+    }
+
+    const firstExecution = detail.executions.find((execution) => execution.phase.order === 1);
+    if (!firstExecution) {
+      throw new BadRequestException('Order has no first phase execution');
+    }
+    if (firstExecution.status !== PhaseExecutionStatus.PENDING) {
+      throw new ConflictException('First phase execution is not in PENDING state');
+    }
+
+    await this.plantRepository.updateOrder(tenantId, id, {
+      status: ProductionOrderStatus.PLANNED,
+    });
+    await this.plantRepository.updateExecution(tenantId, firstExecution.id, {
+      status: PhaseExecutionStatus.READY,
+    });
+
+    this.plantEventsService.emitPhaseStatusChanges(tenantId, [
+      {
+        id: firstExecution.id,
+        orderId: id,
+        phaseId: firstExecution.phaseId,
+        workStationId: firstExecution.workStationId,
+        status: PhaseExecutionStatus.READY,
+      },
+    ]);
+
+    const updated = await this.requireOrderDetail(tenantId, id);
+    return this.mapOrderDetail(updated);
+  }
+
+  async pauseOrder(
+    tenantId: string,
+    id: string,
+    input: PauseOrderInput,
+  ): Promise<OrderDetailResponse> {
+    const reason = input.reason?.trim();
+    if (!reason) {
+      throw new BadRequestException('reason is required');
+    }
+
+    const detail = await this.requireOrderDetail(tenantId, id);
+    if (detail.status !== ProductionOrderStatus.IN_PROCESS) {
+      throw new ConflictException(`Cannot pause order in status ${detail.status}`);
+    }
+
+    const notes = this.appendOrderMetadata(detail.notes, 'pause', {
+      reason,
+      pausedAt: new Date().toISOString(),
+    });
+
+    await this.plantRepository.updateOrder(tenantId, id, {
+      status: ProductionOrderStatus.PAUSED,
+      notes,
+    });
+
+    const pauseChanges: PhaseStatusChange[] = [];
+
+    for (const execution of detail.executions) {
+      if (execution.status === PhaseExecutionStatus.IN_PROCESS) {
+        await this.plantRepository.updateExecution(tenantId, execution.id, {
+          status: PhaseExecutionStatus.PAUSED,
+        });
+        pauseChanges.push({
+          id: execution.id,
+          orderId: id,
+          phaseId: execution.phaseId,
+          workStationId: execution.workStationId,
+          status: PhaseExecutionStatus.PAUSED,
+        });
+      }
+    }
+
+    this.plantEventsService.emitPhaseStatusChanges(tenantId, pauseChanges);
+
+    const updated = await this.requireOrderDetail(tenantId, id);
+    return this.mapOrderDetail(updated);
+  }
+
+  async resumeOrder(tenantId: string, id: string): Promise<OrderDetailResponse> {
+    const detail = await this.requireOrderDetail(tenantId, id);
+
+    if (detail.status !== ProductionOrderStatus.PAUSED) {
+      throw new ConflictException(`Cannot resume order in status ${detail.status}`);
+    }
+
+    await this.plantRepository.updateOrder(tenantId, id, {
+      status: ProductionOrderStatus.IN_PROCESS,
+    });
+
+    const resumeChanges: PhaseStatusChange[] = [];
+
+    for (const execution of detail.executions) {
+      if (execution.status === PhaseExecutionStatus.PAUSED) {
+        await this.plantRepository.updateExecution(tenantId, execution.id, {
+          status: PhaseExecutionStatus.IN_PROCESS,
+        });
+        resumeChanges.push({
+          id: execution.id,
+          orderId: id,
+          phaseId: execution.phaseId,
+          workStationId: execution.workStationId,
+          status: PhaseExecutionStatus.IN_PROCESS,
+        });
+      }
+    }
+
+    this.plantEventsService.emitPhaseStatusChanges(tenantId, resumeChanges);
+
+    const updated = await this.requireOrderDetail(tenantId, id);
+    return this.mapOrderDetail(updated);
+  }
+
+  async cancelOrder(
+    tenantId: string,
+    id: string,
+    input: CancelOrderInput,
+    cancelledBy: string,
+  ): Promise<OrderDetailResponse> {
+    const reason = input.reason?.trim();
+    if (!reason) {
+      throw new BadRequestException('reason is required');
+    }
+
+    const detail = await this.requireOrderDetail(tenantId, id);
+
+    if (detail.status === ProductionOrderStatus.COMPLETED) {
+      throw new ConflictException('Cannot cancel a completed order');
+    }
+    if (detail.status === ProductionOrderStatus.CANCELLED) {
+      throw new ConflictException('Order is already cancelled');
+    }
+
+    const requiresConsumedInputsAction =
+      detail.status === ProductionOrderStatus.IN_PROCESS ||
+      detail.status === ProductionOrderStatus.PAUSED;
+
+    if (requiresConsumedInputsAction && !input.consumedInputsAction) {
+      throw new BadRequestException(
+        'consumedInputsAction is required when cancelling an in-progress order',
+      );
+    }
+
+    if (
+      input.consumedInputsAction &&
+      !this.isValidConsumedInputsAction(input.consumedInputsAction)
+    ) {
+      throw new BadRequestException('Invalid consumedInputsAction');
+    }
+
+    const cancelMetadata: Record<string, string> = {
+      reason,
+      cancelledAt: new Date().toISOString(),
+      cancelledBy,
+    };
+    if (input.consumedInputsAction) {
+      cancelMetadata.consumedInputsAction = input.consumedInputsAction;
+    }
+
+    const notes = this.appendOrderMetadata(detail.notes, 'cancel', cancelMetadata);
+
+    await this.plantRepository.updateOrder(tenantId, id, {
+      status: ProductionOrderStatus.CANCELLED,
+      notes,
+    });
+
+    const updated = await this.requireOrderDetail(tenantId, id);
+    return this.mapOrderDetail(updated);
+  }
+
   // ── Private helpers ──────────────────────────────────────────────────────────
 
   private async requireWorkStation(tenantId: string, id: string): Promise<WorkStation> {
@@ -233,6 +498,122 @@ export class PlantService implements IPlantService {
       throw new NotFoundException(`Production phase with ID "${id}" not found`);
     }
     return phase;
+  }
+
+  private async requireOrderDetail(tenantId: string, id: string): Promise<OrderDetail> {
+    const detail = await this.plantRepository.findOrderDetailById(tenantId, id);
+    if (!detail) {
+      throw new NotFoundException(`Production order with ID "${id}" not found`);
+    }
+    return detail;
+  }
+
+  private validateBatchCount(batchCount: number): void {
+    if (!Number.isInteger(batchCount) || batchCount < 1) {
+      throw new BadRequestException('batchCount must be a positive integer');
+    }
+  }
+
+  private validateOrderDates(plannedStartAt: Date, plannedEndAt: Date): void {
+    if (plannedStartAt >= plannedEndAt) {
+      throw new BadRequestException('plannedStartAt must be before plannedEndAt');
+    }
+  }
+
+  private async generateOrderNumber(tenantId: string): Promise<string> {
+    const year = new Date().getFullYear();
+    const prefix = `${year}-`;
+    const orders = await this.plantRepository.findOrders(tenantId, {});
+
+    let maxSeq = 0;
+    for (const order of orders) {
+      if (!order.number.startsWith(prefix)) {
+        continue;
+      }
+      const seq = Number.parseInt(order.number.slice(prefix.length), 10);
+      if (!Number.isNaN(seq) && seq > maxSeq) {
+        maxSeq = seq;
+      }
+    }
+
+    return `${prefix}${maxSeq + 1}`;
+  }
+
+  private mapOrderDetail(detail: OrderDetail): OrderDetailResponse {
+    return {
+      id: detail.id,
+      tenantId: detail.tenantId,
+      number: detail.number,
+      recipeId: detail.recipeId,
+      recipeName: detail.recipe.name,
+      recipeVersion: detail.recipeVersion,
+      status: detail.status,
+      priority: detail.priority,
+      shift: detail.shift,
+      batchCount: detail.batchCount,
+      plannedQuantity: detail.plannedQuantity.toString(),
+      producedQuantity: detail.producedQuantity?.toString() ?? null,
+      unit: detail.unit,
+      plannedStartAt: detail.plannedStartAt,
+      plannedEndAt: detail.plannedEndAt,
+      actualStartAt: detail.actualStartAt,
+      actualEndAt: detail.actualEndAt,
+      supervisorId: detail.supervisorId,
+      notes: detail.notes,
+      createdAt: detail.createdAt,
+      updatedAt: detail.updatedAt,
+      executions: detail.executions.map((execution) => ({
+        id: execution.id,
+        phaseId: execution.phaseId,
+        phaseOrder: execution.phase.order,
+        phaseName: execution.phase.name,
+        requiresQA: execution.phase.requiresQA,
+        workStationId: execution.workStationId,
+        status: execution.status,
+        plannedMinutes: execution.plannedMinutes,
+        actualMinutes: execution.actualMinutes,
+        producedQuantity: execution.producedQuantity?.toString() ?? null,
+        qaApprovedAt: execution.qaApprovedAt,
+        qaApprovedBy: execution.qaApprovedBy,
+        completedAt: execution.completedAt,
+        notes: execution.notes,
+      })),
+      activeOperators: detail.activeSessions.map((session) => ({
+        sessionId: session.id,
+        operatorUserId: session.operatorUserId,
+        workStationId: session.workStationId,
+        phaseExecutionId: session.phaseExecutionId,
+        startedAt: session.startedAt,
+      })),
+    };
+  }
+
+  private appendOrderMetadata(
+    notes: string | null,
+    key: string,
+    value: Record<string, string>,
+  ): string {
+    let parsed: Record<string, unknown> = {};
+
+    if (notes) {
+      try {
+        const existing = JSON.parse(notes) as unknown;
+        if (typeof existing === 'object' && existing !== null && !Array.isArray(existing)) {
+          parsed = existing as Record<string, unknown>;
+        } else {
+          parsed = { userNotes: notes };
+        }
+      } catch {
+        parsed = { userNotes: notes };
+      }
+    }
+
+    parsed[key] = value;
+    return JSON.stringify(parsed);
+  }
+
+  private isValidConsumedInputsAction(action: ConsumedInputsAction): boolean {
+    return Object.values(ConsumedInputsAction).includes(action);
   }
 
   private validateReorderItems(phases: ProductionPhase[], items: ReorderPhaseItem[]): void {

@@ -30,7 +30,9 @@
     "@nestjs/jwt": "^11.0.2",
     "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^10.3.0",
+    "@nestjs/platform-socket.io": "^10.4.15",
     "@nestjs/swagger": "^7.4.2",
+    "@nestjs/websockets": "^10.4.15",
     "@prisma/client": "^5.22.0",
     "@restopsiq/email": "workspace:*",
     "@restopsiq/types": "workspace:*",
@@ -48,6 +50,7 @@
     "redlock": "4.2.0",
     "reflect-metadata": "^0.2.0",
     "rxjs": "^7.8.0",
+    "socket.io": "^4.8.1",
     "swagger-ui-express": "^5.0.1",
     "zod": "^4.4.3"
   },
