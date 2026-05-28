@@ -4,7 +4,7 @@ import styles from './LoginTitle.module.scss';
 export interface LoginTitleProps extends React.HTMLAttributes<HTMLDivElement> {
   title?: string;
   subtitle?: string;
-  variant?: 'light' | 'dark';
+  theme?: 'light' | 'dark';
   titleSize?: 'sm' | 'md' | 'lg';
   statusColor?: string; // optional small dot color shown before subtitle
 }
@@ -12,7 +12,7 @@ export interface LoginTitleProps extends React.HTMLAttributes<HTMLDivElement> {
 export function LoginTitle({
   title = 'Bienvenido a RestOpsIQ',
   subtitle = 'Módulo · Planificación de Despachos',
-  variant = 'light',
+  theme = 'light',
   titleSize = 'md',
   statusColor,
   className,
@@ -26,7 +26,7 @@ export function LoginTitle({
         : styles['size-md'];
   const cls = [
     styles.container,
-    variant === 'dark' ? styles.dark : styles.light,
+    theme === 'dark' ? styles.dark : styles.light,
     sizeClass,
     className,
   ]

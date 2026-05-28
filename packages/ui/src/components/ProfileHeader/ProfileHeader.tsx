@@ -35,7 +35,7 @@ export function ProfileHeader({
         <LoginTitle
           title={name}
           subtitle={subtitle}
-          variant={theme}
+          theme={theme}
           titleSize={titleSize}
           className={styles.titleOverride}
         />

@@ -11,15 +11,18 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   loading?: boolean;
 }
 
-export function Button({
-  variant = 'primary',
-  className,
-  children,
-  size = 'medium',
-  arrow = false,
-  loading = false,
-  ...props
-}: ButtonProps): React.JSX.Element {
+export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(function Button(
+  {
+    variant = 'primary',
+    className,
+    children,
+    size = 'medium',
+    arrow = false,
+    loading = false,
+    ...props
+  },
+  ref,
+): React.JSX.Element {
   const variantClass = styles[variant] ?? styles.primary;
   const sizeClass =
     size === 'large' ? styles.large : size === 'small' ? styles.small : styles.medium;
@@ -29,6 +32,7 @@ export function Button({
     .join(' ');
   return (
     <button
+      ref={ref}
       className={combinedClassName}
       data-variant={variant}
       data-size={size}
@@ -55,4 +59,6 @@ export function Button({
       )}
     </button>
   );
-}
+});
+
+Button.displayName = 'Button';

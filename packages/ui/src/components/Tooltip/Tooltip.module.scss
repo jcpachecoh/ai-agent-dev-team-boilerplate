@@ -28,7 +28,7 @@
   padding: $spacing-sm $spacing-md;
 }
 
-.variant--dark {
+.content--dark {
   background-color: $color-gray-900;
   color: $color-white;
   border: 1px solid rgba($color-white, 0.06);
@@ -38,7 +38,7 @@
   fill: $color-gray-900;
 }
 
-.variant--light {
+.content--light {
   background-color: $color-white;
   color: $color-gray-900;
   border: 1px solid rgba($color-black, 0.04);
@@ -48,7 +48,7 @@
   fill: $color-white;
 }
 
-.variant--brand {
+.content--brand {
   background-color: #d4a017;
   color: $color-white;
   border: 1px solid rgba($color-black, 0.06);
