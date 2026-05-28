@@ -235,7 +235,7 @@ function validate() {
   ]);
 
   // Parent aggregator modules whose children should be validated individually
-  const AGGREGATORS = new Set(['testlab', 'mes']);
+  const AGGREGATORS = new Set(['mes']);
 
   // Collect { dir, name } pairs for every feature module to validate
   const features = [];

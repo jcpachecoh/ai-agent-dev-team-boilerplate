@@ -4,7 +4,6 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
 import { EmailModule } from './email/email.module';
-import { TestlabModule } from './testlab/testlab.module';
 import { AuthModule } from './auth/auth.module';
 import { AuditModule } from './audit/audit.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
@@ -22,7 +21,6 @@ import { PlantModule } from './mes/plant/plant.module';
     MesAuthModule,
     PlantModule,
     AuditModule,
-    TestlabModule,
     SupplyItemsModule,
     LockModule,
   ],
