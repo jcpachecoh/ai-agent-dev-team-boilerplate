@@ -16,7 +16,7 @@ function getLoadingSpinnerColor(
   if (checked) {
     return theme === 'dark' ? '#f2c94c' : '#e4b43a';
   }
-  return theme === 'dark' ? '#f5f5f0' : '#1a1a1a';
+  return '#f5f5f0';
 }
 
 export interface SwitchProps extends Omit<React.LabelHTMLAttributes<HTMLLabelElement>, 'onChange'> {
