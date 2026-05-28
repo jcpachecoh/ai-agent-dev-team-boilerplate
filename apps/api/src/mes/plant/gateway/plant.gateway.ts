@@ -8,6 +8,8 @@ import {
 } from '@nestjs/websockets';
 import type { Server, Socket } from 'socket.io';
 import type { MesJwtPayload } from '../../auth/interfaces/mes-auth.interfaces';
+import type { AlarmTriggeredPayload } from '../controller/dto/alarm-triggered.payload';
+import type { IncidentCreatedPayload } from '../controller/dto/incident.response';
 import type { PhaseStatusChangedPayload } from '../service/plant-events.service';
 
 @Injectable()
@@ -60,6 +62,30 @@ export class PlantGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     this.server.to(`tenant:${tenantId}`).emit('phase:status_changed', payload);
+  }
+
+  emitAlarmTriggered(tenantId: string, payload: AlarmTriggeredPayload): void {
+    if (!this.server) {
+      return;
+    }
+
+    this.server.to(`tenant:${tenantId}`).emit('alarm:triggered', payload);
+
+    if (payload.stationId) {
+      this.server.to(`station:${payload.stationId}`).emit('alarm:triggered', payload);
+    }
+  }
+
+  emitIncidentCreated(tenantId: string, payload: IncidentCreatedPayload): void {
+    if (!this.server) {
+      return;
+    }
+
+    this.server.to(`tenant:${tenantId}`).emit('incident:created', payload);
+
+    if (payload.stationId) {
+      this.server.to(`station:${payload.stationId}`).emit('incident:created', payload);
+    }
   }
 
   private extractToken(client: Socket): string | undefined {

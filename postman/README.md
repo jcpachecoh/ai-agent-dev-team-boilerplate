@@ -2,7 +2,7 @@
 
 Automated API test collection for the RestOpsIQ platform.
 
-- **70 live endpoints** across Health, Auth, MES Auth, MES Plant, Plant Production Orders (MES-05), Supply Items, and Testlab modules.
+- **77 live endpoints** across Health, Auth, MES Auth, MES Plant, Plant Production Orders (MES-05), Plant Alarms & Incidents (MES-08), Supply Items, and Testlab modules.
 - **Postman Collection v2.1** — importable into Postman Desktop or runnable via Newman CLI.
 - **Dynamic variable capture** — POST create responses feed IDs into subsequent requests automatically.
 - **Auto-login pre-request script** — access token is refreshed transparently before any protected request.
@@ -13,7 +13,7 @@ Automated API test collection for the RestOpsIQ platform.
 
 | File                            | Purpose                                             |
 | ------------------------------- | --------------------------------------------------- |
-| `restopsiq-api.collection.json` | Main Postman collection (v2.1) with all 70 requests |
+| `restopsiq-api.collection.json` | Main Postman collection (v2.1) with all 77 requests |
 | `local.environment.json`        | Environment variables for `http://localhost:3001`   |
 | `README.md`                     | This file                                           |
 
@@ -134,6 +134,11 @@ newman run postman/restopsiq-api.collection.json \
 newman run postman/restopsiq-api.collection.json \
   --environment postman/local.environment.json \
   --folder "Plant — Production Orders"
+
+# Plant — Alarms & Incidents (MES-08; run MES Auth + Production Orders setup first)
+newman run postman/restopsiq-api.collection.json \
+  --environment postman/local.environment.json \
+  --folder "Plant — Alarms & Incidents (MES-08)"
 ```
 
 To save a JSON report:
@@ -175,8 +180,9 @@ RestOpsIQ API
 │   ├── POST /api/auth/verify-email (invalid OTP — negative)
 │   └── ── RES-226 email endpoints require Redis + BullMQ queue running ──
 │
-├── MES Auth           (6 requests — separate from TestLab auth)
-│   ├── POST /api/mes/auth/login (Owner)     → x-tenant-id: {{mesTenantId}}, captures mesAccessToken
+├── MES Auth           (7 requests — separate from TestLab auth)
+│   ├── POST /api/mes/auth/login (Owner)     → x-tenant-id: {{mesTenantId}}, captures mesAccessToken + mesTokenSupervisor
+│   ├── POST /api/mes/auth/login (Operator)  → captures mesTokenOperator
 │   ├── GET  /api/mes/auth/me                → Bearer {{mesAccessToken}}
 │   ├── GET  /api/mes/users/:id/role         → Bearer {{mesAccessToken}}, uses {{mesUserId}}
 │   ├── POST /api/mes/auth/logout            → Bearer {{mesAccessToken}}
@@ -210,6 +216,14 @@ RestOpsIQ API
 │   ├── POST   /api/plant/orders/:id/resume         → 200 or 409 (needs PAUSED)
 │   ├── POST   /api/plant/executions/:id/qa-approve → after internal chain complete
 │   └── POST   /api/plant/orders/:id/cancel
+│
+├── Plant — Alarms & Incidents (MES-08) (6 requests — operator + supervisor tokens)
+│   ├── POST   /api/plant/incidents                         → captures incidentId (operator)
+│   ├── GET    /api/plant/incidents (operator — negative)   → 403
+│   ├── PATCH  /api/plant/incidents/:id/resolve (operator — negative) → 403
+│   ├── GET    /api/plant/incidents                         → filters + supervisor list
+│   ├── PATCH  /api/plant/incidents/:id/resolve             → supervisor resolve
+│   └── POST   /api/plant/incidents (invalid workStation)   → 400 tenant validation
 │
 ├── 02 Supply Items    (7 requests — x-tenant-id: {{tenantId}} on every request)
 │   ├── POST   /api/supply-items              → captures supplyItemId
@@ -396,6 +410,55 @@ Emitted on plan, pause, resume, cancel, internal chain complete, and qa-approve.
 
 ---
 
+## Plant — Alarms & Incidents (MES-08)
+
+Incidents HTTP API + RBAC smoke. Alarm cron, BullMQ worker, WebSocket `alarm:triggered`, and 30-minute deduplication are **manual** (see `tasks/mes-plant/MES-08-alarms-incidents/10-manual-testing.md`).
+
+### HTTP routes (ticket scope)
+
+| Method | Path                               | Role        | Notes                                                               |
+| ------ | ---------------------------------- | ----------- | ------------------------------------------------------------------- |
+| POST   | `/api/plant/incidents`             | Operator+   | Creates incident; emits `incident:created`                          |
+| GET    | `/api/plant/incidents`             | Supervisor+ | Filters: `orderId`, `workStationId`, `type`, `severity`, `resolved` |
+| PATCH  | `/api/plant/incidents/:id/resolve` | Supervisor+ | Body: `{ "resolution": "..." }`                                     |
+
+### Postman flow
+
+1. **MES Auth → Login Owner** — sets `mesTokenSupervisor` (+ `mesAccessToken`).
+2. **MES Auth → Login Operator** — sets `mesTokenOperator`.
+3. **Plant — Production Orders** — sets `workStationId`, `orderId`, `executionId`.
+4. Run **Plant — Alarms & Incidents (MES-08)** top-to-bottom.
+
+### Tokens
+
+| Request group   | Bearer token             |
+| --------------- | ------------------------ |
+| Create incident | `{{mesTokenOperator}}`   |
+| List / resolve  | `{{mesTokenSupervisor}}` |
+
+### WebSocket events
+
+| Event              | When                              | Path                                                         |
+| ------------------ | --------------------------------- | ------------------------------------------------------------ |
+| `incident:created` | POST incident succeeds            | `PlantEventsService` → `PlantGateway`                        |
+| `alarm:triggered`  | BullMQ worker processes alarm job | `PLANT_ALARM_EVENTS` → `PlantEventsService` → `PlantGateway` |
+
+Connect with Socket.IO using MES JWT in `auth.token`. Optional `auth.stationId` joins `station:{id}` room.
+
+### Smoke scenarios
+
+| Scenario                     | How to verify                                                              |
+| ---------------------------- | -------------------------------------------------------------------------- |
+| Operator create              | POST incident → 201, `incidentId` captured                                 |
+| Operator list/resolve denied | GET/PATCH with operator token → 403                                        |
+| Supervisor list + resolve    | GET with filters → 200; PATCH resolve → `resolvedAt` set                   |
+| Invalid workStation          | POST with fake UUID → 400                                                  |
+| `incident:created` WS        | Socket client receives event on POST                                       |
+| Alarm cron + worker          | SQL seed IN_PROCESS execution; wait ≤60s; `alarm:triggered` + dispatch row |
+| Dedup 30 min                 | Same alarm condition; no second dispatch within window                     |
+
+---
+
 ## Dynamic Variable Capture
 
 Every `POST` create request captures the returned `id` in its `Tests` script:
@@ -417,6 +480,7 @@ Every `POST` create request captures the returned `id` in its `Tests` script:
 | POST /api/plant/orders (MES-05 setup recipe)    | `ordersRecipeId`       |
 | POST /api/plant/orders                          | `orderId`              |
 | GET /api/plant/orders/:id                       | `executionId`          |
+| POST /api/plant/incidents (MES-08)              | `incidentId`           |
 
 **Uniqueness note:**
 
@@ -477,10 +541,14 @@ Login
 | `mesOwnerPin`           | Yes (MES login)                   | `local.environment.json` (synthetic, dev only)             |
 | `mesOperatorCedula`     | Optional (operator login)         | `local.environment.json` (synthetic, dev only)             |
 | `mesOperatorPin`        | Optional (operator login)         | `local.environment.json` (synthetic, dev only)             |
-| `mesAccessToken`        | Auto                              | MES Login Owner test                                       |
+| `mesAccessToken`        | Auto                              | MES Login Owner test (alias of mesTokenSupervisor)         |
+| `mesTokenSupervisor`    | Auto                              | MES Login Owner test                                       |
+| `mesTokenOperator`      | Auto                              | MES Login Operator test                                    |
 | `mesRefreshToken`       | Auto                              | MES Login Owner test                                       |
 | `mesUserId`             | Auto                              | MES Login Owner / Me test                                  |
 | `workstationId`         | Auto                              | MES Plant / Create Work Station                            |
+| `workStationId`         | Auto                              | Synced from workstationId; MES-08 incidents                |
+| `incidentId`            | Auto                              | MES-08 / Create Incident                                   |
 | `recipeId`              | Auto                              | MES Plant / Create Recipe                                  |
 | `clonedRecipeId`        | Auto                              | MES Plant / Clone Recipe                                   |
 | `phaseId1` / `phaseId2` | Auto                              | MES Plant / Get Recipe Detail                              |

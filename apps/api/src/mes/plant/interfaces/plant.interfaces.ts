@@ -1,7 +1,10 @@
 import type {
+  AlarmSeverity,
+  IncidentType,
   PhaseExecution,
   PhaseExecutionStatus,
   PhaseInput,
+  ProductionIncident,
   ProductionOrder,
   ProductionOrderStatus,
   ProductionPhase,
@@ -319,6 +322,89 @@ export interface PhaseStatusChange {
 export interface ChainResult {
   orderId: string;
   changedExecutions: PhaseStatusChange[];
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Production incidents (manual — separate from PlantAlarmDispatch)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface CreateIncidentInput {
+  workStationId: string;
+  executionId?: string | null;
+  orderId?: string | null;
+  type: IncidentType;
+  severity: AlarmSeverity;
+  description: string;
+  photoUrl?: string | null;
+}
+
+export interface ListIncidentsFilters {
+  orderId?: string;
+  workStationId?: string;
+  type?: IncidentType;
+  severity?: AlarmSeverity;
+  /** When true, only resolved incidents; when false, only open incidents. */
+  resolved?: boolean;
+}
+
+export interface ResolveIncidentInput {
+  resolution: string;
+}
+
+export interface IncidentResponse {
+  id: string;
+  tenantId: string;
+  orderId: string | null;
+  executionId: string | null;
+  workStationId: string;
+  operatorUserId: string;
+  type: IncidentType;
+  severity: AlarmSeverity;
+  description: string;
+  photoUrl: string | null;
+  resolvedAt: Date | null;
+  resolvedBy: string | null;
+  resolution: string | null;
+  createdAt: Date;
+}
+
+export interface IIncidentRepository {
+  createIncident(
+    tenantId: string,
+    operatorUserId: string,
+    input: CreateIncidentInput,
+  ): Promise<ProductionIncident>;
+  findIncidents(
+    tenantId: string,
+    filters: ListIncidentsFilters,
+    pagination?: { limit?: number; offset?: number },
+  ): Promise<ProductionIncident[]>;
+  findIncidentById(tenantId: string, id: string): Promise<ProductionIncident | null>;
+  resolveIncident(
+    tenantId: string,
+    id: string,
+    resolvedBy: string,
+    input: ResolveIncidentInput,
+  ): Promise<ProductionIncident>;
+}
+
+export interface IIncidentService {
+  createIncident(
+    tenantId: string,
+    operatorUserId: string,
+    input: CreateIncidentInput,
+  ): Promise<IncidentResponse>;
+  listIncidents(
+    tenantId: string,
+    filters: ListIncidentsFilters,
+    pagination?: { limit?: number; offset?: number },
+  ): Promise<IncidentResponse[]>;
+  resolveIncident(
+    tenantId: string,
+    incidentId: string,
+    resolvedBy: string,
+    input: ResolveIncidentInput,
+  ): Promise<IncidentResponse>;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

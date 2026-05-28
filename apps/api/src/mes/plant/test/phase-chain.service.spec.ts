@@ -42,6 +42,7 @@ const buildExecution = (
   efficiencyPct: null,
   qaApprovedAt: null,
   qaApprovedBy: null,
+  startedAt: null,
   completedAt: null,
   notes: null,
   createdAt: new Date(),

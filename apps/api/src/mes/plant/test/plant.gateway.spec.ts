@@ -1,6 +1,6 @@
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
-import { PhaseExecutionStatus } from '@prisma/client';
+import { AlarmSeverity, IncidentType, PhaseExecutionStatus, PlantAlarmType } from '@prisma/client';
 import { PlantGateway } from '../gateway/plant.gateway';
 import { PlantEventsService } from '../service/plant-events.service';
 
@@ -28,6 +28,42 @@ describe('PlantGateway', () => {
     jest.clearAllMocks();
   });
 
+  it('emitAlarmTriggered broadcasts alarm:triggered to tenant and station rooms', () => {
+    const payload = {
+      alarmType: PlantAlarmType.TIEMPO_EXCEDIDO,
+      severity: AlarmSeverity.WARNING,
+      stationId: 'ws-1',
+      orderId: 'order-1',
+      executionId: 'exec-1',
+      message: 'Fase excedió tiempo estándar',
+    };
+
+    gateway.emitAlarmTriggered('palos-de-lena', payload);
+
+    expect(toMock).toHaveBeenCalledWith('tenant:palos-de-lena');
+    expect(toMock).toHaveBeenCalledWith('station:ws-1');
+    expect(emitMock).toHaveBeenCalledWith('alarm:triggered', payload);
+    expect(emitMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('emitIncidentCreated broadcasts incident:created to tenant and station rooms', () => {
+    const payload = {
+      incidentId: 'incident-1',
+      stationId: 'ws-1',
+      orderId: 'order-1',
+      executionId: 'exec-1',
+      type: IncidentType.QUALITY,
+      severity: AlarmSeverity.CRITICAL,
+    };
+
+    gateway.emitIncidentCreated('palos-de-lena', payload);
+
+    expect(toMock).toHaveBeenCalledWith('tenant:palos-de-lena');
+    expect(toMock).toHaveBeenCalledWith('station:ws-1');
+    expect(emitMock).toHaveBeenCalledWith('incident:created', payload);
+    expect(emitMock).toHaveBeenCalledTimes(2);
+  });
+
   it('emitPhaseStatusChanged broadcasts phase:status_changed to tenant room', () => {
     const payload = {
       orderId: 'order-1',
@@ -50,6 +86,34 @@ describe('PlantGateway', () => {
       phaseId: 'phase-1',
       stationId: 'ws-1',
       status: 'READY',
+    });
+
+    expect(toMock).not.toHaveBeenCalled();
+    expect(emitMock).not.toHaveBeenCalled();
+  });
+
+  it('does not emit alarm:triggered when server is not initialized', () => {
+    gateway.server = undefined as never;
+
+    gateway.emitAlarmTriggered('palos-de-lena', {
+      alarmType: PlantAlarmType.TIEMPO_EXCEDIDO,
+      severity: AlarmSeverity.WARNING,
+      stationId: 'ws-1',
+      message: 'Fase excedió tiempo estándar',
+    });
+
+    expect(toMock).not.toHaveBeenCalled();
+    expect(emitMock).not.toHaveBeenCalled();
+  });
+
+  it('does not emit incident:created when server is not initialized', () => {
+    gateway.server = undefined as never;
+
+    gateway.emitIncidentCreated('palos-de-lena', {
+      incidentId: 'incident-1',
+      stationId: 'ws-1',
+      type: IncidentType.QUALITY,
+      severity: AlarmSeverity.WARNING,
     });
 
     expect(toMock).not.toHaveBeenCalled();
@@ -172,6 +236,51 @@ describe('PlantEventsService', () => {
       phaseId: 'phase-1',
       stationId: 'ws-1',
       status: PhaseExecutionStatus.READY,
+    });
+  });
+
+  it('delegates emitAlarmTriggered to gateway', () => {
+    const gatewayMock = { emitAlarmTriggered: jest.fn() };
+    const events = new PlantEventsService(gatewayMock as never);
+    const payload = {
+      alarmType: PlantAlarmType.OP_RETRASADA,
+      severity: AlarmSeverity.INFO,
+      stationId: 'ws-2',
+      message: 'Orden retrasada',
+    };
+
+    events.emitAlarmTriggered('palos-de-lena', payload);
+
+    expect(gatewayMock.emitAlarmTriggered).toHaveBeenCalledWith('palos-de-lena', payload);
+  });
+
+  it('maps incident response to incident:created websocket payload', () => {
+    const gatewayMock = { emitIncidentCreated: jest.fn() };
+    const events = new PlantEventsService(gatewayMock as never);
+
+    events.emitIncidentCreated('palos-de-lena', {
+      id: 'incident-1',
+      tenantId: 'palos-de-lena',
+      orderId: 'order-1',
+      executionId: null,
+      workStationId: 'ws-1',
+      operatorUserId: 'op-1',
+      type: IncidentType.SAFETY,
+      severity: AlarmSeverity.WARNING,
+      description: 'Derrame en línea 1',
+      photoUrl: null,
+      resolvedAt: null,
+      resolvedBy: null,
+      resolution: null,
+      createdAt: new Date('2026-05-27T12:00:00.000Z'),
+    });
+
+    expect(gatewayMock.emitIncidentCreated).toHaveBeenCalledWith('palos-de-lena', {
+      incidentId: 'incident-1',
+      stationId: 'ws-1',
+      orderId: 'order-1',
+      type: IncidentType.SAFETY,
+      severity: AlarmSeverity.WARNING,
     });
   });
 });

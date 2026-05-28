@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "7c3e5f82-1a9b-4d6e-8f2c-0b5a3d7e9f1c",
     "name": "RestOpsIQ API",
-    "description": "Complete API test collection for RestOpsIQ.\n\nCovers Health, Auth, MES Auth, MES Plant, Plant Production Orders (MES-05), Supply Items, and Testlab modules.\n\nGlobal prefix: /api\nOperational tenant (supply-items + MES + plant): {{tenantId}} = {{mesTenantId}} = palos-de-lena after seed.\nTestLab: email auth only (no tenant).\nMES plant: Bearer {{mesAccessToken}} (no x-tenant-id).\nSupply-items: Bearer {{accessToken}} + x-tenant-id {{tenantId}}.\n\nPhase completion is internal (no POST /api/plant/phases/complete). See postman/README.md.",
+    "description": "Complete API test collection for RestOpsIQ.\n\nCovers Health, Auth, MES Auth, MES Plant, Plant Production Orders (MES-05), Plant Alarms & Incidents (MES-08), Supply Items, and Testlab modules.\n\nGlobal prefix: /api\nOperational tenant (supply-items + MES + plant): {{tenantId}} = {{mesTenantId}} = palos-de-lena after seed.\nTestLab: email auth only (no tenant).\nMES plant: Bearer {{mesAccessToken}} (no x-tenant-id).\nSupply-items: Bearer {{accessToken}} + x-tenant-id {{tenantId}}.\n\nPhase completion is internal (no POST /api/plant/phases/complete). See postman/README.md.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -331,6 +331,30 @@
       "value": "",
       "type": "string",
       "description": "ISO plannedEndAt for Create Production Order pre-request"
+    },
+    {
+      "key": "mesTokenOperator",
+      "value": "",
+      "type": "string",
+      "description": "MES JWT for seeded OPERATOR — set by MES Auth / Login Operator"
+    },
+    {
+      "key": "mesTokenSupervisor",
+      "value": "",
+      "type": "string",
+      "description": "MES JWT for supervisor+ (OWNER in seed) — set by MES Auth / Login Owner"
+    },
+    {
+      "key": "workStationId",
+      "value": "",
+      "type": "string",
+      "description": "Work station id (alias synced from workstationId captures)"
+    },
+    {
+      "key": "incidentId",
+      "value": "",
+      "type": "string",
+      "description": "Captured from POST /api/plant/incidents"
     }
   ],
   "item": [
@@ -825,7 +849,7 @@
       "item": [
         {
           "name": "Login Owner",
-          "description": "POST /api/mes/auth/login with seeded OWNER credentials.\nRequires x-tenant-id: {{mesTenantId}}.\nCaptures mesAccessToken, mesRefreshToken, and mesUserId (from JWT sub).",
+          "description": "POST /api/mes/auth/login with seeded OWNER credentials.\nRequires x-tenant-id: {{mesTenantId}}.\nCaptures mesAccessToken, mesTokenSupervisor, mesRefreshToken, and mesUserId (from JWT sub).",
           "event": [
             {
               "listen": "test",
@@ -838,6 +862,8 @@
                   "pm.test('Has refreshToken', () => pm.expect(body).to.have.property('refreshToken'));",
                   "if (body.accessToken) {",
                   "  pm.collectionVariables.set('mesAccessToken', body.accessToken);",
+                  "  pm.collectionVariables.set('mesTokenSupervisor', body.accessToken);",
+                  "  pm.environment.set('mesTokenSupervisor', body.accessToken);",
                   "  pm.environment.set('mesAccessToken', body.accessToken);",
                   "  try {",
                   "    const payload = JSON.parse(atob(body.accessToken.split('.')[1]));",
@@ -873,6 +899,54 @@
             "body": {
               "mode": "raw",
               "raw": "{\n  \"cedula\": \"{{mesOwnerCedula}}\",\n  \"pin\": \"{{mesOwnerPin}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/mes/auth/login"
+          },
+          "response": []
+        },
+        {
+          "name": "Login Operator",
+          "description": "POST /api/mes/auth/login with seeded OPERATOR credentials.\nRequires x-tenant-id: {{mesTenantId}}.\nCaptures mesTokenOperator.",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Has accessToken', () => pm.expect(body).to.have.property('accessToken'));",
+                  "if (body.accessToken) {",
+                  "  pm.collectionVariables.set('mesTokenOperator', body.accessToken);",
+                  "  pm.environment.set('mesTokenOperator', body.accessToken);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{mesTenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cedula\": \"{{mesOperatorCedula}}\",\n  \"pin\": \"{{mesOperatorPin}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1101,6 +1175,8 @@
                   "if (body.id) {",
                   "  pm.collectionVariables.set('workstationId', body.id);",
                   "  pm.environment.set('workstationId', body.id);",
+                  "  pm.collectionVariables.set('workStationId', body.id);",
+                  "  pm.environment.set('workStationId', body.id);",
                   "}"
                 ]
               }
@@ -1779,6 +1855,8 @@
                   "if (body.id) {",
                   "  pm.collectionVariables.set('workstationId', body.id);",
                   "  pm.environment.set('workstationId', body.id);",
+                  "  pm.collectionVariables.set('workStationId', body.id);",
+                  "  pm.environment.set('workStationId', body.id);",
                   "}"
                 ]
               }
@@ -2232,6 +2310,303 @@
                 }
               }
             }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Plant — Alarms & Incidents (MES-08)",
+      "description": "MES-08 incidents API + RBAC smoke.\n\nPrerequisites (run first):\n1. **MES Auth → Login Owner** (mesTokenSupervisor)\n2. **MES Auth → Login Operator** (mesTokenOperator)\n3. **Plant — Production Orders** (workStationId, orderId, executionId)\n\nAuth: operator requests use Bearer {{mesTokenOperator}}; supervisor requests use Bearer {{mesTokenSupervisor}}.\n\nAlarms/cron/WebSocket/dedup are manual — see tasks/mes-plant/MES-08-alarms-incidents/10-manual-testing.md.",
+      "item": [
+        {
+          "name": "Create Incident (Operator)",
+          "description": "POST /api/plant/incidents — operator+ can report. Emits incident:created WebSocket event.",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('Has id', () => pm.expect(body).to.have.property('id'));",
+                  "pm.test('Has workStationId', () => pm.expect(body.workStationId).to.eql(pm.variables.get('workStationId') || pm.collectionVariables.get('workStationId')));",
+                  "pm.test('Type QUALITY', () => pm.expect(body.type).to.eql('QUALITY'));",
+                  "pm.test('Not resolved yet', () => pm.expect(body.resolvedAt).to.be.null);",
+                  "if (body.id) {",
+                  "  pm.collectionVariables.set('incidentId', body.id);",
+                  "  pm.environment.set('incidentId', body.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{mesTokenOperator}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workStationId\": \"{{workStationId}}\",\n  \"orderId\": \"{{orderId}}\",\n  \"executionId\": \"{{executionId}}\",\n  \"type\": \"QUALITY\",\n  \"severity\": \"WARNING\",\n  \"description\": \"Incidente de prueba Postman MES-08\",\n  \"photoUrl\": \"https://cdn.example.com/incidents/postman-test.jpg\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/plant/incidents"
+          },
+          "response": []
+        },
+        {
+          "name": "List Incidents — Operator forbidden (negative)",
+          "description": "GET /api/plant/incidents with operator token — expect 403.",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Status 403', () => pm.response.to.have.status(403));"]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{mesTokenOperator}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/plant/incidents"
+          },
+          "response": []
+        },
+        {
+          "name": "List Incidents (Supervisor)",
+          "description": "GET /api/plant/incidents — supervisor+ only. Filters: orderId, workStationId, type, severity, resolved.",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Response is array', () => pm.expect(body).to.be.an('array'));",
+                  "const incidentId = pm.variables.get('incidentId') || pm.collectionVariables.get('incidentId');",
+                  "if (incidentId) {",
+                  "  pm.test('Contains created incident', () => {",
+                  "    pm.expect(body.some((row) => row.id === incidentId)).to.be.true;",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{mesTokenSupervisor}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/plant/incidents?orderId={{orderId}}&workStationId={{workStationId}}&type=QUALITY&severity=WARNING&resolved=false",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "plant", "incidents"],
+              "query": [
+                {
+                  "key": "orderId",
+                  "value": "{{orderId}}"
+                },
+                {
+                  "key": "workStationId",
+                  "value": "{{workStationId}}"
+                },
+                {
+                  "key": "type",
+                  "value": "QUALITY"
+                },
+                {
+                  "key": "severity",
+                  "value": "WARNING"
+                },
+                {
+                  "key": "resolved",
+                  "value": "false"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Resolve Incident (Supervisor)",
+          "description": "PATCH /api/plant/incidents/:id/resolve — supervisor+ only.",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Has resolution', () => pm.expect(body.resolution).to.be.a('string').and.not.empty);",
+                  "pm.test('Has resolvedAt', () => pm.expect(body.resolvedAt).to.not.be.null);",
+                  "pm.test('Has resolvedBy', () => pm.expect(body.resolvedBy).to.not.be.null);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{mesTokenSupervisor}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resolution\": \"Se revisó la línea y se corrigió el desvío de calidad (Postman MES-08)\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/plant/incidents/{{incidentId}}/resolve"
+          },
+          "response": []
+        },
+        {
+          "name": "Resolve Incident — Operator forbidden (negative)",
+          "description": "PATCH resolve with operator token — expect 403.",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Status 403', () => pm.response.to.have.status(403));"]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{mesTokenOperator}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resolution\": \"Intento no autorizado\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/plant/incidents/{{incidentId}}/resolve"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Incident — Invalid workStationId (negative)",
+          "description": "POST with workStationId outside tenant — expect 400.",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 400', () => pm.response.to.have.status(400));",
+                  "const body = pm.response.json();",
+                  "if (body && body.message) {",
+                  "  pm.test('Tenant validation message', () => {",
+                  "    pm.expect(body.message).to.include('workStationId');",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{mesTokenOperator}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workStationId\": \"00000000-0000-0000-0000-000000000099\",\n  \"type\": \"SAFETY\",\n  \"severity\": \"CRITICAL\",\n  \"description\": \"Referencia inválida fuera del tenant\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/plant/incidents"
           },
           "response": []
         }

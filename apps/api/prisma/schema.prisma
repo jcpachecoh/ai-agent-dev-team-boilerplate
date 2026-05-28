@@ -579,7 +579,9 @@ model OperationalUser {
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
 
-  operatorSessions OperatorSession[]
+  operatorSessions  OperatorSession[]
+  reportedIncidents ProductionIncident[] @relation("IncidentReporter")
+  resolvedIncidents ProductionIncident[] @relation("IncidentResolver")
 
   @@unique([tenantId, cedulaHash])
   @@index([tenantId])
@@ -604,6 +606,7 @@ model WorkStation {
   phases          ProductionPhase[]
   sessions        OperatorSession[]
   phaseExecutions PhaseExecution[]
+  incidents       ProductionIncident[]
 
   @@unique([tenantId, code])
   @@index([tenantId])
@@ -719,6 +722,25 @@ enum PhaseExecutionStatus {
   COMPLETED
 }
 
+enum PlantAlarmType {
+  TIEMPO_EXCEDIDO
+  FASE_SIN_OPERARIO
+  OP_RETRASADA
+}
+
+enum AlarmSeverity {
+  INFO
+  WARNING
+  CRITICAL
+}
+
+enum IncidentType {
+  QUALITY
+  SAFETY
+  EQUIPMENT
+  OTHER
+}
+
 model ProductionOrder {
   id               String                @id @default(cuid())
   tenantId         String
@@ -741,8 +763,10 @@ model ProductionOrder {
   createdAt        DateTime              @default(now())
   updatedAt        DateTime              @updatedAt
 
-  recipe     ProductionRecipe @relation(fields: [recipeId], references: [id])
-  executions PhaseExecution[]
+  recipe          ProductionRecipe     @relation(fields: [recipeId], references: [id])
+  executions      PhaseExecution[]
+  alarmDispatches PlantAlarmDispatch[]
+  incidents       ProductionIncident[]
 
   @@index([tenantId, status])
   @@index([tenantId, plannedStartAt])
@@ -762,16 +786,69 @@ model PhaseExecution {
   producedQuantity Decimal?             @db.Decimal(10, 3)
   qaApprovedAt     DateTime?
   qaApprovedBy     String?
+  startedAt        DateTime?
   completedAt      DateTime?
   notes            String?
   createdAt        DateTime             @default(now())
 
-  order       ProductionOrder   @relation(fields: [orderId], references: [id])
-  phase       ProductionPhase   @relation(fields: [phaseId], references: [id])
-  workStation WorkStation       @relation(fields: [workStationId], references: [id])
-  sessions    OperatorSession[]
+  order           ProductionOrder      @relation(fields: [orderId], references: [id])
+  phase           ProductionPhase      @relation(fields: [phaseId], references: [id])
+  workStation     WorkStation          @relation(fields: [workStationId], references: [id])
+  sessions        OperatorSession[]
+  alarmDispatches PlantAlarmDispatch[]
+  incidents       ProductionIncident[]
 
   @@index([orderId])
   @@index([tenantId, workStationId, status])
+  @@index([tenantId, status, startedAt])
   @@map("phase_executions")
+}
+
+model PlantAlarmDispatch {
+  id           String         @id @default(cuid())
+  tenantId     String
+  alarmType    PlantAlarmType
+  executionId  String?
+  orderId      String?
+  severity     AlarmSeverity
+  dispatchedAt DateTime       @default(now())
+  message      String
+  metadata     Json?
+
+  execution PhaseExecution?  @relation(fields: [executionId], references: [id])
+  order     ProductionOrder? @relation(fields: [orderId], references: [id])
+
+  @@index([tenantId])
+  @@index([tenantId, alarmType, executionId, dispatchedAt])
+  @@index([tenantId, alarmType, orderId, dispatchedAt])
+  @@map("plant_alarm_dispatches")
+}
+
+model ProductionIncident {
+  id             String        @id @default(cuid())
+  tenantId       String
+  orderId        String?
+  executionId    String?
+  workStationId  String
+  operatorUserId String
+  type           IncidentType
+  severity       AlarmSeverity
+  description    String
+  photoUrl       String?
+  resolvedAt     DateTime?
+  resolvedBy     String?
+  resolution     String?
+  createdAt      DateTime      @default(now())
+
+  order       ProductionOrder? @relation(fields: [orderId], references: [id])
+  execution   PhaseExecution?  @relation(fields: [executionId], references: [id])
+  workStation WorkStation      @relation(fields: [workStationId], references: [id])
+  reporter    OperationalUser  @relation("IncidentReporter", fields: [operatorUserId], references: [id])
+  resolver    OperationalUser? @relation("IncidentResolver", fields: [resolvedBy], references: [id])
+
+  @@index([tenantId])
+  @@index([tenantId, workStationId])
+  @@index([tenantId, orderId])
+  @@index([tenantId, resolvedAt])
+  @@map("production_incidents")
 }
