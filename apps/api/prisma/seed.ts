@@ -2,15 +2,16 @@
  * Development seed — creates deterministic fixtures for local testing and
  * the Postman collection.
  *
- * TestLab (no operational tenant — email auth until USR-01 Task 08):
- *   user email = test@restopsiq.dev  /  password = TestPass123!
+ * Email auth (global User — x-tenant-id: palos-de-lena):
+ *   mes-owner@palos-de-lena.dev    / TestPass123!
+ *   mes-operator@palos-de-lena.dev / TestPass123!
  *
  * Operational tenant palos-de-lena (supply catalog + MES + plant):
  *   tenantId / mesTenantId = palos-de-lena  (x-tenant-id on supply-items & MES login)
  *   categoryId = SEED_CATEGORY_ID (POST /api/supply-items body)
  *   supplyItemId = SEED_SUPPLY_ITEM_ID (optional; also captured by Create Supply Item)
  *
- * Global User + Role (USR-01 — not used by email auth until Task 08):
+ * Global User + Role (USR-01):
  *   Roles: OWNER, SUPERVISOR, MANAGER, OPERATOR (tenant-scoped)
  *
  * MES operational users (local/dev only — synthetic cédulas, never use in production):
@@ -32,7 +33,6 @@ const SALT_ROUNDS = 12;
 const OPERATIONAL_TENANT_ID = 'palos-de-lena';
 
 const SEED_CATEGORY_ID = 'bbbbbbbb-0000-0000-0000-000000000002';
-const SEED_USER_ID = 'cccccccc-0000-0000-0000-000000000003';
 const SEED_SUPPLY_ITEM_ID = 'ffffffff-0000-0000-0000-000000000006';
 
 const ROLE_OWNER_ID = 'aaaaaaaa-0000-0000-0000-000000000001';
@@ -90,21 +90,6 @@ async function main() {
   console.log('Seeding database…');
 
   const roles = await seedRoles();
-
-  // ── TestLab user (email/password — not tied to operational tenant) ───────
-  const passwordHash = await bcrypt.hash('TestPass123!', SALT_ROUNDS);
-
-  const user = await prisma.userTestLab.upsert({
-    where: { email: 'test@restopsiq.dev' },
-    update: { passwordHash },
-    create: {
-      id: SEED_USER_ID,
-      email: 'test@restopsiq.dev',
-      name: 'Test User',
-      passwordHash,
-    },
-  });
-  console.log('UserTestLab:', user.email, '—', user.id);
 
   // ── Supply category (operational tenant) ─────────────────────────────────
   const category = await prisma.supplyCategory.upsert({
@@ -270,9 +255,9 @@ async function main() {
     `(userId ${operator.userId})`,
   );
 
-  console.log('\n✅ TestLab (email auth, no tenant):');
-  console.log('  email     = test@restopsiq.dev');
-  console.log('  password  = TestPass123!');
+  console.log('\n✅ Email auth (global User — x-tenant-id: palos-de-lena):');
+  console.log('  mes-owner    = mes-owner@palos-de-lena.dev / TestPass123!');
+  console.log('  mes-operator = mes-operator@palos-de-lena.dev / TestPass123!');
   console.log('\n✅ Operational tenant (supply-items, MES, plant):');
   console.log('  tenantId / mesTenantId =', OPERATIONAL_TENANT_ID);
   console.log('  categoryId             =', SEED_CATEGORY_ID);
