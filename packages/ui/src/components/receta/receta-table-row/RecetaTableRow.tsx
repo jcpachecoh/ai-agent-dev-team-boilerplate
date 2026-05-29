@@ -1,4 +1,4 @@
-import React, { type JSX } from 'react';
+import React, { type CSSProperties, type JSX } from 'react';
 
 import { RecetaEditButton } from '../receta-edit-button';
 import { RecetaStatusButton } from '../receta-status-button';
@@ -18,6 +18,10 @@ export interface RecetaTableRowProps {
   theme?: RecetaTheme;
   size?: RecetaSize;
   className?: string;
+  /** Grid template columns; should match `RecetaTableHeader` columns. */
+  columnsTemplate?: string;
+  /** Compact row density for dense data tables. */
+  density?: 'default' | 'compact';
 }
 
 export function RecetaTableRow({
@@ -33,15 +37,26 @@ export function RecetaTableRow({
   theme = 'light',
   size = 'md',
   className,
+  columnsTemplate,
+  density = 'default',
 }: RecetaTableRowProps): JSX.Element {
   const nextStatus: RecetaStatus = status === 'active' ? 'inactive' : 'active';
 
   return (
     <div
-      className={[styles.row, styles[`theme--${theme}`], styles[`size--${size}`], className]
+      className={[
+        styles.row,
+        styles[`theme--${theme}`],
+        styles[`size--${size}`],
+        density === 'compact' && styles.densityCompact,
+        className,
+      ]
         .filter(Boolean)
         .join(' ')}
       role="row"
+      style={
+        columnsTemplate ? ({ '--receta-columns': columnsTemplate } as CSSProperties) : undefined
+      }
     >
       <span className={styles.code} role="cell">
         {code}
@@ -68,11 +83,21 @@ export function RecetaTableRow({
           status={status}
           theme={theme}
           size="sm"
-          onClick={() => onStatusChange?.(nextStatus)}
+          onClick={(event) => {
+            event.stopPropagation();
+            onStatusChange?.(nextStatus);
+          }}
         />
       </span>
       <span className={styles.actions} role="cell">
-        <RecetaEditButton theme={theme} size="sm" onClick={onEdit} />
+        <RecetaEditButton
+          theme={theme}
+          size="sm"
+          onClick={(event) => {
+            event.stopPropagation();
+            onEdit?.();
+          }}
+        />
       </span>
     </div>
   );

@@ -93,6 +93,7 @@ Referencias PNG: `tasks/packages-ui/design-references/field-ops/`
 | 2   | [02-kds-active-phase-screen.md](./02-kds-active-phase-screen.md)     | Fase activa                         | `/phase/active`   |
 | 3   | [03-kds-complete-phase-screen.md](./03-kds-complete-phase-screen.md) | Cierre / cantidad                   | `/phase/complete` |
 | 4   | [04-kds-cross-cutting.md](./04-kds-cross-cutting.md)                 | Touch, WS, offline, flujo ≤5 toques | —                 |
+| 5   | [05-kds-recetas-management.md](./05-kds-recetas-management.md)       | Recetas (lista, editor, control)    | `/recipes/*`      |
 
 ### Infraestructura previa (app-plant)
 

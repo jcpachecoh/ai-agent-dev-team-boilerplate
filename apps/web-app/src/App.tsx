@@ -1,15 +1,15 @@
 import { Routes, Route } from 'react-router-dom';
-import AppLayout from '@/components/AppLayout';
-import HomePage from '@/pages/HomePage';
+
+import OperationsHubPage from '@/pages/OperationsHubPage';
+import RecipesPage from '@/pages/RecipesPage';
 import NotFoundPage from '@/pages/NotFoundPage';
 
 export default function App(): React.JSX.Element {
   return (
-    <AppLayout>
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="*" element={<NotFoundPage />} />
-      </Routes>
-    </AppLayout>
+    <Routes>
+      <Route path="/" element={<OperationsHubPage />} />
+      <Route path="/recetas" element={<RecipesPage />} />
+      <Route path="*" element={<NotFoundPage />} />
+    </Routes>
   );
 }

@@ -6,12 +6,15 @@
   @include receta.receta-theme-classes;
   @include receta.receta-size-vars;
 
+  --metric-accent: var(--receta-muted);
+
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: var(--card-gap);
   padding: var(--card-padding-y) var(--card-padding-x);
   background: var(--receta-surface);
+  box-shadow: inset 3px 0 0 var(--metric-accent);
 }
 
 .size--sm {
@@ -86,12 +89,24 @@
 
 .variant--type-1 {
   --metric-accent: #{receta.$receta-purple};
+
+  .value {
+    color: var(--receta-text);
+  }
 }
 
 .variant--type-2 {
   --metric-accent: #{receta.$receta-teal};
+
+  .value {
+    color: var(--metric-accent);
+  }
 }
 
 .variant--type-3 {
   --metric-accent: #{receta.$receta-gold};
+
+  .value {
+    color: var(--metric-accent);
+  }
 }

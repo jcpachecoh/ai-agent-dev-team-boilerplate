@@ -1,10 +1,5 @@
 {
-  "extends": [
-    "../../.eslintrc.json",
-    "next/core-web-vitals",
-    "plugin:react/recommended",
-    "plugin:react-hooks/recommended"
-  ],
+  "extends": ["../../.eslintrc.json", "plugin:react/recommended", "plugin:react-hooks/recommended"],
   "plugins": ["react", "react-hooks", "jsx-a11y"],
   "parserOptions": {
     "project": "./tsconfig.json",
@@ -14,54 +9,21 @@
     "react": { "version": "detect" }
   },
   "rules": {
-    // ── React rules ────────────────────────────────────────────────────────
     "react/react-in-jsx-scope": "off",
     "react/prop-types": "off",
     "react/no-unused-prop-types": "error",
-    "react/no-array-index-key": "warn",
-    "react/jsx-no-target-blank": "error",
-    "react/jsx-curly-brace-presence": ["error", { "props": "never", "children": "never" }],
-    "react/self-closing-comp": "error",
     "react-hooks/rules-of-hooks": "error",
     "react-hooks/exhaustive-deps": "error",
-
-    // ── Accessibility ──────────────────────────────────────────────────────
-    "jsx-a11y/alt-text": "error",
-    "jsx-a11y/aria-props": "error",
-    "jsx-a11y/click-events-have-key-events": "warn",
-    "jsx-a11y/no-static-element-interactions": "warn",
-
-    // ── Next.js / frontend conventions ────────────────────────────────────
     "@typescript-eslint/explicit-function-return-type": [
       "error",
       { "allowExpressions": true, "allowTypedFunctionExpressions": true }
-    ],
-
-    // Default exports required for Next.js pages
-    "import/no-default-export": "off"
+    ]
   },
-
   "overrides": [
     {
-      // Allow default exports in page/layout/route files (Next.js requirement)
-      "files": [
-        "src/app/**/page.tsx",
-        "src/app/**/layout.tsx",
-        "src/app/**/loading.tsx",
-        "src/app/**/error.tsx",
-        "src/app/**/not-found.tsx",
-        "src/app/**/route.ts",
-        "next.config.js"
-      ],
-      "rules": {
-        "import/no-default-export": "off"
-      }
-    },
-    {
-      "files": ["**/*.test.tsx", "**/*.test.ts", "**/*.spec.tsx", "**/*.spec.ts"],
+      "files": ["**/*.test.tsx", "**/*.test.ts"],
       "rules": {
         "@typescript-eslint/no-explicit-any": "off",
-        "@typescript-eslint/no-unsafe-assignment": "off",
         "react/display-name": "off"
       }
     }

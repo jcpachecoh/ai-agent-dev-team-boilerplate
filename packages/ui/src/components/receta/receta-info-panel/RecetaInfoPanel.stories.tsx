@@ -27,5 +27,6 @@ export const Default: Story = {};
 export const WithCategory: Story = {
   args: {
     categoryValue: 'Plato Fuerte',
+    yieldValue: '4 porciones',
   },
 };

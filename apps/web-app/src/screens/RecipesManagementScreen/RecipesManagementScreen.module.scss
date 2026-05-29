@@ -1,0 +1,479 @@
+@use '@/styles/tokens' as *;
+
+.screen {
+  height: 100dvh;
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  background: $color-recipes-bg;
+  color: $color-operator-text;
+  overflow: hidden;
+}
+
+.sidebar {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 1rem;
+  padding: 1rem 0.9rem;
+  border-right: 1px solid $color-recipes-divider;
+  background: $color-recipes-sidebar-bg;
+  height: 100dvh;
+  position: sticky;
+  top: 0;
+  overflow: hidden;
+}
+
+.sidebarTop {
+  min-height: 0;
+}
+
+.brand {
+  margin: 0;
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba($color-operator-text, 0.45);
+}
+.title {
+  margin: 0.35rem 0 1.2rem;
+  font-size: 1.05rem;
+}
+.nav {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.navList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.navItem {
+  min-width: 0;
+}
+
+.navButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  width: 100%;
+  border: 1px solid transparent;
+  background: rgba($color-recipes-accent, 0.04);
+  color: rgba($color-operator-text, 0.88);
+  padding: 0.65rem 0.75rem;
+  border-radius: 0.4rem;
+  cursor: pointer;
+  &:hover {
+    border-color: transparent;
+    background: rgba($color-recipes-accent, 0.1);
+    color: $color-operator-text;
+  }
+}
+
+.navButtonActive {
+  border-color: rgba($color-recipes-accent, 0.85);
+  color: $color-operator-text;
+  background: rgba($color-recipes-accent, 0.2);
+}
+
+.backButton {
+  border: 1px solid rgba($color-operator-text, 0.2);
+  background: transparent;
+  color: rgba($color-operator-text, 0.72);
+  border-radius: 0.35rem;
+  padding: 0.7rem;
+}
+
+.sidebarBottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid $color-recipes-divider;
+  min-height: 0;
+}
+
+.operatorName {
+  font-size: 0.85rem;
+  color: rgba($color-operator-text, 0.8);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+  min-height: 0;
+  background: $color-recipes-bg;
+}
+
+.pageHeader {
+  flex-shrink: 0;
+  padding: 1.1rem 1.25rem 1rem;
+  margin-bottom: 0;
+  border-bottom: 1px solid $color-recipes-divider;
+
+  h1 {
+    margin: 0;
+    font-size: 1.9rem;
+  }
+
+  p {
+    margin: 0.25rem 0 0;
+    color: rgba($color-operator-text, 0.5);
+    font-size: 0.85rem;
+  }
+}
+
+.metricsRow {
+  display: grid;
+  gap: 0.65rem;
+  width: 100%;
+  flex-shrink: 0;
+  padding: 1rem 1.25rem;
+  margin-bottom: 0;
+  border-bottom: 1px solid $color-recipes-divider;
+}
+.metricsRowFive {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+.metricsRowFour {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.metricsRowThree {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.toolbarRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  flex-shrink: 0;
+  padding: 0.85rem 1.25rem;
+  margin-bottom: 0;
+  border-bottom: 1px solid $color-recipes-divider;
+  align-items: center;
+}
+
+.searchGrow {
+  flex: 999 1 56%;
+  min-width: min(56%, 520px);
+}
+
+.filterSelect {
+  flex: 1 1 180px;
+  min-width: 160px;
+  max-width: 240px;
+}
+
+.toolbarAction {
+  flex: 1 1 180px;
+  min-width: 160px;
+  max-width: 220px;
+}
+
+.toolbarRowList {
+  display: grid;
+  grid-template-columns: minmax(0, 3.4fr) repeat(3, minmax(0, 1fr));
+  align-items: center;
+}
+
+.searchGrowList {
+  min-width: 0;
+  width: 100%;
+  --control-width: 100%;
+}
+
+.filterSelectList {
+  min-width: 0;
+  max-width: none;
+}
+
+.toolbarActionList {
+  min-width: 0;
+  max-width: none;
+  width: 100%;
+}
+.tableWrap {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 1.25rem;
+  border: 1px solid $color-recipes-divider;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  background: $color-recipes-surface;
+}
+
+.tableBody {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+.historyWrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding-bottom: 1rem;
+  overflow: auto;
+  background: transparent;
+}
+
+.tableHead {
+  --control-min-height: 52px;
+  --control-padding-x: 1.25rem;
+  --control-radius: 0;
+  flex-shrink: 0;
+  width: 100%;
+  overflow-x: visible;
+  border-bottom: 1px solid $color-recipes-divider;
+  border-radius: 0;
+  background: $color-recipes-surface-raised;
+}
+
+.tableWrapList {
+  .listTableHead {
+    --control-min-height: 44px;
+    --control-padding-x: 1rem;
+  }
+}
+
+.tableRow {
+  --row-width: 100%;
+  --row-height: 72px;
+  --row-padding-x: 1.25rem;
+  width: 100%;
+  overflow-x: visible;
+  background: $color-recipes-surface;
+
+  &:hover {
+    background: $color-recipes-surface-hover;
+  }
+}
+
+.rowClickable {
+  cursor: pointer;
+
+  &:hover {
+    filter: brightness(1.05);
+  }
+}
+
+.tableWrapProcess {
+  .processTableHead {
+    --control-min-height: 44px;
+    --control-padding-x: 1rem;
+  }
+}
+
+.processRow {
+  display: grid;
+  grid-template-columns: var(
+    --receta-columns,
+    96px minmax(0, 1.15fr) minmax(96px, 0.85fr) 64px 88px 136px minmax(112px, 1fr)
+      minmax(120px, 1fr) 128px
+  );
+  align-items: center;
+  gap: 0.25rem 0.5rem;
+  min-height: 56px;
+  padding: 0 1rem;
+  border-bottom: 1px solid $color-recipes-divider;
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
+    monospace;
+  font-size: 0.75rem;
+  line-height: 1.25;
+  background: $color-recipes-surface;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &:hover {
+    background: $color-recipes-surface-hover;
+  }
+
+  color: rgba($color-operator-text, 0.82);
+}
+
+.processCell {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.processCellCode {
+  color: $color-recipes-accent;
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
+    monospace;
+  font-size: 0.6875rem;
+  font-weight: 600;
+}
+
+.processCellName {
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: $color-operator-text;
+}
+
+.processCellMuted {
+  font-size: 0.6875rem;
+  color: rgba($color-operator-text, 0.5);
+}
+
+.processCellCenter {
+  text-align: center;
+}
+
+.processCellStatus {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.processProgressCell {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.processActionsCell {
+  display: flex;
+  flex-shrink: 0;
+  gap: 0.35rem;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.pageHeaderEditor {
+  display: flex;
+  flex-shrink: 0;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  margin-bottom: 0;
+  border-bottom: 1px solid $color-recipes-divider;
+}
+.editorLeft {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  h1 {
+    margin: 0;
+    font-size: 1.8rem;
+  }
+  p {
+    margin: 0;
+    color: rgba($color-operator-text, 0.45);
+    font-size: 0.75rem;
+  }
+}
+.editorActions {
+  display: flex;
+  gap: 0.45rem;
+}
+.editorLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  flex: 1 1 auto;
+  min-height: 0;
+  gap: 0;
+}
+
+.editorMain {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  padding: 1rem 1.25rem;
+  min-height: 0;
+  overflow: auto;
+
+  > * {
+    flex-shrink: 0;
+  }
+}
+
+.panelCard {
+  flex-shrink: 0;
+  border: 1px solid $color-recipes-divider;
+  border-radius: 0.5rem;
+  background: $color-recipes-panel;
+  padding: 0.9rem;
+  h3 {
+    margin: 0 0 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-size: 0.72rem;
+    color: rgba($color-operator-text, 0.7);
+  }
+}
+
+.panelHeaderRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+}
+.stepsList {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding-top: 0.65rem;
+}
+.editorSidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  padding: 1rem 1.25rem;
+  border-left: 1px solid $color-recipes-divider;
+  background: $color-recipes-editor-sidebar;
+  min-height: 0;
+  overflow: auto;
+}
+
+@media (max-width: 1200px) {
+  .screen {
+    grid-template-columns: 1fr;
+    height: auto;
+    overflow: visible;
+  }
+  .sidebar {
+    border-right: none;
+    border-bottom: 1px solid $color-recipes-divider;
+    height: auto;
+    position: static;
+  }
+  .metricsRow,
+  .metricsRowFive,
+  .metricsRowFour,
+  .metricsRowThree {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .toolbarRowList {
+    grid-template-columns: 1fr;
+  }
+  .editorLayout {
+    grid-template-columns: 1fr;
+  }
+}

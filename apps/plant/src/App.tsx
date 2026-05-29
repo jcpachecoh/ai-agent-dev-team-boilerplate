@@ -1,55 +1,41 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useState } from 'react';
 
 import { bootstrapPlantApp, type BootstrapResult } from '@/bootstrap';
-import { usePlantSocket } from '@/hooks/usePlantSocket';
 import { useWakeLock } from '@/hooks/useWakeLock';
+import { logoutOperator } from '@/services/auth.service';
 import { ActivePhaseScreen } from '@/screens/ActivePhaseScreen';
 import { CompletePhaseScreen } from '@/screens/CompletePhaseScreen';
 import { LoginScreen } from '@/screens/LoginScreen';
-import { logoutOperator } from '@/services/auth.service';
-import { usePhaseStore } from '@/stores/phase.store';
 import { useSessionStore } from '@/stores/session.store';
 
-type OperatorScreen = 'active' | 'complete';
-
 export function App() {
-  const queryClient = useQueryClient();
   const [boot, setBoot] = useState<BootstrapResult | null>(null);
-  const [screen, setScreen] = useState<OperatorScreen>('active');
+  const [view, setView] = useState<'active' | 'complete'>('active');
   const isAuthenticated = useSessionStore((s) => s.isAuthenticated);
-  const clearSession = useSessionStore((s) => s.logout);
+  const logout = useSessionStore((s) => s.logout);
+  const queryClient = useQueryClient();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   useWakeLock();
-  usePlantSocket();
 
-  const logoutMutation = useMutation({
-    mutationFn: logoutOperator,
-    onSettled: () => {
-      clearSession();
-      void queryClient.invalidateQueries({ queryKey: ['mes-auth'] });
+  const handleLogout = useCallback(async () => {
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+    try {
+      await logoutOperator();
+    } finally {
+      void queryClient.invalidateQueries({ queryKey: ['mes-auth', 'me'] });
       void queryClient.invalidateQueries({ queryKey: ['plant-session'] });
-      setScreen('active');
-    },
-  });
-
-  const handleLogout = useCallback(() => {
-    logoutMutation.mutate();
-  }, [logoutMutation]);
+      setView('active');
+      logout();
+      setIsLoggingOut(false);
+    }
+  }, [isLoggingOut, logout, queryClient]);
 
   useEffect(() => {
     void bootstrapPlantApp().then(setBoot);
   }, []);
-
-  const handleLoginSuccess = () => {
-    usePhaseStore.getState().hydrateDemoPhase();
-    setScreen('active');
-  };
-
-  const handleCompleteSuccess = () => {
-    usePhaseStore.getState().hydrateDemoPhase();
-    setScreen('active');
-  };
 
   if (!boot) {
     return (
@@ -60,25 +46,25 @@ export function App() {
   }
 
   if (!isAuthenticated) {
-    return <LoginScreen onLoginSuccess={handleLoginSuccess} />;
+    return <LoginScreen />;
   }
 
-  if (screen === 'complete') {
+  if (view === 'complete') {
     return (
       <CompletePhaseScreen
-        onBack={() => setScreen('active')}
-        onCompleteSuccess={handleCompleteSuccess}
-        onLogout={handleLogout}
-        isLoggingOut={logoutMutation.isPending}
+        onBack={() => setView('active')}
+        onCompleteSuccess={() => setView('active')}
+        onLogout={() => void handleLogout()}
+        isLoggingOut={isLoggingOut}
       />
     );
   }
 
   return (
     <ActivePhaseScreen
-      onCompletePhase={() => setScreen('complete')}
-      onLogout={handleLogout}
-      isLoggingOut={logoutMutation.isPending}
+      onLogout={() => void handleLogout()}
+      isLoggingOut={isLoggingOut}
+      onCompletePhase={() => setView('complete')}
     />
   );
 }

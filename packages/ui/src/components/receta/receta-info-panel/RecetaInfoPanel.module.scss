@@ -6,12 +6,13 @@
 
   display: flex;
   flex-direction: column;
+  flex-shrink: 0;
   gap: $spacing-md;
   width: 100%;
-  max-width: 842px;
-  min-height: 288px;
+  min-height: auto;
   padding: 24px;
   border-radius: $border-radius-sm;
+  overflow: visible;
 }
 
 .themeLight {
@@ -39,11 +40,22 @@
   gap: $spacing-md;
 }
 
+.gridSecondary {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr);
+  gap: $spacing-md;
+}
+
 .field {
   display: flex;
   flex-direction: column;
+  flex-shrink: 0;
   gap: $spacing-sm;
   min-width: 0;
+}
+
+.descriptionField {
+  flex-shrink: 0;
 }
 
 .label {
@@ -63,7 +75,11 @@
   border-radius: $border-radius-sm;
   font-size: $font-size-sm;
   line-height: 1.5;
-  color: rgb(245 245 240 / 50%);
+  color: var(--receta-text);
+
+  &::placeholder {
+    color: rgb(245 245 240 / 50%);
+  }
 
   &:focus-visible {
     @include receta.receta-focus-ring;
@@ -71,11 +87,15 @@
 }
 
 .themeLight .input {
-  color: rgb(17 17 17 / 55%);
+  color: var(--receta-text);
+
+  &::placeholder {
+    color: rgb(17 17 17 / 45%);
+  }
 }
 
 .textarea {
-  min-height: 85px;
+  min-height: 106px;
   resize: vertical;
 }
 

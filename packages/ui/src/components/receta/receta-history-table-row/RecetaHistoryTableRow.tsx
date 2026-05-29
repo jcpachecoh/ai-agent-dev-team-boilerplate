@@ -71,7 +71,7 @@ export function RecetaHistoryTableRow({
         <span>{duration}</span>
       </span>
       <span className={styles.result} role="cell">
-        <RecetaResultButton variant={result} theme={theme} size="md" onClick={onResultClick} />
+        <RecetaResultButton variant={result} theme={theme} size="sm" onClick={onResultClick} />
       </span>
       <span className={styles.details} role="cell" aria-label={details ?? 'Ver detalles'}>
         <ChevronDown aria-hidden />
