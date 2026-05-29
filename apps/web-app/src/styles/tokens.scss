@@ -1,17 +1,26 @@
-// Color palette
-$color-bg-primary: #0f1419;
-$color-bg-secondary: #1a2332;
-$color-bg-surface: #242f3e;
-$color-text-primary: #e7edf3;
-$color-text-secondary: #8b9bb4;
-$color-accent: #1d9bf0;
-$color-accent-hover: #1a8cd8;
-$color-border: #2f3e53;
-$color-danger: #f4212e;
-$color-success: #00ba7c;
-$color-warning: #ffd400;
+// Color palette — layout shell (Figma Opssynk)
+$color-bg-primary: #0a0a0a;
+$color-bg-secondary: #0d0d0d;
+$color-bg-surface: #1c1c1c;
+$color-bg-header: #111111;
+$color-text-primary: #f5f5f0;
+$color-text-secondary: #888888;
+$color-text-muted: #555555;
+$color-accent: #8b5cf6;
+$color-accent-hover: #7c4fe0;
+$color-accent-subtle: rgba(139, 92, 246, 0.07);
+$color-border: #2e2e2e;
+$color-danger: #e05a44;
+$color-success: #2ec4a0;
+$color-warning: #f0c040;
+$color-brand-gold: #c8a96e;
+$color-brand-gold-subtle: rgba(200, 169, 110, 0.12);
+$color-brand-gold-border: rgba(200, 169, 110, 0.3);
+$color-nav-hover: rgba(255, 255, 255, 0.03);
+$color-orange: #e8943a;
+$color-overlay: rgba(0, 0, 0, 0.55);
 
-// Spacing scale
+// Spacing scale (4px grid)
 $space-1: 0.25rem;
 $space-2: 0.5rem;
 $space-3: 0.75rem;
@@ -24,39 +33,54 @@ $space-12: 3rem;
 
 // Typography
 $font-family-base:
+  'IBM Plex Sans',
   system-ui,
   -apple-system,
   BlinkMacSystemFont,
   'Segoe UI',
   sans-serif;
-$font-size-sm: 0.875rem;
-$font-size-base: 1rem;
-$font-size-lg: 1.125rem;
+$font-family-mono: 'IBM Plex Mono', 'Fira Code', 'Courier New', monospace;
+$font-size-xs: 0.5625rem;
+$font-size-sm: 0.6875rem;
+$font-size-base: 0.8125rem;
+$font-size-md: 0.875rem;
+$font-size-lg: 1rem;
 $font-size-xl: 1.25rem;
 $font-size-2xl: 1.5rem;
+$font-size-3xl: 2rem;
 $font-weight-normal: 400;
 $font-weight-medium: 500;
+$font-weight-semibold: 600;
 $font-weight-bold: 700;
 $line-height-tight: 1.25;
 $line-height-base: 1.5;
 
-// Layout
-$nav-height: 3.5rem;
-$footer-height: 2.5rem;
-$border-radius-sm: 0.25rem;
-$border-radius-base: 0.5rem;
-$border-radius-lg: 0.75rem;
+// Layout shell
+$sidebar-width: 280px;
+$sidebar-width-collapsed: 72px;
+$header-height: 56px;
+$nav-item-height: 2.75rem;
+$nav-icon-size: 1.125rem;
+$nav-sub-icon-size: 0.875rem;
+$nav-active-border: 3px;
+$layout-transition: 300ms ease;
+$border-radius-sm: 4px;
+$border-radius-base: 8px;
 
-// Operations hub & recetas module
-$font-family-mono: 'Fira Code', 'Courier New', monospace;
-$color-operator-bg: #0f1419;
-$color-operator-text: #f4f6f8;
-$color-recipes-bg: #000000;
-$color-recipes-sidebar-bg: #0a0a0a;
-$color-recipes-divider: #2e2e2e;
-$color-recipes-accent: #8b5cf6;
-$color-recipes-surface: #1c1c1c;
+// Legacy aliases (recetas module)
+$color-operator-bg: $color-bg-primary;
+$color-operator-text: $color-text-primary;
+$color-recipes-bg: $color-bg-primary;
+$color-recipes-sidebar-bg: $color-bg-secondary;
+$color-recipes-divider: $color-border;
+$color-recipes-accent: $color-accent;
+$color-recipes-surface: $color-bg-surface;
 $color-recipes-surface-raised: #202020;
 $color-recipes-surface-hover: #262626;
 $color-recipes-panel: #1a1a1a;
 $color-recipes-editor-sidebar: #141414;
+
+// Deprecated layout tokens
+$nav-height: $header-height;
+$footer-height: 2.5rem;
+$border-radius-lg: 0.75rem;

@@ -98,3 +98,7 @@ export * from './components/proveedor/proveedor-product-modal';
 export * from './components/proveedor/proveedor-contact-panel';
 export * from './components/proveedor/proveedor-metrics-panel';
 export * from './components/proveedor/shared/proveedor-types';
+
+export * from './components/ProfileHeader';
+export * from './components/InitialBadge';
+export * from './components/Sidebar';

@@ -1,120 +1,17 @@
 @use '@/styles/tokens' as *;
 
 .screen {
-  height: 100dvh;
-  display: grid;
-  grid-template-columns: 220px minmax(0, 1fr);
+  min-height: 100%;
   background: $color-recipes-bg;
   color: $color-operator-text;
-  overflow: hidden;
-}
-
-.sidebar {
-  display: grid;
-  grid-template-rows: auto 1fr auto;
-  gap: 1rem;
-  padding: 1rem 0.9rem;
-  border-right: 1px solid $color-recipes-divider;
-  background: $color-recipes-sidebar-bg;
-  height: 100dvh;
-  position: sticky;
-  top: 0;
-  overflow: hidden;
-}
-
-.sidebarTop {
-  min-height: 0;
-}
-
-.brand {
-  margin: 0;
-  font-size: 0.65rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: rgba($color-operator-text, 0.45);
-}
-.title {
-  margin: 0.35rem 0 1.2rem;
-  font-size: 1.05rem;
-}
-.nav {
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  min-height: 0;
-  overflow-y: auto;
-}
-
-.navList {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.45rem;
-}
-
-.navItem {
-  min-width: 0;
-}
-
-.navButton {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  width: 100%;
-  border: 1px solid transparent;
-  background: rgba($color-recipes-accent, 0.04);
-  color: rgba($color-operator-text, 0.88);
-  padding: 0.65rem 0.75rem;
-  border-radius: 0.4rem;
-  cursor: pointer;
-  &:hover {
-    border-color: transparent;
-    background: rgba($color-recipes-accent, 0.1);
-    color: $color-operator-text;
-  }
-}
-
-.navButtonActive {
-  border-color: rgba($color-recipes-accent, 0.85);
-  color: $color-operator-text;
-  background: rgba($color-recipes-accent, 0.2);
-}
-
-.backButton {
-  border: 1px solid rgba($color-operator-text, 0.2);
-  background: transparent;
-  color: rgba($color-operator-text, 0.72);
-  border-radius: 0.35rem;
-  padding: 0.7rem;
-}
-
-.sidebarBottom {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.6rem;
-  padding-top: 0.85rem;
-  border-top: 1px solid $color-recipes-divider;
-  min-height: 0;
-}
-
-.operatorName {
-  font-size: 0.85rem;
-  color: rgba($color-operator-text, 0.8);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  min-width: 0;
 }
 
 .content {
   display: flex;
   flex-direction: column;
+  min-height: 100%;
   padding: 0;
-  overflow: hidden;
-  min-height: 0;
+  overflow: auto;
   background: $color-recipes-bg;
 }
 

@@ -1,5 +1,4 @@
 import {
-  LogoutButton,
   RecetaActionButton,
   RecetaFilterSelect,
   RecetaFormButton,
@@ -18,8 +17,7 @@ import {
   RecetaTimelinePanel,
   RecetaUtilityButton,
 } from '@restopsiq/ui';
-import { Cog, History, List } from 'lucide-react';
-import { type CSSProperties, useMemo, useState } from 'react';
+import { type CSSProperties, useEffect, useMemo, useState } from 'react';
 
 import styles from './RecipesManagementScreen.module.scss';
 
@@ -294,17 +292,13 @@ const initialPhases: RecipePhase[] = [
 ];
 
 interface RecipesManagementScreenProps {
-  operatorName?: string;
-  onLogout?: () => void;
-  isLoggingOut?: boolean;
+  view?: RecipesView;
 }
 
 export function RecipesManagementScreen({
-  operatorName = 'Operario 5678',
-  onLogout,
-  isLoggingOut = false,
+  view = 'list',
 }: RecipesManagementScreenProps): React.JSX.Element {
-  const [currentView, setCurrentView] = useState<RecipesView>('list');
+  const [currentView, setCurrentView] = useState<RecipesView>(view);
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState<'all' | RecetaStatus>('all');
@@ -321,6 +315,10 @@ export function RecipesManagementScreen({
   const [phaseDescription, setPhaseDescription] = useState('');
   const [phaseDuration, setPhaseDuration] = useState('10');
   const [phaseResponsible, setPhaseResponsible] = useState<ResponsibleRole>('Operario');
+
+  useEffect(() => {
+    setCurrentView(view);
+  }, [view]);
 
   const filteredRecipes = useMemo(() => {
     return recipesSeed.filter((recipe) => {
@@ -774,63 +772,6 @@ export function RecipesManagementScreen({
 
   return (
     <div className={styles.screen}>
-      <aside className={styles.sidebar}>
-        <div className={styles.sidebarTop}>
-          <p className={styles.brand}>RestOpsIQ WEB</p>
-          <h2 className={styles.title}>Gestion de Recetas</h2>
-        </div>
-        <nav className={styles.nav} aria-label="Navegacion de recetas">
-          <ul className={styles.navList}>
-            <li className={styles.navItem}>
-              <button
-                type="button"
-                className={[styles.navButton, currentView === 'list' && styles.navButtonActive]
-                  .filter(Boolean)
-                  .join(' ')}
-                onClick={() => setCurrentView('list')}
-              >
-                <List size={16} /> Listado de Recetas
-              </button>
-            </li>
-            <li className={styles.navItem}>
-              <button
-                type="button"
-                className={[styles.navButton, currentView === 'process' && styles.navButtonActive]
-                  .filter(Boolean)
-                  .join(' ')}
-                onClick={() => setCurrentView('process')}
-              >
-                <Cog size={16} /> Control de Procesos
-              </button>
-            </li>
-            <li className={styles.navItem}>
-              <button
-                type="button"
-                className={[styles.navButton, currentView === 'history' && styles.navButtonActive]
-                  .filter(Boolean)
-                  .join(' ')}
-                onClick={() => setCurrentView('history')}
-              >
-                <History size={16} /> Historial de Ejecucion
-              </button>
-            </li>
-          </ul>
-        </nav>
-
-        <div className={styles.sidebarBottom}>
-          <span className={styles.operatorName}>{operatorName}</span>
-          {onLogout ? (
-            <LogoutButton
-              theme="dark"
-              size="sm"
-              variant="default"
-              onClick={onLogout}
-              loading={isLoggingOut}
-            />
-          ) : null}
-        </div>
-      </aside>
-
       <main className={styles.content}>{renderMainContent()}</main>
 
       <RecetaPhaseModal
