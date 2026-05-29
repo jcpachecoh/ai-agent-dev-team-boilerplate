@@ -1,11 +1,36 @@
-import type { UserTestLab, PasswordResetToken } from '@prisma/client';
+import type { DocumentType, PasswordResetToken, User } from '@prisma/client';
 import type { SignupDto } from '../controller/dto/signup.dto';
 import type { LoginDto } from '../controller/dto/login.dto';
 
+export type AuthUserSafe = Omit<User, 'passwordHash' | 'refreshToken'>;
+export type AuthUserWithPassword = AuthUserSafe & { passwordHash: string };
+export type AuthUserWithRefresh = AuthUserSafe & { refreshToken: string | null };
+
+export interface CreateUserData {
+  tenantId: string;
+  cedula: string;
+  documentType: DocumentType;
+  email: string;
+  passwordHash: string;
+  roleId: string;
+}
+
+export interface AuthRoleRef {
+  id: string;
+  code: string;
+  isActive: boolean;
+}
+
 export interface IAuthRepository {
-  findByEmail(email: string): Promise<UserTestLab | null>;
-  findById(id: string): Promise<UserTestLab | null>;
-  createUser(data: { email: string; name: string; passwordHash: string }): Promise<UserTestLab>;
+  findByTenantAndEmail(tenantId: string, email: string): Promise<AuthUserSafe | null>;
+  findByTenantAndEmailForAuth(
+    tenantId: string,
+    email: string,
+  ): Promise<AuthUserWithPassword | null>;
+  findByTenantAndCedula(tenantId: string, cedula: string): Promise<AuthUserSafe | null>;
+  findByIdForRefresh(id: string): Promise<AuthUserWithRefresh | null>;
+  findRoleByTenantAndCode(tenantId: string, code: string): Promise<AuthRoleRef | null>;
+  createUser(data: CreateUserData): Promise<AuthUserSafe>;
   saveRefreshToken(userId: string, hashedToken: string | null): Promise<void>;
   updatePassword(userId: string, passwordHash: string): Promise<void>;
 }
@@ -21,12 +46,12 @@ export interface JwtPayload {
 }
 
 export interface IAuthService {
-  signup(dto: SignupDto): Promise<AuthTokens>;
-  login(dto: LoginDto): Promise<AuthTokens>;
+  signup(tenantId: string, dto: SignupDto): Promise<AuthTokens>;
+  login(tenantId: string, dto: LoginDto): Promise<AuthTokens>;
   refresh(userId: string, refreshToken: string): Promise<AuthTokens>;
   logout(userId: string): Promise<void>;
   resetPassword(rawToken: string, newPassword: string): Promise<void>;
-  findByEmail(email: string): Promise<UserTestLab | null>;
+  findByTenantAndEmail(tenantId: string, email: string): Promise<AuthUserSafe | null>;
 }
 
 // ---------------------------------------------------------------------------
@@ -66,7 +91,7 @@ export interface IAuthEmailService {
   sendResetPassword(userEmail: string, tenant: TenantContext, ipAddress?: string): Promise<void>;
 
   sendVerifyEmail(
-    user: { id: string; email: string; name: string },
+    user: { id: string; email: string },
     tenant: TenantContext,
   ): Promise<{ otpCode: string }>;
 

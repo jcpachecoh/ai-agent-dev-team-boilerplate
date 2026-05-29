@@ -1,4 +1,5 @@
 import { createHash } from 'crypto';
+import { DocumentType } from '@prisma/client';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthEmailService } from '../service/auth-email.service';
 import { AuthRepository } from '../repository/auth.repository';
@@ -25,12 +26,21 @@ const MockRedis = Redis as unknown as jest.Mock;
 
 const mockUser = {
   id: 'user-001',
+  tenantId: 'tenant-abc',
+  cedula: '12345678',
+  documentType: DocumentType.CC,
   email: 'alice@example.com',
-  name: 'Alice',
-  passwordHash: 'hashed',
-  refreshToken: null,
+  roleId: 'role-1',
+  loginAttempts: 0,
+  lockedUntil: null,
+  lastLoginAt: null,
+  passwordChangedAt: null,
+  isActive: true,
+  emailVerified: false,
   createdAt: new Date(),
   updatedAt: new Date(),
+  deletedAt: null,
+  createdBy: null,
 };
 
 const mockTenant: TenantContext = {
@@ -55,7 +65,7 @@ const mockToken = {
 // ---------------------------------------------------------------------------
 
 const authRepoMock = {
-  findByEmail: jest.fn(),
+  findByTenantAndEmail: jest.fn(),
 };
 
 const authEmailRepoMock = {
@@ -88,7 +98,7 @@ describe('AuthEmailService — sendResetPassword', () => {
     jest.clearAllMocks();
 
     // Default happy-path setup
-    authRepoMock.findByEmail.mockResolvedValue(mockUser);
+    authRepoMock.findByTenantAndEmail.mockResolvedValue(mockUser);
     authEmailRepoMock.deleteExpiredResetTokens.mockResolvedValue(undefined);
     authEmailRepoMock.createResetToken.mockResolvedValue(mockToken);
     emailServiceMock.send.mockResolvedValue({ jobId: 'job-001' });
@@ -101,7 +111,7 @@ describe('AuthEmailService — sendResetPassword', () => {
   });
 
   it('returns void silently when user does not exist (no throw)', async () => {
-    authRepoMock.findByEmail.mockResolvedValue(null);
+    authRepoMock.findByTenantAndEmail.mockResolvedValue(null);
     const result = await service.sendResetPassword('nobody@example.com', mockTenant);
     expect(result).toBeUndefined();
     expect(emailServiceMock.send).not.toHaveBeenCalled();
@@ -210,11 +220,12 @@ describe('AuthEmailService — sendResetPassword', () => {
     const [sendCall] = emailServiceMock.send.mock.calls;
     const props = sendCall[0].template.props;
     expect(props).toMatchObject({
-      userName: mockUser.name,
+      userName: mockUser.email,
       resetUrl: expect.stringContaining('token='),
       expiresAt: expect.any(String),
       ipAddress: '192.168.1.1',
     });
+    expect(props).not.toHaveProperty('passwordHash');
   });
 
   it('does not throw when emailService.send resolves', async () => {
@@ -224,13 +235,20 @@ describe('AuthEmailService — sendResetPassword', () => {
     ).resolves.toBeUndefined();
   });
 
-  it('uses email as userName fallback when user.name is null', async () => {
-    authRepoMock.findByEmail.mockResolvedValue({ ...mockUser, name: null });
-
+  it('uses email as userName in reset-password template', async () => {
     await service.sendResetPassword('alice@example.com', mockTenant);
 
     const [sendCall] = emailServiceMock.send.mock.calls;
     expect(sendCall[0].template.props.userName).toBe('alice@example.com');
+  });
+
+  it('looks up user by tenantId and email', async () => {
+    await service.sendResetPassword('alice@example.com', mockTenant);
+
+    expect(authRepoMock.findByTenantAndEmail).toHaveBeenCalledWith(
+      mockTenant.tenantId,
+      'alice@example.com',
+    );
   });
 
   it('propagates error when authEmailRepository.createResetToken rejects', async () => {
@@ -251,7 +269,6 @@ describe('AuthEmailService — sendVerifyEmail & verifyOtp', () => {
   const mockVerifyUser = {
     id: 'user-002',
     email: 'bob@example.com',
-    name: 'Bob',
   };
 
   const mockVerifyTenant: TenantContext = {
@@ -271,7 +288,7 @@ describe('AuthEmailService — sendVerifyEmail & verifyOtp', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthEmailService,
-        { provide: AuthRepository, useValue: { findByEmail: jest.fn() } },
+        { provide: AuthRepository, useValue: { findByTenantAndEmail: jest.fn() } },
         {
           provide: AuthEmailRepository,
           useValue: { deleteExpiredResetTokens: jest.fn(), createResetToken: jest.fn() },
@@ -356,7 +373,7 @@ describe('AuthEmailService — sendVerifyEmail & verifyOtp', () => {
       const [sendCall] = emailServiceMock.send.mock.calls;
       const props = sendCall[0].template.props;
       expect(props).toMatchObject({
-        userName: mockVerifyUser.name,
+        userName: mockVerifyUser.email,
         otpCode: result.otpCode,
         expiresInMinutes: 15,
       });
@@ -370,7 +387,7 @@ describe('AuthEmailService — sendVerifyEmail & verifyOtp', () => {
       const module = await Test.createTestingModule({
         providers: [
           AuthEmailService,
-          { provide: AuthRepository, useValue: { findByEmail: jest.fn() } },
+          { provide: AuthRepository, useValue: { findByTenantAndEmail: jest.fn() } },
           { provide: AuthEmailRepository, useValue: authEmailRepoMockLocal },
           { provide: EmailService, useValue: emailServiceMock },
         ],
@@ -452,7 +469,7 @@ describe('AuthEmailService — sendWelcome & sendInvitation', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthEmailService,
-        { provide: AuthRepository, useValue: { findByEmail: jest.fn() } },
+        { provide: AuthRepository, useValue: { findByTenantAndEmail: jest.fn() } },
         {
           provide: AuthEmailRepository,
           useValue: { deleteExpiredResetTokens: jest.fn(), createResetToken: jest.fn() },
@@ -616,7 +633,7 @@ describe('AuthEmailService — lifecycle hooks', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthEmailService,
-        { provide: AuthRepository, useValue: { findByEmail: jest.fn() } },
+        { provide: AuthRepository, useValue: { findByTenantAndEmail: jest.fn() } },
         {
           provide: AuthEmailRepository,
           useValue: { deleteExpiredResetTokens: jest.fn(), createResetToken: jest.fn() },

@@ -32,9 +32,8 @@ model UserTestLab {
   resultsAssigned     TestResult[]    @relation("ResultsAssigned")
   resultsExecuted     TestResult[]    @relation("ResultsExecuted")
   attachmentsUploaded Attachment[]    @relation("AttachmentsUploaded")
-  auditLogs           AuditLog[]
 
-  @@map("users")
+  @@map("users_testlab")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -375,8 +374,6 @@ model AuditLog {
   userAgent String?
   createdAt DateTime @default(now())
 
-  user UserTestLab? @relation(fields: [userId], references: [id], onDelete: SetNull)
-
   @@index([entity, entityId])
   @@index([userId])
   @@map("audit_logs")
@@ -554,6 +551,67 @@ model PasswordResetToken {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// GLOBAL IDENTITY — ROLES & DOCUMENT TYPES (USR-01)
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum DocumentType {
+  CC
+  CE
+  PASAPORTE
+  TI
+  PEP
+}
+
+model Role {
+  id          String   @id @default(cuid())
+  tenantId    String
+  code        String
+  name        String
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users User[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId, isActive])
+  @@map("roles")
+}
+
+model User {
+  id                String       @id @default(cuid())
+  tenantId          String
+  cedula            String
+  documentType      DocumentType
+  email             String
+  passwordHash      String
+  roleId            String
+  loginAttempts     Int          @default(0)
+  lockedUntil       DateTime?
+  lastLoginAt       DateTime?
+  passwordChangedAt DateTime?
+  refreshToken      String?
+  isActive          Boolean      @default(true)
+  emailVerified     Boolean      @default(false)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  deletedAt         DateTime?
+  createdBy         String?
+
+  role Role @relation(fields: [roleId], references: [id])
+
+  operationalProfile OperationalUser?
+
+  @@unique([tenantId, email])
+  @@unique([tenantId, cedula])
+  @@index([tenantId, roleId])
+  @@index([isActive])
+  @@index([tenantId, isActive])
+  @@map("users")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // MES OPERATIONAL USERS (cédula + PIN auth)
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -566,6 +624,7 @@ enum OperationalRole {
 
 model OperationalUser {
   id            String          @id @default(cuid())
+  userId        String?         @unique
   cedulaHash    String
   pinHash       String
   role          OperationalRole
@@ -579,6 +638,7 @@ model OperationalUser {
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
 
+  user             User?             @relation(fields: [userId], references: [id])
   operatorSessions OperatorSession[]
 
   @@unique([tenantId, cedulaHash])
