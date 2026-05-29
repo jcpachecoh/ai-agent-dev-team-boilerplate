@@ -18,6 +18,7 @@
     "db:down": "docker compose down",
     "db:migrate": "npx prisma@5 migrate dev",
     "db:migrate:deploy": "npx prisma@5 migrate deploy",
+    "db:migrate:deploy:remote": "railway run sh -c 'DATABASE_URL=$DATABASE_PUBLIC_URL npx prisma@5 migrate deploy'",
     "db:migrate:reset": "npx prisma@5 migrate reset",
     "db:generate": "npx prisma@5 generate",
     "db:studio": "npx prisma@5 studio",
