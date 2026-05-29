@@ -18,6 +18,7 @@ const serviceMock = {
   logout: jest.fn(),
   me: jest.fn(),
   getRole: jest.fn(),
+  createUser: jest.fn(),
 };
 
 const buildRequest = (overrides: Partial<Request> = {}): Request =>
@@ -100,6 +101,31 @@ describe('MesAuthController', () => {
 
       expect(result).toEqual(meResponse);
       expect(serviceMock.me).toHaveBeenCalledWith('op-user-1');
+    });
+  });
+
+  describe('createUser', () => {
+    it('calls service.createUser with requester sub and dto', async () => {
+      const created = {
+        id: 'new-op-1',
+        cedula: '****4321',
+        role: OperationalRole.OPERATOR,
+        tenantId: 'tenant-abc',
+        sedeId: 'sede-principal',
+      };
+      serviceMock.createUser.mockResolvedValue(created);
+      const dto = {
+        cedula: '87654321',
+        pin: '4321',
+        role: OperationalRole.OPERATOR,
+        sedeId: 'sede-principal',
+      };
+      const req = { user: { sub: 'owner-1' } } as never;
+
+      const result = await controller.createUser(dto, req);
+
+      expect(result).toEqual(created);
+      expect(serviceMock.createUser).toHaveBeenCalledWith('owner-1', dto);
     });
   });
 

@@ -171,6 +171,27 @@
       "description": "Synthetic PIN for seeded MES OPERATOR (local/dev only)"
     },
     {
+      "key": "mesNewUserCedula",
+      "value": "99123456",
+      "type": "default",
+      "enabled": true,
+      "description": "Synthetic cédula for POST /api/mes/users — overwritten per run by Create User pre-request script"
+    },
+    {
+      "key": "mesNewUserPin",
+      "value": "5678",
+      "type": "secret",
+      "enabled": true,
+      "description": "Synthetic PIN for POST /api/mes/users (local/dev only)"
+    },
+    {
+      "key": "mesCreatedUserId",
+      "value": "",
+      "type": "default",
+      "enabled": true,
+      "description": "Operational user id returned by Create User — set by test script"
+    },
+    {
       "key": "mesAccessToken",
       "value": "",
       "type": "default",

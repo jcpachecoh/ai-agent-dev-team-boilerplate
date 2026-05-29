@@ -22,6 +22,7 @@ const mockOperationalUser = {
 const prismaMock = {
   operationalUser: {
     findUnique: jest.fn(),
+    create: jest.fn(),
     update: jest.fn(),
   },
 };
@@ -69,6 +70,32 @@ describe('MesAuthRepository', () => {
       prismaMock.operationalUser.findUnique.mockResolvedValue(null);
       const result = await repository.findById('unknown');
       expect(result).toBeNull();
+    });
+  });
+
+  describe('createUser', () => {
+    it('calls prisma create with hashed fields and defaults', async () => {
+      prismaMock.operationalUser.create.mockResolvedValue(mockOperationalUser);
+      const result = await repository.createUser({
+        tenantId: 'tenant-1',
+        cedulaHash: 'hash-abc',
+        pinHash: 'pin-hash',
+        role: OperationalRole.OPERATOR,
+        sedeId: 'sede-1',
+      });
+      expect(result).toEqual(mockOperationalUser);
+      expect(prismaMock.operationalUser.create).toHaveBeenCalledWith({
+        data: {
+          tenantId: 'tenant-1',
+          cedulaHash: 'hash-abc',
+          pinHash: 'pin-hash',
+          role: OperationalRole.OPERATOR,
+          sedeId: 'sede-1',
+          isActive: true,
+          loginAttempts: 0,
+          lockedUntil: null,
+        },
+      });
     });
   });
 

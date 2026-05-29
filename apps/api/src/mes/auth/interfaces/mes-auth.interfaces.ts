@@ -1,8 +1,32 @@
 import type { OperationalUser, OperationalRole } from '@prisma/client';
 
+export interface CreateOperationalUserData {
+  tenantId: string;
+  cedulaHash: string;
+  pinHash: string;
+  role: OperationalRole;
+  sedeId: string | null;
+}
+
+export interface MesCreateUserInput {
+  cedula: string;
+  pin: string;
+  role: OperationalRole;
+  sedeId?: string;
+}
+
+export interface MesCreatedUserResponse {
+  id: string;
+  cedula: string;
+  role: OperationalRole;
+  tenantId: string;
+  sedeId: string | null;
+}
+
 export interface IMesAuthRepository {
   findByCedulaHash(tenantId: string, cedulaHash: string): Promise<OperationalUser | null>;
   findById(id: string): Promise<OperationalUser | null>;
+  createUser(data: CreateOperationalUserData): Promise<OperationalUser>;
   incrementLoginAttempts(id: string): Promise<void>;
   lockUser(id: string, until: Date): Promise<void>;
   resetLoginAttempts(id: string): Promise<void>;
@@ -32,6 +56,7 @@ export interface IMesAuthService {
   logout(userId: string, jti?: string): Promise<void>;
   me(userId: string): Promise<MesMeResponse>;
   getRole(requesterUserId: string, targetUserId: string): Promise<{ role: OperationalRole }>;
+  createUser(requesterUserId: string, dto: MesCreateUserInput): Promise<MesCreatedUserResponse>;
 }
 
 export interface MesJwtPayload {

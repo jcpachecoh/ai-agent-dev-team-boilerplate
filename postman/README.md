@@ -65,12 +65,15 @@ The `local.environment.json` ships with deterministic seed values:
 
 Run `pnpm db:seed` from `apps/api/` and these values work immediately.
 
-| Variable            | Seeded value (local/dev only) |
-| ------------------- | ----------------------------- |
-| `mesOwnerCedula`    | `12345678` (OWNER)            |
-| `mesOwnerPin`       | `1234`                        |
-| `mesOperatorCedula` | `87654321` (OPERATOR)         |
-| `mesOperatorPin`    | `4321`                        |
+| Variable            | Seeded value (local/dev only)                   |
+| ------------------- | ----------------------------------------------- |
+| `mesOwnerCedula`    | `12345678` (OWNER)                              |
+| `mesOwnerPin`       | `1234`                                          |
+| `mesOperatorCedula` | `87654321` (OPERATOR)                           |
+| `mesOperatorPin`    | `4321`                                          |
+| `mesNewUserPin`     | `5678` (Create User body)                       |
+| `mesNewUserCedula`  | unique per run (`99` + 6 digits from timestamp) |
+| `mesCreatedUserId`  | set by Create User response                     |
 
 MES credentials are **synthetic** and documented in `apps/api/prisma/seed.ts` — never use real production cédulas in Postman.
 
@@ -175,10 +178,11 @@ RestOpsIQ API
 │   ├── POST /api/auth/verify-email (invalid OTP — negative)
 │   └── ── RES-226 email endpoints require Redis + BullMQ queue running ──
 │
-├── MES Auth           (6 requests — separate from TestLab auth)
+├── MES Auth           (7 requests — separate from TestLab auth)
 │   ├── POST /api/mes/auth/login (Owner)     → x-tenant-id: {{mesTenantId}}, captures mesAccessToken
 │   ├── GET  /api/mes/auth/me                → Bearer {{mesAccessToken}}
 │   ├── GET  /api/mes/users/:id/role         → Bearer {{mesAccessToken}}, uses {{mesUserId}}
+│   ├── POST /api/mes/users                  → Bearer {{mesAccessToken}}, OWNER only; captures mesCreatedUserId
 │   ├── POST /api/mes/auth/logout            → Bearer {{mesAccessToken}}
 │   ├── POST /api/mes/auth/login (wrong PIN) → negative, 401
 │   └── POST /api/mes/auth/login (no tenant) → negative, 400
@@ -278,7 +282,8 @@ Run these requests **in order** inside the **MES Auth** folder:
 1. **Login Owner** — sends `x-tenant-id: {{mesTenantId}}` and owner cédula/PIN; sets `mesAccessToken`, `mesRefreshToken`, and `mesUserId`.
 2. **Me** — `GET /api/mes/auth/me` with `Authorization: Bearer {{mesAccessToken}}`.
 3. **Get User Role** — `GET /api/mes/users/{{mesUserId}}/role` (OWNER role required).
-4. **Logout** — `POST /api/mes/auth/logout`.
+4. **Create User** — `POST /api/mes/users` with OWNER token; creates an OPERATOR and sets `mesCreatedUserId`.
+5. **Logout** — `POST /api/mes/auth/logout`.
 
 Negative cases (wrong PIN, missing `x-tenant-id`) can be run independently; they use `noauth` and do not require a prior login.
 

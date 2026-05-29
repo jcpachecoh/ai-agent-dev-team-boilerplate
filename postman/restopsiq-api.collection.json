@@ -249,6 +249,24 @@
       "description": "Seeded MES OPERATOR id"
     },
     {
+      "key": "mesNewUserCedula",
+      "value": "99123456",
+      "type": "string",
+      "description": "Synthetic cédula for POST /api/mes/users — overwritten per run by pre-request script"
+    },
+    {
+      "key": "mesNewUserPin",
+      "value": "5678",
+      "type": "string",
+      "description": "Synthetic PIN for POST /api/mes/users (local/dev only)"
+    },
+    {
+      "key": "mesCreatedUserId",
+      "value": "",
+      "type": "string",
+      "description": "Operational user id returned by Create User — set by test script"
+    },
+    {
       "key": "testLabUserId",
       "value": "cccccccc-0000-0000-0000-000000000003",
       "type": "string",
@@ -951,6 +969,72 @@
             "method": "GET",
             "header": [],
             "url": "{{baseUrl}}/api/mes/users/{{mesUserId}}/role"
+          },
+          "response": []
+        },
+        {
+          "name": "Create User",
+          "description": "POST /api/mes/users — OWNER role required.\nCreates an OPERATOR with a unique synthetic cédula (pre-request script).\nRequires Bearer {{mesAccessToken}} from Login Owner.\nCaptures mesCreatedUserId on success.",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const cedula = '99' + String(Date.now()).slice(-6);",
+                  "pm.collectionVariables.set('mesNewUserCedula', cedula);",
+                  "pm.environment.set('mesNewUserCedula', cedula);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('Has id', () => pm.expect(body).to.have.property('id'));",
+                  "pm.test('Has masked cedula', () => pm.expect(body.cedula).to.match(/^\\*+\\d{4}$/));",
+                  "pm.test('Has role OPERATOR', () => pm.expect(body.role).to.eql('OPERATOR'));",
+                  "pm.test('Has tenantId', () => pm.expect(body).to.have.property('tenantId'));",
+                  "pm.test('Has sedeId', () => pm.expect(body.sedeId).to.eql('sede-principal'));",
+                  "if (body.id) {",
+                  "  pm.collectionVariables.set('mesCreatedUserId', body.id);",
+                  "  pm.environment.set('mesCreatedUserId', body.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{mesAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cedula\": \"{{mesNewUserCedula}}\",\n  \"pin\": \"{{mesNewUserPin}}\",\n  \"role\": \"OPERATOR\",\n  \"sedeId\": \"sede-principal\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/mes/users"
           },
           "response": []
         },
