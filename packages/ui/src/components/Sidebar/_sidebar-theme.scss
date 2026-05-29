@@ -1,0 +1,29 @@
+@use '../../styles/abstracts/variables' as *;
+
+@mixin sidebar-theme-dark {
+  --sidebar-bg: #0d0d0d;
+  --sidebar-border: #2e2e2e;
+  --sidebar-text-primary: #f5f5f0;
+  --sidebar-text-secondary: #888888;
+  --sidebar-text-muted: #555555;
+  --sidebar-brand: #c8a96e;
+  --sidebar-accent: #8b5cf6;
+  --sidebar-accent-subtle: rgba(139, 92, 246, 0.07);
+  --sidebar-nav-hover: rgba(255, 255, 255, 0.03);
+  --sidebar-badge-bg: #e05a44;
+  --sidebar-overlay: rgba(0, 0, 0, 0.55);
+}
+
+@mixin sidebar-theme-light {
+  --sidebar-bg: #ffffff;
+  --sidebar-border: #dee2e6;
+  --sidebar-text-primary: #212529;
+  --sidebar-text-secondary: #6c757d;
+  --sidebar-text-muted: #adb5bd;
+  --sidebar-brand: #b8892f;
+  --sidebar-accent: #0057ff;
+  --sidebar-accent-subtle: rgba(0, 87, 255, 0.08);
+  --sidebar-nav-hover: rgba(0, 0, 0, 0.04);
+  --sidebar-badge-bg: #dc3545;
+  --sidebar-overlay: rgba(0, 0, 0, 0.35);
+}

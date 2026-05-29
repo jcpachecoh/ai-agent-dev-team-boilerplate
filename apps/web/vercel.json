@@ -2,10 +2,5 @@
   "installCommand": "cd ../.. && pnpm install --frozen-lockfile",
   "buildCommand": "cd ../.. && pnpm --filter @restopsiq/web run build",
   "outputDirectory": ".next",
-  "github": {
-    "enabled": false,
-    "autoAlias": false,
-    "silent": true
-  },
   "ignoreCommand": "[ \"$VERCEL_GIT_COMMIT_REF\" != \"main\" ] && exit 0 || exit 1"
 }

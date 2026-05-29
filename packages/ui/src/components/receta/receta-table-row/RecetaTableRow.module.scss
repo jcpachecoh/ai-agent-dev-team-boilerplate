@@ -5,7 +5,10 @@
   @include receta.receta-theme-classes;
 
   display: grid;
-  grid-template-columns: 110px minmax(180px, 1.5fr) minmax(130px, 0.8fr) 120px 100px 120px 110px;
+  grid-template-columns: var(
+    --receta-columns,
+    110px minmax(180px, 1.5fr) minmax(130px, 0.8fr) 120px 100px 120px 110px
+  );
   align-items: center;
   width: min(100%, var(--row-width));
   min-height: var(--row-height);
@@ -34,12 +37,18 @@
   --row-width: 100%;
   --row-height: 72px;
   --row-padding-x: #{$spacing-lg};
+  width: 100%;
 }
 
 .code,
+.category,
 .duration,
 .portions,
 .updated {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-family: $font-family-mono;
   font-size: $font-size-xs;
   color: var(--receta-muted);
@@ -52,14 +61,18 @@
 }
 
 .name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: $font-family-base;
   font-size: $font-size-sm;
   font-weight: $font-weight-semibold;
   color: var(--receta-text);
 }
 
 .category {
-  font-size: $font-size-xs;
-  color: var(--receta-text-secondary);
+  color: var(--receta-muted);
 }
 
 .portions,
@@ -74,6 +87,26 @@
 
 .updated {
   display: none;
+}
+
+.densityCompact {
+  --row-height: 56px;
+  --row-padding-x: 1rem;
+  width: 100%;
+
+  .code {
+    font-size: 0.6875rem;
+  }
+
+  .name {
+    font-size: 0.75rem;
+  }
+
+  .category,
+  .duration,
+  .portions {
+    font-size: 0.75rem;
+  }
 }
 
 @media (max-width: 760px) {

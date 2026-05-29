@@ -30,13 +30,12 @@ body {
 }
 
 a {
-  color: t.$color-accent;
+  color: inherit;
   text-decoration: none;
+}
 
-  &:hover {
-    color: t.$color-accent-hover;
-    text-decoration: underline;
-  }
+button {
+  font: inherit;
 }
 
 ul,

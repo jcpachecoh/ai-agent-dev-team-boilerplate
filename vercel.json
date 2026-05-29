@@ -1,9 +1,4 @@
 {
-  "github": {
-    "enabled": false,
-    "autoAlias": false,
-    "silent": true
-  },
   "ignoreCommand": "[ \"$VERCEL_GIT_COMMIT_REF\" != \"main\" ] && exit 0 || exit 1",
   "installCommand": "pnpm install --frozen-lockfile"
 }
