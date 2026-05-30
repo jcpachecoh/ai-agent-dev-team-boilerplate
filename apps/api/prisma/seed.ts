@@ -14,6 +14,14 @@
  * Global User + Role (USR-01):
  *   Roles: OWNER, SUPERVISOR, MANAGER, OPERATOR (tenant-scoped)
  *
+ * Global Permission catalog (USR-02):
+ *   13 permission codes — see PERMISSION_SEEDS (ids cccccccc-0000-0000-0000-000000000001…013)
+ *
+ * Role-permission matrix (USR-02, tenant palos-de-lena):
+ *   OWNER — all 13 permissions
+ *   MANAGER / SUPERVISOR — 11 permissions (no mes.users.*)
+ *   OPERATOR — plant.orders.read, supply.items.read
+ *
  * MES operational users (local/dev only — synthetic cédulas, never use in production):
  *   owner:    cédula 12345678 / PIN 1234  (OWNER) — linked to global User
  *   operator: cédula 87654321 / PIN 4321  (OPERATOR, sede sede-principal) — linked to global User
@@ -53,6 +61,149 @@ const ROLE_SEEDS = [
   { id: ROLE_OPERATOR_ID, code: 'OPERATOR', name: 'Operator' },
 ] as const;
 
+const PERMISSION_SEEDS = [
+  {
+    id: 'cccccccc-0000-0000-0000-000000000001',
+    code: 'mes.users.create',
+    name: 'Create operational user',
+    description: 'Create a new MES operational user in the tenant',
+    module: 'mes',
+    resource: 'users',
+    action: 'create',
+  },
+  {
+    id: 'cccccccc-0000-0000-0000-000000000002',
+    code: 'mes.users.role.read',
+    name: 'Read operational user role',
+    description: 'Read the role assigned to an MES operational user',
+    module: 'mes',
+    resource: 'users.role',
+    action: 'read',
+  },
+  {
+    id: 'cccccccc-0000-0000-0000-000000000003',
+    code: 'plant.workstations.manage',
+    name: 'Manage workstations',
+    description: 'Create, update, and deactivate plant work stations',
+    module: 'plant',
+    resource: 'workstations',
+    action: 'manage',
+  },
+  {
+    id: 'cccccccc-0000-0000-0000-000000000004',
+    code: 'plant.recipes.manage',
+    name: 'Manage recipes',
+    description: 'Create, update, clone, and deactivate production recipes',
+    module: 'plant',
+    resource: 'recipes',
+    action: 'manage',
+  },
+  {
+    id: 'cccccccc-0000-0000-0000-000000000005',
+    code: 'plant.orders.read',
+    name: 'Read production orders',
+    description: 'List and view production orders',
+    module: 'plant',
+    resource: 'orders',
+    action: 'read',
+  },
+  {
+    id: 'cccccccc-0000-0000-0000-000000000006',
+    code: 'plant.orders.create',
+    name: 'Create production order',
+    description: 'Create a new production order',
+    module: 'plant',
+    resource: 'orders',
+    action: 'create',
+  },
+  {
+    id: 'cccccccc-0000-0000-0000-000000000007',
+    code: 'plant.orders.plan',
+    name: 'Plan production order',
+    description: 'Move a production order to planned status',
+    module: 'plant',
+    resource: 'orders',
+    action: 'plan',
+  },
+  {
+    id: 'cccccccc-0000-0000-0000-000000000008',
+    code: 'plant.orders.pause',
+    name: 'Pause production order',
+    description: 'Pause an in-progress production order',
+    module: 'plant',
+    resource: 'orders',
+    action: 'pause',
+  },
+  {
+    id: 'cccccccc-0000-0000-0000-000000000009',
+    code: 'plant.orders.resume',
+    name: 'Resume production order',
+    description: 'Resume a paused production order',
+    module: 'plant',
+    resource: 'orders',
+    action: 'resume',
+  },
+  {
+    id: 'cccccccc-0000-0000-0000-000000000010',
+    code: 'plant.orders.cancel',
+    name: 'Cancel production order',
+    description: 'Cancel a production order',
+    module: 'plant',
+    resource: 'orders',
+    action: 'cancel',
+  },
+  {
+    id: 'cccccccc-0000-0000-0000-000000000011',
+    code: 'plant.executions.qa_approve',
+    name: 'QA approve execution',
+    description: 'Approve a phase execution pending QA',
+    module: 'plant',
+    resource: 'executions',
+    action: 'qa_approve',
+  },
+  {
+    id: 'cccccccc-0000-0000-0000-000000000012',
+    code: 'supply.items.read',
+    name: 'Read supply items',
+    description: 'List and view supply catalog items',
+    module: 'supply',
+    resource: 'items',
+    action: 'read',
+  },
+  {
+    id: 'cccccccc-0000-0000-0000-000000000013',
+    code: 'supply.items.manage',
+    name: 'Manage supply items',
+    description: 'Create, update, and deactivate supply catalog items',
+    module: 'supply',
+    resource: 'items',
+    action: 'manage',
+  },
+] as const;
+
+const MANAGER_SUPERVISOR_PERMISSION_CODES = [
+  'plant.workstations.manage',
+  'plant.recipes.manage',
+  'plant.orders.read',
+  'plant.orders.create',
+  'plant.orders.plan',
+  'plant.orders.pause',
+  'plant.orders.resume',
+  'plant.orders.cancel',
+  'plant.executions.qa_approve',
+  'supply.items.read',
+  'supply.items.manage',
+] as const;
+
+const OPERATOR_PERMISSION_CODES = ['plant.orders.read', 'supply.items.read'] as const;
+
+const ROLE_PERMISSION_MATRIX: Record<string, readonly string[]> = {
+  OWNER: PERMISSION_SEEDS.map((permissionSeed) => permissionSeed.code),
+  MANAGER: MANAGER_SUPERVISOR_PERMISSION_CODES,
+  SUPERVISOR: MANAGER_SUPERVISOR_PERMISSION_CODES,
+  OPERATOR: OPERATOR_PERMISSION_CODES,
+};
+
 /** Matches MesAuthService cédula hashing (HMAC-SHA256 or SHA-256 fallback). */
 function hashCedula(cedula: string): string {
   const hmacSecret = process.env.CEDULA_HMAC_SECRET;
@@ -86,10 +237,95 @@ async function seedRoles() {
   return roles;
 }
 
+async function seedPermissions() {
+  const permissions: Record<string, { id: string; code: string }> = {};
+
+  for (const permissionSeed of PERMISSION_SEEDS) {
+    const permission = await prisma.permission.upsert({
+      where: { code: permissionSeed.code },
+      update: {
+        name: permissionSeed.name,
+        description: permissionSeed.description,
+        module: permissionSeed.module,
+        resource: permissionSeed.resource,
+        action: permissionSeed.action,
+        isActive: true,
+      },
+      create: {
+        id: permissionSeed.id,
+        code: permissionSeed.code,
+        name: permissionSeed.name,
+        description: permissionSeed.description,
+        module: permissionSeed.module,
+        resource: permissionSeed.resource,
+        action: permissionSeed.action,
+        isActive: true,
+      },
+    });
+    permissions[permissionSeed.code] = permission;
+    console.log('Permission:', permission.code, '—', permission.id);
+  }
+
+  return permissions;
+}
+
+async function seedRolePermissions() {
+  const countsByRole: Record<string, number> = {};
+
+  for (const [roleCode, permissionCodes] of Object.entries(ROLE_PERMISSION_MATRIX)) {
+    const role = await prisma.role.findUnique({
+      where: {
+        tenantId_code: { tenantId: OPERATIONAL_TENANT_ID, code: roleCode },
+      },
+      select: { id: true, code: true },
+    });
+    if (!role) {
+      throw new Error(
+        `[seedRolePermissions] Role "${roleCode}" not found for tenant "${OPERATIONAL_TENANT_ID}"`,
+      );
+    }
+
+    let linkedCount = 0;
+    for (const permissionCode of permissionCodes) {
+      const permission = await prisma.permission.findUnique({
+        where: { code: permissionCode },
+        select: { id: true, code: true },
+      });
+      if (!permission) {
+        throw new Error(
+          `[seedRolePermissions] Permission "${permissionCode}" not found in catalog`,
+        );
+      }
+
+      await prisma.rolePermission.upsert({
+        where: {
+          roleId_permissionId: {
+            roleId: role.id,
+            permissionId: permission.id,
+          },
+        },
+        update: {},
+        create: {
+          roleId: role.id,
+          permissionId: permission.id,
+        },
+      });
+      linkedCount++;
+    }
+
+    countsByRole[roleCode] = linkedCount;
+    console.log(`RolePermission: ${roleCode} — ${linkedCount} permissions linked`);
+  }
+
+  return countsByRole;
+}
+
 async function main() {
   console.log('Seeding database…');
 
   const roles = await seedRoles();
+  await seedPermissions();
+  const rolePermissionCounts = await seedRolePermissions();
 
   // ── Supply category (operational tenant) ─────────────────────────────────
   const category = await prisma.supplyCategory.upsert({
@@ -265,6 +501,12 @@ async function main() {
   console.log('\n✅ Global User fixtures (USR-01):');
   console.log('  mes-owner userId    =', ownerGlobalUser.id);
   console.log('  mes-operator userId =', operatorGlobalUser.id);
+  console.log('\n✅ Global Permission catalog (USR-02):');
+  console.log('  permissions seeded =', PERMISSION_SEEDS.length);
+  console.log('\n✅ Role-permission matrix (USR-02, tenant palos-de-lena):');
+  for (const [roleCode, count] of Object.entries(rolePermissionCounts)) {
+    console.log(`  ${roleCode}: ${count} permissions`);
+  }
   console.log('\n✅ MES auth (local/dev only):');
   console.log('  See file header for synthetic cédula + PIN test credentials');
 
