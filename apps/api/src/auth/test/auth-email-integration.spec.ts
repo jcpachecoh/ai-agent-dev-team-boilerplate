@@ -1,11 +1,14 @@
 // ioredis must be mocked before any import that pulls AuthEmailService, so that
 // onModuleInit() does not attempt a real Redis connection even if called.
 jest.mock('ioredis');
+jest.mock('bcrypt');
 
 import { createHash } from 'crypto';
+import { DocumentType } from '@prisma/client';
 import { BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
+import * as bcrypt from 'bcrypt';
 import { AuthController } from '../controller/auth.controller';
 import { AuthService } from '../service/auth.service';
 import { AuthEmailService } from '../service/auth-email.service';
@@ -14,23 +17,35 @@ import { AuthEmailRepository } from '../repository/auth-email.repository';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EmailService } from '@restopsiq/email';
 
-// ---------------------------------------------------------------------------
-// Fixtures
-// ---------------------------------------------------------------------------
+const TENANT_ID = 'palos-de-lena';
 
-const mockUser = {
+const mockUserSafe = {
   id: 'user-001',
+  tenantId: TENANT_ID,
+  cedula: '12345678',
+  documentType: DocumentType.CC,
   email: 'alice@example.com',
-  name: 'Alice',
-  passwordHash: '$2b$10$Elo.kWNs5.bh93LOaBPH7OtQ23EuF38MBKm4XUL2mH1WnpBhOsXiS', // bcrypt("pass1234")
-  refreshToken: null,
+  roleId: 'role-1',
+  loginAttempts: 0,
+  lockedUntil: null,
+  lastLoginAt: null,
+  passwordChangedAt: null,
+  isActive: true,
+  emailVerified: true,
   createdAt: new Date(),
   updatedAt: new Date(),
+  deletedAt: null,
+  createdBy: null,
+};
+
+const mockUserWithPassword = {
+  ...mockUserSafe,
+  passwordHash: '$2b$12$Elo.kWNs5.bh93LOaBPH7OtQ23EuF38MBKm4XUL2mH1WnpBhOsXiS',
 };
 
 const mockTokenRecord = {
   id: 'token-001',
-  tenantId: 'global',
+  tenantId: TENANT_ID,
   userId: 'user-001',
   tokenHash: 'placeholder-hash',
   expiresAt: new Date(Date.now() + 3600 * 1000),
@@ -38,15 +53,14 @@ const mockTokenRecord = {
   createdAt: new Date(),
 };
 
-// ---------------------------------------------------------------------------
-// Module-level mocks (reset in beforeEach)
-// ---------------------------------------------------------------------------
-
 const prismaMock = {
-  userTestLab: {
+  user: {
     findUnique: jest.fn(),
     create: jest.fn(),
     update: jest.fn(),
+  },
+  role: {
+    findUnique: jest.fn(),
   },
   passwordResetToken: {
     create: jest.fn(),
@@ -64,10 +78,6 @@ const jwtServiceMock = {
   signAsync: jest.fn().mockResolvedValue('mock-token'),
   verifyAsync: jest.fn(),
 };
-
-// ---------------------------------------------------------------------------
-// Suite
-// ---------------------------------------------------------------------------
 
 describe('Auth Email Integration — G4 wiring (AuthController → AuthEmailService → EmailService)', () => {
   let controller: AuthController;
@@ -96,8 +106,6 @@ describe('Auth Email Integration — G4 wiring (AuthController → AuthEmailServ
 
     jest.clearAllMocks();
 
-    // Inject a controlled Redis mock directly after clearing — avoids relying on
-    // onModuleInit() being called (compile() does not trigger lifecycle hooks).
     redisMock = {
       set: jest.fn().mockResolvedValue('OK'),
       get: jest.fn().mockResolvedValue(null),
@@ -107,9 +115,13 @@ describe('Auth Email Integration — G4 wiring (AuthController → AuthEmailServ
     const authEmailService = module.get<AuthEmailService>(AuthEmailService);
     (authEmailService as unknown as { redis: typeof redisMock }).redis = redisMock;
 
-    // Default: user not found, emailService resolves, no tokens exist
-    prismaMock.userTestLab.findUnique.mockResolvedValue(null);
-    prismaMock.userTestLab.update.mockResolvedValue(mockUser);
+    prismaMock.user.findUnique.mockResolvedValue(null);
+    prismaMock.user.update.mockResolvedValue(mockUserSafe);
+    prismaMock.role.findUnique.mockResolvedValue({
+      id: 'role-1',
+      code: 'OPERATOR',
+      isActive: true,
+    });
     prismaMock.passwordResetToken.deleteMany.mockResolvedValue({ count: 0 });
     prismaMock.passwordResetToken.create.mockResolvedValue(mockTokenRecord);
     prismaMock.passwordResetToken.findUnique.mockResolvedValue(null);
@@ -119,27 +131,23 @@ describe('Auth Email Integration — G4 wiring (AuthController → AuthEmailServ
     });
     emailServiceMock.send.mockResolvedValue({ jobId: 'job-integration-001' });
     jwtServiceMock.signAsync.mockResolvedValue('mock-token');
+    (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+    (bcrypt.hash as jest.Mock).mockResolvedValue('hashed-value');
   });
 
-  // ── Scenario 1 ─────────────────────────────────────────────────────────────
-  // POST /auth/forgot-password: returns 200 even when email does not exist
-
   it('forgot-password returns 200 response even when the email is not registered', async () => {
-    prismaMock.userTestLab.findUnique.mockResolvedValue(null);
+    prismaMock.user.findUnique.mockResolvedValue(null);
 
-    const result = await controller.forgotPassword({ email: 'nobody@example.com' });
+    const result = await controller.forgotPassword({ email: 'nobody@example.com' }, TENANT_ID);
 
     expect(result).toEqual({ message: 'If the email exists, a reset link has been sent.' });
     expect(emailServiceMock.send).not.toHaveBeenCalled();
   });
 
-  // ── Scenario 2 ─────────────────────────────────────────────────────────────
-  // POST /auth/forgot-password: enqueues the email job in BullMQ (G4 — core gap)
-
   it('forgot-password enqueues a reset-password email job via EmailService.send', async () => {
-    prismaMock.userTestLab.findUnique.mockResolvedValue(mockUser);
+    prismaMock.user.findUnique.mockResolvedValue(mockUserSafe);
 
-    await controller.forgotPassword({ email: 'alice@example.com' });
+    await controller.forgotPassword({ email: 'alice@example.com' }, TENANT_ID);
 
     expect(emailServiceMock.send).toHaveBeenCalledTimes(1);
     expect(emailServiceMock.send).toHaveBeenCalledWith(
@@ -149,26 +157,23 @@ describe('Auth Email Integration — G4 wiring (AuthController → AuthEmailServ
         priority: 'urgent',
       }),
     );
-  });
-
-  // ── Scenario 3 ─────────────────────────────────────────────────────────────
-  // POST /auth/reset-password: valid token changes the password
-
-  it('reset-password with a valid token calls user.update (password changed)', async () => {
-    prismaMock.passwordResetToken.findUnique.mockResolvedValue(mockTokenRecord);
-
-    await controller.resetPassword({ token: 'raw-valid-token', newPassword: 'newpassword123' });
-
-    expect(prismaMock.userTestLab.update).toHaveBeenCalledWith(
+    expect(prismaMock.user.findUnique).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { id: mockTokenRecord.userId },
-        data: expect.objectContaining({ passwordHash: expect.any(String) }),
+        where: { tenantId_email: { tenantId: TENANT_ID, email: 'alice@example.com' } },
       }),
     );
   });
 
-  // ── Scenario 4 ─────────────────────────────────────────────────────────────
-  // POST /auth/reset-password: token used twice returns 400
+  it('reset-password with a valid token calls user.update (password changed on global User)', async () => {
+    prismaMock.passwordResetToken.findUnique.mockResolvedValue(mockTokenRecord);
+
+    await controller.resetPassword({ token: 'raw-valid-token', newPassword: 'newpassword123' });
+
+    expect(prismaMock.user.update).toHaveBeenCalledWith({
+      where: { id: mockTokenRecord.userId },
+      data: { passwordHash: 'hashed-value' },
+    });
+  });
 
   it('reset-password throws BadRequestException when token has already been used', async () => {
     prismaMock.passwordResetToken.findUnique.mockResolvedValue({
@@ -181,9 +186,6 @@ describe('Auth Email Integration — G4 wiring (AuthController → AuthEmailServ
     ).rejects.toThrow(BadRequestException);
   });
 
-  // ── Scenario 5 ─────────────────────────────────────────────────────────────
-  // POST /auth/reset-password: expired token returns 400
-
   it('reset-password throws BadRequestException when token is expired', async () => {
     prismaMock.passwordResetToken.findUnique.mockResolvedValue({
       ...mockTokenRecord,
@@ -194,9 +196,6 @@ describe('Auth Email Integration — G4 wiring (AuthController → AuthEmailServ
       controller.resetPassword({ token: 'expired-token', newPassword: 'newpassword123' }),
     ).rejects.toThrow(BadRequestException);
   });
-
-  // ── Scenario 6 ─────────────────────────────────────────────────────────────
-  // POST /auth/verify-email: valid OTP verifies the email
 
   it('verify-email with a valid OTP resolves and consumes the OTP from Redis', async () => {
     const otpCode = '847291';
@@ -213,9 +212,6 @@ describe('Auth Email Integration — G4 wiring (AuthController → AuthEmailServ
     expect(redisMock.del).toHaveBeenCalledWith(`otp:${otpHash}`);
   });
 
-  // ── Scenario 7 ─────────────────────────────────────────────────────────────
-  // POST /auth/verify-email: expired/missing OTP returns 400
-
   it('verify-email throws BadRequestException when OTP is expired or not found', async () => {
     redisMock.get.mockResolvedValue(null);
 
@@ -224,11 +220,8 @@ describe('Auth Email Integration — G4 wiring (AuthController → AuthEmailServ
     );
   });
 
-  // ── Scenario 8 ─────────────────────────────────────────────────────────────
-  // Reset token is stored as SHA-256, not plaintext, in DB
-
   it('forgot-password stores a SHA-256 tokenHash (not the raw token) in passwordResetToken.create', async () => {
-    prismaMock.userTestLab.findUnique.mockResolvedValue(mockUser);
+    prismaMock.user.findUnique.mockResolvedValue(mockUserSafe);
 
     let capturedTokenHash: string | undefined;
     let capturedResetUrl: string | undefined;
@@ -246,18 +239,38 @@ describe('Auth Email Integration — G4 wiring (AuthController → AuthEmailServ
       },
     );
 
-    await controller.forgotPassword({ email: 'alice@example.com' });
+    await controller.forgotPassword({ email: 'alice@example.com' }, TENANT_ID);
 
     expect(capturedTokenHash).toBeDefined();
     expect(capturedResetUrl).toBeDefined();
 
-    // Extract raw token from the reset URL
     const rawToken = new URL(capturedResetUrl!).searchParams.get('token')!;
     const expectedHash = createHash('sha256').update(rawToken).digest('hex');
 
     expect(capturedTokenHash).toBe(expectedHash);
     expect(capturedTokenHash).not.toBe(rawToken);
-    expect(capturedTokenHash).toHaveLength(64); // SHA-256 hex = 64 chars
+    expect(capturedTokenHash).toHaveLength(64);
     expect(capturedTokenHash).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it('login uses tenant-scoped lookup and does not expose passwordHash in response', async () => {
+    prismaMock.user.findUnique.mockResolvedValue(mockUserWithPassword);
+    (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+    (bcrypt.hash as jest.Mock).mockResolvedValue('hashed-refresh');
+    jwtServiceMock.signAsync.mockResolvedValueOnce('access').mockResolvedValueOnce('refresh');
+
+    const result = await controller.login(
+      { email: 'alice@example.com', password: 'TestPass123!' },
+      TENANT_ID,
+    );
+
+    expect(prismaMock.user.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { tenantId_email: { tenantId: TENANT_ID, email: 'alice@example.com' } },
+        select: expect.objectContaining({ passwordHash: true }),
+      }),
+    );
+    expect(result).toEqual({ accessToken: 'access', refreshToken: 'refresh' });
+    expect(result).not.toHaveProperty('passwordHash');
   });
 });

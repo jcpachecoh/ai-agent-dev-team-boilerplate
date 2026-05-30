@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "7c3e5f82-1a9b-4d6e-8f2c-0b5a3d7e9f1c",
     "name": "RestOpsIQ API",
-    "description": "Complete API test collection for RestOpsIQ.\n\nCovers Health, Auth, MES Auth, MES Plant, Plant Production Orders (MES-05), Supply Items, and Testlab modules.\n\nGlobal prefix: /api\nOperational tenant (supply-items + MES + plant): {{tenantId}} = {{mesTenantId}} = palos-de-lena after seed.\nTestLab: email auth only (no tenant).\nMES plant: Bearer {{mesAccessToken}} (no x-tenant-id).\nSupply-items: Bearer {{accessToken}} + x-tenant-id {{tenantId}}.\n\nPhase completion is internal (no POST /api/plant/phases/complete). See postman/README.md.",
+    "description": "Complete API test collection for RestOpsIQ.\n\nCovers Health, Auth, MES Auth, MES Plant, Plant Production Orders (MES-05), Supply Items, and Testlab modules.\n\nGlobal prefix: /api\nOperational tenant (supply-items + MES + plant): {{tenantId}} = {{mesTenantId}} = palos-de-lena after seed.\nEmail auth (01 Auth): global User — requires x-tenant-id: {{tenantId}} on signup/login/forgot-password/resend-verification. Refresh/logout/reset-password/verify-email do NOT require x-tenant-id.\nTestLab (03 Testlab): JWT from email auth; test@restopsiq.dev is UserTestLab-only and NOT valid for /api/auth/login.\nMES plant: Bearer {{mesAccessToken}} (no x-tenant-id).\nSupply-items: Bearer {{accessToken}} + x-tenant-id {{tenantId}}.\n\nPhase completion is internal (no POST /api/plant/phases/complete). See postman/README.md.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -38,16 +38,20 @@
           "const expiry = pm.collectionVariables.get('accessTokenExpiresAt');",
           "if (expiry && Date.now() < Number(expiry)) return;",
           "",
-          "// Auto-login",
+          "// Auto-login (global User — tenant-scoped email auth)",
           "const baseUrl  = pm.collectionVariables.get('baseUrl');",
           "const email    = pm.collectionVariables.get('email');",
           "const password = pm.collectionVariables.get('password');",
-          "if (!baseUrl || !email || !password) return;",
+          "const tenantId = pm.collectionVariables.get('tenantId');",
+          "if (!baseUrl || !email || !password || !tenantId) return;",
           "",
           "pm.sendRequest({",
           "  url: baseUrl + '/api/auth/login',",
           "  method: 'POST',",
-          "  header: { 'Content-Type': 'application/json' },",
+          "  header: {",
+          "    'Content-Type': 'application/json',",
+          "    'x-tenant-id': tenantId",
+          "  },",
           "  body: { mode: 'raw', raw: JSON.stringify({ email, password }) }",
           "}, function (err, res) {",
           "  if (err || res.code !== 200) return;",
@@ -70,9 +74,9 @@
     },
     {
       "key": "email",
-      "value": "test@restopsiq.dev",
+      "value": "mes-owner@palos-de-lena.dev",
       "type": "string",
-      "description": "Seeded test-user email"
+      "description": "Global User email for email auth (01 Auth). Requires x-tenant-id: palos-de-lena. NOT test@restopsiq.dev (UserTestLab-only)."
     },
     {
       "key": "password",
@@ -166,9 +170,21 @@
     },
     {
       "key": "authEmail",
+      "value": "mes-owner@palos-de-lena.dev",
+      "type": "string",
+      "description": "Global User email for forgot-password and resend-verification (requires x-tenant-id). Alternative: mes-operator@palos-de-lena.dev"
+    },
+    {
+      "key": "testLabEmail",
       "value": "test@restopsiq.dev",
       "type": "string",
-      "description": "Email used for RES-226 auth email flows (forgot-password, resend-verification). Defaults to the seeded test user."
+      "description": "UserTestLab-only fixture — NOT valid for /api/auth/login after USR-01. Use for reference; TestLab routes use JWT from global User login."
+    },
+    {
+      "key": "globalOwnerUserId",
+      "value": "11111111-0000-0000-0000-000000000004",
+      "type": "string",
+      "description": "Seeded global User id linked to MES OWNER (USR-01)"
     },
     {
       "key": "resetToken",
@@ -383,7 +399,19 @@
       "item": [
         {
           "name": "Signup",
+          "description": "Register a global User under the operational tenant.\n\nRequires header x-tenant-id: {{tenantId}}.\nBody: email, cedula, documentType (CC|CE|PASAPORTE|TI|PEP), password; optional roleCode (default OPERATOR).\nPre-request generates unique signupEmail/signupCedula per run.\nAccepts 201 (created) or 409 (already exists).",
           "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const ts = Date.now();",
+                  "pm.collectionVariables.set('signupEmail', 'signup-' + ts + '@palos-de-lena.dev');",
+                  "pm.collectionVariables.set('signupCedula', '99' + String(ts).slice(-8));"
+                ]
+              }
+            },
             {
               "listen": "test",
               "script": {
@@ -397,6 +425,9 @@
                   "if (pm.response.code === 201) {",
                   "  pm.test('Has accessToken on first signup', () => {",
                   "    pm.expect(pm.response.json()).to.have.property('accessToken');",
+                  "  });",
+                  "  pm.test('Response does not expose passwordHash', () => {",
+                  "    pm.expect(pm.response.json()).to.not.have.property('passwordHash');",
                   "  });",
                   "}"
                 ]
@@ -412,11 +443,15 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
               }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"{{email}}\",\n  \"name\": \"Test User\",\n  \"password\": \"{{password}}\"\n}",
+              "raw": "{\n  \"email\": \"{{signupEmail}}\",\n  \"cedula\": \"{{signupCedula}}\",\n  \"documentType\": \"CC\",\n  \"password\": \"{{password}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -429,6 +464,7 @@
         },
         {
           "name": "Login",
+          "description": "Login with global User credentials.\n\nRequires header x-tenant-id: {{tenantId}}.\nDefault {{email}} = mes-owner@palos-de-lena.dev / TestPass123! after seed.\nDoes NOT work with test@restopsiq.dev (UserTestLab-only).",
           "event": [
             {
               "listen": "test",
@@ -440,6 +476,7 @@
                   "  const body = pm.response.json();",
                   "  pm.expect(body).to.have.property('accessToken');",
                   "  pm.expect(body).to.have.property('refreshToken');",
+                  "  pm.expect(body).to.not.have.property('passwordHash');",
                   "});",
                   "const body = pm.response.json();",
                   "if (body.accessToken) {",
@@ -460,6 +497,10 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
               }
             ],
             "body": {
@@ -477,6 +518,7 @@
         },
         {
           "name": "Refresh",
+          "description": "Refresh access token using refresh JWT.\n\nNo x-tenant-id header required.",
           "event": [
             {
               "listen": "test",
@@ -515,6 +557,7 @@
         },
         {
           "name": "Logout",
+          "description": "Invalidate refresh token.\n\nNo x-tenant-id header required.",
           "event": [
             {
               "listen": "test",
@@ -533,7 +576,7 @@
         },
         {
           "name": "Forgot Password",
-          "description": "RES-226 — Request a password reset email.\n\nPublic endpoint — no Authorization header required.\nAlways returns 200 regardless of whether the email exists (anti-enumeration).\nA BullMQ job is enqueued to send the email via Resend when the user exists.\nThe raw reset token is embedded in the email URL; extract it and set {{resetToken}} before running Reset Password.",
+          "description": "RES-226 — Request a password reset email.\n\nPublic endpoint — no Authorization header required.\nRequires x-tenant-id: {{tenantId}}.\nAlways returns 200 regardless of whether the email exists (anti-enumeration).\nA BullMQ job is enqueued to send the email via Resend when the user exists.\nThe raw reset token is embedded in the email URL; extract it and set {{resetToken}} before running Reset Password.",
           "event": [
             {
               "listen": "test",
@@ -561,6 +604,10 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
               }
             ],
             "body": {
@@ -578,7 +625,7 @@
         },
         {
           "name": "Reset Password",
-          "description": "RES-226 — Reset the user's password using a valid single-use token.\n\nPublic endpoint — no Authorization header required.\nPrerequisite: run Forgot Password first, extract the raw token from the email link, and set {{resetToken}}.\nExpected: 200 { message: 'Password updated successfully.' }\nThe token row in password_reset_tokens will have usedAt set after this call.",
+          "description": "RES-226 — Reset the user's password using a valid single-use token.\n\nPublic endpoint — no Authorization header required.\nNo x-tenant-id header required.\nPrerequisite: run Forgot Password first, extract the raw token from the email link, and set {{resetToken}}.\nExpected: 200 { message: 'Password updated successfully.' }\nThe token row in password_reset_tokens will have usedAt set after this call.",
           "event": [
             {
               "listen": "test",
@@ -706,7 +753,7 @@
         },
         {
           "name": "Resend Verification",
-          "description": "RES-226 — Resend the email verification OTP to an existing user.\n\nPublic endpoint — no Authorization header required.\nAlways returns 200 regardless of whether the email exists (anti-enumeration).\nA 6-digit OTP is stored in Redis under otp:{sha256(otpCode)} with a 15-minute TTL.\nExtract the OTP from the email or Redis (redis-cli KEYS 'otp:*') and set {{otpCode}} before running Verify Email.",
+          "description": "RES-226 — Resend the email verification OTP to an existing user.\n\nPublic endpoint — no Authorization header required.\nRequires x-tenant-id: {{tenantId}}.\nAlways returns 200 regardless of whether the email exists (anti-enumeration).\nA 6-digit OTP is stored in Redis under otp:{sha256(otpCode)} with a 15-minute TTL.\nExtract the OTP from the email or Redis (redis-cli KEYS 'otp:*') and set {{otpCode}} before running Verify Email.",
           "event": [
             {
               "listen": "test",
@@ -734,6 +781,10 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
               }
             ],
             "body": {
@@ -751,7 +802,7 @@
         },
         {
           "name": "Verify Email",
-          "description": "RES-226 — Verify the user's email address using the 6-digit OTP.\n\nPublic endpoint — no Authorization header required.\nPrerequisite: run Resend Verification (or Signup which triggers sendVerifyEmail), then set {{otpCode}} from the email or Redis.\nExpected: 200 { message: 'Email verified successfully.' }\nThe Redis key otp:{sha256(otpCode)} is deleted after successful verification.",
+          "description": "RES-226 — Verify the user's email address using the 6-digit OTP.\n\nPublic endpoint — no Authorization header required.\nNo x-tenant-id header required.\nPrerequisite: run Resend Verification (or Signup which triggers sendVerifyEmail), then set {{otpCode}} from the email or Redis.\nExpected: 200 { message: 'Email verified successfully.' }\nThe Redis key otp:{sha256(otpCode)} is deleted after successful verification.",
           "event": [
             {
               "listen": "test",
