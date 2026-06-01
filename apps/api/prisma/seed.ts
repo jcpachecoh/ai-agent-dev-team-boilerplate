@@ -494,6 +494,9 @@ async function main() {
   console.log('\n✅ Email auth (global User — x-tenant-id: palos-de-lena):');
   console.log('  mes-owner    = mes-owner@palos-de-lena.dev / TestPass123!');
   console.log('  mes-operator = mes-operator@palos-de-lena.dev / TestPass123!');
+  console.log('\n✅ Email auth (global User — x-tenant-id: palos-de-lena):');
+  console.log('  mes-owner    = mes-owner@palos-de-lena.dev / TestPass123!');
+  console.log('  mes-operator = mes-operator@palos-de-lena.dev / TestPass123!');
   console.log('\n✅ Operational tenant (supply-items, MES, plant):');
   console.log('  tenantId / mesTenantId =', OPERATIONAL_TENANT_ID);
   console.log('  categoryId             =', SEED_CATEGORY_ID);
