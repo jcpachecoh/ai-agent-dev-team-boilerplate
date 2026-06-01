@@ -11,20 +11,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // ─────────────────────────────────────────────────────────────────────────────
 // AUDIT LOG
 // ─────────────────────────────────────────────────────────────────────────────
@@ -240,7 +226,8 @@ model Role {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  users User[]
+  users           User[]
+  rolePermissions RolePermission[]
 
   @@unique([tenantId, code])
   @@index([tenantId, isActive])
@@ -270,6 +257,7 @@ model User {
   role Role @relation(fields: [roleId], references: [id])
 
   operationalProfile OperationalUser?
+  userPermissions    UserPermission[]
 
   @@unique([tenantId, email])
   @@unique([tenantId, cedula])
@@ -277,6 +265,69 @@ model User {
   @@index([isActive])
   @@index([tenantId, isActive])
   @@map("users")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RBAC — PERMISSION CATALOG (USR-02)
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Permission {
+  id          String   @id @default(cuid())
+  code        String
+  name        String
+  description String?
+  module      String?
+  resource    String?
+  action      String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  rolePermissions RolePermission[]
+  userPermissions UserPermission[]
+
+  @@unique([code])
+  @@index([module])
+  @@index([resource, action])
+  @@index([isActive])
+  @@map("permissions")
+}
+
+model RolePermission {
+  id           String   @id @default(cuid())
+  roleId       String
+  permissionId String
+  createdAt    DateTime @default(now())
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@index([roleId])
+  @@index([permissionId])
+  @@map("role_permissions")
+}
+
+enum PermissionEffect {
+  ALLOW
+  DENY
+}
+
+model UserPermission {
+  id           String           @id @default(cuid())
+  userId       String
+  permissionId String
+  effect       PermissionEffect @default(ALLOW)
+  createdAt    DateTime         @default(now())
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, permissionId])
+  @@index([userId])
+  @@index([permissionId])
+  @@index([effect])
+  @@map("user_permissions")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
