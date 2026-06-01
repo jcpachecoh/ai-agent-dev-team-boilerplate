@@ -2,15 +2,28 @@ import React, { type JSX } from 'react';
 
 import type {
   ProveedorCatalogStatus,
+  ProveedorOcHistoryStatus,
+  ProveedorPayableStatus,
+  ProveedorQualityComplianceStatus,
   ProveedorSize,
   ProveedorSupplierStatus,
   ProveedorTheme,
 } from '../shared/proveedor-types';
 import styles from './ProveedorStatusBadge.module.scss';
 
-export type ProveedorStatusBadgeDomain = 'supplier' | 'catalog';
+export type ProveedorStatusBadgeDomain =
+  | 'supplier'
+  | 'catalog'
+  | 'oc-history'
+  | 'quality'
+  | 'payable';
 
-export type ProveedorStatusBadgeStatus = ProveedorSupplierStatus | ProveedorCatalogStatus;
+export type ProveedorStatusBadgeStatus =
+  | ProveedorSupplierStatus
+  | ProveedorCatalogStatus
+  | ProveedorOcHistoryStatus
+  | ProveedorQualityComplianceStatus
+  | ProveedorPayableStatus;
 
 export interface ProveedorStatusBadgeProps {
   domain?: ProveedorStatusBadgeDomain;
@@ -32,6 +45,43 @@ const catalogLabels: Record<ProveedorCatalogStatus, string> = {
   limited: 'LIMITADO',
 };
 
+const ocHistoryLabels: Record<ProveedorOcHistoryStatus, string> = {
+  delivered: 'ENTREGADO',
+  pending: 'PENDIENTE',
+  cancelled: 'CANCELADA',
+};
+
+const qualityLabels: Record<ProveedorQualityComplianceStatus, string> = {
+  conform: 'CONFORME',
+  'non-conform': 'NO CONFORME',
+};
+
+const payableLabels: Record<ProveedorPayableStatus, string> = {
+  pending: 'PENDIENTE',
+  paid: 'PAGADO',
+  overdue: 'VENCIDO',
+};
+
+function resolveLabel(
+  domain: ProveedorStatusBadgeDomain,
+  status: ProveedorStatusBadgeStatus,
+  label?: string,
+): string {
+  if (label) return label;
+  switch (domain) {
+    case 'catalog':
+      return catalogLabels[status as ProveedorCatalogStatus];
+    case 'oc-history':
+      return ocHistoryLabels[status as ProveedorOcHistoryStatus];
+    case 'quality':
+      return qualityLabels[status as ProveedorQualityComplianceStatus];
+    case 'payable':
+      return payableLabels[status as ProveedorPayableStatus];
+    default:
+      return supplierLabels[status as ProveedorSupplierStatus];
+  }
+}
+
 export function ProveedorStatusBadge({
   domain = 'supplier',
   status = 'active',
@@ -40,11 +90,7 @@ export function ProveedorStatusBadge({
   size = 'md',
   className,
 }: ProveedorStatusBadgeProps): JSX.Element {
-  const resolvedLabel =
-    label ??
-    (domain === 'catalog'
-      ? catalogLabels[status as ProveedorCatalogStatus]
-      : supplierLabels[status as ProveedorSupplierStatus]);
+  const resolvedLabel = resolveLabel(domain, status, label);
 
   return (
     <span

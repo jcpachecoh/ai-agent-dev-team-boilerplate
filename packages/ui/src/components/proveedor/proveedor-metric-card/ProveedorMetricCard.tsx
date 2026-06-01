@@ -20,7 +20,9 @@ export interface ProveedorMetricCardProps {
 }
 
 function isSemanticColor(value: string): value is ProveedorMetricValueColor {
-  return ['default', 'success', 'warning', 'danger', 'info', 'enterprise'].includes(value);
+  return ['default', 'success', 'warning', 'danger', 'info', 'enterprise', 'purple'].includes(
+    value,
+  );
 }
 
 export function ProveedorMetricCard({

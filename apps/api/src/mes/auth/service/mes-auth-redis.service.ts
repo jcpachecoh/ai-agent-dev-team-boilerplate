@@ -54,7 +54,7 @@ export class MesAuthRedisService implements OnModuleInit, OnModuleDestroy {
   }
 
   async checkRateLimit(ip: string): Promise<RateLimitResult> {
-    if (!this.redisReady && this.shouldFailOpenWithoutRedis()) {
+    if (!this.redisReady) {
       return this.failOpenRateLimit();
     }
 
@@ -66,7 +66,10 @@ export class MesAuthRedisService implements OnModuleInit, OnModuleDestroy {
       if (this.shouldFailOpenWithoutRedis()) {
         return this.failOpenRateLimit();
       }
-      throw err;
+      this.logger.warn(
+        `Rate limit skipped (Redis error): ${err instanceof Error ? err.message : String(err)}`,
+      );
+      return this.failOpenRateLimit();
     }
 
     if (count === 1) {

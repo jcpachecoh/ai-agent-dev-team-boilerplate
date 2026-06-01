@@ -5,6 +5,7 @@ $proveedor-teal: #2ec4a0;
 $proveedor-warning: #f0c040;
 $proveedor-danger: #e85d4a;
 $proveedor-info: #5b9fd4;
+$proveedor-purple: #a78bfa;
 $proveedor-dark-surface: #141414;
 $proveedor-dark-surface-raised: #1c1c1c;
 $proveedor-dark-border: #2e2e2e;
@@ -111,6 +112,8 @@ $proveedor-dark-muted: #888888;
     --metric-value-color: #{$proveedor-info};
   } @else if $color == 'enterprise' {
     --metric-value-color: #{$proveedor-enterprise};
+  } @else if $color == 'purple' {
+    --metric-value-color: #{$proveedor-purple};
   } @else {
     --metric-value-color: var(--proveedor-text);
   }

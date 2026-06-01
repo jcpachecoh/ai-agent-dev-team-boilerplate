@@ -5,6 +5,7 @@ import { useLocation } from 'react-router-dom';
 import Breadcrumbs from '@/components/Breadcrumbs';
 import UserMenu from '@/components/UserMenu';
 import { getBreadcrumbsForPath } from '@/constants/navigation';
+import { useLogout } from '@/features/auth/hooks/useLogout';
 
 import styles from './Header.module.scss';
 
@@ -17,6 +18,7 @@ export default function Header({
   onMenuClick,
   showMenuButton = false,
 }: HeaderProps): React.JSX.Element {
+  const handleLogout = useLogout();
   const { pathname } = useLocation();
   const breadcrumbs = getBreadcrumbsForPath(pathname);
   const [clock, setClock] = useState(() => formatClock(new Date()));
@@ -86,7 +88,7 @@ export default function Header({
           <span className={styles.notificationDot} aria-hidden />
         </button>
 
-        <UserMenu />
+        <UserMenu onLogout={handleLogout} />
       </div>
     </header>
   );

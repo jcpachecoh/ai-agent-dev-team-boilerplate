@@ -24,8 +24,14 @@ const VALID_CEDULA = '12345678';
 const VALID_PIN = '1234';
 const TENANT_ID = 'tenant-abc';
 
-const hashCedula = (cedula: string): string =>
-  crypto.createHash('sha256').update(cedula).digest('hex');
+/** Mirrors MesAuthService.hashCedula (HMAC when CEDULA_HMAC_SECRET is set). */
+const hashCedula = (cedula: string): string => {
+  const hmacSecret = process.env.CEDULA_HMAC_SECRET;
+  if (hmacSecret) {
+    return crypto.createHmac('sha256', hmacSecret).update(cedula).digest('hex');
+  }
+  return crypto.createHash('sha256').update(cedula).digest('hex');
+};
 
 const baseUser = {
   id: 'op-user-1',
@@ -67,6 +73,8 @@ describe('MesAuthService', () => {
   let service: MesAuthService;
 
   beforeEach(async () => {
+    delete process.env.CEDULA_HMAC_SECRET;
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         MesAuthService,

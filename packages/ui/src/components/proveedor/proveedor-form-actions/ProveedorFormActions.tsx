@@ -13,6 +13,8 @@ export interface ProveedorFormActionsProps {
   saveLoading?: boolean;
   theme?: ProveedorTheme;
   size?: ProveedorSize;
+  /** Stretch the action row to full width (buttons stay right-aligned). */
+  fullWidth?: boolean;
   className?: string;
 }
 
@@ -25,11 +27,18 @@ export function ProveedorFormActions({
   saveLoading = false,
   theme = 'light',
   size = 'md',
+  fullWidth = false,
   className,
 }: ProveedorFormActionsProps): JSX.Element {
   return (
     <div
-      className={[styles.actions, styles[`theme--${theme}`], styles[`size--${size}`], className]
+      className={[
+        styles.actions,
+        styles[`theme--${theme}`],
+        styles[`size--${size}`],
+        fullWidth && styles.actionsFullWidth,
+        className,
+      ]
         .filter(Boolean)
         .join(' ')}
     >

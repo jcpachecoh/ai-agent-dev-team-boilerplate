@@ -76,14 +76,39 @@
   border-right: $border-width solid transparent;
 }
 
+.wrapperNoSteppers {
+  --control-width: 100%;
+  width: 100%;
+
+  .inputContainer {
+    border-left: none;
+    border-right: none;
+    padding: 0 $spacing-sm;
+  }
+}
+
+.inputContainerGrouped {
+  justify-content: center;
+}
+
+.groupedField {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  width: 100%;
+  min-width: 0;
+}
+
 .prefix {
-  margin-right: $spacing-xs;
-  font-weight: $font-weight-medium;
+  flex-shrink: 0;
+  font-weight: $font-weight-semibold;
   color: $color-text-secondary;
 }
 
 .input {
   flex: 1;
+  min-width: 0;
   background: transparent;
   border: none;
   font-family: $font-family-base;
@@ -91,6 +116,7 @@
   color: inherit;
   outline: none;
   text-align: center;
+  font-variant-numeric: tabular-nums;
 
   &::placeholder {
     color: $color-text-secondary;
@@ -98,10 +124,21 @@
   }
 }
 
+.inputGrouped {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  text-align: center;
+}
+
 .theme--dark {
   background-color: rgba($color-white, 0.05);
   border-color: rgba($color-white, 0.1);
   color: $color-text-inverse;
+
+  .prefix {
+    color: rgba($color-white, 0.55);
+  }
 
   .inputContainer {
     border-color: rgba($color-white, 0.1);

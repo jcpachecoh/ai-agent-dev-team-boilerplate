@@ -27,6 +27,14 @@ SupplierObject.implement({
       resolve: (s) => Number(s.calificacion),
     }),
     isActive: t.exposeBoolean('isActive'),
+    productCount: t.int({
+      description: 'Number of supply items linked to this supplier',
+      resolve: async (supplier, _args, ctx) => {
+        return ctx.prisma.supplierProduct.count({
+          where: { tenantId: supplier.tenantId, supplierId: supplier.id },
+        });
+      },
+    }),
     createdAt: t.expose('createdAt', { type: 'DateTime' }),
     updatedAt: t.expose('updatedAt', { type: 'DateTime' }),
   }),

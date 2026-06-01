@@ -14,9 +14,24 @@ const envSchema = z.object({
   RATE_LIMIT_MAX_REQUESTS: z.coerce.number().default(1000),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
   PROMETHEUS_PORT: z.coerce.number().default(9090),
+  GRAPHQL_DEV_TENANT_ID: z.string().default('palos-de-lena'),
 });
 
 const parsed = envSchema.safeParse(process.env);
+
+const graphqlAuthDisabledEnv =
+  process.env.GRAPHQL_AUTH_DISABLED === 'true' || process.env.GRAPHQL_AUTH_DISABLED === '1';
+
+const rateLimitDisabledEnv =
+  process.env.RATE_LIMIT_DISABLED === 'true' || process.env.RATE_LIMIT_DISABLED === '1';
+
+if (parsed.success && graphqlAuthDisabledEnv && parsed.data.NODE_ENV === 'production') {
+  throw new Error('GRAPHQL_AUTH_DISABLED cannot be enabled when NODE_ENV=production');
+}
+
+if (parsed.success && rateLimitDisabledEnv && parsed.data.NODE_ENV === 'production') {
+  throw new Error('RATE_LIMIT_DISABLED cannot be enabled when NODE_ENV=production');
+}
 
 if (!parsed.success) {
   console.error('❌ Invalid environment variables:');
@@ -41,6 +56,9 @@ export const env = {
   PROMETHEUS_PORT: raw.PROMETHEUS_PORT,
   isProduction: raw.NODE_ENV === 'production',
   isDevelopment: raw.NODE_ENV === 'development',
+  graphqlAuthDisabled: raw.NODE_ENV === 'development' && graphqlAuthDisabledEnv,
+  graphqlDevTenantId: raw.GRAPHQL_DEV_TENANT_ID,
+  rateLimitDisabled: raw.NODE_ENV === 'development' && rateLimitDisabledEnv,
 };
 
 export type Env = typeof env;

@@ -2,6 +2,15 @@ import { Plus, Minus } from 'lucide-react';
 import * as React from 'react';
 
 import styles from './NumberInput.module.scss';
+import {
+  countDecimalPlaces,
+  DEFAULT_MAX_CURRENCY_DIGITS,
+  formatCurrencyCop,
+  formatStepValue,
+  parseCurrencyDigits,
+  sanitizeCurrencyDigits,
+  snapToStep,
+} from './number-input.utils';
 
 export interface NumberInputProps extends Omit<
   React.InputHTMLAttributes<HTMLInputElement>,
@@ -9,13 +18,32 @@ export interface NumberInputProps extends Omit<
 > {
   value?: number;
   onChange?: (value: number) => void;
-  variant?: 'currency' | 'quantity';
+  variant?: 'currency' | 'quantity' | 'grouped';
   step?: number;
   min?: number;
   max?: number;
+  /** +/- buttons (default: true except `grouped`). */
+  showSteppers?: boolean;
+  /** Max digit count for `currency` / `grouped` (default 12). */
+  maxCurrencyDigits?: number;
+  /** Decimal places for display and snapping (defaults from `step` when fractional). */
+  decimalPlaces?: number;
   allowNegative?: boolean;
   theme?: 'light' | 'dark';
   size?: 'sm' | 'md' | 'xl';
+}
+
+function selectionIndexForDigitCount(formatted: string, digitCount: number): number {
+  if (digitCount <= 0) return 0;
+
+  let seen = 0;
+  for (let i = 0; i < formatted.length; i += 1) {
+    if (/\d/.test(formatted[i] ?? '')) {
+      seen += 1;
+      if (seen >= digitCount) return i + 1;
+    }
+  }
+  return formatted.length;
 }
 
 export const NumberInput = React.forwardRef<HTMLInputElement, NumberInputProps>(
@@ -27,130 +55,268 @@ export const NumberInput = React.forwardRef<HTMLInputElement, NumberInputProps>(
       step = 1,
       min = 0,
       max,
+      maxCurrencyDigits = DEFAULT_MAX_CURRENCY_DIGITS,
+      decimalPlaces: decimalPlacesProp,
       allowNegative = false,
       theme = 'dark',
       size = 'md',
+      showSteppers: showSteppersProp,
       className,
-      ...props
+      onFocus: onFocusProp,
+      onBlur: onBlurProp,
+      ...inputProps
     },
     ref,
   ) => {
-    const [inputValue, setInputValue] = React.useState<string>(
-      value !== undefined ? String(value) : '',
+    const usesGroupedDigits = variant === 'currency' || variant === 'grouped';
+    const showCurrencyPrefix = variant === 'currency';
+    const showSteppers = showSteppersProp ?? variant !== 'grouped';
+    const inputRef = React.useRef<HTMLInputElement>(null);
+
+    React.useImperativeHandle(ref, () => inputRef.current as HTMLInputElement);
+
+    const decimalPlaces =
+      decimalPlacesProp ?? (countDecimalPlaces(step) > 0 ? countDecimalPlaces(step) : 0);
+
+    const normalize = React.useCallback(
+      (raw: number): number => snapToStep(raw, step, min, max),
+      [max, min, step],
     );
 
-    React.useEffect(() => {
-      if (value !== undefined) {
-        setInputValue(String(value));
-      }
-    }, [value]);
+    const formatDisplay = React.useCallback(
+      (num: number): string => formatStepValue(normalize(num), decimalPlaces),
+      [decimalPlaces, normalize],
+    );
 
-    const formatCurrency = (val: number): string => {
-      return new Intl.NumberFormat('es-CO', {
-        style: 'decimal',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-      }).format(val);
+    const toCurrencyDigits = React.useCallback(
+      (num: number): string => {
+        if (!Number.isFinite(num) || num <= 0) return num === 0 ? '0' : '';
+        return sanitizeCurrencyDigits(String(Math.trunc(num)), maxCurrencyDigits);
+      },
+      [maxCurrencyDigits],
+    );
+
+    const formatCurrencyDisplay = React.useCallback(
+      (digits: string): string => {
+        if (!digits) return '';
+        return formatCurrencyCop(parseCurrencyDigits(digits, maxCurrencyDigits));
+      },
+      [maxCurrencyDigits],
+    );
+
+    const valueToInputString = React.useCallback(
+      (num: number | undefined): string => {
+        if (num === undefined) return '';
+        if (usesGroupedDigits) return toCurrencyDigits(normalize(num));
+        return formatDisplay(num);
+      },
+      [formatDisplay, normalize, toCurrencyDigits, usesGroupedDigits],
+    );
+
+    const [inputValue, setInputValue] = React.useState<string>(valueToInputString(value));
+    const [isFocused, setIsFocused] = React.useState(false);
+
+    React.useEffect(() => {
+      if (value !== undefined && !isFocused) {
+        setInputValue(valueToInputString(value));
+      }
+    }, [isFocused, value, valueToInputString]);
+
+    const parseQuantityValue = (val: string): number => {
+      const sanitized = val.replace(/[^0-9.-]/g, '');
+      const parsed = Number.parseFloat(sanitized);
+      return Number.isNaN(parsed) ? min : parsed;
     };
 
-    const parseValue = (val: string): number => {
-      const sanitized = val.replace(/[^0-9.-]/g, '');
-      const parsed = parseFloat(sanitized);
-      return isNaN(parsed) ? 0 : parsed;
+    const parseInputValue = (val: string): number => {
+      if (usesGroupedDigits) return parseCurrencyDigits(val, maxCurrencyDigits);
+      return parseQuantityValue(val);
+    };
+
+    const commitValue = (raw: string): void => {
+      if (usesGroupedDigits) {
+        const sanitized = sanitizeCurrencyDigits(raw, maxCurrencyDigits);
+        if (!sanitized) {
+          setInputValue('');
+          onChange?.(min);
+          return;
+        }
+        const num = normalize(parseCurrencyDigits(sanitized, maxCurrencyDigits));
+        setInputValue(toCurrencyDigits(num));
+        onChange?.(num);
+        return;
+      }
+
+      if (raw === '' || raw === '-') {
+        setInputValue('');
+        onChange?.(min);
+        return;
+      }
+
+      const num = normalize(parseInputValue(raw));
+      setInputValue(formatDisplay(num));
+      onChange?.(num);
     };
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
       const raw = e.target.value;
+      const el = e.target;
+      const selectionStart = el.selectionStart ?? raw.length;
 
-      // Basic non-numeric block (allow digits, minus sign if allowed, and decimal point if quantity)
-      const regex =
-        variant === 'quantity'
+      if (usesGroupedDigits) {
+        const digitsBeforeCursor = sanitizeCurrencyDigits(
+          raw.slice(0, selectionStart),
+          maxCurrencyDigits,
+        ).length;
+        const sanitized = sanitizeCurrencyDigits(raw, maxCurrencyDigits);
+
+        setInputValue(sanitized);
+        if (sanitized === '') {
+          onChange?.(min);
+          return;
+        }
+
+        onChange?.(normalize(parseCurrencyDigits(sanitized, maxCurrencyDigits)));
+
+        const formatted = formatCurrencyDisplay(sanitized);
+        requestAnimationFrame(() => {
+          const node = inputRef.current;
+          if (!node) return;
+          const nextIndex = selectionIndexForDigitCount(formatted, digitsBeforeCursor);
+          node.setSelectionRange(nextIndex, nextIndex);
+        });
+        return;
+      }
+
+      const decimalPattern =
+        decimalPlaces > 0
           ? allowNegative
-            ? /^-?\d*\.?\d*$/
-            : /^\d*\.?\d*$/
-          : allowNegative
-            ? /^-?\d*$/
-            : /^\d*$/;
+            ? new RegExp(`^-?\\d*(\\.\\d{0,${decimalPlaces}})?$`)
+            : new RegExp(`^\\d*(\\.\\d{0,${decimalPlaces}})?$`)
+          : null;
+
+      const regex = decimalPattern ?? (allowNegative ? /^-?\d*\.?\d*$/ : /^\d*\.?\d*$/);
 
       if (raw === '' || regex.test(raw)) {
         setInputValue(raw);
-        if (raw !== '' && raw !== '-') {
-          const num = parseFloat(raw);
-          if (!isNaN(num)) {
-            onChange?.(num);
+        if (raw !== '' && raw !== '-' && !raw.endsWith('.')) {
+          const num = parseQuantityValue(raw);
+          if (!Number.isNaN(num)) {
+            onChange?.(normalize(num));
           }
         }
       }
     };
 
-    const handleBlur = (): void => {
-      let num = parseValue(inputValue);
-      if (min !== undefined) {
-        num = Math.max(min, num);
-      }
-      if (max !== undefined) {
-        num = Math.min(max, num);
-      }
+    const handleFocus = (e: React.FocusEvent<HTMLInputElement>): void => {
+      setIsFocused(true);
+      onFocusProp?.(e);
+    };
 
-      setInputValue(String(num));
-      onChange?.(num);
+    const handleBlur = (e: React.FocusEvent<HTMLInputElement>): void => {
+      setIsFocused(false);
+      commitValue(inputValue);
+      onBlurProp?.(e);
     };
 
     const handleIncrement = (): void => {
-      let num = parseValue(inputValue) + step;
-      if (max !== undefined) {
-        num = Math.min(max, num);
-      }
-      setInputValue(String(num));
-      onChange?.(num);
+      const current = normalize(parseInputValue(inputValue || '0'));
+      const next = normalize(current + step);
+      const nextRaw = usesGroupedDigits ? toCurrencyDigits(next) : formatDisplay(next);
+      setInputValue(nextRaw);
+      onChange?.(next);
     };
 
     const handleDecrement = (): void => {
-      let num = parseValue(inputValue) - step;
-      if (min !== undefined) {
-        num = Math.max(min, num);
-      }
-      setInputValue(String(num));
-      onChange?.(num);
+      const current = normalize(parseInputValue(inputValue || '0'));
+      const next = normalize(current - step);
+      const nextRaw = usesGroupedDigits ? toCurrencyDigits(next) : formatDisplay(next);
+      setInputValue(nextRaw);
+      onChange?.(next);
     };
+
+    const currentNumeric = normalize(parseInputValue(inputValue || '0'));
+
+    const displayedValue = usesGroupedDigits ? formatCurrencyDisplay(inputValue) : inputValue;
 
     const themeClass = theme === 'light' ? styles['theme--light'] : styles['theme--dark'];
     const sizeClass = styles[`size--${size}`];
 
+    const groupedInput = (
+      <div className={styles.groupedField}>
+        {showCurrencyPrefix ? (
+          <span className={styles.prefix} aria-hidden>
+            $
+          </span>
+        ) : null}
+        <input
+          ref={inputRef}
+          type="text"
+          inputMode="numeric"
+          className={[styles.input, styles.inputGrouped].join(' ')}
+          value={displayedValue}
+          onChange={handleInputChange}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
+          placeholder="0"
+          {...inputProps}
+        />
+      </div>
+    );
+
     return (
-      <div className={[styles.wrapper, themeClass, sizeClass, className].filter(Boolean).join(' ')}>
-        <button
-          type="button"
-          className={styles.button}
-          onClick={handleDecrement}
-          disabled={props.disabled || (min !== undefined && parseValue(inputValue) <= min)}
+      <div
+        className={[
+          styles.wrapper,
+          themeClass,
+          sizeClass,
+          !showSteppers && styles.wrapperNoSteppers,
+          className,
+        ]
+          .filter(Boolean)
+          .join(' ')}
+      >
+        {showSteppers ? (
+          <button
+            type="button"
+            className={styles.button}
+            onClick={handleDecrement}
+            disabled={inputProps.disabled || currentNumeric <= min}
+          >
+            <Minus size={16} />
+          </button>
+        ) : null}
+        <div
+          className={[styles.inputContainer, usesGroupedDigits && styles.inputContainerGrouped]
+            .filter(Boolean)
+            .join(' ')}
         >
-          <Minus size={16} />
-        </button>
-        <div className={styles.inputContainer}>
-          {variant === 'currency' && <span className={styles.prefix}>$</span>}
-          <input
-            ref={ref}
-            type="text"
-            className={styles.input}
-            value={
-              variant === 'currency' && inputValue !== '' && inputValue !== '-'
-                ? formatCurrency(parseValue(inputValue))
-                : inputValue
-            }
-            onChange={handleInputChange}
-            onBlur={handleBlur}
-            {...props}
-          />
+          {usesGroupedDigits ? (
+            groupedInput
+          ) : (
+            <input
+              ref={inputRef}
+              type="text"
+              inputMode={decimalPlaces > 0 ? 'decimal' : 'numeric'}
+              className={styles.input}
+              value={displayedValue}
+              onChange={handleInputChange}
+              onFocus={handleFocus}
+              onBlur={handleBlur}
+              {...inputProps}
+            />
+          )}
         </div>
-        <button
-          type="button"
-          className={styles.button}
-          onClick={handleIncrement}
-          disabled={props.disabled || (max !== undefined && parseValue(inputValue) >= max)}
-        >
-          <Plus size={16} />
-        </button>
+        {showSteppers ? (
+          <button
+            type="button"
+            className={styles.button}
+            onClick={handleIncrement}
+            disabled={inputProps.disabled || (max !== undefined && currentNumeric >= max)}
+          >
+            <Plus size={16} />
+          </button>
+        ) : null}
       </div>
     );
   },

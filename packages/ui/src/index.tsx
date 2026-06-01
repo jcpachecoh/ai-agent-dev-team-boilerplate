@@ -97,7 +97,21 @@ export * from './components/proveedor/proveedor-catalog-table';
 export * from './components/proveedor/proveedor-product-modal';
 export * from './components/proveedor/proveedor-contact-panel';
 export * from './components/proveedor/proveedor-metrics-panel';
+export * from './components/proveedor/proveedor-filter-button-group';
+export * from './components/proveedor/proveedor-metrics-bar';
+export * from './components/proveedor/proveedor-row-action-button';
+export * from './components/proveedor/proveedor-oc-history-table-row';
+export * from './components/proveedor/proveedor-oc-history-table';
+export * from './components/proveedor/proveedor-quality-table-row';
+export * from './components/proveedor/proveedor-quality-table';
+export * from './components/proveedor/proveedor-certifications-panel';
+export * from './components/proveedor/proveedor-payable-table-row';
+export * from './components/proveedor/proveedor-payable-table';
+export * from './components/proveedor/proveedor-payment-conditions-panel';
+export * from './components/proveedor/shared/proveedor-detail-columns';
 export * from './components/proveedor/shared/proveedor-types';
+
+export * from './components/web-login';
 
 export * from './components/ProfileHeader';
 export * from './components/InitialBadge';

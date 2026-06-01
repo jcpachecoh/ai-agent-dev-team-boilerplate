@@ -12,12 +12,13 @@ import type {
 import styles from './ProveedorCatalogTableRow.module.scss';
 
 export interface ProveedorCatalogTableRowProps {
-  productName?: string;
-  sku?: string;
-  unit?: string;
-  currentPrice?: string;
-  previousPrice?: string;
-  moq?: string;
+  rowKey?: string;
+  productName?: React.ReactNode;
+  sku?: React.ReactNode;
+  unit?: React.ReactNode;
+  currentPrice?: React.ReactNode;
+  previousPrice?: React.ReactNode;
+  moq?: React.ReactNode;
   status?: ProveedorCatalogStatus;
   priceTrend?: ProveedorPriceTrend;
   onEdit?: () => void;

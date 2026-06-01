@@ -13,6 +13,8 @@ import './shared/types';
 // 2. Domain object types
 import './user/user';
 import './supplier/supplier';
+import './supply-item/supply-item';
+import './supplier-product/supplier-product';
 import './recipe/recipe';
 
 // 3. Query root — must define builder.queryType before any queryField calls
@@ -26,6 +28,8 @@ builder.queryType({
 // 4. Query fields
 import './user/user.query';
 import './supplier/supplier.query';
+import './supply-item/supply-item.query';
+import './supplier-product/supplier-product.query';
 import './recipe/recipe.query';
 
 // 5. Mutation root + fields
@@ -34,6 +38,7 @@ import './auth/auth.mutation';
 // Additional mutation fields
 import './user/user.mutation';
 import './supplier/supplier.mutation';
+import './supplier-product/supplier-product.mutation';
 import './recipe/recipe.mutation';
 
 // 6. Subscription root + fields

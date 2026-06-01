@@ -35,11 +35,11 @@
 
 .size--xl {
   --control-width: 100%;
-  --control-min-height: 79px;
+  --control-height: 100%;
   --card-padding-x: #{$spacing-lg};
-  --card-padding-y: 11px;
-  --card-gap: 4px;
-  --metric-value-size: 2.625rem;
+  --card-padding-y: #{$spacing-xl};
+  --card-gap: #{$spacing-lg};
+  --metric-value-size: 3rem;
 }
 
 .value {
@@ -87,4 +87,8 @@
 
 .color--enterprise {
   --metric-value-color: #{proveedor.$proveedor-enterprise};
+}
+
+.color--purple {
+  --metric-value-color: #{proveedor.$proveedor-purple};
 }

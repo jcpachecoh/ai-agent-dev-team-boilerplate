@@ -10,7 +10,10 @@ import type {
 import styles from './ProveedorTableRow.module.scss';
 
 export interface ProveedorTableRowProps {
+  /** Full id (navigation, keys). Not shown in the ID column when `supplierCode` is set. */
   supplierId?: string;
+  /** Short label for the ID column (e.g. `#A1B2C3`). */
+  supplierCode?: string;
   name?: string;
   category?: string;
   status?: ProveedorSupplierStatus;
@@ -29,6 +32,7 @@ export interface ProveedorTableRowProps {
 
 export function ProveedorTableRow({
   supplierId = 'SUP-001',
+  supplierCode,
   name = 'Carnes del Valle S.A.S',
   category = 'Proteínas',
   status = 'active',
@@ -44,6 +48,8 @@ export function ProveedorTableRow({
   size = 'xl',
   className,
 }: ProveedorTableRowProps): JSX.Element {
+  const idLabel = supplierCode ?? supplierId;
+
   const handleClick = () => onClick?.();
   const handleKeyDown = (event: React.KeyboardEvent) => {
     if (onClick && (event.key === 'Enter' || event.key === ' ')) {
@@ -70,13 +76,13 @@ export function ProveedorTableRow({
       onKeyDown={onClick ? handleKeyDown : undefined}
       tabIndex={onClick ? 0 : undefined}
     >
-      <span className={styles.id} role="cell">
-        {supplierId}
+      <span className={styles.id} role="cell" title={idLabel}>
+        {idLabel}
       </span>
-      <span className={styles.name} role="cell">
+      <span className={styles.name} role="cell" title={name}>
         {name}
       </span>
-      <span className={styles.category} role="cell">
+      <span className={styles.category} role="cell" title={category}>
         {category}
       </span>
       <span className={styles.status} role="cell">

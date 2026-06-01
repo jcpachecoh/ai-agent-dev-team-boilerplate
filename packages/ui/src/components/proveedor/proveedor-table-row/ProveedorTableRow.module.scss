@@ -50,6 +50,18 @@
   background: rgba(proveedor.$proveedor-enterprise, 0.08);
 }
 
+.id,
+.name,
+.category,
+.muted,
+.reliability,
+.balance {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .id {
   font-family: $font-family-mono;
   font-size: $font-size-sm;

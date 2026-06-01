@@ -29,13 +29,13 @@
   font-size: $font-size-xl;
   font-weight: $font-weight-semibold;
   color: $color-text-primary;
-  margin-bottom: $spacing-sm;
+  margin: 0 0 $spacing-sm;
 }
 
 .description {
   font-size: $font-size-base;
   color: $color-text-secondary;
-  margin-bottom: $spacing-xl;
+  margin: 0 0 $spacing-xl;
   max-width: 400px;
   line-height: $line-height-base;
 }
@@ -58,25 +58,53 @@
   }
 }
 
-// Dark Mode
-:global(.dark) {
-  .emptyState {
-    border-color: rgba($color-white, 0.1);
-  }
+.theme--dark {
+  border-color: rgba($color-white, 0.12);
+
   .title {
-    color: $color-text-inverse;
+    color: rgba($color-white, 0.92);
   }
+
   .description {
-    color: rgba($color-white, 0.6);
+    color: rgba($color-white, 0.58);
   }
+
   .iconContainer {
-    color: rgba($color-white, 0.3);
+    color: rgba($color-white, 0.35);
   }
 
   &.error .iconContainer {
     color: $color-danger;
   }
+
   &.create .iconContainer {
-    color: $color-primary;
+    color: $color-primary-light;
+  }
+}
+
+// Legacy: Storybook / apps that wrap with .dark on an ancestor
+:global(.dark) {
+  .emptyState:not(.theme--light) {
+    border-color: rgba($color-white, 0.12);
+  }
+
+  .emptyState:not(.theme--light) .title {
+    color: rgba($color-white, 0.92);
+  }
+
+  .emptyState:not(.theme--light) .description {
+    color: rgba($color-white, 0.58);
+  }
+
+  .emptyState:not(.theme--light) .iconContainer {
+    color: rgba($color-white, 0.35);
+  }
+
+  .emptyState:not(.theme--light).error .iconContainer {
+    color: $color-danger;
+  }
+
+  .emptyState:not(.theme--light).create .iconContainer {
+    color: $color-primary-light;
   }
 }

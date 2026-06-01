@@ -22,6 +22,28 @@ export const UpdateSupplierSchema = CreateSupplierSchema.partial().extend({
   isActive: z.boolean().optional(),
 });
 
+// ─── SupplierProduct ─────────────────────────────────────────────────────────
+
+const StockUnitSchema = z.enum(['UNIT', 'GRAMS', 'KILOGRAMS', 'ML', 'LITERS']);
+
+export const CreateSupplierProductSchema = z.object({
+  supplierId: z.string().min(1),
+  supplyItemId: z.string().min(1),
+  precioUnitario: z.number().positive('precioUnitario must be greater than 0'),
+  unidadCompra: StockUnitSchema,
+  factorConversion: z.number().positive('factorConversion must be greater than 0'),
+  tiempoEntregaDias: z.number().int().min(0).default(1),
+  esProveedorPrincipal: z.boolean().default(false),
+});
+
+export const UpdateSupplierProductSchema = z.object({
+  precioUnitario: z.number().positive().optional(),
+  unidadCompra: StockUnitSchema.optional(),
+  factorConversion: z.number().positive().optional(),
+  tiempoEntregaDias: z.number().int().min(0).optional(),
+  esProveedorPrincipal: z.boolean().optional(),
+});
+
 // ─── Recipe ──────────────────────────────────────────────────────────────────
 
 export const CreateRecipeSchema = z.object({

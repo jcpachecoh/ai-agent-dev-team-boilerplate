@@ -212,16 +212,18 @@ export class MesAuthService implements IMesAuthService {
       jti,
     };
 
-    const accessSecret = process.env.MES_JWT_SECRET ?? process.env.JWT_SECRET ?? undefined;
+    const accessSecret =
+      process.env.MES_JWT_SECRET || process.env.JWT_SECRET || 'mes-dev-secret-change-in-production';
     const refreshSecret =
-      process.env.MES_JWT_REFRESH_SECRET ??
-      process.env.JWT_MES_REFRESH_SECRET ??
-      process.env.JWT_REFRESH_SECRET;
+      process.env.MES_JWT_REFRESH_SECRET ||
+      process.env.JWT_MES_REFRESH_SECRET ||
+      process.env.JWT_REFRESH_SECRET ||
+      'mes-dev-refresh-secret-change-in-production';
 
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(payload, {
         expiresIn: ACCESS_TOKEN_TTL,
-        ...(accessSecret ? { secret: accessSecret } : {}),
+        secret: accessSecret,
       }),
       this.jwtService.signAsync(payload, {
         expiresIn: REFRESH_TOKEN_TTL,

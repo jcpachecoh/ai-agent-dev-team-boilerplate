@@ -61,6 +61,11 @@
   --actions-gap: 14px;
 }
 
+.actionsFullWidth {
+  width: 100%;
+  --control-width: 100%;
+}
+
 .cancel {
   background: transparent;
   color: var(--proveedor-muted);

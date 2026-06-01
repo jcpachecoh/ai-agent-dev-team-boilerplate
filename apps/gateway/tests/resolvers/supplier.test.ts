@@ -41,8 +41,14 @@ function makeSupplier(overrides: Partial<Supplier> = {}): Supplier {
 function makePrisma(suppliers: Supplier[]) {
   return {
     supplier: {
-      findMany: jest.fn(({ where }: { where: { tenantId: string } }) =>
-        Promise.resolve(suppliers.filter((s) => s.tenantId === where.tenantId && s.isActive)),
+      findMany: jest.fn(({ where }: { where: { tenantId: string; isActive?: boolean } }) =>
+        Promise.resolve(
+          suppliers.filter((s) => {
+            if (s.tenantId !== where.tenantId) return false;
+            if (where.isActive !== undefined && s.isActive !== where.isActive) return false;
+            return true;
+          }),
+        ),
       ),
       findFirst: jest.fn(({ where }: { where: { id: string; tenantId: string } }) =>
         Promise.resolve(

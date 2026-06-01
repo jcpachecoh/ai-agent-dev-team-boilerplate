@@ -22,11 +22,24 @@ const rateLimiter = new RateLimiterRedis({
   blockDuration: 30, // block for 30s after exceeding limit
 });
 
+function isLocalDevRequest(req: Request): boolean {
+  const ip =
+    (req.headers['x-forwarded-for'] as string | undefined)?.split(',')[0]?.trim() ??
+    req.socket?.remoteAddress ??
+    '';
+  return ip === '::1' || ip === '127.0.0.1' || ip === '::ffff:127.0.0.1';
+}
+
 async function applyRateLimit(
   req: Request,
   res: Response,
   next: express.NextFunction,
 ): Promise<void> {
+  if (env.isDevelopment && (env.rateLimitDisabled || isLocalDevRequest(req))) {
+    next();
+    return;
+  }
+
   const key =
     (req.headers['x-forwarded-for'] as string | undefined)?.split(',')[0]?.trim() ??
     req.socket?.remoteAddress ??

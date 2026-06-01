@@ -93,6 +93,44 @@
 }
 
 .footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
   padding: 16px 24px;
   border-top: $border-width solid var(--proveedor-border);
+}
+
+.fieldsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  width: 100%;
+}
+
+.fieldFull {
+  grid-column: 1 / -1;
+}
+
+.fieldCell {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+
+  .fieldLabel + * {
+    width: 100%;
+    --control-width: 100%;
+  }
+}
+
+.fieldLabel {
+  font-size: 0.6875rem;
+  font-weight: $font-weight-semibold;
+  letter-spacing: 0.04em;
+  color: var(--proveedor-muted);
+  cursor: default;
+}
+
+.fieldLabelRequired {
+  margin-left: 2px;
 }

@@ -22,7 +22,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 120px;
+  width: 100%;
+  min-height: 200px;
   padding: var(--control-padding-y) var(--control-padding-x);
   color: var(--proveedor-muted);
   font-size: var(--control-font-size);

@@ -13,19 +13,27 @@ export class SupplierService extends BaseService {
    */
   async findAll(
     tenantId: string,
-    opts: { limit?: number | null; offset?: number | null; filter?: string | null } = {},
+    opts: {
+      limit?: number | null;
+      offset?: number | null;
+      filter?: string | null;
+      isActive?: boolean | null;
+      condicionPago?: Supplier['condicionPago'] | null;
+    } = {},
   ): Promise<Supplier[]> {
     const { take, skip } = this.paginate(opts);
 
     const where: Prisma.SupplierWhereInput = {
       tenantId,
-      isActive: true,
+      ...(opts.isActive !== undefined && opts.isActive !== null ? { isActive: opts.isActive } : {}),
+      ...(opts.condicionPago ? { condicionPago: opts.condicionPago } : {}),
       ...(opts.filter
         ? {
             OR: [
               { razonSocial: { contains: opts.filter, mode: 'insensitive' } },
               { nit: { contains: opts.filter, mode: 'insensitive' } },
               { ciudad: { contains: opts.filter, mode: 'insensitive' } },
+              { contactoNombre: { contains: opts.filter, mode: 'insensitive' } },
             ],
           }
         : {}),

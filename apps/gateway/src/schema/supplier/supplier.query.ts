@@ -9,6 +9,8 @@ builder.queryField('suppliers', (t) =>
     authScopes: { isAuthenticated: true },
     args: {
       filter: t.arg.string({ required: false }),
+      isActive: t.arg.boolean({ required: false }),
+      condicionPago: t.arg.string({ required: false }),
       limit: t.arg.int({ required: false }),
       offset: t.arg.int({ required: false }),
     },
@@ -16,6 +18,10 @@ builder.queryField('suppliers', (t) =>
       const user = requireAuth(ctx.user);
       return ctx.services.supplier.findAll(user.tenantId, {
         filter: args.filter,
+        isActive: args.isActive,
+        condicionPago: args.condicionPago as
+          | import('@prisma/client').Supplier['condicionPago']
+          | undefined,
         limit: args.limit,
         offset: args.offset,
       });

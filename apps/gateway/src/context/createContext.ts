@@ -3,6 +3,8 @@ import { Queue } from 'bullmq';
 import { prisma } from '../config/prisma';
 import { redis } from '../config/redis';
 import { authenticate } from '../auth/auth.guard';
+import { UserRole } from '../auth/types';
+import { env } from '../config/env';
 import { createDataLoaders } from './dataLoaders';
 import { createServices } from '../services/types';
 import { createChildLogger, logger } from '../utils/logging';
@@ -34,7 +36,14 @@ export async function createContext({ req }: { req: Request }): Promise<GraphQLC
     req.socket?.remoteAddress ??
     'unknown';
 
-  const user = authenticate(req);
+  let user = authenticate(req);
+  if (!user && env.graphqlAuthDisabled) {
+    user = {
+      id: 'dev-auth-bypass',
+      tenantId: env.graphqlDevTenantId,
+      role: UserRole.OWNER,
+    };
+  }
   const isAuthenticated = user !== null;
   const tenantId = user?.tenantId ?? null;
 

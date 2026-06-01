@@ -72,3 +72,26 @@
   background: rgba(proveedor.$proveedor-warning, 0.14);
   border-color: rgba(proveedor.$proveedor-warning, 0.35);
 }
+
+.domain--oc-history.status--delivered,
+.domain--quality.status--conform,
+.domain--payable.status--paid {
+  color: proveedor.$proveedor-teal;
+  background: rgba(proveedor.$proveedor-teal, 0.14);
+  border-color: rgba(proveedor.$proveedor-teal, 0.35);
+}
+
+.domain--oc-history.status--pending,
+.domain--payable.status--pending {
+  color: proveedor.$proveedor-warning;
+  background: rgba(proveedor.$proveedor-warning, 0.14);
+  border-color: rgba(proveedor.$proveedor-warning, 0.35);
+}
+
+.domain--oc-history.status--cancelled,
+.domain--quality.status--non-conform,
+.domain--payable.status--overdue {
+  color: proveedor.$proveedor-danger;
+  background: rgba(proveedor.$proveedor-danger, 0.14);
+  border-color: rgba(proveedor.$proveedor-danger, 0.35);
+}

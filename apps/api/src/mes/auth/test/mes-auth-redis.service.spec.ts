@@ -326,12 +326,16 @@ describe('MesAuthRedisService', () => {
       delete process.env.MES_AUTH_REDIS_OPTIONAL;
     });
 
-    it('rethrows Redis incr error when fail-open is disabled', async () => {
+    it('returns fail-open result on Redis incr error when fail-open is disabled', async () => {
       process.env.NODE_ENV = 'production';
       delete process.env.MES_AUTH_REDIS_OPTIONAL;
       redisMock.incr.mockRejectedValue(new Error('Redis timeout'));
 
-      await expect(service.checkRateLimit('10.0.0.1')).rejects.toThrow('Redis timeout');
+      const result = await service.checkRateLimit('10.0.0.1');
+
+      expect(result.allowed).toBe(true);
+      expect(result.remaining).toBe(5);
+      delete process.env.NODE_ENV;
     });
   });
 });

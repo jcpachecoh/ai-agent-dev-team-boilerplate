@@ -3,6 +3,8 @@ import Redis from 'ioredis';
 import { Logger } from 'pino';
 import { Queue } from 'bullmq';
 import { SupplierService } from './supplier.service';
+import { SupplierProductService } from './supplier-product.service';
+import { SupplyItemService } from './supply-item.service';
 import { GatewayAuthService } from './auth.service';
 import { TenantService } from './tenant.service';
 import { EmailService } from './email.service';
@@ -12,6 +14,8 @@ import { RecipeService } from './recipe.service';
 
 export interface Services {
   supplier: SupplierService;
+  supplierProduct: SupplierProductService;
+  supplyItem: SupplyItemService;
   auth: GatewayAuthService;
   tenant: TenantService;
   email: EmailService;
@@ -40,6 +44,8 @@ export function createServices(deps: ServiceDeps): Services {
 
   return {
     supplier: new SupplierService(prisma, redis, log),
+    supplierProduct: new SupplierProductService(prisma, redis, log),
+    supplyItem: new SupplyItemService(prisma, redis, log),
     auth: new GatewayAuthService(prisma, redis, log),
     tenant: new TenantService(prisma, redis, log),
     email: new EmailService(queue),

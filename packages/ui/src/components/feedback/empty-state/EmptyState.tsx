@@ -3,8 +3,11 @@ import * as React from 'react';
 
 import styles from './EmptyState.module.scss';
 
+export type EmptyStateTheme = 'light' | 'dark';
+
 export interface EmptyStateProps {
   variant?: 'search' | 'create' | 'error';
+  theme?: EmptyStateTheme;
   icon?: React.ReactNode;
   title: string;
   description?: string;
@@ -20,13 +23,19 @@ const variantIcons = {
 
 export const EmptyState: React.FC<EmptyStateProps> = ({
   variant = 'search',
+  theme = 'light',
   icon,
   title,
   description,
   action,
   className,
 }) => {
-  const combinedClassName = [styles.emptyState, styles[variant], className]
+  const combinedClassName = [
+    styles.emptyState,
+    styles[variant],
+    styles[`theme--${theme}`],
+    className,
+  ]
     .filter(Boolean)
     .join(' ');
 
@@ -34,8 +43,8 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
     <div className={combinedClassName}>
       <div className={styles.iconContainer}>{icon || variantIcons[variant]}</div>
       <h3 className={styles.title}>{title}</h3>
-      {description && <p className={styles.description}>{description}</p>}
-      {action && <div className={styles.action}>{action}</div>}
+      {description ? <p className={styles.description}>{description}</p> : null}
+      {action ? <div className={styles.action}>{action}</div> : null}
     </div>
   );
 };

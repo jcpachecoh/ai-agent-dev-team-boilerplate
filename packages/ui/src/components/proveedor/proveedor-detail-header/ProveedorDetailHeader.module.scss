@@ -38,16 +38,31 @@
   }
 }
 
-.info {
+.identity {
   flex: 1;
   min-width: 0;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
 }
 
 .name {
   margin: 0;
   font-size: var(--name-size);
   font-weight: $font-weight-semibold;
+  line-height: 1.2;
   color: var(--proveedor-text);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 0.65rem;
 }
 
 .meta {
@@ -75,8 +90,11 @@
 
 .size--xl {
   --control-width: 100%;
-  --back-size: 32px;
-  --name-size: 1.125rem;
-  --meta-size: 0.6875rem;
-  --header-gap: 16px;
+  --back-size: 36px;
+  --name-size: 1.5rem;
+  --meta-size: 0.75rem;
+  --header-gap: 1rem;
+  --control-padding-y: 1rem;
+  --control-padding-x: 1.25rem;
+  min-height: 88px;
 }

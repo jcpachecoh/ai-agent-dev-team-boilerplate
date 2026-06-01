@@ -77,6 +77,7 @@ export function ProveedorProductModal({
         <div className={styles.body}>{children}</div>
         <footer className={styles.footer}>
           <ProveedorFormActions
+            fullWidth
             theme={theme}
             size={size}
             onCancel={handleCancel}

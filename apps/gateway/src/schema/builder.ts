@@ -3,7 +3,6 @@ import ErrorsPlugin from '@pothos/plugin-errors';
 import ScopeAuthPlugin from '@pothos/plugin-scope-auth';
 import ValidationPlugin from '@pothos/plugin-validation';
 import DataloaderPlugin from '@pothos/plugin-dataloader';
-import type { ForbiddenResult } from '@pothos/plugin-scope-auth';
 import { GraphQLContext } from '../context/types';
 import { UserRole } from '../auth/types';
 import { AuthenticationError, AuthorizationError } from '../utils/errors';
@@ -42,15 +41,8 @@ export const builder = new SchemaBuilder<{
         return roles.includes(context.user.role);
       },
     }),
-    unauthorizedError: (
-      _parent: unknown,
-      _context: unknown,
-      _info: unknown,
-      result: ForbiddenResult,
-    ) => {
-      // Check if the failure is due to being unauthenticated vs unauthorized
-      const msg = result.message ?? '';
-      if (msg.toLowerCase().includes('unauth') || !_context) {
+    unauthorizedError: (_parent: unknown, context: GraphQLContext) => {
+      if (!context.user) {
         return new AuthenticationError('Not authenticated');
       }
       return new AuthorizationError('Insufficient permissions');

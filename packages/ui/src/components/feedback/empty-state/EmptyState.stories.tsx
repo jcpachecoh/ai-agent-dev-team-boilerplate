@@ -1,3 +1,4 @@
+import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
 
 import { EmptyState } from './EmptyState';
@@ -51,12 +52,13 @@ export const DarkMode: Story = {
   },
   decorators: [
     (Story) => (
-      <div className="dark" style={{ padding: '2rem', background: '#111' }}>
+      <div style={{ padding: '2rem', background: '#0a0a0a' }}>
         <Story />
       </div>
     ),
   ],
   args: {
+    theme: 'dark',
     variant: 'search',
     title: 'Dark Mode Empty State',
     description: 'This is how the empty state looks in dark mode.',

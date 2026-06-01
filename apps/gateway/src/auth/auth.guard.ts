@@ -14,7 +14,9 @@ export function authenticate(req: Request): AuthUser | null {
   const authHeader = req.headers['authorization'];
   const token = authService.extractToken(authHeader);
 
-  if (!token) return null;
+  if (!token) {
+    return null;
+  }
 
   try {
     const payload = authService.verifyToken(token);

@@ -74,6 +74,16 @@ async function bootstrap(): Promise<void> {
     httpServer.listen(env.PORT, resolve);
   });
 
+  if (env.graphqlAuthDisabled) {
+    log.warn(
+      { tenantId: env.graphqlDevTenantId },
+      'GRAPHQL_AUTH_DISABLED=true — JWT not required (development only)',
+    );
+  }
+  if (env.rateLimitDisabled) {
+    log.warn('RATE_LIMIT_DISABLED=true — rate limiting off (development only)');
+  }
+
   log.info(
     { port: env.PORT, env: env.NODE_ENV },
     `🚀 Gateway ready at http://localhost:${env.PORT}/graphql`,

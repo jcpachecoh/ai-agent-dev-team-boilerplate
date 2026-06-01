@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "nest start --watch",
+    "start:dev": "nest start --watch",
     "build": "nest build",
     "start": "node dist/main",
     "lint": "eslint src --ext .ts --max-warnings 0",

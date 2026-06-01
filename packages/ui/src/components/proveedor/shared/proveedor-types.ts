@@ -10,6 +10,11 @@ export type ProveedorMetricValueColor =
   | 'warning'
   | 'danger'
   | 'info'
-  | 'enterprise';
+  | 'enterprise'
+  | 'purple';
 
 export type ProveedorPriceTrend = 'up' | 'down' | 'neutral';
+
+export type ProveedorOcHistoryStatus = 'delivered' | 'pending' | 'cancelled';
+export type ProveedorQualityComplianceStatus = 'conform' | 'non-conform';
+export type ProveedorPayableStatus = 'pending' | 'paid' | 'overdue';

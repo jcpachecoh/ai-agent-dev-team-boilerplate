@@ -15,14 +15,14 @@ const themeClasses: Record<RecetaTheme, string> = {
 export function RecetaTextInput({
   theme = 'dark',
   className,
-  placeholder = 'Ej: Marinado y Reposo',
+  placeholder,
   ...props
 }: RecetaTextInputProps): JSX.Element {
   return (
     <input
       className={[styles.input, themeClasses[theme], className].filter(Boolean).join(' ')}
-      placeholder={placeholder}
       {...props}
+      placeholder={placeholder}
     />
   );
 }

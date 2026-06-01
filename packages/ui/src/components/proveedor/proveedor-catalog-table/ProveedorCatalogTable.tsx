@@ -45,15 +45,21 @@ export function ProveedorCatalogTable({
             {emptyState ?? <span>Sin productos</span>}
           </div>
         ) : (
-          rows.map((row) => (
-            <ProveedorCatalogTableRow
-              key={row.sku}
-              {...row}
-              theme={theme}
-              size={size}
-              onEdit={onEditRow && row.sku ? () => onEditRow(row.sku as string) : row.onEdit}
-            />
-          ))
+          rows.map((row, index) => {
+            const sku = row.sku;
+            return (
+              <ProveedorCatalogTableRow
+                key={row.rowKey ?? (typeof sku === 'string' ? sku : `row-${index}`)}
+                {...row}
+                theme={theme}
+                size={size}
+                onEdit={
+                  row.onEdit ??
+                  (onEditRow && typeof sku === 'string' ? () => onEditRow(sku) : undefined)
+                }
+              />
+            );
+          })
         )}
       </div>
     </div>
