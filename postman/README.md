@@ -37,17 +37,23 @@ The API must be reachable at `http://localhost:3001` (default `PORT`).
 
 The collection requires three pieces of data to exist in the local database before a full run:
 
-| Variable             | What it must be                                           | How to obtain                                        |
-| -------------------- | --------------------------------------------------------- | ---------------------------------------------------- |
-| `email` / `password` | A registered user (`test@restopsiq.dev` / `TestPass123!`) | Run `pnpm db:seed` from `apps/api/`                  |
-| `tenantId`           | `palos-de-lena` (operational tenant)                      | Pre-populated in `local.environment.json` after seed |
-| `mesTenantId`        | `palos-de-lena` (same as `tenantId`)                      | Pre-populated after seed                             |
-| `categoryId`         | `bbbbbbbb-0000-0000-0000-000000000002`                    | Pre-populated after seed                             |
-| `supplyItemId`       | `ffffffff-0000-0000-0000-000000000006` (optional)         | Seeded item; overwritten by Create Supply Item       |
+| Variable             | What it must be                                              | How to obtain                                        |
+| -------------------- | ------------------------------------------------------------ | ---------------------------------------------------- |
+| `email` / `password` | Global User (`mes-owner@palos-de-lena.dev` / `TestPass123!`) | Run `pnpm db:seed` from `apps/api/`                  |
+| `tenantId`           | `palos-de-lena` (operational tenant)                         | Pre-populated in `local.environment.json` after seed |
+| `mesTenantId`        | `palos-de-lena` (same as `tenantId`)                         | Pre-populated after seed                             |
+| `categoryId`         | `bbbbbbbb-0000-0000-0000-000000000002`                       | Pre-populated after seed                             |
+| `supplyItemId`       | `ffffffff-0000-0000-0000-000000000006` (optional)            | Seeded item; overwritten by Create Supply Item       |
 
-> The signup request in the collection accepts both `201` (first run) and `409` (user already exists), so it is safe to run repeatedly.
+> **USR-01:** Email auth uses the global `User` table with `x-tenant-id: palos-de-lena`. `test@restopsiq.dev` is **UserTestLab-only** and will **not** work for `/api/auth/login`. Alternative global User: `mes-operator@palos-de-lena.dev` / `TestPass123!`.
 
-**TestLab** uses email/password auth only (no tenant). **Supply items, MES, and plant** share the operational tenant `palos-de-lena`.
+The signup request generates unique `signupEmail` / `signupCedula` per run and accepts both `201` (first run) and `409` (user already exists), so it is safe to run repeatedly.
+
+**01 Auth (email/password):** global `User` — requires `x-tenant-id: {{tenantId}}` on signup, login, forgot-password, and resend-verification. Refresh, logout, reset-password, and verify-email do **not** require `x-tenant-id`.
+
+**03 Testlab:** uses JWT from global User login (same `{{accessToken}}`). `testLabUserId` / `testLabEmail` reference the seeded `UserTestLab` row only.
+
+**Supply items, MES, and plant** share the operational tenant `palos-de-lena`.
 
 The `local.environment.json` ships with deterministic seed values:
 
@@ -58,6 +64,9 @@ The `local.environment.json` ships with deterministic seed values:
 "supplyItemId":   "ffffffff-0000-0000-0000-000000000006"
 "supplyItemCode": "SEED-ACEITE"
 "testLabUserId":  "cccccccc-0000-0000-0000-000000000003"
+"testLabEmail":   "test@restopsiq.dev"
+"globalOwnerUserId": "11111111-0000-0000-0000-000000000004"
+"globalOperatorUserId": "11111111-0000-0000-0000-000000000005"
 "mesOwnerId":     "dddddddd-0000-0000-0000-000000000004"
 "mesOperatorId":  "eeeeeeee-0000-0000-0000-000000000005"
 "mesUserId":      "dddddddd-0000-0000-0000-000000000004"
@@ -65,12 +74,15 @@ The `local.environment.json` ships with deterministic seed values:
 
 Run `pnpm db:seed` from `apps/api/` and these values work immediately.
 
-| Variable            | Seeded value (local/dev only) |
-| ------------------- | ----------------------------- |
-| `mesOwnerCedula`    | `12345678` (OWNER)            |
-| `mesOwnerPin`       | `1234`                        |
-| `mesOperatorCedula` | `87654321` (OPERATOR)         |
-| `mesOperatorPin`    | `4321`                        |
+| Variable            | Seeded value (local/dev only)                   |
+| ------------------- | ----------------------------------------------- |
+| `mesOwnerCedula`    | `12345678` (OWNER)                              |
+| `mesOwnerPin`       | `1234`                                          |
+| `mesOperatorCedula` | `87654321` (OPERATOR)                           |
+| `mesOperatorPin`    | `4321`                                          |
+| `mesNewUserPin`     | `5678` (Create User body)                       |
+| `mesNewUserCedula`  | unique per run (`99` + 6 digits from timestamp) |
+| `mesCreatedUserId`  | set by Create User response                     |
 
 MES credentials are **synthetic** and documented in `apps/api/prisma/seed.ts` — never use real production cédulas in Postman.
 
@@ -166,16 +178,16 @@ RestOpsIQ API
 ├── 00 Health          (1 request)
 │   └── GET /api/
 │
-├── 01 Auth            (12 requests)
-│   ├── POST /api/auth/signup
-│   ├── POST /api/auth/login                → captures accessToken, refreshToken
-│   ├── POST /api/auth/refresh              → uses refreshToken, captures new accessToken
-│   ├── POST /api/auth/logout
-│   ├── POST /api/auth/forgot-password      → public, always 200 (anti-enumeration)
-│   ├── POST /api/auth/reset-password       → public, consumes {{resetToken}}
+├── 01 Auth            (12 requests — global User; x-tenant-id on signup/login/forgot/resend)
+│   ├── POST /api/auth/signup              → x-tenant-id; body: cedula, documentType, optional roleCode
+│   ├── POST /api/auth/login               → x-tenant-id; captures accessToken, refreshToken
+│   ├── POST /api/auth/refresh             → no x-tenant-id; uses refreshToken
+│   ├── POST /api/auth/logout              → no x-tenant-id
+│   ├── POST /api/auth/forgot-password     → x-tenant-id; public, always 200 (anti-enumeration)
+│   ├── POST /api/auth/reset-password      → no x-tenant-id; consumes {{resetToken}}
 │   ├── POST /api/auth/reset-password (invalid token — negative)
 │   ├── POST /api/auth/reset-password (reused token — negative)
-│   ├── POST /api/auth/resend-verification  → public, always 200 (anti-enumeration)
+│   ├── POST /api/auth/resend-verification  → x-tenant-id; public, always 200 (anti-enumeration)
 │   ├── POST /api/auth/verify-email         → public, consumes {{otpCode}}
 │   ├── POST /api/auth/verify-email (invalid OTP — negative)
 │   └── ── RES-226 email endpoints require Redis + BullMQ queue running ──
@@ -185,6 +197,7 @@ RestOpsIQ API
 │   ├── POST /api/mes/auth/login (Operator)  → captures mesTokenOperator
 │   ├── GET  /api/mes/auth/me                → Bearer {{mesAccessToken}}
 │   ├── GET  /api/mes/users/:id/role         → Bearer {{mesAccessToken}}, uses {{mesUserId}}
+│   ├── POST /api/mes/users                  → Bearer {{mesAccessToken}}, OWNER only; captures mesCreatedUserId
 │   ├── POST /api/mes/auth/logout            → Bearer {{mesAccessToken}}
 │   ├── POST /api/mes/auth/login (wrong PIN) → negative, 401
 │   └── POST /api/mes/auth/login (no tenant) → negative, 400
@@ -262,12 +275,22 @@ All requests inherit `Authorization: Bearer {{accessToken}}` from the collection
 The collection-level pre-request script fires before every non-auth request:
 
 1. Checks if `{{accessToken}}` is still valid (via `accessTokenExpiresAt` timestamp).
-2. If expired or missing, fires a synchronous `POST /api/auth/login` using `{{email}}` and `{{password}}`.
+2. If expired or missing, fires a synchronous `POST /api/auth/login` with `x-tenant-id: {{tenantId}}` using `{{email}}` and `{{password}}` (global User credentials).
 3. Stores the returned `accessToken`, `refreshToken`, and a 14-minute expiry window.
 
 This means the **Login request in the `01 Auth` folder is also the canonical setup step** — running it first ensures all subsequent requests have a valid token without relying on the pre-request script alone.
 
-MES routes (`/mes/auth/*`, `/mes/users/*`) and plant routes (`/plant/*`) are **excluded** from the auto-login script so they never overwrite `{{mesAccessToken}}` with a TestLab token.
+MES routes (`/mes/auth/*`, `/mes/users/*`) and plant routes (`/plant/*`) are **excluded** from the auto-login script so they never overwrite `{{mesAccessToken}}` with the global User token.
+
+### Email auth credentials (USR-01)
+
+| Account                    | Email                            | Password       | x-tenant-id                             |
+| -------------------------- | -------------------------------- | -------------- | --------------------------------------- |
+| MES owner (global User)    | `mes-owner@palos-de-lena.dev`    | `TestPass123!` | `palos-de-lena`                         |
+| MES operator (global User) | `mes-operator@palos-de-lena.dev` | `TestPass123!` | `palos-de-lena`                         |
+| UserTestLab only           | `test@restopsiq.dev`             | `TestPass123!` | N/A — **not valid for /api/auth/login** |
+
+Signup body fields: `email`, `cedula`, `documentType` (`CC`|`CE`|`PASAPORTE`|`TI`|`PEP`), `password`, optional `roleCode` (default `OPERATOR`).
 
 ---
 
@@ -292,7 +315,8 @@ Run these requests **in order** inside the **MES Auth** folder:
 1. **Login Owner** — sends `x-tenant-id: {{mesTenantId}}` and owner cédula/PIN; sets `mesAccessToken`, `mesRefreshToken`, and `mesUserId`.
 2. **Me** — `GET /api/mes/auth/me` with `Authorization: Bearer {{mesAccessToken}}`.
 3. **Get User Role** — `GET /api/mes/users/{{mesUserId}}/role` (OWNER role required).
-4. **Logout** — `POST /api/mes/auth/logout`.
+4. **Create User** — `POST /api/mes/users` with OWNER token; creates an OPERATOR and sets `mesCreatedUserId`.
+5. **Logout** — `POST /api/mes/auth/logout`.
 
 Negative cases (wrong PIN, missing `x-tenant-id`) can be run independently; they use `noauth` and do not require a prior login.
 
@@ -513,16 +537,19 @@ Login
 | Variable                | Required before run               | Set by                                                     |
 | ----------------------- | --------------------------------- | ---------------------------------------------------------- |
 | `baseUrl`               | Yes                               | `local.environment.json`                                   |
-| `email`                 | Yes                               | `local.environment.json`                                   |
+| `email`                 | Yes                               | `local.environment.json` (`mes-owner@palos-de-lena.dev`)   |
 | `password`              | Yes                               | `local.environment.json`                                   |
+| `testLabEmail`          | Reference                         | `test@restopsiq.dev` — UserTestLab only, not email auth    |
+| `globalOwnerUserId`     | Reference                         | Seeded global User linked to MES OWNER                     |
+| `globalOperatorUserId`  | Reference                         | Seeded global User linked to MES OPERATOR                  |
 | `tenantId`              | Yes                               | `local.environment.json` (`palos-de-lena` after seed)      |
 | `categoryId`            | Yes (for Supply Items)            | `local.environment.json` (seed id)                         |
 | `supplyItemId`          | Yes (MES phase input)             | `local.environment.json` (seed id)                         |
 | `supplyItemCode`        | Auto / seed reference             | `SEED-ACEITE`; pre-request uses `SI-<timestamp>` on create |
-| `testLabUserId`         | Reference                         | Seeded `UserTestLab` id                                    |
+| `testLabUserId`         | Reference                         | Seeded `UserTestLab` id — not used by email auth           |
 | `mesOwnerId`            | Reference / MES role tests        | Seeded OWNER id                                            |
 | `mesOperatorId`         | Reference                         | Seeded OPERATOR id                                         |
-| `authEmail`             | Yes (for RES-226 email endpoints) | `local.environment.json` (defaults to seeded user)         |
+| `authEmail`             | Yes (for RES-226 email endpoints) | `mes-owner@palos-de-lena.dev` (requires x-tenant-id)       |
 | `resetToken`            | Manual (for Reset Password)       | Extracted from password-reset email URL                    |
 | `otpCode`               | Manual (for Verify Email)         | Extracted from verification email or Redis                 |
 | `newPassword`           | Yes (for Reset Password)          | `local.environment.json` (defaults to `NewPassword456!`)   |
@@ -583,15 +610,17 @@ The `reset-password` and `verify-email` happy-path requests depend on tokens del
 
 ## Troubleshooting
 
-| Symptom                                  | Likely cause                                             | Fix                                                                                                                                 |
-| ---------------------------------------- | -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| All supply-items requests return 403/404 | `tenantId` is wrong or empty                             | Use `palos-de-lena` (same as `mesTenantId`) after seed                                                                              |
-| `Create Supply Item` returns 400         | `x-tenant-id` ≠ `palos-de-lena` (category tenant in DB)  | Set `tenantId` = `palos-de-lena` in **active** environment; re-import `recipes-local.environment.json` if you use **Recipes Local** |
-| `Create Supply Item` 400 after seed      | Old env still has `tenantId: aaaaaaaa-...`               | Open environment → `tenantId` must be `palos-de-lena`; check `debugResolvedTenantId` after running request (Console + env vars)     |
-| `Create Supply Item` returns 409         | `codigoInterno` already exists (timestamp collision)     | Extremely unlikely; re-run                                                                                                          |
-| Testlab GET returns 404                  | POST create ran after GET (wrong order)                  | Run collection in folder order                                                                                                      |
-| `Refresh` returns 401                    | `refreshToken` is stale or was invalidated by Logout     | Run Login again before Refresh                                                                                                      |
-| Pre-request auto-login silently fails    | `email`/`password` vars are empty or DB has no such user | Seed the user and set correct env vars                                                                                              |
-| `Reset Password` returns 400 (not found) | `{{resetToken}}` is empty or already used                | Re-run Forgot Password, extract fresh token from email                                                                              |
-| `Verify Email` returns 400 (expired)     | `{{otpCode}}` is expired (TTL 15 min) or already used    | Re-run Resend Verification, copy fresh OTP from email                                                                               |
-| Email requests succeed but no email sent | Redis is not running or BullMQ worker is not started     | `docker compose up -d redis` and start the email worker                                                                             |
+| Symptom                                     | Likely cause                                               | Fix                                                                                                                                 |
+| ------------------------------------------- | ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| All supply-items requests return 403/404    | `tenantId` is wrong or empty                               | Use `palos-de-lena` (same as `mesTenantId`) after seed                                                                              |
+| `Create Supply Item` returns 400            | `x-tenant-id` ≠ `palos-de-lena` (category tenant in DB)    | Set `tenantId` = `palos-de-lena` in **active** environment; re-import `recipes-local.environment.json` if you use **Recipes Local** |
+| `Create Supply Item` 400 after seed         | Old env still has `tenantId: aaaaaaaa-...`                 | Open environment → `tenantId` must be `palos-de-lena`; check `debugResolvedTenantId` after running request (Console + env vars)     |
+| `Create Supply Item` returns 409            | `codigoInterno` already exists (timestamp collision)       | Extremely unlikely; re-run                                                                                                          |
+| Testlab GET returns 404                     | POST create ran after GET (wrong order)                    | Run collection in folder order                                                                                                      |
+| `Refresh` returns 401                       | `refreshToken` is stale or was invalidated by Logout       | Run Login again before Refresh                                                                                                      |
+| Pre-request auto-login silently fails       | `email`/`password` vars are empty or DB has no global User | Seed DB; use `mes-owner@palos-de-lena.dev` + `x-tenant-id: palos-de-lena`                                                           |
+| `Login` returns 401 with test@restopsiq.dev | UserTestLab is not email auth after USR-01                 | Use `mes-owner@palos-de-lena.dev` and set `tenantId` = `palos-de-lena`                                                              |
+| `Login` returns 400 missing tenant          | `x-tenant-id` header missing on email auth                 | Add header on signup/login/forgot/resend only                                                                                       |
+| `Reset Password` returns 400 (not found)    | `{{resetToken}}` is empty or already used                  | Re-run Forgot Password, extract fresh token from email                                                                              |
+| `Verify Email` returns 400 (expired)        | `{{otpCode}}` is expired (TTL 15 min) or already used      | Re-run Resend Verification, copy fresh OTP from email                                                                               |
+| Email requests succeed but no email sent    | Redis is not running or BullMQ worker is not started       | `docker compose up -d redis` and start the email worker                                                                             |

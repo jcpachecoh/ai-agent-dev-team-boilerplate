@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   HttpException,
   HttpStatus,
@@ -44,6 +45,7 @@ const baseUser = {
 const repoMock = {
   findByCedulaHash: jest.fn(),
   findById: jest.fn(),
+  createUser: jest.fn(),
   incrementLoginAttempts: jest.fn(),
   lockUser: jest.fn(),
   resetLoginAttempts: jest.fn(),
@@ -265,6 +267,116 @@ describe('MesAuthService', () => {
       repoMock.findById.mockResolvedValue(null);
 
       await expect(service.me('unknown')).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('createUser', () => {
+    const owner = {
+      ...baseUser,
+      id: 'owner-1',
+      role: OperationalRole.OWNER,
+      tenantId: TENANT_ID,
+    };
+
+    const createDto = {
+      cedula: '87654321',
+      pin: '4321',
+      role: OperationalRole.OPERATOR,
+      sedeId: 'sede-principal',
+    };
+
+    beforeEach(() => {
+      bcryptMock.hash.mockResolvedValue('hashed-new-pin' as never);
+    });
+
+    it('creates user with hashed credentials in requester tenant', async () => {
+      const created = {
+        ...baseUser,
+        id: 'new-op-1',
+        cedulaHash: hashCedula(createDto.cedula),
+        role: OperationalRole.OPERATOR,
+        sedeId: 'sede-principal',
+      };
+      repoMock.findById.mockResolvedValue(owner);
+      repoMock.findByCedulaHash.mockResolvedValue(null);
+      repoMock.createUser.mockResolvedValue(created);
+
+      const result = await service.createUser(owner.id, createDto);
+
+      expect(repoMock.createUser).toHaveBeenCalledWith({
+        tenantId: TENANT_ID,
+        cedulaHash: hashCedula(createDto.cedula),
+        pinHash: 'hashed-new-pin',
+        role: OperationalRole.OPERATOR,
+        sedeId: 'sede-principal',
+      });
+      expect(result).toEqual({
+        id: 'new-op-1',
+        cedula: '****4321',
+        role: OperationalRole.OPERATOR,
+        tenantId: TENANT_ID,
+        sedeId: 'sede-principal',
+      });
+      expect(result).not.toHaveProperty('pinHash');
+      expect(result).not.toHaveProperty('cedulaHash');
+    });
+
+    it('throws ConflictException when cédula already exists in tenant', async () => {
+      repoMock.findById.mockResolvedValue(owner);
+      repoMock.findByCedulaHash.mockResolvedValue({
+        ...baseUser,
+        cedulaHash: hashCedula(createDto.cedula),
+      });
+
+      await expect(service.createUser(owner.id, createDto)).rejects.toThrow(ConflictException);
+      expect(repoMock.createUser).not.toHaveBeenCalled();
+    });
+
+    it('throws ForbiddenException when requester is inactive', async () => {
+      repoMock.findById.mockResolvedValue({ ...owner, isActive: false });
+
+      await expect(service.createUser(owner.id, createDto)).rejects.toThrow(ForbiddenException);
+    });
+
+    it('throws NotFoundException when requester does not exist', async () => {
+      repoMock.findById.mockResolvedValue(null);
+
+      await expect(service.createUser('unknown', createDto)).rejects.toThrow(NotFoundException);
+    });
+
+    it('throws BadRequestException when OPERATOR has no sedeId', async () => {
+      repoMock.findById.mockResolvedValue(owner);
+
+      await expect(
+        service.createUser(owner.id, {
+          cedula: '11112222',
+          pin: '1234',
+          role: OperationalRole.OPERATOR,
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('allows MANAGER without sedeId', async () => {
+      const created = {
+        ...baseUser,
+        id: 'mgr-1',
+        role: OperationalRole.MANAGER,
+        sedeId: null,
+      };
+      repoMock.findById.mockResolvedValue(owner);
+      repoMock.findByCedulaHash.mockResolvedValue(null);
+      repoMock.createUser.mockResolvedValue(created);
+
+      const result = await service.createUser(owner.id, {
+        cedula: '55556666',
+        pin: '9999',
+        role: OperationalRole.MANAGER,
+      });
+
+      expect(result.sedeId).toBeNull();
+      expect(repoMock.createUser).toHaveBeenCalledWith(
+        expect.objectContaining({ role: OperationalRole.MANAGER, sedeId: null }),
+      );
     });
   });
 

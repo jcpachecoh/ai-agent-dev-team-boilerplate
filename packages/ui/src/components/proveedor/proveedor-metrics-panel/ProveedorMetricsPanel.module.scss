@@ -1,0 +1,75 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/proveedor-theme' as proveedor;
+
+.panel {
+  @include proveedor.proveedor-control-base;
+  @include proveedor.proveedor-theme-classes;
+  @include proveedor.proveedor-size-vars;
+
+  display: flex;
+  flex-direction: column;
+  gap: var(--panel-gap);
+  padding: var(--panel-padding);
+  background: var(--proveedor-surface-raised);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--panel-title-size);
+  font-weight: $font-weight-semibold;
+  color: var(--proveedor-text);
+}
+
+.list {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--panel-item-gap);
+}
+
+.label {
+  margin: 0 0 4px;
+  font-family: $font-family-mono;
+  font-size: var(--panel-label-size);
+  font-weight: $font-weight-bold;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--proveedor-muted);
+}
+
+.value {
+  margin: 0;
+  font-family: $font-family-mono;
+  font-size: var(--panel-metric-size);
+  font-weight: $font-weight-bold;
+  line-height: 1.1;
+  color: var(--proveedor-text);
+}
+
+.size--sm {
+  --panel-padding: #{$spacing-md};
+  --panel-gap: #{$spacing-sm};
+  --panel-item-gap: 12px;
+  --panel-title-size: #{$font-size-sm};
+  --panel-label-size: 0.625rem;
+  --panel-metric-size: 1.25rem;
+}
+
+.size--md {
+  --panel-padding: 25px;
+  --panel-gap: 20px;
+  --panel-item-gap: 16px;
+  --panel-title-size: 1.125rem;
+  --panel-label-size: 0.6875rem;
+  --panel-metric-size: 2rem;
+}
+
+.size--xl {
+  --control-width: 100%;
+  --panel-padding: 25px;
+  --panel-gap: 20px;
+  --panel-item-gap: 16px;
+  --panel-title-size: 1.125rem;
+  --panel-label-size: 0.6875rem;
+  --panel-metric-size: 2rem;
+}

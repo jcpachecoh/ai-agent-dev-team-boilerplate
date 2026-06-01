@@ -1,9 +1,11 @@
-import { Plus } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import React, { type ButtonHTMLAttributes, type JSX, type ReactNode } from 'react';
 
-import Spinner from '../../Spinner';
 import type { RecetaSize, RecetaTheme } from '../shared/receta-types';
 import styles from './RecetaActionButton.module.scss';
+
+export type RecetaActionAccent = 'purple' | 'teal' | 'gold';
+export type RecetaActionVariant = 'soft' | 'solid';
 
 export interface RecetaActionButtonProps extends Omit<
   ButtonHTMLAttributes<HTMLButtonElement>,
@@ -14,6 +16,8 @@ export interface RecetaActionButtonProps extends Omit<
   loading?: boolean;
   theme?: RecetaTheme;
   size?: RecetaSize;
+  accent?: RecetaActionAccent;
+  variant?: RecetaActionVariant;
 }
 
 export function RecetaActionButton({
@@ -23,25 +27,31 @@ export function RecetaActionButton({
   disabled,
   theme = 'light',
   size = 'md',
+  accent = 'purple',
+  variant = 'soft',
   className,
   ...props
 }: RecetaActionButtonProps): JSX.Element {
-  const displayIcon = icon ?? <Plus aria-hidden />;
-
   return (
     <button
       type="button"
-      className={[styles.button, styles[`theme--${theme}`], styles[`size--${size}`], className]
+      className={[
+        styles.button,
+        styles[`theme--${theme}`],
+        styles[`size--${size}`],
+        styles[`accent--${accent}`],
+        styles[`variant--${variant}`],
+        loading && styles.loading,
+        className,
+      ]
         .filter(Boolean)
         .join(' ')}
       disabled={disabled || loading}
-      aria-busy={loading}
+      aria-busy={loading || undefined}
       {...props}
     >
-      {loading ? (
-        <Spinner size={size === 'sm' ? 'sm' : 'md'} />
-      ) : (
-        <span className={styles.icon}>{displayIcon}</span>
+      {(loading || icon) && (
+        <span className={styles.icon}>{loading ? <Loader2 aria-hidden /> : icon}</span>
       )}
       <span className={styles.label}>{label}</span>
     </button>

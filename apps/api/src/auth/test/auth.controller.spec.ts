@@ -1,19 +1,30 @@
 import { BadRequestException } from '@nestjs/common';
+import { DocumentType } from '@prisma/client';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthController } from '../controller/auth.controller';
 import { AuthService } from '../service/auth.service';
 import { AuthEmailService } from '../service/auth-email.service';
 
+const TENANT_ID = 'palos-de-lena';
 const tokens = { accessToken: 'access', refreshToken: 'refresh' };
 
-const mockUser = {
+const mockUserSafe = {
   id: 'user-1',
+  tenantId: TENANT_ID,
+  cedula: '12345678',
+  documentType: DocumentType.CC,
   email: 'a@b.com',
-  name: 'Alice',
-  passwordHash: 'hash',
-  refreshToken: null,
+  roleId: 'role-1',
+  loginAttempts: 0,
+  lockedUntil: null,
+  lastLoginAt: null,
+  passwordChangedAt: null,
+  isActive: true,
+  emailVerified: false,
   createdAt: new Date(),
   updatedAt: new Date(),
+  deletedAt: null,
+  createdBy: null,
 };
 
 const serviceMock = {
@@ -22,7 +33,7 @@ const serviceMock = {
   refresh: jest.fn(),
   logout: jest.fn(),
   resetPassword: jest.fn(),
-  findByEmail: jest.fn(),
+  findByTenantAndEmail: jest.fn(),
 };
 
 const authEmailServiceMock = {
@@ -49,27 +60,44 @@ describe('AuthController', () => {
     jest.clearAllMocks();
   });
 
-  // -------------------------------------------------------------------------
-  // Existing endpoints
-  // -------------------------------------------------------------------------
-
   describe('signup', () => {
-    it('delegates to AuthService.signup and returns tokens', async () => {
+    it('delegates to AuthService.signup with tenant header and returns tokens', async () => {
       serviceMock.signup.mockResolvedValue(tokens);
-      const dto = { email: 'a@b.com', name: 'User', password: 'pass1234' };
-      const result = await controller.signup(dto);
+      const dto = {
+        email: 'a@b.com',
+        cedula: '12345678',
+        documentType: DocumentType.CC,
+        password: 'pass1234',
+      };
+      const result = await controller.signup(dto, TENANT_ID);
       expect(result).toEqual(tokens);
-      expect(serviceMock.signup).toHaveBeenCalledWith(dto);
+      expect(serviceMock.signup).toHaveBeenCalledWith(TENANT_ID, dto);
+    });
+
+    it('throws BadRequestException when x-tenant-id is missing', async () => {
+      const dto = {
+        email: 'a@b.com',
+        cedula: '12345678',
+        documentType: DocumentType.CC,
+        password: 'pass1234',
+      };
+      expect(() => controller.signup(dto, '')).toThrow(BadRequestException);
     });
   });
 
   describe('login', () => {
-    it('delegates to AuthService.login and returns tokens', async () => {
+    it('delegates to AuthService.login with tenant header and returns tokens', async () => {
       serviceMock.login.mockResolvedValue(tokens);
       const dto = { email: 'a@b.com', password: 'pass1234' };
-      const result = await controller.login(dto);
+      const result = await controller.login(dto, TENANT_ID);
       expect(result).toEqual(tokens);
-      expect(serviceMock.login).toHaveBeenCalledWith(dto);
+      expect(serviceMock.login).toHaveBeenCalledWith(TENANT_ID, dto);
+    });
+
+    it('throws BadRequestException when x-tenant-id is missing', () => {
+      expect(() => controller.login({ email: 'a@b.com', password: 'pass' }, '  ')).toThrow(
+        BadRequestException,
+      );
     });
   });
 
@@ -92,37 +120,45 @@ describe('AuthController', () => {
     });
   });
 
-  // -------------------------------------------------------------------------
-  // New endpoints (Task 09)
-  // -------------------------------------------------------------------------
-
   describe('forgotPassword', () => {
-    it('delegates to authEmailService.sendResetPassword and returns 200 message', async () => {
+    it('delegates to authEmailService.sendResetPassword with tenant context and returns 200 message', async () => {
       authEmailServiceMock.sendResetPassword.mockResolvedValue(undefined);
       const dto = { email: 'alice@example.com' };
 
-      const result = await controller.forgotPassword(dto);
+      const result = await controller.forgotPassword(dto, TENANT_ID);
 
       expect(authEmailServiceMock.sendResetPassword).toHaveBeenCalledWith('alice@example.com', {
-        tenantId: 'global',
-        tenantName: 'RestOpsIQ',
+        tenantId: TENANT_ID,
+        tenantName: TENANT_ID,
       });
       expect(result).toHaveProperty('message');
     });
 
     it('returns 200 even when sendResetPassword resolves (user not found — silent)', async () => {
       authEmailServiceMock.sendResetPassword.mockResolvedValue(undefined);
-      const result = await controller.forgotPassword({ email: 'nobody@example.com' });
+      const result = await controller.forgotPassword({ email: 'nobody@example.com' }, TENANT_ID);
       expect(result).toHaveProperty('message');
     });
 
     it('returns the same message regardless of whether user exists (anti-enumeration)', async () => {
       authEmailServiceMock.sendResetPassword.mockResolvedValue(undefined);
 
-      const resultExisting = await controller.forgotPassword({ email: 'alice@example.com' });
-      const resultMissing = await controller.forgotPassword({ email: 'nobody@example.com' });
+      const resultExisting = await controller.forgotPassword(
+        { email: 'alice@example.com' },
+        TENANT_ID,
+      );
+      const resultMissing = await controller.forgotPassword(
+        { email: 'nobody@example.com' },
+        TENANT_ID,
+      );
 
       expect(resultExisting).toEqual(resultMissing);
+    });
+
+    it('throws BadRequestException when x-tenant-id is missing', async () => {
+      await expect(controller.forgotPassword({ email: 'a@b.com' }, '')).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
@@ -181,25 +217,35 @@ describe('AuthController', () => {
 
   describe('resendVerification', () => {
     it('calls sendVerifyEmail when user exists and returns 200 message', async () => {
-      serviceMock.findByEmail.mockResolvedValue(mockUser);
+      serviceMock.findByTenantAndEmail.mockResolvedValue(mockUserSafe);
       authEmailServiceMock.sendVerifyEmail.mockResolvedValue({ otpCode: '123456' });
 
-      const result = await controller.resendVerification({ email: 'a@b.com' });
+      const result = await controller.resendVerification({ email: 'a@b.com' }, TENANT_ID);
 
+      expect(serviceMock.findByTenantAndEmail).toHaveBeenCalledWith(TENANT_ID, 'a@b.com');
       expect(authEmailServiceMock.sendVerifyEmail).toHaveBeenCalledWith(
-        { id: mockUser.id, email: mockUser.email, name: mockUser.name },
-        { tenantId: 'global', tenantName: 'RestOpsIQ' },
+        { id: mockUserSafe.id, email: mockUserSafe.email },
+        { tenantId: TENANT_ID, tenantName: TENANT_ID },
       );
       expect(result).toHaveProperty('message');
     });
 
     it('returns 200 silently when user does not exist (no sendVerifyEmail call)', async () => {
-      serviceMock.findByEmail.mockResolvedValue(null);
+      serviceMock.findByTenantAndEmail.mockResolvedValue(null);
 
-      const result = await controller.resendVerification({ email: 'nobody@example.com' });
+      const result = await controller.resendVerification(
+        { email: 'nobody@example.com' },
+        TENANT_ID,
+      );
 
       expect(authEmailServiceMock.sendVerifyEmail).not.toHaveBeenCalled();
       expect(result).toHaveProperty('message');
+    });
+
+    it('throws BadRequestException when x-tenant-id is missing', async () => {
+      await expect(controller.resendVerification({ email: 'a@b.com' }, '')).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 });

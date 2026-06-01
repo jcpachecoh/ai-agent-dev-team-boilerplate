@@ -10,7 +10,6 @@ $color-operator-text: #f4f6f8;
 $color-accent: #3d9eff;
 $color-danger: #e85d4a;
 $color-success: #3ecf8e;
-
 @mixin touch-target {
   min-width: $touch-target-min;
   min-height: $touch-target-min;

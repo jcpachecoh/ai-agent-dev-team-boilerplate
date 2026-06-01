@@ -7,12 +7,15 @@ export interface RecetaInfoPanelProps {
   title?: string;
   nameLabel?: string;
   categoryLabel?: string;
+  yieldLabel?: string;
   descriptionLabel?: string;
   nameValue?: string;
   categoryValue?: string;
+  yieldValue?: string;
   descriptionValue?: string;
   onNameChange?: (value: string) => void;
   onCategoryChange?: (value: string) => void;
+  onYieldChange?: (value: string) => void;
   onDescriptionChange?: (value: string) => void;
   theme?: RecetaTheme;
   className?: string;
@@ -27,12 +30,15 @@ export function RecetaInfoPanel({
   title = 'Información General',
   nameLabel = 'Nombre de la Receta *',
   categoryLabel = 'Categoría *',
+  yieldLabel = 'Rendimiento',
   descriptionLabel = 'Descripción',
   nameValue = 'Lomo de Cerdo al Carbón',
   categoryValue = '',
+  yieldValue = '4 porciones',
   descriptionValue = 'Descripción general de la receta...',
   onNameChange,
   onCategoryChange,
+  onYieldChange,
   onDescriptionChange,
   theme = 'dark',
   className,
@@ -60,7 +66,18 @@ export function RecetaInfoPanel({
           />
         </label>
       </div>
-      <label className={styles.field}>
+      <div className={styles.gridSecondary}>
+        <label className={styles.field}>
+          <span className={styles.label}>{yieldLabel}</span>
+          <input
+            className={styles.input}
+            value={yieldValue}
+            readOnly={!onYieldChange}
+            onChange={(event) => onYieldChange?.(event.target.value)}
+          />
+        </label>
+      </div>
+      <label className={[styles.field, styles.descriptionField].join(' ')}>
         <span className={styles.label}>{descriptionLabel}</span>
         <textarea
           className={[styles.input, styles.textarea].join(' ')}

@@ -12,6 +12,9 @@ import {
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiConflictResponse,
+  ApiCreatedResponse,
+  ApiForbiddenResponse,
   ApiHeader,
   ApiOkResponse,
   ApiOperation,
@@ -30,7 +33,9 @@ import {
   MesAuthResponseDto,
   MesMeResponseDto,
   MesRoleResponseDto,
+  MesUserResponseDto,
 } from './dto/mes-auth-response.dto';
+import { MesCreateUserDto } from './dto/mes-create-user.dto';
 import { MesLoginDto } from './dto/mes-login.dto';
 
 type MesRequestUser = MesJwtPayload & { jti?: string };
@@ -83,6 +88,20 @@ export class MesAuthController {
   @Get('mes/users/:userId/role')
   getRole(@Param('userId') userId: string, @Req() req: Request & { user: MesRequestUser }) {
     return this.mesAuthService.getRole(req.user.sub, userId);
+  }
+
+  @Public()
+  @UseGuards(MesJwtGuard, MesRolesGuard)
+  @Roles(OperationalRole.OWNER)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Create an operational user (OWNER only)' })
+  @ApiCreatedResponse({ type: MesUserResponseDto })
+  @ApiConflictResponse({ description: 'Cédula already registered for this tenant' })
+  @ApiForbiddenResponse({ description: 'Insufficient role or inactive requester' })
+  @Post('mes/users')
+  @HttpCode(HttpStatus.CREATED)
+  createUser(@Body() dto: MesCreateUserDto, @Req() req: Request & { user: MesRequestUser }) {
+    return this.mesAuthService.createUser(req.user.sub, dto);
   }
 
   private resolveClientIp(req: Request): string {

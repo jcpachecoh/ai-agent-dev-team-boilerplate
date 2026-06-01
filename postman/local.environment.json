@@ -11,10 +11,10 @@
     },
     {
       "key": "email",
-      "value": "test@restopsiq.dev",
+      "value": "mes-owner@palos-de-lena.dev",
       "type": "default",
       "enabled": true,
-      "description": "Email of the seeded test user. Must exist in the local database before running the collection."
+      "description": "Global User email for email auth (01 Auth). Requires x-tenant-id: palos-de-lena. NOT test@restopsiq.dev (UserTestLab-only)."
     },
     {
       "key": "password",
@@ -28,14 +28,14 @@
       "value": "",
       "type": "default",
       "enabled": true,
-      "description": "TestLab JWT — set by 01 Auth / Login or collection pre-request script."
+      "description": "Global User JWT — set by 01 Auth / Login or collection pre-request script (x-tenant-id required)."
     },
     {
       "key": "refreshToken",
       "value": "",
       "type": "default",
       "enabled": true,
-      "description": "TestLab refresh token — set by 01 Auth / Login."
+      "description": "Global User refresh token — set by 01 Auth / Login."
     },
     {
       "key": "accessTokenExpiresAt",
@@ -105,14 +105,35 @@
       "value": "cccccccc-0000-0000-0000-000000000003",
       "type": "default",
       "enabled": true,
-      "description": "Seeded UserTestLab id (test@restopsiq.dev). Reference only — TestLab routes use JWT, not this header."
+      "description": "Seeded UserTestLab id (test@restopsiq.dev). TestLab-only — NOT used by /api/auth/login after USR-01."
     },
     {
-      "key": "authEmail",
+      "key": "testLabEmail",
       "value": "test@restopsiq.dev",
       "type": "default",
       "enabled": true,
-      "description": "RES-226 — Email used for forgot-password and resend-verification requests. Must match a user that exists in the local database."
+      "description": "UserTestLab email — TestLab module reference only; email auth uses mes-owner@palos-de-lena.dev"
+    },
+    {
+      "key": "globalOwnerUserId",
+      "value": "11111111-0000-0000-0000-000000000004",
+      "type": "default",
+      "enabled": true,
+      "description": "Seeded global User id linked to MES OWNER (USR-01)"
+    },
+    {
+      "key": "globalOperatorUserId",
+      "value": "11111111-0000-0000-0000-000000000005",
+      "type": "default",
+      "enabled": true,
+      "description": "Seeded global User id linked to MES OPERATOR (USR-01)"
+    },
+    {
+      "key": "authEmail",
+      "value": "mes-owner@palos-de-lena.dev",
+      "type": "default",
+      "enabled": true,
+      "description": "RES-226 — Global User email for forgot-password and resend-verification (requires x-tenant-id: palos-de-lena)"
     },
     {
       "key": "resetToken",
@@ -169,6 +190,27 @@
       "type": "secret",
       "enabled": true,
       "description": "Synthetic PIN for seeded MES OPERATOR (local/dev only)"
+    },
+    {
+      "key": "mesNewUserCedula",
+      "value": "99123456",
+      "type": "default",
+      "enabled": true,
+      "description": "Synthetic cédula for POST /api/mes/users — overwritten per run by Create User pre-request script"
+    },
+    {
+      "key": "mesNewUserPin",
+      "value": "5678",
+      "type": "secret",
+      "enabled": true,
+      "description": "Synthetic PIN for POST /api/mes/users (local/dev only)"
+    },
+    {
+      "key": "mesCreatedUserId",
+      "value": "",
+      "type": "default",
+      "enabled": true,
+      "description": "Operational user id returned by Create User — set by test script"
     },
     {
       "key": "mesAccessToken",

@@ -53,7 +53,7 @@ export class AuthEmailService implements IAuthEmailService, OnModuleInit, OnModu
       `[reset-password] Request received for email="${userEmail}" tenant="${tenant.tenantId}"`,
     );
 
-    const user = await this.authRepository.findByEmail(userEmail);
+    const user = await this.authRepository.findByTenantAndEmail(tenant.tenantId, userEmail);
     if (!user) {
       this.logger.log(
         `[reset-password] User not found for email="${userEmail}" — silently skipping (anti-enumeration)`,
@@ -91,7 +91,7 @@ export class AuthEmailService implements IAuthEmailService, OnModuleInit, OnModu
       template: {
         type: 'reset-password',
         props: {
-          userName: user.name ?? userEmail,
+          userName: user.email,
           resetUrl,
           expiresAt: expiresAtFormatted,
           ipAddress,
@@ -110,7 +110,7 @@ export class AuthEmailService implements IAuthEmailService, OnModuleInit, OnModu
   // ---------------------------------------------------------------------------
 
   async sendVerifyEmail(
-    user: { id: string; email: string; name: string },
+    user: { id: string; email: string },
     tenant: TenantContext,
   ): Promise<{ otpCode: string }> {
     this.logger.log(
@@ -118,8 +118,6 @@ export class AuthEmailService implements IAuthEmailService, OnModuleInit, OnModu
     );
 
     const otpCode = String(crypto.randomInt(100_000, 999_999));
-    // Store under SHA-256(otpCode) so the key is not guessable from context alone.
-    // Value carries enough context for future audit without exposing userId in the key.
     const otpHash = crypto.createHash('sha256').update(otpCode).digest('hex');
     const redisValue = JSON.stringify({ userId: user.id, email: user.email });
     await this.redis.set(`otp:${otpHash}`, redisValue, 'EX', OTP_TTL_SECONDS);
@@ -138,7 +136,7 @@ export class AuthEmailService implements IAuthEmailService, OnModuleInit, OnModu
       template: {
         type: 'verify-email',
         props: {
-          userName: user.name,
+          userName: user.email,
           otpCode,
           expiresInMinutes: OTP_EXPIRES_IN_MINUTES,
         },

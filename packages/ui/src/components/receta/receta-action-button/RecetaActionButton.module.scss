@@ -11,9 +11,6 @@
   justify-content: center;
   gap: var(--control-gap);
   padding: var(--control-padding-y) var(--control-padding-x);
-  border-color: receta.$receta-purple;
-  background: rgba(receta.$receta-purple, 0.12);
-  color: receta.$receta-purple;
   font-weight: $font-weight-semibold;
   font-size: var(--control-font-size);
   cursor: pointer;
@@ -23,7 +20,7 @@
     transform 120ms ease;
 
   &:hover:not(:disabled) {
-    background: rgba(receta.$receta-purple, 0.18);
+    filter: brightness(1.06);
   }
 
   &:active:not(:disabled) {
@@ -51,4 +48,50 @@
 
 .label {
   white-space: nowrap;
+}
+
+.loading .icon svg {
+  animation: receta-action-spin 0.8s linear infinite;
+}
+
+@keyframes receta-action-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.accent--purple.variant--soft {
+  border-color: receta.$receta-purple;
+  background: rgba(receta.$receta-purple, 0.12);
+  color: receta.$receta-purple;
+}
+
+.accent--purple.variant--solid {
+  border-color: receta.$receta-purple;
+  background: receta.$receta-purple;
+  color: $color-white;
+}
+
+.accent--teal.variant--soft {
+  border-color: receta.$receta-teal;
+  background: rgba(receta.$receta-teal, 0.12);
+  color: receta.$receta-teal;
+}
+
+.accent--teal.variant--solid {
+  border-color: receta.$receta-teal;
+  background: receta.$receta-teal;
+  color: $color-black;
+}
+
+.accent--gold.variant--soft {
+  border-color: receta.$receta-gold;
+  background: rgba(receta.$receta-gold, 0.12);
+  color: receta.$receta-gold;
+}
+
+.accent--gold.variant--solid {
+  border-color: receta.$receta-gold;
+  background: receta.$receta-gold;
+  color: $color-black;
 }

@@ -1,0 +1,41 @@
+@use '@/styles/tokens' as t;
+
+.shell {
+  display: flex;
+  min-height: 100dvh;
+  background: t.$color-bg-primary;
+  color: t.$color-text-primary;
+}
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: t.$color-overlay;
+  z-index: 20;
+  animation: fadeIn t.$layout-transition ease;
+}
+
+.mainColumn {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 100dvh;
+}
+
+.content {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  background: t.$color-bg-primary;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}

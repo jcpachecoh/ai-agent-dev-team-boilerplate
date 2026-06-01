@@ -1,7 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import type { OperationalUser } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
-import type { IMesAuthRepository } from '../interfaces/mes-auth.interfaces';
+import type {
+  CreateOperationalUserData,
+  IMesAuthRepository,
+} from '../interfaces/mes-auth.interfaces';
 
 @Injectable()
 export class MesAuthRepository implements IMesAuthRepository {
@@ -15,6 +18,21 @@ export class MesAuthRepository implements IMesAuthRepository {
 
   findById(id: string): Promise<OperationalUser | null> {
     return this.prisma.operationalUser.findUnique({ where: { id } });
+  }
+
+  createUser(data: CreateOperationalUserData): Promise<OperationalUser> {
+    return this.prisma.operationalUser.create({
+      data: {
+        tenantId: data.tenantId,
+        cedulaHash: data.cedulaHash,
+        pinHash: data.pinHash,
+        role: data.role,
+        sedeId: data.sedeId,
+        isActive: true,
+        loginAttempts: 0,
+        lockedUntil: null,
+      },
+    });
   }
 
   async incrementLoginAttempts(id: string): Promise<void> {

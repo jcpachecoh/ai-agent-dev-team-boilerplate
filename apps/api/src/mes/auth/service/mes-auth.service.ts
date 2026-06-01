@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   HttpException,
   HttpStatus,
@@ -12,9 +13,12 @@ import type { OperationalUser } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { randomUUID } from 'crypto';
+import { OperationalRole } from '@prisma/client';
 import type {
   IMesAuthService,
   MesAuthTokens,
+  MesCreateUserInput,
+  MesCreatedUserResponse,
   MesJwtPayload,
   MesLoginInput,
   MesMeResponse,
@@ -120,6 +124,60 @@ export class MesAuthService implements IMesAuthService {
     }
 
     return { role: target.role };
+  }
+
+  async createUser(
+    requesterUserId: string,
+    dto: MesCreateUserInput,
+  ): Promise<MesCreatedUserResponse> {
+    const requester = await this.mesAuthRepository.findById(requesterUserId);
+    if (!requester) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (!requester.isActive) {
+      throw new ForbiddenException('Access denied');
+    }
+
+    this.assertOperatorSede(dto.role, dto.sedeId);
+
+    const cedulaHash = this.hashCedula(dto.cedula);
+    const existing = await this.mesAuthRepository.findByCedulaHash(requester.tenantId, cedulaHash);
+    if (existing) {
+      throw new ConflictException('La cédula ya está registrada en este tenant');
+    }
+
+    const pinHash = await bcrypt.hash(dto.pin, SALT_ROUNDS);
+    const sedeId = dto.sedeId?.trim() ?? null;
+
+    const user = await this.mesAuthRepository.createUser({
+      tenantId: requester.tenantId,
+      cedulaHash,
+      pinHash,
+      role: dto.role,
+      sedeId,
+    });
+
+    return {
+      id: user.id,
+      cedula: this.maskCedula(dto.cedula),
+      role: user.role,
+      tenantId: user.tenantId,
+      sedeId: user.sedeId,
+    };
+  }
+
+  private assertOperatorSede(role: OperationalRole, sedeId?: string): void {
+    if (role === OperationalRole.OPERATOR && !sedeId?.trim()) {
+      throw new BadRequestException('sedeId is required for OPERATOR role');
+    }
+  }
+
+  private maskCedula(cedula: string): string {
+    if (cedula.length <= 4) {
+      return '****';
+    }
+    return `${'*'.repeat(cedula.length - 4)}${cedula.slice(-4)}`;
   }
 
   private assertCredentialsFormat(cedula: string, pin: string): void {
