@@ -6,6 +6,7 @@ import { MesJwtGuard } from '../../auth/guards/mes-jwt.guard';
 import { MesRolesGuard } from '../../auth/guards/mes-roles.guard';
 import type { MesJwtPayload } from '../../auth/interfaces/mes-auth.interfaces';
 import { PlantController } from '../controller/plant.controller';
+import { IncidentService } from '../service/incident.service';
 import { PhaseChainService } from '../service/phase-chain.service';
 import { PlantService } from '../service/plant.service';
 
@@ -48,6 +49,12 @@ const phaseChainServiceMock = {
   qaApproveExecution: jest.fn(),
 };
 
+const incidentServiceMock = {
+  createIncident: jest.fn(),
+  listIncidents: jest.fn(),
+  resolveIncident: jest.fn(),
+};
+
 describe('PlantController', () => {
   let controller: PlantController;
 
@@ -57,6 +64,7 @@ describe('PlantController', () => {
       providers: [
         { provide: PlantService, useValue: serviceMock },
         { provide: PhaseChainService, useValue: phaseChainServiceMock },
+        { provide: IncidentService, useValue: incidentServiceMock },
       ],
     })
       .overrideGuard(MesJwtGuard)
@@ -338,6 +346,77 @@ describe('PlantController', () => {
 
     it('requires supervisor roles via Roles decorator', () => {
       const roles = Reflect.getMetadata(MES_ROLES_KEY, controller.qaApproveExecution);
+
+      expect(roles).toEqual(
+        expect.arrayContaining([
+          OperationalRole.SUPERVISOR,
+          OperationalRole.MANAGER,
+          OperationalRole.OWNER,
+        ]),
+      );
+    });
+  });
+
+  describe('incidents', () => {
+    it('createIncident passes tenantId and reporter from JWT', async () => {
+      const dto = {
+        workStationId: 'ws-1',
+        type: 'QUALITY',
+        severity: 'WARNING',
+        description: 'Incident report',
+      };
+      incidentServiceMock.createIncident.mockResolvedValue({ id: 'incident-1' });
+
+      await controller.createIncident(buildReq(), dto as never);
+
+      expect(incidentServiceMock.createIncident).toHaveBeenCalledWith(
+        tenantId,
+        mesUser.sub,
+        expect.objectContaining({
+          workStationId: 'ws-1',
+          description: 'Incident report',
+        }),
+      );
+    });
+
+    it('listIncidents passes tenant filters to service', async () => {
+      incidentServiceMock.listIncidents.mockResolvedValue([]);
+
+      await controller.listIncidents(
+        buildReq(),
+        { workStationId: 'ws-1', resolved: false } as never,
+        '25',
+        '10',
+      );
+
+      expect(incidentServiceMock.listIncidents).toHaveBeenCalledWith(
+        tenantId,
+        {
+          orderId: undefined,
+          workStationId: 'ws-1',
+          type: undefined,
+          severity: undefined,
+          resolved: false,
+        },
+        { limit: 25, offset: 10 },
+      );
+    });
+
+    it('resolveIncident passes tenantId and resolver id', async () => {
+      incidentServiceMock.resolveIncident.mockResolvedValue({ id: 'incident-1' });
+
+      await controller.resolveIncident(buildReq(), 'incident-1', { resolution: 'Fixed' });
+
+      expect(incidentServiceMock.resolveIncident).toHaveBeenCalledWith(
+        tenantId,
+        'incident-1',
+        mesUser.sub,
+        { resolution: 'Fixed' },
+      );
+    });
+
+    it('requires supervisor roles for listIncidents', () => {
+      const roles = Reflect.getMetadata(MES_ROLES_KEY, controller.listIncidents);
 
       expect(roles).toEqual(
         expect.arrayContaining([

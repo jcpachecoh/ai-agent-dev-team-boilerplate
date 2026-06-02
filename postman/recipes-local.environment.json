@@ -196,7 +196,21 @@
       "value": "",
       "type": "default",
       "enabled": true,
-      "description": "MES JWT access token — set by MES Auth / Login Owner"
+      "description": "MES JWT access token — set by MES Auth / Login Owner (alias of mesTokenSupervisor)"
+    },
+    {
+      "key": "mesTokenSupervisor",
+      "value": "",
+      "type": "default",
+      "enabled": true,
+      "description": "MES JWT for supervisor+ (OWNER in seed) — set by MES Auth / Login Owner"
+    },
+    {
+      "key": "mesTokenOperator",
+      "value": "",
+      "type": "default",
+      "enabled": true,
+      "description": "MES JWT for OPERATOR — set by MES Auth / Login Operator"
     },
     {
       "key": "mesRefreshToken",
@@ -231,7 +245,21 @@
       "value": "",
       "type": "default",
       "enabled": true,
-      "description": "MES plant — captured from POST /api/plant/workstations"
+      "description": "MES plant — captured from POST /api/plant/workstations (legacy alias)"
+    },
+    {
+      "key": "workStationId",
+      "value": "",
+      "type": "default",
+      "enabled": true,
+      "description": "MES plant work station id — synced from workstationId captures; used by MES-08 incidents"
+    },
+    {
+      "key": "incidentId",
+      "value": "",
+      "type": "default",
+      "enabled": true,
+      "description": "MES-08 — captured from POST /api/plant/incidents"
     },
     {
       "key": "recipeId",

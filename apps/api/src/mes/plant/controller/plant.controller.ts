@@ -40,6 +40,8 @@ import type {
   CreateOrderInput,
   CreatePhaseInputInput,
   CreateRecipeWithPhasesInput,
+  IncidentResponse,
+  ListIncidentsFilters,
   ListOrdersFilters,
   OrderDetailResponse,
   OrderListItemResponse,
@@ -47,17 +49,22 @@ import type {
   UpdateRecipeInput,
 } from '../interfaces/plant.interfaces';
 import { PhaseChainService } from '../service/phase-chain.service';
+import { IncidentService } from '../service/incident.service';
 import { PlantService } from '../service/plant.service';
 import { CancelOrderDto } from './dto/cancel-order.dto';
+import { CreateIncidentDto } from './dto/create-incident.dto';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { CreatePhaseInputDto } from './dto/create-phase-input.dto';
 import { CreateRecipeDto } from './dto/create-recipe.dto';
 import { CreateWorkstationDto } from './dto/create-workstation.dto';
+import { IncidentResponseDto } from './dto/incident.response';
+import { ListIncidentsQueryDto } from './dto/list-incidents-query.dto';
 import { ListOrdersQueryDto } from './dto/list-orders-query.dto';
 import { OrderDetailResponseDto, OrderListItemResponseDto } from './dto/order-detail.response';
 import { PauseOrderDto } from './dto/pause-order.dto';
 import { QaApproveDto } from './dto/qa-approve.dto';
 import { ReorderPhaseItemDto } from './dto/reorder-phases.dto';
+import { ResolveIncidentDto } from './dto/resolve-incident.dto';
 import { RecipeDetailResponseDto } from './dto/recipe-detail.response';
 import { UpdateRecipeDto } from './dto/update-recipe.dto';
 import { UpdateWorkstationDto } from './dto/update-workstation.dto';
@@ -79,6 +86,7 @@ export class PlantController {
   constructor(
     private readonly plantService: PlantService,
     private readonly phaseChainService: PhaseChainService,
+    private readonly incidentService: IncidentService,
   ) {}
 
   // ── Workstations ─────────────────────────────────────────────────────────────
@@ -313,6 +321,62 @@ export class PlantController {
     return this.phaseChainService.qaApproveExecution(req.user.tenantId, id, req.user.sub, dto);
   }
 
+  // ── Incidents ────────────────────────────────────────────────────────────────
+
+  @ApiOperation({ summary: 'Report a manual production incident' })
+  @ApiCreatedResponse({ type: IncidentResponseDto })
+  @Post('incidents')
+  @HttpCode(HttpStatus.CREATED)
+  createIncident(
+    @Req() req: MesRequest,
+    @Body() dto: CreateIncidentDto,
+  ): Promise<IncidentResponse> {
+    return this.incidentService.createIncident(req.user.tenantId, req.user.sub, {
+      workStationId: dto.workStationId,
+      executionId: dto.executionId ?? null,
+      orderId: dto.orderId ?? null,
+      type: dto.type,
+      severity: dto.severity,
+      description: dto.description,
+      photoUrl: dto.photoUrl ?? null,
+    });
+  }
+
+  @ApiOperation({ summary: 'List production incidents (supervisor+)' })
+  @ApiOkResponse({ type: [IncidentResponseDto] })
+  @Get('incidents')
+  @UseGuards(MesJwtGuard, MesRolesGuard)
+  @Roles(...SUPERVISOR_ROLES)
+  listIncidents(
+    @Req() req: MesRequest,
+    @Query() query: ListIncidentsQueryDto,
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string,
+  ): Promise<IncidentResponse[]> {
+    return this.incidentService.listIncidents(
+      req.user.tenantId,
+      this.toListIncidentsFilters(query),
+      {
+        limit: limit !== undefined ? Number(limit) : undefined,
+        offset: offset !== undefined ? Number(offset) : undefined,
+      },
+    );
+  }
+
+  @ApiOperation({ summary: 'Resolve a production incident (supervisor+)' })
+  @ApiParam({ name: 'id', description: 'Incident ID' })
+  @ApiOkResponse({ type: IncidentResponseDto })
+  @Patch('incidents/:id/resolve')
+  @UseGuards(MesJwtGuard, MesRolesGuard)
+  @Roles(...SUPERVISOR_ROLES)
+  resolveIncident(
+    @Req() req: MesRequest,
+    @Param('id') id: string,
+    @Body() dto: ResolveIncidentDto,
+  ): Promise<IncidentResponse> {
+    return this.incidentService.resolveIncident(req.user.tenantId, id, req.user.sub, dto);
+  }
+
   // ── DTO mappers (decimal strings → Prisma Decimal) ───────────────────────────
 
   private toCreateRecipeInput(dto: CreateRecipeDto): CreateRecipeWithPhasesInput {
@@ -383,6 +447,16 @@ export class PlantController {
       priority: query.priority,
       plannedStartFrom: query.plannedStartFrom ? new Date(query.plannedStartFrom) : undefined,
       plannedStartTo: query.plannedStartTo ? new Date(query.plannedStartTo) : undefined,
+    };
+  }
+
+  private toListIncidentsFilters(query: ListIncidentsQueryDto): ListIncidentsFilters {
+    return {
+      orderId: query.orderId,
+      workStationId: query.workStationId,
+      type: query.type,
+      severity: query.severity,
+      resolved: query.resolved,
     };
   }
 }
