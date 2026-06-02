@@ -1,4 +1,5 @@
 import { ExecutionContext, CallHandler } from '@nestjs/common';
+import { AuditAction } from '@prisma/client';
 import { of } from 'rxjs';
 import { AuditInterceptor } from '../audit.interceptor';
 import { AuditService } from '../service/audit.service';
@@ -13,11 +14,13 @@ function buildContext(
     xForwardedFor?: string | string[];
     userAgent?: string | string[];
     remoteAddress?: string;
+    tenantId?: string;
   } = {},
 ): ExecutionContext {
   const headers: Record<string, string | string[]> = {};
   if (options.xForwardedFor !== undefined) headers['x-forwarded-for'] = options.xForwardedFor;
   if (options.userAgent !== undefined) headers['user-agent'] = options.userAgent;
+  if (options.tenantId !== undefined) headers['x-tenant-id'] = options.tenantId;
   const req = {
     method,
     path,
@@ -61,12 +64,18 @@ describe('AuditInterceptor', () => {
       user: { sub: 'user-1' },
       xForwardedFor: '10.0.0.1',
       userAgent: 'jest',
+      tenantId: 't-1',
     });
     await new Promise<void>((resolve) =>
       interceptor.intercept(context, buildHandler({ id: 'proj-1' })).subscribe(async () => {
         await waitForLog();
         expect(auditServiceMock.log).toHaveBeenCalledWith(
-          expect.objectContaining({ action: 'CREATE', entityId: 'proj-1', userId: 'user-1' }),
+          expect.objectContaining({
+            action: AuditAction.CREATE,
+            entityId: 'proj-1',
+            actorUserId: 'user-1',
+            tenantId: 't-1',
+          }),
         );
         resolve();
       }),
@@ -82,7 +91,7 @@ describe('AuditInterceptor', () => {
       interceptor.intercept(context, buildHandler({ id: 'proj-1' })).subscribe(async () => {
         await waitForLog();
         expect(auditServiceMock.log).toHaveBeenCalledWith(
-          expect.objectContaining({ action: 'UPDATE' }),
+          expect.objectContaining({ action: AuditAction.UPDATE }),
         );
         resolve();
       }),
@@ -98,7 +107,7 @@ describe('AuditInterceptor', () => {
       interceptor.intercept(context, buildHandler({ id: 'proj-1' })).subscribe(async () => {
         await waitForLog();
         expect(auditServiceMock.log).toHaveBeenCalledWith(
-          expect.objectContaining({ action: 'UPDATE' }),
+          expect.objectContaining({ action: AuditAction.UPDATE }),
         );
         resolve();
       }),
@@ -114,7 +123,7 @@ describe('AuditInterceptor', () => {
       interceptor.intercept(context, buildHandler({ id: 'proj-1' })).subscribe(async () => {
         await waitForLog();
         expect(auditServiceMock.log).toHaveBeenCalledWith(
-          expect.objectContaining({ action: 'DELETE' }),
+          expect.objectContaining({ action: AuditAction.DELETE }),
         );
         resolve();
       }),
@@ -206,14 +215,14 @@ describe('AuditInterceptor', () => {
       interceptor.intercept(context, buildHandler({ id: 'x' })).subscribe(async () => {
         await waitForLog();
         expect(auditServiceMock.log).toHaveBeenCalledWith(
-          expect.objectContaining({ entity: 'unknown' }),
+          expect.objectContaining({ entityType: 'unknown' }),
         );
         resolve();
       }),
     );
   });
 
-  it('logs without userId when user is not attached to request', async () => {
+  it('logs without actorUserId when user is not attached to request', async () => {
     const context = buildContext('POST', '/api/supply-items', {
       xForwardedFor: '10.0.0.1',
       userAgent: 'jest',
@@ -222,7 +231,45 @@ describe('AuditInterceptor', () => {
       interceptor.intercept(context, buildHandler({ id: 'proj-1' })).subscribe(async () => {
         await waitForLog();
         expect(auditServiceMock.log).toHaveBeenCalledWith(
-          expect.objectContaining({ userId: undefined }),
+          expect.objectContaining({ actorUserId: undefined }),
+        );
+        resolve();
+      }),
+    );
+  });
+
+  it('uses first segment after /api/ as entityType and extracts entityId from URL if missing in response', async () => {
+    const context = buildContext('PATCH', '/api/supply-items/item-123', {
+      xForwardedFor: '10.0.0.1',
+      userAgent: 'jest',
+    });
+    await new Promise<void>((resolve) =>
+      interceptor.intercept(context, buildHandler({ success: true })).subscribe(async () => {
+        await waitForLog();
+        expect(auditServiceMock.log).toHaveBeenCalledWith(
+          expect.objectContaining({
+            entityType: 'supply-items',
+            entityId: 'item-123',
+          }),
+        );
+        resolve();
+      }),
+    );
+  });
+
+  it('prefers entityId from response body over URL', async () => {
+    const context = buildContext('POST', '/api/supply-items/url-id', {
+      xForwardedFor: '10.0.0.1',
+      userAgent: 'jest',
+    });
+    await new Promise<void>((resolve) =>
+      interceptor.intercept(context, buildHandler({ id: 'body-id' })).subscribe(async () => {
+        await waitForLog();
+        expect(auditServiceMock.log).toHaveBeenCalledWith(
+          expect.objectContaining({
+            entityType: 'supply-items',
+            entityId: 'body-id',
+          }),
         );
         resolve();
       }),

@@ -52,8 +52,13 @@ export interface MesMeResponse {
 }
 
 export interface IMesAuthService {
-  login(dto: MesLoginInput, ipAddress: string, tenantId: string): Promise<MesAuthTokens>;
-  logout(userId: string, jti?: string): Promise<void>;
+  login(
+    dto: MesLoginInput,
+    ipAddress: string,
+    tenantId: string,
+    userAgent?: string,
+  ): Promise<MesAuthTokens>;
+  logout(userId: string, jti?: string, ipAddress?: string, userAgent?: string): Promise<void>;
   me(userId: string): Promise<MesMeResponse>;
   getRole(requesterUserId: string, targetUserId: string): Promise<{ role: OperationalRole }>;
   createUser(requesterUserId: string, dto: MesCreateUserInput): Promise<MesCreatedUserResponse>;

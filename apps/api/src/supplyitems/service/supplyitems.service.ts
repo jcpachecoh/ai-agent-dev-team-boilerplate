@@ -4,10 +4,12 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
+import { AuditAction } from '@prisma/client';
 import type { SupplyItem, SupplyItemPriceHistory } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 import { SupplyItemsRepository } from '../repository/supplyitems.repository';
 import { LockService } from '../../lock/service/lock.service';
+import { AuditService } from '../../audit/service/audit.service';
 import type {
   ISupplyitemsService,
   SupplierWithProductInfo,
@@ -22,6 +24,7 @@ export class SupplyItemsService implements ISupplyitemsService {
   constructor(
     private readonly supplyItemsRepository: SupplyItemsRepository,
     private readonly lockService: LockService,
+    private readonly auditService: AuditService,
   ) {}
 
   findAll(tenantId: string): Promise<SupplyItem[]> {
@@ -36,25 +39,68 @@ export class SupplyItemsService implements ISupplyitemsService {
     return item;
   }
 
-  async create(tenantId: string, dto: CreateSupplyItemDto): Promise<SupplyItem> {
+  async create(
+    tenantId: string,
+    dto: CreateSupplyItemDto,
+    actorUserId?: string,
+  ): Promise<SupplyItem> {
     await this.validateBusinessRules(tenantId, dto);
 
-    return this.supplyItemsRepository.create({
+    const item = await this.supplyItemsRepository.create({
       ...dto,
       tenantId,
     });
+
+    void this.auditService.log({
+      tenantId,
+      action: AuditAction.CREATE,
+      entityType: 'SupplyItem',
+      entityId: item.id,
+      actorUserId,
+      newValue: item as unknown as Record<string, unknown>,
+    });
+
+    return item;
   }
 
-  async update(tenantId: string, id: string, dto: UpdateSupplyItemDto): Promise<SupplyItem> {
-    await this.findOne(tenantId, id);
+  async update(
+    tenantId: string,
+    id: string,
+    dto: UpdateSupplyItemDto,
+    actorUserId?: string,
+  ): Promise<SupplyItem> {
+    const oldValue = await this.findOne(tenantId, id);
     await this.validateBusinessRules(tenantId, dto, id);
 
-    return this.supplyItemsRepository.update(tenantId, id, dto);
+    const newValue = await this.supplyItemsRepository.update(tenantId, id, dto);
+
+    void this.auditService.log({
+      tenantId,
+      action: AuditAction.UPDATE,
+      entityType: 'SupplyItem',
+      entityId: id,
+      actorUserId,
+      oldValue: oldValue as unknown as Record<string, unknown>,
+      newValue: newValue as unknown as Record<string, unknown>,
+    });
+
+    return newValue;
   }
 
-  async remove(tenantId: string, id: string): Promise<SupplyItem> {
-    await this.findOne(tenantId, id);
-    return this.supplyItemsRepository.delete(tenantId, id);
+  async remove(tenantId: string, id: string, actorUserId?: string): Promise<SupplyItem> {
+    const oldValue = await this.findOne(tenantId, id);
+    const item = await this.supplyItemsRepository.delete(tenantId, id);
+
+    void this.auditService.log({
+      tenantId,
+      action: AuditAction.DELETE,
+      entityType: 'SupplyItem',
+      entityId: id,
+      actorUserId,
+      oldValue: oldValue as unknown as Record<string, unknown>,
+    });
+
+    return item;
   }
 
   async findSuppliers(tenantId: string, id: string): Promise<SupplierWithProductInfo[]> {

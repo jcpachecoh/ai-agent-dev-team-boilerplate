@@ -15,6 +15,7 @@ import { AuthEmailService } from '../service/auth-email.service';
 import { AuthRepository } from '../repository/auth.repository';
 import { AuthEmailRepository } from '../repository/auth-email.repository';
 import { PrismaService } from '../../prisma/prisma.service';
+import { AuditService } from '../../audit/service/audit.service';
 import { EmailService } from '@restopsiq/email';
 
 const TENANT_ID = 'palos-de-lena';
@@ -74,6 +75,10 @@ const emailServiceMock = {
   send: jest.fn(),
 };
 
+const auditServiceMock = {
+  logLogin: jest.fn(),
+};
+
 const jwtServiceMock = {
   signAsync: jest.fn().mockResolvedValue('mock-token'),
   verifyAsync: jest.fn(),
@@ -98,6 +103,7 @@ describe('Auth Email Integration — G4 wiring (AuthController → AuthEmailServ
         AuthEmailRepository,
         { provide: PrismaService, useValue: prismaMock },
         { provide: EmailService, useValue: emailServiceMock },
+        { provide: AuditService, useValue: auditServiceMock },
         { provide: JwtService, useValue: jwtServiceMock },
       ],
     }).compile();
@@ -259,9 +265,11 @@ describe('Auth Email Integration — G4 wiring (AuthController → AuthEmailServ
     (bcrypt.hash as jest.Mock).mockResolvedValue('hashed-refresh');
     jwtServiceMock.signAsync.mockResolvedValueOnce('access').mockResolvedValueOnce('refresh');
 
+    const req = { headers: {}, socket: { remoteAddress: '127.0.0.1' } } as never;
     const result = await controller.login(
       { email: 'alice@example.com', password: 'TestPass123!' },
       TENANT_ID,
+      req,
     );
 
     expect(prismaMock.user.findUnique).toHaveBeenCalledWith(
@@ -272,5 +280,6 @@ describe('Auth Email Integration — G4 wiring (AuthController → AuthEmailServ
     );
     expect(result).toEqual({ accessToken: 'access', refreshToken: 'refresh' });
     expect(result).not.toHaveProperty('passwordHash');
+    expect(auditServiceMock.logLogin).toHaveBeenCalled();
   });
 });

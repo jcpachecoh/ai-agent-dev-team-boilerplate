@@ -9,6 +9,7 @@ import {
   Headers,
   HttpCode,
   HttpStatus,
+  Req,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -17,7 +18,9 @@ import {
   ApiResponse,
   ApiCreatedResponse,
   ApiHeader,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
+import type { Request } from 'express';
 import type { SupplyItem, SupplyItemPriceHistory } from '@prisma/client';
 import { SupplyItemsService } from '../service/supplyitems.service';
 import { CreateSupplyItemDto } from './dto/create-supplyitem.dto';
@@ -25,6 +28,7 @@ import { UpdateSupplyItemDto } from './dto/update-supplyitem.dto';
 import type { SupplierWithProductInfo } from '../interfaces/supplyitems.interfaces';
 
 @ApiTags('supplyitems')
+@ApiBearerAuth()
 @ApiHeader({ name: 'x-tenant-id', required: true, description: 'Tenant identifier' })
 @Controller('supply-items')
 export class SupplyItemsController {
@@ -54,8 +58,9 @@ export class SupplyItemsController {
   create(
     @Body() dto: CreateSupplyItemDto,
     @Headers('x-tenant-id') tenantId: string,
+    @Req() req: Request & { user: { sub: string } },
   ): Promise<SupplyItem> {
-    return this.supplyItemsService.create(tenantId, dto);
+    return this.supplyItemsService.create(tenantId, dto, req.user.sub);
   }
 
   @ApiOperation({ summary: 'Update an existing supply item' })
@@ -67,8 +72,9 @@ export class SupplyItemsController {
     @Param('id') id: string,
     @Body() dto: UpdateSupplyItemDto,
     @Headers('x-tenant-id') tenantId: string,
+    @Req() req: Request & { user: { sub: string } },
   ): Promise<SupplyItem> {
-    return this.supplyItemsService.update(tenantId, id, dto);
+    return this.supplyItemsService.update(tenantId, id, dto, req.user.sub);
   }
 
   @ApiOperation({ summary: 'Deactivate/Delete a supply item' })
@@ -76,8 +82,12 @@ export class SupplyItemsController {
   @ApiResponse({ status: 200, description: 'Supply item deleted' })
   @ApiResponse({ status: 404, description: 'Supply item not found' })
   @Delete(':id')
-  remove(@Param('id') id: string, @Headers('x-tenant-id') tenantId: string): Promise<SupplyItem> {
-    return this.supplyItemsService.remove(tenantId, id);
+  remove(
+    @Param('id') id: string,
+    @Headers('x-tenant-id') tenantId: string,
+    @Req() req: Request & { user: { sub: string } },
+  ): Promise<SupplyItem> {
+    return this.supplyItemsService.remove(tenantId, id, req.user.sub);
   }
 
   @ApiOperation({ summary: 'Get suppliers for a supply item' })

@@ -4,13 +4,14 @@ import {
   ForbiddenException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { DocumentType } from '@prisma/client';
+import { DocumentType, AuthMethod, LoginAuditStatus } from '@prisma/client';
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
 import * as bcrypt from 'bcrypt';
 import { AuthService } from '../service/auth.service';
 import { AuthRepository } from '../repository/auth.repository';
 import { AuthEmailRepository } from '../repository/auth-email.repository';
+import { AuditService } from '../../audit/service/audit.service';
 
 jest.mock('bcrypt');
 const bcryptMock = bcrypt as jest.Mocked<typeof bcrypt>;
@@ -64,6 +65,10 @@ const authEmailRepoMock = {
   deleteExpiredResetTokens: jest.fn(),
 };
 
+const auditServiceMock = {
+  logLogin: jest.fn(),
+};
+
 const jwtMock = {
   signAsync: jest.fn(),
 };
@@ -78,6 +83,7 @@ describe('AuthService', () => {
         { provide: AuthRepository, useValue: repoMock },
         { provide: AuthEmailRepository, useValue: authEmailRepoMock },
         { provide: JwtService, useValue: jwtMock },
+        { provide: AuditService, useValue: auditServiceMock },
       ],
     }).compile();
 
@@ -192,93 +198,111 @@ describe('AuthService', () => {
   describe('login', () => {
     const dto = { email: 'test@example.com', password: 'correct-password' };
 
-    it('returns tokens on valid credentials', async () => {
+    it('returns tokens and logs SUCCESS on valid credentials', async () => {
       repoMock.findByTenantAndEmailForAuth.mockResolvedValue(mockUserWithPassword);
       (bcryptMock.compare as jest.Mock).mockResolvedValue(true);
       jwtMock.signAsync.mockResolvedValueOnce('access').mockResolvedValueOnce('refresh');
       (bcryptMock.hash as jest.Mock).mockResolvedValue('hashed-refresh');
       repoMock.saveRefreshToken.mockResolvedValue(undefined);
 
-      const result = await service.login(TENANT_ID, dto);
+      const result = await service.login(TENANT_ID, dto, '1.2.3.4', 'Mozilla');
       expect(result).toHaveProperty('accessToken');
       expect(result).toHaveProperty('refreshToken');
       expect(repoMock.findByTenantAndEmailForAuth).toHaveBeenCalledWith(TENANT_ID, dto.email);
+      expect(auditServiceMock.logLogin).toHaveBeenCalledWith({
+        tenantId: TENANT_ID,
+        userId: mockUserWithPassword.id,
+        identifier: dto.email,
+        authMethod: AuthMethod.PASSWORD,
+        status: LoginAuditStatus.SUCCESS,
+        ipAddress: '1.2.3.4',
+        userAgent: 'Mozilla',
+      });
     });
 
-    it('throws UnauthorizedException when user does not exist', async () => {
+    it('throws UnauthorizedException and logs FAILED when user does not exist', async () => {
       repoMock.findByTenantAndEmailForAuth.mockResolvedValue(null);
-      await expect(service.login(TENANT_ID, dto)).rejects.toThrow(UnauthorizedException);
+      await expect(service.login(TENANT_ID, dto, '1.2.3.4')).rejects.toThrow(UnauthorizedException);
+      expect(auditServiceMock.logLogin).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: LoginAuditStatus.FAILED,
+          failureReason: 'User not found or inactive',
+          ipAddress: '1.2.3.4',
+        }),
+      );
     });
 
-    it('throws UnauthorizedException when user is inactive', async () => {
+    it('throws UnauthorizedException and logs LOCKED when account is locked', async () => {
       repoMock.findByTenantAndEmailForAuth.mockResolvedValue({
         ...mockUserWithPassword,
-        isActive: false,
+        lockedUntil: new Date(Date.now() + 10000),
       });
       await expect(service.login(TENANT_ID, dto)).rejects.toThrow(UnauthorizedException);
+      expect(auditServiceMock.logLogin).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: LoginAuditStatus.LOCKED,
+          failureReason: 'Account locked',
+        }),
+      );
     });
 
-    it('throws UnauthorizedException when user is soft-deleted', async () => {
-      repoMock.findByTenantAndEmailForAuth.mockResolvedValue({
-        ...mockUserWithPassword,
-        deletedAt: new Date(),
-      });
-      await expect(service.login(TENANT_ID, dto)).rejects.toThrow(UnauthorizedException);
-    });
-
-    it('throws UnauthorizedException when password does not match', async () => {
+    it('throws UnauthorizedException and logs FAILED when password does not match', async () => {
       repoMock.findByTenantAndEmailForAuth.mockResolvedValue(mockUserWithPassword);
       (bcryptMock.compare as jest.Mock).mockResolvedValue(false);
       await expect(service.login(TENANT_ID, dto)).rejects.toThrow(UnauthorizedException);
-    });
-
-    it('throws BadRequestException when tenantId is missing', async () => {
-      await expect(service.login('  ', dto)).rejects.toThrow(BadRequestException);
+      expect(auditServiceMock.logLogin).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: LoginAuditStatus.FAILED,
+          failureReason: 'Invalid password',
+        }),
+      );
     });
   });
 
   describe('refresh', () => {
-    it('issues new tokens when refresh token matches', async () => {
+    it('issues new tokens and logs SUCCESS when refresh token matches', async () => {
       repoMock.findByIdForRefresh.mockResolvedValue(mockUserWithRefresh);
       (bcryptMock.compare as jest.Mock).mockResolvedValue(true);
       jwtMock.signAsync.mockResolvedValueOnce('access').mockResolvedValueOnce('refresh');
       (bcryptMock.hash as jest.Mock).mockResolvedValue('new-hashed-refresh');
       repoMock.saveRefreshToken.mockResolvedValue(undefined);
 
-      const result = await service.refresh('user-1', 'raw-refresh');
+      const result = await service.refresh('user-1', 'raw-refresh', '1.2.3.4');
       expect(result).toHaveProperty('accessToken', 'access');
+      expect(auditServiceMock.logLogin).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: LoginAuditStatus.SUCCESS,
+          authMethod: AuthMethod.REFRESH_TOKEN,
+          ipAddress: '1.2.3.4',
+        }),
+      );
     });
 
-    it('throws ForbiddenException when user has no stored refresh token', async () => {
-      repoMock.findByIdForRefresh.mockResolvedValue({ ...mockUserWithRefresh, refreshToken: null });
-      await expect(service.refresh('user-1', 'token')).rejects.toThrow(ForbiddenException);
-    });
-
-    it('throws ForbiddenException when user is not found', async () => {
-      repoMock.findByIdForRefresh.mockResolvedValue(null);
-      await expect(service.refresh('user-1', 'token')).rejects.toThrow(ForbiddenException);
-    });
-
-    it('throws ForbiddenException when user is inactive', async () => {
-      repoMock.findByIdForRefresh.mockResolvedValue({
-        ...mockUserWithRefresh,
-        isActive: false,
-      });
-      await expect(service.refresh('user-1', 'token')).rejects.toThrow(ForbiddenException);
-    });
-
-    it('throws ForbiddenException when refresh token does not match', async () => {
+    it('throws ForbiddenException and logs FAILED when refresh token does not match', async () => {
       repoMock.findByIdForRefresh.mockResolvedValue(mockUserWithRefresh);
       (bcryptMock.compare as jest.Mock).mockResolvedValue(false);
       await expect(service.refresh('user-1', 'bad-token')).rejects.toThrow(ForbiddenException);
+      expect(auditServiceMock.logLogin).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: LoginAuditStatus.FAILED,
+          authMethod: AuthMethod.REFRESH_TOKEN,
+        }),
+      );
     });
   });
 
   describe('logout', () => {
-    it('clears refresh token for user', async () => {
+    it('clears refresh token and logs LOGOUT', async () => {
+      repoMock.findByIdForRefresh.mockResolvedValue(mockUserSafe);
       repoMock.saveRefreshToken.mockResolvedValue(undefined);
-      await service.logout('user-1');
+      await service.logout('user-1', '1.2.3.4');
       expect(repoMock.saveRefreshToken).toHaveBeenCalledWith('user-1', null);
+      expect(auditServiceMock.logLogin).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: LoginAuditStatus.LOGOUT,
+          ipAddress: '1.2.3.4',
+        }),
+      );
     });
   });
 

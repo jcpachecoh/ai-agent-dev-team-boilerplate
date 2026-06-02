@@ -6,11 +6,13 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { AuthMethod, LoginAuditStatus } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import type { AuthTokens, IAuthService, JwtPayload } from '../interfaces/auth.interfaces';
 import { AuthRepository } from '../repository/auth.repository';
 import { AuthEmailRepository } from '../repository/auth-email.repository';
+import { AuditService } from '../../audit/service/audit.service';
 import type { SignupDto } from '../controller/dto/signup.dto';
 import type { LoginDto } from '../controller/dto/login.dto';
 
@@ -25,6 +27,7 @@ export class AuthService implements IAuthService {
     private readonly authRepository: AuthRepository,
     private readonly authEmailRepository: AuthEmailRepository,
     private readonly jwtService: JwtService,
+    private readonly auditService: AuditService,
   ) {}
 
   async signup(tenantId: string, dto: SignupDto): Promise<AuthTokens> {
@@ -64,38 +67,136 @@ export class AuthService implements IAuthService {
     return this.issueTokens(user.id, user.email);
   }
 
-  async login(tenantId: string, dto: LoginDto): Promise<AuthTokens> {
+  async login(
+    tenantId: string,
+    dto: LoginDto,
+    ipAddress?: string,
+    userAgent?: string,
+  ): Promise<AuthTokens> {
     const resolvedTenantId = this.requireTenantId(tenantId);
 
     const user = await this.authRepository.findByTenantAndEmailForAuth(resolvedTenantId, dto.email);
+
     if (!user || !user.isActive || user.deletedAt) {
+      await this.auditService.logLogin({
+        tenantId: resolvedTenantId,
+        identifier: dto.email,
+        authMethod: AuthMethod.PASSWORD,
+        status: LoginAuditStatus.FAILED,
+        failureReason: 'User not found or inactive',
+        ipAddress,
+        userAgent,
+      });
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    if (user.lockedUntil && user.lockedUntil > new Date()) {
+      await this.auditService.logLogin({
+        tenantId: resolvedTenantId,
+        userId: user.id,
+        identifier: dto.email,
+        authMethod: AuthMethod.PASSWORD,
+        status: LoginAuditStatus.LOCKED,
+        failureReason: 'Account locked',
+        ipAddress,
+        userAgent,
+      });
       throw new UnauthorizedException('Invalid credentials');
     }
 
     const passwordMatch = await bcrypt.compare(dto.password, user.passwordHash);
     if (!passwordMatch) {
+      await this.auditService.logLogin({
+        tenantId: resolvedTenantId,
+        userId: user.id,
+        identifier: dto.email,
+        authMethod: AuthMethod.PASSWORD,
+        status: LoginAuditStatus.FAILED,
+        failureReason: 'Invalid password',
+        ipAddress,
+        userAgent,
+      });
       throw new UnauthorizedException('Invalid credentials');
     }
+
+    await this.auditService.logLogin({
+      tenantId: resolvedTenantId,
+      userId: user.id,
+      identifier: dto.email,
+      authMethod: AuthMethod.PASSWORD,
+      status: LoginAuditStatus.SUCCESS,
+      ipAddress,
+      userAgent,
+    });
 
     return this.issueTokens(user.id, user.email);
   }
 
-  async refresh(userId: string, refreshToken: string): Promise<AuthTokens> {
+  async refresh(
+    userId: string,
+    refreshToken: string,
+    ipAddress?: string,
+    userAgent?: string,
+  ): Promise<AuthTokens> {
     const user = await this.authRepository.findByIdForRefresh(userId);
+
     if (!user?.refreshToken || !user.isActive || user.deletedAt) {
+      await this.auditService.logLogin({
+        tenantId: user?.tenantId ?? 'SYSTEM',
+        userId: user?.id ?? userId,
+        identifier: user?.email ?? userId,
+        authMethod: AuthMethod.REFRESH_TOKEN,
+        status: LoginAuditStatus.FAILED,
+        failureReason: 'Invalid user or missing refresh token',
+        ipAddress,
+        userAgent,
+      });
       throw new ForbiddenException('Access denied');
     }
 
     const tokenMatch = await bcrypt.compare(refreshToken, user.refreshToken);
     if (!tokenMatch) {
+      await this.auditService.logLogin({
+        tenantId: user.tenantId,
+        userId: user.id,
+        identifier: user.email,
+        authMethod: AuthMethod.REFRESH_TOKEN,
+        status: LoginAuditStatus.FAILED,
+        failureReason: 'Invalid refresh token',
+        ipAddress,
+        userAgent,
+      });
       throw new ForbiddenException('Access denied');
     }
+
+    await this.auditService.logLogin({
+      tenantId: user.tenantId,
+      userId: user.id,
+      identifier: user.email,
+      authMethod: AuthMethod.REFRESH_TOKEN,
+      status: LoginAuditStatus.SUCCESS,
+      ipAddress,
+      userAgent,
+    });
 
     return this.issueTokens(user.id, user.email);
   }
 
-  async logout(userId: string): Promise<void> {
+  async logout(userId: string, ipAddress?: string, userAgent?: string): Promise<void> {
+    const user = await this.authRepository.findByIdForRefresh(userId);
     await this.authRepository.saveRefreshToken(userId, null);
+
+    if (user) {
+      await this.auditService.logLogin({
+        tenantId: user.tenantId,
+        userId: user.id,
+        identifier: user.email,
+        authMethod: AuthMethod.PASSWORD, // Default to PASSWORD for manual logout
+        status: LoginAuditStatus.LOGOUT,
+        ipAddress,
+        userAgent,
+      });
+    }
   }
 
   findByTenantAndEmail(tenantId: string, email: string) {

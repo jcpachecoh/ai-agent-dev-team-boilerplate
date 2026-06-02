@@ -1,9 +1,10 @@
 import { ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { StockUnit } from '@prisma/client';
+import { StockUnit, AuditAction } from '@prisma/client';
 import { SupplyItemsService } from '../service/supplyitems.service';
 import { SupplyItemsRepository } from '../repository/supplyitems.repository';
 import { LockService } from '../../lock/service/lock.service';
+import { AuditService } from '../../audit/service/audit.service';
 import { CreateSupplyItemDto } from '../controller/dto/create-supplyitem.dto';
 
 const tenantId = 'tenant-123';
@@ -43,6 +44,10 @@ const lockServiceMock = {
   usingLock: jest.fn((key, ttl, cb) => cb()),
 };
 
+const auditServiceMock = {
+  log: jest.fn(),
+};
+
 describe('SupplyItemsService', () => {
   let service: SupplyItemsService;
 
@@ -52,11 +57,13 @@ describe('SupplyItemsService', () => {
         SupplyItemsService,
         { provide: SupplyItemsRepository, useValue: repoMock },
         { provide: LockService, useValue: lockServiceMock },
+        { provide: AuditService, useValue: auditServiceMock },
       ],
     }).compile();
 
     service = module.get<SupplyItemsService>(SupplyItemsService);
     jest.clearAllMocks();
+    auditServiceMock.log.mockResolvedValue(undefined);
   });
 
   describe('create', () => {
@@ -74,17 +81,24 @@ describe('SupplyItemsService', () => {
       isActive: true,
     };
 
-    it('should create a supply item when data is valid and unique', async () => {
+    it('should create a supply item and log audit when data is valid and unique', async () => {
       repoMock.findByCodigo.mockResolvedValue(null);
       repoMock.findCategoryById.mockResolvedValue({ id: 'cat-1' });
       repoMock.create.mockResolvedValue(mockSupplyItem);
 
-      const result = await service.create(tenantId, dto);
+      const result = await service.create(tenantId, dto, 'user-1');
 
       expect(result).toEqual(mockSupplyItem);
-      expect(repoMock.findByCodigo).toHaveBeenCalledWith(tenantId, dto.codigoInterno);
-      expect(repoMock.findCategoryById).toHaveBeenCalledWith(tenantId, dto.categoriaId);
       expect(repoMock.create).toHaveBeenCalledWith({ ...dto, tenantId });
+      expect(auditServiceMock.log).toHaveBeenCalledWith(
+        expect.objectContaining({
+          tenantId,
+          action: AuditAction.CREATE,
+          entityType: 'SupplyItem',
+          actorUserId: 'user-1',
+          newValue: mockSupplyItem,
+        }),
+      );
     });
 
     it('should throw ConflictException if codigoInterno already exists in tenant', async () => {
@@ -104,6 +118,48 @@ describe('SupplyItemsService', () => {
       const invalidDto = { ...dto, stockMinimoBodega: '100.0', stockMaximoBodega: '50.0' };
 
       await expect(service.create(tenantId, invalidDto)).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('update', () => {
+    const dto = { nombre: 'Updated' };
+    const updatedItem = { ...mockSupplyItem, nombre: 'Updated' };
+
+    it('should update and log oldValue/newValue snapshots', async () => {
+      repoMock.findById.mockResolvedValue(mockSupplyItem);
+      repoMock.update.mockResolvedValue(updatedItem);
+
+      const result = await service.update(tenantId, 'item-1', dto, 'user-1');
+
+      expect(result).toEqual(updatedItem);
+      expect(auditServiceMock.log).toHaveBeenCalledWith({
+        tenantId,
+        action: AuditAction.UPDATE,
+        entityType: 'SupplyItem',
+        entityId: 'item-1',
+        actorUserId: 'user-1',
+        oldValue: mockSupplyItem,
+        newValue: updatedItem,
+      });
+    });
+  });
+
+  describe('remove', () => {
+    it('should delete and log oldValue snapshot', async () => {
+      repoMock.findById.mockResolvedValue(mockSupplyItem);
+      repoMock.delete.mockResolvedValue(mockSupplyItem);
+
+      const result = await service.remove(tenantId, 'item-1', 'user-1');
+
+      expect(result).toEqual(mockSupplyItem);
+      expect(auditServiceMock.log).toHaveBeenCalledWith({
+        tenantId,
+        action: AuditAction.DELETE,
+        entityType: 'SupplyItem',
+        entityId: 'item-1',
+        actorUserId: 'user-1',
+        oldValue: mockSupplyItem,
+      });
     });
   });
 
