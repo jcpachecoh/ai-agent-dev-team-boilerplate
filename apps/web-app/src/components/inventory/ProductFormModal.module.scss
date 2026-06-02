@@ -1,29 +1,33 @@
+@use '@/styles/tokens' as t;
+
 .formGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px 24px;
+  gap: 20px 28px;
 }
 
 .input {
   width: 100%;
-  min-height: 38px;
-  padding: 8px 12px;
+  min-height: 42px;
+  padding: 10px 14px;
   border: 0;
   outline: 0;
   background: transparent;
-  font-size: 14px;
+  font-size: t.$font-size-md;
+  font-family: var(--font-body, inherit);
+  color: inherit;
 }
 
 .fieldError {
-  outline: 1px solid #e05a44;
-  border-radius: 4px;
+  outline: 1px solid t.$color-danger;
+  border-radius: t.$border-radius-sm;
 }
 
 .errorText {
   display: block;
   margin-top: 4px;
-  font-size: 12px;
-  color: #e05a44;
+  font-size: t.$font-size-xs;
+  color: t.$color-danger;
 }
 
 @media (max-width: 640px) {

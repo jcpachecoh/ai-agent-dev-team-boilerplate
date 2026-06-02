@@ -1,3 +1,5 @@
+@use '@/styles/tokens' as t;
+
 .bar {
   display: flex;
   flex-wrap: wrap;
@@ -5,9 +7,9 @@
   gap: 12px;
   width: 100%;
   padding: 16px;
-  border: 1px solid #2e2e2e;
-  border-radius: 4px;
-  background: #1c1c1c;
+  border: 1px solid t.$color-border;
+  border-radius: t.$border-radius-base;
+  background: t.$color-bg-surface;
 }
 
 .search {

@@ -46,6 +46,15 @@
   cursor: pointer;
 }
 
+.nativeInput:focus,
+.nativeSelect:focus {
+  outline: none;
+}
+
+.control:focus-within {
+  @include inventario.inventario-focus-ring;
+}
+
 .size--xl {
   --control-width: 100%;
 }

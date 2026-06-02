@@ -16,13 +16,13 @@ $proveedor-dark-muted: #888888;
   --proveedor-surface: #{$proveedor-dark-surface};
   --proveedor-surface-raised: #{$proveedor-dark-surface-raised};
   --proveedor-border: #{$proveedor-dark-border};
-  --proveedor-border-strong: #{rgba($color-white, 0.14)};
+  --proveedor-border-strong: #{rgba($color-white, 0.28)};
   --proveedor-text: #{$proveedor-dark-text};
   --proveedor-text-secondary: #cccccc;
   --proveedor-muted: #{$proveedor-dark-muted};
   --proveedor-subtle: #666666;
   --proveedor-input: #1a1a1a;
-  --proveedor-hover: #{rgba($color-white, 0.04)};
+  --proveedor-hover: #{rgba($color-white, 0.07)};
   --proveedor-overlay: #{rgba($color-black, 0.72)};
 }
 

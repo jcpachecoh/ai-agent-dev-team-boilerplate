@@ -19,11 +19,13 @@
   display: flex;
   flex-direction: column;
   width: min(100%, var(--modal-width));
-  max-height: min(90vh, 720px);
+  max-height: min(92vh, 820px);
   border: $border-width solid var(--inventario-border);
   border-radius: $border-radius-md;
   background: var(--inventario-surface);
-  box-shadow: 0 24px 48px rgba($color-black, 0.35);
+  box-shadow:
+    0 24px 48px rgba($color-black, 0.4),
+    0 0 0 1px rgba(139, 92, 246, 0.06);
   overflow: hidden;
 }
 
@@ -32,11 +34,11 @@
 }
 
 .size--md {
-  --modal-width: 600px;
+  --modal-width: 620px;
 }
 
 .size--xl {
-  --modal-width: 720px;
+  --modal-width: 860px;
 }
 
 .header {
@@ -85,11 +87,9 @@
 
 .body {
   flex: 1;
-  overflow: auto;
+  overflow-y: auto;
   padding: 24px;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
+  display: block;
 }
 
 .footer {

@@ -43,8 +43,12 @@
 
 .variant--ghost {
   background: var(--inventario-surface);
-  border-color: var(--inventario-border);
+  border-color: var(--inventario-border-strong, var(--inventario-border));
   color: var(--inventario-text);
+
+  &:hover:not(:disabled) {
+    filter: brightness(1.12);
+  }
 }
 
 .icon svg {

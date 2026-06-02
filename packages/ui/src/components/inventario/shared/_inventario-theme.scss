@@ -23,12 +23,13 @@ $inventario-dark-subtle: #555555;
   --inventario-topbar: #{$inventario-dark-topbar};
   --inventario-surface: #{$inventario-dark-surface};
   --inventario-border: #{$inventario-dark-border};
+  --inventario-border-strong: #{rgba($color-white, 0.22)};
   --inventario-text: #{$inventario-dark-text};
   --inventario-muted: #{$inventario-dark-muted};
-  --inventario-subtle: #{$inventario-dark-subtle};
+  --inventario-subtle: #{rgba($color-white, 0.38)};
   --inventario-input: #{$inventario-dark-surface};
   --inventario-track: #{$inventario-dark-bg};
-  --inventario-hover: #{rgba($color-white, 0.04)};
+  --inventario-hover: #{rgba($color-white, 0.07)};
   --inventario-bar-fill: linear-gradient(
     180deg,
     var(--inventario-accent) 0%,
@@ -131,7 +132,12 @@ $inventario-dark-subtle: #555555;
 }
 
 @mixin inventario-button-ghost($accent) {
-  background: rgba($accent, 0.12);
-  border-color: rgba($accent, 0.3);
+  background: rgba($accent, 0.16);
+  border-color: rgba($accent, 0.45);
   color: $accent;
+
+  &:hover:not(:disabled) {
+    background: rgba($accent, 0.26);
+    border-color: rgba($accent, 0.65);
+  }
 }

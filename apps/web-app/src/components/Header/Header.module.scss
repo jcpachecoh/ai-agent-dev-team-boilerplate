@@ -49,7 +49,7 @@
   border: 1px solid t.$color-border;
   border-radius: t.$border-radius-sm;
   background: t.$color-bg-surface;
-  font-family: t.$font-family-mono;
+  font-family: var(--font-body, inherit);
   font-size: t.$font-size-sm;
   color: t.$color-text-secondary;
 }
@@ -117,14 +117,16 @@
   display: none;
   align-items: center;
   gap: t.$space-2;
-  font-family: t.$font-family-mono;
+  font-family: var(--font-body, inherit);
   font-size: t.$font-size-md;
   color: t.$color-text-muted;
 }
 
 .clockTime {
   color: t.$color-text-primary;
+  font-family: var(--font-mono, inherit);
   font-weight: t.$font-weight-semibold;
+  font-variant-numeric: tabular-nums;
 }
 
 .clockDivider {

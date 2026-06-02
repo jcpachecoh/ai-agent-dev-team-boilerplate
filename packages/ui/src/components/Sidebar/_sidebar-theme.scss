@@ -1,17 +1,17 @@
 @use '../../styles/abstracts/variables' as *;
 
 @mixin sidebar-theme-dark {
-  --sidebar-bg: #0d0d0d;
-  --sidebar-border: #2e2e2e;
-  --sidebar-text-primary: #f5f5f0;
-  --sidebar-text-secondary: #888888;
-  --sidebar-text-muted: #555555;
+  --sidebar-bg: #0f1117;
+  --sidebar-border: #232333;
+  --sidebar-text-primary: #ffffff;
+  --sidebar-text-secondary: #c8c8d0;
+  --sidebar-text-muted: #707078;
   --sidebar-brand: #c8a96e;
   --sidebar-accent: #8b5cf6;
-  --sidebar-accent-subtle: rgba(139, 92, 246, 0.07);
-  --sidebar-nav-hover: rgba(255, 255, 255, 0.03);
+  --sidebar-accent-subtle: rgba(139, 92, 246, 0.15);
+  --sidebar-nav-hover: rgba(255, 255, 255, 0.07);
   --sidebar-badge-bg: #e05a44;
-  --sidebar-overlay: rgba(0, 0, 0, 0.55);
+  --sidebar-overlay: rgba(0, 0, 0, 0.6);
 }
 
 @mixin sidebar-theme-light {

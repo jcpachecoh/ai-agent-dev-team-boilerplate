@@ -1,3 +1,5 @@
+@use '@/styles/tokens' as t;
+
 .state {
   display: flex;
   flex-direction: column;
@@ -6,16 +8,25 @@
   gap: 12px;
   min-height: 120px;
   padding: 24px;
-  color: #888888;
+  color: t.$color-text-secondary;
   text-align: center;
+  font-size: t.$font-size-base;
 }
 
 .retry {
   min-height: 44px;
-  padding: 0 16px;
-  border: 1px solid #2e2e2e;
-  border-radius: 4px;
-  background: #1c1c1c;
-  color: #f5f5f0;
+  padding: 0 20px;
+  border: 1px solid t.$color-border;
+  border-radius: t.$border-radius-base;
+  background: t.$color-bg-surface;
+  color: t.$color-text-primary;
   cursor: pointer;
+  font-size: t.$font-size-md;
+  font-weight: t.$font-weight-medium;
+  transition: background 150ms ease;
+
+  &:hover {
+    background: t.$color-bg-surface;
+    outline: 1px solid t.$color-accent;
+  }
 }

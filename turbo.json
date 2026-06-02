@@ -39,15 +39,6 @@
     },
     "email#preview": {
       "cache": false
-    },
-    "@restopsiq/mobile-client#build": {
-      "outputs": []
-    },
-    "@restopsiq/mobile-manager#build": {
-      "outputs": []
-    },
-    "@restopsiq/mobile-rider#build": {
-      "outputs": []
     }
   }
 }

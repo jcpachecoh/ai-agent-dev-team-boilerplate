@@ -50,16 +50,8 @@ $color-border: $color-gray-300;
 // Typography
 // --------------------------------------------------------------------------
 
-$font-family-base:
-  'Inter',
-  -apple-system,
-  BlinkMacSystemFont,
-  'Segoe UI',
-  Roboto,
-  'Helvetica Neue',
-  Arial,
-  sans-serif;
-$font-family-mono: 'Fira Code', 'Courier New', monospace;
+$font-family-base: var(--font-body, 'Inter', system-ui, sans-serif);
+$font-family-mono: var(--font-mono, 'Fira Code', 'Courier New', monospace);
 
 $font-size-xs: 0.75rem; // 12px
 $font-size-sm: 0.875rem; // 14px
