@@ -1,5 +1,4 @@
 import client, { Registry, Counter, Histogram } from 'prom-client';
-import { Request, Response } from 'express';
 import { createChildLogger } from './logging';
 
 const log = createChildLogger('monitoring');
@@ -31,14 +30,3 @@ export const authAttemptsTotal = new Counter({
   labelNames: ['type', 'status'] as const,
   registers: [metricsRegistry],
 });
-
-export async function metricsMiddleware(req: Request, res: Response): Promise<void> {
-  try {
-    const metrics = await metricsRegistry.metrics();
-    res.set('Content-Type', metricsRegistry.contentType);
-    res.send(metrics);
-  } catch (err) {
-    log.error({ err }, 'Failed to collect metrics');
-    res.status(500).send('Failed to collect metrics');
-  }
-}
