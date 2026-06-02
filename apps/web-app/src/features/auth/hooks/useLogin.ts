@@ -12,7 +12,7 @@ export function useLogin(options?: { onSuccess?: (result: LoginResponse) => void
   return useMutation({
     mutationFn: (input: LoginInput) => loginWithCedulaPin(input),
     onSuccess: (result) => {
-      setGraphqlAuthToken(result.accessToken);
+      setGraphqlAuthToken(result.token);
       void queryClient.invalidateQueries({ queryKey: authKeys.all });
       void queryClient.invalidateQueries({ queryKey: proveedoresKeys.all });
       options?.onSuccess?.(result);

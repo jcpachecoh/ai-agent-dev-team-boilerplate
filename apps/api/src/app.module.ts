@@ -8,7 +8,6 @@ import { AuthModule } from './auth/auth.module';
 import { AuditModule } from './audit/audit.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { AuditInterceptor } from './audit/audit.interceptor';
-import { SupplyItemsModule } from './supplyitems/supplyitems.module';
 import { LockModule } from './lock/lock.module';
 import { MesAuthModule } from './mes/auth/mes-auth.module';
 import { PlantModule } from './mes/plant/plant.module';
@@ -21,7 +20,6 @@ import { PlantModule } from './mes/plant/plant.module';
     MesAuthModule,
     PlantModule,
     AuditModule,
-    SupplyItemsModule,
     LockModule,
   ],
   controllers: [AppController],

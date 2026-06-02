@@ -3,14 +3,16 @@ export interface LoginInput {
   pin: string;
 }
 
+/** Matches the gateway GraphQL AuthResponse shape. */
+export interface LoginUser {
+  id: string;
+  role: string;
+  tenantId: string;
+  sedeId?: string | null;
+  isActive: boolean;
+}
+
 export interface LoginResponse {
-  accessToken: string;
-  refreshToken?: string;
-  operator: {
-    id: string;
-    name?: string;
-    role: string;
-    tenantId: string;
-    sedeId?: string | null;
-  };
+  token: string;
+  user: LoginUser;
 }

@@ -1,11 +1,7 @@
 import React, { type JSX, type ReactNode } from 'react';
 
 import { webLoginSurfaceClass } from '../shared/web-login-classnames';
-import type {
-  WebLoginDemoCredentials,
-  WebLoginStat,
-  WebLoginSurfaceProps,
-} from '../shared/web-login-types';
+import type { WebLoginDemoCredentials, WebLoginSurfaceProps } from '../shared/web-login-types';
 import { WebLoginFormPanel } from '../web-login-form-panel';
 import { WebLoginHeroPanel } from '../web-login-hero-panel';
 import styles from './WebLoginPage.module.scss';
@@ -16,9 +12,9 @@ export interface WebLoginPageProps extends WebLoginSurfaceProps {
   brandInitial?: string;
   headline?: string;
   description?: string;
-  stats?: WebLoginStat[];
   statusLine?: string;
   heroLogo?: ReactNode;
+  heroImageUrl?: string;
   cedula: string;
   pin: string;
   onCedulaChange: (value: string) => void;
@@ -38,9 +34,9 @@ export function WebLoginPage({
   brandInitial,
   headline,
   description,
-  stats,
   statusLine,
   heroLogo,
+  heroImageUrl,
   cedula,
   pin,
   onCedulaChange,
@@ -64,9 +60,9 @@ export function WebLoginPage({
         brandInitial={brandInitial}
         headline={headline}
         description={description}
-        stats={stats}
         statusLine={statusLine}
         logo={heroLogo}
+        heroImageUrl={heroImageUrl}
         theme={theme}
         size={size}
         className={styles.hero}

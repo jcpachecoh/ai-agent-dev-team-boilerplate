@@ -1,25 +1,26 @@
+import { gql } from 'graphql-request';
+
+import { graphqlClient } from '@/lib/graphql-client';
+import { getTenantId } from '@/lib/tenant';
 import type { LoginInput, LoginResponse } from '../types';
 
-/** Same-origin in dev (Vite proxies /api → API). Override with VITE_API_URL in .env.local. */
-const DEFAULT_API_URL = '';
-const DEFAULT_TENANT_ID = 'palos-de-lena';
-
-function getApiBaseUrl(): string {
-  const raw = import.meta.env.VITE_API_URL;
-  if (raw === undefined || raw === '') {
-    return DEFAULT_API_URL;
+const LOGIN_MUTATION = gql`
+  mutation Login($cedula: String!, $pin: String!, $tenantId: String!) {
+    login(cedula: $cedula, pin: $pin, tenantId: $tenantId) {
+      token
+      user {
+        id
+        role
+        tenantId
+        sedeId
+        isActive
+      }
+    }
   }
-  return String(raw).replace(/\/$/, '');
-}
+`;
 
-function getTenantId(): string {
-  return import.meta.env.VITE_TENANT_ID ?? DEFAULT_TENANT_ID;
-}
-
-function buildLoginUrl(): string {
-  const base = getApiBaseUrl();
-  const path = '/api/mes/auth/login';
-  return base ? `${base}${path}` : path;
+interface LoginMutationResult {
+  login: LoginResponse;
 }
 
 export class AuthApiError extends Error {
@@ -33,53 +34,36 @@ export class AuthApiError extends Error {
 }
 
 export async function loginWithCedulaPin(input: LoginInput): Promise<LoginResponse> {
-  const url = buildLoginUrl();
-
-  let res: Response;
   try {
-    res = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-tenant-id': getTenantId(),
-      },
-      body: JSON.stringify({ cedula: input.cedula, pin: input.pin }),
+    const data = await graphqlClient.request<LoginMutationResult>(LOGIN_MUTATION, {
+      cedula: input.cedula,
+      pin: input.pin,
+      tenantId: getTenantId(),
     });
-  } catch {
-    throw new AuthApiError(
-      'No se pudo conectar con el servidor. Comprueba que la API esté en ejecución (puerto 3001).',
-    );
+    return data.login;
+  } catch (err: unknown) {
+    const message = extractGraphqlErrorMessage(err);
+    throw new AuthApiError(message);
   }
+}
 
-  if (!res.ok) {
-    let message = 'No pudimos iniciar sesión. Intente nuevamente.';
-    try {
-      const body = (await res.json()) as { message?: string | string[] };
-      if (typeof body.message === 'string') {
-        message = body.message;
-      } else if (Array.isArray(body.message) && body.message[0]) {
-        message = body.message[0];
-      }
-    } catch {
-      if (res.status >= 500) {
-        message =
-          'No se pudo contactar la API. Abre otra terminal y ejecuta: cd apps/api && pnpm dev (puerto 3001).';
+function extractGraphqlErrorMessage(err: unknown): string {
+  if (err && typeof err === 'object') {
+    // graphql-request wraps errors in err.response.errors
+    const response = (err as Record<string, unknown>).response;
+    if (response && typeof response === 'object') {
+      const errors = (response as Record<string, unknown>).errors;
+      if (Array.isArray(errors) && errors.length > 0) {
+        const first = errors[0] as Record<string, unknown>;
+        const code = (first.extensions as Record<string, unknown> | undefined)?.code;
+        if (code === 'UNAUTHENTICATED') return 'Cédula o PIN incorrecto.';
+        if (code === 'FORBIDDEN') return 'Usuario sin acceso autorizado.';
+        if (typeof first.message === 'string') return first.message;
       }
     }
-
-    if (res.status === 401) {
-      message = 'Cédula o PIN incorrecto.';
-    } else if (res.status === 400) {
-      message = 'Revise la cédula y el PIN ingresados.';
-    } else if (res.status === 403) {
-      message = 'Usuario sin acceso autorizado.';
-    } else if (res.status >= 500 && message === 'No pudimos iniciar sesión. Intente nuevamente.') {
-      message =
-        'No se pudo contactar la API. Abre otra terminal y ejecuta: cd apps/api && pnpm dev (puerto 3001).';
+    if (err instanceof Error && err.message?.includes('fetch')) {
+      return 'No se pudo conectar con el servidor. Comprueba que el gateway esté en ejecución (puerto 4000).';
     }
-
-    throw new AuthApiError(message, res.status);
   }
-
-  return (await res.json()) as LoginResponse;
+  return 'No pudimos iniciar sesión. Intente nuevamente.';
 }

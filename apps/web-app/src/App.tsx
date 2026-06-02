@@ -22,28 +22,35 @@ import { RequireAuth } from '@/routes/RequireAuth';
 export default function App(): React.JSX.Element {
   return (
     <Routes>
-      <Route element={<AppLayout />}>
-        <Route path="/" element={<DashboardPage />} />
-        <Route path="/proveedores" element={<ProveedoresPage />} />
-        <Route path="/inventory" element={<InventoryDashboardPage />} />
-        <Route path="/inventory/products" element={<InventoryProductsPage />} />
-        <Route path="/inventory/products/:id" element={<InventoryProductDetailPage />} />
-        <Route path="/inventory/movements" element={<InventoryMovementsPage />} />
-        <Route path="/inventory/alerts" element={<InventoryAlertsPage />} />
-        <Route path="/inventory/reports" element={<InventoryReportsPage />} />
-        <Route path="/recetas" element={<RecipesPage />} />
-        <Route path="/recetas/procesos" element={<RecipesPage />} />
-        <Route path="/recetas/historial" element={<RecipesPage />} />
-        <Route path="/reports" element={<ReportsPage />} />
-        <Route path="/dispatch" element={<DispatchPage />} />
-        <Route path="/users" element={<UsersPage />} />
-        <Route path="/users/roles" element={<UsersPage />} />
-        <Route path="/users/permissions" element={<UsersPage />} />
-        <Route path="/payroll" element={<PayrollPage />} />
-        <Route path="/payroll/employees" element={<PayrollPage />} />
-        <Route path="/payroll/salaries" element={<PayrollPage />} />
-        <Route path="/settings" element={<SettingsPage />} />
+      {/* Public */}
+      <Route path="/login" element={<LoginPage />} />
+
+      {/* Protected — all routes require authentication */}
+      <Route element={<RequireAuth />}>
+        <Route element={<AppLayout />}>
+          <Route path="/" element={<DashboardPage />} />
+          <Route path="/proveedores" element={<ProveedoresPage />} />
+          <Route path="/inventory" element={<InventoryDashboardPage />} />
+          <Route path="/inventory/products" element={<InventoryProductsPage />} />
+          <Route path="/inventory/products/:id" element={<InventoryProductDetailPage />} />
+          <Route path="/inventory/movements" element={<InventoryMovementsPage />} />
+          <Route path="/inventory/alerts" element={<InventoryAlertsPage />} />
+          <Route path="/inventory/reports" element={<InventoryReportsPage />} />
+          <Route path="/recetas" element={<RecipesPage />} />
+          <Route path="/recetas/procesos" element={<RecipesPage />} />
+          <Route path="/recetas/historial" element={<RecipesPage />} />
+          <Route path="/reports" element={<ReportsPage />} />
+          <Route path="/dispatch" element={<DispatchPage />} />
+          <Route path="/users" element={<UsersPage />} />
+          <Route path="/users/roles" element={<UsersPage />} />
+          <Route path="/users/permissions" element={<UsersPage />} />
+          <Route path="/payroll" element={<PayrollPage />} />
+          <Route path="/payroll/employees" element={<PayrollPage />} />
+          <Route path="/payroll/salaries" element={<PayrollPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
+        </Route>
       </Route>
+
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );

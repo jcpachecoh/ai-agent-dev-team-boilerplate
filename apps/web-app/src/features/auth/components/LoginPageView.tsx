@@ -4,6 +4,11 @@ const DEFAULT_BRAND_NAME = 'COMMAND CENTER';
 const DEFAULT_BRAND_LOCATION = 'PLATFORM · RESTOPSIQ ENTERPRISE';
 const DEFAULT_BRAND_INITIAL = 'R';
 
+// Professional kitchen — Unsplash (free to use, no attribution required for product use)
+// Photo by Elevate on Unsplash: https://unsplash.com/photos/jSZ_RbNRpjs
+const HERO_IMAGE_URL =
+  'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=1600&q=80&auto=format&fit=crop';
+
 export interface LoginPageViewProps {
   cedula: string;
   pin: string;
@@ -37,6 +42,7 @@ export function LoginPageView({
 }: LoginPageViewProps): React.JSX.Element {
   return (
     <WebLoginPage
+      heroImageUrl={HERO_IMAGE_URL}
       brandName={brandName}
       brandLocation={brandLocation}
       brandInitial={brandInitial}
