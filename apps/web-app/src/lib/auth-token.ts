@@ -11,10 +11,24 @@ function isUsableToken(value: string): boolean {
   return true;
 }
 
+function isTokenExpired(token: string): boolean {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return true;
+    const payload = JSON.parse(atob(parts[1])) as Record<string, unknown>;
+    if (typeof payload['exp'] !== 'number') return false;
+    // Add 10s leeway for clock skew
+    return Date.now() >= (payload['exp'] as number) * 1000 - 10_000;
+  } catch {
+    return true;
+  }
+}
+
 export function getAuthSessionToken(): string | undefined {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored && isUsableToken(stored)) return stored.trim();
+    if (stored && isUsableToken(stored) && !isTokenExpired(stored)) return stored.trim();
+    if (stored) localStorage.removeItem(STORAGE_KEY); // auto-clear expired/invalid tokens
     return undefined;
   } catch {
     return undefined;
