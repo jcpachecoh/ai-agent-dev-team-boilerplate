@@ -32,13 +32,6 @@
     },
     "clean": {
       "cache": false
-    },
-    "email#build": {
-      "dependsOn": ["^build"],
-      "outputs": ["dist/**"]
-    },
-    "email#preview": {
-      "cache": false
     }
   }
 }
