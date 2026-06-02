@@ -10,6 +10,7 @@ import InventoryProductDetailPage from '@/pages/InventoryProductDetailPage';
 import InventoryProductsPage from '@/pages/InventoryProductsPage';
 import InventoryReportsPage from '@/pages/InventoryReportsPage';
 import LoginPage from '@/pages/LoginPage';
+import SignupPage from '@/pages/SignupPage';
 import NotFoundPage from '@/pages/NotFoundPage';
 import PayrollPage from '@/pages/PayrollPage';
 import ProveedoresPage from '@/pages/ProveedoresPage';
@@ -24,12 +25,13 @@ export default function App(): React.JSX.Element {
     <Routes>
       {/* Public */}
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/signup" element={<SignupPage />} />
 
       {/* Protected — all routes require authentication */}
       <Route element={<RequireAuth />}>
         <Route element={<AppLayout />}>
           <Route path="/" element={<DashboardPage />} />
-          <Route path="/proveedores" element={<ProveedoresPage />} />
+          <Route path="/proveedores/*" element={<ProveedoresPage />} />
           <Route path="/inventory" element={<InventoryDashboardPage />} />
           <Route path="/inventory/products" element={<InventoryProductsPage />} />
           <Route path="/inventory/products/:id" element={<InventoryProductDetailPage />} />

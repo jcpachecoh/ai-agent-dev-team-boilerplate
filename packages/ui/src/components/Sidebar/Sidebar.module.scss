@@ -42,7 +42,8 @@ $sidebar-transition: 300ms ease;
   }
 
   .brandSubtitle,
-  .brandTitle {
+  .brandTitle,
+  .brandHeading {
     display: none;
   }
 
@@ -145,7 +146,7 @@ $sidebar-transition: 300ms ease;
 
 .header {
   min-height: 4rem;
-  padding: $spacing-lg $spacing-md;
+  padding: $spacing-md $spacing-sm;
   border-bottom: 1px solid var(--sidebar-border);
 }
 
@@ -167,6 +168,19 @@ $sidebar-transition: 300ms ease;
   letter-spacing: -0.01em;
   color: var(--sidebar-brand);
   transition: opacity $sidebar-transition;
+}
+
+.brandHeading {
+  margin: 0;
+  line-height: 0;
+}
+
+.brandLogo {
+  display: block;
+  width: 100%;
+  max-width: 150px;
+  height: auto;
+  object-fit: contain;
 }
 
 .nav {

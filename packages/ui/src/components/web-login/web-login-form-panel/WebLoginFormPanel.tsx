@@ -3,15 +3,15 @@ import React, { type JSX } from 'react';
 
 import { webLoginSurfaceClass } from '../shared/web-login-classnames';
 import type { WebLoginDemoCredentials, WebLoginSurfaceProps } from '../shared/web-login-types';
+import { WebLoginBrandLogo } from '../web-login-brand-logo';
 import { WebLoginCredentialsForm } from '../web-login-credentials-form';
-import { WebLoginDemoPanel } from '../web-login-demo-panel';
 import styles from './WebLoginFormPanel.module.scss';
 
 export interface WebLoginFormPanelProps extends WebLoginSurfaceProps {
-  cedula: string;
-  pin: string;
-  onCedulaChange: (value: string) => void;
-  onPinChange: (value: string) => void;
+  email: string;
+  password: string;
+  onEmailChange: (value: string) => void;
+  onPasswordChange: (value: string) => void;
   onSubmit: () => void;
   isSubmitting?: boolean;
   error?: string | null;
@@ -23,24 +23,28 @@ export interface WebLoginFormPanelProps extends WebLoginSurfaceProps {
   backHref?: string;
   onBack?: () => void;
   backLabel?: string;
+  footerHref?: string;
+  footerLabel?: string;
 }
 
 export function WebLoginFormPanel({
-  cedula,
-  pin,
-  onCedulaChange,
-  onPinChange,
+  email,
+  password,
+  onEmailChange,
+  onPasswordChange,
   onSubmit,
   isSubmitting,
   error,
   badgeLabel = 'Acceso restringido',
   title = 'Bienvenido de vuelta',
-  subtitle = 'Ingresa tus credenciales para acceder al centro de comando.',
+  subtitle = 'Ingresa tu correo y contraseña para acceder al centro de comando.',
   demoCredentials,
   onUseDemo,
   backHref,
   onBack,
   backLabel = 'Volver al inicio',
+  footerHref,
+  footerLabel,
   theme = 'dark',
   size = 'md',
   className,
@@ -53,31 +57,22 @@ export function WebLoginFormPanel({
       aria-label="Inicio de sesión"
     >
       <div className={styles.intro}>
-        <span className={styles.badge}>{badgeLabel}</span>
+        <WebLoginBrandLogo theme={theme} size={size} />
         <h2 className={styles.title}>{title}</h2>
         <p className={styles.subtitle}>{subtitle}</p>
       </div>
 
       <WebLoginCredentialsForm
-        cedula={cedula}
-        pin={pin}
-        onCedulaChange={onCedulaChange}
-        onPinChange={onPinChange}
+        email={email}
+        password={password}
+        onEmailChange={onEmailChange}
+        onPasswordChange={onPasswordChange}
         onSubmit={onSubmit}
         isSubmitting={isSubmitting}
         error={error}
         theme={theme}
         size={size}
       />
-
-      {demoCredentials ? (
-        <WebLoginDemoPanel
-          credentials={demoCredentials}
-          onUseDemo={onUseDemo}
-          theme={theme}
-          size={size}
-        />
-      ) : null}
 
       {showBack ? (
         backHref ? (
@@ -91,6 +86,14 @@ export function WebLoginFormPanel({
             {backLabel}
           </button>
         )
+      ) : null}
+
+      {footerHref && footerLabel ? (
+        <p className={styles.footer}>
+          <a className={styles.footerLink} href={footerHref}>
+            {footerLabel}
+          </a>
+        </p>
       ) : null}
     </section>
   );

@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-import { AuthApiError, loginWithCedulaPin } from '../api/auth.api';
+import { AuthApiError, loginWithEmailPassword } from '../api/auth.api';
 import { authKeys } from '../api/auth.keys';
 import type { LoginInput, LoginResponse } from '../types';
 import { proveedoresKeys } from '@/features/proveedores/api/proveedores.keys';
@@ -10,9 +10,9 @@ export function useLogin(options?: { onSuccess?: (result: LoginResponse) => void
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (input: LoginInput) => loginWithCedulaPin(input),
+    mutationFn: (input: LoginInput) => loginWithEmailPassword(input),
     onSuccess: (result) => {
-      setGraphqlAuthToken(result.token);
+      setGraphqlAuthToken(result.accessToken);
       void queryClient.invalidateQueries({ queryKey: authKeys.all });
       void queryClient.invalidateQueries({ queryKey: proveedoresKeys.all });
       options?.onSuccess?.(result);
@@ -30,6 +30,8 @@ export function getLoginErrorMessage(error: unknown): string {
   return 'No pudimos iniciar sesión. Intente nuevamente.';
 }
 
-export function isValidLoginInput(cedula: string, pin: string): boolean {
-  return /^\d{8,11}$/.test(cedula) && /^\d{4,6}$/.test(pin);
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export function isValidLoginInput(email: string, password: string): boolean {
+  return EMAIL_PATTERN.test(email.trim()) && password.length > 0;
 }

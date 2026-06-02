@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { useState } from 'react';
+import React, { useState } from 'react';
 
+import { WEB_LOGIN_HERO_IMAGE } from '../shared/web-login-assets';
 import {
   webLoginDarkDecorator,
   webLoginLightDecorator,
@@ -8,35 +9,35 @@ import {
 } from '../shared/story-decorators';
 import { WebLoginPage } from './WebLoginPage';
 
-const DEMO = { cedula: '12345678', pin: '1234' };
+const HERO_IMAGE = WEB_LOGIN_HERO_IMAGE;
+
+const DEMO = { email: 'mes-owner@palos-de-lena.dev', password: 'TestPass123!' };
 
 function WebLoginPageStory(
   props: Omit<
     React.ComponentProps<typeof WebLoginPage>,
-    'cedula' | 'pin' | 'onCedulaChange' | 'onPinChange' | 'onSubmit'
+    'email' | 'password' | 'onEmailChange' | 'onPasswordChange' | 'onSubmit' | 'heroImageUrl'
   > & { initialError?: string | null },
 ): React.JSX.Element {
-  const [cedula, setCedula] = useState('');
-  const [pin, setPin] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(props.initialError ?? null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   return (
     <WebLoginPage
       {...props}
-      brandName="COMMAND CENTER"
-      brandLocation="PLATFORM · RESTOPSIQ ENTERPRISE"
-      brandInitial="R"
-      cedula={cedula}
-      pin={pin}
-      onCedulaChange={setCedula}
-      onPinChange={setPin}
+      heroImageUrl={HERO_IMAGE}
+      email={email}
+      password={password}
+      onEmailChange={setEmail}
+      onPasswordChange={setPassword}
       error={error}
       isSubmitting={isSubmitting}
       demoCredentials={props.demoCredentials ?? DEMO}
       onUseDemo={() => {
-        setCedula(DEMO.cedula);
-        setPin(DEMO.pin);
+        setEmail(DEMO.email);
+        setPassword(DEMO.password);
         setError(null);
       }}
       onSubmit={() => {
@@ -44,8 +45,8 @@ function WebLoginPageStory(
         setError(null);
         window.setTimeout(() => {
           setIsSubmitting(false);
-          if (cedula !== DEMO.cedula || pin !== DEMO.pin) {
-            setError('Cédula o PIN incorrectos. Intenta de nuevo.');
+          if (email !== DEMO.email || password !== DEMO.password) {
+            setError('Correo o contraseña incorrectos. Intenta de nuevo.');
           }
         }, 800);
       }}
@@ -71,18 +72,16 @@ export const Default: Story = {
 };
 
 export const WithError: Story = {
-  render: (args) => <WebLoginPageStory {...args} initialError="Cédula o PIN incorrectos." />,
+  render: (args) => <WebLoginPageStory {...args} initialError="Correo o contraseña incorrectos." />,
 };
 
 export const Submitting: Story = {
   args: {
-    brandName: 'COMMAND CENTER',
-    brandLocation: 'PLATFORM · RESTOPSIQ ENTERPRISE',
-    brandInitial: 'R',
-    cedula: '1234567890',
-    pin: '1234',
-    onCedulaChange: () => undefined,
-    onPinChange: () => undefined,
+    heroImageUrl: HERO_IMAGE,
+    email: 'mes-owner@palos-de-lena.dev',
+    password: 'TestPass123!',
+    onEmailChange: () => undefined,
+    onPasswordChange: () => undefined,
     onSubmit: () => undefined,
     isSubmitting: true,
     demoCredentials: DEMO,
@@ -103,6 +102,13 @@ export const DarkMode: Story = {
 export const LightMode: Story = {
   decorators: [webLoginLightDecorator],
   render: (args) => <WebLoginPageStory {...args} theme="light" />,
+};
+
+export const MobileViewport: Story = {
+  parameters: {
+    viewport: { defaultViewport: 'mobile1' },
+  },
+  render: (args) => <WebLoginPageStory {...args} />,
 };
 
 export const SizeSmall: Story = {

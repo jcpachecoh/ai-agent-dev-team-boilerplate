@@ -16,6 +16,8 @@ export function Sidebar({
   overlay = false,
   brandSubtitle = 'RESTOPSIQ',
   brandTitle = 'Plant MES',
+  brandLogoSrc,
+  brandLogoAlt = 'Palos de Leña Restaurantes',
   activePath = '/',
   user,
   ariaLabel = 'Navegación principal',
@@ -62,8 +64,16 @@ export function Sidebar({
   return (
     <aside className={sidebarClassName} aria-label={ariaLabel}>
       <div className={styles.header}>
-        <p className={styles.brandSubtitle}>{brandSubtitle}</p>
-        <h1 className={styles.brandTitle}>{brandTitle}</h1>
+        {brandLogoSrc ? (
+          <h1 className={styles.brandHeading}>
+            <img className={styles.brandLogo} src={brandLogoSrc} alt={brandLogoAlt} />
+          </h1>
+        ) : (
+          <>
+            <p className={styles.brandSubtitle}>{brandSubtitle}</p>
+            <h1 className={styles.brandTitle}>{brandTitle}</h1>
+          </>
+        )}
       </div>
 
       <nav className={styles.nav}>

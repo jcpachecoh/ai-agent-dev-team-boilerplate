@@ -12,8 +12,8 @@ export default function ProveedoresPage(): React.JSX.Element {
       <Routes>
         <Route index element={<ProveedoresListView />} />
         <Route path="nuevo" element={<ProveedorFormView mode="create" />} />
-        <Route path=":supplierId" element={<ProveedorDetailView />} />
         <Route path=":supplierId/editar" element={<ProveedorFormView mode="edit" />} />
+        <Route path=":supplierId" element={<ProveedorDetailView />} />
       </Routes>
     </div>
   );

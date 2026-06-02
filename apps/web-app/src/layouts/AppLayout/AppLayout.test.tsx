@@ -27,6 +27,6 @@ describe('AppLayout', () => {
     );
 
     expect(screen.getByText('Ruta anidada')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Plant MES' })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: /palos de leña/i })).toBeInTheDocument();
   });
 });

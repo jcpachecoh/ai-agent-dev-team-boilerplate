@@ -1,4 +1,4 @@
-import { Sidebar, type SidebarNavItem } from '@restopsiq/ui';
+import { Sidebar, WEB_LOGIN_BRAND_LOGO_DARK, type SidebarNavItem } from '@restopsiq/ui';
 import { useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
@@ -62,6 +62,7 @@ export default function AppSidebar({
   return (
     <Sidebar
       theme="dark"
+      brandLogoSrc={WEB_LOGIN_BRAND_LOGO_DARK}
       items={items}
       activePath={pathname}
       collapsed={collapsed}

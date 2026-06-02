@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 
 import { darkBackground, lightBackground } from '../../storybook/theme-helpers';
+import { WEB_LOGIN_BRAND_LOGO_DARK } from '../web-login/shared/web-login-assets';
 import Sidebar from '.';
 import type { SidebarNavItem } from './sidebar-types';
 
@@ -175,8 +176,7 @@ const meta: Meta<typeof Sidebar> = {
     theme: 'dark',
     collapsed: false,
     open: true,
-    brandSubtitle: 'RESTOPSIQ',
-    brandTitle: 'Plant MES',
+    brandLogoSrc: WEB_LOGIN_BRAND_LOGO_DARK,
     items: demoItems,
     user: demoUser,
     activePath: '/inventory/alerts',

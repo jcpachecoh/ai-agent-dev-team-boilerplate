@@ -27,12 +27,13 @@
   }
 
   .hero {
-    border-right: none;
-    border-bottom: 1px solid var(--web-login-border);
+    display: none;
   }
 
   .form {
     max-width: none;
     width: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
   }
 }

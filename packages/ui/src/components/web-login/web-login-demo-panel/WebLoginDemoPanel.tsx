@@ -28,12 +28,12 @@ export function WebLoginDemoPanel({
       <p className={styles.title}>{title}</p>
       <dl className={styles.list}>
         <div className={styles.row}>
-          <dt>Cédula</dt>
-          <dd>{credentials.cedula}</dd>
+          <dt>Email</dt>
+          <dd>{credentials.email}</dd>
         </div>
         <div className={styles.row}>
-          <dt>PIN</dt>
-          <dd>{credentials.pin}</dd>
+          <dt>Contraseña</dt>
+          <dd>{credentials.password}</dd>
         </div>
       </dl>
       {onUseDemo ? (

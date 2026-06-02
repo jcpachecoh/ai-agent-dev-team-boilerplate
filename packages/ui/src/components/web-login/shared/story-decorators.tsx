@@ -26,7 +26,7 @@ export const webLoginFullscreenDecorator: Decorator = (Story) => (
 );
 
 export const webLoginStoryMeta = {
-  tags: ['autodocs'] as const,
+  tags: ['autodocs'] as string[],
   args: {
     theme: 'dark' as const,
     size: 'md' as const,

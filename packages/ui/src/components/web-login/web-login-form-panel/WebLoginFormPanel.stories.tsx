@@ -8,29 +8,29 @@ import {
 } from '../shared/story-decorators';
 import { WebLoginFormPanel } from './WebLoginFormPanel';
 
-const DEMO = { cedula: '1234567890', pin: '1234' };
+const DEMO = { email: 'mes-owner@palos-de-lena.dev', password: 'TestPass123!' };
 
 function FormPanelStory(
   props: Omit<
     React.ComponentProps<typeof WebLoginFormPanel>,
-    'cedula' | 'pin' | 'onCedulaChange' | 'onPinChange' | 'onSubmit'
+    'email' | 'password' | 'onEmailChange' | 'onPasswordChange' | 'onSubmit'
   >,
 ): React.JSX.Element {
-  const [cedula, setCedula] = useState('');
-  const [pin, setPin] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
   return (
     <WebLoginFormPanel
       {...props}
-      cedula={cedula}
-      pin={pin}
-      onCedulaChange={setCedula}
-      onPinChange={setPin}
+      email={email}
+      password={password}
+      onEmailChange={setEmail}
+      onPasswordChange={setPassword}
       onSubmit={() => undefined}
       demoCredentials={DEMO}
       onUseDemo={() => {
-        setCedula(DEMO.cedula);
-        setPin(DEMO.pin);
+        setEmail(DEMO.email);
+        setPassword(DEMO.password);
       }}
     />
   );
@@ -51,16 +51,16 @@ export const Default: Story = {
 
 export const WithError: Story = {
   render: (args) => (
-    <FormPanelStory {...args} error="Cédula o PIN incorrectos. Intenta de nuevo." />
+    <FormPanelStory {...args} error="Correo o contraseña incorrectos. Intenta de nuevo." />
   ),
 };
 
 export const Submitting: Story = {
   args: {
-    cedula: '1234567890',
-    pin: '1234',
-    onCedulaChange: () => undefined,
-    onPinChange: () => undefined,
+    email: 'mes-owner@palos-de-lena.dev',
+    password: 'TestPass123!',
+    onEmailChange: () => undefined,
+    onPasswordChange: () => undefined,
     onSubmit: () => undefined,
     isSubmitting: true,
     demoCredentials: DEMO,

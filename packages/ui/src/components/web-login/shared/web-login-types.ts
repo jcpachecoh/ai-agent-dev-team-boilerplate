@@ -11,8 +11,8 @@ export interface WebLoginStat {
 }
 
 export interface WebLoginDemoCredentials {
-  cedula: string;
-  pin: string;
+  email: string;
+  password: string;
   /** Optional label for the demo block title */
   label?: string;
 }
@@ -22,3 +22,16 @@ export interface WebLoginSurfaceProps {
   size?: WebLoginSize;
   className?: string;
 }
+
+export type WebSignupDocumentType = 'CC' | 'CE' | 'PASAPORTE' | 'TI' | 'PEP';
+
+export const WEB_SIGNUP_DOCUMENT_TYPES: readonly {
+  value: WebSignupDocumentType;
+  label: string;
+}[] = [
+  { value: 'CC', label: 'Cédula de ciudadanía' },
+  { value: 'CE', label: 'Cédula de extranjería' },
+  { value: 'PASAPORTE', label: 'Pasaporte' },
+  { value: 'TI', label: 'Tarjeta de identidad' },
+  { value: 'PEP', label: 'Permiso especial de permanencia' },
+] as const;

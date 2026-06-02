@@ -15,7 +15,7 @@ describe('Sidebar', () => {
     expect(
       screen.getByRole('complementary', { name: /navegación principal/i }),
     ).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Plant MES' })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: /palos de leña/i })).toBeInTheDocument();
     expect(screen.getByText('Inventario')).toBeInTheDocument();
     expect(screen.getByText('Recetas')).toBeInTheDocument();
     expect(screen.getByText('Carlos Mendez')).toBeInTheDocument();

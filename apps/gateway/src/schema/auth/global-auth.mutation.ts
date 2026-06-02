@@ -16,6 +16,7 @@ import {
 } from './auth.types';
 import {
   buildApiRequestContext,
+  getHeaderValue,
   requireAuthorizationHeader,
   requireTenantHeader,
   resolveRefreshAuthorization,
@@ -125,9 +126,16 @@ export async function resolveGlobalLogout(
   _args: Record<string, never>,
   ctx: GraphQLContext,
 ): Promise<boolean> {
-  await ctx.services.api.authLogout(
-    buildApiRequestContext(ctx, { authorization: requireAuthorizationHeader(ctx) }),
-  );
+  const authorization = getHeaderValue(ctx.request.headers, 'authorization')?.trim();
+  if (!authorization) {
+    return true;
+  }
+
+  try {
+    await ctx.services.api.authLogout(buildApiRequestContext(ctx, { authorization }));
+  } catch {
+    // Best-effort: API may reject expired or rotated tokens; client still clears locally.
+  }
   return true;
 }
 
@@ -237,8 +245,8 @@ builder.mutationField('login', (t) =>
 
 builder.mutationField('logout', (t) =>
   t.boolean({
-    description: 'Logout global User and invalidate refresh token — POST /api/auth/logout',
-    authScopes: { isGlobalAuthenticated: true },
+    description:
+      'Logout global User and invalidate refresh token — POST /api/auth/logout (Bearer optional; idempotent)',
     resolve: resolveGlobalLogout,
   }),
 );

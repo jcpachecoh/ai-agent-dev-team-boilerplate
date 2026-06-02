@@ -11,7 +11,7 @@ import { authKeys } from '../api/auth.keys';
 import { useLogin } from './useLogin';
 
 vi.mock('../api/auth.api', () => ({
-  loginWithCedulaPin: vi.fn(),
+  loginWithEmailPassword: vi.fn(),
   AuthApiError: class AuthApiError extends Error {
     constructor(
       message: string,
@@ -30,13 +30,8 @@ vi.mock('@/lib/auth-token', () => ({
 }));
 
 const mockLoginResponse = {
-  token: 'jwt-test-token',
-  user: {
-    id: 'op-1',
-    role: 'MANAGER',
-    tenantId: 'palos-de-lena',
-    isActive: true,
-  },
+  accessToken: 'jwt-test-token',
+  refreshToken: 'refresh-test-token',
 };
 
 describe('useLogin', () => {
@@ -44,17 +39,20 @@ describe('useLogin', () => {
     vi.clearAllMocks();
   });
 
-  it('stores token and invalidates auth queries on success', async () => {
+  it('stores accessToken and invalidates auth queries on success', async () => {
     const client = createTestQueryClient();
     const invalidateSpy = vi.spyOn(client, 'invalidateQueries');
-    vi.mocked(authApi.loginWithCedulaPin).mockResolvedValue(mockLoginResponse);
+    vi.mocked(authApi.loginWithEmailPassword).mockResolvedValue(mockLoginResponse);
 
     const onSuccess = vi.fn();
     const { result } = renderHook(() => useLogin({ onSuccess }), {
       wrapper: ({ children }) => <TestQueryProvider client={client}>{children}</TestQueryProvider>,
     });
 
-    await result.current.mutateAsync({ cedula: '1234567890', pin: '1234' });
+    await result.current.mutateAsync({
+      email: 'mes-owner@palos-de-lena.dev',
+      password: 'TestPass123!',
+    });
 
     expect(setGraphqlAuthToken).toHaveBeenCalledWith('jwt-test-token');
     expect(onSuccess).toHaveBeenCalledWith(mockLoginResponse);
@@ -64,18 +62,18 @@ describe('useLogin', () => {
     });
   });
 
-  it('surfaces API errors from loginWithCedulaPin', async () => {
-    vi.mocked(authApi.loginWithCedulaPin).mockRejectedValue(
-      new authApi.AuthApiError('Cédula o PIN incorrecto.', 401),
+  it('surfaces API errors from loginWithEmailPassword', async () => {
+    vi.mocked(authApi.loginWithEmailPassword).mockRejectedValue(
+      new authApi.AuthApiError('Correo o contraseña incorrectos.', 401),
     );
 
     const { result } = renderHook(() => useLogin(), {
       wrapper: TestQueryProvider,
     });
 
-    await expect(result.current.mutateAsync({ cedula: '1234567890', pin: '0000' })).rejects.toThrow(
-      'Cédula o PIN incorrecto.',
-    );
+    await expect(
+      result.current.mutateAsync({ email: 'bad@example.com', password: 'wrong' }),
+    ).rejects.toThrow('Correo o contraseña incorrectos.');
 
     expect(setGraphqlAuthToken).not.toHaveBeenCalled();
   });

@@ -25,7 +25,7 @@ describe('Layout', () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole('heading', { name: 'Plant MES' })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: /palos de leña/i })).toBeInTheDocument();
     expect(screen.getByText('Contenido principal')).toBeInTheDocument();
     expect(screen.getByText('PLANTA CENTRAL')).toBeInTheDocument();
   });

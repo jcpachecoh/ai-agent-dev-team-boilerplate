@@ -41,11 +41,15 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(function Inp
         ? styles['wrapper--lg']
         : styles['wrapper--md'];
   const themeClass = theme === 'light' ? styles['theme--light'] : styles['theme--dark'];
+  const hasLeftIcon = Boolean(leftIcon && showIcon);
+  const hasRightAdornment = Boolean(rightIcon || (isPassword && showPasswordToggle));
 
   const wrapperCls = [
     styles.wrapper,
     sizeClass,
     themeClass,
+    hasLeftIcon ? styles['wrapper--has-left'] : '',
+    hasRightAdornment ? styles['wrapper--has-right'] : '',
     error ? styles['wrapper--error'] : '',
     disabled ? styles['wrapper--disabled'] : '',
     className,
@@ -55,7 +59,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(function Inp
 
   return (
     <div className={wrapperCls}>
-      {leftIcon && showIcon && <div className={styles.left}>{leftIcon}</div>}
+      {hasLeftIcon ? <div className={styles.left}>{leftIcon}</div> : null}
       <input ref={ref} className={styles.input} type={shownType} {...props} />
       <div className={styles.right}>
         {isPassword && showPasswordToggle ? (

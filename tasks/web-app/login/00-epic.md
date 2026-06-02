@@ -1,49 +1,63 @@
-# Epic: Login Web App (cédula + PIN)
+# Epic: Login Web App (email + password — backoffice global)
 
 **Domain:** `[FRONTEND]` `[WEB-APP]` `[UI]` `[AUTH]` `[REACT-QUERY]`  
-**Status:** `done` (UI + integración web-app)  
+**Status:** `done`  
 **Entry route (objetivo):** `/login` → post-auth `/` (`DashboardPage` dentro de `AppLayout`)  
-**Referencia UX:** mock FogonMind (panel hero + formulario); credenciales como `apps/plant` (`/api/mes/auth/login`)  
+**Referencia UX:** split layout — **imagen a la izquierda**, formulario **email + contraseña** a la derecha; en **mobile solo formulario** (sin imagen)  
 **UI kit:** `packages/ui/src/components/web-login/*`
 
 ---
 
 ## Objetivo
 
-Pantalla de acceso para **web-app** (backoffice / centro de comando): layout de dos columnas, campos **cédula** y **PIN**, login vía API con **React Query**, persistencia del JWT para GraphQL (`setGraphqlAuthToken`) y redirección al dashboard solo cuando hay sesión válida.
+Pantalla de acceso para **web-app** (backoffice / centro de comando):
+
+- **Desktop/tablet (≥ 901px):** columna izquierda = imagen full-bleed; columna derecha = login con **email** y **contraseña**.
+- **Mobile (≤ 900px):** solo panel de login (formulario centrado), **sin imagen**.
+- Login vía **GraphQL gateway** (`mutation login` AUTH-02) con React Query.
+- Persistencia del `accessToken` para GraphQL autenticado (`setGraphqlAuthToken`) y redirección al dashboard solo con sesión válida.
 
 ## Subtareas
 
-| #   | Archivo                                                              | Descripción                                      | Depende de |
-| --- | -------------------------------------------------------------------- | ------------------------------------------------ | ---------- |
-| 1   | [01-ui-web-login-components.md](./01-ui-web-login-components.md)     | Componentes `@restopsiq/ui` + Storybook          | —          |
-| 2   | [02-web-app-login-integration.md](./02-web-app-login-integration.md) | Página, hook `useLogin`, rutas protegidas, token | Tarea 1    |
+| #   | Archivo                                                              | Descripción                                                        | Depende de |
+| --- | -------------------------------------------------------------------- | ------------------------------------------------------------------ | ---------- |
+| 1   | [01-ui-web-login-components.md](./01-ui-web-login-components.md)     | Componentes `@restopsiq/ui` + Storybook (imagen + form email/pass) | —          |
+| 2   | [02-web-app-login-integration.md](./02-web-app-login-integration.md) | Página, hook `useLogin`, rutas protegidas, token                   | Tarea 1    |
 
-## API de autenticación (existente)
+## API de autenticación (global / backoffice)
 
-| Endpoint                   | Headers       | Body              |
-| -------------------------- | ------------- | ----------------- |
-| `POST /api/mes/auth/login` | `x-tenant-id` | `{ cedula, pin }` |
+| Operación | GraphQL (gateway) | Headers HTTP            | Input / respuesta                                    |
+| --------- | ----------------- | ----------------------- | ---------------------------------------------------- |
+| Login     | `mutation login`  | `x-tenant-id`           | `GlobalLoginInput` → `{ accessToken, refreshToken }` |
+| Signup    | `mutation signup` | `x-tenant-id`           | `SignupInput` → tokens                               |
+| Logout    | `mutation logout` | `Authorization: Bearer` | `true`                                               |
 
-Misma semántica que `apps/plant` (`loginOperator` en `auth.service.ts`). Web-app llamará a la **API REST** (no GraphQL) para login; el **accessToken** devuelto se guarda con `setGraphqlAuthToken` para el gateway.
+**No** usar login operacional MES (`loginOperational`, cédula + PIN) — ese flujo es para `apps/plant`.
 
-## Referencia visual
+Web-app llama **GraphQL al gateway** (`:4000/graphql`); el gateway delega a `apps/api` REST. El `accessToken` se reutiliza como Bearer en queries autenticadas.
 
-Captura FogonMind (hero + formulario). Sustituir email/password por **cédula** y **PIN**.
+## Layout visual
 
-Copiar opcionalmente a `tasks/web-app/design-references/login/`.
+```
+Desktop (≥901px)                    Mobile (≤900px)
+┌──────────────┬─────────────┐      ┌─────────────────┐
+│              │  Acceso     │      │    Acceso       │
+│   Imagen     │  email      │      │    email        │
+│  (cover)     │  password   │      │    password     │
+│              │  [Entrar]   │      │    [Entrar]     │
+└──────────────┴─────────────┘      └─────────────────┘
+```
 
 ## Estado actual
 
-- `App.tsx` monta todas las rutas bajo `AppLayout` **sin** guard de auth.
-- `DashboardPage` es placeholder del shell.
-- `auth-token.ts` ya soporta token en `localStorage` + override `.env`.
-- Plant tiene flujo completo con keypad; web-app usará **inputs** al estilo del mock.
+- Componentes UI en `@restopsiq/ui` (`WebLoginPage`, `WebLoginImagePanel`, `WebLoginCredentialsForm`).
+- Integración web-app: GraphQL gateway (`login` / `signup` / `logout`) + `RequireAuth`.
 
 ## Criterios de aceptación (epic)
 
-- [x] Storybook documenta `WebLoginPage` en dark.
-- [x] `/login` muestra cédula + PIN y no el shell con sidebar.
-- [x] Login exitoso → token persistido → navegación a `/`.
+- [x] Storybook documenta `WebLoginPage` con imagen + formulario email/password.
+- [x] Desktop: imagen izquierda + login derecha; mobile: solo login.
+- [x] `/login` muestra email + contraseña (sin shell sidebar).
+- [x] Login exitoso → `accessToken` persistido → navegación a `/`.
 - [x] Sin token → rutas del shell redirigen a `/login`.
-- [x] Errores de API visibles en el formulario (cédula/PIN incorrecto, cuenta bloqueada).
+- [x] Errores de API visibles en el formulario (credenciales inválidas, cuenta inactiva, etc.).

@@ -7,7 +7,7 @@ import {
 } from '../shared/story-decorators';
 import { WebLoginDemoPanel } from './WebLoginDemoPanel';
 
-const DEMO = { cedula: '1234567890', pin: '1234' };
+const DEMO = { email: 'mes-owner@palos-de-lena.dev', password: 'TestPass123!' };
 
 const meta: Meta<typeof WebLoginDemoPanel> = {
   title: 'WebLogin/WebLoginDemoPanel',

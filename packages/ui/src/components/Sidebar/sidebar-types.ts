@@ -36,6 +36,9 @@ export interface SidebarProps {
   overlay?: boolean;
   brandSubtitle?: string;
   brandTitle?: string;
+  /** When set, replaces subtitle/title text with the brand image. */
+  brandLogoSrc?: string;
+  brandLogoAlt?: string;
   activePath?: string;
   user?: SidebarUser;
   ariaLabel?: string;

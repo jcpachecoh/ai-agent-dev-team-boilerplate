@@ -1,8 +1,9 @@
 import { GraphQLClient } from 'graphql-request';
 
 import { clearGraphqlAuthToken, getGraphqlAuthToken, isAuthenticated } from './auth-token';
+import { getTenantId } from './tenant';
 
-const DEFAULT_URL = 'http://localhost:4000/graphql';
+const DEFAULT_URL = import.meta.env.DEV ? '/graphql' : 'http://localhost:4000/graphql';
 
 export function getGraphqlEndpoint(): string {
   return import.meta.env.VITE_GRAPHQL_URL ?? DEFAULT_URL;
@@ -11,6 +12,7 @@ export function getGraphqlEndpoint(): string {
 function buildHeaders(): Record<string, string> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
+    'x-tenant-id': getTenantId(),
   };
   const token = getGraphqlAuthToken();
   if (token) {
@@ -23,7 +25,7 @@ export const graphqlClient = new GraphQLClient(getGraphqlEndpoint(), {
   headers: buildHeaders,
 });
 
-/** True when the user has a session JWT from MES login (sent as Bearer on GraphQL). */
+/** True when the user has a session JWT from global login (sent as Bearer on GraphQL). */
 export function isGraphqlConfigured(): boolean {
   return isAuthenticated();
 }

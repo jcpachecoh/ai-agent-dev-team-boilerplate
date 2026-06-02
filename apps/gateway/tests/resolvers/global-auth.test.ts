@@ -195,6 +195,26 @@ describe('global auth resolvers', () => {
         forwardedFor: '10.0.0.1',
       });
     });
+
+    it('returns true without calling API when Authorization header is absent', async () => {
+      const authLogout = jest.fn();
+      const ctx = makeContext(makeRequest(), { authLogout });
+
+      const result = await resolveGlobalLogout(null, {}, ctx);
+
+      expect(result).toBe(true);
+      expect(authLogout).not.toHaveBeenCalled();
+    });
+
+    it('returns true when API rejects the token', async () => {
+      const authLogout = jest.fn().mockRejectedValue(new Error('Unauthorized'));
+      const ctx = makeContext(makeRequest({ authorization: 'Bearer stale-token' }), { authLogout });
+
+      const result = await resolveGlobalLogout(null, {}, ctx);
+
+      expect(result).toBe(true);
+      expect(authLogout).toHaveBeenCalled();
+    });
   });
 
   describe('resolveGlobalRefreshToken', () => {

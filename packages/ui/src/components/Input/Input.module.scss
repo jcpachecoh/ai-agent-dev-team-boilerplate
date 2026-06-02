@@ -18,23 +18,47 @@
 
 .wrapper--sm {
   min-height: 36px;
-  padding: 6px 10px 6px 36px;
+  padding: 6px 10px;
   border-radius: 10px;
   max-width: 320px;
 }
 
 .wrapper--md {
   min-height: 44px;
-  padding: 10px 14px 10px 40px;
+  padding: 10px 14px;
   border-radius: $border-radius-lg;
   max-width: 420px;
 }
 
 .wrapper--lg {
   min-height: 52px;
-  padding: 14px 18px 14px 44px;
+  padding: 14px 18px;
   border-radius: 14px;
   max-width: 520px;
+}
+
+.wrapper--has-left.wrapper--sm {
+  padding-left: 36px;
+}
+
+.wrapper--has-left.wrapper--md {
+  padding-left: 40px;
+}
+
+.wrapper--has-left.wrapper--lg {
+  padding-left: 44px;
+}
+
+.wrapper--has-right.wrapper--sm {
+  padding-right: 36px;
+}
+
+.wrapper--has-right.wrapper--md {
+  padding-right: 40px;
+}
+
+.wrapper--has-right.wrapper--lg {
+  padding-right: 44px;
 }
 
 .left {
@@ -95,10 +119,39 @@
 .right {
   display: flex;
   align-items: center;
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.wrapper--sm .right {
+  right: 10px;
+}
+
+.wrapper--lg .right {
+  right: 14px;
 }
 
 .adornment {
+  display: flex;
+  align-items: center;
   color: rgba($color-black, 0.6);
+}
+
+.adornment svg {
+  width: 18px;
+  height: 18px;
+}
+
+.wrapper--sm .adornment svg {
+  width: 14px;
+  height: 14px;
+}
+
+.wrapper--lg .adornment svg {
+  width: 20px;
+  height: 20px;
 }
 
 .iconButton {
@@ -118,31 +171,25 @@
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 14px;
-  padding-left: 36px; /* space for left icon */
-  padding-right: 16px;
-  padding-top: 10px;
-  padding-bottom: 10px;
 }
 .theme--dark .input {
   color: rgba(237, 237, 245, 0.9);
 }
-.theme--dark .left {
-  color: rgba(237, 237, 245, 0.9);
+.theme--dark .left,
+.theme--dark .adornment {
+  color: rgba(237, 237, 245, 0.55);
 }
 
 .theme--light {
   background: rgba(0, 0, 0, 0.04);
   border: 1px solid rgba(0, 0, 0, 0.1);
   border-radius: 14px;
-  padding-left: 36px;
-  padding-right: 16px;
-  padding-top: 10px;
-  padding-bottom: 10px;
 }
 .theme--light .input {
   color: rgba(24, 24, 31, 0.9);
 }
-.theme--light .left {
+.theme--light .left,
+.theme--light .adornment {
   color: rgba(24, 24, 31, 0.6);
 }
 

@@ -19,7 +19,9 @@
 .intro {
   display: flex;
   flex-direction: column;
-  gap: $spacing-md;
+  align-items: center;
+  gap: $spacing-lg;
+  text-align: center;
 }
 
 .badge {
@@ -65,6 +67,24 @@
 
   &:hover {
     color: var(--web-login-text);
+  }
+}
+
+.footer {
+  margin: $spacing-md 0 0;
+  font-size: 0.875rem;
+  text-align: center;
+  color: var(--web-login-muted);
+}
+
+.footerLink {
+  color: var(--web-login-accent);
+  text-decoration: none;
+  transition: opacity 0.15s ease;
+
+  &:hover {
+    opacity: 0.85;
+    text-decoration: underline;
   }
 }
 

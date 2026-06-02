@@ -11,19 +11,19 @@ import { WebLoginCredentialsForm } from './WebLoginCredentialsForm';
 function CredentialsFormStory(
   props: Omit<
     React.ComponentProps<typeof WebLoginCredentialsForm>,
-    'cedula' | 'pin' | 'onCedulaChange' | 'onPinChange' | 'onSubmit'
+    'email' | 'password' | 'onEmailChange' | 'onPasswordChange' | 'onSubmit'
   >,
 ): React.JSX.Element {
-  const [cedula, setCedula] = useState(props.error ? '1234567890' : '');
-  const [pin, setPin] = useState('');
+  const [email, setEmail] = useState(props.error ? 'demo@palos-de-lena.dev' : '');
+  const [password, setPassword] = useState('');
 
   return (
     <WebLoginCredentialsForm
       {...props}
-      cedula={cedula}
-      pin={pin}
-      onCedulaChange={setCedula}
-      onPinChange={setPin}
+      email={email}
+      password={password}
+      onEmailChange={setEmail}
+      onPasswordChange={setPassword}
       onSubmit={() => undefined}
     />
   );
@@ -44,16 +44,16 @@ export const Default: Story = {
 
 export const WithError: Story = {
   render: (args) => (
-    <CredentialsFormStory {...args} error="Cédula o PIN incorrectos. Intenta de nuevo." />
+    <CredentialsFormStory {...args} error="Correo o contraseña incorrectos. Intenta de nuevo." />
   ),
 };
 
 export const Submitting: Story = {
   args: {
-    cedula: '1234567890',
-    pin: '1234',
-    onCedulaChange: () => undefined,
-    onPinChange: () => undefined,
+    email: 'mes-owner@palos-de-lena.dev',
+    password: 'TestPass123!',
+    onEmailChange: () => undefined,
+    onPasswordChange: () => undefined,
     onSubmit: () => undefined,
     isSubmitting: true,
   },

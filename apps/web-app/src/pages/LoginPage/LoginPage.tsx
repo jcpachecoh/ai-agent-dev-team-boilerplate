@@ -5,9 +5,9 @@ import { LoginPageView } from '@/features/auth/components/LoginPageView';
 import { getLoginErrorMessage, isValidLoginInput, useLogin } from '@/features/auth/hooks/useLogin';
 import { isAuthenticated } from '@/lib/auth-token';
 
-/** Matches apps/api/prisma/seed.ts (owner operational user). */
-const DEMO_CEDULA = import.meta.env.VITE_DEMO_CEDULA ?? '12345678';
-const DEMO_PIN = import.meta.env.VITE_DEMO_PIN ?? '1234';
+/** Matches apps/api/prisma/seed.ts (global User — MES owner). */
+const DEMO_EMAIL = import.meta.env.VITE_DEMO_EMAIL ?? 'mes-owner@palos-de-lena.dev';
+const DEMO_PASSWORD = import.meta.env.VITE_DEMO_PASSWORD ?? 'TestPass123!';
 
 type LoginLocationState = {
   from?: string;
@@ -24,8 +24,8 @@ function getRedirectPath(state: unknown): string {
 export default function LoginPage(): React.JSX.Element {
   const navigate = useNavigate();
   const location = useLocation();
-  const [cedula, setCedula] = useState('');
-  const [pin, setPin] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const hasToken = isAuthenticated();
 
@@ -41,12 +41,12 @@ export default function LoginPage(): React.JSX.Element {
 
   const handleSubmit = (): void => {
     setError(null);
-    if (!isValidLoginInput(cedula, pin)) {
-      setError('La cédula debe tener 8–11 dígitos y el PIN entre 4 y 6.');
+    if (!isValidLoginInput(email, password)) {
+      setError('Ingresa un correo válido y tu contraseña.');
       return;
     }
     login.mutate(
-      { cedula, pin },
+      { email, password },
       {
         onError: (err) => {
           setError(getLoginErrorMessage(err));
@@ -57,18 +57,18 @@ export default function LoginPage(): React.JSX.Element {
 
   return (
     <LoginPageView
-      cedula={cedula}
-      pin={pin}
-      onCedulaChange={setCedula}
-      onPinChange={setPin}
+      email={email}
+      password={password}
+      onEmailChange={setEmail}
+      onPasswordChange={setPassword}
       onSubmit={handleSubmit}
       isSubmitting={login.isPending}
       error={error}
-      demoCedula={DEMO_CEDULA}
-      demoPin={DEMO_PIN}
+      demoEmail={DEMO_EMAIL}
+      demoPassword={DEMO_PASSWORD}
       onUseDemo={() => {
-        setCedula(DEMO_CEDULA);
-        setPin(DEMO_PIN);
+        setEmail(DEMO_EMAIL);
+        setPassword(DEMO_PASSWORD);
         setError(null);
       }}
     />

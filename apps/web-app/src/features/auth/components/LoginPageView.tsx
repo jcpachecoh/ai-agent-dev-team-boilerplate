@@ -1,66 +1,52 @@
-import { WebLoginPage } from '@restopsiq/ui';
-
-const DEFAULT_BRAND_NAME = 'COMMAND CENTER';
-const DEFAULT_BRAND_LOCATION = 'PLATFORM · RESTOPSIQ ENTERPRISE';
-const DEFAULT_BRAND_INITIAL = 'R';
-
-// Professional kitchen — Unsplash (free to use, no attribution required for product use)
-// Photo by Elevate on Unsplash: https://unsplash.com/photos/jSZ_RbNRpjs
-const HERO_IMAGE_URL =
-  'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=1600&q=80&auto=format&fit=crop';
+import { WEB_LOGIN_HERO_IMAGE, WebLoginPage } from '@restopsiq/ui';
 
 export interface LoginPageViewProps {
-  cedula: string;
-  pin: string;
-  onCedulaChange: (value: string) => void;
-  onPinChange: (value: string) => void;
+  email: string;
+  password: string;
+  onEmailChange: (value: string) => void;
+  onPasswordChange: (value: string) => void;
   onSubmit: () => void;
   isSubmitting?: boolean;
   error?: string | null;
-  demoCedula: string;
-  demoPin: string;
+  demoEmail: string;
+  demoPassword: string;
   onUseDemo?: () => void;
-  brandName?: string;
-  brandLocation?: string;
-  brandInitial?: string;
+  heroImageUrl?: string;
 }
 
 export function LoginPageView({
-  cedula,
-  pin,
-  onCedulaChange,
-  onPinChange,
+  email,
+  password,
+  onEmailChange,
+  onPasswordChange,
   onSubmit,
   isSubmitting = false,
   error = null,
-  demoCedula,
-  demoPin,
+  demoEmail,
+  demoPassword,
   onUseDemo,
-  brandName = import.meta.env.VITE_BRAND_NAME ?? DEFAULT_BRAND_NAME,
-  brandLocation = import.meta.env.VITE_BRAND_LOCATION ?? DEFAULT_BRAND_LOCATION,
-  brandInitial = import.meta.env.VITE_BRAND_INITIAL ?? DEFAULT_BRAND_INITIAL,
+  heroImageUrl = import.meta.env.VITE_LOGIN_HERO_IMAGE ?? WEB_LOGIN_HERO_IMAGE,
 }: LoginPageViewProps): React.JSX.Element {
   return (
     <WebLoginPage
-      heroImageUrl={HERO_IMAGE_URL}
-      brandName={brandName}
-      brandLocation={brandLocation}
-      brandInitial={brandInitial}
-      cedula={cedula}
-      pin={pin}
-      onCedulaChange={onCedulaChange}
-      onPinChange={onPinChange}
+      heroImageUrl={heroImageUrl}
+      email={email}
+      password={password}
+      onEmailChange={onEmailChange}
+      onPasswordChange={onPasswordChange}
       onSubmit={onSubmit}
       isSubmitting={isSubmitting}
       error={error}
-      demoCredentials={{ cedula: demoCedula, pin: demoPin }}
+      demoCredentials={{ email: demoEmail, password: demoPassword }}
       onUseDemo={
         onUseDemo ??
         (() => {
-          onCedulaChange(demoCedula);
-          onPinChange(demoPin);
+          onEmailChange(demoEmail);
+          onPasswordChange(demoPassword);
         })
       }
+      footerHref="/signup"
+      footerLabel="¿No tienes cuenta? Regístrate"
     />
   );
 }
