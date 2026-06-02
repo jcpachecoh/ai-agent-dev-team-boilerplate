@@ -38,7 +38,7 @@ function createRedisClient(): Redis {
   return client;
 }
 
-export const redis: Redis | null = env.REDIS_URL
+export const redis: Redis | null = env.redisEnabled
   ? (global.__redis ?? (global.__redis = createRedisClient()))
   : null;
 

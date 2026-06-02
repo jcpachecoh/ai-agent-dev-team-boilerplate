@@ -6,6 +6,10 @@ const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
   REDIS_URL: z.string().optional(),
+  REDIS_ENABLED: z
+    .enum(['true', 'false', '1', '0'])
+    .default('false')
+    .transform((v) => v === 'true' || v === '1'),
   JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
   JWT_EXPIRES_IN: z.string().default('8h'),
   RESEND_API_KEY: z.string().optional().default(''),
@@ -46,6 +50,7 @@ export const env = {
   NODE_ENV: raw.NODE_ENV,
   DATABASE_URL: raw.DATABASE_URL,
   REDIS_URL: raw.REDIS_URL ?? null,
+  redisEnabled: raw.REDIS_ENABLED && !!raw.REDIS_URL,
   JWT_SECRET: raw.JWT_SECRET,
   JWT_EXPIRES_IN: raw.JWT_EXPIRES_IN,
   RESEND_API_KEY: raw.RESEND_API_KEY,
