@@ -21,6 +21,19 @@ export interface AuthRoleRef {
   isActive: boolean;
 }
 
+/** Safe global User profile for GET /api/auth/me (no secrets) */
+export interface AuthUserProfile {
+  id: string;
+  tenantId: string;
+  email: string;
+  cedula: string;
+  documentType: DocumentType;
+  emailVerified: boolean;
+  isActive: boolean;
+  roleCode: string;
+  createdAt: Date;
+}
+
 export interface IAuthRepository {
   findByTenantAndEmail(tenantId: string, email: string): Promise<AuthUserSafe | null>;
   findByTenantAndEmailForAuth(
@@ -29,10 +42,16 @@ export interface IAuthRepository {
   ): Promise<AuthUserWithPassword | null>;
   findByTenantAndCedula(tenantId: string, cedula: string): Promise<AuthUserSafe | null>;
   findByIdForRefresh(id: string): Promise<AuthUserWithRefresh | null>;
+  findByIdForAuth(id: string): Promise<AuthUserWithPassword | null>;
+  findByIdWithRoleCode(id: string): Promise<AuthUserProfile | null>;
   findRoleByTenantAndCode(tenantId: string, code: string): Promise<AuthRoleRef | null>;
   createUser(data: CreateUserData): Promise<AuthUserSafe>;
   saveRefreshToken(userId: string, hashedToken: string | null): Promise<void>;
-  updatePassword(userId: string, passwordHash: string): Promise<void>;
+  updatePassword(
+    userId: string,
+    passwordHash: string,
+    trackPasswordChange?: boolean,
+  ): Promise<void>;
 }
 
 export interface AuthTokens {
@@ -50,6 +69,12 @@ export interface IAuthService {
   login(tenantId: string, dto: LoginDto): Promise<AuthTokens>;
   refresh(userId: string, refreshToken: string): Promise<AuthTokens>;
   logout(userId: string): Promise<void>;
+  me(userId: string): Promise<AuthUserProfile>;
+  changePassword(
+    userId: string,
+    currentPassword: string,
+    newPassword: string,
+  ): Promise<{ message: string }>;
   resetPassword(rawToken: string, newPassword: string): Promise<void>;
   findByTenantAndEmail(tenantId: string, email: string): Promise<AuthUserSafe | null>;
 }

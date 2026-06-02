@@ -65,10 +65,58 @@ export const CreateRecipeSchema = z.object({
 
 // ─── Auth ────────────────────────────────────────────────────────────────────
 
+/** @deprecated Legacy GraphQL loginWithPin args — use OperationalLoginSchema + x-tenant-id header */
 export const LoginSchema = z.object({
   cedula: z.string().min(4, 'Cedula must be at least 4 characters').max(20),
   pin: z.string().min(4, 'PIN must be at least 4 characters').max(8),
   tenantId: z.string().min(1, 'tenantId is required'),
+});
+
+export const DocumentTypeSchema = z.enum(['CC', 'CE', 'PASAPORTE', 'TI', 'PEP']);
+
+export const SignupSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(8).max(72),
+  cedula: z.string().max(20),
+  documentType: DocumentTypeSchema,
+  roleCode: z.string().max(50).optional(),
+});
+
+export const GlobalLoginSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(1),
+});
+
+export const RefreshTokenSchema = z.object({
+  refreshToken: z.string().min(1).optional(),
+});
+
+export const VerifyEmailSchema = z.object({
+  otpCode: z.string().length(6, 'otpCode must be exactly 6 characters'),
+});
+
+export const ChangePasswordSchema = z.object({
+  currentPassword: z.string().min(1),
+  newPassword: z.string().min(8).max(72),
+});
+
+export const ForgotPasswordSchema = z.object({
+  email: z.string().email(),
+});
+
+export const ResetPasswordSchema = z.object({
+  token: z.string().min(1),
+  newPassword: z.string().min(8).max(72),
+});
+
+export const ResendVerificationSchema = z.object({
+  email: z.string().email(),
+});
+
+/** Tenant is forwarded via x-tenant-id header, not in GraphQL args */
+export const OperationalLoginSchema = z.object({
+  cedula: z.string().min(4).max(20),
+  pin: z.string().min(4).max(8),
 });
 
 // ─── Helper ──────────────────────────────────────────────────────────────────

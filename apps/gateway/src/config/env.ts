@@ -19,6 +19,8 @@ const envSchema = z.object({
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
   PROMETHEUS_PORT: z.coerce.number().default(9090),
   GRAPHQL_DEV_TENANT_ID: z.string().default('palos-de-lena'),
+  API_BASE_URL: z.string().url().default('http://localhost:3001'),
+  MES_JWT_SECRET: z.string().min(32).optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -64,6 +66,8 @@ export const env = {
   graphqlAuthDisabled: raw.NODE_ENV === 'development' && graphqlAuthDisabledEnv,
   graphqlDevTenantId: raw.GRAPHQL_DEV_TENANT_ID,
   rateLimitDisabled: raw.NODE_ENV === 'development' && rateLimitDisabledEnv,
+  API_BASE_URL: raw.API_BASE_URL,
+  MES_JWT_SECRET: raw.MES_JWT_SECRET,
 };
 
 export type Env = typeof env;
