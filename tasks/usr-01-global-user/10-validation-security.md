@@ -92,13 +92,13 @@ Validate the complete USR-01 epic end-to-end: schema integrity, migrations, seed
 
 ### Postman / manual testing updates
 
-| Item                                                       | Result                                                                                    |
-| ---------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| `x-tenant-id: palos-de-lena` on signup/login/forgot/resend | ✅ Updated in collection                                                                  |
-| Login credentials → mes-owner/operator                     | ✅ Updated in `local.environment.json`, `recipes-local.environment.json`, collection vars |
-| `test@restopsiq.dev` marked TestLab-only                   | ✅ `testLabEmail` var + README note                                                       |
-| Signup body: cedula, documentType, optional roleCode       | ✅ Collection pre-request + body updated                                                  |
-| Refresh/logout/reset-password no x-tenant-id               | ✅ Documented in collection descriptions + README                                         |
+| Item                                                       | Result                                                  |
+| ---------------------------------------------------------- | ------------------------------------------------------- |
+| `x-tenant-id: palos-de-lena` on signup/login/forgot/resend | ✅ Updated in collection                                |
+| Login credentials → mes-owner/operator                     | ✅ Updated in `local.environment.json`, collection vars |
+| `test@restopsiq.dev` marked TestLab-only                   | ✅ `testLabEmail` var + README note                     |
+| Signup body: cedula, documentType, optional roleCode       | ✅ Collection pre-request + body updated                |
+| Refresh/logout/reset-password no x-tenant-id               | ✅ Documented in collection descriptions + README       |
 
 ---
 

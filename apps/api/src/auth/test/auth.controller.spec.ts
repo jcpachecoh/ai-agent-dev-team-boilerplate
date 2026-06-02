@@ -27,11 +27,25 @@ const mockUserSafe = {
   createdBy: null,
 };
 
+const mockUserProfile = {
+  id: mockUserSafe.id,
+  tenantId: mockUserSafe.tenantId,
+  email: mockUserSafe.email,
+  cedula: mockUserSafe.cedula,
+  documentType: mockUserSafe.documentType,
+  emailVerified: mockUserSafe.emailVerified,
+  isActive: mockUserSafe.isActive,
+  roleCode: 'OPERATOR',
+  createdAt: mockUserSafe.createdAt,
+};
+
 const serviceMock = {
   signup: jest.fn(),
   login: jest.fn(),
   refresh: jest.fn(),
   logout: jest.fn(),
+  me: jest.fn(),
+  changePassword: jest.fn(),
   resetPassword: jest.fn(),
   findByTenantAndEmail: jest.fn(),
 };
@@ -132,6 +146,49 @@ describe('AuthController', () => {
       } as never;
       await controller.logout(req);
       expect(serviceMock.logout).toHaveBeenCalledWith('user-1', '1.2.3.4', undefined);
+    });
+  });
+
+  describe('me', () => {
+    it('delegates to AuthService.me using req.user.sub', async () => {
+      serviceMock.me.mockResolvedValue(mockUserProfile);
+      const req = { user: { sub: 'user-1', email: 'a@b.com' } } as never;
+
+      const result = await controller.me(req);
+
+      expect(serviceMock.me).toHaveBeenCalledWith('user-1');
+      expect(result).toEqual(mockUserProfile);
+      expect(result).not.toHaveProperty('passwordHash');
+      expect(result).not.toHaveProperty('refreshToken');
+    });
+  });
+
+  describe('changePassword', () => {
+    it('delegates to AuthService.changePassword with user sub and dto', async () => {
+      serviceMock.changePassword.mockResolvedValue({ message: 'Password updated successfully.' });
+      const req = { user: { sub: 'user-1', email: 'a@b.com' } } as never;
+      const dto = { currentPassword: 'OldPass123!', newPassword: 'NewPass123!' };
+
+      const result = await controller.changePassword(dto, req);
+
+      expect(serviceMock.changePassword).toHaveBeenCalledWith(
+        'user-1',
+        'OldPass123!',
+        'NewPass123!',
+      );
+      expect(result).toEqual({ message: 'Password updated successfully.' });
+    });
+
+    it('propagates UnauthorizedException from AuthService.changePassword', async () => {
+      const { UnauthorizedException } = await import('@nestjs/common');
+      serviceMock.changePassword.mockRejectedValue(
+        new UnauthorizedException('Invalid credentials'),
+      );
+      const req = { user: { sub: 'user-1', email: 'a@b.com' } } as never;
+
+      await expect(
+        controller.changePassword({ currentPassword: 'wrong', newPassword: 'NewPass123!' }, req),
+      ).rejects.toThrow(UnauthorizedException);
     });
   });
 

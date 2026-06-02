@@ -11,12 +11,15 @@ import { EmailService } from './email.service';
 import { FileService } from './file.service';
 import { PurchaseOrderService } from './purchase-order.service';
 import { RecipeService } from './recipe.service';
+import { ApiClient } from './api-client';
+import { env } from '../config/env';
 
 export interface Services {
   supplier: SupplierService;
   supplierProduct: SupplierProductService;
   supplyItem: SupplyItemService;
   auth: GatewayAuthService;
+  api: ApiClient;
   tenant: TenantService;
   email: EmailService;
   file: FileService;
@@ -49,6 +52,7 @@ export function createServices(deps: ServiceDeps): Services {
     supplierProduct: new SupplierProductService(prisma, redis, log),
     supplyItem: new SupplyItemService(prisma, redis, log),
     auth: new GatewayAuthService(prisma, redis, log),
+    api: new ApiClient(env.API_BASE_URL),
     tenant: new TenantService(prisma, redis, log),
     email: new EmailService(queue),
     file: new FileService(prisma, redis, log),

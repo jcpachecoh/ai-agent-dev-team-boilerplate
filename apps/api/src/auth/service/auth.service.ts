@@ -9,7 +9,12 @@ import { JwtService } from '@nestjs/jwt';
 import { AuthMethod, LoginAuditStatus } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
-import type { AuthTokens, IAuthService, JwtPayload } from '../interfaces/auth.interfaces';
+import type {
+  AuthTokens,
+  AuthUserProfile,
+  IAuthService,
+  JwtPayload,
+} from '../interfaces/auth.interfaces';
 import { AuthRepository } from '../repository/auth.repository';
 import { AuthEmailRepository } from '../repository/auth-email.repository';
 import { AuditService } from '../../audit/service/audit.service';
@@ -201,6 +206,34 @@ export class AuthService implements IAuthService {
 
   findByTenantAndEmail(tenantId: string, email: string) {
     return this.authRepository.findByTenantAndEmail(this.requireTenantId(tenantId), email);
+  }
+
+  async me(userId: string): Promise<AuthUserProfile> {
+    const user = await this.authRepository.findByIdWithRoleCode(userId);
+    if (!user || !user.isActive) {
+      throw new UnauthorizedException('User not found or inactive');
+    }
+    return user;
+  }
+
+  async changePassword(
+    userId: string,
+    currentPassword: string,
+    newPassword: string,
+  ): Promise<{ message: string }> {
+    const user = await this.authRepository.findByIdForAuth(userId);
+    if (!user || !user.isActive || user.deletedAt) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    const passwordMatch = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!passwordMatch) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
+    await this.authRepository.updatePassword(userId, passwordHash, true);
+    return { message: 'Password updated successfully.' };
   }
 
   async resetPassword(rawToken: string, newPassword: string): Promise<void> {

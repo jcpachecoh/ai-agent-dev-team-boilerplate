@@ -1,14 +1,19 @@
 /**
- * Context factory tests
- *
- * Tests that:
- *  - A request with a valid JWT returns an authenticated context
- *  - A request without a token returns isAuthenticated: false
+ * Context factory and dual JWT auth session tests
  */
 
-// ─── Module mocks ─────────────────────────────────────────────────────────────
+const TEST_JWT_SECRET = 'test-jwt-secret-minimum-32-characters!!';
+const TEST_MES_JWT_SECRET = 'test-mes-jwt-secret-minimum-32-chars!!';
 
-// Mock out infrastructure dependencies so tests don't need real DB/Redis
+jest.mock('../src/config/env', () => ({
+  env: {
+    JWT_SECRET: TEST_JWT_SECRET,
+    MES_JWT_SECRET: TEST_MES_JWT_SECRET,
+    graphqlAuthDisabled: false,
+    graphqlDevTenantId: 'palos-de-lena',
+  },
+}));
+
 jest.mock('../src/config/prisma', () => ({
   prisma: { operationalUser: { findUnique: jest.fn() } },
 }));
@@ -35,29 +40,15 @@ jest.mock('../src/services/types', () => ({
     file: {},
     purchaseOrder: {},
     recipe: {},
+    api: {},
   })),
 }));
 
-// Mock authService to control token verification
-jest.mock('../src/auth/auth.service', () => ({
-  authService: {
-    extractToken: jest.fn(),
-    verifyToken: jest.fn(),
-    toAuthUser: jest.fn(),
-    hashCedula: jest.fn(),
-    comparePin: jest.fn(),
-    signToken: jest.fn(),
-  },
-}));
-
-// ─── Imports (after mocks) ────────────────────────────────────────────────────
-
+import jwt from 'jsonwebtoken';
 import { createContext } from '../src/context/createContext';
-import { authService } from '../src/auth/auth.service';
+import { resolveAuthSession } from '../src/auth/auth.guard';
 import { UserRole } from '../src/auth/types';
 import type { Request } from 'express';
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function makeRequest(authHeader?: string): Request {
   return {
@@ -66,65 +57,141 @@ function makeRequest(authHeader?: string): Request {
   } as unknown as Request;
 }
 
-// ─── Tests ───────────────────────────────────────────────────────────────────
+function signGlobalToken(payload: { sub: string; email: string }): string {
+  return jwt.sign(payload, TEST_JWT_SECRET, { algorithm: 'HS256' });
+}
+
+function signOperationalToken(
+  payload: {
+    sub: string;
+    tenantId: string;
+    role: string;
+    sedeId?: string;
+    jti?: string;
+  },
+  secret = TEST_MES_JWT_SECRET,
+): string {
+  return jwt.sign(payload, secret, { algorithm: 'HS256' });
+}
+
+describe('resolveAuthSession', () => {
+  it('returns unauthenticated session when no Authorization header is present', () => {
+    const session = resolveAuthSession(makeRequest());
+
+    expect(session.isAuthenticated).toBe(false);
+    expect(session.authKind).toBeNull();
+    expect(session.globalUser).toBeNull();
+    expect(session.operationalUser).toBeNull();
+    expect(session.user).toBeNull();
+    expect(session.tenantId).toBeNull();
+  });
+
+  it('returns global session for JWT signed with JWT_SECRET and email claim', () => {
+    const token = signGlobalToken({ sub: 'user-global', email: 'user@example.com' });
+    const session = resolveAuthSession(makeRequest(`Bearer ${token}`));
+
+    expect(session.isAuthenticated).toBe(true);
+    expect(session.authKind).toBe('global');
+    expect(session.globalUser).toEqual({ id: 'user-global', email: 'user@example.com' });
+    expect(session.operationalUser).toBeNull();
+    expect(session.user).toBeNull();
+    expect(session.tenantId).toBeNull();
+  });
+
+  it('returns operational session for JWT signed with MES_JWT_SECRET', () => {
+    const token = signOperationalToken({
+      sub: 'op-user-1',
+      tenantId: 'tenant-abc',
+      role: UserRole.OPERATOR,
+      sedeId: 'sede-1',
+      jti: 'jti-123',
+    });
+    const session = resolveAuthSession(makeRequest(`Bearer ${token}`));
+
+    expect(session.isAuthenticated).toBe(true);
+    expect(session.authKind).toBe('operational');
+    expect(session.globalUser).toBeNull();
+    expect(session.operationalUser).toEqual({
+      id: 'op-user-1',
+      tenantId: 'tenant-abc',
+      role: UserRole.OPERATOR,
+      sedeId: 'sede-1',
+      jti: 'jti-123',
+    });
+    expect(session.user).toEqual({
+      id: 'op-user-1',
+      tenantId: 'tenant-abc',
+      role: UserRole.OPERATOR,
+      sedeId: 'sede-1',
+    });
+    expect(session.tenantId).toBe('tenant-abc');
+  });
+
+  it('returns operational session for JWT signed with JWT_SECRET when no email claim (dev parity)', () => {
+    const token = signOperationalToken(
+      {
+        sub: 'op-user-2',
+        tenantId: 'tenant-dev',
+        role: UserRole.MANAGER,
+      },
+      TEST_JWT_SECRET,
+    );
+    const session = resolveAuthSession(makeRequest(`Bearer ${token}`));
+
+    expect(session.authKind).toBe('operational');
+    expect(session.operationalUser?.id).toBe('op-user-2');
+    expect(session.tenantId).toBe('tenant-dev');
+  });
+
+  it('returns unauthenticated session for invalid token', () => {
+    const session = resolveAuthSession(makeRequest('Bearer not-a-valid-jwt'));
+
+    expect(session.isAuthenticated).toBe(false);
+    expect(session.authKind).toBeNull();
+    expect(session.user).toBeNull();
+  });
+});
 
 describe('createContext', () => {
-  beforeEach(() => jest.clearAllMocks());
+  it('maps resolveAuthSession into GraphQLContext flags', async () => {
+    const token = signGlobalToken({ sub: 'user-global', email: 'user@example.com' });
+    const ctx = await createContext({ req: makeRequest(`Bearer ${token}`) });
 
-  it('returns isAuthenticated: false when no Authorization header is present', async () => {
-    (authService.extractToken as jest.Mock).mockReturnValue(undefined);
-
-    const ctx = await createContext({ req: makeRequest() });
-
-    expect(ctx.isAuthenticated).toBe(false);
+    expect(ctx.isAuthenticated).toBe(true);
+    expect(ctx.isGlobalAuthenticated).toBe(true);
+    expect(ctx.isOperationalAuthenticated).toBe(false);
+    expect(ctx.authKind).toBe('global');
+    expect(ctx.globalUser?.email).toBe('user@example.com');
     expect(ctx.user).toBeNull();
     expect(ctx.tenantId).toBeNull();
   });
 
-  it('returns isAuthenticated: false when token is missing (no Bearer)', async () => {
-    (authService.extractToken as jest.Mock).mockReturnValue(undefined);
-
-    const ctx = await createContext({ req: makeRequest('NotBearer token') });
-
-    expect(ctx.isAuthenticated).toBe(false);
-  });
-
-  it('returns isAuthenticated: true with correct user fields for a valid JWT', async () => {
-    const mockUser = { id: 'user-1', tenantId: 'tenant-abc', role: UserRole.OPERATOR };
-    const mockPayload = {
-      sub: 'user-1',
+  it('sets operational auth flags for MES token', async () => {
+    const token = signOperationalToken({
+      sub: 'op-user-1',
       tenantId: 'tenant-abc',
-      role: 'OPERATOR',
-      iat: 1000,
-      exp: 9999999999,
-    };
-
-    (authService.extractToken as jest.Mock).mockReturnValue('valid.jwt.token');
-    (authService.verifyToken as jest.Mock).mockReturnValue(mockPayload);
-    (authService.toAuthUser as jest.Mock).mockReturnValue(mockUser);
-
-    const ctx = await createContext({ req: makeRequest('Bearer valid.jwt.token') });
+      role: UserRole.OWNER,
+    });
+    const ctx = await createContext({ req: makeRequest(`Bearer ${token}`) });
 
     expect(ctx.isAuthenticated).toBe(true);
-    expect(ctx.user).toEqual(mockUser);
-    expect(ctx.tenantId).toBe('tenant-abc');
+    expect(ctx.isGlobalAuthenticated).toBe(false);
+    expect(ctx.isOperationalAuthenticated).toBe(true);
+    expect(ctx.authKind).toBe('operational');
+    expect(ctx.user?.tenantId).toBe('tenant-abc');
   });
 
-  it('returns isAuthenticated: false when token verification throws', async () => {
-    (authService.extractToken as jest.Mock).mockReturnValue('expired.token');
-    (authService.verifyToken as jest.Mock).mockImplementation(() => {
-      throw new Error('Token expired');
-    });
-
-    const ctx = await createContext({ req: makeRequest('Bearer expired.token') });
+  it('returns unauthenticated context when no token is present', async () => {
+    const ctx = await createContext({ req: makeRequest() });
 
     expect(ctx.isAuthenticated).toBe(false);
+    expect(ctx.isGlobalAuthenticated).toBe(false);
+    expect(ctx.isOperationalAuthenticated).toBe(false);
     expect(ctx.user).toBeNull();
+    expect(ctx.tenantId).toBeNull();
   });
 
   it('attaches a requestId and startTime to every context', async () => {
-    (authService.extractToken as jest.Mock).mockReturnValue(undefined);
-
     const ctx = await createContext({ req: makeRequest() });
 
     expect(typeof ctx.requestId).toBe('string');

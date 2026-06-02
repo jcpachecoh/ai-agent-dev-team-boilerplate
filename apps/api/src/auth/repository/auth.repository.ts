@@ -5,6 +5,7 @@ import type {
   AuthUserSafe,
   AuthUserWithPassword,
   AuthUserWithRefresh,
+  AuthUserProfile,
   AuthRoleRef,
   CreateUserData,
   IAuthRepository,
@@ -64,6 +65,45 @@ export class AuthRepository implements IAuthRepository {
     });
   }
 
+  findByIdForAuth(id: string): Promise<AuthUserWithPassword | null> {
+    return this.prisma.user.findUnique({
+      where: { id },
+      select: { ...AUTH_USER_SAFE_SELECT, passwordHash: true },
+    });
+  }
+
+  async findByIdWithRoleCode(id: string): Promise<AuthUserProfile | null> {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        tenantId: true,
+        email: true,
+        cedula: true,
+        documentType: true,
+        emailVerified: true,
+        isActive: true,
+        createdAt: true,
+        deletedAt: true,
+        role: { select: { code: true } },
+      },
+    });
+
+    if (!user || user.deletedAt) return null;
+
+    return {
+      id: user.id,
+      tenantId: user.tenantId,
+      email: user.email,
+      cedula: user.cedula,
+      documentType: user.documentType,
+      emailVerified: user.emailVerified,
+      isActive: user.isActive,
+      roleCode: user.role.code,
+      createdAt: user.createdAt,
+    };
+  }
+
   findRoleByTenantAndCode(tenantId: string, code: string): Promise<AuthRoleRef | null> {
     return this.prisma.role.findUnique({
       where: { tenantId_code: { tenantId, code } },
@@ -94,10 +134,17 @@ export class AuthRepository implements IAuthRepository {
     });
   }
 
-  async updatePassword(userId: string, passwordHash: string): Promise<void> {
+  async updatePassword(
+    userId: string,
+    passwordHash: string,
+    trackPasswordChange = false,
+  ): Promise<void> {
     await this.prisma.user.update({
       where: { id: userId },
-      data: { passwordHash },
+      data: {
+        passwordHash,
+        ...(trackPasswordChange ? { passwordChangedAt: new Date() } : {}),
+      },
     });
   }
 }

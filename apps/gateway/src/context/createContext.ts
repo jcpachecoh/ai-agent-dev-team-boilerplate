@@ -2,12 +2,12 @@ import crypto from 'crypto';
 import { Queue } from 'bullmq';
 import { prisma } from '../config/prisma';
 import { redis } from '../config/redis';
-import { authenticate } from '../auth/auth.guard';
+import { resolveAuthSession } from '../auth/auth.guard';
 import { UserRole } from '../auth/types';
 import { env } from '../config/env';
 import { createDataLoaders } from './dataLoaders';
 import { createServices } from '../services/types';
-import { createChildLogger, logger } from '../utils/logging';
+import { createChildLogger } from '../utils/logging';
 import { GraphQLContext } from './types';
 import type { Request } from 'express';
 
@@ -37,16 +37,23 @@ export async function createContext({ req }: { req: Request }): Promise<GraphQLC
     req.socket?.remoteAddress ??
     'unknown';
 
-  let user = authenticate(req);
-  if (!user && env.graphqlAuthDisabled) {
-    user = {
+  let session = resolveAuthSession(req);
+
+  if (!session.isAuthenticated && env.graphqlAuthDisabled) {
+    const bypassOperational = {
       id: 'dev-auth-bypass',
       tenantId: env.graphqlDevTenantId,
       role: UserRole.OWNER,
     };
+    session = {
+      authKind: 'operational',
+      globalUser: null,
+      operationalUser: bypassOperational,
+      user: bypassOperational,
+      isAuthenticated: true,
+      tenantId: env.graphqlDevTenantId,
+    };
   }
-  const isAuthenticated = user !== null;
-  const tenantId = user?.tenantId ?? null;
 
   const log = createChildLogger('request').child({ requestId, ip });
 
@@ -56,8 +63,11 @@ export async function createContext({ req }: { req: Request }): Promise<GraphQLC
   const services = createServices({ prisma, redis, log });
 
   return {
-    user,
-    tenantId,
+    authKind: session.authKind,
+    globalUser: session.globalUser,
+    operationalUser: session.operationalUser,
+    user: session.user,
+    tenantId: session.tenantId,
     request: req,
     ip,
     requestId,
@@ -68,6 +78,8 @@ export async function createContext({ req }: { req: Request }): Promise<GraphQLC
     loaders,
     services,
     log,
-    isAuthenticated,
+    isAuthenticated: session.isAuthenticated,
+    isGlobalAuthenticated: session.authKind === 'global',
+    isOperationalAuthenticated: session.authKind === 'operational',
   };
 }

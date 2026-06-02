@@ -26,6 +26,7 @@ builder.queryType({
 });
 
 // 4. Query fields
+import './auth/auth.types';
 import './user/user.query';
 import './supplier/supplier.query';
 import './supply-item/supply-item.query';

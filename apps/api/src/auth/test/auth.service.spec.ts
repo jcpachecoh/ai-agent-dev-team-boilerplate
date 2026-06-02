@@ -52,6 +52,8 @@ const repoMock = {
   findByTenantAndEmailForAuth: jest.fn(),
   findByTenantAndCedula: jest.fn(),
   findByIdForRefresh: jest.fn(),
+  findByIdForAuth: jest.fn(),
+  findByIdWithRoleCode: jest.fn(),
   findRoleByTenantAndCode: jest.fn(),
   createUser: jest.fn(),
   saveRefreshToken: jest.fn(),
@@ -320,6 +322,69 @@ describe('AuthService', () => {
       repoMock.findByTenantAndEmail.mockResolvedValue(null);
       const result = await service.findByTenantAndEmail(TENANT_ID, 'nobody@example.com');
       expect(result).toBeNull();
+    });
+  });
+
+  describe('me', () => {
+    const profile = {
+      id: mockUserSafe.id,
+      tenantId: mockUserSafe.tenantId,
+      email: mockUserSafe.email,
+      cedula: mockUserSafe.cedula,
+      documentType: mockUserSafe.documentType,
+      emailVerified: mockUserSafe.emailVerified,
+      isActive: mockUserSafe.isActive,
+      roleCode: 'OPERATOR',
+      createdAt: mockUserSafe.createdAt,
+    };
+
+    it('returns safe user profile with roleCode', async () => {
+      repoMock.findByIdWithRoleCode.mockResolvedValue(profile);
+      const result = await service.me('user-1');
+      expect(result).toEqual(profile);
+      expect(result).not.toHaveProperty('passwordHash');
+      expect(result).not.toHaveProperty('refreshToken');
+    });
+
+    it('throws UnauthorizedException when user is not found', async () => {
+      repoMock.findByIdWithRoleCode.mockResolvedValue(null);
+      await expect(service.me('missing')).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('throws UnauthorizedException when user is inactive', async () => {
+      repoMock.findByIdWithRoleCode.mockResolvedValue({ ...profile, isActive: false });
+      await expect(service.me('user-1')).rejects.toThrow(UnauthorizedException);
+    });
+  });
+
+  describe('changePassword', () => {
+    it('updates password when current password matches', async () => {
+      repoMock.findByIdForAuth.mockResolvedValue(mockUserWithPassword);
+      (bcryptMock.compare as jest.Mock).mockResolvedValue(true);
+      (bcryptMock.hash as jest.Mock).mockResolvedValue('new-hash');
+      repoMock.updatePassword.mockResolvedValue(undefined);
+
+      const result = await service.changePassword('user-1', 'old-pass', 'new-pass123');
+
+      expect(result).toEqual({ message: 'Password updated successfully.' });
+      expect(repoMock.updatePassword).toHaveBeenCalledWith('user-1', 'new-hash', true);
+    });
+
+    it('throws UnauthorizedException when current password is wrong', async () => {
+      repoMock.findByIdForAuth.mockResolvedValue(mockUserWithPassword);
+      (bcryptMock.compare as jest.Mock).mockResolvedValue(false);
+
+      await expect(service.changePassword('user-1', 'wrong', 'new-pass123')).rejects.toThrow(
+        UnauthorizedException,
+      );
+      expect(repoMock.updatePassword).not.toHaveBeenCalled();
+    });
+
+    it('throws UnauthorizedException when user is not found', async () => {
+      repoMock.findByIdForAuth.mockResolvedValue(null);
+      await expect(service.changePassword('user-1', 'old', 'new-pass123')).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
   });
 

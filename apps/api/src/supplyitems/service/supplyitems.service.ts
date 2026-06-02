@@ -1,10 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import type { SupplyItem } from '@prisma/client';
-import type { ISupplyItemsService } from '../interfaces/supplyitems.interfaces';
+import type { ISupplyitemsService } from '../interfaces/supplyitems.interfaces';
 import { SupplyItemsRepository } from '../repository/supplyitems.repository';
 
 @Injectable()
-export class SupplyItemsService implements ISupplyItemsService {
+export class SupplyItemsService implements ISupplyitemsService {
   constructor(private readonly supplyItemsRepository: SupplyItemsRepository) {}
 
   async findOne(tenantId: string, id: string): Promise<SupplyItem> {

@@ -8,7 +8,8 @@ import {
   validate,
   CreateSupplierSchema,
   UpdateSupplierSchema,
-  LoginSchema,
+  GlobalLoginSchema,
+  OperationalLoginSchema,
   CreateRecipeSchema,
 } from '../../src/utils/validation';
 import { ValidationError } from '../../src/utils/errors';
@@ -17,25 +18,23 @@ import { ValidationError } from '../../src/utils/errors';
 
 describe('validate', () => {
   it('returns parsed data on success', () => {
-    const result = validate(LoginSchema, {
-      cedula: '12345678',
-      pin: '1234',
-      tenantId: 'tenant-abc',
+    const result = validate(GlobalLoginSchema, {
+      email: 'user@example.com',
+      password: 'TestPass123!',
     });
-    expect(result.cedula).toBe('12345678');
-    expect(result.pin).toBe('1234');
-    expect(result.tenantId).toBe('tenant-abc');
+    expect(result.email).toBe('user@example.com');
+    expect(result.password).toBe('TestPass123!');
   });
 
   it('throws ValidationError with field map on failure', () => {
-    expect(() => validate(LoginSchema, { cedula: 'ab', pin: '1', tenantId: '' })).toThrow(
+    expect(() => validate(OperationalLoginSchema, { cedula: 'ab', pin: '1' })).toThrow(
       ValidationError,
     );
   });
 
   it('ValidationError carries the first field message', () => {
     try {
-      validate(LoginSchema, { cedula: 'ab', pin: '1', tenantId: '' });
+      validate(OperationalLoginSchema, { cedula: 'ab', pin: '1' });
       fail('expected throw');
     } catch (err) {
       expect(err).toBeInstanceOf(ValidationError);
@@ -133,16 +132,31 @@ describe('CreateRecipeSchema', () => {
   });
 });
 
-// ─── LoginSchema ─────────────────────────────────────────────────────────────
+// ─── AUTH-02 login schemas ───────────────────────────────────────────────────
 
-describe('LoginSchema', () => {
-  it('rejects missing tenantId', () => {
-    const result = LoginSchema.safeParse({ cedula: '12345678', pin: '1234' });
+describe('GlobalLoginSchema', () => {
+  it('rejects invalid email', () => {
+    const result = GlobalLoginSchema.safeParse({ email: 'not-an-email', password: 'secret' });
     expect(result.success).toBe(false);
   });
 
+  it('accepts valid email and password', () => {
+    const result = GlobalLoginSchema.safeParse({
+      email: 'user@example.com',
+      password: 'TestPass123!',
+    });
+    expect(result.success).toBe(true);
+  });
+});
+
+describe('OperationalLoginSchema', () => {
+  it('accepts cedula and pin without tenantId in body', () => {
+    const result = OperationalLoginSchema.safeParse({ cedula: '12345678', pin: '1234' });
+    expect(result.success).toBe(true);
+  });
+
   it('rejects pin shorter than 4 chars', () => {
-    const result = LoginSchema.safeParse({ cedula: '12345678', pin: '12', tenantId: 't1' });
+    const result = OperationalLoginSchema.safeParse({ cedula: '12345678', pin: '12' });
     expect(result.success).toBe(false);
   });
 });

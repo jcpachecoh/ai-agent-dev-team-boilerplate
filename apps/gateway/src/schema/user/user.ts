@@ -3,6 +3,9 @@ import { OperationalUser } from '@prisma/client';
 
 /**
  * GraphQL type for OperationalUser (MES user authenticated via cédula + PIN).
+ *
+ * Legacy name `User` — kept for existing `me` query until AUTH-02 task 08.
+ * New operational flows should use `OperationalUser` from auth.types.ts.
  */
 export const UserObject = builder.objectRef<OperationalUser>('User');
 

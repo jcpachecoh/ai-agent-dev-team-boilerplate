@@ -13,17 +13,30 @@ export type { UserRole };
  * Pothos SchemaBuilder configured with all plugins.
  *
  * Auth scopes:
- *  - `isAuthenticated`  — any logged-in user
- *  - `hasRole`          — specific role(s) required
+ *  - `isAuthenticated`             — any supported JWT (global or operational)
+ *  - `isGlobalAuthenticated`         — global User JWT only
+ *  - `isOperationalAuthenticated`    — operational MES JWT only
+ *  - `hasRole`                       — operational role check (legacy resolvers)
  */
 export const builder = new SchemaBuilder<{
   Context: GraphQLContext;
   AuthScopes: {
     isAuthenticated: boolean;
+    isGlobalAuthenticated: boolean;
+    isOperationalAuthenticated: boolean;
     hasRole: UserRole | UserRole[];
   };
   AuthContexts: {
-    isAuthenticated: GraphQLContext & { user: NonNullable<GraphQLContext['user']> };
+    isAuthenticated: GraphQLContext & { isAuthenticated: true };
+    isGlobalAuthenticated: GraphQLContext & {
+      authKind: 'global';
+      globalUser: NonNullable<GraphQLContext['globalUser']>;
+    };
+    isOperationalAuthenticated: GraphQLContext & {
+      authKind: 'operational';
+      operationalUser: NonNullable<GraphQLContext['operationalUser']>;
+      user: NonNullable<GraphQLContext['user']>;
+    };
     hasRole: GraphQLContext & { user: NonNullable<GraphQLContext['user']> };
   };
   Scalars: {
@@ -35,14 +48,16 @@ export const builder = new SchemaBuilder<{
   scopeAuth: {
     authScopes: (context: GraphQLContext) => ({
       isAuthenticated: context.isAuthenticated,
+      isGlobalAuthenticated: context.isGlobalAuthenticated,
+      isOperationalAuthenticated: context.isOperationalAuthenticated,
       hasRole: (roleOrRoles: UserRole | UserRole[]) => {
-        if (!context.user) return false;
+        if (context.authKind !== 'operational' || !context.user) return false;
         const roles = Array.isArray(roleOrRoles) ? roleOrRoles : [roleOrRoles];
         return roles.includes(context.user.role);
       },
     }),
     unauthorizedError: (_parent: unknown, context: GraphQLContext) => {
-      if (!context.user) {
+      if (!context.isAuthenticated) {
         return new AuthenticationError('Not authenticated');
       }
       return new AuthorizationError('Insufficient permissions');

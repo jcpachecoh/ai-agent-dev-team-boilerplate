@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Get,
   Headers,
   HttpCode,
   HttpStatus,
@@ -26,9 +27,11 @@ import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { ResendVerificationDto } from './dto/resend-verification.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
+import { MeResponseDto } from './dto/me-response.dto';
 import { Public } from '../../common/decorators/public.decorator';
 import { JwtRefreshGuard } from '../guards/jwt-refresh.guard';
-import type { TenantContext } from '../interfaces/auth.interfaces';
+import type { JwtPayload, TenantContext } from '../interfaces/auth.interfaces';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -96,6 +99,23 @@ export class AuthController {
       Array.isArray(ipAddress) ? ipAddress[0] : ipAddress,
       userAgent,
     );
+  }
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get the authenticated global User profile' })
+  @ApiOkResponse({ type: MeResponseDto })
+  @Get('me')
+  me(@Req() req: Request & { user: JwtPayload }) {
+    return this.authService.me(req.user.sub);
+  }
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Change password for the authenticated global User' })
+  @ApiOkResponse({ description: 'Password updated successfully' })
+  @Post('change-password')
+  @HttpCode(HttpStatus.OK)
+  changePassword(@Body() dto: ChangePasswordDto, @Req() req: Request & { user: JwtPayload }) {
+    return this.authService.changePassword(req.user.sub, dto.currentPassword, dto.newPassword);
   }
 
   @Public()

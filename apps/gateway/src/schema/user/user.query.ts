@@ -1,16 +1,7 @@
-import { builder } from '../builder';
-import { UserObject } from './user';
-import { requireAuth } from '../../auth/roles.guard';
+/**
+ * User query fields.
+ *
+ * `meOperational` is registered in auth/operational-auth.query.ts (loaded via auth.mutation import chain).
+ */
 
-builder.queryField('me', (t) =>
-  t.field({
-    type: UserObject,
-    nullable: true,
-    description: 'Returns the currently authenticated operational user',
-    authScopes: { isAuthenticated: true },
-    resolve: async (_root, _args, ctx) => {
-      const user = requireAuth(ctx.user);
-      return ctx.prisma.operationalUser.findUnique({ where: { id: user.id } });
-    },
-  }),
-);
+export {};
