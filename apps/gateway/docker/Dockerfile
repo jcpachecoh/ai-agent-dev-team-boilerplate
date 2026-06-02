@@ -19,4 +19,4 @@ COPY --from=build /app/apps/gateway/dist ./dist
 COPY --from=build /app/apps/gateway/package.json ./
 COPY --from=build /app/node_modules ./node_modules
 EXPOSE 4000
-CMD ["node", "dist/index.js"]
+CMD ["node", "dist/main.js"]
