@@ -15,4 +15,14 @@ export class HealthController {
       env: env.NODE_ENV,
     };
   }
+
+  @Public()
+  @Get('graphql')
+  graphqlLanding(): { status: string; message: string; endpoint: string } {
+    return {
+      status: 'ok',
+      message: 'GraphQL endpoint is available via POST requests.',
+      endpoint: '/graphql',
+    };
+  }
 }
