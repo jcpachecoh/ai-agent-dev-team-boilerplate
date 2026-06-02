@@ -77,11 +77,26 @@ export function createApp(): Application {
   app.use(
     cors({
       origin: (origin, callback) => {
-        if (!origin) return callback(null, true); // non-browser requests
-        if (env.ALLOWED_ORIGINS.includes('*') || env.ALLOWED_ORIGINS.includes(origin)) {
-          return callback(null, true);
-        }
-        return callback(new Error(`CORS policy: origin "${origin}" is not allowed`));
+        // Allow non-browser / same-origin requests (no Origin header)
+        if (!origin) return callback(null, true);
+
+        const allowed = env.ALLOWED_ORIGINS.some((pattern) => {
+          if (pattern === '*') return true;
+          if (pattern === origin) return true;
+          // Wildcard subdomain: https://*.example.com or http://*.example.com
+          if (/^https?:\/\/\*\./.test(pattern)) {
+            const scheme = pattern.startsWith('https') ? 'https' : 'http';
+            const baseDomain = pattern.replace(/^https?:\/\/\*\./, '');
+            return (
+              origin.startsWith(`${scheme}://`) &&
+              (origin === `${scheme}://${baseDomain}` || origin.endsWith(`.${baseDomain}`))
+            );
+          }
+          return false;
+        });
+
+        // Return null, false (not an Error) so Express emits 403, not 500
+        return callback(null, allowed);
       },
       credentials: true,
       methods: ['GET', 'POST', 'OPTIONS'],
