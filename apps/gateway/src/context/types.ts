@@ -27,9 +27,9 @@ export interface GraphQLContext {
   /** Prisma client singleton */
   prisma: PrismaClient;
   /** Redis client singleton */
-  redis: Redis;
+  redis: Redis | null;
   /** BullMQ email queue */
-  bullQueue: Queue;
+  bullQueue: Queue | null;
   /** Per-request DataLoaders */
   loaders: DataLoaders;
   /** Service layer instances */

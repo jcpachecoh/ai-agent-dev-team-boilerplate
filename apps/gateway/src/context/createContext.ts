@@ -14,7 +14,8 @@ import type { Request } from 'express';
 // Lazy-init BullMQ queue (avoids Redis connection at module load in tests)
 let emailQueue: Queue | null = null;
 
-function getEmailQueue(): Queue {
+function getEmailQueue(): Queue | null {
+  if (!redis) return null;
   if (!emailQueue) {
     emailQueue = new Queue('email', {
       connection: redis,

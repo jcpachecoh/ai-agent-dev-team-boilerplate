@@ -98,7 +98,7 @@ async function bootstrap(): Promise<void> {
 
     await apolloServer.stop();
     await prisma.$disconnect();
-    redis.disconnect();
+    redis?.disconnect();
 
     log.info('Graceful shutdown complete');
     process.exit(0);
