@@ -7,11 +7,11 @@ const RETRY_DELAY_MS = 500;
 
 declare global {
   // eslint-disable-next-line no-var
-  var __redis: Redis | undefined;
+  var __redis: Redis | null | undefined;
 }
 
 function createRedisClient(): Redis {
-  const client = new Redis(env.REDIS_URL, {
+  const client = new Redis(env.REDIS_URL!, {
     maxRetriesPerRequest: 3,
     retryStrategy(times: number): number | null {
       if (times > MAX_RETRIES) {
@@ -36,8 +36,10 @@ function createRedisClient(): Redis {
   return client;
 }
 
-export const redis: Redis = global.__redis ?? (global.__redis = createRedisClient());
+export const redis: Redis | null = env.REDIS_URL
+  ? (global.__redis ?? (global.__redis = createRedisClient()))
+  : null;
 
-if (!env.isProduction) {
+if (!env.isProduction && redis) {
   global.__redis = redis;
 }

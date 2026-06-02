@@ -1,7 +1,7 @@
 import express, { Application, Request, Response } from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
-import { RateLimiterRedis } from 'rate-limiter-flexible';
+import { RateLimiterMemory, RateLimiterRedis } from 'rate-limiter-flexible';
 import { redis } from './config/redis';
 import { env } from './config/env';
 import { loggingMiddleware } from './middleware/logging.middleware';
@@ -14,13 +14,20 @@ const log = createChildLogger('app');
 
 // ─── Rate limiter ────────────────────────────────────────────────────────────
 
-const rateLimiter = new RateLimiterRedis({
-  storeClient: redis,
-  keyPrefix: 'rl_gateway',
-  points: env.RATE_LIMIT_MAX_REQUESTS,
-  duration: Math.ceil(env.RATE_LIMIT_WINDOW / 1000), // convert ms → seconds
-  blockDuration: 30, // block for 30s after exceeding limit
-});
+const rateLimiter = redis
+  ? new RateLimiterRedis({
+      storeClient: redis,
+      keyPrefix: 'rl_gateway',
+      points: env.RATE_LIMIT_MAX_REQUESTS,
+      duration: Math.ceil(env.RATE_LIMIT_WINDOW / 1000),
+      blockDuration: 30,
+    })
+  : new RateLimiterMemory({
+      keyPrefix: 'rl_gateway',
+      points: env.RATE_LIMIT_MAX_REQUESTS,
+      duration: Math.ceil(env.RATE_LIMIT_WINDOW / 1000),
+      blockDuration: 30,
+    });
 
 function isLocalDevRequest(req: Request): boolean {
   const ip =

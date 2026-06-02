@@ -15,10 +15,10 @@ export interface PaginationResult {
 
 export class BaseService {
   protected readonly prisma: PrismaClient;
-  protected readonly redis: Redis;
+  protected readonly redis: Redis | null;
   protected readonly log: Logger;
 
-  constructor(prisma: PrismaClient, redis: Redis, log: Logger) {
+  constructor(prisma: PrismaClient, redis: Redis | null, log: Logger) {
     this.prisma = prisma;
     this.redis = redis;
     this.log = log;

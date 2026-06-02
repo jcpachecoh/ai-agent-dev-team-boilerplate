@@ -26,21 +26,23 @@ export interface Services {
 
 interface ServiceDeps {
   prisma: PrismaClient;
-  redis: Redis;
+  redis: Redis | null;
   log: Logger;
-  queue?: Queue;
+  queue?: Queue | null;
 }
 
 export function createServices(deps: ServiceDeps): Services {
   const { prisma, redis, log } = deps;
 
-  // A dummy queue for EmailService when none is provided (e.g. in tests)
-  const queue =
-    deps.queue ??
-    new Queue('email', {
-      connection: redis,
-      defaultJobOptions: { attempts: 3, backoff: { type: 'exponential', delay: 5000 } },
-    });
+  const queue: Queue | null =
+    deps.queue !== undefined
+      ? deps.queue
+      : redis
+        ? new Queue('email', {
+            connection: redis,
+            defaultJobOptions: { attempts: 3, backoff: { type: 'exponential', delay: 5000 } },
+          })
+        : null;
 
   return {
     supplier: new SupplierService(prisma, redis, log),
