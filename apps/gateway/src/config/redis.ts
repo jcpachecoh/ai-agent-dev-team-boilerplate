@@ -12,7 +12,11 @@ declare global {
 
 function createRedisClient(): Redis {
   const client = new Redis(env.REDIS_URL!, {
-    maxRetriesPerRequest: 3,
+    maxRetriesPerRequest: null,
+    // Don't connect at module load — only when a command is actually issued.
+    // Since Redis is currently optional, no commands are sent so no ECONNREFUSED.
+    lazyConnect: true,
+    enableReadyCheck: false,
     retryStrategy(times: number): number | null {
       if (times > MAX_RETRIES) {
         logger.error({ times }, 'Redis max retries exceeded — giving up');
@@ -22,8 +26,6 @@ function createRedisClient(): Redis {
       logger.warn({ times, delay }, 'Redis reconnecting...');
       return delay;
     },
-    enableReadyCheck: true,
-    lazyConnect: false,
   });
 
   client.on('connect', () => logger.info('Redis connected'));

@@ -18,7 +18,7 @@ function getEmailQueue(): Queue | null {
   if (!redis) return null;
   if (!emailQueue) {
     emailQueue = new Queue('email', {
-      connection: redis,
+      connection: { url: env.REDIS_URL! },
       defaultJobOptions: { attempts: 3, backoff: { type: 'exponential', delay: 5000 } },
     });
   }
