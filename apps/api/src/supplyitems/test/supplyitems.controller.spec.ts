@@ -35,7 +35,7 @@ describe('SupplyItemsController', () => {
   });
 
   describe('create', () => {
-    it('should call service with tenantId from context and dto from body', async () => {
+    it('should call service with tenantId, dto, and actorUserId', async () => {
       const dto = {
         nombre: 'Insumo Test',
         codigoInterno: 'INS-001',
@@ -50,14 +50,37 @@ describe('SupplyItemsController', () => {
       };
 
       serviceMock.create.mockResolvedValue(mockSupplyItem);
+      const req = { user: { sub: 'user-1' } } as never;
 
-      // Simulating request with tenantId already resolved (e.g. by interceptor/guard)
-      // In NestJS, this is often passed via @Req() or a custom decorator
-      // For unit test, we call the controller method directly.
-      const result = await (controller as any).create(dto, tenantId);
+      const result = await controller.create(dto, tenantId, req);
 
       expect(result).toEqual(mockSupplyItem);
-      expect(serviceMock.create).toHaveBeenCalledWith(tenantId, dto);
+      expect(serviceMock.create).toHaveBeenCalledWith(tenantId, dto, 'user-1');
+    });
+  });
+
+  describe('update', () => {
+    it('should call service with tenantId, id, dto, and actorUserId', async () => {
+      const dto = { nombre: 'New Name' };
+      serviceMock.update.mockResolvedValue(mockSupplyItem);
+      const req = { user: { sub: 'user-1' } } as never;
+
+      const result = await controller.update('item-1', dto, tenantId, req);
+
+      expect(result).toEqual(mockSupplyItem);
+      expect(serviceMock.update).toHaveBeenCalledWith(tenantId, 'item-1', dto, 'user-1');
+    });
+  });
+
+  describe('remove', () => {
+    it('should call service with tenantId, id, and actorUserId', async () => {
+      serviceMock.remove.mockResolvedValue(mockSupplyItem);
+      const req = { user: { sub: 'user-1' } } as never;
+
+      const result = await controller.remove('item-1', tenantId, req);
+
+      expect(result).toEqual(mockSupplyItem);
+      expect(serviceMock.remove).toHaveBeenCalledWith(tenantId, 'item-1', 'user-1');
     });
   });
 

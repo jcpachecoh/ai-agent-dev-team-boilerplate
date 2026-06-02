@@ -6,6 +6,7 @@ import * as bcrypt from 'bcrypt';
 import { AuthService } from '../service/auth.service';
 import { AuthRepository } from '../repository/auth.repository';
 import { AuthEmailRepository } from '../repository/auth-email.repository';
+import { AuditService } from '../../audit/service/audit.service';
 
 jest.mock('bcrypt');
 const bcryptMock = bcrypt as jest.Mocked<typeof bcrypt>;
@@ -51,6 +52,10 @@ const authEmailRepoMock = {
   deleteExpiredResetTokens: jest.fn(),
 };
 
+const auditServiceMock = {
+  logLogin: jest.fn(),
+};
+
 const jwtMock = {
   signAsync: jest.fn(),
 };
@@ -65,11 +70,13 @@ describe('AuthService — global User email login regression (USR-01 Task 09)', 
         { provide: AuthRepository, useValue: repoMock },
         { provide: AuthEmailRepository, useValue: authEmailRepoMock },
         { provide: JwtService, useValue: jwtMock },
+        { provide: AuditService, useValue: auditServiceMock },
       ],
     }).compile();
 
     service = module.get<AuthService>(AuthService);
     jest.clearAllMocks();
+    auditServiceMock.logLogin.mockResolvedValue(undefined);
   });
 
   it('logs in seeded mes-owner@palos-de-lena.dev with x-tenant-id palos-de-lena', async () => {

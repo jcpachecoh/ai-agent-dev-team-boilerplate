@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { SupplyItemsService } from '../service/supplyitems.service';
 import { SupplyItemsRepository } from '../repository/supplyitems.repository';
 import { LockService } from '../../lock/service/lock.service';
+import { AuditService } from '../../audit/service/audit.service';
 
 describe('SupplyItemsService - CPP Calculation', () => {
   let service: SupplyItemsService;
@@ -12,11 +13,15 @@ describe('SupplyItemsService - CPP Calculation', () => {
         SupplyItemsService,
         {
           provide: SupplyItemsRepository,
-          useValue: {}, // Not needed for pure logic tests
+          useValue: {},
         },
         {
           provide: LockService,
-          useValue: {}, // Not needed for pure logic tests
+          useValue: {},
+        },
+        {
+          provide: AuditService,
+          useValue: {},
         },
       ],
     }).compile();

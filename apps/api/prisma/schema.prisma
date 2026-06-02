@@ -15,22 +15,84 @@ datasource db {
 // AUDIT LOG
 // ─────────────────────────────────────────────────────────────────────────────
 
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  LOGIN
+  LOGOUT
+  VIEW
+  EXPORT
+  APPROVE
+  REJECT
+  ASSIGN
+}
+
 model AuditLog {
-  id        String   @id @default(cuid())
-  userId    String?
-  action    String
-  entity    String
-  entityId  String
-  payload   Json?
-  ipAddress String?
-  userAgent String?
-  createdAt DateTime @default(now())
+  id          String      @id @default(cuid())
+  tenantId    String
+  actorUserId String?
+  userId      String?
+  action      AuditAction
+  entityType  String      @map("entity")
+  entityId    String
+  payload     Json?
+  oldValue    Json?
+  newValue    Json?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime    @default(now())
 
-  // userId is kept as a plain reference (no FK relation after UserTestLab removal)
+  actor User? @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
 
-  @@index([entity, entityId])
-  @@index([userId])
+  // userId is kept as a plain reference for legacy data
+
+  @@index([tenantId])
+  @@index([actorUserId])
+  @@index([entityType, entityId])
+  @@index([action])
+  @@index([createdAt])
   @@map("audit_logs")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LOGIN AUDIT (USR-05)
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum AuthMethod {
+  PASSWORD
+  PIN
+  REFRESH_TOKEN
+  OAUTH_GOOGLE
+}
+
+enum LoginAuditStatus {
+  SUCCESS
+  FAILED
+  LOCKED
+  LOGOUT
+}
+
+model LoginAudit {
+  id            String           @id @default(cuid())
+  tenantId      String
+  userId        String?
+  identifier    String
+  authMethod    AuthMethod
+  status        LoginAuditStatus
+  failureReason String?
+  ipAddress     String?
+  userAgent     String?
+  deviceInfo    Json?
+  createdAt     DateTime         @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("login_audits")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -258,6 +320,8 @@ model User {
 
   operationalProfile OperationalUser?
   userPermissions    UserPermission[]
+  loginAudits        LoginAudit[]
+  auditLogs          AuditLog[]
 
   @@unique([tenantId, email])
   @@unique([tenantId, cedula])

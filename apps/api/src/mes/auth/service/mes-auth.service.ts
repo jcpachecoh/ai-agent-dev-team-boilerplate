@@ -9,7 +9,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import type { OperationalUser } from '@prisma/client';
+import { AuthMethod, LoginAuditStatus, OperationalUser } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { randomUUID } from 'crypto';
@@ -25,6 +25,7 @@ import type {
 } from '../interfaces/mes-auth.interfaces';
 import { MesAuthRepository } from '../repository/mes-auth.repository';
 import { MesAuthRedisService } from './mes-auth-redis.service';
+import { AuditService } from '../../../audit/service/audit.service';
 
 const MAX_ATTEMPTS = 3;
 const LOCK_DURATION_MS = 15 * 60 * 1000;
@@ -43,17 +44,47 @@ export class MesAuthService implements IMesAuthService {
     private readonly mesAuthRepository: MesAuthRepository,
     private readonly mesAuthRedisService: MesAuthRedisService,
     private readonly jwtService: JwtService,
+    private readonly auditService: AuditService,
   ) {}
 
-  async login(dto: MesLoginInput, ipAddress: string, tenantId: string): Promise<MesAuthTokens> {
+  async login(
+    dto: MesLoginInput,
+    ipAddress: string,
+    tenantId: string,
+    userAgent?: string,
+  ): Promise<MesAuthTokens> {
     if (!tenantId?.trim()) {
       throw new BadRequestException('Tenant context is required');
     }
 
-    this.assertCredentialsFormat(dto.cedula, dto.pin);
+    const maskedCedula = this.maskCedula(dto.cedula);
+
+    try {
+      this.assertCredentialsFormat(dto.cedula, dto.pin);
+    } catch (error) {
+      await this.auditService.logLogin({
+        tenantId: tenantId.trim(),
+        identifier: maskedCedula,
+        authMethod: AuthMethod.PIN,
+        status: LoginAuditStatus.FAILED,
+        failureReason: 'Invalid format',
+        ipAddress,
+        userAgent,
+      });
+      throw error;
+    }
 
     const rateLimit = await this.mesAuthRedisService.checkRateLimit(ipAddress);
     if (!rateLimit.allowed) {
+      await this.auditService.logLogin({
+        tenantId: tenantId.trim(),
+        identifier: maskedCedula,
+        authMethod: AuthMethod.PIN,
+        status: LoginAuditStatus.FAILED,
+        failureReason: 'Rate limit exceeded',
+        ipAddress,
+        userAgent,
+      });
       throw new HttpException(
         'Too many login attempts. Try again later.',
         HttpStatus.TOO_MANY_REQUESTS,
@@ -63,32 +94,86 @@ export class MesAuthService implements IMesAuthService {
     const cedulaHash = this.hashCedula(dto.cedula);
     const user = await this.mesAuthRepository.findByCedulaHash(tenantId.trim(), cedulaHash);
 
-    if (!user) {
-      throw new UnauthorizedException(GENERIC_AUTH_MESSAGE);
-    }
-
-    if (!user.isActive) {
+    if (!user || !user.isActive) {
+      await this.auditService.logLogin({
+        tenantId: tenantId.trim(),
+        userId: user?.id,
+        identifier: maskedCedula,
+        authMethod: AuthMethod.PIN,
+        status: LoginAuditStatus.FAILED,
+        failureReason: user ? 'User inactive' : 'User not found',
+        ipAddress,
+        userAgent,
+      });
       throw new UnauthorizedException(GENERIC_AUTH_MESSAGE);
     }
 
     if (user.lockedUntil && user.lockedUntil > new Date()) {
+      await this.auditService.logLogin({
+        tenantId: tenantId.trim(),
+        userId: user.id,
+        identifier: maskedCedula,
+        authMethod: AuthMethod.PIN,
+        status: LoginAuditStatus.LOCKED,
+        failureReason: 'Account locked',
+        ipAddress,
+        userAgent,
+      });
       throw new UnauthorizedException(GENERIC_AUTH_MESSAGE);
     }
 
     const pinMatch = await bcrypt.compare(dto.pin, user.pinHash);
     if (!pinMatch) {
       await this.handleFailedLogin(user);
+      await this.auditService.logLogin({
+        tenantId: tenantId.trim(),
+        userId: user.id,
+        identifier: maskedCedula,
+        authMethod: AuthMethod.PIN,
+        status: LoginAuditStatus.FAILED,
+        failureReason: 'Invalid PIN',
+        ipAddress,
+        userAgent,
+      });
       throw new UnauthorizedException(GENERIC_AUTH_MESSAGE);
     }
 
     await this.mesAuthRepository.resetLoginAttempts(user.id);
+    await this.auditService.logLogin({
+      tenantId: tenantId.trim(),
+      userId: user.id,
+      identifier: maskedCedula,
+      authMethod: AuthMethod.PIN,
+      status: LoginAuditStatus.SUCCESS,
+      ipAddress,
+      userAgent,
+    });
+
     return this.issueTokens(user);
   }
 
-  async logout(userId: string, jti?: string): Promise<void> {
+  async logout(
+    userId: string,
+    jti?: string,
+    ipAddress?: string,
+    userAgent?: string,
+  ): Promise<void> {
+    const user = await this.mesAuthRepository.findById(userId);
     await this.mesAuthRepository.saveRefreshToken(userId, null);
     if (jti) {
       await this.mesAuthRedisService.blacklistToken(jti, ACCESS_TOKEN_BLACKLIST_TTL_SECONDS);
+    }
+
+    if (user) {
+      await this.auditService.logLogin({
+        tenantId: user.tenantId,
+        userId: user.id,
+        identifier: user.cedulaHash, // We use cedulaHash since we don't have the raw cédula here
+        authMethod: AuthMethod.PIN,
+        status: LoginAuditStatus.LOGOUT,
+        ipAddress,
+        userAgent,
+      });
     }
   }
 

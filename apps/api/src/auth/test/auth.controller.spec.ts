@@ -89,13 +89,15 @@ describe('AuthController', () => {
     it('delegates to AuthService.login with tenant header and returns tokens', async () => {
       serviceMock.login.mockResolvedValue(tokens);
       const dto = { email: 'a@b.com', password: 'pass1234' };
-      const result = await controller.login(dto, TENANT_ID);
+      const req = { headers: {}, socket: { remoteAddress: '1.2.3.4' } } as never;
+      const result = await controller.login(dto, TENANT_ID, req);
       expect(result).toEqual(tokens);
-      expect(serviceMock.login).toHaveBeenCalledWith(TENANT_ID, dto);
+      expect(serviceMock.login).toHaveBeenCalledWith(TENANT_ID, dto, '1.2.3.4', undefined);
     });
 
     it('throws BadRequestException when x-tenant-id is missing', () => {
-      expect(() => controller.login({ email: 'a@b.com', password: 'pass' }, '  ')).toThrow(
+      const req = { headers: {}, socket: { remoteAddress: '1.2.3.4' } } as never;
+      expect(() => controller.login({ email: 'a@b.com', password: 'pass' }, '  ', req)).toThrow(
         BadRequestException,
       );
     });
@@ -104,19 +106,32 @@ describe('AuthController', () => {
   describe('refresh', () => {
     it('delegates to AuthService.refresh using req.user', async () => {
       serviceMock.refresh.mockResolvedValue(tokens);
-      const req = { user: { sub: 'user-1', refreshToken: 'raw-refresh' } } as never;
+      const req = {
+        user: { sub: 'user-1', refreshToken: 'raw-refresh' },
+        headers: {},
+        socket: { remoteAddress: '1.2.3.4' },
+      } as never;
       const result = await controller.refresh(req);
       expect(result).toEqual(tokens);
-      expect(serviceMock.refresh).toHaveBeenCalledWith('user-1', 'raw-refresh');
+      expect(serviceMock.refresh).toHaveBeenCalledWith(
+        'user-1',
+        'raw-refresh',
+        '1.2.3.4',
+        undefined,
+      );
     });
   });
 
   describe('logout', () => {
     it('delegates to AuthService.logout using req.user.sub', async () => {
       serviceMock.logout.mockResolvedValue(undefined);
-      const req = { user: { sub: 'user-1' } } as never;
+      const req = {
+        user: { sub: 'user-1' },
+        headers: {},
+        socket: { remoteAddress: '1.2.3.4' },
+      } as never;
       await controller.logout(req);
-      expect(serviceMock.logout).toHaveBeenCalledWith('user-1');
+      expect(serviceMock.logout).toHaveBeenCalledWith('user-1', '1.2.3.4', undefined);
     });
   });
 

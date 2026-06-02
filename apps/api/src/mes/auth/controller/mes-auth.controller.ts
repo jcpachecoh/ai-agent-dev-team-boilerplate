@@ -54,7 +54,8 @@ export class MesAuthController {
   @HttpCode(HttpStatus.OK)
   login(@Body() dto: MesLoginDto, @Headers('x-tenant-id') tenantId: string, @Req() req: Request) {
     const ipAddress = this.resolveClientIp(req);
-    return this.mesAuthService.login(dto, ipAddress, tenantId);
+    const userAgent = req.headers['user-agent'];
+    return this.mesAuthService.login(dto, ipAddress, tenantId, userAgent);
   }
 
   @Public()
@@ -65,7 +66,9 @@ export class MesAuthController {
   @Post('mes/auth/logout')
   @HttpCode(HttpStatus.OK)
   async logout(@Req() req: Request & { user: MesRequestUser }) {
-    await this.mesAuthService.logout(req.user.sub, req.user.jti);
+    const ipAddress = this.resolveClientIp(req);
+    const userAgent = req.headers['user-agent'];
+    await this.mesAuthService.logout(req.user.sub, req.user.jti, ipAddress, userAgent);
     return { message: 'Logged out successfully.' };
   }
 

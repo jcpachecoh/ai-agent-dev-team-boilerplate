@@ -54,8 +54,15 @@ export class AuthController {
   @ApiOkResponse({ description: 'Returns access + refresh tokens' })
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  login(@Body() dto: LoginDto, @Headers('x-tenant-id') tenantId: string) {
-    return this.authService.login(this.requireTenantId(tenantId), dto);
+  login(@Body() dto: LoginDto, @Headers('x-tenant-id') tenantId: string, @Req() req: Request) {
+    const ipAddress = (req.headers['x-forwarded-for'] as string) ?? req.socket.remoteAddress;
+    const userAgent = req.headers['user-agent'];
+    return this.authService.login(
+      this.requireTenantId(tenantId),
+      dto,
+      Array.isArray(ipAddress) ? ipAddress[0] : ipAddress,
+      userAgent,
+    );
   }
 
   @Public()
@@ -66,7 +73,14 @@ export class AuthController {
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   refresh(@Req() req: Request & { user: { sub: string; refreshToken: string } }) {
-    return this.authService.refresh(req.user.sub, req.user.refreshToken);
+    const ipAddress = (req.headers['x-forwarded-for'] as string) ?? req.socket.remoteAddress;
+    const userAgent = req.headers['user-agent'];
+    return this.authService.refresh(
+      req.user.sub,
+      req.user.refreshToken,
+      Array.isArray(ipAddress) ? ipAddress[0] : ipAddress,
+      userAgent,
+    );
   }
 
   @ApiBearerAuth()
@@ -75,7 +89,13 @@ export class AuthController {
   @Post('logout')
   @HttpCode(HttpStatus.OK)
   logout(@Req() req: Request & { user: { sub: string } }) {
-    return this.authService.logout(req.user.sub);
+    const ipAddress = (req.headers['x-forwarded-for'] as string) ?? req.socket.remoteAddress;
+    const userAgent = req.headers['user-agent'];
+    return this.authService.logout(
+      req.user.sub,
+      Array.isArray(ipAddress) ? ipAddress[0] : ipAddress,
+      userAgent,
+    );
   }
 
   @Public()

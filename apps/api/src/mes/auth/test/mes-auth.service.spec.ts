@@ -15,6 +15,7 @@ import * as crypto from 'crypto';
 import { MesAuthService } from '../service/mes-auth.service';
 import { MesAuthRepository } from '../repository/mes-auth.repository';
 import { MesAuthRedisService } from '../service/mes-auth-redis.service';
+import { AuditService } from '../../../audit/service/audit.service';
 
 jest.mock('bcrypt');
 const bcryptMock = bcrypt as jest.Mocked<typeof bcrypt>;
@@ -69,6 +70,10 @@ const jwtMock = {
   signAsync: jest.fn(),
 };
 
+const auditServiceMock = {
+  logLogin: jest.fn(),
+};
+
 describe('MesAuthService', () => {
   let service: MesAuthService;
 
@@ -81,6 +86,7 @@ describe('MesAuthService', () => {
         { provide: MesAuthRepository, useValue: repoMock },
         { provide: MesAuthRedisService, useValue: redisMock },
         { provide: JwtService, useValue: jwtMock },
+        { provide: AuditService, useValue: auditServiceMock },
       ],
     }).compile();
 
@@ -99,6 +105,7 @@ describe('MesAuthService', () => {
     repoMock.resetLoginAttempts.mockResolvedValue(undefined);
     repoMock.saveRefreshToken.mockResolvedValue(undefined);
     redisMock.blacklistToken.mockResolvedValue(undefined);
+    auditServiceMock.logLogin.mockResolvedValue(undefined);
   });
 
   describe('login', () => {
@@ -114,11 +121,12 @@ describe('MesAuthService', () => {
       expect(repoMock.findByCedulaHash).toHaveBeenCalledWith(TENANT_ID, hashCedula(VALID_CEDULA));
     });
 
-    it('returns tokens on valid cédula and PIN', async () => {
+    it('returns tokens and logs SUCCESS on valid cédula and PIN', async () => {
       const result = await service.login(
         { cedula: VALID_CEDULA, pin: VALID_PIN },
         '192.168.1.1',
         TENANT_ID,
+        'Mozilla',
       );
 
       expect(result).toEqual({
@@ -130,6 +138,16 @@ describe('MesAuthService', () => {
           tenantId: baseUser.tenantId,
           sedeId: baseUser.sedeId,
         },
+      });
+
+      expect(auditServiceMock.logLogin).toHaveBeenCalledWith({
+        tenantId: TENANT_ID,
+        userId: baseUser.id,
+        identifier: '****5678',
+        authMethod: 'PIN',
+        status: 'SUCCESS',
+        ipAddress: '192.168.1.1',
+        userAgent: 'Mozilla',
       });
     });
 
@@ -150,12 +168,19 @@ describe('MesAuthService', () => {
       );
     });
 
-    it('throws generic 401 for wrong PIN', async () => {
+    it('throws generic 401 and logs FAILED for wrong PIN', async () => {
       (bcryptMock.compare as jest.Mock).mockResolvedValue(false);
 
       await expect(
         service.login({ cedula: VALID_CEDULA, pin: '9999' }, '192.168.1.1', TENANT_ID),
       ).rejects.toThrow(new UnauthorizedException(GENERIC_AUTH_MESSAGE));
+
+      expect(auditServiceMock.logLogin).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: 'FAILED',
+          failureReason: 'Invalid PIN',
+        }),
+      );
     });
 
     it('increments login attempts on wrong PIN', async () => {
@@ -184,7 +209,7 @@ describe('MesAuthService', () => {
       expect(lockMs).toBeLessThanOrEqual(16 * 60 * 1000);
     });
 
-    it('rejects login when user is locked', async () => {
+    it('rejects login and logs LOCKED when user is already locked', async () => {
       const lockedUntil = new Date(Date.now() + 10 * 60 * 1000);
       repoMock.findByCedulaHash.mockResolvedValue({ ...baseUser, lockedUntil });
 
@@ -194,9 +219,16 @@ describe('MesAuthService', () => {
 
       expect(bcryptMock.compare).not.toHaveBeenCalled();
       expect(repoMock.incrementLoginAttempts).not.toHaveBeenCalled();
+
+      expect(auditServiceMock.logLogin).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: 'LOCKED',
+          failureReason: 'Account locked',
+        }),
+      );
     });
 
-    it('rejects login for inactive user', async () => {
+    it('rejects login and logs FAILED for inactive user', async () => {
       repoMock.findByCedulaHash.mockResolvedValue({
         ...baseUser,
         isActive: false,
@@ -207,17 +239,30 @@ describe('MesAuthService', () => {
       ).rejects.toThrow(new UnauthorizedException(GENERIC_AUTH_MESSAGE));
 
       expect(bcryptMock.compare).not.toHaveBeenCalled();
+      expect(auditServiceMock.logLogin).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: 'FAILED',
+          failureReason: 'User inactive',
+        }),
+      );
     });
 
-    it('throws generic 401 for unknown cédula', async () => {
+    it('throws generic 401 and logs FAILED for unknown cédula', async () => {
       repoMock.findByCedulaHash.mockResolvedValue(null);
 
       await expect(
         service.login({ cedula: VALID_CEDULA, pin: VALID_PIN }, '192.168.1.1', TENANT_ID),
       ).rejects.toThrow(new UnauthorizedException(GENERIC_AUTH_MESSAGE));
+
+      expect(auditServiceMock.logLogin).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: 'FAILED',
+          failureReason: 'User not found',
+        }),
+      );
     });
 
-    it('throws 429 when IP is rate limited', async () => {
+    it('throws 429 and logs FAILED when IP is rate limited', async () => {
       redisMock.checkRateLimit.mockResolvedValue({
         allowed: false,
         remaining: 0,
@@ -229,6 +274,12 @@ describe('MesAuthService', () => {
       ).rejects.toMatchObject({ status: HttpStatus.TOO_MANY_REQUESTS });
 
       expect(repoMock.findByCedulaHash).not.toHaveBeenCalled();
+      expect(auditServiceMock.logLogin).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: 'FAILED',
+          failureReason: 'Rate limit exceeded',
+        }),
+      );
     });
 
     it('resets login attempts and saves hashed refresh token on success', async () => {
@@ -251,6 +302,19 @@ describe('MesAuthService', () => {
         expect(message).not.toContain(VALID_CEDULA);
         expect(message).not.toContain(VALID_PIN);
       }
+    });
+
+    it('logs FAILED when credentials format is invalid', async () => {
+      await expect(
+        service.login({ cedula: 'abc', pin: VALID_PIN }, '192.168.1.1', TENANT_ID),
+      ).rejects.toThrow(UnauthorizedException);
+
+      expect(auditServiceMock.logLogin).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: 'FAILED',
+          failureReason: 'Invalid format',
+        }),
+      );
     });
   });
 
@@ -421,10 +485,20 @@ describe('MesAuthService', () => {
   });
 
   describe('logout', () => {
-    it('clears refresh token in repository', async () => {
-      await service.logout(baseUser.id);
+    it('clears refresh token in repository and logs LOGOUT', async () => {
+      repoMock.findById.mockResolvedValue(baseUser);
+      await service.logout(baseUser.id, undefined, '1.2.3.4', 'Mozilla');
 
       expect(repoMock.saveRefreshToken).toHaveBeenCalledWith(baseUser.id, null);
+      expect(auditServiceMock.logLogin).toHaveBeenCalledWith({
+        tenantId: baseUser.tenantId,
+        userId: baseUser.id,
+        identifier: baseUser.cedulaHash,
+        authMethod: 'PIN',
+        status: 'LOGOUT',
+        ipAddress: '1.2.3.4',
+        userAgent: 'Mozilla',
+      });
     });
 
     it('blacklists jti in Redis when provided', async () => {

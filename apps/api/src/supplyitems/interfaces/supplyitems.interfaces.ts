@@ -57,9 +57,14 @@ export interface CppUpdateInput {
 export interface ISupplyitemsService {
   findAll(tenantId: string): Promise<SupplyItem[]>;
   findOne(tenantId: string, id: string): Promise<SupplyItem>;
-  create(tenantId: string, dto: CreateSupplyItemDto): Promise<SupplyItem>;
-  update(tenantId: string, id: string, dto: UpdateSupplyItemDto): Promise<SupplyItem>;
-  remove(tenantId: string, id: string): Promise<SupplyItem>;
+  create(tenantId: string, dto: CreateSupplyItemDto, actorUserId?: string): Promise<SupplyItem>;
+  update(
+    tenantId: string,
+    id: string,
+    dto: UpdateSupplyItemDto,
+    actorUserId?: string,
+  ): Promise<SupplyItem>;
+  remove(tenantId: string, id: string, actorUserId?: string): Promise<SupplyItem>;
   findSuppliers(tenantId: string, id: string): Promise<SupplierWithProductInfo[]>;
   findPriceHistory(tenantId: string, id: string): Promise<SupplyItemPriceHistory[]>;
   calculateCpp(input: CppCalculationInput): any;

@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { PrismaModule } from '../../prisma/prisma.module';
+import { AuditModule } from '../../audit/audit.module';
 import { MesAuthController } from './controller/mes-auth.controller';
 import { MesJwtGuard } from './guards/mes-jwt.guard';
 import { MesRolesGuard } from './guards/mes-roles.guard';
@@ -13,6 +14,7 @@ import { MesJwtStrategy } from './strategies/mes-jwt.strategy';
 @Module({
   imports: [
     PrismaModule,
+    AuditModule,
     PassportModule,
     JwtModule.register({
       secret:
