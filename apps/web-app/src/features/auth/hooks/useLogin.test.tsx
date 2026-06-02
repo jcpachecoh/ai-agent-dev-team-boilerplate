@@ -30,12 +30,12 @@ vi.mock('@/lib/auth-token', () => ({
 }));
 
 const mockLoginResponse = {
-  accessToken: 'jwt-test-token',
-  operator: {
+  token: 'jwt-test-token',
+  user: {
     id: 'op-1',
-    name: 'Test Operator',
     role: 'MANAGER',
     tenantId: 'palos-de-lena',
+    isActive: true,
   },
 };
 

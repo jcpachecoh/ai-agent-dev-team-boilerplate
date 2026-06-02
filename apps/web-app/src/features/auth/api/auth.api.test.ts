@@ -11,8 +11,12 @@ describe('loginWithCedulaPin', () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
-        accessToken: 'token-abc',
-        operator: { id: '1', role: 'MANAGER', tenantId: 'palos-de-lena' },
+        data: {
+          login: {
+            token: 'token-abc',
+            user: { id: '1', role: 'MANAGER', tenantId: 'palos-de-lena', isActive: true },
+          },
+        },
       }),
     });
     vi.stubGlobal('fetch', fetchMock);
@@ -20,17 +24,12 @@ describe('loginWithCedulaPin', () => {
     const result = await loginWithCedulaPin({ cedula: '1234567890', pin: '1234' });
 
     expect(fetchMock).toHaveBeenCalledWith(
-      '/api/mes/auth/login',
+      expect.stringContaining('/graphql'),
       expect.objectContaining({
         method: 'POST',
-        headers: expect.objectContaining({
-          'x-tenant-id': expect.any(String),
-          'Content-Type': 'application/json',
-        }),
-        body: JSON.stringify({ cedula: '1234567890', pin: '1234' }),
       }),
     );
-    expect(result.accessToken).toBe('token-abc');
+    expect(result.token).toBe('token-abc');
   });
 
   it('throws AuthApiError on 401', async () => {
