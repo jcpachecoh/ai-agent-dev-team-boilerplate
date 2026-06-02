@@ -2,7 +2,6 @@ import { Bell, Clock, Menu, Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 
-import Breadcrumbs from '@/components/Breadcrumbs';
 import UserMenu from '@/components/UserMenu';
 import { getBreadcrumbsForPath } from '@/constants/navigation';
 import { useLogout } from '@/features/auth/hooks/useLogout';
@@ -47,33 +46,6 @@ export default function Header({
             <Menu size={16} />
           </button>
         ) : null}
-
-        <div className={styles.statusGroup}>
-          <div className={[styles.pill, styles.pillActive].join(' ')}>
-            <span className={styles.statusDot} aria-hidden />
-            PLANTA CENTRAL
-          </div>
-          <div className={styles.pill}>
-            <Clock size={14} aria-hidden />
-            TURNO MAÑANA
-          </div>
-        </div>
-
-        <div className={styles.breadcrumbs}>
-          <Breadcrumbs items={breadcrumbs} />
-        </div>
-      </div>
-
-      <div className={styles.center}>
-        <label className={styles.search}>
-          <Search size={14} className={styles.searchIcon} aria-hidden />
-          <input
-            className={styles.searchInput}
-            type="search"
-            placeholder="Buscar en el sistema..."
-            aria-label="Buscar en el sistema"
-          />
-        </label>
       </div>
 
       <div className={styles.right}>

@@ -1,0 +1,137 @@
+@use '../../../styles/abstracts/variables' as *;
+
+$inventario-success: #22c55e;
+$inventario-info: #3b82f6;
+$inventario-warning: #f0c040;
+$inventario-enterprise: #e8943a;
+$inventario-danger: #e05a44;
+$inventario-purple: #8b5cf6;
+$inventario-teal: #2ec4a0;
+$inventario-gold: #c8a96e;
+
+$inventario-dark-bg: #0a0a0a;
+$inventario-dark-topbar: #111111;
+$inventario-dark-surface: #1c1c1c;
+$inventario-dark-border: #2e2e2e;
+$inventario-dark-text: #f5f5f0;
+$inventario-dark-muted: #888888;
+$inventario-dark-subtle: #555555;
+
+@mixin inventario-theme-dark {
+  --inventario-overlay: #{rgba($color-black, 0.72)};
+  --inventario-bg: #{$inventario-dark-bg};
+  --inventario-topbar: #{$inventario-dark-topbar};
+  --inventario-surface: #{$inventario-dark-surface};
+  --inventario-border: #{$inventario-dark-border};
+  --inventario-text: #{$inventario-dark-text};
+  --inventario-muted: #{$inventario-dark-muted};
+  --inventario-subtle: #{$inventario-dark-subtle};
+  --inventario-input: #{$inventario-dark-surface};
+  --inventario-track: #{$inventario-dark-bg};
+  --inventario-hover: #{rgba($color-white, 0.04)};
+  --inventario-bar-fill: linear-gradient(
+    180deg,
+    var(--inventario-accent) 0%,
+    rgba(34, 197, 94, 0.4) 100%
+  );
+}
+
+@mixin inventario-theme-light {
+  --inventario-overlay: #{rgba($color-black, 0.45)};
+  --inventario-bg: #f6f4ef;
+  --inventario-topbar: #fbfaf6;
+  --inventario-surface: #ffffff;
+  --inventario-border: #{rgba($color-black, 0.12)};
+  --inventario-text: #{$color-black};
+  --inventario-muted: #{$color-gray-700};
+  --inventario-subtle: #{$color-gray-700};
+  --inventario-input: #fbfaf6;
+  --inventario-track: #{rgba($color-black, 0.08)};
+  --inventario-hover: #{rgba($color-black, 0.04)};
+  --inventario-bar-fill: var(--inventario-accent);
+}
+
+@mixin inventario-theme-classes {
+  &.theme--dark {
+    @include inventario-theme-dark;
+  }
+
+  &.theme--light {
+    @include inventario-theme-light;
+  }
+}
+
+@mixin inventario-size-vars {
+  &.size--sm {
+    --control-width: 220px;
+    --control-min-height: 34px;
+    --control-padding-x: #{$spacing-sm};
+    --control-padding-y: 0.375rem;
+    --control-gap: #{$spacing-xs};
+    --control-radius: #{$border-radius-sm};
+    --control-font-size: #{$font-size-xs};
+    --control-icon-size: 14px;
+  }
+
+  &.size--md {
+    --control-width: 320px;
+    --control-min-height: 44px;
+    --control-padding-x: #{$spacing-md};
+    --control-padding-y: #{$spacing-sm};
+    --control-gap: #{$spacing-sm};
+    --control-radius: #{$border-radius-sm};
+    --control-font-size: #{$font-size-sm};
+    --control-icon-size: 16px;
+  }
+
+  &.size--xl {
+    --control-width: 100%;
+    --control-min-height: 52px;
+    --control-padding-x: #{$spacing-lg};
+    --control-padding-y: #{$spacing-md};
+    --control-gap: #{$spacing-md};
+    --control-radius: #{$border-radius-md};
+    --control-font-size: #{$font-size-base};
+    --control-icon-size: 18px;
+  }
+}
+
+@mixin inventario-accent-color($color) {
+  @if $color == 'success' {
+    --inventario-accent: #{$inventario-success};
+  } @else if $color == 'info' {
+    --inventario-accent: #{$inventario-info};
+  } @else if $color == 'warning' {
+    --inventario-accent: #{$inventario-warning};
+  } @else if $color == 'danger' {
+    --inventario-accent: #{$inventario-danger};
+  } @else if $color == 'purple' {
+    --inventario-accent: #{$inventario-purple};
+  } @else if $color == 'enterprise' {
+    --inventario-accent: #{$inventario-enterprise};
+  } @else {
+    --inventario-accent: var(--inventario-text);
+  }
+}
+
+@mixin inventario-focus-ring {
+  outline: 2px solid rgba($inventario-teal, 0.65);
+  outline-offset: 2px;
+}
+
+@mixin inventario-control-base {
+  width: min(100%, var(--control-width));
+  min-height: var(--control-min-height);
+  border-radius: var(--control-radius);
+  border: $border-width solid var(--inventario-border);
+  background: var(--inventario-input);
+  color: var(--inventario-text);
+  box-sizing: border-box;
+  font-family: $font-family-base;
+}
+
+@mixin inventario-button-ghost($accent) {
+  background: rgba($accent, 0.12);
+  border-color: rgba($accent, 0.3);
+  color: $accent;
+}

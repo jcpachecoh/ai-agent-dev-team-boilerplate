@@ -28,6 +28,7 @@ function mapNavItem(item: NavItem, pathname: string): SidebarNavItem {
     label: item.label,
     href: item.path,
     badge: item.badge,
+    accent: item.accent,
     active: isNavItemActive(pathname, item),
     icon: <Icon size={18} aria-hidden />,
     children: item.children?.map((child) => {

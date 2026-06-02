@@ -1,0 +1,55 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/inventario-theme' as inventario;
+
+.pagination {
+  @include inventario.inventario-theme-classes;
+  @include inventario.inventario-size-vars;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: min(100%, var(--control-width));
+  gap: $spacing-md;
+  color: var(--inventario-text);
+}
+
+.summary {
+  font-size: var(--control-font-size);
+  color: var(--inventario-muted);
+}
+
+.controls {
+  display: inline-flex;
+  gap: 8px;
+}
+
+.navButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: $border-width solid var(--inventario-border);
+  border-radius: $border-radius-sm;
+  background: var(--inventario-surface);
+  color: var(--inventario-text);
+  cursor: pointer;
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  &:hover:not(:disabled) {
+    background: var(--inventario-hover);
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  &:focus-visible {
+    @include inventario.inventario-focus-ring;
+  }
+}

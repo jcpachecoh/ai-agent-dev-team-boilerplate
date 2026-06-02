@@ -4,6 +4,7 @@ import { es } from 'date-fns/locale';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 import * as React from 'react';
 import { DayPicker } from 'react-day-picker';
+import 'react-day-picker/style.css';
 
 import styles from './DatePicker.module.scss';
 
@@ -15,6 +16,8 @@ export interface DatePickerProps {
   theme?: 'light' | 'dark';
   className?: string;
   size?: 'sm' | 'md' | 'xl';
+  /** No outer border — for use inside InventarioFormField / Receta controls */
+  embedded?: boolean;
 }
 
 export const DatePicker: React.FC<DatePickerProps> = ({
@@ -25,6 +28,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
   theme = 'dark',
   className,
   size = 'md',
+  embedded = false,
 }) => {
   const [isOpen, setIsOpen] = React.useState(false);
   const [inputValue, setInputValue] = React.useState(value ? format(value, 'dd/MM/yyyy') : '');
@@ -59,7 +63,11 @@ export const DatePicker: React.FC<DatePickerProps> = ({
   const sizeClass = styles[`size--${size}`];
 
   return (
-    <div className={[styles.container, themeClass, sizeClass, className].filter(Boolean).join(' ')}>
+    <div
+      className={[styles.container, themeClass, sizeClass, embedded && styles.embedded, className]
+        .filter(Boolean)
+        .join(' ')}
+    >
       <Popover.Root open={isOpen} onOpenChange={setIsOpen}>
         <div className={styles.inputWrapper}>
           <input
@@ -76,33 +84,21 @@ export const DatePicker: React.FC<DatePickerProps> = ({
             </button>
           </Popover.Trigger>
         </div>
-        <Popover.Content className={styles.popoverContent} sideOffset={5} align="start">
+        <Popover.Content
+          className={[
+            styles.popoverContent,
+            theme === 'dark' ? styles.popoverContentDark : styles.popoverContentLight,
+          ]
+            .filter(Boolean)
+            .join(' ')}
+          sideOffset={5}
+          align="start"
+        >
           <DayPicker
             mode="single"
             selected={value}
             onSelect={handleDateSelect}
             locale={es}
-            classNames={{
-              months: styles.months,
-              month: styles.month,
-              month_caption: styles.caption,
-              caption_label: styles.captionLabel,
-              nav: styles.nav,
-              button_previous: [styles.navButton, styles.navButtonPrevious].join(' '),
-              button_next: [styles.navButton, styles.navButtonNext].join(' '),
-              month_grid: styles.table,
-              weekdays: styles.headRow,
-              weekday: styles.headCell,
-              week: styles.row,
-              day: styles.day,
-              day_button: styles.day,
-              selected: styles.daySelected,
-              today: styles.dayToday,
-              outside: styles.dayOutside,
-              disabled: styles.dayDisabled,
-              range_middle: styles.dayRangeMiddle,
-              hidden: styles.dayHidden,
-            }}
             components={{
               Chevron: (props): React.JSX.Element => {
                 if (props.orientation === 'left') {

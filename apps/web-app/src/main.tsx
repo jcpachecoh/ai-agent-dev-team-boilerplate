@@ -1,3 +1,4 @@
+import { Toaster } from '@restopsiq/ui';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -14,6 +15,7 @@ createRoot(rootElement).render(
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <App />
+        <Toaster theme="dark" />
       </BrowserRouter>
     </QueryClientProvider>
   </StrictMode>,

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import InitialBadge from '../InitialBadge';
 import ProfileHeader from '../ProfileHeader';
 import styles from './Sidebar.module.scss';
+import { getSidebarAccentStyle } from './sidebar-accent';
 import type { SidebarNavItem, SidebarProps } from './sidebar-types';
 import { getDefaultExpandedIds, getUserInitials, isSidebarItemActive } from './sidebar-utils';
 
@@ -172,9 +173,11 @@ function SidebarNavItemRow({
     onToggleExpanded();
   };
 
+  const accentStyle = getSidebarAccentStyle(item.accent);
+
   if (hasChildren) {
     return (
-      <li className={styles.navGroup}>
+      <li className={styles.navGroup} style={accentStyle}>
         <button
           type="button"
           className={[
@@ -226,7 +229,7 @@ function SidebarNavItemRow({
   }
 
   return (
-    <li className={styles.navGroup}>
+    <li className={styles.navGroup} style={accentStyle}>
       <a
         href={item.href ?? '/'}
         className={[styles.navLink, isActive && styles.active].filter(Boolean).join(' ')}

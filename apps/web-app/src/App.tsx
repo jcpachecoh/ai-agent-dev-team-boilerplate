@@ -3,7 +3,12 @@ import { Route, Routes } from 'react-router-dom';
 import AppLayout from '@/layouts/AppLayout';
 import DashboardPage from '@/pages/DashboardPage';
 import DispatchPage from '@/pages/DispatchPage';
-import InventoryPage from '@/pages/InventoryPage';
+import InventoryAlertsPage from '@/pages/InventoryAlertsPage';
+import InventoryDashboardPage from '@/pages/InventoryDashboardPage';
+import InventoryMovementsPage from '@/pages/InventoryMovementsPage';
+import InventoryProductDetailPage from '@/pages/InventoryProductDetailPage';
+import InventoryProductsPage from '@/pages/InventoryProductsPage';
+import InventoryReportsPage from '@/pages/InventoryReportsPage';
 import LoginPage from '@/pages/LoginPage';
 import NotFoundPage from '@/pages/NotFoundPage';
 import PayrollPage from '@/pages/PayrollPage';
@@ -17,29 +22,27 @@ import { RequireAuth } from '@/routes/RequireAuth';
 export default function App(): React.JSX.Element {
   return (
     <Routes>
-      <Route path="/login" element={<LoginPage />} />
-      <Route element={<RequireAuth />}>
-        <Route element={<AppLayout />}>
-          <Route path="/" element={<DashboardPage />} />
-          <Route path="/proveedores/*" element={<ProveedoresPage />} />
-          <Route path="/inventory" element={<InventoryPage />} />
-          <Route path="/inventory/products" element={<InventoryPage />} />
-          <Route path="/inventory/movements" element={<InventoryPage />} />
-          <Route path="/inventory/alerts" element={<InventoryPage />} />
-          <Route path="/inventory/reports" element={<InventoryPage />} />
-          <Route path="/recetas" element={<RecipesPage />} />
-          <Route path="/recetas/procesos" element={<RecipesPage />} />
-          <Route path="/recetas/historial" element={<RecipesPage />} />
-          <Route path="/reports" element={<ReportsPage />} />
-          <Route path="/dispatch" element={<DispatchPage />} />
-          <Route path="/users" element={<UsersPage />} />
-          <Route path="/users/roles" element={<UsersPage />} />
-          <Route path="/users/permissions" element={<UsersPage />} />
-          <Route path="/payroll" element={<PayrollPage />} />
-          <Route path="/payroll/employees" element={<PayrollPage />} />
-          <Route path="/payroll/salaries" element={<PayrollPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
-        </Route>
+      <Route element={<AppLayout />}>
+        <Route path="/" element={<DashboardPage />} />
+        <Route path="/proveedores" element={<ProveedoresPage />} />
+        <Route path="/inventory" element={<InventoryDashboardPage />} />
+        <Route path="/inventory/products" element={<InventoryProductsPage />} />
+        <Route path="/inventory/products/:id" element={<InventoryProductDetailPage />} />
+        <Route path="/inventory/movements" element={<InventoryMovementsPage />} />
+        <Route path="/inventory/alerts" element={<InventoryAlertsPage />} />
+        <Route path="/inventory/reports" element={<InventoryReportsPage />} />
+        <Route path="/recetas" element={<RecipesPage />} />
+        <Route path="/recetas/procesos" element={<RecipesPage />} />
+        <Route path="/recetas/historial" element={<RecipesPage />} />
+        <Route path="/reports" element={<ReportsPage />} />
+        <Route path="/dispatch" element={<DispatchPage />} />
+        <Route path="/users" element={<UsersPage />} />
+        <Route path="/users/roles" element={<UsersPage />} />
+        <Route path="/users/permissions" element={<UsersPage />} />
+        <Route path="/payroll" element={<PayrollPage />} />
+        <Route path="/payroll/employees" element={<PayrollPage />} />
+        <Route path="/payroll/salaries" element={<PayrollPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
       </Route>
       <Route path="*" element={<NotFoundPage />} />
     </Routes>

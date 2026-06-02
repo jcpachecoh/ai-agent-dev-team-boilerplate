@@ -1,0 +1,38 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/inventario-theme' as inventario;
+
+.dateInput {
+  @include inventario.inventario-size-vars;
+
+  width: 100%;
+  min-height: calc(var(--control-min-height) - 2px);
+  padding: var(--control-padding-y) var(--control-padding-x);
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--inventario-text);
+  font-family: $font-family-base;
+  font-size: var(--control-font-size);
+  box-sizing: border-box;
+
+  &::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    opacity: 0.7;
+  }
+}
+
+.theme--dark {
+  color-scheme: dark;
+
+  &::-webkit-calendar-picker-indicator {
+    filter: invert(0.85);
+  }
+}
+
+.theme--light {
+  color-scheme: light;
+}
+
+.size--xl {
+  --control-width: 100%;
+}

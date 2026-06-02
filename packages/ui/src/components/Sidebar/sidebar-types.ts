@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
 
+import type { SidebarAccent } from './sidebar-accent';
+
 export interface SidebarNavChildItem {
   id: string;
   label: string;
@@ -15,6 +17,8 @@ export interface SidebarNavItem {
   icon?: ReactNode;
   badge?: number;
   active?: boolean;
+  /** Module accent when this group/link is active (overrides default purple on dark theme). */
+  accent?: SidebarAccent;
   children?: SidebarNavChildItem[];
 }
 

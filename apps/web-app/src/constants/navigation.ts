@@ -1,3 +1,4 @@
+import type { SidebarAccent } from '@restopsiq/ui';
 import type { LucideIcon } from 'lucide-react';
 import {
   ArrowLeftRight,
@@ -33,6 +34,8 @@ export interface NavItem {
   path?: string;
   icon: LucideIcon;
   badge?: number;
+  /** Sidebar highlight color when this module is active. */
+  accent?: SidebarAccent;
   children?: NavChildItem[];
 }
 
@@ -61,12 +64,14 @@ export const navigationItems: NavItem[] = [
     label: 'Gestión de Proveedores',
     path: '/proveedores',
     icon: Package,
+    accent: 'gold',
   },
   {
     id: 'inventario',
     label: 'Inventario',
     icon: Warehouse,
     badge: 5,
+    accent: 'green',
     children: [
       { id: 'inv-dashboard', label: 'Dashboard', path: '/inventory', icon: LayoutGrid },
       { id: 'inv-products', label: 'Productos', path: '/inventory/products', icon: Box },
@@ -84,6 +89,7 @@ export const navigationItems: NavItem[] = [
     id: 'recetas',
     label: 'Recetas',
     icon: ChefHat,
+    accent: 'purple',
     children: [
       { id: 'rec-list', label: 'Lista de Recetas', path: '/recetas', icon: List },
       {
@@ -106,17 +112,20 @@ export const navigationItems: NavItem[] = [
     path: '/reports',
     icon: Monitor,
     badge: 4,
+    accent: 'blue',
   },
   {
     id: 'despacho',
     label: 'Centro de Despacho',
     path: '/dispatch',
     icon: Truck,
+    accent: 'orange',
   },
   {
     id: 'usuarios',
     label: 'Usuarios',
     icon: Users,
+    accent: 'teal',
     children: [
       { id: 'users-list', label: 'Usuarios', path: '/users', icon: Users },
       { id: 'users-roles', label: 'Roles', path: '/users/roles', icon: Shield },
@@ -127,6 +136,7 @@ export const navigationItems: NavItem[] = [
     id: 'nomina',
     label: 'Nómina',
     icon: Wallet,
+    accent: 'amber',
     children: [
       { id: 'payroll', label: 'Nómina', path: '/payroll', icon: Wallet },
       { id: 'payroll-employees', label: 'Empleados', path: '/payroll/employees', icon: Users },
@@ -138,6 +148,7 @@ export const navigationItems: NavItem[] = [
     label: 'Configuración',
     path: '/settings',
     icon: Settings,
+    accent: 'muted',
   },
 ];
 

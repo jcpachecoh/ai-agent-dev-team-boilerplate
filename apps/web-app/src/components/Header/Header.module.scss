@@ -113,10 +113,6 @@
   gap: t.$space-4;
 }
 
-.breadcrumbs {
-  display: none;
-}
-
 .clock {
   display: none;
   align-items: center;
@@ -183,10 +179,6 @@
 
   .center {
     display: flex;
-  }
-
-  .breadcrumbs {
-    display: block;
   }
 }
 

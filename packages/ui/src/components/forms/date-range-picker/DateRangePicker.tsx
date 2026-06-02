@@ -13,9 +13,10 @@ import { es as esLocale, es } from 'date-fns/locale';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 import * as React from 'react';
 import { type DateRange, DayPicker } from 'react-day-picker';
+import 'react-day-picker/style.css';
 
-import styles from './DateRangePicker.module.scss';
 import datePickerStyles from '../date-picker/DatePicker.module.scss';
+import styles from './DateRangePicker.module.scss';
 
 export interface DateRangePickerProps {
   value?: DateRange;
@@ -98,7 +99,13 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
           </Popover.Trigger>
         </div>
         <Popover.Content
-          className={[datePickerStyles.popoverContent, styles.rangePopover].join(' ')}
+          className={[
+            datePickerStyles.popoverContent,
+            theme === 'dark'
+              ? datePickerStyles.popoverContentDark
+              : datePickerStyles.popoverContentLight,
+            styles.rangePopover,
+          ].join(' ')}
           sideOffset={5}
           align="start"
         >
@@ -119,33 +126,6 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
               selected={value}
               onSelect={handleRangeSelect}
               locale={es}
-              classNames={{
-                ...datePickerStyles,
-                months: datePickerStyles.months,
-                month: datePickerStyles.month,
-                month_caption: datePickerStyles.caption,
-                caption_label: datePickerStyles.captionLabel,
-                nav: datePickerStyles.nav,
-                button_previous: [
-                  datePickerStyles.navButton,
-                  datePickerStyles.navButtonPrevious,
-                ].join(' '),
-                button_next: [datePickerStyles.navButton, datePickerStyles.navButtonNext].join(' '),
-                month_grid: datePickerStyles.table,
-                weekdays: datePickerStyles.headRow,
-                weekday: datePickerStyles.headCell,
-                week: datePickerStyles.row,
-                day: datePickerStyles.day,
-                day_button: datePickerStyles.day,
-                selected: datePickerStyles.daySelected,
-                today: datePickerStyles.dayToday,
-                outside: datePickerStyles.dayOutside,
-                disabled: datePickerStyles.dayDisabled,
-                range_middle: styles.dayRangeMiddle,
-                range_start: styles.dayRangeStart,
-                range_end: styles.dayRangeEnd,
-                hidden: datePickerStyles.dayHidden,
-              }}
               components={{
                 Chevron: (props): React.JSX.Element => {
                   if (props.orientation === 'left') {

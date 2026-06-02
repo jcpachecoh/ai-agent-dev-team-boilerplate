@@ -1,0 +1,48 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/inventario-theme' as inventario;
+
+.button {
+  @include inventario.inventario-theme-classes;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 7px;
+  border-radius: $border-radius-sm;
+  border: $border-width solid transparent;
+  background: transparent;
+  cursor: pointer;
+  box-sizing: border-box;
+
+  svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+}
+
+.variant--edit {
+  @include inventario.inventario-button-ghost(inventario.$inventario-info);
+}
+
+.variant--delete {
+  @include inventario.inventario-button-ghost(inventario.$inventario-danger);
+}
+
+.variant--view {
+  @include inventario.inventario-button-ghost(inventario.$inventario-teal);
+}
+
+.variant--order {
+  @include inventario.inventario-button-ghost(inventario.$inventario-warning);
+}
+
+.variant--resolve {
+  @include inventario.inventario-button-ghost(inventario.$inventario-success);
+}
