@@ -505,7 +505,7 @@
           "item": [
             {
               "name": "Signup",
-              "description": "Register a global User under the operational tenant.\n\nRequires header x-tenant-id: {{tenantId}}.\nBody: email, cedula, documentType (CC|CE|PASAPORTE|TI|PEP), password; optional roleCode (default OPERATOR).\nPre-request generates unique signupEmail/signupCedula per run.\nAccepts 201 (created) or 409 (already exists).",
+              "description": "Register a global User under the operational tenant.\n\nRequires header x-tenant-id: {{tenantId}}.\nBody: email, cedula, documentType (CC|CE|PASAPORTE|TI|PEP), password; optional roleCode (default OPERATOR).\nPre-request generates unique signupEmail/signupCedula per run.\nAccepts 201 (created) or 409 (already exists).\n\nOn 201: automatically enqueues verify-email OTP (emailVerified stays false until Verify Email). Requires Redis + email worker.",
               "event": [
                 {
                   "listen": "prerequest",
@@ -758,7 +758,7 @@
             },
             {
               "name": "Verify Email",
-              "description": "AUTH-04 / RES-226 — Verify the user's email address using the 6-digit OTP.\n\nPublic endpoint — no Authorization header required.\nNo x-tenant-id header required.\n\nPrerequisite: run Resend Verification first (Signup does NOT send an OTP). Copy the OTP from the email or worker/dev logs and set {{otpCode}} before running this request.\n\nExpected: 200 { message: 'Email verified successfully.' }\nSide effects: OTP consumed (single-use); User.emailVerified set to true.\n\nAfter success, run Me — Check emailVerified (requires Login + Bearer {{accessToken}}) to confirm emailVerified: true.",
+              "description": "AUTH-04 / RES-226 — Verify the user's email address using the 6-digit OTP.\n\nPublic endpoint — no Authorization header required.\nNo x-tenant-id header required.\n\nPrerequisite: Signup automatically sends an OTP. Copy it from the email or worker/dev logs and set {{otpCode}}. If missing or expired, run Resend Verification first.\n\nExpected: 200 { message: 'Email verified successfully.' }\nSide effects: OTP consumed (single-use); User.emailVerified set to true.\n\nAfter success, run Me — Check emailVerified (requires Login + Bearer {{accessToken}}) to confirm emailVerified: true.",
               "event": [
                 {
                   "listen": "test",
@@ -3364,7 +3364,7 @@
     },
     {
       "name": "10 — GraphQL Auth",
-      "description": "GraphQL auth against {{graphqlUrl}} (apps/api :3001/graphql). Same auth services as REST folders 01/02.\n\n**Prerequisites:** API on :3001 only. Redis + email worker for email flows. Run `pnpm --filter=@restopsiq/api start:dev`.\n\n**Token parity with REST folders 01/02:**\n- Global: `data.login.accessToken` → {{accessToken}} (never use for plant/MES)\n- Operational: `data.loginOperational.accessToken` → {{mesAccessToken}} (same as REST folder 02)\n\n**Run order (top-to-bottom):** Signup → Login → Me → Refresh Token → Change Password → **Resend Verification → Verify Email → Me — Check emailVerified** (manual {{otpCode}}) → Forgot Password → Reset Password (manual {{resetToken}}) → Logout → Login Operational → Me Operational → Logout Operational.\n\n**Email verification (AUTH-04):** Signup does NOT send OTP. Run Resend Verification first, set {{otpCode}}, then Verify Email. Optional Me — Check emailVerified confirms emailVerified: true.\n\n**Password reset:** forgotPassword / resetPassword mirror REST folder 01. resetPassword uses input.token = {{resetToken}} (no x-tenant-id).\n\nCollection pre-request auto-login is **disabled** for `/graphql` URLs — run Login / Login Operational explicitly.",
+      "description": "GraphQL auth against {{graphqlUrl}} (apps/api :3001/graphql). Same auth services as REST folders 01/02.\n\n**Prerequisites:** API on :3001 only. Redis + email worker for email flows. Run `pnpm --filter=@restopsiq/api start:dev`.\n\n**Token parity with REST folders 01/02:**\n- Global: `data.login.accessToken` → {{accessToken}} (never use for plant/MES)\n- Operational: `data.loginOperational.accessToken` → {{mesAccessToken}} (same as REST folder 02)\n\n**Run order (top-to-bottom):** Signup → Login → Me → Refresh Token → Change Password → **Resend Verification → Verify Email → Me — Check emailVerified** (manual {{otpCode}}) → Forgot Password → Reset Password (manual {{resetToken}}) → Logout → Login Operational → Me Operational → Logout Operational.\n\n**Email verification (AUTH-04):** Signup sends OTP automatically. Set {{otpCode}} from email/worker logs, then Verify Email. Use Resend Verification if OTP expired. Optional Me — Check emailVerified confirms emailVerified: true.\n\n**Password reset:** forgotPassword / resetPassword mirror REST folder 01. resetPassword uses input.token = {{resetToken}} (no x-tenant-id).\n\nCollection pre-request auto-login is **disabled** for `/graphql` URLs — run Login / Login Operational explicitly.",
       "item": [
         {
           "name": "Signup",
@@ -3715,7 +3715,7 @@
         },
         {
           "name": "Verify Email",
-          "description": "AUTH-04 / RES-226 — GraphQL mutation verifyEmail delegates to POST /api/auth/verify-email.\n\nPrerequisite: Resend Verification first (Signup does NOT send OTP). Set {{otpCode}} from email/worker logs.\n\nOn success: OTP consumed; User.emailVerified set to true. Then run Me — Check emailVerified with Bearer {{accessToken}}.",
+          "description": "AUTH-04 / RES-226 — GraphQL mutation verifyEmail delegates to POST /api/auth/verify-email.\n\nPrerequisite: Signup sends OTP automatically. Set {{otpCode}} from email/worker logs, or run Resend Verification if missing/expired.\n\nOn success: OTP consumed; User.emailVerified set to true. Then run Me — Check emailVerified with Bearer {{accessToken}}.",
           "request": {
             "auth": {
               "type": "noauth"

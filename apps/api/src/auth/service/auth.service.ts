@@ -3,6 +3,7 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -17,6 +18,7 @@ import type {
 } from '../interfaces/auth.interfaces';
 import { AuthRepository } from '../repository/auth.repository';
 import { AuthEmailRepository } from '../repository/auth-email.repository';
+import { AuthEmailService } from './auth-email.service';
 import { AuditService } from '../../audit/service/audit.service';
 import type { SignupDto } from '../controller/dto/signup.dto';
 import type { LoginDto } from '../controller/dto/login.dto';
@@ -28,9 +30,12 @@ const DEFAULT_ROLE_CODE = 'OPERATOR';
 
 @Injectable()
 export class AuthService implements IAuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly authRepository: AuthRepository,
     private readonly authEmailRepository: AuthEmailRepository,
+    private readonly authEmailService: AuthEmailService,
     private readonly jwtService: JwtService,
     private readonly auditService: AuditService,
   ) {}
@@ -69,6 +74,18 @@ export class AuthService implements IAuthService {
       passwordHash,
       roleId: role.id,
     });
+
+    try {
+      await this.authEmailService.sendVerifyEmail(
+        { id: user.id, email: user.email },
+        { tenantId: resolvedTenantId, tenantName: resolvedTenantId },
+      );
+    } catch (error) {
+      this.logger.warn(
+        `[signup] Verification email enqueue failed for userId="${user.id}" — ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+
     return this.issueTokens(user.id, user.email);
   }
 

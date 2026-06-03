@@ -6,6 +6,7 @@ import * as bcrypt from 'bcrypt';
 import { AuthService } from '../service/auth.service';
 import { AuthRepository } from '../repository/auth.repository';
 import { AuthEmailRepository } from '../repository/auth-email.repository';
+import { AuthEmailService } from '../service/auth-email.service';
 import { AuditService } from '../../audit/service/audit.service';
 
 jest.mock('bcrypt');
@@ -60,6 +61,10 @@ const jwtMock = {
   signAsync: jest.fn(),
 };
 
+const authEmailServiceMock = {
+  sendVerifyEmail: jest.fn(),
+};
+
 describe('AuthService — global User email login regression (USR-01 Task 09)', () => {
   let service: AuthService;
 
@@ -69,6 +74,7 @@ describe('AuthService — global User email login regression (USR-01 Task 09)', 
         AuthService,
         { provide: AuthRepository, useValue: repoMock },
         { provide: AuthEmailRepository, useValue: authEmailRepoMock },
+        { provide: AuthEmailService, useValue: authEmailServiceMock },
         { provide: JwtService, useValue: jwtMock },
         { provide: AuditService, useValue: auditServiceMock },
       ],
