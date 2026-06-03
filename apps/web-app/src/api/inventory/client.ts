@@ -1,3 +1,5 @@
+import { getGraphqlAuthToken } from '@/lib/auth-token';
+
 import { inventoryApiConfig } from './config';
 
 export class InventoryApiError extends Error {
@@ -11,7 +13,7 @@ export class InventoryApiError extends Error {
 }
 
 export async function inventoryFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  const token = localStorage.getItem('accessToken');
+  const token = getGraphqlAuthToken();
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
     'x-tenant-id': inventoryApiConfig.tenantId,
@@ -22,7 +24,9 @@ export async function inventoryFetch<T>(path: string, init?: RequestInit): Promi
     (headers as Record<string, string>).Authorization = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${inventoryApiConfig.baseUrl}/api${path}`, {
+  const base = inventoryApiConfig.baseUrl.replace(/\/$/, '');
+  const url = base ? `${base}/api${path}` : `/api${path}`;
+  const response = await fetch(url, {
     ...init,
     headers,
   });

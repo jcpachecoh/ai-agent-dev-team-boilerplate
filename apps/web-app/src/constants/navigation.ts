@@ -15,6 +15,7 @@ import {
   Settings,
   Shield,
   Truck,
+  Tags,
   TriangleAlert,
   Users,
   Wallet,
@@ -75,6 +76,12 @@ export const navigationItems: NavItem[] = [
     children: [
       { id: 'inv-dashboard', label: 'Dashboard', path: '/inventory', icon: LayoutGrid },
       { id: 'inv-products', label: 'Productos', path: '/inventory/products', icon: Box },
+      {
+        id: 'inv-categories',
+        label: 'Categorías',
+        path: '/inventory/categories',
+        icon: Tags,
+      },
       {
         id: 'inv-movements',
         label: 'Movimientos',
@@ -157,6 +164,7 @@ const routeLabels: Record<string, string> = {
   '/proveedores': 'Gestión de Proveedores',
   '/inventory': 'Inventario',
   '/inventory/products': 'Productos',
+  '/inventory/categories': 'Categorías',
   '/inventory/movements': 'Movimientos',
   '/inventory/alerts': 'Alertas',
   '/inventory/reports': 'Reportes',

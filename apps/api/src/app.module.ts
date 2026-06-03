@@ -12,6 +12,8 @@ import { LockModule } from './lock/lock.module';
 import { MesAuthModule } from './mes/auth/mes-auth.module';
 import { PlantModule } from './mes/plant/plant.module';
 import { SupplyItemsModule } from './supplyitems/supplyitems.module';
+import { SupplyCategoriesModule } from './supply-categories/supply-categories.module';
+import { InventoryModule } from './inventory/inventory.module';
 import { GraphqlModule } from './graphql/graphql.module';
 import { UserModule } from './user/user.module';
 import { SupplierModule } from './supplier/supplier.module';
@@ -30,6 +32,8 @@ import { TenantModule } from './tenant/tenant.module';
     AuditModule,
     LockModule,
     SupplyItemsModule,
+    SupplyCategoriesModule,
+    InventoryModule,
     GraphqlModule,
     UserModule,
     SupplierModule,
