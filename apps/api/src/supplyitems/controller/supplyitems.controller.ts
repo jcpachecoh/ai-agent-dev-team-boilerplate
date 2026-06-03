@@ -39,6 +39,7 @@ import { SupplyItemsService } from '../service/supplyitems.service';
 export class SupplyItemsController {
   constructor(private readonly supplyItemsService: SupplyItemsService) {}
 
+  @RequirePermission('supply.items.read')
   @ApiOperation({ summary: 'List supply items' })
   @ApiResponse({ status: 200, type: [SupplyItemResponseDto] })
   @Get()
@@ -104,6 +105,7 @@ export class SupplyItemsController {
     }));
   }
 
+  @RequirePermission('supply.items.read')
   @ApiOperation({ summary: 'Get a supply item by ID' })
   @ApiParam({ name: 'id', description: 'Supply item ID' })
   @ApiResponse({ status: 200, type: SupplyItemResponseDto })
