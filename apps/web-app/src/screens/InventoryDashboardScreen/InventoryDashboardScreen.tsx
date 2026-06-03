@@ -15,10 +15,12 @@ import type { InventoryDashboardData } from '@/types/inventory';
 import { formatCurrency } from '@/utils/inventory';
 
 import shared from '../inventory/shared.module.scss';
+import { useUiTheme } from '@/hooks/useUiTheme';
 
 const REFRESH_MS = 30_000;
 
 export function InventoryDashboardScreen(): React.JSX.Element {
+  const theme = useUiTheme();
   const [data, setData] = useState<InventoryDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -68,7 +70,7 @@ export function InventoryDashboardScreen(): React.JSX.Element {
         <InventarioPageHeader
           title="Dashboard de Inventario"
           subtitle="Resumen operacional en tiempo real • Actualización automática cada 30s"
-          theme="dark"
+          theme={theme}
           size="xl"
           className={shared.pageHeaderHost}
         />
@@ -80,7 +82,7 @@ export function InventoryDashboardScreen(): React.JSX.Element {
           value={data.totalItems.toLocaleString('es-CO')}
           accent="success"
           icon={<Box aria-hidden />}
-          theme="dark"
+          theme={theme}
           size="xl"
         />
         <InventarioMetricCard
@@ -88,7 +90,7 @@ export function InventoryDashboardScreen(): React.JSX.Element {
           value={formatCurrency(data.totalValue)}
           accent="info"
           icon={<DollarSign aria-hidden />}
-          theme="dark"
+          theme={theme}
           size="xl"
         />
         <InventarioMetricCard
@@ -96,7 +98,7 @@ export function InventoryDashboardScreen(): React.JSX.Element {
           value={`${data.lowStockCount} items`}
           accent="warning"
           icon={<AlertTriangle aria-hidden />}
-          theme="dark"
+          theme={theme}
           size="xl"
         />
         <InventarioMetricCard
@@ -104,20 +106,20 @@ export function InventoryDashboardScreen(): React.JSX.Element {
           value={String(data.movementsToday)}
           accent="purple"
           icon={<ArrowLeftRight aria-hidden />}
-          theme="dark"
+          theme={theme}
           size="xl"
         />
       </section>
 
       <section className={shared.panelsSection}>
         <div className={shared.panelCell}>
-          <InventarioPanel title="Top 10 Productos por Stock" theme="dark" size="xl">
+          <InventarioPanel title="Top 10 Productos por Stock" theme={theme} size="xl">
             <div className={shared.barList}>
               {data.topProducts.map((item) => (
                 <InventarioBarRow
                   key={item.label}
                   {...item}
-                  theme="dark"
+                  theme={theme}
                   size="xl"
                   density="compact"
                 />
@@ -126,13 +128,13 @@ export function InventoryDashboardScreen(): React.JSX.Element {
           </InventarioPanel>
         </div>
         <div className={shared.panelCell}>
-          <InventarioPanel title="Stock por Sede (%)" theme="dark" size="xl">
+          <InventarioPanel title="Stock por Sede (%)" theme={theme} size="xl">
             <div className={shared.barList}>
               {data.stockBySite.map((item) => (
                 <InventarioBarRow
                   key={item.label}
                   {...item}
-                  theme="dark"
+                  theme={theme}
                   size="xl"
                   density="comfortable"
                 />
@@ -143,8 +145,8 @@ export function InventoryDashboardScreen(): React.JSX.Element {
       </section>
 
       <section className={shared.chartSection}>
-        <InventarioPanel title="Histórico Últimos 30 Días (% Ocupación)" theme="dark" size="xl">
-          <InventarioBarChart items={data.historyOccupancy} theme="dark" size="xl" />
+        <InventarioPanel title="Histórico Últimos 30 Días (% Ocupación)" theme={theme} size="xl">
+          <InventarioBarChart items={data.historyOccupancy} theme={theme} size="xl" />
         </InventarioPanel>
       </section>
     </div>

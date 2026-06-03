@@ -1,4 +1,9 @@
-import { Sidebar, WEB_LOGIN_BRAND_LOGO_DARK, type SidebarNavItem } from '@restopsiq/ui';
+import {
+  Sidebar,
+  WEB_LOGIN_BRAND_LOGO_DARK,
+  WEB_LOGIN_BRAND_LOGO_LIGHT,
+  type SidebarNavItem,
+} from '@restopsiq/ui';
 import { useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
@@ -11,6 +16,7 @@ import {
   navigationItems,
   type NavItem,
 } from '@/constants/navigation';
+import { useUiTheme } from '@/hooks/useUiTheme';
 
 interface AppSidebarProps {
   collapsed?: boolean;
@@ -54,6 +60,7 @@ export default function AppSidebar({
 }: AppSidebarProps): React.JSX.Element {
   const { pathname } = useLocation();
   const navigate = useNavigate();
+  const theme = useUiTheme();
   const items = useMemo(
     () => navigationItems.map((item) => mapNavItem(item, pathname)),
     [pathname],
@@ -61,8 +68,8 @@ export default function AppSidebar({
 
   return (
     <Sidebar
-      theme="dark"
-      brandLogoSrc={WEB_LOGIN_BRAND_LOGO_DARK}
+      theme={theme}
+      brandLogoSrc={theme === 'dark' ? WEB_LOGIN_BRAND_LOGO_DARK : WEB_LOGIN_BRAND_LOGO_LIGHT}
       items={items}
       activePath={pathname}
       collapsed={collapsed}

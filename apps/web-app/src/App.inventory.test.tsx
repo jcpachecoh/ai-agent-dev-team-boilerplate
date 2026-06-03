@@ -1,5 +1,8 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import { beforeEach, vi } from 'vitest';
+
+import * as authToken from '@/lib/auth-token';
 
 import { TestQueryProvider } from '@/test-utils/query-client';
 
@@ -12,49 +15,9 @@ vi.mock('@/lib/auth-token', () => ({
   clearGraphqlAuthToken: vi.fn(),
 }));
 
-const inventoryRestPayload = {
-  dashboard: {
-    totalItems: 1,
-    totalValue: 0,
-    lowStockCount: 0,
-    movementsToday: 0,
-    topProducts: [],
-    stockBySite: [],
-    historyOccupancy: [],
-  },
-  alerts: [] as unknown[],
-  summary: { critical: 0, warning: 0, resolvedToday: 0 },
-  report: { rows: [], distribution: [], summary: [] },
-};
-
-beforeEach(() => {
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async (input: RequestInfo | URL) => {
-      const url = String(input);
-      if (url.includes('/inventory/dashboard')) {
-        return new Response(JSON.stringify(inventoryRestPayload.dashboard), { status: 200 });
-      }
-      if (url.includes('/inventory/alerts/summary')) {
-        return new Response(JSON.stringify(inventoryRestPayload.summary), { status: 200 });
-      }
-      if (url.includes('/inventory/alerts')) {
-        return new Response(JSON.stringify(inventoryRestPayload.alerts), { status: 200 });
-      }
-      if (url.includes('/inventory/reports')) {
-        return new Response(JSON.stringify(inventoryRestPayload.report), { status: 200 });
-      }
-      return new Response('{}', { status: 200 });
-    }),
-  );
-});
-
-afterEach(() => {
-  vi.unstubAllGlobals();
-});
-
 describe('Inventory routes', () => {
   beforeEach(() => {
+    vi.mocked(authToken.isAuthenticated).mockReturnValue(true);
     window.matchMedia = vi.fn().mockImplementation((query: string) => ({
       matches: query.includes('1024px'),
       media: query,

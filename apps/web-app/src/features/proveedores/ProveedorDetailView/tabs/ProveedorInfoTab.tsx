@@ -1,6 +1,7 @@
 import { ProveedorContactPanel, ProveedorMetricsPanel } from '@restopsiq/ui';
+import { useUiTheme } from '@/hooks/useUiTheme';
 
-import { PROVEEDOR_TABLE_SIZE, PROVEEDOR_UI_THEME } from '../../constants';
+import { PROVEEDOR_TABLE_SIZE } from '../../constants';
 import { formatCondicionPago, formatReliability } from '../../mappers/display';
 import styles from '../../proveedores.module.scss';
 import type { SupplierViewModel } from '../../types';
@@ -10,6 +11,7 @@ interface ProveedorInfoTabProps {
 }
 
 export default function ProveedorInfoTab({ supplier }: ProveedorInfoTabProps): React.JSX.Element {
+  const theme = useUiTheme();
   const contactFields = [
     { label: 'EMAIL', value: supplier.email ?? '—' },
     { label: 'TELÉFONO', value: supplier.telefono ?? '—' },
@@ -28,13 +30,13 @@ export default function ProveedorInfoTab({ supplier }: ProveedorInfoTabProps): R
       <ProveedorContactPanel
         title="Datos de contacto"
         fields={contactFields}
-        theme={PROVEEDOR_UI_THEME}
+        theme={theme}
         size={PROVEEDOR_TABLE_SIZE}
       />
       <ProveedorMetricsPanel
         title="Métricas operacionales"
         metrics={metrics}
-        theme={PROVEEDOR_UI_THEME}
+        theme={theme}
         size={PROVEEDOR_TABLE_SIZE}
       />
     </div>

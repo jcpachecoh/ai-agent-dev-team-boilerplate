@@ -15,26 +15,26 @@
   align-items: center;
   gap: t.$space-2;
   font-size: t.$font-size-sm;
-  color: t.$color-text-muted;
+  color: var(--color-text-muted);
 }
 
 .link {
-  color: t.$color-text-secondary;
+  color: var(--color-text-secondary);
   text-decoration: none;
   transition: color t.$layout-transition;
 
   &:hover {
-    color: t.$color-text-primary;
+    color: var(--color-text-primary);
     text-decoration: none;
   }
 }
 
 .current {
-  color: t.$color-text-primary;
+  color: var(--color-text-primary);
   font-weight: t.$font-weight-medium;
 }
 
 .separator {
-  color: t.$color-text-muted;
+  color: var(--color-text-muted);
   user-select: none;
 }

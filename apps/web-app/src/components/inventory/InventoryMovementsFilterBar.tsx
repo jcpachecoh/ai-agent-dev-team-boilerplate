@@ -6,6 +6,8 @@ import {
   type InventarioSelectOption,
 } from '@restopsiq/ui';
 
+import type { UiTheme } from '@/constants/theme';
+
 import styles from './InventoryMovementsFilterBar.module.scss';
 
 const typeOptions: InventarioSelectOption[] = [
@@ -24,6 +26,7 @@ const siteOptions: InventarioSelectOption[] = [
 ];
 
 export interface InventoryMovementsFilterBarProps {
+  theme: UiTheme;
   className?: string;
   search: string;
   movementType: string;
@@ -38,6 +41,7 @@ export interface InventoryMovementsFilterBarProps {
 }
 
 export function InventoryMovementsFilterBar({
+  theme,
   className,
   search,
   movementType,
@@ -56,7 +60,7 @@ export function InventoryMovementsFilterBar({
         value={search}
         placeholder="Buscar producto..."
         onChange={onSearchChange}
-        theme="dark"
+        theme={theme}
         size="md"
         className={styles.search}
       />
@@ -64,7 +68,7 @@ export function InventoryMovementsFilterBar({
         options={typeOptions}
         value={movementType}
         onChange={onTypeChange}
-        theme="dark"
+        theme={theme}
         size="md"
         className={styles.select}
         aria-label="Tipo de movimiento"
@@ -73,25 +77,25 @@ export function InventoryMovementsFilterBar({
         options={siteOptions}
         value={site}
         onChange={onSiteChange}
-        theme="dark"
+        theme={theme}
         size="md"
         className={styles.select}
         aria-label="Sede"
       />
-      <InventarioFormField label="Desde" theme="dark" size="sm" className={styles.dateField}>
+      <InventarioFormField label="Desde" theme={theme} size="sm" className={styles.dateField}>
         <InventarioDateField
           value={dateStart}
           onChange={onDateStartChange}
-          theme="dark"
+          theme={theme}
           size="md"
           aria-label="Fecha desde"
         />
       </InventarioFormField>
-      <InventarioFormField label="Hasta" theme="dark" size="sm" className={styles.dateField}>
+      <InventarioFormField label="Hasta" theme={theme} size="sm" className={styles.dateField}>
         <InventarioDateField
           value={dateEnd}
           onChange={onDateEndChange}
-          theme="dark"
+          theme={theme}
           size="md"
           aria-label="Fecha hasta"
         />

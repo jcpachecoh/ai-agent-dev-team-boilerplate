@@ -2,18 +2,21 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 
+import { ThemeProvider } from '@/providers/ThemeProvider';
+
 import Header from './Header';
 
 describe('Header', () => {
-  it('renders status pills and search on desktop layout', () => {
+  it('renders clock, theme switch and user menu', () => {
     render(
-      <MemoryRouter initialEntries={['/recetas']}>
-        <Header />
-      </MemoryRouter>,
+      <ThemeProvider initialTheme="dark">
+        <MemoryRouter initialEntries={['/recetas']}>
+          <Header />
+        </MemoryRouter>
+      </ThemeProvider>,
     );
 
-    expect(screen.getByText('PLANTA CENTRAL')).toBeInTheDocument();
-    expect(screen.getByLabelText(/buscar en el sistema/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/cambiar tema claro u oscuro/i)).toBeInTheDocument();
     expect(screen.getByText('Carlos Mendez')).toBeInTheDocument();
   });
 
@@ -22,9 +25,11 @@ describe('Header', () => {
     const onMenuClick = vi.fn();
 
     render(
-      <MemoryRouter>
-        <Header showMenuButton onMenuClick={onMenuClick} />
-      </MemoryRouter>,
+      <ThemeProvider initialTheme="dark">
+        <MemoryRouter>
+          <Header showMenuButton onMenuClick={onMenuClick} />
+        </MemoryRouter>
+      </ThemeProvider>,
     );
 
     await user.click(screen.getByRole('button', { name: /abrir menú/i }));

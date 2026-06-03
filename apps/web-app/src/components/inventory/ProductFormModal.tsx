@@ -10,6 +10,7 @@ import { useSupplyCategories } from '@/features/inventario/hooks/useSupplyCatego
 import { productToFormValues } from '@/features/inventario/mappers/formValues';
 import type { InventoryProduct, InventoryProductFormValues } from '@/types/inventory';
 import { STOCK_UNIT_OPTIONS } from '@/types/inventory';
+import type { UiTheme } from '@/constants/theme';
 
 import { FormToggle } from './FormToggle';
 import styles from './ProductFormModal.module.scss';
@@ -20,6 +21,7 @@ const unitOptions: InventarioSelectOption[] = STOCK_UNIT_OPTIONS.map((u) => ({
 }));
 
 export interface ProductFormModalProps {
+  theme: UiTheme;
   open: boolean;
   mode: 'create' | 'edit';
   product?: InventoryProduct;
@@ -43,6 +45,7 @@ const emptyForm: InventoryProductFormValues = {
 };
 
 export function ProductFormModal({
+  theme,
   open,
   mode,
   product,
@@ -97,16 +100,11 @@ export function ProductFormModal({
       onClose={onClose}
       onSave={handleSave}
       saveLoading={saving}
-      theme="dark"
+      theme={theme}
       size="xl"
     >
       <div className={styles.formGrid}>
-        <InventarioFormField
-          label="Código interno (SKU) *"
-          htmlFor="insumo-sku"
-          theme="dark"
-          size="md"
-        >
+        <InventarioFormField label="SKU *" theme={theme} size="md">
           <input
             id="insumo-sku"
             className={styles.input}
@@ -114,7 +112,7 @@ export function ProductFormModal({
             onChange={(e) => update({ sku: e.target.value })}
           />
         </InventarioFormField>
-        <InventarioFormField label="Nombre *" htmlFor="insumo-nombre" theme="dark" size="md">
+        <InventarioFormField label="Nombre *" theme={theme} size="md">
           <input
             id="insumo-nombre"
             className={styles.input}
@@ -122,45 +120,27 @@ export function ProductFormModal({
             onChange={(e) => update({ name: e.target.value })}
           />
         </InventarioFormField>
-        <InventarioFormField
-          label="Descripción"
-          htmlFor="insumo-descripcion"
-          theme="dark"
-          size="md"
-          className={styles.fullWidthField}
-        >
-          <textarea
-            id="insumo-descripcion"
-            className={styles.textarea}
-            rows={3}
-            value={values.descripcion}
-            placeholder="Detalle opcional del insumo"
-            onChange={(e) => update({ descripcion: e.target.value })}
-          />
-        </InventarioFormField>
-        <InventarioFormField label="Categoría *" bareControl theme="dark" size="md">
+        <InventarioFormField label="Categoría" inputType="select" theme={theme} size="md">
           <InventarioSelect
             options={categoryOptions}
             value={values.categoryId}
             onChange={(v) => update({ categoryId: v })}
-            placeholder="Seleccionar categoría"
-            theme="dark"
+            theme={theme}
             size="md"
             aria-label="Categoría"
           />
         </InventarioFormField>
-        <InventarioFormField label="Unidad base" bareControl theme="dark" size="md">
+        <InventarioFormField label="Unidad base" inputType="select" theme={theme} size="md">
           <InventarioSelect
             options={unitOptions}
             value={values.unidadBase}
             onChange={(v) => update({ unidadBase: v as InventoryProductFormValues['unidadBase'] })}
-            placeholder="Seleccionar unidad"
-            theme="dark"
+            theme={theme}
             size="md"
             aria-label="Unidad base"
           />
         </InventarioFormField>
-        <InventarioFormField label="Costo promedio (CPP)" theme="dark" size="md">
+        <InventarioFormField label="Costo promedio (CPP)" theme={theme} size="md">
           <input
             className={styles.input}
             type="number"
@@ -168,7 +148,7 @@ export function ProductFormModal({
             onChange={(e) => update({ costPrice: e.target.value })}
           />
         </InventarioFormField>
-        <InventarioFormField label="Factor conversión" theme="dark" size="md">
+        <InventarioFormField label="Factor de conversión" theme={theme} size="md">
           <input
             className={styles.input}
             type="number"
@@ -176,7 +156,7 @@ export function ProductFormModal({
             onChange={(e) => update({ factorConversion: e.target.value })}
           />
         </InventarioFormField>
-        <InventarioFormField label="Stock mínimo bodega" theme="dark" size="md">
+        <InventarioFormField label="Stock Mínimo" theme={theme} size="md">
           <input
             className={styles.input}
             type="number"
@@ -184,7 +164,7 @@ export function ProductFormModal({
             onChange={(e) => update({ minStock: e.target.value })}
           />
         </InventarioFormField>
-        <InventarioFormField label="Stock máximo bodega" theme="dark" size="md">
+        <InventarioFormField label="Stock Máximo" theme={theme} size="md">
           <input
             className={styles.input}
             type="number"

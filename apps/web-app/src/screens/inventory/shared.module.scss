@@ -1,10 +1,10 @@
-@use '@/styles/tokens' as *;
+@use '@/styles/tokens' as t;
 
-$inv-divider: $color-border;
-$inv-radius: $border-radius-base;
-$inv-surface: $color-bg-surface;
-$inv-surface-raised: #202020;
-$inv-surface-hover: #262626;
+$inv-divider: var(--color-border);
+$inv-radius: t.$border-radius-base;
+$inv-surface: var(--color-bg-surface);
+$inv-surface-raised: var(--color-bg-surface-raised);
+$inv-surface-hover: var(--color-bg-surface-hover);
 
 /* Full-width column layout (expands when sidebar is collapsed) */
 .screen {
@@ -12,8 +12,8 @@ $inv-surface-hover: #262626;
   flex-direction: column;
   width: 100%;
   min-height: 100%;
-  background: $color-bg-primary;
-  color: $color-text-primary;
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
 }
 
 .pageHeader {
@@ -55,21 +55,21 @@ $inv-surface-hover: #262626;
   border: 1px solid $inv-divider;
   border-radius: $inv-radius;
   background: $inv-surface-raised;
-  color: $color-text-secondary;
+  color: var(--color-text-secondary);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
 
   &:hover {
     background: $inv-surface-hover;
-    color: $color-text-primary;
+    color: var(--color-text-primary);
   }
 }
 
 .statusFilterBtnActive {
-  border-color: $color-success;
-  color: $color-success;
-  background: rgba($color-success, 0.12);
+  border-color: var(--color-success);
+  color: var(--color-success);
+  background: color-mix(in srgb, var(--color-success) 12%, transparent);
 }
 
 .embedFilters {
