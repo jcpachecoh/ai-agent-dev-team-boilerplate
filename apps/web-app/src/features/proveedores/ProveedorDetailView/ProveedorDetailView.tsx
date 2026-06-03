@@ -42,7 +42,7 @@ export default function ProveedorDetailView(): React.JSX.Element {
     return (
       <div className={`${styles.content} ${styles.contentPadded}`}>
         <p className={styles.configBanner}>
-          Sesión no disponible. Inicia sesión de nuevo para consultar este proveedor en el gateway.
+          Sesión no disponible. Inicia sesión de nuevo para consultar este proveedor en GraphQL.
         </p>
       </div>
     );

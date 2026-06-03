@@ -20,6 +20,11 @@ export class AuditInterceptor implements NestInterceptor {
   constructor(private readonly auditService: AuditService) {}
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
+    // REST-only: GraphQL uses a different execution context (no HTTP req on switchToHttp).
+    if ((context.getType() as string) === 'graphql') {
+      return next.handle();
+    }
+
     const req = context.switchToHttp().getRequest<
       Request & {
         user?: { sub: string };

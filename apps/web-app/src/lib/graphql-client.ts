@@ -3,10 +3,66 @@ import { GraphQLClient } from 'graphql-request';
 import { clearGraphqlAuthToken, getGraphqlAuthToken, isAuthenticated } from './auth-token';
 import { getTenantId } from './tenant';
 
-const DEFAULT_URL = import.meta.env.DEV ? '/graphql' : 'http://localhost:4000/graphql';
+const DEFAULT_URL = '/graphql';
+const REMOVED_GATEWAY_PORT = ':4000';
+
+function resolveGraphqlEndpoint(configured: string): string {
+  const trimmed = configured.trim();
+  if (/^https?:\/\//i.test(trimmed)) {
+    return trimmed;
+  }
+  const path = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+  if (typeof window !== 'undefined' && window.location?.origin) {
+    return new URL(path, window.location.origin).href;
+  }
+  return path;
+}
 
 export function getGraphqlEndpoint(): string {
-  return import.meta.env.VITE_GRAPHQL_URL ?? DEFAULT_URL;
+  const raw = import.meta.env.VITE_GRAPHQL_URL;
+  let configured = typeof raw === 'string' && raw.trim() !== '' ? raw.trim() : DEFAULT_URL;
+  if (import.meta.env.DEV && configured.includes(REMOVED_GATEWAY_PORT)) {
+    console.warn(
+      '[graphql] VITE_GRAPHQL_URL apunta al gateway eliminado (:4000). Usando /graphql vía proxy de Vite.',
+    );
+    configured = DEFAULT_URL;
+  }
+  const resolved = resolveGraphqlEndpoint(configured);
+  // #region agent log
+  let urlCtorOk = false;
+  try {
+    new URL(resolved);
+    urlCtorOk = true;
+  } catch {
+    urlCtorOk = false;
+  }
+  fetch('http://127.0.0.1:7828/ingest/355d2ecf-3818-453c-8510-c7b3fe83712b', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '28e71d' },
+    body: JSON.stringify({
+      sessionId: '28e71d',
+      location: 'graphql-client.ts:getGraphqlEndpoint',
+      message: 'GraphQL endpoint resolved',
+      data: {
+        rawType: typeof raw,
+        rawEmpty: raw === '',
+        configuredIsRelative: !/^https?:\/\//i.test(configured),
+        resolvedOrigin: resolved.split('/').slice(0, 3).join('/'),
+        urlCtorOk,
+        hypothesisId: 'H1',
+      },
+      timestamp: Date.now(),
+      runId: 'post-fix',
+    }),
+  }).catch(() => {});
+  // #endregion
+  return resolved;
+}
+
+function createGraphqlClient(): GraphQLClient {
+  return new GraphQLClient(getGraphqlEndpoint(), {
+    headers: buildHeaders,
+  });
 }
 
 function buildHeaders(): Record<string, string> {
@@ -20,10 +76,6 @@ function buildHeaders(): Record<string, string> {
   }
   return headers;
 }
-
-export const graphqlClient = new GraphQLClient(getGraphqlEndpoint(), {
-  headers: buildHeaders,
-});
 
 /** True when the user has a session JWT from global login (sent as Bearer on GraphQL). */
 export function isGraphqlConfigured(): boolean {
@@ -80,8 +132,27 @@ export async function graphqlRequest<T>(
 ): Promise<T> {
   const headers = buildHeaders();
   try {
-    return await graphqlClient.request<T>(document, variables, headers);
+    return await createGraphqlClient().request<T>(document, variables, headers);
   } catch (error) {
+    // #region agent log
+    fetch('http://127.0.0.1:7828/ingest/355d2ecf-3818-453c-8510-c7b3fe83712b', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '28e71d' },
+      body: JSON.stringify({
+        sessionId: '28e71d',
+        location: 'graphql-client.ts:graphqlRequest',
+        message: 'graphqlRequest failed',
+        data: {
+          errorName: error instanceof Error ? error.name : 'unknown',
+          errorMessage: error instanceof Error ? error.message.slice(0, 120) : 'unknown',
+          endpoint: getGraphqlEndpoint().split('/').slice(0, 3).join('/'),
+          hypothesisId: 'H1',
+        },
+        timestamp: Date.now(),
+        runId: 'post-fix',
+      }),
+    }).catch(() => {});
+    // #endregion
     throw parseGraphqlError(error);
   }
 }

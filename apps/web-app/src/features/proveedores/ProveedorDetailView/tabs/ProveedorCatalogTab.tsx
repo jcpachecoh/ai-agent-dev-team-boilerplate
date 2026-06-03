@@ -19,7 +19,7 @@ export default function ProveedorCatalogTab({
     return (
       <div className={styles.tabPanel}>
         <p className={styles.configBanner}>
-          Inicia sesión para cargar el catálogo desde el gateway (JWT de sesión tras el login MES).
+          Inicia sesión para cargar el catálogo vía GraphQL (JWT de sesión tras el login MES).
         </p>
       </div>
     );

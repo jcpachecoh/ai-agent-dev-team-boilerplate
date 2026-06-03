@@ -30,6 +30,7 @@ function buildContext(
     user: options.user,
   };
   return {
+    getType: () => 'http',
     switchToHttp: () => ({ getRequest: () => req }),
   } as unknown as ExecutionContext;
 }
@@ -49,6 +50,17 @@ describe('AuditInterceptor', () => {
     interceptor = new AuditInterceptor(auditServiceMock as unknown as AuditService);
     jest.clearAllMocks();
     auditServiceMock.log.mockResolvedValue(undefined);
+  });
+
+  it('passes through GraphQL requests without logging', (done) => {
+    const context = {
+      getType: () => 'graphql',
+      switchToHttp: () => ({ getRequest: () => undefined }),
+    } as unknown as ExecutionContext;
+    interceptor.intercept(context, buildHandler({ id: 'x' })).subscribe(() => {
+      expect(auditServiceMock.log).not.toHaveBeenCalled();
+      done();
+    });
   });
 
   it('passes through GET requests without logging', (done) => {

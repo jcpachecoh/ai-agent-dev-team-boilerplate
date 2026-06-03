@@ -10,7 +10,9 @@ module.exports = {
     '**/*.ts',
     '!**/*.module.ts',
     '!**/*.controller.ts', // Controllers are tested via *.controller.spec.ts but have no logic branches
+    '!**/*.resolver.ts', // GraphQL resolvers are thin adapters — tested via *.resolver.spec.ts
     '!**/*.dto.ts',
+    '!**/controller/dto/**', // Swagger/OpenAPI declaration classes (no runtime logic)
     '!**/*.entity.ts',
     '!**/*.interface.ts',
     '!**/main.ts',

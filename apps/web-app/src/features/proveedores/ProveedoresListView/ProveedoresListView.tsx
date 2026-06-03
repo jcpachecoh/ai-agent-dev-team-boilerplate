@@ -80,8 +80,8 @@ export default function ProveedoresListView(): React.JSX.Element {
       {!isGraphqlConfigured() && (
         <p className={styles.configBanner}>
           Inicia sesión para cargar proveedores. Las consultas GraphQL usan el JWT guardado tras el
-          login MES (<code>/api/mes/auth/login</code>). Opcional en <code>.env.local</code>:{' '}
-          <code>VITE_GRAPHQL_URL=http://localhost:4000/graphql</code>.
+          login global (GraphQL). En dev: <code>pnpm --filter @restopsiq/api start:dev</code> y{' '}
+          <code>VITE_GRAPHQL_URL=/graphql</code> (proxy Vite → API :3001).
         </p>
       )}
 

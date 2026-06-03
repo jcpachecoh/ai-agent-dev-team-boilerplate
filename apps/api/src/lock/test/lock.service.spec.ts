@@ -2,6 +2,22 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { LockService } from '../service/lock.service';
 import { InternalServerErrorException } from '@nestjs/common';
 
+jest.mock('ioredis', () => ({
+  __esModule: true,
+  default: jest.fn().mockImplementation(() => ({
+    quit: jest.fn().mockResolvedValue(undefined),
+  })),
+}));
+
+jest.mock('redlock', () => ({
+  __esModule: true,
+  default: jest.fn().mockImplementation(() => ({
+    lock: jest.fn(),
+  })),
+}));
+
+const RedisClient = jest.requireMock<{ default: jest.Mock }>('ioredis').default;
+
 describe('LockService', () => {
   let service: LockService;
   let redlockMock: any;
@@ -74,6 +90,50 @@ describe('LockService', () => {
       );
 
       expect(callback).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('lifecycle', () => {
+    const originalRedisUrl = process.env.REDIS_URL;
+
+    afterEach(() => {
+      if (originalRedisUrl === undefined) {
+        delete process.env.REDIS_URL;
+      } else {
+        process.env.REDIS_URL = originalRedisUrl;
+      }
+      RedisClient.mockClear();
+    });
+
+    it('onModuleInit uses REDIS_URL when set', () => {
+      process.env.REDIS_URL = 'redis://custom:6379';
+      const lifecycleService = new LockService();
+      lifecycleService.onModuleInit();
+
+      expect(RedisClient).toHaveBeenCalledWith('redis://custom:6379', {
+        maxRetriesPerRequest: null,
+      });
+    });
+
+    it('onModuleInit falls back to localhost when REDIS_URL is unset', () => {
+      delete process.env.REDIS_URL;
+      const lifecycleService = new LockService();
+      lifecycleService.onModuleInit();
+
+      expect(RedisClient).toHaveBeenCalledWith('redis://localhost:6379', {
+        maxRetriesPerRequest: null,
+      });
+    });
+
+    it('onModuleDestroy quits the redis client when initialized', async () => {
+      const lifecycleService = new LockService();
+      lifecycleService.onModuleInit();
+      const redisInstance = RedisClient.mock.results[RedisClient.mock.results.length - 1].value as {
+        quit: jest.Mock;
+      };
+      await lifecycleService.onModuleDestroy();
+
+      expect(redisInstance.quit).toHaveBeenCalled();
     });
   });
 });

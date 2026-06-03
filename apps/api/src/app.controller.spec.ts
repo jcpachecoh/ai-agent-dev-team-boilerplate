@@ -24,6 +24,10 @@ describe('AppController', () => {
   });
 
   describe('getHealth', () => {
+    it('should return health status from /health alias', () => {
+      expect(controller.getHealthAlias()).toEqual({ status: 'ok', service: 'restopsiq-api' });
+    });
+
     it('should return health status', () => {
       expect(controller.getHealth()).toEqual({ status: 'ok', service: 'restopsiq-api' });
     });

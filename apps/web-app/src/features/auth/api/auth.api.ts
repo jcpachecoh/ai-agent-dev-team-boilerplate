@@ -63,7 +63,7 @@ function toAuthApiError(error: unknown, operation: AuthOperation): AuthApiError 
     const msg = error.message.toLowerCase();
     if (msg.includes('fetch') || msg.includes('network') || msg.includes('failed to fetch')) {
       return new AuthApiError(
-        'No se pudo conectar con el gateway GraphQL. Inicia el gateway (puerto 4000): cd apps/gateway && pnpm dev',
+        'No se pudo conectar con la API. Inicia API + web-app: pnpm --filter @restopsiq/web-app run dev:stack (o en otra terminal: cd apps/api && pnpm start:dev). Revisa que no uses el gateway :4000 en .env.local.',
       );
     }
   }

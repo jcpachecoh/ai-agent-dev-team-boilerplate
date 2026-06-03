@@ -26,6 +26,7 @@ const mockSupplyItem = {
 
 const repoMock = {
   findOne: jest.fn(),
+  findAll: jest.fn(),
 };
 
 describe('SupplyItemsService', () => {
@@ -54,6 +55,17 @@ describe('SupplyItemsService', () => {
       repoMock.findOne.mockResolvedValue(null);
 
       await expect(service.findOne(tenantId, 'missing')).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('findAll', () => {
+    it('returns supply items for the tenant and search criteria', async () => {
+      repoMock.findAll.mockResolvedValue([mockSupplyItem]);
+
+      const result = await service.findAll(tenantId, { search: 'insumo', limit: 10 });
+
+      expect(result).toEqual([mockSupplyItem]);
+      expect(repoMock.findAll).toHaveBeenCalledWith(tenantId, { search: 'insumo', limit: 10 });
     });
   });
 });

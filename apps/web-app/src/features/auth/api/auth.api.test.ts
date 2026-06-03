@@ -24,7 +24,7 @@ describe('loginWithEmailPassword', () => {
     vi.clearAllMocks();
   });
 
-  it('calls gateway login mutation with GlobalLoginInput', async () => {
+  it('calls GraphQL login mutation with GlobalLoginInput', async () => {
     graphqlRequestMock.mockResolvedValue({
       login: { accessToken: 'access-abc', refreshToken: 'refresh-xyz' },
     });
@@ -62,7 +62,7 @@ describe('signupWithEmailPassword', () => {
     vi.clearAllMocks();
   });
 
-  it('calls gateway signup mutation with SignupInput', async () => {
+  it('calls GraphQL signup mutation with SignupInput', async () => {
     graphqlRequestMock.mockResolvedValue({
       signup: { accessToken: 'access-abc', refreshToken: 'refresh-xyz' },
     });
@@ -109,7 +109,7 @@ describe('logoutGlobalUser', () => {
     vi.clearAllMocks();
   });
 
-  it('calls gateway logout mutation', async () => {
+  it('calls GraphQL logout mutation', async () => {
     graphqlRequestMock.mockResolvedValue({ logout: true });
 
     await logoutGlobalUser();

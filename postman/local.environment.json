@@ -11,10 +11,10 @@
     },
     {
       "key": "graphqlUrl",
-      "value": "http://localhost:4000/graphql",
+      "value": "http://localhost:3001/graphql",
       "type": "default",
       "enabled": true,
-      "description": "GraphQL gateway endpoint (AUTH-02 folder 10 \u2014 GraphQL Auth). Requires apps/gateway on :4000."
+      "description": "GraphQL endpoint on apps/api (folder 10 \u2014 GraphQL Auth). Requires apps/api on :3001 only."
     },
     {
       "key": "email",

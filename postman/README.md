@@ -216,7 +216,7 @@ The collection pre-request script injects `x-tenant-id` from `pm.variables.get('
 
 ## AUTH-02 — GraphQL Auth (folder 10)
 
-Folder **10 — GraphQL Auth** exercises auth through the gateway at `{{graphqlUrl}}` (`http://localhost:4000/graphql`). Each request is a GraphQL POST; resolvers delegate to the same REST routes as folders **01 — Global Auth** and **02 — Operational Auth**.
+Folder **10 — GraphQL Auth** exercises auth through `{{graphqlUrl}}` (`http://localhost:3001/graphql` on `apps/api`). Each request is a GraphQL POST using the same auth services as folders **01 — Global Auth** and **02 — Operational Auth**.
 
 **Global auth/email parity:** GraphQL now covers the full global auth surface from REST folder **01** (session + email flows). Operational **refresh** is still REST-only — there is no `POST /api/mes/auth/refresh` endpoint.
 

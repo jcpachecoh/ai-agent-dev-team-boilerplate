@@ -113,6 +113,58 @@ describe('AuthRepository', () => {
     });
   });
 
+  describe('findByIdForAuth', () => {
+    it('returns user with passwordHash for credential checks', async () => {
+      prismaMock.user.findUnique.mockResolvedValue(mockUserWithPassword);
+      const result = await repository.findByIdForAuth('user-1');
+
+      expect(result).toEqual(mockUserWithPassword);
+      expect(prismaMock.user.findUnique).toHaveBeenCalledWith({
+        where: { id: 'user-1' },
+        select: expect.objectContaining({ passwordHash: true }),
+      });
+    });
+  });
+
+  describe('findByIdWithRoleCode', () => {
+    it('returns profile when user is active', async () => {
+      prismaMock.user.findUnique.mockResolvedValue({
+        id: 'user-1',
+        tenantId: 'palos-de-lena',
+        email: 'test@example.com',
+        cedula: '12345678',
+        documentType: DocumentType.CC,
+        emailVerified: false,
+        isActive: true,
+        createdAt: mockUserSafe.createdAt,
+        deletedAt: null,
+        role: { code: 'OPERATOR' },
+      });
+
+      await expect(repository.findByIdWithRoleCode('user-1')).resolves.toEqual({
+        id: 'user-1',
+        tenantId: 'palos-de-lena',
+        email: 'test@example.com',
+        cedula: '12345678',
+        documentType: DocumentType.CC,
+        emailVerified: false,
+        isActive: true,
+        createdAt: mockUserSafe.createdAt,
+        roleCode: 'OPERATOR',
+      });
+    });
+
+    it('returns null when user is soft-deleted', async () => {
+      prismaMock.user.findUnique.mockResolvedValue({
+        ...mockUserSafe,
+        deletedAt: new Date(),
+        role: { code: 'OPERATOR' },
+      });
+
+      await expect(repository.findByIdWithRoleCode('user-1')).resolves.toBeNull();
+    });
+  });
+
   describe('findByIdForRefresh', () => {
     it('returns user with refreshToken for refresh flow', async () => {
       prismaMock.user.findUnique.mockResolvedValue(mockUserWithRefresh);

@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react';
 import { resolve } from 'node:path';
 
 const apiTarget = process.env.VITE_API_URL ?? 'http://localhost:3001';
-const gatewayTarget = process.env.VITE_GATEWAY_URL ?? 'http://localhost:4000';
+const graphqlTarget = process.env.VITE_GRAPHQL_TARGET_URL ?? apiTarget;
 
 export default defineConfig({
   plugins: [
@@ -12,6 +12,7 @@ export default defineConfig({
       name: 'log-api-proxy',
       configureServer() {
         console.log(`[web-app] Proxy /api → ${apiTarget} (inicia la API si ves ECONNREFUSED)`);
+        console.log(`[web-app] Proxy /graphql → ${graphqlTarget} (GraphQL servido por apps/api)`);
       },
     },
   ],
@@ -23,7 +24,7 @@ export default defineConfig({
         changeOrigin: true,
       },
       '/graphql': {
-        target: gatewayTarget,
+        target: graphqlTarget,
         changeOrigin: true,
       },
     },

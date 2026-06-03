@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "dev:stack": "pnpm --dir ../.. exec turbo run dev --filter=@restopsiq/api --filter=@restopsiq/gateway --filter=@restopsiq/web-app",
+    "dev:stack": "pnpm --dir ../.. exec turbo run dev --filter=@restopsiq/api --filter=@restopsiq/web-app",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",

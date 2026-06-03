@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "7c3e5f82-1a9b-4d6e-8f2c-0b5a3d7e9f1c",
     "name": "RestOpsIQ API",
-    "description": "RestOpsIQ API \u2014 live HTTP + GraphQL auth + MES-08 incidents.\n\nHybrid auth: 01 Global Auth (REST) + 02 Operational Auth (REST) + 10 GraphQL Auth (gateway). Tokens: {{accessToken}} (global) vs {{mesAccessToken}} (operational) \u2014 not interchangeable.\n\nFolders: 00 Health \u2192 01 Global Auth \u2192 02 Operational Auth \u2192 04 Supply Items \u2192 05\u201306 Plant \u2192 07 Incidents (MES-08) \u2192 10 GraphQL Auth.\nTenant: {{tenantId}} = palos-de-lena. See postman/README.md.",
+    "description": "RestOpsIQ API \u2014 live HTTP + GraphQL auth + MES-08 incidents.\n\nHybrid auth: 01 Global Auth (REST) + 02 Operational Auth (REST) + 10 GraphQL Auth (apps/api). Tokens: {{accessToken}} (global) vs {{mesAccessToken}} (operational) \u2014 not interchangeable.\n\nFolders: 00 Health \u2192 01 Global Auth \u2192 02 Operational Auth \u2192 04 Supply Items \u2192 05\u201306 Plant \u2192 07 Incidents (MES-08) \u2192 10 GraphQL Auth.\nTenant: {{tenantId}} = palos-de-lena. See postman/README.md.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -92,9 +92,9 @@
     },
     {
       "key": "graphqlUrl",
-      "value": "http://localhost:4000/graphql",
+      "value": "http://localhost:3001/graphql",
       "type": "string",
-      "description": "GraphQL gateway endpoint (AUTH-02 folder 10)"
+      "description": "GraphQL endpoint on apps/api (folder 10)"
     },
     {
       "key": "email",
@@ -3314,7 +3314,7 @@
     },
     {
       "name": "10 \u2014 GraphQL Auth",
-      "description": "AUTH-02 GraphQL auth against {{graphqlUrl}} (gateway :4000). Delegates to apps/api REST.\n\n**Prerequisites:** API on :3001 AND gateway on :4000. Run `pnpm --filter=@restopsiq/api start:dev` and `pnpm --filter=@restopsiq/gateway dev`.\n\n**Token parity with REST folders 01/02:**\n- Global: `data.login.accessToken` \u2192 {{accessToken}} (never use for plant/MES)\n- Operational: `data.loginOperational.accessToken` \u2192 {{mesAccessToken}} (same as REST folder 02)\n\n**Run order (top-to-bottom):** Signup \u2192 Login \u2192 Me \u2192 Refresh Token \u2192 Change Password \u2192 Resend Verification \u2192 Verify Email (manual {{otpCode}}) \u2192 Forgot Password \u2192 Reset Password (manual {{resetToken}}) \u2192 Logout \u2192 Login Operational \u2192 Me Operational \u2192 Logout Operational.\n\n**Global email flows:** forgotPassword, resetPassword, and resendVerification mirror REST folder 01 (RES-226). resetPassword uses input.token = {{resetToken}} (no x-tenant-id).\n\nCollection pre-request auto-login is **disabled** for `/graphql` URLs \u2014 run Login / Login Operational explicitly.",
+      "description": "GraphQL auth against {{graphqlUrl}} (apps/api :3001/graphql). Same auth services as REST folders 01/02.\n\n**Prerequisites:** API on :3001 only. Run `pnpm --filter=@restopsiq/api start:dev`.\n\n**Token parity with REST folders 01/02:**\n- Global: `data.login.accessToken` \u2192 {{accessToken}} (never use for plant/MES)\n- Operational: `data.loginOperational.accessToken` \u2192 {{mesAccessToken}} (same as REST folder 02)\n\n**Run order (top-to-bottom):** Signup \u2192 Login \u2192 Me \u2192 Refresh Token \u2192 Change Password \u2192 Resend Verification \u2192 Verify Email (manual {{otpCode}}) \u2192 Forgot Password \u2192 Reset Password (manual {{resetToken}}) \u2192 Logout \u2192 Login Operational \u2192 Me Operational \u2192 Logout Operational.\n\n**Global email flows:** forgotPassword, resetPassword, and resendVerification mirror REST folder 01 (RES-226). resetPassword uses input.token = {{resetToken}} (no x-tenant-id).\n\nCollection pre-request auto-login is **disabled** for `/graphql` URLs \u2014 run Login / Login Operational explicitly.",
       "item": [
         {
           "name": "Signup",

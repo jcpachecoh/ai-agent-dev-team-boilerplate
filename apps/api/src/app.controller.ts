@@ -8,6 +8,11 @@ export class AppController {
   /* istanbul ignore next */
   constructor(private readonly appService: AppService) {}
 
+  @Get('health')
+  getHealthAlias() {
+    return this.appService.getHealth();
+  }
+
   @Get()
   getHealth() {
     return this.appService.getHealth();

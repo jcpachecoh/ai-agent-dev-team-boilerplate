@@ -11,6 +11,14 @@ import { AuditInterceptor } from './audit/audit.interceptor';
 import { LockModule } from './lock/lock.module';
 import { MesAuthModule } from './mes/auth/mes-auth.module';
 import { PlantModule } from './mes/plant/plant.module';
+import { SupplyItemsModule } from './supplyitems/supplyitems.module';
+import { GraphqlModule } from './graphql/graphql.module';
+import { UserModule } from './user/user.module';
+import { SupplierModule } from './supplier/supplier.module';
+import { SupplierProductModule } from './supplier-product/supplier-product.module';
+import { RecipeModule } from './recipe/recipe.module';
+import { PurchaseOrderModule } from './purchase-order/purchase-order.module';
+import { TenantModule } from './tenant/tenant.module';
 
 @Module({
   imports: [
@@ -21,6 +29,14 @@ import { PlantModule } from './mes/plant/plant.module';
     PlantModule,
     AuditModule,
     LockModule,
+    SupplyItemsModule,
+    GraphqlModule,
+    UserModule,
+    SupplierModule,
+    SupplierProductModule,
+    RecipeModule,
+    PurchaseOrderModule,
+    TenantModule,
   ],
   controllers: [AppController],
   providers: [

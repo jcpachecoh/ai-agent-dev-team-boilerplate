@@ -1,7 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuditAction, AuthMethod, LoginAuditStatus } from '@prisma/client';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { AuditRepository } from '../repository/audit.repository';
 import { PrismaService } from '../../prisma/prisma.service';
+
+const p2003Error = new PrismaClientKnownRequestError('FK constraint failed', {
+  code: 'P2003',
+  clientVersion: '5.0.0',
+});
 
 const prismaMock = {
   auditLog: {
@@ -66,6 +72,39 @@ describe('AuditRepository', () => {
         }),
       });
     });
+
+    it('swallows P2003 foreign key errors without throwing', async () => {
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+      prismaMock.auditLog.create.mockRejectedValue(p2003Error);
+
+      await expect(
+        repo.create({
+          tenantId: 't-1',
+          action: AuditAction.CREATE,
+          entityType: 'projects',
+          entityId: 'proj-1',
+        }),
+      ).resolves.toBeUndefined();
+
+      expect(consoleSpy).toHaveBeenCalledWith(
+        'AuditLog persistence failed: Foreign key constraint error (P2003)',
+        expect.objectContaining({ tenantId: 't-1', action: AuditAction.CREATE }),
+      );
+      consoleSpy.mockRestore();
+    });
+
+    it('rethrows non-P2003 errors', async () => {
+      prismaMock.auditLog.create.mockRejectedValue(new Error('database unavailable'));
+
+      await expect(
+        repo.create({
+          tenantId: 't-1',
+          action: AuditAction.CREATE,
+          entityType: 'projects',
+          entityId: 'proj-1',
+        }),
+      ).rejects.toThrow('database unavailable');
+    });
   });
 
   describe('createLoginAudit', () => {
@@ -94,6 +133,39 @@ describe('AuditRepository', () => {
           deviceInfo: { browser: 'Chrome' },
         }),
       });
+    });
+
+    it('swallows P2003 foreign key errors without throwing', async () => {
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+      prismaMock.loginAudit.create.mockRejectedValue(p2003Error);
+
+      await expect(
+        repo.createLoginAudit({
+          tenantId: 't-1',
+          identifier: 'user@example.com',
+          authMethod: 'PASSWORD' as AuthMethod,
+          status: 'FAILURE' as LoginAuditStatus,
+        }),
+      ).resolves.toBeUndefined();
+
+      expect(consoleSpy).toHaveBeenCalledWith(
+        'LoginAudit persistence failed: Foreign key constraint error (P2003)',
+        expect.objectContaining({ tenantId: 't-1', identifier: 'user@example.com' }),
+      );
+      consoleSpy.mockRestore();
+    });
+
+    it('rethrows non-P2003 errors', async () => {
+      prismaMock.loginAudit.create.mockRejectedValue(new Error('database unavailable'));
+
+      await expect(
+        repo.createLoginAudit({
+          tenantId: 't-1',
+          identifier: 'user@example.com',
+          authMethod: 'PASSWORD' as AuthMethod,
+          status: 'FAILURE' as LoginAuditStatus,
+        }),
+      ).rejects.toThrow('database unavailable');
     });
   });
 });

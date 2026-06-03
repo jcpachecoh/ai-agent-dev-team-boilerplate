@@ -155,6 +155,38 @@ function validateServiceLayer(featureDir, featureName) {
   }
 }
 
+function hasResolver(featureDir, featureName) {
+  return fs.existsSync(path.join(featureDir, 'resolver', `${featureName}.resolver.ts`));
+}
+
+function isGraphqlOnlyModule(featureDir, featureName) {
+  return (
+    hasResolver(featureDir, featureName) && !fs.existsSync(path.join(featureDir, 'controller'))
+  );
+}
+
+// ── Rule: resolver/ for GraphQL-only modules (no REST controller) ─────────
+
+function validateResolverLayer(featureDir, featureName) {
+  const dir = path.join(featureDir, 'resolver');
+  if (!fs.existsSync(dir)) {
+    error(`[${featureName}] Missing resolver/ directory`);
+    return;
+  }
+
+  const file = path.join(dir, `${featureName}.resolver.ts`);
+  if (!fs.existsSync(file)) {
+    error(`[${featureName}] Missing resolver/${featureName}.resolver.ts`);
+    return;
+  }
+  ok(`${featureName}.resolver.ts exists`);
+
+  const content = readFile(file);
+  if (/from ['"].*repository/.test(content)) {
+    error(`[${featureName}] resolver must not import from repository — use the Service instead`);
+  }
+}
+
 // ── Rule: controller/ must exist with controller file and dto/ ────────────
 
 function validateControllerLayer(featureDir, featureName) {
@@ -185,9 +217,9 @@ function validateControllerLayer(featureDir, featureName) {
   }
 }
 
-// ── Rule: test/ must have service spec and controller spec ────────────────
+// ── Rule: test/ — service spec; controller and/or resolver specs when present ─
 
-function validateTestLayer(featureDir, featureName) {
+function validateTestLayer(featureDir, featureName, { graphqlOnly = false } = {}) {
   const dir = path.join(featureDir, 'test');
   if (!fs.existsSync(dir)) {
     error(`[${featureName}] Missing test/ directory`);
@@ -196,6 +228,7 @@ function validateTestLayer(featureDir, featureName) {
 
   const serviceSpec = path.join(dir, `${featureName}.service.spec.ts`);
   const controllerSpec = path.join(dir, `${featureName}.controller.spec.ts`);
+  const resolverSpec = path.join(dir, `${featureName}.resolver.spec.ts`);
 
   if (!fs.existsSync(serviceSpec)) {
     error(`[${featureName}] Missing test/${featureName}.service.spec.ts`);
@@ -203,10 +236,29 @@ function validateTestLayer(featureDir, featureName) {
     ok(`test/${featureName}.service.spec.ts exists`);
   }
 
-  if (!fs.existsSync(controllerSpec)) {
-    error(`[${featureName}] Missing test/${featureName}.controller.spec.ts`);
-  } else {
-    ok(`test/${featureName}.controller.spec.ts exists`);
+  if (graphqlOnly) {
+    if (!fs.existsSync(resolverSpec)) {
+      error(`[${featureName}] Missing test/${featureName}.resolver.spec.ts`);
+    } else {
+      ok(`test/${featureName}.resolver.spec.ts exists`);
+    }
+    return;
+  }
+
+  if (fs.existsSync(path.join(featureDir, 'controller'))) {
+    if (!fs.existsSync(controllerSpec)) {
+      error(`[${featureName}] Missing test/${featureName}.controller.spec.ts`);
+    } else {
+      ok(`test/${featureName}.controller.spec.ts exists`);
+    }
+  }
+
+  if (hasResolver(featureDir, featureName)) {
+    if (!fs.existsSync(resolverSpec)) {
+      error(`[${featureName}] Missing test/${featureName}.resolver.spec.ts`);
+    } else {
+      ok(`test/${featureName}.resolver.spec.ts exists`);
+    }
   }
 }
 
@@ -232,7 +284,11 @@ function validate() {
     'decorators',
     'prisma',
     'email',
+    'utils', // shared helpers — not a Nest feature module
   ]);
+
+  // Wiring-only modules (no domain layers)
+  const INFRASTRUCTURE = new Set(['graphql', 'pubsub']);
 
   // Parent aggregator modules whose children should be validated individually
   const AGGREGATORS = new Set(['mes']);
@@ -265,11 +321,24 @@ function validate() {
     log(`\n📦 Module: ${feature}`);
 
     validateModuleFile(featureDir, feature);
+
+    if (INFRASTRUCTURE.has(feature)) {
+      ok('infrastructure module — domain layers not required');
+      continue;
+    }
+
     validateInterfacesLayer(featureDir, feature);
     validateRepositoryLayer(featureDir, feature);
     validateServiceLayer(featureDir, feature);
-    validateControllerLayer(featureDir, feature);
-    validateTestLayer(featureDir, feature);
+
+    const graphqlOnly = isGraphqlOnlyModule(featureDir, feature);
+    if (graphqlOnly) {
+      validateResolverLayer(featureDir, feature);
+      validateTestLayer(featureDir, feature, { graphqlOnly: true });
+    } else {
+      validateControllerLayer(featureDir, feature);
+      validateTestLayer(featureDir, feature);
+    }
   }
 
   log('\n' + '─'.repeat(60));
