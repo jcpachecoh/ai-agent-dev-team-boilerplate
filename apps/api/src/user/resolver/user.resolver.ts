@@ -1,7 +1,21 @@
-import { Args, Field, ID, InputType, Mutation, ObjectType, Query, Resolver } from '@nestjs/graphql';
+import {
+  Args,
+  Context,
+  Field,
+  ID,
+  InputType,
+  Mutation,
+  ObjectType,
+  Query,
+  Resolver,
+} from '@nestjs/graphql';
 import { OperationalUser } from '@prisma/client';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import type { JwtPayload } from '../../auth/interfaces/auth.interfaces';
+import {
+  getTenantIdFromContext,
+  type GqlRequestContext,
+} from '../../common/graphql/tenant-from-context';
 import { UserService } from '../service/user.service';
 
 @ObjectType('User')
@@ -40,8 +54,11 @@ export class UserResolver {
 
   /** OperationalUser profile — not global auth `me` (see AuthResolver.me → AuthUserProfile). */
   @Query(() => UserType, { nullable: true, name: 'operationalProfile' })
-  operationalProfile(@CurrentUser() currentUser: JwtPayload): Promise<OperationalUser | null> {
-    return this.userService.getMe(currentUser.sub);
+  operationalProfile(
+    @CurrentUser() currentUser: JwtPayload,
+    @Context() context: GqlRequestContext,
+  ): Promise<OperationalUser | null> {
+    return this.userService.getOperationalProfile(currentUser.sub, getTenantIdFromContext(context));
   }
 
   @Mutation(() => UserType)

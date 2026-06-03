@@ -8,9 +8,15 @@ import type {
   InventoryReportData,
   InventoryStockBySite,
 } from '@/types/inventory';
-import { INVENTORY_CATEGORIES } from '@/types/inventory';
-
 import { buildDashboardData, seedMovements, seedProducts, stockBySiteSeed } from './seed';
+
+const MOCK_CATEGORY_LABELS: Record<string, string> = {
+  carnes: 'Carnes',
+  granos: 'Granos',
+  tuberculos: 'Tubérculos',
+  aceites: 'Aceites',
+  vegetales: 'Vegetales',
+};
 
 function computeSeverity(current: number, threshold: number): InventarioSeverity {
   if (current < threshold * 0.5) return 'critical';
@@ -53,22 +59,25 @@ export const inventoryMockStore = {
 
   async createProduct(values: InventoryProductFormValues): Promise<InventoryProduct> {
     await delay();
-    const category = INVENTORY_CATEGORIES.find((c) => c.value === values.categoryId);
     const product: InventoryProduct = {
       id: String(Date.now()),
       sku: values.sku.trim().toUpperCase(),
       name: values.name.trim().toUpperCase(),
-      category: category?.label ?? values.categoryId,
+      descripcion: values.descripcion.trim() || undefined,
+      category: MOCK_CATEGORY_LABELS[values.categoryId] ?? values.categoryId,
       categoryId: values.categoryId,
-      supplier: values.supplier,
+      supplier: '—',
       costPrice: Number(values.costPrice),
-      sellingPrice: Number(values.sellingPrice),
+      sellingPrice: 0,
       currentStock: 0,
       minStock: Number(values.minStock),
       maxStock: Number(values.maxStock),
       lastMovement: new Date().toISOString().slice(0, 10),
       isActive: true,
-      itemType: 'product',
+      itemType: 'supply',
+      unidadBase: values.unidadBase,
+      aplicaVencimiento: values.aplicaVencimiento,
+      aplicaLote: values.aplicaLote,
     };
     products = [...products, product];
     alerts = syncAlertsFromProducts(products);
@@ -77,20 +86,22 @@ export const inventoryMockStore = {
 
   async updateProduct(id: string, values: InventoryProductFormValues): Promise<InventoryProduct> {
     await delay();
-    const category = INVENTORY_CATEGORIES.find((c) => c.value === values.categoryId);
     products = products.map((p) =>
       p.id === id
         ? {
             ...p,
             sku: values.sku.trim().toUpperCase(),
             name: values.name.trim().toUpperCase(),
-            category: category?.label ?? values.categoryId,
+            descripcion: values.descripcion.trim() || undefined,
+            category: MOCK_CATEGORY_LABELS[values.categoryId] ?? values.categoryId,
             categoryId: values.categoryId,
-            supplier: values.supplier,
             costPrice: Number(values.costPrice),
-            sellingPrice: Number(values.sellingPrice),
+            sellingPrice: 0,
             minStock: Number(values.minStock),
             maxStock: Number(values.maxStock),
+            unidadBase: values.unidadBase,
+            aplicaVencimiento: values.aplicaVencimiento,
+            aplicaLote: values.aplicaLote,
           }
         : p,
     );

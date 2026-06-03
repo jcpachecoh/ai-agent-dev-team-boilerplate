@@ -1,0 +1,40 @@
+import type { InventoryProduct, InventoryProductFormValues } from '@/types/inventory';
+
+import type { CreateSupplyItemInput, UpdateSupplyItemInput } from '../types';
+
+export function formValuesToCreateInput(values: InventoryProductFormValues): CreateSupplyItemInput {
+  return {
+    nombre: values.name.trim(),
+    codigoInterno: values.sku.trim(),
+    descripcion: values.descripcion.trim() || undefined,
+    categoriaId: values.categoryId,
+    unidadBase: values.unidadBase,
+    factorConversion: values.factorConversion || '1',
+    costoPromedioPonderado: values.costPrice || '0',
+    stockMinimoBodega: values.minStock || '0',
+    stockMaximoBodega: values.maxStock || '0',
+    aplicaVencimiento: values.aplicaVencimiento,
+    aplicaLote: values.aplicaLote,
+    isActive: true,
+  };
+}
+
+export function formValuesToUpdateInput(values: InventoryProductFormValues): UpdateSupplyItemInput {
+  return formValuesToCreateInput(values);
+}
+
+export function productToFormValues(product: InventoryProduct): InventoryProductFormValues {
+  return {
+    sku: product.sku,
+    name: product.name,
+    descripcion: product.descripcion ?? '',
+    categoryId: product.categoryId,
+    costPrice: String(product.costPrice),
+    minStock: String(product.minStock),
+    maxStock: String(product.maxStock),
+    unidadBase: product.unidadBase ?? 'UNIT',
+    factorConversion: '1',
+    aplicaVencimiento: product.aplicaVencimiento ?? false,
+    aplicaLote: product.aplicaLote ?? false,
+  };
+}

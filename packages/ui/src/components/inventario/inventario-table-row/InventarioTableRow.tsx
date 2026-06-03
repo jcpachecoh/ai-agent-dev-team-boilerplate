@@ -5,6 +5,7 @@ import { InventarioIconButton } from '../inventario-icon-button';
 import { InventarioStatusBadge } from '../inventario-status-badge';
 import {
   inventarioAlertGridTemplate,
+  inventarioCategoryGridTemplate,
   inventarioMovementGridTemplate,
   inventarioProductGridTemplate,
 } from '../shared/inventario-columns';
@@ -17,7 +18,7 @@ import type {
 } from '../shared/inventario-types';
 import styles from './InventarioTableRow.module.scss';
 
-export type InventarioTableRowVariant = 'product' | 'movement' | 'alert';
+export type InventarioTableRowVariant = 'product' | 'movement' | 'alert' | 'category';
 
 export interface InventarioTableRowProductProps {
   variant?: 'product';
@@ -56,10 +57,20 @@ export interface InventarioTableRowAlertProps {
   onResolve?: () => void;
 }
 
+export interface InventarioTableRowCategoryProps {
+  variant: 'category';
+  nombre?: string;
+  descripcion?: string;
+  isActive?: boolean;
+  onEdit?: () => void;
+  onDelete?: () => void;
+}
+
 export type InventarioTableRowProps = (
   | InventarioTableRowProductProps
   | InventarioTableRowMovementProps
   | InventarioTableRowAlertProps
+  | InventarioTableRowCategoryProps
 ) & {
   theme?: InventarioTheme;
   size?: InventarioSize;
@@ -70,6 +81,7 @@ const gridByVariant = {
   product: inventarioProductGridTemplate,
   movement: inventarioMovementGridTemplate,
   alert: inventarioAlertGridTemplate,
+  category: inventarioCategoryGridTemplate,
 } as const;
 
 export function InventarioTableRow(props: InventarioTableRowProps): JSX.Element {
@@ -93,7 +105,43 @@ export function InventarioTableRow(props: InventarioTableRowProps): JSX.Element 
       {variant === 'alert' ? (
         <AlertCells {...(props as InventarioTableRowAlertProps)} theme={theme} />
       ) : null}
+      {variant === 'category' ? (
+        <CategoryCells {...(props as InventarioTableRowCategoryProps)} theme={theme} />
+      ) : null}
     </div>
+  );
+}
+
+function CategoryCells({
+  nombre = 'Categoría',
+  descripcion = '—',
+  isActive = true,
+  onEdit,
+  onDelete,
+  theme = 'light',
+}: InventarioTableRowCategoryProps & { theme: InventarioTheme }): JSX.Element {
+  return (
+    <>
+      <span className={styles.name} role="cell">
+        {nombre}
+      </span>
+      <span className={styles.muted} role="cell">
+        {descripcion?.trim() ? descripcion : '—'}
+      </span>
+      <span className={styles.badgeCell} role="cell">
+        <InventarioStatusBadge
+          domain="severity"
+          status={isActive ? 'resolved' : 'warning'}
+          label={isActive ? 'ACTIVO' : 'INACTIVO'}
+          theme={theme}
+          size="sm"
+        />
+      </span>
+      <span className={styles.actions} role="cell">
+        <InventarioIconButton variant="edit" theme={theme} onClick={onEdit} />
+        <InventarioIconButton variant="delete" theme={theme} onClick={onDelete} />
+      </span>
+    </>
   );
 }
 

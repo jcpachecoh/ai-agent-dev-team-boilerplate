@@ -2,9 +2,11 @@ import React, { type CSSProperties, type JSX } from 'react';
 
 import {
   defaultAlertColumns,
+  defaultCategoryColumns,
   defaultMovementColumns,
   defaultProductColumns,
   inventarioAlertGridTemplate,
+  inventarioCategoryGridTemplate,
   inventarioMovementGridTemplate,
   inventarioProductGridTemplate,
 } from '../shared/inventario-columns';
@@ -15,7 +17,7 @@ import type {
 } from '../shared/inventario-types';
 import styles from './InventarioTableHeader.module.scss';
 
-export type InventarioTableVariant = 'product' | 'movement' | 'alert';
+export type InventarioTableVariant = 'product' | 'movement' | 'alert' | 'category';
 
 export interface InventarioTableHeaderProps {
   variant?: InventarioTableVariant;
@@ -35,12 +37,14 @@ const defaultColumnsByVariant: Record<InventarioTableVariant, InventarioTableCol
   product: defaultProductColumns,
   movement: defaultMovementColumns,
   alert: defaultAlertColumns,
+  category: defaultCategoryColumns,
 };
 
 const gridByVariant: Record<InventarioTableVariant, string> = {
   product: inventarioProductGridTemplate,
   movement: inventarioMovementGridTemplate,
   alert: inventarioAlertGridTemplate,
+  category: inventarioCategoryGridTemplate,
 };
 
 export function InventarioTableHeader({

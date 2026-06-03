@@ -4,15 +4,19 @@ import type {
   InventarioSeverity,
 } from '@restopsiq/ui';
 
+import type { StockUnit } from '@/features/inventario/types';
+
 export type InventoryItemType = 'product' | 'supply';
 
 export interface InventoryProduct {
   id: string;
   sku: string;
   name: string;
+  descripcion?: string;
   category: string;
   categoryId: string;
   supplier: string;
+  supplierId?: string;
   costPrice: number;
   sellingPrice: number;
   currentStock: number;
@@ -21,17 +25,23 @@ export interface InventoryProduct {
   lastMovement: string;
   isActive: boolean;
   itemType: InventoryItemType;
+  unidadBase?: StockUnit;
+  aplicaVencimiento?: boolean;
+  aplicaLote?: boolean;
 }
 
 export interface InventoryProductFormValues {
   sku: string;
   name: string;
+  descripcion: string;
   categoryId: string;
-  supplier: string;
   costPrice: string;
-  sellingPrice: string;
   minStock: string;
   maxStock: string;
+  unidadBase: StockUnit;
+  factorConversion: string;
+  aplicaVencimiento: boolean;
+  aplicaLote: boolean;
 }
 
 export interface InventoryMovement {
@@ -98,20 +108,10 @@ export interface InventoryReportData {
 
 export const INVENTORY_PAGE_SIZE = 20;
 
-export const INVENTORY_CATEGORIES = [
-  { value: 'all', label: 'Todas las categorías' },
-  { value: 'carnes', label: 'Carnes' },
-  { value: 'granos', label: 'Granos' },
-  { value: 'tuberculos', label: 'Tubérculos' },
-  { value: 'aceites', label: 'Aceites' },
-  { value: 'vegetales', label: 'Vegetales' },
-] as const;
-
-export const INVENTORY_SUPPLIERS = [
-  { value: 'all', label: 'Todos los proveedores' },
-  { value: 'agrosuper', label: 'Agrosuper' },
-  { value: 'frigorifico', label: 'Frigorífico del Llano' },
-  { value: 'arroz-diana', label: 'Arroz Diana' },
-  { value: 'lloreda', label: 'Lloreda' },
-  { value: 'agro-boyaca', label: 'Agro Boyacá' },
-] as const;
+export const STOCK_UNIT_OPTIONS: { value: StockUnit; label: string }[] = [
+  { value: 'UNIT', label: 'Unidad' },
+  { value: 'GRAMS', label: 'Gramos' },
+  { value: 'KILOGRAMS', label: 'Kilogramos' },
+  { value: 'ML', label: 'Mililitros' },
+  { value: 'LITERS', label: 'Litros' },
+];

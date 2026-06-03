@@ -221,7 +221,7 @@ Folder **10 — GraphQL Auth** exercises auth through `{{graphqlUrl}}` (`http://
 
 | Request                  | GraphQL operation             | Auth header                 | Notes                                                     |
 | ------------------------ | ----------------------------- | --------------------------- | --------------------------------------------------------- |
-| Signup                   | `mutation signup`             | `x-tenant-id: {{tenantId}}` | optional tokens                                           |
+| Signup                   | `mutation signup`             | `x-tenant-id: {{tenantId}}` | optional tokens; enqueues verify-email OTP                |
 | Login                    | `mutation login`              | `x-tenant-id: {{tenantId}}` | `accessToken`, `refreshToken`, `globalUserId`             |
 | Me                       | `query me`                    | `Bearer {{accessToken}}`    | —                                                         |
 | Refresh Token            | `mutation refreshToken`       | `Bearer {{refreshToken}}`   | new tokens                                                |

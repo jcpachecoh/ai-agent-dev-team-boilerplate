@@ -1,94 +1,39 @@
-import {
-  InventarioFormField,
-  InventarioModal,
-  InventarioPageHeader,
-  InventarioPanel,
-  InventarioPrimaryButton,
-  InventarioTableHeader,
-  InventarioTableRow,
-  toast,
-} from '@restopsiq/ui';
-import { useCallback, useEffect, useState } from 'react';
+import { InventarioPageHeader, InventarioPanel, toast } from '@restopsiq/ui';
 import { Link, useParams } from 'react-router-dom';
 
-import {
-  adjustProductStock,
-  fetchInventoryProduct,
-  fetchProductMovements,
-  fetchStockBySite,
-} from '@/api/inventory';
 import { InventoryScreenState } from '@/components/inventory/InventoryScreenState';
-import type { InventoryMovement, InventoryProduct, InventoryStockBySite } from '@/types/inventory';
-import { formatCurrency, formatMovementQuantity } from '@/utils/inventory';
+import { useSupplyItem } from '@/features/inventario/hooks/useSupplyItem';
+import { useSupplyItemPriceHistory } from '@/features/inventario/hooks/useSupplyItemPriceHistory';
+import { useSupplyItemSuppliers } from '@/features/inventario/hooks/useSupplyItemSuppliers';
+import { STOCK_UNIT_OPTIONS } from '@/types/inventory';
+import { formatCurrency } from '@/utils/inventory';
 
 import shared from '../inventory/shared.module.scss';
 import styles from './InventoryProductDetailScreen.module.scss';
 
+function unitLabel(unit: string): string {
+  return STOCK_UNIT_OPTIONS.find((u) => u.value === unit)?.label ?? unit;
+}
+
 export function InventoryProductDetailScreen(): React.JSX.Element {
   const { id = '' } = useParams();
-  const [product, setProduct] = useState<InventoryProduct | null>(null);
-  const [stockBySite, setStockBySite] = useState<InventoryStockBySite[]>([]);
-  const [movements, setMovements] = useState<InventoryMovement[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [adjustOpen, setAdjustOpen] = useState(false);
-  const [adjustQty, setAdjustQty] = useState('');
-  const [adjustReason, setAdjustReason] = useState('');
+  const productQuery = useSupplyItem(id);
+  const suppliersQuery = useSupplyItemSuppliers(id);
+  const historyQuery = useSupplyItemPriceHistory(id);
 
-  const load = useCallback(async () => {
-    if (!id) return;
-    setLoading(true);
-    try {
-      const [p, sites, movs] = await Promise.all([
-        fetchInventoryProduct(id),
-        fetchStockBySite(id),
-        fetchProductMovements(id),
-      ]);
-      if (!p) {
-        setProduct(null);
-        return;
-      }
-      setProduct(p);
-      setStockBySite(sites);
-      setMovements(movs);
-    } catch {
-      toast.error('Error al cargar el producto');
-    } finally {
-      setLoading(false);
-    }
-  }, [id]);
+  const product = productQuery.data;
 
-  useEffect(() => {
-    void load();
-  }, [load]);
-
-  const handleAdjust = async () => {
-    if (!product) return;
-    const qty = Number(adjustQty);
-    if (Number.isNaN(qty) || !adjustReason.trim()) {
-      toast.error('Ingrese cantidad y razón válidas');
-      return;
-    }
-    try {
-      await adjustProductStock(product.id, qty, adjustReason.trim());
-      toast.success('Stock ajustado');
-      setAdjustOpen(false);
-      setAdjustQty('');
-      setAdjustReason('');
-      await load();
-    } catch {
-      toast.error('Error al ajustar stock');
-    }
-  };
-
-  if (loading) return <InventoryScreenState variant="loading" />;
+  if (productQuery.isLoading) return <InventoryScreenState variant="loading" />;
+  if (productQuery.isError) {
+    toast.error('Error al cargar el insumo');
+    return <InventoryScreenState variant="error" onRetry={() => void productQuery.refetch()} />;
+  }
   if (!product) {
-    return <InventoryScreenState variant="empty" message="Producto no encontrado." />;
+    return <InventoryScreenState variant="empty" message="Insumo no encontrado." />;
   }
 
-  const margin =
-    product.sellingPrice > 0
-      ? `${Math.round(((product.sellingPrice - product.costPrice) / product.sellingPrice) * 100)}%`
-      : '—';
+  const suppliers = suppliersQuery.data ?? [];
+  const history = historyQuery.data ?? [];
 
   return (
     <div className={shared.screen}>
@@ -99,7 +44,7 @@ export function InventoryProductDetailScreen(): React.JSX.Element {
       <section className={shared.pageHeader}>
         <InventarioPageHeader
           title={product.name}
-          subtitle={`SKU ${product.sku} · ${product.category} · ${product.supplier}`}
+          subtitle={`${product.sku} · ${product.category} · ${product.supplier}`}
           theme="dark"
           size="xl"
           className={shared.pageHeaderHost}
@@ -110,123 +55,110 @@ export function InventoryProductDetailScreen(): React.JSX.Element {
         <InventarioPanel title="Información general" theme="dark" size="xl">
           <dl className={styles.infoGrid}>
             <div>
-              <dt>Precio costo</dt>
+              <dt>Costo promedio (CPP)</dt>
               <dd>{formatCurrency(product.costPrice)}</dd>
             </div>
             <div>
-              <dt>Precio venta</dt>
-              <dd>{formatCurrency(product.sellingPrice)}</dd>
+              <dt>Unidad base</dt>
+              <dd>{unitLabel(product.unidadBase ?? 'UNIT')}</dd>
             </div>
             <div>
-              <dt>Margen</dt>
-              <dd>{margin}</dd>
-            </div>
-            <div>
-              <dt>Stock mínimo</dt>
+              <dt>Stock mínimo bodega</dt>
               <dd>{product.minStock}</dd>
             </div>
             <div>
-              <dt>Stock máximo</dt>
+              <dt>Stock máximo bodega</dt>
               <dd>{product.maxStock}</dd>
             </div>
             <div>
-              <dt>Stock total</dt>
+              <dt>Stock disponible</dt>
               <dd>{product.currentStock}</dd>
+            </div>
+            <div>
+              <dt>Lote / vencimiento</dt>
+              <dd>
+                {product.aplicaLote ? 'Lote' : '—'} / {product.aplicaVencimiento ? 'Vence' : '—'}
+              </dd>
             </div>
           </dl>
         </InventarioPanel>
       </section>
 
       <section className={shared.detailBlock}>
-        <InventarioPanel title="Stock por Sede" theme="dark" size="xl">
-          <div className={[shared.tableWrap, shared.tableWrapInset].join(' ')}>
-            <div className={shared.tableBody}>
+        <InventarioPanel title="Proveedores vinculados" theme="dark" size="xl">
+          {suppliersQuery.isLoading ? (
+            <p className={styles.muted}>Cargando proveedores…</p>
+          ) : suppliers.length === 0 ? (
+            <p className={styles.muted}>
+              Sin proveedores asociados. Vincule desde el módulo Proveedores.
+            </p>
+          ) : (
+            <div
+              className={[shared.tableWrap, shared.tableWrapInset, styles.supplierGrid].join(' ')}
+            >
               <div className={styles.siteTable}>
                 <div className={styles.siteHeader} role="row">
-                  <span>Sede</span>
-                  <span>Stock actual</span>
-                  <span>Reservado</span>
-                  <span>Disponible</span>
-                  <span>Acciones</span>
+                  <span>Proveedor</span>
+                  <span>NIT</span>
+                  <span>Precio</span>
+                  <span>Unidad</span>
+                  <span>Lead time</span>
+                  <span>Principal</span>
                 </div>
-                {stockBySite.map((row) => (
-                  <div key={row.site} className={styles.siteRow} role="row">
-                    <span>{row.site}</span>
-                    <span>{row.current}</span>
-                    <span>{row.reserved}</span>
-                    <span>{row.available}</span>
-                    <span>
-                      <InventarioPrimaryButton
-                        label="Ajustar"
-                        variant="ghost"
-                        showIcon={false}
-                        onClick={() => setAdjustOpen(true)}
-                        theme="dark"
-                        size="sm"
-                      />
-                    </span>
+                {suppliers.map((row) => (
+                  <div key={row.supplierId} className={styles.siteRow} role="row">
+                    <span>{row.razonSocial}</span>
+                    <span>{row.nit}</span>
+                    <span>{formatCurrency(row.precioUnitario)}</span>
+                    <span>{unitLabel(row.unidadCompra)}</span>
+                    <span>{row.tiempoEntregaDias} días</span>
+                    <span>{row.esProveedorPrincipal ? 'Sí' : '—'}</span>
                   </div>
                 ))}
               </div>
             </div>
-          </div>
+          )}
         </InventarioPanel>
       </section>
 
       <section className={shared.detailBlock}>
-        <InventarioPanel title="Últimos movimientos" theme="dark" size="xl">
-          <div className={[shared.tableWrap, shared.tableWrapInset].join(' ')}>
-            <div className={shared.tableHead}>
-              <InventarioTableHeader variant="movement" theme="dark" size="xl" />
+        <InventarioPanel title="Historial de costo" theme="dark" size="xl">
+          {historyQuery.isLoading ? (
+            <p className={styles.muted}>Cargando historial…</p>
+          ) : history.length === 0 ? (
+            <p className={styles.muted}>Sin movimientos de costo registrados.</p>
+          ) : (
+            <div
+              className={[shared.tableWrap, shared.tableWrapInset, styles.historyGrid].join(' ')}
+            >
+              <div className={styles.siteTable}>
+                <div className={styles.siteHeader} role="row">
+                  <span>Fecha</span>
+                  <span>Anterior</span>
+                  <span>Nuevo</span>
+                  <span>Motivo</span>
+                </div>
+                {history.map((entry) => (
+                  <div key={entry.id} className={styles.siteRow} role="row">
+                    <span>{new Date(entry.createdAt).toLocaleString('es-CO')}</span>
+                    <span>{formatCurrency(entry.costoAnterior)}</span>
+                    <span>{formatCurrency(entry.costoNuevo)}</span>
+                    <span>{entry.motivo ?? entry.referenciaTipo ?? '—'}</span>
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className={shared.tableBody}>
-              {movements.map((m) => (
-                <InventarioTableRow
-                  key={m.id}
-                  variant="movement"
-                  theme="dark"
-                  size="xl"
-                  className={shared.tableRowHost}
-                  date={m.date}
-                  product={m.product}
-                  movementType={m.movementType}
-                  quantity={formatMovementQuantity(m.quantity)}
-                  user={`${m.user} · ${m.site}`}
-                  reference={m.reason}
-                />
-              ))}
-            </div>
-          </div>
+          )}
         </InventarioPanel>
       </section>
 
-      <InventarioModal
-        open={adjustOpen}
-        title="Ajustar Stock"
-        subtitle={product.name}
-        onClose={() => setAdjustOpen(false)}
-        onSave={() => void handleAdjust()}
-        theme="dark"
-        size="md"
-      >
-        <div className={styles.adjustForm}>
-          <InventarioFormField label="Cantidad (+/-)" theme="dark" size="md">
-            <input
-              type="number"
-              className={styles.input}
-              value={adjustQty}
-              onChange={(e) => setAdjustQty(e.target.value)}
-            />
-          </InventarioFormField>
-          <InventarioFormField label="Razón" theme="dark" size="md">
-            <input
-              className={styles.input}
-              value={adjustReason}
-              onChange={(e) => setAdjustReason(e.target.value)}
-            />
-          </InventarioFormField>
-        </div>
-      </InventarioModal>
+      <section className={shared.detailBlock}>
+        <InventarioPanel title="Stock por sede y movimientos" theme="dark" size="xl">
+          <p className={styles.muted}>
+            Disponible cuando se integre el módulo de bodega y movimientos de inventario.
+          </p>
+        </InventarioPanel>
+      </section>
     </div>
   );
 }

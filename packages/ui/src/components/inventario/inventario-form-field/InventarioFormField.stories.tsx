@@ -31,7 +31,7 @@ export const InputField: Story = {
 export const SelectField: Story = {
   args: {
     label: 'Categoría',
-    inputType: 'select',
+    bareControl: true,
     children: (
       <InventarioSelect
         options={[
@@ -39,6 +39,7 @@ export const SelectField: Story = {
           { value: 'grains', label: 'Granos' },
         ]}
         value="proteins"
+        theme="dark"
       />
     ),
   },

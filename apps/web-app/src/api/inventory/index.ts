@@ -1,3 +1,19 @@
+import {
+  checkCodigoInternoExists,
+  createSupplyItem,
+  deactivateSupplyItem,
+  fetchSupplyItem,
+  fetchSupplyItemPriceHistory,
+  fetchSupplyItemSuppliers,
+  fetchSupplyItems,
+  updateSupplyItem,
+} from '@/features/inventario/api/inventario.api';
+import { toInventoryProduct } from '@/features/inventario/mappers/toInventoryProduct';
+import {
+  formValuesToCreateInput,
+  formValuesToUpdateInput,
+} from '@/features/inventario/mappers/formValues';
+import { inventoryMockStore } from '@/mocks/inventory/store';
 import type {
   InventoryAlert,
   InventoryDashboardData,
@@ -7,33 +23,38 @@ import type {
   InventoryReportData,
   InventoryStockBySite,
 } from '@/types/inventory';
-import { inventoryMockStore } from '@/mocks/inventory/store';
 
-import { useInventoryMock } from './config';
+import {
+  fetchInventoryAlertSummaryApi,
+  fetchInventoryAlertsApi,
+  fetchInventoryDashboardApi,
+  fetchInventoryReportApi,
+} from '@/features/inventario/api/inventario.rest';
 import { inventoryFetch } from './client';
+import { useInventoryMock, useInventoryMovementsMock } from './config';
+
+type AlertSummary = { critical: number; warning: number; resolvedToday: number };
+
+let cachedAlertSummary: AlertSummary | null = null;
 
 export async function fetchInventoryProducts(): Promise<InventoryProduct[]> {
   if (useInventoryMock()) return inventoryMockStore.listProducts();
-  return inventoryFetch<InventoryProduct[]>('/supply-items');
+  const items = await fetchSupplyItems();
+  return items.map(toInventoryProduct);
 }
 
 export async function fetchInventoryProduct(id: string): Promise<InventoryProduct | undefined> {
   if (useInventoryMock()) return inventoryMockStore.getProduct(id);
-  try {
-    return await inventoryFetch<InventoryProduct>(`/supply-items/${id}`);
-  } catch {
-    return undefined;
-  }
+  const item = await fetchSupplyItem(id);
+  return item ? toInventoryProduct(item) : undefined;
 }
 
 export async function createInventoryProduct(
   values: InventoryProductFormValues,
 ): Promise<InventoryProduct> {
   if (useInventoryMock()) return inventoryMockStore.createProduct(values);
-  return inventoryFetch<InventoryProduct>('/supply-items', {
-    method: 'POST',
-    body: JSON.stringify(mapFormToApi(values)),
-  });
+  const item = await createSupplyItem(formValuesToCreateInput(values));
+  return toInventoryProduct(item);
 }
 
 export async function updateInventoryProduct(
@@ -41,36 +62,42 @@ export async function updateInventoryProduct(
   values: InventoryProductFormValues,
 ): Promise<InventoryProduct> {
   if (useInventoryMock()) return inventoryMockStore.updateProduct(id, values);
-  return inventoryFetch<InventoryProduct>(`/supply-items/${id}`, {
-    method: 'PATCH',
-    body: JSON.stringify(mapFormToApi(values)),
-  });
+  const item = await updateSupplyItem(id, formValuesToUpdateInput(values));
+  return toInventoryProduct(item);
 }
 
 export async function deleteInventoryProduct(id: string): Promise<void> {
   if (useInventoryMock()) return inventoryMockStore.deleteProduct(id);
-  await inventoryFetch(`/supply-items/${id}`, { method: 'DELETE' });
+  await deactivateSupplyItem(id);
 }
 
 export async function checkSkuExists(sku: string, excludeId?: string): Promise<boolean> {
   if (useInventoryMock()) return inventoryMockStore.skuExists(sku, excludeId);
-  const items = await fetchInventoryProducts();
-  return items.some((p) => p.sku.toLowerCase() === sku.toLowerCase() && p.id !== excludeId);
+  return checkCodigoInternoExists(sku, excludeId);
 }
+
+export { fetchSupplyItemSuppliers, fetchSupplyItemPriceHistory };
 
 export async function fetchInventoryDashboard(): Promise<InventoryDashboardData> {
   if (useInventoryMock()) return inventoryMockStore.getDashboard();
-  return inventoryFetch<InventoryDashboardData>('/inventory/dashboard');
+  return fetchInventoryDashboardApi();
 }
 
 export async function fetchInventoryMovements(): Promise<InventoryMovement[]> {
-  if (useInventoryMock()) return inventoryMockStore.listMovements();
+  if (useInventoryMock() || useInventoryMovementsMock()) {
+    return inventoryMockStore.listMovements();
+  }
   return inventoryFetch<InventoryMovement[]>('/inventory/movements');
 }
 
 export async function fetchInventoryAlerts(): Promise<InventoryAlert[]> {
   if (useInventoryMock()) return inventoryMockStore.listAlerts();
-  return inventoryFetch<InventoryAlert[]>('/inventory/alerts');
+  const [list, summary] = await Promise.all([
+    fetchInventoryAlertsApi(),
+    fetchInventoryAlertSummaryApi(),
+  ]);
+  cachedAlertSummary = summary;
+  return list;
 }
 
 export async function resolveInventoryAlert(id: string): Promise<void> {
@@ -78,18 +105,22 @@ export async function resolveInventoryAlert(id: string): Promise<void> {
   await inventoryFetch(`/inventory/alerts/${id}/resolve`, { method: 'PATCH' });
 }
 
-export function fetchInventoryAlertSummary() {
+export function fetchInventoryAlertSummary(): AlertSummary {
   if (useInventoryMock()) return inventoryMockStore.getAlertSummary();
-  return { critical: 0, warning: 0, resolvedToday: 0 };
+  return cachedAlertSummary ?? { critical: 0, warning: 0, resolvedToday: 0 };
 }
 
 export async function fetchStockBySite(productId: string): Promise<InventoryStockBySite[]> {
-  if (useInventoryMock()) return inventoryMockStore.getStockBySite(productId);
+  if (useInventoryMock() || useInventoryMovementsMock()) {
+    return inventoryMockStore.getStockBySite(productId);
+  }
   return inventoryFetch<InventoryStockBySite[]>(`/inventory/products/${productId}/stock-by-site`);
 }
 
 export async function fetchProductMovements(productId: string): Promise<InventoryMovement[]> {
-  if (useInventoryMock()) return inventoryMockStore.getProductMovements(productId);
+  if (useInventoryMock() || useInventoryMovementsMock()) {
+    return inventoryMockStore.getProductMovements(productId);
+  }
   return inventoryFetch<InventoryMovement[]>(`/inventory/products/${productId}/movements`);
 }
 
@@ -98,7 +129,9 @@ export async function adjustProductStock(
   quantity: number,
   reason: string,
 ): Promise<void> {
-  if (useInventoryMock()) return inventoryMockStore.adjustStock(productId, quantity, reason);
+  if (useInventoryMock() || useInventoryMovementsMock()) {
+    return inventoryMockStore.adjustStock(productId, quantity, reason);
+  }
   await inventoryFetch(`/inventory/products/${productId}/adjust`, {
     method: 'POST',
     body: JSON.stringify({ quantity, reason }),
@@ -111,23 +144,5 @@ export async function fetchInventoryReport(
   to: string,
 ): Promise<InventoryReportData> {
   if (useInventoryMock()) return inventoryMockStore.getReport(type, from, to);
-  return inventoryFetch<InventoryReportData>(
-    `/inventory/reports?type=${type}&from=${from}&to=${to}`,
-  );
-}
-
-function mapFormToApi(values: InventoryProductFormValues) {
-  return {
-    nombre: values.name,
-    codigoInterno: values.sku,
-    categoriaId: values.categoryId,
-    costoPromedioPonderado: values.costPrice,
-    stockMinimoBodega: values.minStock,
-    stockMaximoBodega: values.maxStock,
-    unidadBase: 'UNIT',
-    factorConversion: '1',
-    aplicaVencimiento: false,
-    aplicaLote: false,
-    isActive: true,
-  };
+  return fetchInventoryReportApi(type, from, to);
 }

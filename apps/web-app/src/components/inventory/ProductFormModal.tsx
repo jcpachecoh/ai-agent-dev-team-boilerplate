@@ -4,24 +4,20 @@ import {
   InventarioSelect,
   type InventarioSelectOption,
 } from '@restopsiq/ui';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
+import { useSupplyCategories } from '@/features/inventario/hooks/useSupplyCategories';
+import { productToFormValues } from '@/features/inventario/mappers/formValues';
 import type { InventoryProduct, InventoryProductFormValues } from '@/types/inventory';
-import { INVENTORY_CATEGORIES } from '@/types/inventory';
+import { STOCK_UNIT_OPTIONS } from '@/types/inventory';
 
+import { FormToggle } from './FormToggle';
 import styles from './ProductFormModal.module.scss';
 
-const categoryOptions: InventarioSelectOption[] = INVENTORY_CATEGORIES.filter(
-  (c) => c.value !== 'all',
-).map((c) => ({ value: c.value, label: c.label }));
-
-const supplierOptions: InventarioSelectOption[] = [
-  { value: 'Agrosuper', label: 'Agrosuper' },
-  { value: 'Frigorífico del Llano', label: 'Frigorífico del Llano' },
-  { value: 'Arroz Diana', label: 'Arroz Diana' },
-  { value: 'Lloreda', label: 'Lloreda' },
-  { value: 'Agro Boyacá', label: 'Agro Boyacá' },
-];
+const unitOptions: InventarioSelectOption[] = STOCK_UNIT_OPTIONS.map((u) => ({
+  value: u.value,
+  label: u.label,
+}));
 
 export interface ProductFormModalProps {
   open: boolean;
@@ -35,12 +31,15 @@ export interface ProductFormModalProps {
 const emptyForm: InventoryProductFormValues = {
   sku: '',
   name: '',
-  categoryId: 'carnes',
-  supplier: 'Agrosuper',
-  costPrice: '',
-  sellingPrice: '',
-  minStock: '',
-  maxStock: '',
+  descripcion: '',
+  categoryId: '',
+  costPrice: '0',
+  minStock: '0',
+  maxStock: '100',
+  unidadBase: 'UNIT',
+  factorConversion: '1',
+  aplicaVencimiento: false,
+  aplicaLote: false,
 };
 
 export function ProductFormModal({
@@ -51,39 +50,39 @@ export function ProductFormModal({
   onClose,
   onSave,
 }: ProductFormModalProps): React.JSX.Element {
+  const categoriesQuery = useSupplyCategories();
   const [values, setValues] = useState<InventoryProductFormValues>(emptyForm);
-  const [priceError, setPriceError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
+
+  const categoryOptions: InventarioSelectOption[] = useMemo(() => {
+    const items = categoriesQuery.data ?? [];
+    return items.map((c) => ({ value: c.id, label: c.nombre }));
+  }, [categoriesQuery.data]);
 
   useEffect(() => {
     if (!open) return;
     if (product) {
-      setValues({
-        sku: product.sku,
-        name: product.name,
-        categoryId: product.categoryId,
-        supplier: product.supplier,
-        costPrice: String(product.costPrice),
-        sellingPrice: String(product.sellingPrice),
-        minStock: String(product.minStock),
-        maxStock: String(product.maxStock),
-      });
+      setValues(productToFormValues(product));
     } else {
-      setValues(emptyForm);
+      const firstCategory = categoriesQuery.data?.[0]?.id ?? '';
+      setValues({ ...emptyForm, categoryId: firstCategory });
     }
-    setPriceError(null);
-  }, [open, product]);
+    setFormError(null);
+  }, [open, product, categoriesQuery.data]);
 
   const handleSave = () => {
     const cost = Number(values.costPrice);
-    const sell = Number(values.sellingPrice);
-    if (Number.isNaN(cost) || Number.isNaN(sell) || cost >= sell) {
-      setPriceError('El precio de costo debe ser menor al precio de venta.');
+    const min = Number(values.minStock);
+    const max = Number(values.maxStock);
+    if (!values.sku.trim() || !values.name.trim() || !values.categoryId) {
+      setFormError('Complete SKU, nombre y categoría.');
       return;
     }
-    if (!values.sku.trim() || !values.name.trim()) {
+    if (Number.isNaN(cost) || Number.isNaN(min) || Number.isNaN(max) || min > max) {
+      setFormError('Revise costo y límites de stock (mínimo ≤ máximo).');
       return;
     }
-    setPriceError(null);
+    setFormError(null);
     onSave(values);
   };
 
@@ -93,8 +92,8 @@ export function ProductFormModal({
   return (
     <InventarioModal
       open={open}
-      title={mode === 'create' ? 'Crear Producto' : 'Editar Producto'}
-      subtitle="Configurar información del producto"
+      title={mode === 'create' ? 'Crear Insumo' : 'Editar Insumo'}
+      subtitle="Maestro de insumos — categoría, unidad y límites de bodega"
       onClose={onClose}
       onSave={handleSave}
       saveLoading={saving}
@@ -102,39 +101,66 @@ export function ProductFormModal({
       size="xl"
     >
       <div className={styles.formGrid}>
-        <InventarioFormField label="SKU *" theme="dark" size="md">
+        <InventarioFormField
+          label="Código interno (SKU) *"
+          htmlFor="insumo-sku"
+          theme="dark"
+          size="md"
+        >
           <input
+            id="insumo-sku"
             className={styles.input}
             value={values.sku}
             onChange={(e) => update({ sku: e.target.value })}
           />
         </InventarioFormField>
-        <InventarioFormField label="Nombre *" theme="dark" size="md">
+        <InventarioFormField label="Nombre *" htmlFor="insumo-nombre" theme="dark" size="md">
           <input
+            id="insumo-nombre"
             className={styles.input}
             value={values.name}
             onChange={(e) => update({ name: e.target.value })}
           />
         </InventarioFormField>
-        <InventarioFormField label="Categoría" inputType="select" theme="dark" size="md">
+        <InventarioFormField
+          label="Descripción"
+          htmlFor="insumo-descripcion"
+          theme="dark"
+          size="md"
+          className={styles.fullWidthField}
+        >
+          <textarea
+            id="insumo-descripcion"
+            className={styles.textarea}
+            rows={3}
+            value={values.descripcion}
+            placeholder="Detalle opcional del insumo"
+            onChange={(e) => update({ descripcion: e.target.value })}
+          />
+        </InventarioFormField>
+        <InventarioFormField label="Categoría *" bareControl theme="dark" size="md">
           <InventarioSelect
             options={categoryOptions}
             value={values.categoryId}
             onChange={(v) => update({ categoryId: v })}
+            placeholder="Seleccionar categoría"
             theme="dark"
             size="md"
+            aria-label="Categoría"
           />
         </InventarioFormField>
-        <InventarioFormField label="Proveedor" inputType="select" theme="dark" size="md">
+        <InventarioFormField label="Unidad base" bareControl theme="dark" size="md">
           <InventarioSelect
-            options={supplierOptions}
-            value={values.supplier}
-            onChange={(v) => update({ supplier: v })}
+            options={unitOptions}
+            value={values.unidadBase}
+            onChange={(v) => update({ unidadBase: v as InventoryProductFormValues['unidadBase'] })}
+            placeholder="Seleccionar unidad"
             theme="dark"
             size="md"
+            aria-label="Unidad base"
           />
         </InventarioFormField>
-        <InventarioFormField label="Precio Costo" theme="dark" size="md">
+        <InventarioFormField label="Costo promedio (CPP)" theme="dark" size="md">
           <input
             className={styles.input}
             type="number"
@@ -142,21 +168,15 @@ export function ProductFormModal({
             onChange={(e) => update({ costPrice: e.target.value })}
           />
         </InventarioFormField>
-        <InventarioFormField
-          label="Precio Venta"
-          theme="dark"
-          size="md"
-          className={priceError ? styles.fieldError : undefined}
-        >
+        <InventarioFormField label="Factor conversión" theme="dark" size="md">
           <input
             className={styles.input}
             type="number"
-            value={values.sellingPrice}
-            onChange={(e) => update({ sellingPrice: e.target.value })}
+            value={values.factorConversion}
+            onChange={(e) => update({ factorConversion: e.target.value })}
           />
-          {priceError ? <span className={styles.errorText}>{priceError}</span> : null}
         </InventarioFormField>
-        <InventarioFormField label="Stock Mínimo" theme="dark" size="md">
+        <InventarioFormField label="Stock mínimo bodega" theme="dark" size="md">
           <input
             className={styles.input}
             type="number"
@@ -164,7 +184,7 @@ export function ProductFormModal({
             onChange={(e) => update({ minStock: e.target.value })}
           />
         </InventarioFormField>
-        <InventarioFormField label="Stock Máximo" theme="dark" size="md">
+        <InventarioFormField label="Stock máximo bodega" theme="dark" size="md">
           <input
             className={styles.input}
             type="number"
@@ -172,6 +192,19 @@ export function ProductFormModal({
             onChange={(e) => update({ maxStock: e.target.value })}
           />
         </InventarioFormField>
+        <div className={styles.togglePair}>
+          <FormToggle
+            label="Aplica vencimiento"
+            checked={values.aplicaVencimiento}
+            onChange={(checked) => update({ aplicaVencimiento: checked })}
+          />
+          <FormToggle
+            label="Aplica lote"
+            checked={values.aplicaLote}
+            onChange={(checked) => update({ aplicaLote: checked })}
+          />
+        </div>
+        {formError ? <span className={styles.errorText}>{formError}</span> : null}
       </div>
     </InventarioModal>
   );

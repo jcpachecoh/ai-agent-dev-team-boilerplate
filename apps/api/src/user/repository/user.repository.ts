@@ -11,6 +11,10 @@ export class UserRepository implements IUserRepository {
     return this.prisma.operationalUser.findUnique({ where: { id } });
   }
 
+  async findByUserId(userId: string): Promise<OperationalUser | null> {
+    return this.prisma.operationalUser.findUnique({ where: { userId } });
+  }
+
   async updateProfile(id: string, data: UpdateProfileInput): Promise<OperationalUser> {
     return this.prisma.operationalUser.update({
       where: { id },

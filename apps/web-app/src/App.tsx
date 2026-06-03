@@ -4,6 +4,7 @@ import AppLayout from '@/layouts/AppLayout';
 import DashboardPage from '@/pages/DashboardPage';
 import DispatchPage from '@/pages/DispatchPage';
 import InventoryAlertsPage from '@/pages/InventoryAlertsPage';
+import InventoryCategoriesPage from '@/pages/InventoryCategoriesPage';
 import InventoryDashboardPage from '@/pages/InventoryDashboardPage';
 import InventoryMovementsPage from '@/pages/InventoryMovementsPage';
 import InventoryProductDetailPage from '@/pages/InventoryProductDetailPage';
@@ -34,6 +35,7 @@ export default function App(): React.JSX.Element {
           <Route path="/proveedores/*" element={<ProveedoresPage />} />
           <Route path="/inventory" element={<InventoryDashboardPage />} />
           <Route path="/inventory/products" element={<InventoryProductsPage />} />
+          <Route path="/inventory/categories" element={<InventoryCategoriesPage />} />
           <Route path="/inventory/products/:id" element={<InventoryProductDetailPage />} />
           <Route path="/inventory/movements" element={<InventoryMovementsPage />} />
           <Route path="/inventory/alerts" element={<InventoryAlertsPage />} />

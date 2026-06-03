@@ -23,6 +23,22 @@
   min-width: 720px;
 }
 
+.muted {
+  margin: 0;
+  color: #9ca3af;
+  font-size: 14px;
+}
+
+.supplierGrid .siteHeader,
+.supplierGrid .siteRow {
+  grid-template-columns: 1.4fr 0.9fr 0.9fr 0.7fr 0.7fr 0.5fr;
+}
+
+.historyGrid .siteHeader,
+.historyGrid .siteRow {
+  grid-template-columns: 1.2fr 1fr 1fr 1.4fr;
+}
+
 .siteHeader,
 .siteRow {
   display: grid;

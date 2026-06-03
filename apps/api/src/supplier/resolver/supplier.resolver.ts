@@ -18,6 +18,15 @@ import {
 } from '@nestjs/graphql';
 import { PubSub } from 'graphql-subscriptions';
 import { Supplier } from '@prisma/client';
+import {
+  IsBoolean,
+  IsEmail,
+  IsInt,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 import { PUB_SUB } from '../../pubsub/pubsub.module';
 import { SupplierService } from '../service/supplier.service';
 import type { SupplierWithProductCount } from '../interfaces/supplier.interfaces';
@@ -64,37 +73,139 @@ export class SupplierType {
   updatedAt!: Date;
 }
 
-@InputType()
+@InputType('CreateSupplierInput')
 export class CreateSupplierInputDto {
-  @Field() razonSocial!: string;
-  @Field() nit!: string;
-  @Field(() => String, { nullable: true }) dv?: string;
-  @Field() tipo!: string;
-  @Field(() => String, { nullable: true }) direccion?: string;
-  @Field(() => String, { nullable: true }) ciudad?: string;
-  @Field(() => String, { nullable: true }) telefono?: string;
-  @Field(() => String, { nullable: true }) email?: string;
-  @Field(() => String, { nullable: true }) contactoNombre?: string;
-  @Field() condicionPago!: string;
-  @Field(() => Int, { nullable: true }) cupoCredito?: number;
-  @Field(() => Float, { nullable: true }) calificacion?: number;
+  @Field()
+  @IsString()
+  @IsNotEmpty()
+  razonSocial!: string;
+
+  @Field()
+  @IsString()
+  @IsNotEmpty()
+  nit!: string;
+
+  @Field(() => String, { nullable: true })
+  @IsString()
+  @IsOptional()
+  dv?: string;
+
+  @Field()
+  @IsString()
+  @IsNotEmpty()
+  tipo!: string;
+
+  @Field(() => String, { nullable: true })
+  @IsString()
+  @IsOptional()
+  direccion?: string;
+
+  @Field(() => String, { nullable: true })
+  @IsString()
+  @IsOptional()
+  ciudad?: string;
+
+  @Field(() => String, { nullable: true })
+  @IsString()
+  @IsOptional()
+  telefono?: string;
+
+  @Field(() => String, { nullable: true })
+  @IsString()
+  @IsEmail()
+  @IsOptional()
+  email?: string;
+
+  @Field(() => String, { nullable: true })
+  @IsString()
+  @IsOptional()
+  contactoNombre?: string;
+
+  @Field()
+  @IsString()
+  @IsNotEmpty()
+  condicionPago!: string;
+
+  @Field(() => Int, { nullable: true })
+  @IsInt()
+  @IsOptional()
+  cupoCredito?: number;
+
+  @Field(() => Float, { nullable: true })
+  @IsNumber()
+  @IsOptional()
+  calificacion?: number;
 }
 
-@InputType()
+@InputType('UpdateSupplierInput')
 export class UpdateSupplierInputDto {
-  @Field(() => String, { nullable: true }) razonSocial?: string;
-  @Field(() => String, { nullable: true }) nit?: string;
-  @Field(() => String, { nullable: true }) dv?: string;
-  @Field(() => String, { nullable: true }) tipo?: string;
-  @Field(() => String, { nullable: true }) direccion?: string;
-  @Field(() => String, { nullable: true }) ciudad?: string;
-  @Field(() => String, { nullable: true }) telefono?: string;
-  @Field(() => String, { nullable: true }) email?: string;
-  @Field(() => String, { nullable: true }) contactoNombre?: string;
-  @Field(() => String, { nullable: true }) condicionPago?: string;
-  @Field(() => Int, { nullable: true }) cupoCredito?: number;
-  @Field(() => Float, { nullable: true }) calificacion?: number;
-  @Field(() => Boolean, { nullable: true }) isActive?: boolean;
+  @Field(() => String, { nullable: true })
+  @IsString()
+  @IsOptional()
+  @IsNotEmpty()
+  razonSocial?: string;
+
+  @Field(() => String, { nullable: true })
+  @IsString()
+  @IsOptional()
+  @IsNotEmpty()
+  nit?: string;
+
+  @Field(() => String, { nullable: true })
+  @IsString()
+  @IsOptional()
+  dv?: string;
+
+  @Field(() => String, { nullable: true })
+  @IsString()
+  @IsOptional()
+  tipo?: string;
+
+  @Field(() => String, { nullable: true })
+  @IsString()
+  @IsOptional()
+  direccion?: string;
+
+  @Field(() => String, { nullable: true })
+  @IsString()
+  @IsOptional()
+  ciudad?: string;
+
+  @Field(() => String, { nullable: true })
+  @IsString()
+  @IsOptional()
+  telefono?: string;
+
+  @Field(() => String, { nullable: true })
+  @IsString()
+  @IsEmail()
+  @IsOptional()
+  email?: string;
+
+  @Field(() => String, { nullable: true })
+  @IsString()
+  @IsOptional()
+  contactoNombre?: string;
+
+  @Field(() => String, { nullable: true })
+  @IsString()
+  @IsOptional()
+  condicionPago?: string;
+
+  @Field(() => Int, { nullable: true })
+  @IsInt()
+  @IsOptional()
+  cupoCredito?: number;
+
+  @Field(() => Float, { nullable: true })
+  @IsNumber()
+  @IsOptional()
+  calificacion?: number;
+
+  @Field(() => Boolean, { nullable: true })
+  @IsBoolean()
+  @IsOptional()
+  isActive?: boolean;
 }
 
 @Resolver(() => SupplierType)

@@ -77,16 +77,8 @@ export function filterProducts(
     if (query.categoryId && query.categoryId !== 'all' && p.categoryId !== query.categoryId) {
       return false;
     }
-    if (query.supplierId && query.supplierId !== 'all') {
-      const supplierNeedle: Record<string, string> = {
-        agrosuper: 'agrosuper',
-        frigorifico: 'frigorífico',
-        'arroz-diana': 'arroz diana',
-        lloreda: 'lloreda',
-        'agro-boyaca': 'agro boyacá',
-      };
-      const needle = supplierNeedle[query.supplierId] ?? query.supplierId;
-      if (!p.supplier.toLowerCase().includes(needle)) return false;
+    if (query.supplierId && query.supplierId !== 'all' && p.supplierId !== query.supplierId) {
+      return false;
     }
     if (query.lowStockOnly && p.currentStock >= p.minStock) {
       return false;
