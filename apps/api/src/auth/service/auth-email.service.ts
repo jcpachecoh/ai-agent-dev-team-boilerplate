@@ -119,7 +119,11 @@ export class AuthEmailService implements IAuthEmailService, OnModuleInit, OnModu
 
     const otpCode = String(crypto.randomInt(100_000, 999_999));
     const otpHash = crypto.createHash('sha256').update(otpCode).digest('hex');
-    const redisValue = JSON.stringify({ userId: user.id, email: user.email });
+    const redisValue = JSON.stringify({
+      userId: user.id,
+      email: user.email,
+      tenantId: tenant.tenantId,
+    });
     await this.redis.set(`otp:${otpHash}`, redisValue, 'EX', OTP_TTL_SECONDS);
 
     this.logger.log(
@@ -158,9 +162,28 @@ export class AuthEmailService implements IAuthEmailService, OnModuleInit, OnModu
       );
       throw new BadRequestException('Invalid or expired verification code');
     }
+
     await this.redis.del(`otp:${otpHash}`);
-    const { userId } = JSON.parse(stored) as { userId: string; email: string };
-    this.logger.log(`[verify-email] OTP verified and consumed for userId="${userId}"`);
+
+    let payload: { userId: string; email: string; tenantId?: string };
+    try {
+      payload = JSON.parse(stored) as { userId: string; email: string; tenantId?: string };
+    } catch {
+      throw new BadRequestException('Invalid or expired verification code');
+    }
+
+    if (!payload.userId) {
+      throw new BadRequestException('Invalid or expired verification code');
+    }
+
+    const marked = await this.authRepository.markEmailVerified(payload.userId, payload.tenantId);
+    if (!marked) {
+      throw new BadRequestException('Invalid or expired verification code');
+    }
+
+    this.logger.log(
+      `[verify-email] OTP verified and emailVerified set for userId="${payload.userId}"`,
+    );
   }
 
   // ---------------------------------------------------------------------------

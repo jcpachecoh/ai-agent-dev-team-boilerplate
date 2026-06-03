@@ -52,6 +52,7 @@ export interface IAuthRepository {
     passwordHash: string,
     trackPasswordChange?: boolean,
   ): Promise<void>;
+  markEmailVerified(userId: string, tenantId?: string): Promise<boolean>;
 }
 
 export interface AuthTokens {

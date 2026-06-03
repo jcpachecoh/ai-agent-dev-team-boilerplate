@@ -2,7 +2,7 @@
 
 Automated API test collection for the RestOpsIQ platform.
 
-- **~61 live HTTP requests** plus **13 GraphQL auth requests** (plus **3 documentation-only** requests and **18 legacy TestLab** requests marked DO NOT RUN).
+- **~62 live HTTP requests** plus **14 GraphQL auth requests** (plus **3 documentation-only** requests and **18 legacy TestLab** requests marked DO NOT RUN).
 - **Postman Collection v2.1** — importable into Postman Desktop or runnable via Newman CLI.
 - **Dynamic variable capture** — POST create responses feed IDs into subsequent requests automatically.
 - **Auto-login pre-request script** — global `accessToken` is refreshed transparently; `x-tenant-id` is injected on tenant-scoped routes.
@@ -30,16 +30,15 @@ pnpm run start:dev
 
 The API must be reachable at `http://localhost:3001` (default `PORT`).
 
-### 2. GraphQL gateway (folder **10 — GraphQL Auth** only)
+### 2. Redis and email worker (email verification and password reset)
 
-```bash
-cd apps/gateway
-pnpm run dev
-```
+Email flows in folder **01 — Global Auth** (subfolders 02–03) and folder **10 — GraphQL Auth** enqueue jobs via BullMQ. For end-to-end delivery you need Redis and the email worker running (same stack as RES-226).
 
-The gateway must be reachable at `http://localhost:4000/graphql` (`{{graphqlUrl}}` in the environment). GraphQL auth mutations/queries delegate to the same REST auth endpoints on `:3001` — **both processes must be running** for folder 10.
+### 3. GraphQL endpoint (folder **10 — GraphQL Auth** only)
 
-### 3. Seeded database
+GraphQL is served by **`apps/api`** at `http://localhost:3001/graphql` (`{{graphqlUrl}}` in the environment). **No separate gateway process is required.**
+
+### 4. Seeded database
 
 ```bash
 cd apps/api && pnpm db:seed
@@ -89,7 +88,7 @@ newman run postman/restopsiq-api.collection.json \
   --bail
 ```
 
-GraphQL auth only (requires API **and** gateway):
+GraphQL auth only (requires API on `:3001`):
 
 ```bash
 newman run postman/restopsiq-api.collection.json \
@@ -118,7 +117,7 @@ RestOpsIQ API
 │
 ├── 01 — Global Auth             (14 live — USR-01 email/password)
 │   ├── 01 Session               Signup, Login, Refresh, Logout (POST /api/auth/logout)
-│   ├── 02 Email Verification    Resend, Verify, Invalid OTP
+│   ├── 02 Email Verification    Resend, Verify, Me check, Invalid OTP
 │   ├── 03 Password Reset        Forgot, Reset, invalid/reused token
 │   └── 04 Login Audit Triggers  Invalid password, unknown email (USR-05)
 │
@@ -141,8 +140,8 @@ RestOpsIQ API
 │
 ├── 09 — RBAC Foundation         (1 doc — seeded permissions, USR-02)
 │
-├── 10 — GraphQL Auth            (13 live — POST {{graphqlUrl}}, AUTH-02)
-│   └── Global session + email (signup/login/me/refresh/change/verify/forgot/reset/resend/logout)
+├── 10 — GraphQL Auth            (14 live — POST {{graphqlUrl}} on apps/api, AUTH-02/AUTH-04)
+│   └── Global session + email (signup/login/me/refresh/change/resend/verify/me-check/forgot/reset/logout)
 │       Operational (loginOperational, meOperational, logoutOperational)
 │
 └── 99 — Legacy / Deprecated     (18 live TestLab — DO NOT RUN)
@@ -220,27 +219,36 @@ Folder **10 — GraphQL Auth** exercises auth through `{{graphqlUrl}}` (`http://
 
 **Global auth/email parity:** GraphQL now covers the full global auth surface from REST folder **01** (session + email flows). Operational **refresh** is still REST-only — there is no `POST /api/mes/auth/refresh` endpoint.
 
-| Request             | GraphQL operation             | Auth header                 | Notes                                                    |
-| ------------------- | ----------------------------- | --------------------------- | -------------------------------------------------------- |
-| Signup              | `mutation signup`             | `x-tenant-id: {{tenantId}}` | optional tokens                                          |
-| Login               | `mutation login`              | `x-tenant-id: {{tenantId}}` | `accessToken`, `refreshToken`, `globalUserId`            |
-| Me                  | `query me`                    | `Bearer {{accessToken}}`    | —                                                        |
-| Refresh Token       | `mutation refreshToken`       | `Bearer {{refreshToken}}`   | new tokens                                               |
-| Change Password     | `mutation changePassword`     | `Bearer {{accessToken}}`    | —                                                        |
-| Resend Verification | `mutation resendVerification` | `x-tenant-id: {{tenantId}}` | anti-enumeration message                                 |
-| Verify Email        | `mutation verifyEmail`        | none                        | manual `{{otpCode}}`                                     |
-| Forgot Password     | `mutation forgotPassword`     | `x-tenant-id: {{tenantId}}` | manual `{{resetToken}}` from email                       |
-| Reset Password      | `mutation resetPassword`      | none                        | `input.token` = `{{resetToken}}`                         |
-| Logout              | `mutation logout`             | `Bearer {{accessToken}}`    | —                                                        |
-| Login Operational   | `mutation loginOperational`   | `x-tenant-id: {{tenantId}}` | `mesAccessToken`, `mesRefreshToken`, `operationalUserId` |
-| Me Operational      | `query meOperational`         | `Bearer {{mesAccessToken}}` | —                                                        |
-| Logout Operational  | `mutation logoutOperational`  | `Bearer {{mesAccessToken}}` | —                                                        |
+| Request                  | GraphQL operation             | Auth header                 | Notes                                                    |
+| ------------------------ | ----------------------------- | --------------------------- | -------------------------------------------------------- |
+| Signup                   | `mutation signup`             | `x-tenant-id: {{tenantId}}` | optional tokens                                          |
+| Login                    | `mutation login`              | `x-tenant-id: {{tenantId}}` | `accessToken`, `refreshToken`, `globalUserId`            |
+| Me                       | `query me`                    | `Bearer {{accessToken}}`    | —                                                        |
+| Refresh Token            | `mutation refreshToken`       | `Bearer {{refreshToken}}`   | new tokens                                               |
+| Change Password          | `mutation changePassword`     | `Bearer {{accessToken}}`    | —                                                        |
+| Resend Verification      | `mutation resendVerification` | `x-tenant-id: {{tenantId}}` | sends OTP if user exists; anti-enumeration response      |
+| Verify Email             | `mutation verifyEmail`        | none                        | manual `{{otpCode}}` after Resend Verification           |
+| Me — Check emailVerified | `query me`                    | `Bearer {{accessToken}}`    | confirm `emailVerified: true` after Verify Email         |
+| Forgot Password          | `mutation forgotPassword`     | `x-tenant-id: {{tenantId}}` | manual `{{resetToken}}` from email                       |
+| Reset Password           | `mutation resetPassword`      | none                        | `input.token` = `{{resetToken}}`                         |
+| Logout                   | `mutation logout`             | `Bearer {{accessToken}}`    | —                                                        |
+| Login Operational        | `mutation loginOperational`   | `x-tenant-id: {{tenantId}}` | `mesAccessToken`, `mesRefreshToken`, `operationalUserId` |
+| Me Operational           | `query meOperational`         | `Bearer {{mesAccessToken}}` | —                                                        |
+| Logout Operational       | `mutation logoutOperational`  | `Bearer {{mesAccessToken}}` | —                                                        |
 
-**Prerequisites:** Start **both** `apps/api` (`:3001`) and `apps/gateway` (`:4000`). Seed the database as usual. Email flows (forgot/reset/resend/verify) need Redis + email worker when testing end-to-end delivery (same as REST folder 01).
+**Prerequisites:** Start `apps/api` on `:3001`. Seed the database. Email flows (resend/verify/forgot/reset) need **Redis + email worker** when testing end-to-end delivery (same as REST folder 01).
 
 **Auto-login:** The collection pre-request script that refreshes global `{{accessToken}}` for REST routes **does not run** for URLs containing `/graphql`. Run **Login** and **Login Operational** explicitly inside folder 10 (or rely on tokens already captured from REST folders 01/02).
 
-**Suggested run order:** top-to-bottom inside folder 10 after seed. **Verify Email** and **Reset Password** skip strict assertions when `otpCode` / `resetToken` are empty — set them manually from email when testing those flows.
+**Suggested run order:** top-to-bottom inside folder 10 after seed. Session block first, then email/password block in this order:
+
+1. **Resend Verification** — requires `x-tenant-id`; sends OTP when `{{authEmail}}` exists.
+2. Copy OTP from email or worker logs → set `{{otpCode}}`.
+3. **Verify Email** — consumes OTP and sets `User.emailVerified = true` (AUTH-04).
+4. **Me — Check emailVerified** — optional; requires `Bearer {{accessToken}}` from **Login**.
+5. **Forgot Password** → copy reset token → set `{{resetToken}}` → **Reset Password**.
+
+**Verify Email** and **Reset Password** skip strict assertions when `otpCode` / `resetToken` are empty — set them manually before running those requests.
 
 **Newman:**
 
@@ -376,7 +384,7 @@ Legacy environment variables (do not use for live flows):
 | Variable                               | Required                      | Set by                                                         |
 | -------------------------------------- | ----------------------------- | -------------------------------------------------------------- |
 | `baseUrl`                              | Yes                           | Environment (`http://localhost:3001`)                          |
-| `graphqlUrl`                           | Yes (folder 10)               | Environment (`http://localhost:4000/graphql`)                  |
+| `graphqlUrl`                           | Yes (folder 10)               | Environment (`http://localhost:3001/graphql`)                  |
 | `tenantId`                             | Yes                           | Environment (`palos-de-lena`)                                  |
 | `email` / `password`                   | Yes                           | Environment (global User)                                      |
 | `authEmail` / `operatorEmail`          | Optional                      | Environment                                                    |
@@ -409,7 +417,7 @@ TestLab variables are marked **LEGACY (99 TestLab — DO NOT RUN)** in environme
 | `400 x-tenant-id header is required` on Login/Forgot | Header not injected or empty `tenantId`      | Set `tenantId=palos-de-lena`; re-import collection                               |
 | Supply Items 403/404                                 | Wrong token or tenant                        | Use `{{accessToken}}` + `x-tenant-id: {{tenantId}}`                              |
 | Plant 401                                            | Missing MES login                            | Run **Login Owner** first                                                        |
-| GraphQL `ECONNREFUSED` / fetch failed                | Gateway not running                          | Start `apps/gateway` on `:4000`                                                  |
+| GraphQL `ECONNREFUSED` / fetch failed                | API not running on `:3001`                   | Start `pnpm --filter=@restopsiq/api start:dev`                                   |
 | GraphQL auth 401 with valid REST token               | Stale token or wrong variable                | Re-run folder 10 **Login** / **Login Operational** (no auto-login on `/graphql`) |
 | Login 401 with `test@restopsiq.dev`                  | TestLab user, not global User                | Use `mes-owner@palos-de-lena.dev`                                                |
 | Newman fails on TestLab                              | Legacy routes removed                        | Exclude folder `99 — Legacy / Deprecated`                                        |
@@ -418,10 +426,32 @@ TestLab variables are marked **LEGACY (99 TestLab — DO NOT RUN)** in environme
 
 ---
 
-## RES-226 Email Endpoints
+## AUTH-04 — Email Verification and Password Reset (RES-226)
 
-Forgot Password, Reset Password, Resend Verification, and Verify Email require Redis + BullMQ worker.
+Forgot Password, Reset Password, Resend Verification, and Verify Email require **API + Redis + BullMQ email worker**.
 
-1. Run Forgot Password or Resend Verification.
-2. Extract `resetToken` or `otpCode` from email (raw token is not in DB).
-3. Run Reset Password or Verify Email within TTL (reset: 60 min, OTP: 15 min).
+### Email verification (REST folder **01 → 02 Email Verification** or GraphQL folder **10**)
+
+Signup does **not** send a verification OTP. Use **Resend Verification** to enqueue the OTP email.
+
+1. Run **Login** (folder 01 or 10) so `{{accessToken}}` is available for optional **Me — Check emailVerified**.
+2. Run **Resend Verification** with `x-tenant-id: {{tenantId}}` and `{{authEmail}}`.
+   - Always returns `200` with a generic message (anti-enumeration).
+   - Sends OTP only when the user exists.
+3. Copy the 6-digit OTP from the email or worker/dev logs → set `{{otpCode}}`.
+4. Run **Verify Email** (no auth header, no `x-tenant-id`).
+   - Expected: `200 { "message": "Email verified successfully." }`
+   - OTP is single-use; `User.emailVerified` is set to `true` (AUTH-04).
+5. Run **Me — Check emailVerified** (`GET /api/auth/me` or GraphQL `me`) with `Bearer {{accessToken}}`.
+   - Expected: `emailVerified: true`.
+
+OTP TTL: 15 minutes.
+
+### Password reset (REST folder **01 → 03 Password Reset** or GraphQL folder **10**)
+
+1. Run **Forgot Password** with `x-tenant-id: {{tenantId}}` and `{{authEmail}}`.
+2. Extract `resetToken` from the email link → set `{{resetToken}}`.
+3. Run **Reset Password** (no `x-tenant-id`).
+   - Expected: `200 { "message": "Password updated successfully." }`
+
+Reset token TTL: 60 minutes.

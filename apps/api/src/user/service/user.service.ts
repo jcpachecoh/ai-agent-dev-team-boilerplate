@@ -7,8 +7,15 @@ import type { IUserService, UpdateProfileInput } from '../interfaces/user.interf
 export class UserService implements IUserService {
   constructor(private readonly userRepository: UserRepository) {}
 
-  async getMe(id: string): Promise<OperationalUser | null> {
-    return this.userRepository.findById(id);
+  async getOperationalProfile(
+    globalUserId: string,
+    tenantId: string,
+  ): Promise<OperationalUser | null> {
+    const profile = await this.userRepository.findByUserId(globalUserId);
+    if (!profile || profile.tenantId !== tenantId) {
+      return null;
+    }
+    return profile;
   }
 
   async updateProfile(id: string, data: UpdateProfileInput): Promise<OperationalUser> {

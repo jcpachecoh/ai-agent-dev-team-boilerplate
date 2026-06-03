@@ -43,6 +43,7 @@ const prismaMock = {
     findUnique: jest.fn(),
     create: jest.fn(),
     update: jest.fn(),
+    updateMany: jest.fn(),
   },
   role: {
     findUnique: jest.fn(),
@@ -239,6 +240,52 @@ describe('AuthRepository', () => {
       expect(prismaMock.user.update).toHaveBeenCalledWith({
         where: { id: 'user-1' },
         data: { passwordHash: 'new-hash' },
+      });
+    });
+  });
+
+  describe('markEmailVerified', () => {
+    it('sets emailVerified true for active user scoped by tenantId', async () => {
+      prismaMock.user.updateMany.mockResolvedValue({ count: 1 });
+
+      const result = await repository.markEmailVerified('user-1', 'palos-de-lena');
+
+      expect(result).toBe(true);
+      expect(prismaMock.user.updateMany).toHaveBeenCalledWith({
+        where: { id: 'user-1', deletedAt: null, tenantId: 'palos-de-lena' },
+        data: { emailVerified: true },
+      });
+    });
+
+    it('sets emailVerified true by userId only when tenantId is omitted', async () => {
+      prismaMock.user.updateMany.mockResolvedValue({ count: 1 });
+
+      const result = await repository.markEmailVerified('user-1');
+
+      expect(result).toBe(true);
+      expect(prismaMock.user.updateMany).toHaveBeenCalledWith({
+        where: { id: 'user-1', deletedAt: null },
+        data: { emailVerified: true },
+      });
+    });
+
+    it('returns false when user is not found or soft-deleted', async () => {
+      prismaMock.user.updateMany.mockResolvedValue({ count: 0 });
+
+      const result = await repository.markEmailVerified('missing-user', 'palos-de-lena');
+
+      expect(result).toBe(false);
+    });
+
+    it('is idempotent when user is already verified', async () => {
+      prismaMock.user.updateMany.mockResolvedValue({ count: 1 });
+
+      const result = await repository.markEmailVerified('user-1', 'palos-de-lena');
+
+      expect(result).toBe(true);
+      expect(prismaMock.user.updateMany).toHaveBeenCalledWith({
+        where: { id: 'user-1', deletedAt: null, tenantId: 'palos-de-lena' },
+        data: { emailVerified: true },
       });
     });
   });

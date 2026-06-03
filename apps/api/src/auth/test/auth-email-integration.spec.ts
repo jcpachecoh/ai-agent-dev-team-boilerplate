@@ -59,6 +59,7 @@ const prismaMock = {
     findUnique: jest.fn(),
     create: jest.fn(),
     update: jest.fn(),
+    updateMany: jest.fn(),
   },
   role: {
     findUnique: jest.fn(),
@@ -123,6 +124,7 @@ describe('Auth Email Integration — G4 wiring (AuthController → AuthEmailServ
 
     prismaMock.user.findUnique.mockResolvedValue(null);
     prismaMock.user.update.mockResolvedValue(mockUserSafe);
+    prismaMock.user.updateMany.mockResolvedValue({ count: 1 });
     prismaMock.role.findUnique.mockResolvedValue({
       id: 'role-1',
       code: 'OPERATOR',
@@ -203,10 +205,14 @@ describe('Auth Email Integration — G4 wiring (AuthController → AuthEmailServ
     ).rejects.toThrow(BadRequestException);
   });
 
-  it('verify-email with a valid OTP resolves and consumes the OTP from Redis', async () => {
+  it('verify-email with a valid OTP resolves, consumes the OTP, and marks emailVerified true', async () => {
     const otpCode = '847291';
     const otpHash = createHash('sha256').update(otpCode).digest('hex');
-    const redisPayload = JSON.stringify({ userId: 'user-001', email: 'alice@example.com' });
+    const redisPayload = JSON.stringify({
+      userId: 'user-001',
+      email: 'alice@example.com',
+      tenantId: TENANT_ID,
+    });
 
     redisMock.get.mockImplementation(async (key: string) => {
       return key === `otp:${otpHash}` ? redisPayload : null;
@@ -216,14 +222,20 @@ describe('Auth Email Integration — G4 wiring (AuthController → AuthEmailServ
 
     expect(result).toEqual({ message: 'Email verified successfully.' });
     expect(redisMock.del).toHaveBeenCalledWith(`otp:${otpHash}`);
+    expect(prismaMock.user.updateMany).toHaveBeenCalledWith({
+      where: { id: 'user-001', deletedAt: null, tenantId: TENANT_ID },
+      data: { emailVerified: true },
+    });
   });
 
-  it('verify-email throws BadRequestException when OTP is expired or not found', async () => {
+  it('verify-email does not mark emailVerified when OTP is expired or not found', async () => {
     redisMock.get.mockResolvedValue(null);
 
     await expect(controller.verifyEmail({ otpCode: '000000' })).rejects.toThrow(
       BadRequestException,
     );
+
+    expect(prismaMock.user.updateMany).not.toHaveBeenCalled();
   });
 
   it('forgot-password stores a SHA-256 tokenHash (not the raw token) in passwordResetToken.create', async () => {
