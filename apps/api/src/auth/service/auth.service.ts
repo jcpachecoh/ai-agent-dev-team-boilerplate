@@ -69,7 +69,13 @@ export class AuthService implements IAuthService {
       passwordHash,
       roleId: role.id,
     });
-    return this.issueTokens(user.id, user.email);
+    return this.issueTokens({
+      sub: user.id,
+      email: user.email,
+      tenantId: user.tenantId,
+      roleId: user.roleId,
+      roleCode: role.code,
+    });
   }
 
   async login(
@@ -134,7 +140,7 @@ export class AuthService implements IAuthService {
       userAgent,
     });
 
-    return this.issueTokens(user.id, user.email);
+    return this.issueTokens(await this.resolveJwtPayload(user.id));
   }
 
   async refresh(
@@ -184,7 +190,7 @@ export class AuthService implements IAuthService {
       userAgent,
     });
 
-    return this.issueTokens(user.id, user.email);
+    return this.issueTokens(await this.resolveJwtPayload(user.id));
   }
 
   async logout(userId: string, ipAddress?: string, userAgent?: string): Promise<void> {
@@ -257,8 +263,15 @@ export class AuthService implements IAuthService {
     return trimmed;
   }
 
-  private async issueTokens(userId: string, email: string): Promise<AuthTokens> {
-    const payload: JwtPayload = { sub: userId, email };
+  private async resolveJwtPayload(userId: string): Promise<JwtPayload> {
+    const claims = await this.authRepository.findJwtClaimsByUserId(userId);
+    if (!claims) {
+      throw new UnauthorizedException('User not found or inactive');
+    }
+    return claims;
+  }
+
+  private async issueTokens(payload: JwtPayload): Promise<AuthTokens> {
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(payload, { expiresIn: ACCESS_TOKEN_TTL }),
       this.jwtService.signAsync(payload, {
@@ -267,7 +280,7 @@ export class AuthService implements IAuthService {
       }),
     ]);
     const hashedRefresh = await bcrypt.hash(refreshToken, SALT_ROUNDS);
-    await this.authRepository.saveRefreshToken(userId, hashedRefresh);
+    await this.authRepository.saveRefreshToken(payload.sub, hashedRefresh);
     return { accessToken, refreshToken };
   }
 }

@@ -1,7 +1,9 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, UseGuards } from '@nestjs/common';
 import { Args, Context, Field, ID, Int, ObjectType, Query, Resolver } from '@nestjs/graphql';
 import type { Request } from 'express';
 import type { SupplyItem } from '@prisma/client';
+import { RequirePermission } from '../../common/decorators/require-permission.decorator';
+import { PermissionsGuard } from '../../common/guards/permissions.guard';
 import { SupplyItemsService } from '../service/supplyitems.service';
 
 @ObjectType('SupplyItem')
@@ -25,10 +27,12 @@ export class SupplyItemType {
   isActive!: boolean;
 }
 
+@UseGuards(PermissionsGuard)
 @Resolver(() => SupplyItemType)
 export class SupplyItemsResolver {
   constructor(private readonly supplyItemsService: SupplyItemsService) {}
 
+  @RequirePermission('supply.items.read')
   @Query(() => [SupplyItemType])
   async supplyItems(
     @Context() context: { req: Request },

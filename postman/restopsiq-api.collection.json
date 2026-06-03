@@ -43,6 +43,9 @@
           "  pm.request.headers.upsert({ key: 'x-tenant-id', value: tenantId });",
           "}",
           "",
+          "// REST RBAC negative cases bring their own Authorization (do not auto-login)",
+          "if (reqName.includes('REST RBAC — MES token') || reqName.includes('REST RBAC — No token')) return;",
+          "",
           "// Skip auto-login for MES/plant and public auth",
           "if (reqUrl.includes('/mes/auth/') || reqUrl.includes('/mes/users/') || reqUrl.includes('/plant/')) return;",
           "if (reqName.startsWith('[DOC]')) return;",
@@ -467,6 +470,18 @@
       "value": "",
       "type": "string",
       "description": "Work station id (alias synced from workstationId captures)"
+    },
+    {
+      "key": "accessTokenOwner",
+      "value": "",
+      "type": "string",
+      "description": "Global OWNER JWT — folder 11 Login Global Owner"
+    },
+    {
+      "key": "accessTokenOperator",
+      "value": "",
+      "type": "string",
+      "description": "Global OPERATOR JWT — folder 11 Login Global Operator"
     }
   ],
   "item": [
@@ -1579,7 +1594,7 @@
     },
     {
       "name": "04 — Supply Items",
-      "description": "Supply catalog CRUD.\n\nAuth: Bearer {{accessToken}} + x-tenant-id: {{tenantId}} on every request.\nPrerequisite: **01 — Global Auth → 01 Session → Login**.\nUSR-05: writes may create two audit_logs rows (interceptor + SupplyItem snapshot).",
+      "description": "Supply catalog REST.\n\nAuth: Bearer {{accessToken}} + x-tenant-id: {{tenantId}} on every request.\nPrerequisite: **01 — Global Auth → 01 Session → Login** (or folder 11 logins for RBAC tokens).\n\nAUTH-09 RBAC (implemented routes):\n- GET /api/supply-items, GET /api/supply-items/:id → supply.items.read\n- POST/PATCH/DELETE in this folder are not implemented on API yet; manage permission (`supply.items.manage`) is covered in Jest + folder **REST RBAC** docs.\n\nDo not use {{mesAccessToken}} on supply-items.\nUSR-05: writes may create two audit_logs rows when write routes exist.",
       "item": [
         {
           "name": "Create Supply Item",
@@ -1827,6 +1842,242 @@
                 "value": "{{tenantId}}"
               }
             ],
+            "url": "{{baseUrl}}/api/supply-items/{{supplyItemId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "[DOC] AUTH-09 REST RBAC",
+          "description": "Read-only.\n\n- GET list/detail: supply.items.read (PermissionsGuard)\n- Future POST/PATCH/DELETE: supply.items.manage\n- OWNER: read+manage; OPERATOR: read only\n- Denied: HTTP 403, message Permission denied\n- mesAccessToken: 401 on REST (global JwtAuthGuard)\n\nRun **REST RBAC — Login Owner/Operator** first (or folder 11). Uses seeded {{supplyItemId}}.",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/health"
+          },
+          "response": []
+        },
+        {
+          "name": "REST RBAC — Login Owner",
+          "description": "Sets {{accessTokenOwner}} for REST RBAC cases.",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function setVar(key, val) {",
+                  "  pm.collectionVariables.set(key, val);",
+                  "  try { pm.environment.set(key, val); } catch (e) { /* no env */ }",
+                  "}",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Has accessToken', () => pm.expect(body.accessToken).to.be.a('string'));",
+                  "if (body.accessToken) setVar('accessTokenOwner', body.accessToken);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"mes-owner@palos-de-lena.dev\",\n  \"password\": \"{{password}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/api/auth/login"
+          },
+          "response": []
+        },
+        {
+          "name": "REST RBAC — Login Operator",
+          "description": "Sets {{accessTokenOperator}} for REST RBAC cases.",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function setVar(key, val) {",
+                  "  pm.collectionVariables.set(key, val);",
+                  "  try { pm.environment.set(key, val); } catch (e) { /* no env */ }",
+                  "}",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Has accessToken', () => pm.expect(body.accessToken).to.be.a('string'));",
+                  "if (body.accessToken) setVar('accessTokenOperator', body.accessToken);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"mes-operator@palos-de-lena.dev\",\n  \"password\": \"{{password}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/api/auth/login"
+          },
+          "response": []
+        },
+        {
+          "name": "REST RBAC — Owner GET item (allow)",
+          "description": "GET /api/supply-items/:id with OWNER token. Expect 200.",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has id', () => pm.expect(pm.response.json()).to.have.property('id'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{accessTokenOwner}}", "type": "string" }]
+            },
+            "method": "GET",
+            "header": [{ "key": "x-tenant-id", "value": "{{tenantId}}" }],
+            "url": "{{baseUrl}}/api/supply-items/{{supplyItemId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "REST RBAC — Operator GET list (allow)",
+          "description": "GET /api/supply-items with OPERATOR token. Expect 200 array (supply.items.read).",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Is array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{accessTokenOperator}}", "type": "string" }]
+            },
+            "method": "GET",
+            "header": [{ "key": "x-tenant-id", "value": "{{tenantId}}" }],
+            "url": "{{baseUrl}}/api/supply-items"
+          },
+          "response": []
+        },
+        {
+          "name": "REST RBAC — No token (401)",
+          "description": "Missing Authorization → 401 before permission check.",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Status 401', () => pm.response.to.have.status(401));"]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [{ "key": "x-tenant-id", "value": "{{tenantId}}" }],
+            "url": "{{baseUrl}}/api/supply-items/{{supplyItemId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "REST RBAC — MES token rejected (401)",
+          "description": "mesAccessToken on supply-items → 401 (invalid global JWT signature) or 403 (if MES_JWT_SECRET === JWT_SECRET — misconfiguration). Prerequisite: **02 — Operational Auth → Login Owner** (not global Login).\n\nUses explicit Authorization header + noauth so collection {{accessToken}} is not inherited.",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const mes = pm.variables.get('mesAccessToken');",
+                  "const global = pm.variables.get('accessToken');",
+                  "if (!mes) {",
+                  "  throw new Error('mesAccessToken empty — run 02 — Operational Auth → Login Owner first');",
+                  "}",
+                  "if (global && mes === global) {",
+                  "  throw new Error('mesAccessToken equals accessToken — use MES PIN login, not global email login');",
+                  "}",
+                  "try {",
+                  "  const payload = JSON.parse(atob(mes.split('.')[1]));",
+                  "  if (payload.email) {",
+                  "    throw new Error('Token looks like global JWT (has email claim) — use mesAccessToken from MES login');",
+                  "  }",
+                  "} catch (e) {",
+                  "  if (e.message && e.message.includes('global JWT')) throw e;",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Rejected (401 or 403)', () => {",
+                  "  pm.expect([401, 403]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{mesAccessToken}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": "{{baseUrl}}/api/supply-items/{{supplyItemId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "REST RBAC — Tenant mismatch (403)",
+          "description": "OWNER token with x-tenant-id ≠ JWT tenantId → 403 Permission denied.",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 403', () => pm.response.to.have.status(403));",
+                  "pm.test('Permission denied message', () => {",
+                  "  const msg = (pm.response.json().message || '').toString();",
+                  "  pm.expect(msg.toLowerCase()).to.include('permission denied');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{accessTokenOwner}}", "type": "string" }]
+            },
+            "method": "GET",
+            "header": [{ "key": "x-tenant-id", "value": "wrong-tenant-id" }],
             "url": "{{baseUrl}}/api/supply-items/{{supplyItemId}}"
           },
           "response": []
@@ -4135,6 +4386,392 @@
               }
             }
           ]
+        }
+      ]
+    },
+    {
+      "name": "11 — GraphQL RBAC",
+      "description": "AUTH-09 GraphQL permission tests for supplyItems.\n\nPrerequisites: API on :3001, seed data, folder run top-to-bottom.\n\n1. Login Global Owner → {{accessTokenOwner}}\n2. Login Global Operator → {{accessTokenOperator}}\n3. supplyItems queries (requires supply.items.read)\n\nOPERATOR has supply.items.read only (no manage). No GraphQL supply mutations yet — manage cases are documented only.\n\nDo not use {{mesAccessToken}} on these requests.",
+      "item": [
+        {
+          "name": "[DOC] AUTH-09 GraphQL RBAC",
+          "description": "Read-only documentation.\n\n- GraphQL `supplyItems` requires global {{accessToken}} + x-tenant-id\n- Permission: supply.items.read (checked server-side via PermissionsService)\n- OWNER: read + manage in seed; OPERATOR: read only\n- Denied: extensions.code PERMISSION_DENIED\n- mesAccessToken: UNAUTHENTICATED on global GraphQL",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/health"
+          },
+          "response": []
+        },
+        {
+          "name": "Login Global Owner",
+          "description": "GraphQL login as seeded OWNER (mes-owner@palos-de-lena.dev). Sets {{accessTokenOwner}}.",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\":\"mutation Login($input: GlobalLoginInput!) { login(input: $input) { accessToken refreshToken } }\",\"variables\":{\"input\":{\"email\":\"mes-owner@palos-de-lena.dev\",\"password\":\"{{password}}\"}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{graphqlUrl}}"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function setVar(key, val) {",
+                  "  pm.collectionVariables.set(key, val);",
+                  "  try { pm.environment.set(key, val); } catch (e) { /* no env */ }",
+                  "}",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('No GraphQL errors', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.errors).to.be.undefined;",
+                  "});",
+                  "const login = pm.response.json().data.login;",
+                  "pm.test('Has accessToken', () => pm.expect(login.accessToken).to.be.a('string'));",
+                  "if (login && login.accessToken) setVar('accessTokenOwner', login.accessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Global Operator",
+          "description": "GraphQL login as seeded OPERATOR (mes-operator@palos-de-lena.dev). Sets {{accessTokenOperator}}.",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\":\"mutation Login($input: GlobalLoginInput!) { login(input: $input) { accessToken refreshToken } }\",\"variables\":{\"input\":{\"email\":\"mes-operator@palos-de-lena.dev\",\"password\":\"{{password}}\"}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{graphqlUrl}}"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function setVar(key, val) {",
+                  "  pm.collectionVariables.set(key, val);",
+                  "  try { pm.environment.set(key, val); } catch (e) { /* no env */ }",
+                  "}",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('No GraphQL errors', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.errors).to.be.undefined;",
+                  "});",
+                  "const login = pm.response.json().data.login;",
+                  "pm.test('Has accessToken', () => pm.expect(login.accessToken).to.be.a('string'));",
+                  "if (login && login.accessToken) setVar('accessTokenOperator', login.accessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "supplyItems — Owner read (allow)",
+          "description": "GraphQL supplyItems with OWNER token. Expect 200 and data array.",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessTokenOwner}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query SupplyItems($search: String, $limit: Int) { supplyItems(search: $search, limit: $limit) { id tenantId nombre codigoInterno unidadBase isActive } }\",\n  \"variables\": {\n    \"search\": null,\n    \"limit\": 10\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{graphqlUrl}}"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('No GraphQL errors', () => pm.expect(pm.response.json().errors).to.be.undefined);",
+                  "pm.test('Returns supplyItems array', () => pm.expect(pm.response.json().data.supplyItems).to.be.an('array'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "supplyItems — Operator read (allow)",
+          "description": "GraphQL supplyItems with OPERATOR token. Expect 200 (supply.items.read).",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessTokenOperator}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query SupplyItems($search: String, $limit: Int) { supplyItems(search: $search, limit: $limit) { id tenantId nombre codigoInterno unidadBase isActive } }\",\n  \"variables\": {\n    \"search\": null,\n    \"limit\": 10\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{graphqlUrl}}"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('No GraphQL errors', () => pm.expect(pm.response.json().errors).to.be.undefined);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "supplyItems — No token (UNAUTHENTICATED)",
+          "description": "Missing Authorization header. Expect GraphQL UNAUTHENTICATED (not PERMISSION_DENIED).",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query SupplyItems($search: String, $limit: Int) { supplyItems(search: $search, limit: $limit) { id tenantId nombre codigoInterno unidadBase isActive } }\",\n  \"variables\": {\n    \"search\": null,\n    \"limit\": 10\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{graphqlUrl}}"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('GraphQL UNAUTHENTICATED', () => {",
+                  "  const err = pm.response.json().errors[0];",
+                  "  pm.expect(err.extensions.code).to.eql('UNAUTHENTICATED');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "supplyItems — MES token rejected",
+          "description": "Uses {{mesAccessToken}} on global GraphQL supplyItems. Expect UNAUTHENTICATED.",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{mesAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query SupplyItems($search: String, $limit: Int) { supplyItems(search: $search, limit: $limit) { id tenantId nombre codigoInterno unidadBase isActive } }\",\n  \"variables\": {\n    \"search\": null,\n    \"limit\": 10\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{graphqlUrl}}"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('GraphQL UNAUTHENTICATED for wrong token type', () => {",
+                  "  const err = pm.response.json().errors[0];",
+                  "  pm.expect(err.extensions.code).to.eql('UNAUTHENTICATED');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "supplyItems — Tenant mismatch (deny)",
+          "description": "OWNER token with x-tenant-id other-tenant. Expect PERMISSION_DENIED.",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessTokenOwner}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "other-tenant"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query SupplyItems($search: String, $limit: Int) { supplyItems(search: $search, limit: $limit) { id tenantId nombre codigoInterno unidadBase isActive } }\",\n  \"variables\": {\n    \"search\": null,\n    \"limit\": 10\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{graphqlUrl}}"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('PERMISSION_DENIED on tenant mismatch', () => {",
+                  "  const err = pm.response.json().errors[0];",
+                  "  pm.expect(err.extensions.code).to.eql('PERMISSION_DENIED');",
+                  "  pm.expect(err.message).to.eql('Permission denied');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[DOC] supply.items.manage (no GraphQL mutation yet)",
+          "description": "Documentation only. OPERATOR lacks supply.items.manage in seed. When create/update GraphQL mutations are added, guard them with @RequirePermission('supply.items.manage') and add a live Postman case: Operator mutation → PERMISSION_DENIED, Owner → 200.",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/health"
+          },
+          "response": []
         }
       ]
     },

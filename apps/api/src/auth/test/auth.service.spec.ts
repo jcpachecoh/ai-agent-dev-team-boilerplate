@@ -18,6 +18,14 @@ const bcryptMock = bcrypt as jest.Mocked<typeof bcrypt>;
 
 const TENANT_ID = 'palos-de-lena';
 
+const expectedJwtPayload = {
+  sub: 'user-1',
+  email: 'test@example.com',
+  tenantId: TENANT_ID,
+  roleId: 'role-1',
+  roleCode: 'OPERATOR',
+};
+
 const mockUserSafe = {
   id: 'user-1',
   tenantId: TENANT_ID,
@@ -54,6 +62,7 @@ const repoMock = {
   findByIdForRefresh: jest.fn(),
   findByIdForAuth: jest.fn(),
   findByIdWithRoleCode: jest.fn(),
+  findJwtClaimsByUserId: jest.fn(),
   findRoleByTenantAndCode: jest.fn(),
   createUser: jest.fn(),
   saveRefreshToken: jest.fn(),
@@ -109,7 +118,12 @@ describe('AuthService', () => {
         code: 'OPERATOR',
         isActive: true,
       });
-      repoMock.createUser.mockResolvedValue({ id: 'user-2', email: dto.email });
+      repoMock.createUser.mockResolvedValue({
+        ...mockUserSafe,
+        id: 'user-2',
+        email: dto.email,
+        roleId: 'role-op',
+      });
       (bcryptMock.hash as jest.Mock).mockResolvedValue('hashed-pw');
       jwtMock.signAsync
         .mockResolvedValueOnce('access-token')
@@ -120,6 +134,25 @@ describe('AuthService', () => {
       const result = await service.signup(TENANT_ID, dto);
       expect(result).toHaveProperty('accessToken');
       expect(result).toHaveProperty('refreshToken');
+      expect(jwtMock.signAsync).toHaveBeenCalledWith(
+        {
+          sub: 'user-2',
+          email: dto.email,
+          tenantId: TENANT_ID,
+          roleId: 'role-op',
+          roleCode: 'OPERATOR',
+        },
+        { expiresIn: '15m' },
+      );
+      expect(jwtMock.signAsync).toHaveBeenCalledWith(
+        expect.objectContaining({
+          sub: 'user-2',
+          tenantId: TENANT_ID,
+          roleId: 'role-op',
+          roleCode: 'OPERATOR',
+        }),
+        expect.objectContaining({ expiresIn: '7d' }),
+      );
       expect(repoMock.findRoleByTenantAndCode).toHaveBeenCalledWith(TENANT_ID, 'OPERATOR');
       expect(repoMock.createUser).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -142,7 +175,12 @@ describe('AuthService', () => {
         code: 'OPERATOR',
         isActive: true,
       });
-      repoMock.createUser.mockResolvedValue({ id: 'user-3', email: dto.email });
+      repoMock.createUser.mockResolvedValue({
+        ...mockUserSafe,
+        id: 'user-3',
+        email: dto.email,
+        roleId: 'role-op',
+      });
       (bcryptMock.hash as jest.Mock).mockResolvedValue('hashed-pw');
       jwtMock.signAsync.mockResolvedValue('token');
       repoMock.saveRefreshToken.mockResolvedValue(undefined);
@@ -162,7 +200,12 @@ describe('AuthService', () => {
         code: 'OPERATOR',
         isActive: true,
       });
-      repoMock.createUser.mockResolvedValue({ id: 'user-2', email: dto.email });
+      repoMock.createUser.mockResolvedValue({
+        ...mockUserSafe,
+        id: 'user-2',
+        email: dto.email,
+        roleId: 'role-op',
+      });
       (bcryptMock.hash as jest.Mock).mockResolvedValue('hashed-pw');
       jwtMock.signAsync.mockResolvedValue('token');
       repoMock.saveRefreshToken.mockResolvedValue(undefined);
@@ -202,6 +245,7 @@ describe('AuthService', () => {
 
     it('returns tokens and logs SUCCESS on valid credentials', async () => {
       repoMock.findByTenantAndEmailForAuth.mockResolvedValue(mockUserWithPassword);
+      repoMock.findJwtClaimsByUserId.mockResolvedValue(expectedJwtPayload);
       (bcryptMock.compare as jest.Mock).mockResolvedValue(true);
       jwtMock.signAsync.mockResolvedValueOnce('access').mockResolvedValueOnce('refresh');
       (bcryptMock.hash as jest.Mock).mockResolvedValue('hashed-refresh');
@@ -210,6 +254,8 @@ describe('AuthService', () => {
       const result = await service.login(TENANT_ID, dto, '1.2.3.4', 'Mozilla');
       expect(result).toHaveProperty('accessToken');
       expect(result).toHaveProperty('refreshToken');
+      expect(jwtMock.signAsync).toHaveBeenCalledWith(expectedJwtPayload, { expiresIn: '15m' });
+      expect(repoMock.findJwtClaimsByUserId).toHaveBeenCalledWith('user-1');
       expect(repoMock.findByTenantAndEmailForAuth).toHaveBeenCalledWith(TENANT_ID, dto.email);
       expect(auditServiceMock.logLogin).toHaveBeenCalledWith({
         tenantId: TENANT_ID,
@@ -264,6 +310,7 @@ describe('AuthService', () => {
   describe('refresh', () => {
     it('issues new tokens and logs SUCCESS when refresh token matches', async () => {
       repoMock.findByIdForRefresh.mockResolvedValue(mockUserWithRefresh);
+      repoMock.findJwtClaimsByUserId.mockResolvedValue(expectedJwtPayload);
       (bcryptMock.compare as jest.Mock).mockResolvedValue(true);
       jwtMock.signAsync.mockResolvedValueOnce('access').mockResolvedValueOnce('refresh');
       (bcryptMock.hash as jest.Mock).mockResolvedValue('new-hashed-refresh');
@@ -271,6 +318,8 @@ describe('AuthService', () => {
 
       const result = await service.refresh('user-1', 'raw-refresh', '1.2.3.4');
       expect(result).toHaveProperty('accessToken', 'access');
+      expect(jwtMock.signAsync).toHaveBeenCalledWith(expectedJwtPayload, { expiresIn: '15m' });
+      expect(repoMock.findJwtClaimsByUserId).toHaveBeenCalledWith('user-1');
       expect(auditServiceMock.logLogin).toHaveBeenCalledWith(
         expect.objectContaining({
           status: LoginAuditStatus.SUCCESS,
@@ -305,6 +354,64 @@ describe('AuthService', () => {
           ipAddress: '1.2.3.4',
         }),
       );
+    });
+  });
+
+  describe('JWT payload', () => {
+    const signupDto = {
+      email: 'jwt@example.com',
+      cedula: '11111111',
+      documentType: DocumentType.CC,
+      password: 'password123',
+    };
+
+    it('signup access JWT includes tenantId, roleId, roleCode and no secrets', async () => {
+      repoMock.findByTenantAndEmail.mockResolvedValue(null);
+      repoMock.findByTenantAndCedula.mockResolvedValue(null);
+      repoMock.findRoleByTenantAndCode.mockResolvedValue({
+        id: 'role-op',
+        code: 'OPERATOR',
+        isActive: true,
+      });
+      repoMock.createUser.mockResolvedValue({
+        ...mockUserSafe,
+        id: 'user-jwt',
+        email: signupDto.email,
+        roleId: 'role-op',
+      });
+      (bcryptMock.hash as jest.Mock).mockResolvedValue('hashed');
+      jwtMock.signAsync.mockResolvedValue('token');
+      repoMock.saveRefreshToken.mockResolvedValue(undefined);
+
+      await service.signup(TENANT_ID, signupDto);
+
+      const accessCall = jwtMock.signAsync.mock.calls.find((call) => call[1]?.expiresIn === '15m');
+      expect(accessCall?.[0]).toEqual({
+        sub: 'user-jwt',
+        email: signupDto.email,
+        tenantId: TENANT_ID,
+        roleId: 'role-op',
+        roleCode: 'OPERATOR',
+      });
+      expect(accessCall?.[0]).not.toHaveProperty('permissions');
+      expect(accessCall?.[0]).not.toHaveProperty('passwordHash');
+      expect(accessCall?.[0]).not.toHaveProperty('refreshToken');
+    });
+
+    it('login refresh JWT uses the same identity claims as access', async () => {
+      repoMock.findByTenantAndEmailForAuth.mockResolvedValue(mockUserWithPassword);
+      repoMock.findJwtClaimsByUserId.mockResolvedValue(expectedJwtPayload);
+      (bcryptMock.compare as jest.Mock).mockResolvedValue(true);
+      jwtMock.signAsync.mockResolvedValue('token');
+      (bcryptMock.hash as jest.Mock).mockResolvedValue('hashed');
+      repoMock.saveRefreshToken.mockResolvedValue(undefined);
+
+      await service.login(TENANT_ID, { email: mockUserWithPassword.email, password: 'pw' });
+
+      expect(jwtMock.signAsync).toHaveBeenCalledTimes(2);
+      const [accessPayload, refreshPayload] = jwtMock.signAsync.mock.calls.map((call) => call[0]);
+      expect(accessPayload).toEqual(expectedJwtPayload);
+      expect(refreshPayload).toEqual(expectedJwtPayload);
     });
   });
 

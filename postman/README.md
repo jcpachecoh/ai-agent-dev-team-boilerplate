@@ -144,6 +144,9 @@ RestOpsIQ API
 │   └── Global session + email (signup/login/me/refresh/change/resend/verify/me-check/forgot/reset/logout)
 │       Operational (loginOperational, meOperational, logoutOperational)
 │
+├── 11 — GraphQL RBAC            (AUTH-09 — supplyItems permission tests)
+│   └── Login Owner/Operator → supplyItems read allow/deny, wrong token, tenant mismatch
+│
 └── 99 — Legacy / Deprecated     (18 live TestLab — DO NOT RUN)
     └── TestLab — DO NOT RUN     /api/testlab/* removed from API
 ```
@@ -286,9 +289,32 @@ See folder **03 — Users / Operational Users** for full documentation.
 
 ---
 
-## USR-02 — RBAC Foundation (not enforced)
+## USR-02 — RBAC Foundation
 
-Seed creates 13 permission codes and a role-permission matrix (OWNER: all 13; MANAGER/SUPERVISOR: 11; OPERATOR: 2). **PermissionGuard is not active** — do not expect 403 permission tests. See folder **09 — RBAC Foundation**.
+Seed creates 13 permission codes and a role-permission matrix (OWNER: all 13; MANAGER/SUPERVISOR: 11; OPERATOR: `plant.orders.read`, `supply.items.read`).
+
+### AUTH-09 — RBAC (supply items: GraphQL + REST)
+
+**Active on:** GraphQL `supplyItems` (folder **11 — GraphQL RBAC**) and REST supply-items read routes (folder **04 — Supply Items → REST RBAC\***).
+
+| Topic          | Behavior                                                                                               |
+| -------------- | ------------------------------------------------------------------------------------------------------ |
+| Enforcement    | Server-side `PermissionsService.hasPermission` (not JWT permissions array)                             |
+| Global JWT     | Includes `tenantId`, `roleId`, `roleCode` — no `permissions[]` in token                                |
+| Read           | `supply.items.read` — GraphQL `supplyItems`; REST `GET /api/supply-items`, `GET /api/supply-items/:id` |
+| Manage         | `supply.items.manage` — reserved for REST POST/PATCH/DELETE and GraphQL mutations when implemented     |
+| GraphQL denied | `extensions.code: PERMISSION_DENIED`, message `Permission denied`                                      |
+| REST denied    | HTTP 403, message `Permission denied`                                                                  |
+| Wrong token    | `{{mesAccessToken}}` on global GraphQL/REST supply-items → 401 (global `JwtAuthGuard` only)            |
+| Tenant header  | `x-tenant-id` must match JWT `tenantId` when present; mismatch → permission denied                     |
+
+**Tokens:** `{{accessTokenOwner}}` / `{{accessTokenOperator}}` from folder 11 or **04 — REST RBAC** logins. Do not use `{{mesAccessToken}}` on supply-items or global GraphQL supply queries.
+
+\* Postman **04** still lists Create/Update/Delete for documentation; those HTTP write routes are not on the API yet — RBAC for manage is validated in unit tests until CRUD ships.
+
+Suppliers, recipes, and purchase-order GraphQL remain **auth-only** until permission codes exist in the catalog.
+
+See also folder **09 — RBAC Foundation** (seed matrix reference).
 
 ---
 

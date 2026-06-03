@@ -38,6 +38,20 @@
       "description": "Global User JWT from POST /api/auth/login. Set by 01 \u2014 Global Auth \u2192 Login or collection pre-request. Not valid on /api/plant/* or /api/mes/*."
     },
     {
+      "key": "accessTokenOwner",
+      "value": "",
+      "type": "default",
+      "enabled": true,
+      "description": "Global OWNER JWT from 11 \u2014 GraphQL RBAC \u2192 Login Global Owner (mes-owner@palos-de-lena.dev). Has supply.items.read and supply.items.manage."
+    },
+    {
+      "key": "accessTokenOperator",
+      "value": "",
+      "type": "default",
+      "enabled": true,
+      "description": "Global OPERATOR JWT from 11 \u2014 GraphQL RBAC \u2192 Login Global Operator (mes-operator@palos-de-lena.dev). Has supply.items.read only."
+    },
+    {
       "key": "refreshToken",
       "value": "",
       "type": "default",

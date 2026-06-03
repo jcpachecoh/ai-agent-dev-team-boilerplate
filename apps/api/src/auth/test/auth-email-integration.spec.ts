@@ -272,7 +272,22 @@ describe('Auth Email Integration — G4 wiring (AuthController → AuthEmailServ
   });
 
   it('login uses tenant-scoped lookup and does not expose passwordHash in response', async () => {
-    prismaMock.user.findUnique.mockResolvedValue(mockUserWithPassword);
+    prismaMock.user.findUnique.mockImplementation(
+      ({ select }: { select?: { role?: unknown; passwordHash?: boolean } }) => {
+        if (select && 'role' in select) {
+          return Promise.resolve({
+            id: mockUserSafe.id,
+            email: mockUserSafe.email,
+            tenantId: TENANT_ID,
+            roleId: mockUserSafe.roleId,
+            isActive: true,
+            deletedAt: null,
+            role: { code: 'OPERATOR' },
+          });
+        }
+        return Promise.resolve(mockUserWithPassword);
+      },
+    );
     (bcrypt.compare as jest.Mock).mockResolvedValue(true);
     (bcrypt.hash as jest.Mock).mockResolvedValue('hashed-refresh');
     jwtServiceMock.signAsync.mockResolvedValueOnce('access').mockResolvedValueOnce('refresh');
@@ -289,6 +304,16 @@ describe('Auth Email Integration — G4 wiring (AuthController → AuthEmailServ
         where: { tenantId_email: { tenantId: TENANT_ID, email: 'alice@example.com' } },
         select: expect.objectContaining({ passwordHash: true }),
       }),
+    );
+    expect(jwtServiceMock.signAsync).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sub: mockUserSafe.id,
+        email: mockUserSafe.email,
+        tenantId: TENANT_ID,
+        roleId: mockUserSafe.roleId,
+        roleCode: 'OPERATOR',
+      }),
+      { expiresIn: '15m' },
     );
     expect(result).toEqual({ accessToken: 'access', refreshToken: 'refresh' });
     expect(result).not.toHaveProperty('passwordHash');

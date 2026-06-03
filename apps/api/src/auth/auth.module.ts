@@ -12,11 +12,14 @@ import { AuthEmailRepository } from './repository/auth-email.repository';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
 import { GqlJwtRefreshGuard } from './guards/gql-jwt-refresh.guard';
+import { PermissionsGuard } from '../common/guards/permissions.guard';
+import { PermissionsModule } from '../permissions/permissions.module';
 
 @Module({
   imports: [
     PrismaModule,
     AuditModule,
+    PermissionsModule,
     PassportModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET ?? 'dev-secret-change-in-production',
@@ -33,7 +36,8 @@ import { GqlJwtRefreshGuard } from './guards/gql-jwt-refresh.guard';
     GqlJwtRefreshGuard,
     JwtStrategy,
     JwtRefreshStrategy,
+    PermissionsGuard,
   ],
-  exports: [AuthService],
+  exports: [AuthService, PermissionsGuard, PermissionsModule],
 })
 export class AuthModule {}

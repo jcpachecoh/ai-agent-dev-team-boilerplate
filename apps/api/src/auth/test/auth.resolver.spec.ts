@@ -60,7 +60,13 @@ describe('AuthResolver', () => {
   it('returns the authenticated user profile for me', async () => {
     authServiceMock.me.mockResolvedValue({ id: 'user-1', tenantId, email: 'test@example.com' });
 
-    const result = await resolver.me({ sub: 'user-1', email: 'test@example.com' });
+    const result = await resolver.me({
+      sub: 'user-1',
+      email: 'test@example.com',
+      tenantId: tenantId,
+      roleId: 'role-1',
+      roleCode: 'OPERATOR',
+    });
 
     expect(result).toEqual({ id: 'user-1', tenantId, email: 'test@example.com' });
     expect(authServiceMock.me).toHaveBeenCalledWith('user-1');
@@ -81,6 +87,14 @@ describe('AuthResolver', () => {
   it('returns true from logout even when AuthService throws', async () => {
     authServiceMock.logout.mockRejectedValue(new Error('already logged out'));
 
-    await expect(resolver.logout({ sub: 'user-1', email: 'test@example.com' })).resolves.toBe(true);
+    await expect(
+      resolver.logout({
+        sub: 'user-1',
+        email: 'test@example.com',
+        tenantId,
+        roleId: 'role-1',
+        roleCode: 'OPERATOR',
+      }),
+    ).resolves.toBe(true);
   });
 });
