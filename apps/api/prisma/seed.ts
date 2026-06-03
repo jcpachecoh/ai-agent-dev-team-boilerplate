@@ -29,7 +29,14 @@
  * Run:  cd apps/api && pnpm db:seed
  */
 
-import { DocumentType, OperationalRole, PrismaClient, StockUnit } from '@prisma/client';
+import {
+  CondicionPago,
+  DocumentType,
+  OperationalRole,
+  PrismaClient,
+  StockUnit,
+  SupplierTipo,
+} from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 
@@ -41,7 +48,11 @@ const SALT_ROUNDS = 12;
 const OPERATIONAL_TENANT_ID = 'palos-de-lena';
 
 const SEED_CATEGORY_ID = 'bbbbbbbb-0000-0000-0000-000000000002';
+const SEED_CATEGORY_GRANOS_ID = 'bbbbbbbb-0000-0000-0000-000000000003';
 const SEED_SUPPLY_ITEM_ID = 'ffffffff-0000-0000-0000-000000000006';
+const SEED_SUPPLY_ITEM_ARROZ_ID = 'ffffffff-0000-0000-0000-000000000007';
+const SEED_SUPPLIER_ID = 'dddddddd-0000-0000-0000-000000000001';
+const SEED_SUPPLIER_PRODUCT_ID = 'eeeeeeee-0000-0000-0000-000000000001';
 
 const ROLE_OWNER_ID = 'aaaaaaaa-0000-0000-0000-000000000001';
 const ROLE_SUPERVISOR_ID = 'aaaaaaaa-0000-0000-0000-000000000002';
@@ -372,6 +383,96 @@ async function main() {
     },
   });
   console.log('SupplyItem:', supplyItem.codigoInterno, '—', supplyItem.id);
+
+  const categoryGranos = await prisma.supplyCategory.upsert({
+    where: { id: SEED_CATEGORY_GRANOS_ID },
+    update: { tenantId: OPERATIONAL_TENANT_ID, nombre: 'Granos' },
+    create: {
+      id: SEED_CATEGORY_GRANOS_ID,
+      tenantId: OPERATIONAL_TENANT_ID,
+      nombre: 'Granos',
+      descripcion: 'Cereales y legumbres',
+    },
+  });
+  console.log('SupplyCategory:', categoryGranos.nombre, '—', categoryGranos.id);
+
+  const supplyItemArroz = await prisma.supplyItem.upsert({
+    where: { id: SEED_SUPPLY_ITEM_ARROZ_ID },
+    update: {
+      tenantId: OPERATIONAL_TENANT_ID,
+      categoriaId: SEED_CATEGORY_GRANOS_ID,
+      nombre: 'Arroz Premium (seed)',
+      stockMinimoBodega: 20,
+      isActive: true,
+    },
+    create: {
+      id: SEED_SUPPLY_ITEM_ARROZ_ID,
+      tenantId: OPERATIONAL_TENANT_ID,
+      nombre: 'Arroz Premium (seed)',
+      codigoInterno: 'SEED-ARROZ',
+      categoriaId: SEED_CATEGORY_GRANOS_ID,
+      unidadBase: StockUnit.KILOGRAMS,
+      factorConversion: 1,
+      costoPromedioPonderado: 4200,
+      stockMinimoBodega: 20,
+      stockMaximoBodega: 200,
+      isActive: true,
+    },
+  });
+  console.log('SupplyItem:', supplyItemArroz.codigoInterno, '—', supplyItemArroz.id);
+
+  const supplier = await prisma.supplier.upsert({
+    where: { id: SEED_SUPPLIER_ID },
+    update: {
+      tenantId: OPERATIONAL_TENANT_ID,
+      razonSocial: 'Agrosuper Seed',
+      isActive: true,
+    },
+    create: {
+      id: SEED_SUPPLIER_ID,
+      tenantId: OPERATIONAL_TENANT_ID,
+      razonSocial: 'Agrosuper Seed',
+      nit: '900123456',
+      tipo: SupplierTipo.PERSONA_JURIDICA,
+      condicionPago: CondicionPago.DIAS_30,
+      cupoCredito: 5000000,
+      calificacion: 4,
+      isActive: true,
+    },
+  });
+  console.log('Supplier:', supplier.razonSocial, '—', supplier.id);
+
+  await prisma.supplierProduct.upsert({
+    where: { id: SEED_SUPPLIER_PRODUCT_ID },
+    update: {
+      precioUnitario: 8200,
+      esProveedorPrincipal: true,
+    },
+    create: {
+      id: SEED_SUPPLIER_PRODUCT_ID,
+      tenantId: OPERATIONAL_TENANT_ID,
+      supplierId: SEED_SUPPLIER_ID,
+      supplyItemId: SEED_SUPPLY_ITEM_ID,
+      precioUnitario: 8200,
+      unidadCompra: StockUnit.LITERS,
+      factorConversion: 1,
+      tiempoEntregaDias: 3,
+      esProveedorPrincipal: true,
+    },
+  });
+
+  await prisma.supplyItemPriceHistory.upsert({
+    where: { id: 'hhhhhhhh-0000-0000-0000-000000000001' },
+    update: {},
+    create: {
+      id: 'hhhhhhhh-0000-0000-0000-000000000001',
+      tenantId: OPERATIONAL_TENANT_ID,
+      supplyItemId: SEED_SUPPLY_ITEM_ID,
+      costoAnterior: 8000,
+      costoNuevo: 8500,
+      motivo: 'seed_initial',
+    },
+  });
 
   // ── MES operational users + linked global User rows ───────────────────────
   const mesUserPasswordHash = await bcrypt.hash('TestPass123!', SALT_ROUNDS);

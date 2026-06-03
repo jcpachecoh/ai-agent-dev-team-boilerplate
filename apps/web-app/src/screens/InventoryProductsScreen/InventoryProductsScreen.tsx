@@ -5,19 +5,22 @@ import {
   InventarioTableHeader,
   InventarioTableRow,
   toast,
+  type InventarioSelectOption,
 } from '@restopsiq/ui';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import {
-  checkSkuExists,
-  createInventoryProduct,
-  deleteInventoryProduct,
-  fetchInventoryProducts,
-  updateInventoryProduct,
-} from '@/api/inventory';
+import { checkSkuExists } from '@/api/inventory';
 import { ProductFormModal } from '@/components/inventory/ProductFormModal';
 import { InventoryScreenState } from '@/components/inventory/InventoryScreenState';
+import { useSupplyCategories } from '@/features/inventario/hooks/useSupplyCategories';
+import {
+  useCreateSupplyItem,
+  useDeactivateSupplyItem,
+  useUpdateSupplyItem,
+} from '@/features/inventario/hooks/useSupplyItemMutations';
+import { getErrorMessage } from '@/lib/graphql-client';
+import { useSupplyItems } from '@/features/inventario/hooks/useSupplyItems';
 import type { InventoryProduct, InventoryProductFormValues } from '@/types/inventory';
 import { INVENTORY_PAGE_SIZE } from '@/types/inventory';
 import { filterProducts, formatCurrency, stockToneForProduct } from '@/utils/inventory';
@@ -26,9 +29,12 @@ import shared from '../inventory/shared.module.scss';
 
 export function InventoryProductsScreen(): React.JSX.Element {
   const navigate = useNavigate();
-  const [products, setProducts] = useState<InventoryProduct[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const itemsQuery = useSupplyItems();
+  const categoriesQuery = useSupplyCategories();
+  const createMutation = useCreateSupplyItem();
+  const updateMutation = useUpdateSupplyItem();
+  const deactivateMutation = useDeactivateSupplyItem();
+
   const [search, setSearch] = useState('');
   const [categoryId, setCategoryId] = useState('all');
   const [supplierId, setSupplierId] = useState('all');
@@ -37,24 +43,29 @@ export function InventoryProductsScreen(): React.JSX.Element {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
   const [editing, setEditing] = useState<InventoryProduct | undefined>();
-  const [saving, setSaving] = useState(false);
 
-  const load = useCallback(async () => {
-    try {
-      setError(false);
-      const list = await fetchInventoryProducts();
-      setProducts(list);
-    } catch {
-      setError(true);
-      toast.error('Error al cargar productos');
-    } finally {
-      setLoading(false);
+  const products = itemsQuery.data ?? [];
+
+  const categoryOptions: InventarioSelectOption[] = useMemo(() => {
+    const cats = categoriesQuery.data ?? [];
+    return [
+      { value: 'all', label: 'Todas las categorías' },
+      ...cats.map((c) => ({ value: c.id, label: c.nombre })),
+    ];
+  }, [categoriesQuery.data]);
+
+  const supplierOptions: InventarioSelectOption[] = useMemo(() => {
+    const seen = new Map<string, string>();
+    for (const p of products) {
+      if (p.supplierId && p.supplier !== '—') {
+        seen.set(p.supplierId, p.supplier);
+      }
     }
-  }, []);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
+    return [
+      { value: 'all', label: 'Todos los proveedores' },
+      ...Array.from(seen.entries()).map(([value, label]) => ({ value, label })),
+    ];
+  }, [products]);
 
   const filtered = useMemo(
     () => filterProducts(products, { search, categoryId, supplierId, lowStockOnly }),
@@ -63,10 +74,6 @@ export function InventoryProductsScreen(): React.JSX.Element {
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / INVENTORY_PAGE_SIZE));
   const pageItems = filtered.slice((page - 1) * INVENTORY_PAGE_SIZE, page * INVENTORY_PAGE_SIZE);
-
-  useEffect(() => {
-    if (page > totalPages) setPage(totalPages);
-  }, [page, totalPages]);
 
   const openCreate = () => {
     setModalMode('create');
@@ -83,42 +90,40 @@ export function InventoryProductsScreen(): React.JSX.Element {
   const handleSave = async (values: InventoryProductFormValues) => {
     const skuTaken = await checkSkuExists(values.sku, editing?.id);
     if (skuTaken) {
-      toast.error('El SKU ya existe. Use un código único.');
+      toast.error('El código interno ya existe. Use un código único.');
       return;
     }
 
-    setSaving(true);
     try {
       if (modalMode === 'create') {
-        await createInventoryProduct(values);
-        toast.success('Producto creado correctamente');
+        await createMutation.mutateAsync(values);
+        toast.success('Insumo creado correctamente');
       } else if (editing) {
-        await updateInventoryProduct(editing.id, values);
-        toast.success('Producto actualizado');
+        await updateMutation.mutateAsync({ id: editing.id, values });
+        toast.success('Insumo actualizado');
       }
       setModalOpen(false);
-      await load();
-    } catch {
-      toast.error('Error al guardar el producto');
-    } finally {
-      setSaving(false);
+    } catch (err) {
+      toast.error(getErrorMessage(err));
     }
   };
 
   const handleDelete = async (product: InventoryProduct) => {
-    const confirmed = window.confirm(`¿Eliminar ${product.name}? Se desactivará del catálogo.`);
+    const confirmed = window.confirm(`¿Desactivar ${product.name}?`);
     if (!confirmed) return;
 
     try {
-      await deleteInventoryProduct(product.id);
-      toast.success('Producto eliminado');
-      await load();
+      await deactivateMutation.mutateAsync(product.id);
+      toast.success('Insumo desactivado');
     } catch {
-      toast.error('Error al eliminar el producto');
+      toast.error('Error al desactivar el insumo');
     }
   };
 
-  if (loading) {
+  const saving =
+    createMutation.isPending || updateMutation.isPending || deactivateMutation.isPending;
+
+  if (itemsQuery.isLoading) {
     return (
       <div className={shared.screen}>
         <section className={shared.stateSection}>
@@ -128,11 +133,11 @@ export function InventoryProductsScreen(): React.JSX.Element {
     );
   }
 
-  if (error) {
+  if (itemsQuery.isError) {
     return (
       <div className={shared.screen}>
         <section className={shared.stateSection}>
-          <InventoryScreenState variant="error" onRetry={() => void load()} />
+          <InventoryScreenState variant="error" onRetry={() => void itemsQuery.refetch()} />
         </section>
       </div>
     );
@@ -142,9 +147,9 @@ export function InventoryProductsScreen(): React.JSX.Element {
     <div className={shared.screen}>
       <section className={shared.pageHeader}>
         <InventarioPageToolbar
-          title="Gestión de Productos"
-          subtitle={`Total: ${filtered.length} productos • Página ${page} de ${totalPages}`}
-          actionLabel="CREAR PRODUCTO"
+          title="Gestión de Insumos"
+          subtitle={`Total: ${filtered.length} insumos • Página ${page} de ${totalPages}`}
+          actionLabel="CREAR INSUMO"
           onAction={openCreate}
           theme="dark"
           size="xl"
@@ -169,6 +174,8 @@ export function InventoryProductsScreen(): React.JSX.Element {
             setSupplierId(v);
             setPage(1);
           }}
+          categoryOptions={categoryOptions}
+          supplierOptions={supplierOptions}
           lowStockOnly={lowStockOnly}
           onLowStockChange={(v) => {
             setLowStockOnly(v);
@@ -184,7 +191,7 @@ export function InventoryProductsScreen(): React.JSX.Element {
         <section className={shared.stateSection}>
           <InventoryScreenState
             variant="empty"
-            message="No hay productos que coincidan con los filtros."
+            message="No hay insumos que coincidan con los filtros."
           />
         </section>
       ) : (
@@ -205,7 +212,7 @@ export function InventoryProductsScreen(): React.JSX.Element {
                 category={product.category}
                 supplier={product.supplier}
                 stockTotal={product.currentStock}
-                unitPrice={formatCurrency(product.sellingPrice)}
+                unitPrice={formatCurrency(product.costPrice)}
                 lastMovement={product.lastMovement}
                 stockTone={stockToneForProduct(product)}
                 lowStockWarning={product.currentStock < product.minStock}

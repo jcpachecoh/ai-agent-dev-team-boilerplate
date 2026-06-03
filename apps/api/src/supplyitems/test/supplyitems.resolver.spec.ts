@@ -1,4 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
+import { StockUnit } from '@prisma/client';
 import { Test, TestingModule } from '@nestjs/testing';
 import { PermissionsGuard } from '../../common/guards/permissions.guard';
 import { SupplyItemsResolver } from '../resolver/supplyitems.resolver';
@@ -10,8 +11,28 @@ const mockSupplyItem = {
   tenantId,
   nombre: 'Insumo Test',
   codigoInterno: 'INS-001',
-  unidadBase: 'UNIT',
+  categoriaId: 'cat-1',
+  descripcion: null,
+  unidadBase: StockUnit.UNIT,
+  factorConversion: '1',
+  costoPromedioPonderado: '100',
+  stockMinimoBodega: '10',
+  stockMaximoBodega: '50',
+  aplicaVencimiento: false,
+  aplicaLote: false,
   isActive: true,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  categoria: {
+    id: 'cat-1',
+    tenantId,
+    nombre: 'Test',
+    descripcion: null,
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  supplierProducts: [],
 };
 
 const serviceMock = {
@@ -40,17 +61,26 @@ describe('SupplyItemsResolver', () => {
       const result = await resolver.supplyItems(
         { req: { headers: { 'x-tenant-id': tenantId } } } as never,
         'insumo',
+        undefined,
+        undefined,
         25,
+        0,
       );
 
-      expect(result).toEqual([mockSupplyItem]);
-      expect(serviceMock.findAll).toHaveBeenCalledWith(tenantId, { search: 'insumo', limit: 25 });
+      expect(result[0]?.codigoInterno).toBe('INS-001');
+      expect(serviceMock.findAll).toHaveBeenCalledWith(tenantId, {
+        search: 'insumo',
+        categoriaId: undefined,
+        isActive: undefined,
+        limit: 25,
+        offset: 0,
+      });
     });
 
     it('throws when the tenant header is missing', async () => {
-      await expect(
-        resolver.supplyItems({ req: { headers: {} } } as never, undefined, undefined),
-      ).rejects.toThrow(BadRequestException);
+      await expect(resolver.supplyItems({ req: { headers: {} } } as never)).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 });

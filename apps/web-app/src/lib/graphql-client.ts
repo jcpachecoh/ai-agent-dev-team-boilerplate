@@ -73,7 +73,10 @@ interface GraphqlClientErrorShape {
   response?: {
     errors?: Array<{
       message?: string;
-      extensions?: { code?: string };
+      extensions?: {
+        code?: string;
+        response?: { message?: string | string[] };
+      };
     }>;
   };
 }
@@ -85,6 +88,11 @@ export function parseGraphqlError(error: unknown): GraphqlRequestError {
   const first = response?.errors?.[0];
   if (first?.extensions?.code === 'UNAUTHENTICATED') {
     clearGraphqlAuthToken();
+  }
+  const nested = first?.extensions?.response?.message;
+  if (nested) {
+    const detail = Array.isArray(nested) ? nested.join('; ') : nested;
+    return new GraphqlRequestError(detail, first.extensions?.code);
   }
   if (first?.message) {
     return new GraphqlRequestError(first.message, first.extensions?.code);

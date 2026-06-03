@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
-import { RequestMethod, ValidationPipe } from '@nestjs/common';
+import { BadRequestException, RequestMethod, ValidationPipe } from '@nestjs/common';
+import type { ValidationError } from 'class-validator';
 import { IoAdapter } from '@nestjs/platform-socket.io';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
@@ -10,7 +11,20 @@ async function bootstrap() {
   app.setGlobalPrefix('api', {
     exclude: [{ path: 'health', method: RequestMethod.GET }],
   });
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+      transformOptions: { enableImplicitConversion: true },
+      exceptionFactory: (errors: ValidationError[]) => {
+        const messages = errors.flatMap((e) =>
+          e.constraints ? Object.values(e.constraints) : [`${e.property} failed validation`],
+        );
+        return new BadRequestException(messages);
+      },
+    }),
+  );
 
   const allowedOrigins = (process.env.ALLOWED_ORIGINS ?? '')
     .split(',')

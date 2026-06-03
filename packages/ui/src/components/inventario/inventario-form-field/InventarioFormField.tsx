@@ -8,6 +8,8 @@ export type InventarioFormFieldInputType = 'input' | 'select';
 export interface InventarioFormFieldProps {
   label?: string;
   inputType?: InventarioFormFieldInputType;
+  /** When true, children provide their own border (e.g. InventarioSelect). */
+  bareControl?: boolean;
   children?: ReactNode;
   htmlFor?: string;
   theme?: InventarioTheme;
@@ -18,6 +20,7 @@ export interface InventarioFormFieldProps {
 export function InventarioFormField({
   label = 'CAMPO',
   inputType = 'input',
+  bareControl = false,
   children,
   htmlFor,
   theme = 'light',
@@ -25,9 +28,14 @@ export function InventarioFormField({
   className,
 }: InventarioFormFieldProps): JSX.Element {
   const controlId = htmlFor ?? `inventario-field-${label.toLowerCase().replace(/\s+/g, '-')}`;
+  const controlClass = bareControl ? styles.controlBare : styles.control;
+  const Wrapper = bareControl ? 'div' : 'label';
+  const wrapperProps = bareControl
+    ? {}
+    : { htmlFor: htmlFor ?? (!children && inputType === 'input' ? controlId : undefined) };
 
   return (
-    <label
+    <Wrapper
       className={[
         styles.field,
         styles[`theme--${theme}`],
@@ -37,10 +45,10 @@ export function InventarioFormField({
       ]
         .filter(Boolean)
         .join(' ')}
-      htmlFor={inputType === 'input' ? controlId : undefined}
+      {...wrapperProps}
     >
       <span className={styles.label}>{label}</span>
-      <div className={styles.control}>
+      <div className={controlClass}>
         {children ??
           (inputType === 'select' ? (
             <select id={controlId} className={styles.nativeSelect} defaultValue="">
@@ -52,7 +60,7 @@ export function InventarioFormField({
             <input id={controlId} className={styles.nativeInput} type="text" />
           ))}
       </div>
-    </label>
+    </Wrapper>
   );
 }
 

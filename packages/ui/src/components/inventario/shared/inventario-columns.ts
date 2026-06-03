@@ -9,6 +9,9 @@ export const inventarioMovementGridTemplate =
 export const inventarioAlertGridTemplate =
   'minmax(100px, 120px) minmax(140px, 1.5fr) minmax(88px, 100px) minmax(88px, 100px) minmax(110px, 1fr) minmax(120px, 140px)';
 
+export const inventarioCategoryGridTemplate =
+  'minmax(140px, 1.6fr) minmax(160px, 2fr) minmax(96px, 120px) minmax(88px, 100px)';
+
 export const inventarioReportGridTemplate =
   'minmax(140px, 1fr) minmax(88px, 120px) minmax(56px, 72px)';
 
@@ -39,4 +42,11 @@ export const defaultAlertColumns: InventarioTableColumn[] = [
   { key: 'minStock', label: 'Stock Mín.', align: 'center', width: 'minmax(88px, 100px)' },
   { key: 'supplier', label: 'Proveedor', width: 'minmax(110px, 1fr)' },
   { key: 'actions', label: 'Acciones', align: 'center', width: 'minmax(120px, 140px)' },
+];
+
+export const defaultCategoryColumns: InventarioTableColumn[] = [
+  { key: 'nombre', label: 'Nombre', width: 'minmax(140px, 1.6fr)' },
+  { key: 'descripcion', label: 'Descripción', width: 'minmax(160px, 2fr)' },
+  { key: 'estado', label: 'Estado', align: 'center', width: 'minmax(96px, 120px)' },
+  { key: 'actions', label: 'Acciones', align: 'center', width: 'minmax(88px, 100px)' },
 ];

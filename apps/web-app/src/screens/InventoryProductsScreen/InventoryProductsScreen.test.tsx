@@ -2,6 +2,8 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 
+import { TestQueryProvider } from '@/test-utils/query-client';
+
 import { InventoryProductsScreen } from './InventoryProductsScreen';
 
 describe('InventoryProductsScreen', () => {
@@ -16,17 +18,19 @@ describe('InventoryProductsScreen', () => {
     }));
   });
 
-  it('renders product list and filters by POLLO search', async () => {
+  it('renders supply list and filters by POLLO search', async () => {
     const user = userEvent.setup();
 
     render(
-      <MemoryRouter>
-        <InventoryProductsScreen />
-      </MemoryRouter>,
+      <TestQueryProvider>
+        <MemoryRouter>
+          <InventoryProductsScreen />
+        </MemoryRouter>
+      </TestQueryProvider>,
     );
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /gestión de productos/i })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /gestión de insumos/i })).toBeInTheDocument();
     });
 
     expect(screen.getByText(/POLLO ENTERO/i)).toBeInTheDocument();

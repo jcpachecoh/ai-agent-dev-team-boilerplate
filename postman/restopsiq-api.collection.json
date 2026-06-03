@@ -1594,7 +1594,7 @@
     },
     {
       "name": "04 — Supply Items",
-      "description": "Supply catalog REST.\n\nAuth: Bearer {{accessToken}} + x-tenant-id: {{tenantId}} on every request.\nPrerequisite: **01 — Global Auth → 01 Session → Login** (or folder 11 logins for RBAC tokens).\n\nAUTH-09 RBAC (implemented routes):\n- GET /api/supply-items, GET /api/supply-items/:id → supply.items.read\n- POST/PATCH/DELETE in this folder are not implemented on API yet; manage permission (`supply.items.manage`) is covered in Jest + folder **REST RBAC** docs.\n\nDo not use {{mesAccessToken}} on supply-items.\nUSR-05: writes may create two audit_logs rows when write routes exist.",
+      "description": "Supply catalog CRUD.\n\nAuth: Bearer {{accessToken}} + x-tenant-id: {{tenantId}} on every request.\nPrerequisite: **01 — Global Auth → 01 Session → Login** (or folder **11 — GraphQL RBAC** for RBAC tokens).\n\nAUTH-09 RBAC:\n- GET /api/supply-items, GET /api/supply-items/:id → supply.items.read\n- POST/PATCH/DELETE → supply.items.manage (see folder **REST RBAC** / Jest for route-level checks).\n\nDo not use {{mesAccessToken}} on supply-items.\nUSR-05: writes may create two audit_logs rows (interceptor + SupplyItem snapshot).",
       "item": [
         {
           "name": "Create Supply Item",

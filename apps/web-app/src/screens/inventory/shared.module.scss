@@ -33,10 +33,43 @@ $inv-surface-hover: #262626;
 }
 
 .embedToolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1rem;
   padding: 0;
   border: none;
   border-radius: 0;
   background: transparent;
+}
+
+.statusFilters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.statusFilterBtn {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid $inv-divider;
+  border-radius: $inv-radius;
+  background: $inv-surface-raised;
+  color: $color-text-secondary;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover {
+    background: $inv-surface-hover;
+    color: $color-text-primary;
+  }
+}
+
+.statusFilterBtnActive {
+  border-color: $color-success;
+  color: $color-success;
+  background: rgba($color-success, 0.12);
 }
 
 .embedFilters {

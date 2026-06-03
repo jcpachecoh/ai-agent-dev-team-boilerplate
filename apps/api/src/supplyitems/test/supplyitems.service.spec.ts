@@ -1,4 +1,5 @@
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { Test, TestingModule } from '@nestjs/testing';
 import { StockUnit } from '@prisma/client';
 import { SupplyItemsService } from '../service/supplyitems.service';
@@ -22,11 +23,28 @@ const mockSupplyItem = {
   isActive: true,
   createdAt: new Date(),
   updatedAt: new Date(),
+  categoria: {
+    id: 'cat-1',
+    tenantId,
+    nombre: 'Test',
+    descripcion: null,
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  supplierProducts: [],
 };
 
 const repoMock = {
   findOne: jest.fn(),
+  findOneDetailed: jest.fn(),
   findAll: jest.fn(),
+  findByCodigoInterno: jest.fn(),
+  create: jest.fn(),
+  update: jest.fn(),
+  findSuppliersForItem: jest.fn(),
+  findPriceHistory: jest.fn(),
+  categoryExists: jest.fn(),
 };
 
 describe('SupplyItemsService', () => {
@@ -43,16 +61,16 @@ describe('SupplyItemsService', () => {
 
   describe('findOne', () => {
     it('returns the supply item when found for tenant', async () => {
-      repoMock.findOne.mockResolvedValue(mockSupplyItem);
+      repoMock.findOneDetailed.mockResolvedValue(mockSupplyItem);
 
       const result = await service.findOne(tenantId, 'item-1');
 
       expect(result).toEqual(mockSupplyItem);
-      expect(repoMock.findOne).toHaveBeenCalledWith(tenantId, 'item-1');
+      expect(repoMock.findOneDetailed).toHaveBeenCalledWith(tenantId, 'item-1');
     });
 
     it('throws NotFoundException when item is missing', async () => {
-      repoMock.findOne.mockResolvedValue(null);
+      repoMock.findOneDetailed.mockResolvedValue(null);
 
       await expect(service.findOne(tenantId, 'missing')).rejects.toThrow(NotFoundException);
     });
@@ -65,7 +83,123 @@ describe('SupplyItemsService', () => {
       const result = await service.findAll(tenantId, { search: 'insumo', limit: 10 });
 
       expect(result).toEqual([mockSupplyItem]);
-      expect(repoMock.findAll).toHaveBeenCalledWith(tenantId, { search: 'insumo', limit: 10 });
+      expect(repoMock.findAll).toHaveBeenCalledWith(tenantId, {
+        search: 'insumo',
+        limit: 10,
+        isActive: true,
+      });
+    });
+  });
+
+  const createInput = {
+    nombre: 'Nuevo',
+    codigoInterno: 'INS-002',
+    categoriaId: 'cat-1',
+    unidadBase: StockUnit.UNIT,
+    factorConversion: '1',
+    stockMinimoBodega: '1',
+    stockMaximoBodega: '10',
+  };
+
+  describe('create', () => {
+    it('creates item when validations pass', async () => {
+      repoMock.categoryExists.mockResolvedValue(true);
+      repoMock.findByCodigoInterno.mockResolvedValue(null);
+      repoMock.create.mockResolvedValue(mockSupplyItem);
+
+      const result = await service.create(tenantId, createInput);
+
+      expect(result).toEqual(mockSupplyItem);
+      expect(repoMock.create).toHaveBeenCalled();
+    });
+
+    it('throws NotFoundException when category is missing', async () => {
+      repoMock.categoryExists.mockResolvedValue(false);
+
+      await expect(service.create(tenantId, createInput)).rejects.toThrow(NotFoundException);
+    });
+
+    it('throws ConflictException when codigoInterno exists', async () => {
+      repoMock.categoryExists.mockResolvedValue(true);
+      repoMock.findByCodigoInterno.mockResolvedValue({ id: 'other' });
+
+      await expect(service.create(tenantId, createInput)).rejects.toThrow(ConflictException);
+    });
+
+    it('throws BadRequestException when stock range is invalid', async () => {
+      repoMock.categoryExists.mockResolvedValue(true);
+      repoMock.findByCodigoInterno.mockResolvedValue(null);
+
+      await expect(
+        service.create(tenantId, {
+          ...createInput,
+          stockMinimoBodega: '20',
+          stockMaximoBodega: '5',
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('throws ConflictException on prisma unique violation', async () => {
+      repoMock.categoryExists.mockResolvedValue(true);
+      repoMock.findByCodigoInterno.mockResolvedValue(null);
+      repoMock.create.mockRejectedValue(
+        new Prisma.PrismaClientKnownRequestError('dup', {
+          code: 'P2002',
+          clientVersion: '5.0.0',
+        }),
+      );
+
+      await expect(service.create(tenantId, createInput)).rejects.toThrow(ConflictException);
+    });
+  });
+
+  describe('update', () => {
+    it('updates item when codigo stays the same', async () => {
+      repoMock.findOneDetailed.mockResolvedValue(mockSupplyItem);
+      repoMock.update.mockResolvedValue(mockSupplyItem);
+
+      const result = await service.update(tenantId, 'item-1', { nombre: 'Renamed' });
+
+      expect(result).toEqual(mockSupplyItem);
+      expect(repoMock.findByCodigoInterno).not.toHaveBeenCalled();
+    });
+
+    it('validates unique codigo when it changes', async () => {
+      repoMock.findOneDetailed.mockResolvedValue(mockSupplyItem);
+      repoMock.findByCodigoInterno.mockResolvedValue({ id: 'other' });
+
+      await expect(
+        service.update(tenantId, 'item-1', { codigoInterno: 'INS-999' }),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('deactivates item via update', async () => {
+      repoMock.findOneDetailed.mockResolvedValue(mockSupplyItem);
+      repoMock.update.mockResolvedValue({ ...mockSupplyItem, isActive: false });
+
+      await service.deactivate(tenantId, 'item-1');
+
+      expect(repoMock.update).toHaveBeenCalledWith(
+        tenantId,
+        'item-1',
+        expect.objectContaining({ isActive: false }),
+      );
+    });
+  });
+
+  describe('findSuppliers and findPriceHistory', () => {
+    it('returns suppliers for existing item', async () => {
+      repoMock.findOneDetailed.mockResolvedValue(mockSupplyItem);
+      repoMock.findSuppliersForItem.mockResolvedValue([]);
+
+      await expect(service.findSuppliers(tenantId, 'item-1')).resolves.toEqual([]);
+    });
+
+    it('returns price history for existing item', async () => {
+      repoMock.findOneDetailed.mockResolvedValue(mockSupplyItem);
+      repoMock.findPriceHistory.mockResolvedValue([]);
+
+      await expect(service.findPriceHistory(tenantId, 'item-1', { limit: 5 })).resolves.toEqual([]);
     });
   });
 });

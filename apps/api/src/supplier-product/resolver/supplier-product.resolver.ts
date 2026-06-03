@@ -13,7 +13,16 @@ import {
   ResolveField,
   Parent,
 } from '@nestjs/graphql';
-import { SupplierProduct } from '@prisma/client';
+import { StockUnit, SupplierProduct } from '@prisma/client';
+import {
+  IsBoolean,
+  IsEnum,
+  IsInt,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 import { SupplierProductService } from '../service/supplier-product.service';
 import type { SupplierProductWithSupplyItem } from '../interfaces/supplier-product.interfaces';
 import { SupplyItemType } from '../../supplyitems/resolver/supplyitems.resolver';
@@ -35,24 +44,67 @@ export class SupplierProductType {
   @Field() updatedAt!: Date;
 }
 
-@InputType()
+@InputType('CreateSupplierProductInput')
 export class CreateSupplierProductInputDto {
-  @Field(() => ID) supplierId!: string;
-  @Field(() => ID) supplyItemId!: string;
-  @Field(() => Float) precioUnitario!: number;
-  @Field() unidadCompra!: string;
-  @Field(() => Float) factorConversion!: number;
-  @Field(() => Int, { nullable: true }) tiempoEntregaDias?: number;
-  @Field(() => Boolean, { nullable: true }) esProveedorPrincipal?: boolean;
+  @Field(() => ID)
+  @IsString()
+  @IsNotEmpty()
+  supplierId!: string;
+
+  @Field(() => ID)
+  @IsString()
+  @IsNotEmpty()
+  supplyItemId!: string;
+
+  @Field(() => Float)
+  @IsNumber()
+  precioUnitario!: number;
+
+  @Field(() => StockUnit)
+  @IsEnum(StockUnit)
+  unidadCompra!: StockUnit;
+
+  @Field(() => Float)
+  @IsNumber()
+  factorConversion!: number;
+
+  @Field(() => Int, { nullable: true })
+  @IsInt()
+  @IsOptional()
+  tiempoEntregaDias?: number;
+
+  @Field(() => Boolean, { nullable: true })
+  @IsBoolean()
+  @IsOptional()
+  esProveedorPrincipal?: boolean;
 }
 
-@InputType()
+@InputType('UpdateSupplierProductInput')
 export class UpdateSupplierProductInputDto {
-  @Field(() => Float, { nullable: true }) precioUnitario?: number;
-  @Field(() => String, { nullable: true }) unidadCompra?: string;
-  @Field(() => Float, { nullable: true }) factorConversion?: number;
-  @Field(() => Int, { nullable: true }) tiempoEntregaDias?: number;
-  @Field(() => Boolean, { nullable: true }) esProveedorPrincipal?: boolean;
+  @Field(() => Float, { nullable: true })
+  @IsNumber()
+  @IsOptional()
+  precioUnitario?: number;
+
+  @Field(() => StockUnit, { nullable: true })
+  @IsEnum(StockUnit)
+  @IsOptional()
+  unidadCompra?: StockUnit;
+
+  @Field(() => Float, { nullable: true })
+  @IsNumber()
+  @IsOptional()
+  factorConversion?: number;
+
+  @Field(() => Int, { nullable: true })
+  @IsInt()
+  @IsOptional()
+  tiempoEntregaDias?: number;
+
+  @Field(() => Boolean, { nullable: true })
+  @IsBoolean()
+  @IsOptional()
+  esProveedorPrincipal?: boolean;
 }
 
 @Resolver(() => SupplierProductType)
@@ -80,7 +132,8 @@ export class SupplierProductResolver {
     @Context() context: { req: { headers: Record<string, unknown> } },
     @Args('input') input: CreateSupplierProductInputDto,
   ): Promise<SupplierProductWithSupplyItem> {
-    return this.supplierProductService.create(this.getTenantId(context), input);
+    const tenantId = this.getTenantId(context);
+    return this.supplierProductService.create(tenantId, input);
   }
 
   @Mutation(() => SupplierProductType)
