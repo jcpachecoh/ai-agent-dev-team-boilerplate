@@ -147,14 +147,14 @@
       "value": "",
       "type": "default",
       "enabled": true,
-      "description": "RES-226 \u2014 Raw reset token extracted from the password-reset email URL. Set manually before running Reset Password requests."
+      "description": "AUTH-04 / RES-226 — Raw reset token from Forgot Password email URL. Set manually before Reset Password."
     },
     {
       "key": "otpCode",
       "value": "",
       "type": "default",
       "enabled": true,
-      "description": "RES-226 \u2014 6-digit OTP from the verification email. Set manually before running Verify Email requests."
+      "description": "AUTH-04 — 6-digit OTP from Resend Verification email or worker/dev logs. Set manually, then run Verify Email. Not sent by Signup."
     },
     {
       "key": "newPassword",

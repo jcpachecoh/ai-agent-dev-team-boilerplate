@@ -30,10 +30,10 @@ describe('UserResolver', () => {
     jest.clearAllMocks();
   });
 
-  it('delegates me to the service', async () => {
+  it('delegates operationalProfile to the service', async () => {
     serviceMock.getMe.mockResolvedValue(mockUser);
 
-    const result = await resolver.me({ sub: userId } as never);
+    const result = await resolver.operationalProfile({ sub: userId } as never);
 
     expect(result).toEqual(mockUser);
     expect(serviceMock.getMe).toHaveBeenCalledWith(userId);

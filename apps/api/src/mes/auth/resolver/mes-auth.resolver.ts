@@ -10,6 +10,7 @@ import {
   Query,
   Resolver,
 } from '@nestjs/graphql';
+import { IsString, Matches } from 'class-validator';
 import { Public } from '../../../common/decorators/public.decorator';
 import {
   getClientIpFromContext,
@@ -62,9 +63,13 @@ class MessagePayloadType {
 @InputType('OperationalLoginInput')
 class OperationalLoginInput {
   @Field()
+  @IsString()
+  @Matches(/^\d{8,11}$/, { message: 'cedula must be 8–11 numeric digits' })
   cedula!: string;
 
   @Field()
+  @IsString()
+  @Matches(/^\d{4,6}$/, { message: 'pin must be 4–6 numeric digits' })
   pin!: string;
 }
 

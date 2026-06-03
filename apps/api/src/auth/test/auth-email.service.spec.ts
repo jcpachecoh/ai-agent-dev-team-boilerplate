@@ -66,6 +66,7 @@ const mockToken = {
 
 const authRepoMock = {
   findByTenantAndEmail: jest.fn(),
+  markEmailVerified: jest.fn(),
 };
 
 const authEmailRepoMock = {
@@ -284,11 +285,16 @@ describe('AuthEmailService — sendVerifyEmail & verifyOtp', () => {
     quit: jest.fn(),
   };
 
+  const authRepoVerifyMock = {
+    findByTenantAndEmail: jest.fn(),
+    markEmailVerified: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthEmailService,
-        { provide: AuthRepository, useValue: { findByTenantAndEmail: jest.fn() } },
+        { provide: AuthRepository, useValue: authRepoVerifyMock },
         {
           provide: AuthEmailRepository,
           useValue: { deleteExpiredResetTokens: jest.fn(), createResetToken: jest.fn() },
@@ -306,6 +312,7 @@ describe('AuthEmailService — sendVerifyEmail & verifyOtp', () => {
     redisMock.get.mockResolvedValue(null);
     redisMock.del.mockResolvedValue(1);
     emailServiceMock.send.mockResolvedValue({ jobId: 'job-otp-001' });
+    authRepoVerifyMock.markEmailVerified.mockResolvedValue(true);
   });
 
   describe('sendVerifyEmail', () => {
@@ -329,12 +336,15 @@ describe('AuthEmailService — sendVerifyEmail & verifyOtp', () => {
       expect(key).not.toBe(`otp:${mockVerifyUser.id}`);
     });
 
-    it('stores userId in the Redis value for context', async () => {
+    it('stores userId and tenantId in the Redis value for context', async () => {
       await service.sendVerifyEmail(mockVerifyUser, mockVerifyTenant);
 
       const [setCall] = redisMock.set.mock.calls;
       const value: string = setCall[1];
-      expect(JSON.parse(value)).toMatchObject({ userId: mockVerifyUser.id });
+      expect(JSON.parse(value)).toMatchObject({
+        userId: mockVerifyUser.id,
+        tenantId: mockVerifyTenant.tenantId,
+      });
     });
 
     it('returns the generated otpCode', async () => {
@@ -387,7 +397,10 @@ describe('AuthEmailService — sendVerifyEmail & verifyOtp', () => {
       const module = await Test.createTestingModule({
         providers: [
           AuthEmailService,
-          { provide: AuthRepository, useValue: { findByTenantAndEmail: jest.fn() } },
+          {
+            provide: AuthRepository,
+            useValue: { findByTenantAndEmail: jest.fn(), markEmailVerified: jest.fn() },
+          },
           { provide: AuthEmailRepository, useValue: authEmailRepoMockLocal },
           { provide: EmailService, useValue: emailServiceMock },
         ],
@@ -404,26 +417,57 @@ describe('AuthEmailService — sendVerifyEmail & verifyOtp', () => {
 
   describe('verifyOtp', () => {
     const validOtp = '847291';
+    const storedPayload = JSON.stringify({
+      userId: mockVerifyUser.id,
+      email: mockVerifyUser.email,
+      tenantId: mockVerifyTenant.tenantId,
+    });
 
     it('calls redis.del on success using the hash-based key', async () => {
       const otpHash = createHash('sha256').update(validOtp).digest('hex');
-      redisMock.get.mockResolvedValue(JSON.stringify({ userId: mockVerifyUser.id }));
+      redisMock.get.mockResolvedValue(storedPayload);
 
       await service.verifyOtp(validOtp);
 
       expect(redisMock.del).toHaveBeenCalledWith(`otp:${otpHash}`);
     });
 
+    it('marks emailVerified true via authRepository on valid OTP', async () => {
+      redisMock.get.mockResolvedValue(storedPayload);
+
+      await service.verifyOtp(validOtp);
+
+      expect(authRepoVerifyMock.markEmailVerified).toHaveBeenCalledWith(
+        mockVerifyUser.id,
+        mockVerifyTenant.tenantId,
+      );
+    });
+
     it('does not require userId as an argument', async () => {
-      redisMock.get.mockResolvedValue(JSON.stringify({ userId: mockVerifyUser.id }));
-      // verifyOtp takes only otpCode — if it compiled and ran, the signature is correct
+      redisMock.get.mockResolvedValue(storedPayload);
       await expect(service.verifyOtp(validOtp)).resolves.toBeUndefined();
+    });
+
+    it('succeeds idempotently when user is already verified', async () => {
+      redisMock.get.mockResolvedValue(storedPayload);
+      authRepoVerifyMock.markEmailVerified.mockResolvedValue(true);
+
+      await expect(service.verifyOtp(validOtp)).resolves.toBeUndefined();
+      expect(authRepoVerifyMock.markEmailVerified).toHaveBeenCalledTimes(1);
     });
 
     it('throws BadRequestException when OTP hash key is not found in Redis', async () => {
       redisMock.get.mockResolvedValue(null);
 
       await expect(service.verifyOtp(validOtp)).rejects.toMatchObject({ status: 400 });
+    });
+
+    it('does not call markEmailVerified when OTP is not found', async () => {
+      redisMock.get.mockResolvedValue(null);
+
+      await expect(service.verifyOtp(validOtp)).rejects.toThrow();
+
+      expect(authRepoVerifyMock.markEmailVerified).not.toHaveBeenCalled();
     });
 
     it('does not call redis.del when OTP is not found', async () => {
@@ -434,8 +478,30 @@ describe('AuthEmailService — sendVerifyEmail & verifyOtp', () => {
       expect(redisMock.del).not.toHaveBeenCalled();
     });
 
+    it('does not call markEmailVerified when user cannot be updated', async () => {
+      redisMock.get.mockResolvedValue(storedPayload);
+      authRepoVerifyMock.markEmailVerified.mockResolvedValue(false);
+
+      await expect(service.verifyOtp(validOtp)).rejects.toMatchObject({ status: 400 });
+
+      expect(authRepoVerifyMock.markEmailVerified).toHaveBeenCalledWith(
+        mockVerifyUser.id,
+        mockVerifyTenant.tenantId,
+      );
+    });
+
+    it('OTP is single-use: second attempt fails after redis.del on first success', async () => {
+      redisMock.get.mockResolvedValueOnce(storedPayload).mockResolvedValueOnce(null);
+
+      await service.verifyOtp(validOtp);
+      await expect(service.verifyOtp(validOtp)).rejects.toMatchObject({ status: 400 });
+
+      expect(redisMock.del).toHaveBeenCalledTimes(1);
+      expect(authRepoVerifyMock.markEmailVerified).toHaveBeenCalledTimes(1);
+    });
+
     it('OTP is single-use: redis.del called exactly once on success', async () => {
-      redisMock.get.mockResolvedValue(JSON.stringify({ userId: mockVerifyUser.id }));
+      redisMock.get.mockResolvedValue(storedPayload);
 
       await service.verifyOtp(validOtp);
 
@@ -469,7 +535,10 @@ describe('AuthEmailService — sendWelcome & sendInvitation', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthEmailService,
-        { provide: AuthRepository, useValue: { findByTenantAndEmail: jest.fn() } },
+        {
+          provide: AuthRepository,
+          useValue: { findByTenantAndEmail: jest.fn(), markEmailVerified: jest.fn() },
+        },
         {
           provide: AuthEmailRepository,
           useValue: { deleteExpiredResetTokens: jest.fn(), createResetToken: jest.fn() },
@@ -633,7 +702,10 @@ describe('AuthEmailService — lifecycle hooks', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthEmailService,
-        { provide: AuthRepository, useValue: { findByTenantAndEmail: jest.fn() } },
+        {
+          provide: AuthRepository,
+          useValue: { findByTenantAndEmail: jest.fn(), markEmailVerified: jest.fn() },
+        },
         {
           provide: AuthEmailRepository,
           useValue: { deleteExpiredResetTokens: jest.fn(), createResetToken: jest.fn() },

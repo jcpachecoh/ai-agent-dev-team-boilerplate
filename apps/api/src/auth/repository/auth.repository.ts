@@ -147,4 +147,16 @@ export class AuthRepository implements IAuthRepository {
       },
     });
   }
+
+  async markEmailVerified(userId: string, tenantId?: string): Promise<boolean> {
+    const result = await this.prisma.user.updateMany({
+      where: {
+        id: userId,
+        deletedAt: null,
+        ...(tenantId != null ? { tenantId } : {}),
+      },
+      data: { emailVerified: true },
+    });
+    return result.count > 0;
+  }
 }
