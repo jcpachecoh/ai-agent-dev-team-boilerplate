@@ -3,11 +3,15 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { UserService } from '../service/user.service';
 import { UserRepository } from '../repository/user.repository';
 
-const userId = 'user-1';
-const mockUser = {
-  id: userId,
-  role: 'OPERATOR',
-  tenantId: 'tenant-1',
+const globalUserId = '11111111-0000-0000-0000-000000000004';
+const operationalUserId = 'dddddddd-0000-0000-0000-000000000004';
+const tenantId = 'palos-de-lena';
+
+const linkedOperationalProfile = {
+  id: operationalUserId,
+  userId: globalUserId,
+  role: 'OWNER',
+  tenantId,
   sedeId: null,
   isActive: true,
   lastLoginAt: null,
@@ -16,6 +20,7 @@ const mockUser = {
 
 const repoMock = {
   findById: jest.fn(),
+  findByUserId: jest.fn(),
   updateProfile: jest.fn(),
 };
 
@@ -31,30 +36,54 @@ describe('UserService', () => {
     jest.clearAllMocks();
   });
 
-  it('returns the current user when found', async () => {
-    repoMock.findById.mockResolvedValue(mockUser);
+  describe('getOperationalProfile', () => {
+    it('returns linked OperationalUser when global user id matches userId FK', async () => {
+      repoMock.findByUserId.mockResolvedValue(linkedOperationalProfile);
 
-    const result = await service.getMe(userId);
+      const result = await service.getOperationalProfile(globalUserId, tenantId);
 
-    expect(result).toEqual(mockUser);
-    expect(repoMock.findById).toHaveBeenCalledWith(userId);
+      expect(result).toEqual(linkedOperationalProfile);
+      expect(repoMock.findByUserId).toHaveBeenCalledWith(globalUserId);
+      expect(repoMock.findById).not.toHaveBeenCalled();
+    });
+
+    it('returns null when no OperationalUser is linked (userId unset)', async () => {
+      repoMock.findByUserId.mockResolvedValue(null);
+
+      const result = await service.getOperationalProfile(globalUserId, tenantId);
+
+      expect(result).toBeNull();
+    });
+
+    it('returns null when linked profile belongs to another tenant', async () => {
+      repoMock.findByUserId.mockResolvedValue({
+        ...linkedOperationalProfile,
+        tenantId: 'other-tenant',
+      });
+
+      const result = await service.getOperationalProfile(globalUserId, tenantId);
+
+      expect(result).toBeNull();
+    });
   });
 
-  it('throws when updating a missing profile', async () => {
-    repoMock.findById.mockResolvedValue(null);
+  describe('updateProfile', () => {
+    it('throws when updating a missing profile', async () => {
+      repoMock.findById.mockResolvedValue(null);
 
-    await expect(service.updateProfile(userId, { sedeId: 's-1' })).rejects.toThrow(
-      NotFoundException,
-    );
-  });
+      await expect(service.updateProfile(globalUserId, { sedeId: 's-1' })).rejects.toThrow(
+        NotFoundException,
+      );
+    });
 
-  it('updates the profile when the user exists', async () => {
-    repoMock.findById.mockResolvedValue(mockUser);
-    repoMock.updateProfile.mockResolvedValue({ ...mockUser, sedeId: 's-1' });
+    it('updates the profile when the user exists', async () => {
+      repoMock.findById.mockResolvedValue(linkedOperationalProfile);
+      repoMock.updateProfile.mockResolvedValue({ ...linkedOperationalProfile, sedeId: 's-1' });
 
-    const result = await service.updateProfile(userId, { sedeId: 's-1' });
+      const result = await service.updateProfile(globalUserId, { sedeId: 's-1' });
 
-    expect(result).toEqual({ ...mockUser, sedeId: 's-1' });
-    expect(repoMock.updateProfile).toHaveBeenCalledWith(userId, { sedeId: 's-1' });
+      expect(result).toEqual({ ...linkedOperationalProfile, sedeId: 's-1' });
+      expect(repoMock.updateProfile).toHaveBeenCalledWith(globalUserId, { sedeId: 's-1' });
+    });
   });
 });
