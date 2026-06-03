@@ -28,9 +28,9 @@ export interface UpdateSupplierInput extends Partial<CreateSupplierInput> {
 }
 
 export interface ISupplierRepository {
-  findAll(tenantId: string, opts: FindSuppliersOptions): Promise<Supplier[]>;
-  findById(id: string, tenantId: string): Promise<Supplier | null>;
-  search(tenantId: string, query: string): Promise<Supplier[]>;
+  findAll(tenantId: string, opts: FindSuppliersOptions): Promise<SupplierWithProductCount[]>;
+  findById(id: string, tenantId: string): Promise<SupplierWithProductCount | null>;
+  search(tenantId: string, query: string): Promise<SupplierWithProductCount[]>;
   create(
     tenantId: string,
     data: CreateSupplierInput & { calificacion: number; cupoCredito: number },
@@ -41,11 +41,14 @@ export interface ISupplierRepository {
   countProducts(tenantId: string, supplierId: string): Promise<number>;
 }
 
+export type SupplierWithProductCount = Supplier & { _count: { products: number } };
+
 export interface ISupplierService {
-  findAll(tenantId: string, opts: FindSuppliersOptions): Promise<Supplier[]>;
-  findById(id: string, tenantId: string): Promise<Supplier>;
-  search(tenantId: string, query: string): Promise<Supplier[]>;
+  findAll(tenantId: string, opts: FindSuppliersOptions): Promise<SupplierWithProductCount[]>;
+  findById(id: string, tenantId: string): Promise<SupplierWithProductCount>;
+  search(tenantId: string, query: string): Promise<SupplierWithProductCount[]>;
   create(tenantId: string, data: unknown): Promise<Supplier>;
   update(id: string, tenantId: string, data: unknown): Promise<Supplier>;
   delete(id: string, tenantId: string): Promise<boolean>;
+  countProducts(tenantId: string, supplierId: string): Promise<number>;
 }

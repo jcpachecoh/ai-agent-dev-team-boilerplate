@@ -39,7 +39,7 @@ describe('SupplierResolver', () => {
           provide: PUB_SUB,
           useValue: {
             publish: jest.fn().mockResolvedValue(undefined),
-            asyncIterableIterator: jest.fn(),
+            asyncIterator: jest.fn(),
           },
         },
       ],
@@ -87,7 +87,7 @@ describe('SupplierResolver', () => {
       serviceMock as never,
       {
         publish,
-        asyncIterableIterator: jest.fn(),
+        asyncIterator: jest.fn(),
       } as never,
     );
 

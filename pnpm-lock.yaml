@@ -156,6 +156,9 @@ importers:
       graphql:
         specifier: ^16.9.0
         version: 16.14.0
+      graphql-subscriptions:
+        specifier: ^2.0.0
+        version: 2.0.0(graphql@16.14.0)
       ioredis:
         specifier: ^5.10.1
         version: 5.10.1
@@ -7011,6 +7014,11 @@ packages:
     resolution: {integrity: sha512-xfr+zFb/QYbs4l4ty0dltqiXIp07U6sl+tOKAb0t50/EnQek6CVVBLjETXi+FghElytvgaAWtIOt3EV7zLzIAQ==}
     peerDependencies:
       graphql: 14 - 16
+
+  graphql-subscriptions@2.0.0:
+    resolution: {integrity: sha512-s6k2b8mmt9gF9pEfkxsaO1lTxaySfKoEJzEfmwguBbQ//Oq23hIXCfR1hm4kdh5hnR20RdwB+s3BCb+0duHSZA==}
+    peerDependencies:
+      graphql: ^15.7.2 || ^16.0.0
 
   graphql-tag@2.12.6:
     resolution: {integrity: sha512-FdSNcu2QQcWnM2VNvSCCDCVS5PpPqpzgFT8+GXzqJuoDd0CBncxCY278u4mhRO7tMgo2JjgJA5aZ+nWSQ/Z+xg==}
@@ -17503,6 +17511,11 @@ snapshots:
     dependencies:
       '@graphql-typed-document-node/core': 3.2.0(graphql@16.14.0)
       graphql: 16.14.0
+
+  graphql-subscriptions@2.0.0(graphql@16.14.0):
+    dependencies:
+      graphql: 16.14.0
+      iterall: 1.3.0
 
   graphql-tag@2.12.6(graphql@16.14.0):
     dependencies:

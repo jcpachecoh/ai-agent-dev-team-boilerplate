@@ -274,6 +274,7 @@ function validate() {
 
   // Directories that are infrastructure/aggregator modules — skip direct validation.
   const SKIP_ROOT = new Set([
+    'test', // app-level smoke/integration specs (e.g. smoke.spec.ts), not a feature module
     'shared',
     'common',
     '__mocks__',

@@ -6,13 +6,16 @@ import type {
   CreateSupplierInput,
   FindSuppliersOptions,
   ISupplierRepository,
+  SupplierWithProductCount,
 } from '../interfaces/supplier.interfaces';
+
+const productCountInclude = { _count: { select: { products: true } } } as const;
 
 @Injectable()
 export class SupplierRepository implements ISupplierRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(tenantId: string, opts: FindSuppliersOptions): Promise<Supplier[]> {
+  async findAll(tenantId: string, opts: FindSuppliersOptions): Promise<SupplierWithProductCount[]> {
     const take = Math.min(Math.max(1, opts.limit ?? DEFAULT_PAGE_SIZE), MAX_PAGE_SIZE);
     const skip = Math.max(0, opts.offset ?? 0);
 
@@ -32,14 +35,23 @@ export class SupplierRepository implements ISupplierRepository {
         : {}),
     };
 
-    return this.prisma.supplier.findMany({ where, take, skip, orderBy: { razonSocial: 'asc' } });
+    return this.prisma.supplier.findMany({
+      where,
+      take,
+      skip,
+      orderBy: { razonSocial: 'asc' },
+      include: productCountInclude,
+    });
   }
 
-  async findById(id: string, tenantId: string): Promise<Supplier | null> {
-    return this.prisma.supplier.findFirst({ where: { id, tenantId } });
+  async findById(id: string, tenantId: string): Promise<SupplierWithProductCount | null> {
+    return this.prisma.supplier.findFirst({
+      where: { id, tenantId },
+      include: productCountInclude,
+    });
   }
 
-  async search(tenantId: string, query: string): Promise<Supplier[]> {
+  async search(tenantId: string, query: string): Promise<SupplierWithProductCount[]> {
     return this.prisma.supplier.findMany({
       where: {
         tenantId,
@@ -52,6 +64,7 @@ export class SupplierRepository implements ISupplierRepository {
       },
       take: 50,
       orderBy: { razonSocial: 'asc' },
+      include: productCountInclude,
     });
   }
 

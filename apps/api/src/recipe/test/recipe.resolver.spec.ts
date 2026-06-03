@@ -34,7 +34,7 @@ describe('RecipeResolver', () => {
           provide: 'PUB_SUB',
           useValue: {
             publish: jest.fn().mockResolvedValue(undefined),
-            asyncIterableIterator: jest.fn(),
+            asyncIterator: jest.fn(),
           },
         },
       ],

@@ -103,6 +103,6 @@ export class RecipeResolver {
 
   @Subscription(() => RecipeType)
   recipeUpdated(): AsyncIterator<unknown> {
-    return this.pubSub.asyncIterableIterator('recipeUpdated');
+    return this.pubSub.asyncIterator('recipeUpdated');
   }
 }

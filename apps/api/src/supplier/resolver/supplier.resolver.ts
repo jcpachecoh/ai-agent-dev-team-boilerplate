@@ -12,12 +12,15 @@ import {
   Resolver,
   Subscription,
   Field,
+  Parent,
+  ResolveField,
   registerEnumType,
 } from '@nestjs/graphql';
 import { PubSub } from 'graphql-subscriptions';
 import { Supplier } from '@prisma/client';
 import { PUB_SUB } from '../../pubsub/pubsub.module';
 import { SupplierService } from '../service/supplier.service';
+import type { SupplierWithProductCount } from '../interfaces/supplier.interfaces';
 
 @ObjectType('Supplier')
 export class SupplierType {
@@ -101,6 +104,17 @@ export class SupplierResolver {
     @Inject(PUB_SUB) private readonly pubSub: PubSub,
   ) {}
 
+  @ResolveField(() => Int, { name: 'productCount' })
+  async productCount(
+    @Parent() supplier: SupplierWithProductCount,
+    @Context() context: { req?: { headers?: Record<string, unknown> } },
+  ): Promise<number> {
+    if (supplier._count?.products !== undefined) {
+      return supplier._count.products;
+    }
+    return this.supplierService.countProducts(this.getTenantId(context), supplier.id);
+  }
+
   private getTenantId(context: { req?: { headers?: Record<string, unknown> } }): string {
     const tenantId = context.req?.headers?.['x-tenant-id'];
     if (typeof tenantId !== 'string' || !tenantId.trim()) {
@@ -178,11 +192,11 @@ export class SupplierResolver {
 
   @Subscription(() => SupplierType)
   supplierUpdated(): AsyncIterator<unknown> {
-    return this.pubSub.asyncIterableIterator('supplierUpdated');
+    return this.pubSub.asyncIterator('supplierUpdated');
   }
 
   @Subscription(() => SupplierType)
   supplierCreated(): AsyncIterator<unknown> {
-    return this.pubSub.asyncIterableIterator('supplierCreated');
+    return this.pubSub.asyncIterator('supplierCreated');
   }
 }

@@ -27,36 +27,7 @@ export function getGraphqlEndpoint(): string {
     );
     configured = DEFAULT_URL;
   }
-  const resolved = resolveGraphqlEndpoint(configured);
-  // #region agent log
-  let urlCtorOk = false;
-  try {
-    new URL(resolved);
-    urlCtorOk = true;
-  } catch {
-    urlCtorOk = false;
-  }
-  fetch('http://127.0.0.1:7828/ingest/355d2ecf-3818-453c-8510-c7b3fe83712b', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '28e71d' },
-    body: JSON.stringify({
-      sessionId: '28e71d',
-      location: 'graphql-client.ts:getGraphqlEndpoint',
-      message: 'GraphQL endpoint resolved',
-      data: {
-        rawType: typeof raw,
-        rawEmpty: raw === '',
-        configuredIsRelative: !/^https?:\/\//i.test(configured),
-        resolvedOrigin: resolved.split('/').slice(0, 3).join('/'),
-        urlCtorOk,
-        hypothesisId: 'H1',
-      },
-      timestamp: Date.now(),
-      runId: 'post-fix',
-    }),
-  }).catch(() => {});
-  // #endregion
-  return resolved;
+  return resolveGraphqlEndpoint(configured);
 }
 
 function createGraphqlClient(): GraphQLClient {
@@ -134,25 +105,6 @@ export async function graphqlRequest<T>(
   try {
     return await createGraphqlClient().request<T>(document, variables, headers);
   } catch (error) {
-    // #region agent log
-    fetch('http://127.0.0.1:7828/ingest/355d2ecf-3818-453c-8510-c7b3fe83712b', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '28e71d' },
-      body: JSON.stringify({
-        sessionId: '28e71d',
-        location: 'graphql-client.ts:graphqlRequest',
-        message: 'graphqlRequest failed',
-        data: {
-          errorName: error instanceof Error ? error.name : 'unknown',
-          errorMessage: error instanceof Error ? error.message.slice(0, 120) : 'unknown',
-          endpoint: getGraphqlEndpoint().split('/').slice(0, 3).join('/'),
-          hypothesisId: 'H1',
-        },
-        timestamp: Date.now(),
-        runId: 'post-fix',
-      }),
-    }).catch(() => {});
-    // #endregion
     throw parseGraphqlError(error);
   }
 }

@@ -2,24 +2,35 @@ import { ConflictException, Injectable, NotFoundException } from '@nestjs/common
 import { Supplier } from '@prisma/client';
 import { validate, CreateSupplierSchema, UpdateSupplierSchema } from '../../utils/validation';
 import { SupplierRepository } from '../repository/supplier.repository';
-import type { ISupplierService, FindSuppliersOptions } from '../interfaces/supplier.interfaces';
+import type {
+  ISupplierService,
+  FindSuppliersOptions,
+  SupplierWithProductCount,
+} from '../interfaces/supplier.interfaces';
 
 @Injectable()
 export class SupplierService implements ISupplierService {
   constructor(private readonly supplierRepository: SupplierRepository) {}
 
-  async findAll(tenantId: string, opts: FindSuppliersOptions = {}): Promise<Supplier[]> {
+  async findAll(
+    tenantId: string,
+    opts: FindSuppliersOptions = {},
+  ): Promise<SupplierWithProductCount[]> {
     return this.supplierRepository.findAll(tenantId, opts);
   }
 
-  async findById(id: string, tenantId: string): Promise<Supplier> {
+  async findById(id: string, tenantId: string): Promise<SupplierWithProductCount> {
     const supplier = await this.supplierRepository.findById(id, tenantId);
     if (!supplier) throw new NotFoundException(`Supplier with id "${id}" not found`);
     return supplier;
   }
 
-  async search(tenantId: string, query: string): Promise<Supplier[]> {
+  async search(tenantId: string, query: string): Promise<SupplierWithProductCount[]> {
     return this.supplierRepository.search(tenantId, query);
+  }
+
+  async countProducts(tenantId: string, supplierId: string): Promise<number> {
+    return this.supplierRepository.countProducts(tenantId, supplierId);
   }
 
   async create(tenantId: string, data: unknown): Promise<Supplier> {
