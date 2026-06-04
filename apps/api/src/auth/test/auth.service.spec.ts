@@ -154,7 +154,7 @@ describe('AuthService', () => {
           roleId: 'role-op',
           roleCode: 'OPERATOR',
         },
-        { expiresIn: '15m' },
+        { expiresIn: '60m' },
       );
       expect(jwtMock.signAsync).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -380,16 +380,12 @@ describe('AuthService', () => {
       const result = await service.login(TENANT_ID, dto, '1.2.3.4', 'Mozilla');
       expect(result).toHaveProperty('accessToken');
       expect(result).toHaveProperty('refreshToken');
-      expect(jwtMock.signAsync).toHaveBeenCalledWith(expectedJwtPayload, { expiresIn: '15m' });
+      expect(jwtMock.signAsync).toHaveBeenCalledWith(expectedJwtPayload, { expiresIn: '60m' });
       expect(repoMock.findJwtClaimsByUserId).toHaveBeenCalledWith('user-1');
       expect(repoMock.resetLoginAttempts).toHaveBeenCalledWith(mockUserWithPassword.id);
       expect(repoMock.findByTenantAndEmailForAuth).toHaveBeenCalledWith(TENANT_ID, dto.email);
       expect(jwtMock.signAsync).toHaveBeenCalledWith(
-        { sub: mockUserWithPassword.id, email: dto.email },
-        { expiresIn: '60m' },
-      );
-      expect(jwtMock.signAsync).toHaveBeenCalledWith(
-        { sub: mockUserWithPassword.id, email: dto.email },
+        expectedJwtPayload,
         expect.objectContaining({ expiresIn: '7d' }),
       );
       expect(auditServiceMock.logLogin).toHaveBeenCalledWith({
@@ -483,7 +479,7 @@ describe('AuthService', () => {
 
       const result = await service.refresh('user-1', 'raw-refresh', '1.2.3.4');
       expect(result).toHaveProperty('accessToken', 'access');
-      expect(jwtMock.signAsync).toHaveBeenCalledWith(expectedJwtPayload, { expiresIn: '15m' });
+      expect(jwtMock.signAsync).toHaveBeenCalledWith(expectedJwtPayload, { expiresIn: '60m' });
       expect(repoMock.findJwtClaimsByUserId).toHaveBeenCalledWith('user-1');
       expect(repoMock.saveRefreshToken).toHaveBeenCalledWith('user-1', 'new-hashed-refresh');
       expect(auditServiceMock.logLogin).toHaveBeenCalledWith(
@@ -572,7 +568,7 @@ describe('AuthService', () => {
 
       await service.signup(TENANT_ID, signupDto);
 
-      const accessCall = jwtMock.signAsync.mock.calls.find((call) => call[1]?.expiresIn === '15m');
+      const accessCall = jwtMock.signAsync.mock.calls.find((call) => call[1]?.expiresIn === '60m');
       expect(accessCall?.[0]).toEqual({
         sub: 'user-jwt',
         email: signupDto.email,

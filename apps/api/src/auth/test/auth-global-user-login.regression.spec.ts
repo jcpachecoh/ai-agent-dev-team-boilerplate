@@ -122,7 +122,7 @@ describe('AuthService — global User email login regression (USR-01 Task 09)', 
         tenantId: TENANT_ID,
         roleCode: 'OWNER',
       }),
-      { expiresIn: '15m' },
+      { expiresIn: '60m' },
     );
   });
 

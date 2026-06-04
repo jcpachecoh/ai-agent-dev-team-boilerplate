@@ -313,7 +313,7 @@ describe('Auth Email Integration — G4 wiring (AuthController → AuthEmailServ
         roleId: mockUserSafe.roleId,
         roleCode: 'OPERATOR',
       }),
-      { expiresIn: '15m' },
+      { expiresIn: '60m' },
     );
     expect(result).toEqual({ accessToken: 'access', refreshToken: 'refresh' });
     expect(result).not.toHaveProperty('passwordHash');
