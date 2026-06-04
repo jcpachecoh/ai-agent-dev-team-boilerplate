@@ -1,0 +1,264 @@
+@use '../../../styles/abstracts/variables' as *;
+
+.timeline {
+  width: min(100%, var(--display-width));
+  min-height: var(--display-min-height);
+  box-sizing: border-box;
+}
+
+.size--sm {
+  --display-width: 220px;
+  --display-min-height: 140px;
+
+  .markerColumn {
+    width: 22px;
+  }
+
+  .marker {
+    width: 22px;
+    height: 22px;
+  }
+
+  .dot {
+    width: 6px;
+    height: 6px;
+  }
+
+  .timestamp {
+    font-size: 10px;
+  }
+
+  .title {
+    font-size: $font-size-xs;
+  }
+
+  .description {
+    font-size: $font-size-xs;
+  }
+
+  .item {
+    padding-bottom: $spacing-sm;
+  }
+}
+
+.size--md {
+  --display-width: 320px;
+  --display-min-height: 180px;
+}
+
+.size--xl {
+  --display-width: 480px;
+  --display-min-height: 240px;
+
+  .markerColumn {
+    width: 32px;
+  }
+
+  .marker {
+    width: 32px;
+    height: 32px;
+  }
+
+  .dot {
+    width: 10px;
+    height: 10px;
+  }
+
+  .timestamp {
+    font-size: $font-size-sm;
+  }
+
+  .title {
+    font-size: $font-size-base;
+  }
+
+  .description {
+    font-size: $font-size-base;
+  }
+
+  .item {
+    padding-bottom: $spacing-lg;
+  }
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: $spacing-sm;
+  padding-bottom: $spacing-md;
+
+  &:last-child {
+    padding-bottom: 0;
+
+    .connector {
+      display: none;
+    }
+  }
+}
+
+.markerColumn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 28px;
+  flex-shrink: 0;
+}
+
+.marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: $border-radius-full;
+  background-color: rgba($color-gray-400, 0.15);
+  color: $color-text-secondary;
+  z-index: 1;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: $border-radius-full;
+  background-color: currentColor;
+}
+
+.connector {
+  flex: 1;
+  width: 2px;
+  min-height: 24px;
+  margin-top: $spacing-xs;
+  background-color: rgba($color-gray-400, 0.35);
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-top: 2px;
+}
+
+.timestamp {
+  font-size: $font-size-xs;
+  color: $color-text-secondary;
+}
+
+.title {
+  margin: 0;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+}
+
+.description {
+  margin: 0;
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+  line-height: 1.4;
+}
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-xs;
+  margin-top: $spacing-sm;
+  padding: $spacing-xs $spacing-sm;
+  font-family: $font-family-base;
+  font-size: $font-size-xs;
+  font-weight: $font-weight-medium;
+  color: #8a610e;
+  background: transparent;
+  border: none;
+  border-radius: $border-radius-sm;
+  cursor: pointer;
+  transition: background-color $transition-fast;
+
+  &:hover {
+    background-color: rgba(#d4a017, 0.1);
+  }
+
+  &:focus-visible {
+    outline: 2px solid #d4a017;
+    outline-offset: 2px;
+  }
+}
+
+// Item colors
+.default {
+  background-color: rgba($color-gray-400, 0.15);
+  color: $color-text-secondary;
+}
+
+.success {
+  background-color: rgba($color-success, 0.12);
+  color: $color-success;
+}
+
+.warning {
+  background-color: rgba($color-warning, 0.12);
+  color: $color-warning;
+}
+
+.danger {
+  background-color: rgba($color-danger, 0.12);
+  color: $color-danger;
+}
+
+.info {
+  background-color: rgba($color-info, 0.12);
+  color: $color-info;
+}
+
+.gold {
+  background-color: rgba(#d4a017, 0.15);
+  color: #8a610e;
+}
+
+// Themes
+.theme--dark {
+  .title {
+    color: $color-text-inverse;
+  }
+
+  .description {
+    color: rgba($color-white, 0.65);
+  }
+
+  .timestamp {
+    color: rgba($color-white, 0.5);
+  }
+
+  .connector {
+    background-color: rgba($color-white, 0.18);
+  }
+
+  .toggle {
+    color: #d4a017;
+  }
+}
+
+.theme--light {
+  .title {
+    color: $color-text-primary;
+  }
+
+  .description {
+    color: $color-text-secondary;
+  }
+
+  .timestamp {
+    color: $color-text-secondary;
+  }
+
+  .connector {
+    background-color: rgba($color-black, 0.12);
+  }
+}

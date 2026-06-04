@@ -1,0 +1,7 @@
+{
+  "installCommand": "cd ../.. && pnpm install --frozen-lockfile",
+  "buildCommand": "cd ../.. && pnpm --filter @restopsiq/testlab run build",
+  "outputDirectory": "dist",
+  "ignoreCommand": "cd ../.. && npx turbo-ignore @restopsiq/testlab",
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+}

@@ -1,0 +1,41 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/field-ops-theme' as fo;
+
+.keypad {
+  display: inline-flex;
+  flex-direction: column;
+  gap: var(--keypad-gap);
+  width: fit-content;
+}
+
+.row {
+  display: flex;
+  gap: var(--keypad-gap);
+  justify-content: center;
+}
+
+.size--sm {
+  --keypad-gap: 6px;
+}
+
+.size--md {
+  --keypad-gap: 8px;
+}
+
+.size--xl {
+  --keypad-gap: 10px;
+}
+
+.confirmLabel {
+  font-size: inherit;
+  font-weight: $font-weight-bold;
+  letter-spacing: 0.04em;
+}
+
+.theme--dark {
+  @include fo.field-ops-theme-dark;
+}
+
+.theme--light {
+  @include fo.field-ops-theme-light;
+}

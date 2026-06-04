@@ -1,0 +1,114 @@
+@use '../../../styles/abstracts/variables' as *;
+
+.wrapper {
+  --control-width: 320px;
+
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: min(100%, var(--control-width));
+  height: 40px;
+  padding: 0 $spacing-sm;
+  background-color: transparent;
+  border-radius: $border-radius-md;
+  border: $border-width solid rgba($color-black, 0.16);
+  transition: all $transition-fast;
+}
+
+.size--sm {
+  --control-width: 220px;
+  height: 32px;
+}
+.size--md {
+  --control-width: 320px;
+  height: 40px;
+}
+.size--xl {
+  --control-width: 480px;
+  height: 52px;
+  padding: 0 $spacing-md;
+}
+
+.size--sm .input {
+  font-size: $font-size-xs;
+}
+.size--xl .input {
+  font-size: $font-size-base;
+}
+
+.icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: $color-text-secondary;
+  margin-right: $spacing-xs;
+}
+
+.input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  font-family: $font-family-base;
+  font-size: $font-size-sm;
+  color: inherit;
+  outline: none;
+
+  &::placeholder {
+    color: $color-text-secondary;
+    opacity: 0.6;
+  }
+}
+
+.clearButton {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: $spacing-xs;
+  border-radius: $border-radius-sm;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: $color-text-secondary;
+  transition: color $transition-fast;
+
+  &:hover {
+    color: $color-text-primary;
+  }
+}
+
+.spinner {
+  animation: rotate 1s linear infinite;
+  width: 18px;
+  height: 18px;
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.theme--dark {
+  background-color: rgba($color-white, 0.05);
+  border-color: rgba($color-white, 0.1);
+  color: $color-text-inverse;
+
+  &:focus-within {
+    border-color: #d4a017;
+    background-color: rgba($color-white, 0.08);
+  }
+}
+
+.theme--light {
+  background-color: $color-white;
+  border-color: rgba($color-black, 0.16);
+  color: $color-text-primary;
+
+  &:focus-within {
+    border-color: #d4a017;
+    background-color: $color-white;
+  }
+}

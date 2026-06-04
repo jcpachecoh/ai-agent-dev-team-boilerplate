@@ -1,0 +1,142 @@
+@use '../../styles/abstracts/variables' as *;
+@use '../../styles/abstracts/mixins' as *;
+
+.switch {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+
+  &:has(.input:focus-visible) .track {
+    @include focus-ring;
+  }
+}
+
+.input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.track {
+  display: inline-flex;
+  align-items: center;
+  position: relative;
+  background: $color-gray-200;
+  border-radius: $border-radius-full;
+  transition:
+    background-color $transition-fast,
+    box-shadow $transition-fast;
+}
+
+.thumb {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: $color-gray-900;
+  border-radius: $border-radius-full;
+  transform: translateX(0);
+  transition:
+    transform $transition-fast,
+    background-color $transition-fast;
+}
+
+/* sizes */
+.size--sm .track {
+  width: 42px;
+  height: 22px;
+  padding: 3px;
+}
+.size--sm .thumb {
+  width: 14px;
+  height: 14px;
+}
+
+.size--md .track {
+  width: 64px;
+  height: 28px;
+  padding: $spacing-xs;
+}
+.size--md .thumb {
+  width: $font-size-xl;
+  height: $font-size-xl;
+}
+
+.size--lg .track {
+  width: 96px;
+  height: 40px;
+  padding: 6px;
+}
+.size--lg .thumb {
+  width: 28px;
+  height: 28px;
+}
+
+/* checked state moves thumb to right */
+.checked.size--sm .thumb {
+  transform: translateX(20px);
+}
+.checked.size--md .thumb {
+  transform: translateX(34px);
+}
+.checked.size--lg .thumb {
+  transform: translateX(50px);
+}
+
+/* variants */
+.variant--default .track {
+  background: #f2c94c;
+}
+.variant--default .thumb {
+  background: #0b0b0b;
+}
+
+.variant--success .track {
+  background: rgba($color-success, 0.2);
+}
+.variant--success .thumb {
+  background: #059669;
+}
+
+.variant--danger .track {
+  background: rgba($color-danger, 0.16);
+}
+.variant--danger .thumb {
+  background: #dc2626;
+}
+
+.variant--info .track {
+  background: rgba(47, 130, 255, 0.16);
+}
+.variant--info .thumb {
+  background: #2f82ff;
+}
+
+.disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Theme: estado apagado (mejor contraste según superficie) */
+.theme--light:not(.checked) .variant--default .track {
+  background: $color-gray-200;
+}
+
+.theme--light:not(.checked) .variant--default .thumb {
+  background: $color-gray-600;
+}
+
+.theme--dark:not(.checked) .variant--default .track {
+  background: rgba($color-white, 0.14);
+}
+
+.theme--dark:not(.checked) .variant--default .thumb {
+  background: rgba($color-white, 0.55);
+}
+
+.theme--dark.checked .variant--default .track {
+  background: #e4b43a;
+}
+
+.theme--dark.checked .variant--default .thumb {
+  background: #0b0b0b;
+}

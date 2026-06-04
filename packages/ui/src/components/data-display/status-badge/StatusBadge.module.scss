@@ -1,0 +1,160 @@
+@use '../../../styles/abstracts/variables' as *;
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-xs;
+  font-family: $font-family-base;
+  width: fit-content;
+  min-width: var(--display-min-width);
+  min-height: var(--display-min-height);
+  box-sizing: border-box;
+}
+
+.size--sm {
+  --display-min-width: 72px;
+  --display-min-height: 24px;
+  gap: 4px;
+
+  .dot {
+    width: 6px;
+    height: 6px;
+  }
+
+  .label {
+    font-size: 10px;
+  }
+
+  &.pill {
+    padding: 2px $spacing-xs;
+  }
+}
+
+.size--md {
+  --display-min-width: 96px;
+  --display-min-height: 28px;
+}
+
+.size--xl {
+  --display-min-width: 128px;
+  --display-min-height: 36px;
+  gap: $spacing-sm;
+
+  .dot {
+    width: 10px;
+    height: 10px;
+  }
+
+  .label {
+    font-size: $font-size-sm;
+  }
+
+  &.pill {
+    padding: $spacing-xs $spacing-md;
+  }
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: $border-radius-full;
+  position: relative;
+}
+
+.label {
+  font-size: $font-size-xs;
+  font-weight: $font-weight-semibold;
+  text-transform: uppercase;
+}
+
+// Variants
+.pill {
+  padding: 2px $spacing-sm;
+  border-radius: $border-radius-full;
+  background-color: rgba($color-gray-400, 0.1);
+}
+
+// Colors
+.green {
+  color: $color-success;
+  .dot {
+    background-color: $color-success;
+  }
+  &.pill {
+    background-color: rgba($color-success, 0.1);
+  }
+}
+.yellow {
+  color: $color-warning;
+  .dot {
+    background-color: $color-warning;
+  }
+  &.pill {
+    background-color: rgba($color-warning, 0.1);
+  }
+}
+.red {
+  color: $color-danger;
+  .dot {
+    background-color: $color-danger;
+  }
+  &.pill {
+    background-color: rgba($color-danger, 0.1);
+  }
+}
+.blue {
+  color: $color-info;
+  .dot {
+    background-color: $color-info;
+  }
+  &.pill {
+    background-color: rgba($color-info, 0.1);
+  }
+}
+.gray {
+  color: $color-text-secondary;
+  .dot {
+    background-color: $color-text-secondary;
+  }
+  &.pill {
+    background-color: rgba($color-text-secondary, 0.1);
+  }
+}
+
+// Animated
+.animated {
+  &::before {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: $border-radius-full;
+    background-color: inherit;
+    animation: pulse 1.5s infinite;
+  }
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+// Themes
+.theme--dark {
+  .label {
+    color: $color-text-inverse;
+  }
+}
+
+.theme--light {
+  .label {
+    color: $color-text-primary;
+  }
+}

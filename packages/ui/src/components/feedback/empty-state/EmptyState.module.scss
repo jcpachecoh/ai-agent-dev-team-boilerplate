@@ -1,0 +1,82 @@
+@use '../../../styles/abstracts/variables' as *;
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-3xl $spacing-xl;
+  text-align: center;
+  font-family: $font-family-base;
+  background-color: transparent;
+  border: 1px dashed rgba($color-gray-400, 0.4);
+  border-radius: $border-radius-lg;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.iconContainer {
+  margin-bottom: $spacing-lg;
+  color: $color-gray-400;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.8;
+}
+
+.title {
+  font-size: $font-size-xl;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+  margin-bottom: $spacing-sm;
+}
+
+.description {
+  font-size: $font-size-base;
+  color: $color-text-secondary;
+  margin-bottom: $spacing-xl;
+  max-width: 400px;
+  line-height: $line-height-base;
+}
+
+.action {
+  display: flex;
+  gap: $spacing-md;
+}
+
+// Variants
+.error {
+  .iconContainer {
+    color: $color-danger;
+  }
+}
+
+.create {
+  .iconContainer {
+    color: $color-primary;
+  }
+}
+
+// Dark Mode
+:global(.dark) {
+  .emptyState {
+    border-color: rgba($color-white, 0.1);
+  }
+  .title {
+    color: $color-text-inverse;
+  }
+  .description {
+    color: rgba($color-white, 0.6);
+  }
+  .iconContainer {
+    color: rgba($color-white, 0.3);
+  }
+
+  &.error .iconContainer {
+    color: $color-danger;
+  }
+  &.create .iconContainer {
+    color: $color-primary;
+  }
+}

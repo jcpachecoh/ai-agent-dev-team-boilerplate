@@ -1,0 +1,93 @@
+@use '../../styles/abstracts/variables' as *;
+
+.container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.title {
+  color: $color-gray-900;
+  font-size: $font-size-xl;
+  margin: 0;
+}
+
+.subtitle {
+  color: rgba($color-black, 0.6);
+  margin: 0 0 $spacing-sm 0;
+}
+
+.card {
+  padding: $spacing-lg;
+  border-radius: $spacing-md;
+  width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.cardDark {
+  background: #0b0b11;
+  box-shadow: 0 8px 30px rgba($color-black, 0.6);
+  color: #ededf5;
+}
+
+.cardLight {
+  background: $color-white;
+  box-shadow: 0 6px 18px rgba($color-black, 0.06);
+  color: $color-gray-900;
+}
+
+.actions {
+  display: flex;
+  justify-content: center;
+}
+
+/* Primary button sizing for login card */
+.primaryBtn {
+  display: inline-block;
+  width: 260px;
+  border-radius: 10px;
+}
+
+/* Social button: full width but with outline look */
+.socials {
+  display: flex;
+  gap: $spacing-md;
+}
+
+.socialBtn {
+  width: 100%;
+  max-width: 360px;
+}
+
+.or {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  color: rgba($color-white, 0.5);
+}
+
+.or::before,
+.or::after {
+  content: '';
+  flex: 1 1 0;
+  height: $border-width;
+  background: rgba($color-white, 0.06);
+}
+
+.or span {
+  font-size: $font-size-xs;
+  text-align: center;
+}
+
+.socials {
+  display: flex;
+  gap: $spacing-md;
+}
+
+.socials :global(.button) {
+  width: 100%;
+}

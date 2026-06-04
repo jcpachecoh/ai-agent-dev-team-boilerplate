@@ -1,0 +1,103 @@
+@use '../../styles/abstracts/variables' as *;
+@use '../../styles/abstracts/mixins' as *;
+
+.wrapper {
+  display: flex;
+  gap: $spacing-sm;
+  align-items: center;
+  cursor: pointer;
+
+  &:has(.input:focus-visible) .box {
+    @include focus-ring;
+  }
+}
+
+.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* visually hide native input but keep it accessible */
+.input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.box {
+  width: 14px;
+  height: 14px;
+  min-width: 14px;
+  border-radius: 3px;
+  border: $border-width solid $color-black;
+  display: inline-block;
+  box-sizing: border-box;
+  position: relative;
+  background: transparent;
+}
+
+/* checkmark */
+.input:checked + .box::after {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 0px;
+  width: 6px;
+  height: 10px;
+  border: solid $color-white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.input:checked + .box {
+  background: $color-success;
+  border-color: $color-success;
+}
+
+.label {
+  font-weight: $font-weight-medium;
+  font-size: $font-size-xs;
+  line-height: $font-size-lg;
+  white-space: nowrap;
+}
+
+.dark .box {
+  border-color: rgba($color-white, 0.38);
+  background: rgba($color-white, 0.04);
+}
+
+.dark .input:checked + .box {
+  background: $color-success;
+  border-color: $color-success;
+}
+
+.dark .label {
+  color: #8888a0;
+}
+
+.light .box {
+  border-color: $color-black;
+  background: $color-white;
+}
+
+.light .input:checked + .box {
+  background: $color-success;
+  border-color: $color-success;
+}
+
+.light .label {
+  color: #52526a;
+}
+
+.sm .box {
+  width: 12px;
+  height: 12px;
+  min-width: 12px;
+}
+.sm .label {
+  font-size: 11px;
+}
+.md .label {
+  font-size: $font-size-xs;
+}

@@ -1,0 +1,82 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/field-ops-theme' as fo;
+
+.panel {
+  width: min(100%, var(--display-width));
+  min-height: var(--display-min-height);
+  display: flex;
+  flex-direction: column;
+  gap: var(--panel-gap);
+  font-family: $font-family-base;
+}
+
+.label {
+  font-size: var(--label-size);
+  font-weight: $font-weight-semibold;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--fo-text-secondary);
+}
+
+.textarea {
+  width: 100%;
+  min-height: var(--textarea-min-height);
+  padding: var(--textarea-padding);
+  border-radius: $border-radius-lg;
+  border: $border-width solid var(--fo-border);
+  background-color: var(--fo-surface-elevated);
+  color: var(--fo-text-primary);
+  font-family: inherit;
+  font-size: var(--textarea-font-size);
+  line-height: $line-height-relaxed;
+  resize: vertical;
+  box-sizing: border-box;
+
+  &::placeholder {
+    color: var(--fo-text-muted);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--fo-focus-ring);
+    outline-offset: 2px;
+    border-color: var(--fo-border-strong);
+  }
+}
+
+.size--sm {
+  --display-width: 220px;
+  --display-min-height: 120px;
+  --panel-gap: #{$spacing-xs};
+  --label-size: 10px;
+  --textarea-min-height: 72px;
+  --textarea-padding: #{$spacing-sm};
+  --textarea-font-size: #{$font-size-xs};
+}
+
+.size--md {
+  --display-width: 320px;
+  --display-min-height: 160px;
+  --panel-gap: #{$spacing-sm};
+  --label-size: #{$font-size-xs};
+  --textarea-min-height: 120px;
+  --textarea-padding: #{$spacing-md};
+  --textarea-font-size: #{$font-size-sm};
+}
+
+.size--xl {
+  --display-width: 100%;
+  --display-min-height: 200px;
+  --panel-gap: #{$spacing-md};
+  --label-size: #{$font-size-sm};
+  --textarea-min-height: 160px;
+  --textarea-padding: #{$spacing-lg};
+  --textarea-font-size: #{$font-size-base};
+}
+
+.theme--dark {
+  @include fo.field-ops-theme-dark;
+}
+
+.theme--light {
+  @include fo.field-ops-theme-light;
+}
