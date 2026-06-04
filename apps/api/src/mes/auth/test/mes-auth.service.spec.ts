@@ -404,6 +404,22 @@ describe('MesAuthService', () => {
       expect(repoMock.createUser).not.toHaveBeenCalled();
     });
 
+    it('throws ConflictException on P2002 when create races duplicate cedulaHash', async () => {
+      const { PrismaClientKnownRequestError } = jest.requireActual(
+        '@prisma/client/runtime/library',
+      ) as typeof import('@prisma/client/runtime/library');
+      repoMock.findById.mockResolvedValue(owner);
+      repoMock.findByCedulaHash.mockResolvedValue(null);
+      const p2002 = new PrismaClientKnownRequestError('Unique constraint failed', {
+        code: 'P2002',
+        clientVersion: 'test',
+        meta: { target: ['tenantId', 'cedulaHash'] },
+      });
+      repoMock.createUser.mockRejectedValue(p2002);
+
+      await expect(service.createUser(owner.id, createDto)).rejects.toThrow(ConflictException);
+    });
+
     it('throws ForbiddenException when requester is inactive', async () => {
       repoMock.findById.mockResolvedValue({ ...owner, isActive: false });
 

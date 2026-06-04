@@ -6,9 +6,9 @@ export class ResetPasswordDto {
   @IsString()
   token!: string;
 
-  @ApiProperty({ minLength: 8 })
+  @ApiProperty({ minLength: 9, description: 'Must be more than 8 characters' })
   @IsString()
-  @MinLength(8)
+  @MinLength(9, { message: 'newPassword must be longer than 8 characters' })
   @MaxLength(72)
   newPassword!: string;
 }

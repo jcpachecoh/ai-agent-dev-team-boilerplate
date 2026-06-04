@@ -55,6 +55,8 @@ describe('MesAuthController', () => {
       const result = await controller.login(dto, 'tenant-abc', req);
 
       expect(result).toEqual(tokens);
+      expect(result).not.toHaveProperty('pinHash');
+      expect(result).not.toHaveProperty('cedulaHash');
       expect(serviceMock.login).toHaveBeenCalledWith(
         dto,
         '203.0.113.5',
@@ -111,6 +113,8 @@ describe('MesAuthController', () => {
       const result = await controller.me(req);
 
       expect(result).toEqual(meResponse);
+      expect(result).not.toHaveProperty('pinHash');
+      expect(result).not.toHaveProperty('cedulaHash');
       expect(serviceMock.me).toHaveBeenCalledWith('op-user-1');
     });
   });
