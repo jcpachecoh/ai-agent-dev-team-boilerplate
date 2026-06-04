@@ -1,5 +1,7 @@
 import {
   Sidebar,
+  SIDEBAR_BRAND_MARK_DARK,
+  SIDEBAR_BRAND_MARK_LIGHT,
   WEB_LOGIN_BRAND_LOGO_DARK,
   WEB_LOGIN_BRAND_LOGO_LIGHT,
   type SidebarNavItem,
@@ -8,11 +10,9 @@ import { useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import {
-  getUserInitials,
   isNavChildPathActive,
   isNavItemActive,
   isNavPathActive,
-  MOCK_USER,
   navigationItems,
   type NavItem,
 } from '@/constants/navigation';
@@ -70,16 +70,12 @@ export default function AppSidebar({
     <Sidebar
       theme={theme}
       brandLogoSrc={theme === 'dark' ? WEB_LOGIN_BRAND_LOGO_DARK : WEB_LOGIN_BRAND_LOGO_LIGHT}
+      brandLogoCollapsedSrc={theme === 'dark' ? SIDEBAR_BRAND_MARK_DARK : SIDEBAR_BRAND_MARK_LIGHT}
       items={items}
       activePath={pathname}
       collapsed={collapsed}
       open={open}
       overlay={overlay}
-      user={{
-        name: MOCK_USER.name,
-        role: MOCK_USER.role,
-        initials: getUserInitials(MOCK_USER.name),
-      }}
       onToggleCollapse={onToggleCollapse}
       onNavigate={(href) => {
         navigate(href);

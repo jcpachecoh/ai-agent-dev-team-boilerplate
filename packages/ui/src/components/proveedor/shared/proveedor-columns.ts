@@ -7,8 +7,8 @@ export interface ProveedorColumnDef {
 
 export const defaultSupplierColumns: ProveedorColumnDef[] = [
   { key: 'id', label: 'ID', width: '100px' },
-  { key: 'name', label: 'PROVEEDOR', width: 'minmax(160px, 1.4fr)' },
-  { key: 'category', label: 'CATEGORÍA', width: 'minmax(120px, 0.9fr)' },
+  { key: 'name', label: 'PROVEEDOR', width: 'minmax(0, 1.4fr)' },
+  { key: 'category', label: 'CATEGORÍA', width: 'minmax(0, 0.9fr)' },
   { key: 'status', label: 'ESTADO', width: '100px', align: 'center' },
   { key: 'payment', label: 'CONDICIÓN PAGO', width: 'minmax(110px, 0.9fr)' },
   { key: 'leadTime', label: 'LEAD TIME', width: '90px' },

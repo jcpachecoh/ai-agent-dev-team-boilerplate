@@ -17,6 +17,7 @@ export function Sidebar({
   brandSubtitle = 'RESTOPSIQ',
   brandTitle = 'Plant MES',
   brandLogoSrc,
+  brandLogoCollapsedSrc,
   brandLogoAlt = 'Palos de Leña Restaurantes',
   activePath = '/',
   user,
@@ -56,24 +57,53 @@ export function Sidebar({
 
   const profileTheme = theme;
   const userInitials = user ? (user.initials ?? getUserInitials(user.name)) : '';
+  const collapsedLogoSrc = brandLogoCollapsedSrc ?? brandLogoSrc;
 
   const handleNavigate = (href: string): void => {
     onNavigate?.(href);
   };
 
+  const collapseButton = onToggleCollapse ? (
+    <button
+      type="button"
+      className={styles.collapseButton}
+      onClick={onToggleCollapse}
+      aria-label={collapsed ? 'Expandir menú' : 'Colapsar menú'}
+    >
+      <ChevronLeft
+        size={16}
+        className={collapsed ? styles.collapseIconCollapsed : undefined}
+        aria-hidden
+      />
+    </button>
+  ) : null;
+
   return (
     <aside className={sidebarClassName} aria-label={ariaLabel}>
       <div className={styles.header}>
-        {brandLogoSrc ? (
-          <h1 className={styles.brandHeading}>
-            <img className={styles.brandLogo} src={brandLogoSrc} alt={brandLogoAlt} />
-          </h1>
-        ) : (
-          <>
-            <p className={styles.brandSubtitle}>{brandSubtitle}</p>
-            <h1 className={styles.brandTitle}>{brandTitle}</h1>
-          </>
-        )}
+        <div className={styles.headerRow}>
+          {collapsed ? (
+            collapsedLogoSrc ? (
+              <h1 className={styles.brandHeadingCollapsed}>
+                <img
+                  className={styles.brandLogoCollapsed}
+                  src={collapsedLogoSrc}
+                  alt={brandLogoAlt}
+                />
+              </h1>
+            ) : null
+          ) : brandLogoSrc ? (
+            <h1 className={styles.brandHeading}>
+              <img className={styles.brandLogo} src={brandLogoSrc} alt={brandLogoAlt} />
+            </h1>
+          ) : (
+            <div className={styles.brandText}>
+              <p className={styles.brandSubtitle}>{brandSubtitle}</p>
+              <h1 className={styles.brandTitle}>{brandTitle}</h1>
+            </div>
+          )}
+          {collapseButton}
+        </div>
       </div>
 
       <nav className={styles.nav}>
@@ -99,56 +129,26 @@ export function Sidebar({
 
       {user ? (
         <div className={styles.footer}>
-          <div className={styles.footerRow}>
-            {collapsed ? (
-              <InitialBadge
-                label={userInitials}
-                theme={profileTheme}
-                size="lg"
-                className={styles.profileCompact}
-              />
-            ) : (
-              <ProfileHeader
-                name={user.name}
-                subtitle={user.role}
-                badgeLabel={userInitials}
-                theme={profileTheme}
-                titleSize="md"
-                badgeSize="lg"
-                className={styles.profileHeader}
-              />
-            )}
-
-            <button
-              type="button"
-              className={styles.collapseButton}
-              onClick={onToggleCollapse}
-              aria-label={collapsed ? 'Expandir menú' : 'Colapsar menú'}
-            >
-              <ChevronLeft
-                size={16}
-                className={collapsed ? styles.collapseIconCollapsed : undefined}
-                aria-hidden
-              />
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div className={styles.footer}>
-          <button
-            type="button"
-            className={styles.collapseButton}
-            onClick={onToggleCollapse}
-            aria-label={collapsed ? 'Expandir menú' : 'Colapsar menú'}
-          >
-            <ChevronLeft
-              size={16}
-              className={collapsed ? styles.collapseIconCollapsed : undefined}
-              aria-hidden
+          {collapsed ? (
+            <InitialBadge
+              label={userInitials}
+              theme={profileTheme}
+              size="lg"
+              className={styles.profileCompact}
             />
-          </button>
+          ) : (
+            <ProfileHeader
+              name={user.name}
+              subtitle={user.role}
+              badgeLabel={userInitials}
+              theme={profileTheme}
+              titleSize="md"
+              badgeSize="lg"
+              className={styles.profileHeader}
+            />
+          )}
         </div>
-      )}
+      ) : null}
     </aside>
   );
 }

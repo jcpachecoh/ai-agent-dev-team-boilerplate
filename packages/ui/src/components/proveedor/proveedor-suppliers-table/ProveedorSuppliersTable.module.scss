@@ -7,6 +7,7 @@
   display: flex;
   flex-direction: column;
   width: min(100%, var(--control-width));
+  min-width: 0;
   border: 1px solid var(--proveedor-border);
   border-radius: var(--control-radius);
   overflow: hidden;
@@ -16,6 +17,7 @@
 .body {
   display: flex;
   flex-direction: column;
+  overflow-x: auto;
 }
 
 .empty {

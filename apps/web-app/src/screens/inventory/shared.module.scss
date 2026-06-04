@@ -43,6 +43,50 @@ $inv-surface-hover: var(--color-bg-surface-hover);
   background: transparent;
 }
 
+.embedToolbarInline {
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+
+  .toolbarSearch {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: 100%;
+    --control-width: 100%;
+  }
+
+  .toolbarSelect {
+    flex: 0 0 auto;
+    margin-left: auto;
+    width: 200px;
+    min-width: 160px;
+    max-width: 220px;
+  }
+
+  @media (max-width: 640px) {
+    flex-wrap: wrap;
+
+    .toolbarSearch {
+      flex: 1 1 100%;
+    }
+
+    .toolbarSelect {
+      margin-left: 0;
+      flex: 1 1 100%;
+      width: 100%;
+      max-width: none;
+    }
+  }
+}
+
+.toolbarSelect {
+  flex: 0 1 220px;
+  min-width: 160px;
+  width: 100%;
+  max-width: 260px;
+}
+
 .statusFilters {
   display: flex;
   flex-wrap: wrap;

@@ -8,12 +8,14 @@
   grid-template-columns: var(--proveedor-columns);
   align-items: center;
   width: min(100%, var(--row-width));
+  min-width: 0;
   min-height: var(--row-height);
   padding: 0 var(--row-padding-x);
   border-bottom: $border-width solid var(--proveedor-border);
   background: var(--proveedor-surface);
   color: var(--proveedor-text);
   box-sizing: border-box;
+  overflow: hidden;
 }
 
 .size--sm {
@@ -70,6 +72,7 @@
 }
 
 .name {
+  max-width: 100%;
   font-size: $font-size-sm;
   font-weight: $font-weight-semibold;
 }

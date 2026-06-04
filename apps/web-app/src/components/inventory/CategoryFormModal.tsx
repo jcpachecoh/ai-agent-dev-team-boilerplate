@@ -2,10 +2,12 @@ import { InventarioFormField, InventarioModal } from '@restopsiq/ui';
 import { useEffect, useState } from 'react';
 
 import type { SupplyCategoryApi, SupplyCategoryFormValues } from '@/features/inventario/types';
+import type { UiTheme } from '@/constants/theme';
 
 import styles from './ProductFormModal.module.scss';
 
 export interface CategoryFormModalProps {
+  theme: UiTheme;
   open: boolean;
   mode: 'create' | 'edit';
   category?: SupplyCategoryApi;
@@ -29,6 +31,7 @@ function categoryToFormValues(category: SupplyCategoryApi): SupplyCategoryFormVa
 }
 
 export function CategoryFormModal({
+  theme,
   open,
   mode,
   category,
@@ -65,18 +68,18 @@ export function CategoryFormModal({
       onClose={onClose}
       onSave={handleSave}
       saveLoading={saving}
-      theme="dark"
+      theme={theme}
       size="xl"
     >
       <div className={styles.formGrid}>
-        <InventarioFormField label="Nombre *" theme="dark" size="md">
+        <InventarioFormField label="Nombre *" theme={theme} size="md">
           <input
             className={styles.input}
             value={values.nombre}
             onChange={(e) => update({ nombre: e.target.value })}
           />
         </InventarioFormField>
-        <InventarioFormField label="Descripción" theme="dark" size="md">
+        <InventarioFormField label="Descripción" theme={theme} size="md">
           <input
             className={styles.input}
             value={values.descripcion}

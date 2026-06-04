@@ -1,7 +1,7 @@
 import { LogOut, User } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
-import { MOCK_USER } from '@/constants/navigation';
+import { useMe } from '@/features/auth/hooks/useMe';
 
 import styles from './UserMenu.module.scss';
 
@@ -12,6 +12,11 @@ interface UserMenuProps {
 export default function UserMenu({ onLogout }: UserMenuProps): React.JSX.Element {
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const { data: user, isPending } = useMe();
+
+  const displayName = user?.displayName ?? (isPending ? 'Cargando…' : 'Usuario');
+  const displayRole = user?.displayRole ?? '';
+  const displayEmail = user?.email ?? '';
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent): void => {
@@ -36,14 +41,15 @@ export default function UserMenu({ onLogout }: UserMenuProps): React.JSX.Element
         <span className={styles.avatar} aria-hidden>
           <User size={16} />
         </span>
-        <span className={styles.name}>{MOCK_USER.name}</span>
+        <span className={styles.name}>{displayName}</span>
       </button>
 
       {open ? (
         <div className={styles.dropdown} role="menu">
           <div className={styles.userInfo}>
-            <span className={styles.userName}>{MOCK_USER.name}</span>
-            <span className={styles.userRole}>{MOCK_USER.role}</span>
+            <span className={styles.userName}>{displayName}</span>
+            {displayRole ? <span className={styles.userRole}>{displayRole}</span> : null}
+            {displayEmail ? <span className={styles.userEmail}>{displayEmail}</span> : null}
           </div>
           <button
             type="button"

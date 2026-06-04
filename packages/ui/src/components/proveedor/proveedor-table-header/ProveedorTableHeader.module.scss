@@ -8,6 +8,7 @@
   grid-template-columns: var(--proveedor-columns);
   align-items: center;
   width: min(100%, var(--header-width));
+  min-width: 0;
   min-height: var(--header-height);
   padding: 0 var(--header-padding-x);
   border-bottom: $border-width solid var(--proveedor-border);

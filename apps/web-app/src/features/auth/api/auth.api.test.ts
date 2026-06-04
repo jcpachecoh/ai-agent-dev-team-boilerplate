@@ -4,6 +4,7 @@ import { GraphqlRequestError } from '@/lib/graphql-client';
 
 import {
   AuthApiError,
+  fetchCurrentUser,
   loginWithEmailPassword,
   logoutGlobalUser,
   signupWithEmailPassword,
@@ -100,6 +101,43 @@ describe('signupWithEmailPassword', () => {
     ).rejects.toMatchObject({
       message: 'Correo o cédula ya registrados.',
       status: 409,
+    });
+  });
+});
+
+describe('fetchCurrentUser', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('calls GraphQL me query', async () => {
+    const profile = {
+      id: 'user-1',
+      tenantId: 'palos-de-lena',
+      email: 'mes-owner@palos-de-lena.dev',
+      cedula: '1234567890',
+      documentType: 'CC' as const,
+      emailVerified: true,
+      isActive: true,
+      roleCode: 'OPERATOR',
+      createdAt: '2024-01-01T00:00:00.000Z',
+    };
+    graphqlRequestMock.mockResolvedValue({ me: profile });
+
+    const result = await fetchCurrentUser();
+
+    expect(graphqlRequestMock).toHaveBeenCalledWith(expect.stringContaining('query Me'));
+    expect(result).toEqual(profile);
+  });
+
+  it('throws AuthApiError on UNAUTHENTICATED', async () => {
+    graphqlRequestMock.mockRejectedValue(
+      new GraphqlRequestError('Unauthorized', 'UNAUTHENTICATED'),
+    );
+
+    await expect(fetchCurrentUser()).rejects.toMatchObject({
+      message: 'Sesión expirada. Inicia sesión de nuevo.',
+      status: 401,
     });
   });
 });

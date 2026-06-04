@@ -384,6 +384,14 @@ describe('AuthService', () => {
       expect(repoMock.findJwtClaimsByUserId).toHaveBeenCalledWith('user-1');
       expect(repoMock.resetLoginAttempts).toHaveBeenCalledWith(mockUserWithPassword.id);
       expect(repoMock.findByTenantAndEmailForAuth).toHaveBeenCalledWith(TENANT_ID, dto.email);
+      expect(jwtMock.signAsync).toHaveBeenCalledWith(
+        { sub: mockUserWithPassword.id, email: dto.email },
+        { expiresIn: '60m' },
+      );
+      expect(jwtMock.signAsync).toHaveBeenCalledWith(
+        { sub: mockUserWithPassword.id, email: dto.email },
+        expect.objectContaining({ expiresIn: '7d' }),
+      );
       expect(auditServiceMock.logLogin).toHaveBeenCalledWith({
         tenantId: TENANT_ID,
         userId: mockUserWithPassword.id,
@@ -497,6 +505,27 @@ describe('AuthService', () => {
           authMethod: AuthMethod.REFRESH_TOKEN,
         }),
       );
+    });
+
+    it('throws ForbiddenException when user is missing or has no refresh token', async () => {
+      repoMock.findByIdForRefresh.mockResolvedValue(null);
+
+      await expect(service.refresh('user-1', 'raw-refresh')).rejects.toThrow(ForbiddenException);
+      expect(auditServiceMock.logLogin).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: LoginAuditStatus.FAILED,
+          failureReason: 'Invalid user or missing refresh token',
+        }),
+      );
+    });
+
+    it('throws ForbiddenException when user is inactive', async () => {
+      repoMock.findByIdForRefresh.mockResolvedValue({
+        ...mockUserWithRefresh,
+        isActive: false,
+      });
+
+      await expect(service.refresh('user-1', 'raw-refresh')).rejects.toThrow(ForbiddenException);
     });
   });
 

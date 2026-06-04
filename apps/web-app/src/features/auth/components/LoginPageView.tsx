@@ -45,8 +45,6 @@ export function LoginPageView({
           onPasswordChange(demoPassword);
         })
       }
-      footerHref="/signup"
-      footerLabel="¿No tienes cuenta? Regístrate"
     />
   );
 }
