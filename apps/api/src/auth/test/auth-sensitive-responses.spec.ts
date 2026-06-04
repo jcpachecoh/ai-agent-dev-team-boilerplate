@@ -32,6 +32,14 @@ function expectNoStoredSecrets(value: Record<string, unknown>): void {
 
 const TENANT_ID = 'palos-de-lena';
 
+const expectedJwtPayload = {
+  sub: 'user-1',
+  email: 'test@example.com',
+  tenantId: TENANT_ID,
+  roleId: 'role-1',
+  roleCode: 'OPERATOR',
+};
+
 const mockUserSafe = {
   id: 'user-1',
   tenantId: TENANT_ID,
@@ -60,6 +68,7 @@ const repoMock = {
   findByIdForRefresh: jest.fn(),
   findByIdForAuth: jest.fn(),
   findByIdWithRoleCode: jest.fn(),
+  findJwtClaimsByUserId: jest.fn(),
   findRoleByTenantAndCode: jest.fn(),
   createUser: jest.fn(),
   incrementLoginAttempts: jest.fn(),
@@ -99,6 +108,7 @@ describe('AuthService sensitive response shapes (AUTH-03)', () => {
     jwtMock.signAsync.mockResolvedValue('jwt-token');
     repoMock.saveRefreshToken.mockResolvedValue(undefined);
     repoMock.resetLoginAttempts.mockResolvedValue(undefined);
+    repoMock.findJwtClaimsByUserId.mockResolvedValue(expectedJwtPayload);
     authEmailServiceMock.sendVerifyEmail.mockResolvedValue({ otpCode: '123456' });
   });
 
