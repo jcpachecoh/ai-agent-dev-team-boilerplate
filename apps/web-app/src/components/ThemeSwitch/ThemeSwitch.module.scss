@@ -1,0 +1,12 @@
+@use '@/styles/tokens' as t;
+
+.root {
+  display: inline-flex;
+  align-items: center;
+  gap: t.$space-2;
+}
+
+.icon {
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}

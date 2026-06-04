@@ -1,10 +1,11 @@
 import { ProveedorActionButton, ProveedorDetailHeader, ProveedorDetailTabBar } from '@restopsiq/ui';
+import { useUiTheme } from '@/hooks/useUiTheme';
 import { Mail, Pencil } from 'lucide-react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
 import { isGraphqlConfigured } from '@/lib/graphql-client';
 
-import { PROVEEDOR_TABLE_SIZE, PROVEEDOR_UI_THEME } from '../constants';
+import { PROVEEDOR_TABLE_SIZE } from '../constants';
 import { useSupplier } from '../hooks/useSupplier';
 import { formatNit } from '../mappers/display';
 import styles from '../proveedores.module.scss';
@@ -23,6 +24,7 @@ function parseTab(value: string | null): ProveedorDetailTabId {
 }
 
 export default function ProveedorDetailView(): React.JSX.Element {
+  const theme = useUiTheme();
   const navigate = useNavigate();
   const { supplierId } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -80,7 +82,7 @@ export default function ProveedorDetailView(): React.JSX.Element {
         variant="secondary"
         label="CONTACTAR"
         icon={<Mail size={16} aria-hidden />}
-        theme={PROVEEDOR_UI_THEME}
+        theme={theme}
         size="md"
         onClick={handleContact}
         disabled={!supplier.email}
@@ -89,7 +91,7 @@ export default function ProveedorDetailView(): React.JSX.Element {
         variant="primary"
         label="EDITAR"
         icon={<Pencil size={16} aria-hidden />}
-        theme={PROVEEDOR_UI_THEME}
+        theme={theme}
         size="md"
         onClick={() => navigate(`/proveedores/${supplierId}/editar`)}
       />
@@ -106,7 +108,7 @@ export default function ProveedorDetailView(): React.JSX.Element {
           status={supplier.status}
           onBack={() => navigate('/proveedores')}
           actions={headerActions}
-          theme={PROVEEDOR_UI_THEME}
+          theme={theme}
           size="xl"
         />
       </section>
@@ -115,7 +117,7 @@ export default function ProveedorDetailView(): React.JSX.Element {
         <ProveedorDetailTabBar
           activeTabId={activeTab}
           onTabChange={handleTabChange}
-          theme={PROVEEDOR_UI_THEME}
+          theme={theme}
           size={PROVEEDOR_TABLE_SIZE}
         />
       </section>

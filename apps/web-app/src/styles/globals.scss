@@ -1,4 +1,5 @@
 @use './tokens' as t;
+@use './themes';
 
 *,
 *::before,
@@ -24,8 +25,8 @@ body {
   font-size: t.$font-size-base;
   font-weight: t.$font-weight-normal;
   line-height: t.$line-height-base;
-  background-color: t.$color-bg-primary;
-  color: t.$color-text-primary;
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
   min-height: 100dvh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;

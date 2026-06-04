@@ -20,6 +20,7 @@ import {
 import { type CSSProperties, useEffect, useMemo, useState } from 'react';
 
 import styles from './RecipesManagementScreen.module.scss';
+import { useUiTheme } from '@/hooks/useUiTheme';
 
 type RecipesView = 'list' | 'process' | 'history' | 'editor';
 type RecipeCategory = 'Entrada' | 'Plato Fuerte' | 'Postre' | 'Bebida';
@@ -298,6 +299,7 @@ interface RecipesManagementScreenProps {
 export function RecipesManagementScreen({
   view = 'list',
 }: RecipesManagementScreenProps): React.JSX.Element {
+  const theme = useUiTheme();
   const [currentView, setCurrentView] = useState<RecipesView>(view);
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
@@ -394,35 +396,35 @@ export function RecipesManagementScreen({
           </header>
           <section className={[styles.metricsRow, styles.metricsRowFive].join(' ')}>
             <RecetaMetricCard
-              theme="dark"
+              theme={theme}
               variant="type-1"
               title="Total recetas"
               value={processStats.total}
               size="xl"
             />
             <RecetaMetricCard
-              theme="dark"
+              theme={theme}
               variant="type-2"
               title="Validadas"
               value={processStats.validated}
               size="xl"
             />
             <RecetaMetricCard
-              theme="dark"
+              theme={theme}
               variant="type-2"
               title="En progreso"
               value={processStats.inProgress}
               size="xl"
             />
             <RecetaMetricCard
-              theme="dark"
+              theme={theme}
               variant="type-3"
               title="Con fallas"
               value={processStats.failed}
               size="xl"
             />
             <RecetaMetricCard
-              theme="dark"
+              theme={theme}
               variant="type-1"
               title="Salud prom."
               value={`${processStats.health}%`}
@@ -431,14 +433,14 @@ export function RecipesManagementScreen({
           </section>
           <section className={styles.toolbarRow}>
             <RecetaSearch
-              theme="dark"
+              theme={theme}
               size="md"
               value={search}
               onChange={setSearch}
               className={styles.searchGrow}
             />
             <RecetaFilterSelect
-              theme="dark"
+              theme={theme}
               size="md"
               className={styles.filterSelect}
               value={statusFilter}
@@ -448,7 +450,7 @@ export function RecipesManagementScreen({
           </section>
           <section className={[styles.tableWrap, styles.tableWrapProcess].join(' ')}>
             <RecetaTableHeader
-              theme="dark"
+              theme={theme}
               size="md"
               className={[styles.tableHead, styles.processTableHead].join(' ')}
               columns={processTableColumns}
@@ -474,7 +476,7 @@ export function RecipesManagementScreen({
                   <span className={styles.processCellStatus}>
                     <RecetaResultButton
                       variant={row.result}
-                      theme="dark"
+                      theme={theme}
                       size="sm"
                       label={row.status}
                     />
@@ -484,7 +486,7 @@ export function RecipesManagementScreen({
                   </span>
                   <span className={styles.processProgressCell}>
                     <RecetaProgressIndicator
-                      theme="dark"
+                      theme={theme}
                       size="sm"
                       value={row.health}
                       max={100}
@@ -498,8 +500,8 @@ export function RecipesManagementScreen({
                     />
                   </span>
                   <span className={styles.processActionsCell}>
-                    <RecetaUtilityButton theme="dark" size="sm" variant="view" />
-                    <RecetaUtilityButton theme="dark" size="sm" variant="pdf" />
+                    <RecetaUtilityButton theme={theme} size="sm" variant="view" />
+                    <RecetaUtilityButton theme={theme} size="sm" variant="pdf" />
                   </span>
                 </div>
               ))}
@@ -518,28 +520,28 @@ export function RecipesManagementScreen({
           </header>
           <section className={[styles.metricsRow, styles.metricsRowFour].join(' ')}>
             <RecetaMetricCard
-              theme="dark"
+              theme={theme}
               variant="type-1"
               title="Total ejecuciones"
               value={historyStats.total}
               size="xl"
             />
             <RecetaMetricCard
-              theme="dark"
+              theme={theme}
               variant="type-2"
               title="Exitosas"
               value={historyStats.success}
               size="xl"
             />
             <RecetaMetricCard
-              theme="dark"
+              theme={theme}
               variant="type-2"
               title="Con advertencias"
               value={historyStats.warning}
               size="xl"
             />
             <RecetaMetricCard
-              theme="dark"
+              theme={theme}
               variant="type-3"
               title="Fallidas"
               value={historyStats.failed}
@@ -548,7 +550,7 @@ export function RecipesManagementScreen({
           </section>
           <section className={styles.toolbarRow}>
             <RecetaSearch
-              theme="dark"
+              theme={theme}
               size="md"
               value={search}
               onChange={setSearch}
@@ -556,7 +558,7 @@ export function RecipesManagementScreen({
               placeholder="Buscar por receta u operador..."
             />
             <RecetaFilterSelect
-              theme="dark"
+              theme={theme}
               size="md"
               className={styles.filterSelect}
               value={statusFilter}
@@ -565,7 +567,7 @@ export function RecipesManagementScreen({
             />
           </section>
           <section className={styles.historyWrap}>
-            <RecetaHistoryAccordion theme="dark" size="xl" items={historyRows} />
+            <RecetaHistoryAccordion theme={theme} size="xl" items={historyRows} />
           </section>
         </>
       );
@@ -578,7 +580,7 @@ export function RecipesManagementScreen({
             <div className={styles.editorLeft}>
               <RecetaFormButton
                 variant="cancel"
-                theme="dark"
+                theme={theme}
                 label="Volver"
                 onClick={() => setCurrentView('list')}
               />
@@ -588,14 +590,14 @@ export function RecipesManagementScreen({
               </div>
             </div>
             <div className={styles.editorActions}>
-              <RecetaFormButton variant="discard" theme="dark" label="Descartar" />
-              <RecetaFormButton variant="save" theme="dark" label="Guardar Receta" />
+              <RecetaFormButton variant="discard" theme={theme} label="Descartar" />
+              <RecetaFormButton variant="save" theme={theme} label="Guardar Receta" />
             </div>
           </header>
           <section className={styles.editorLayout}>
             <div className={styles.editorMain}>
               <RecetaInfoPanel
-                theme="dark"
+                theme={theme}
                 nameValue={name}
                 categoryValue={category}
                 yieldValue={yieldPortions}
@@ -610,7 +612,7 @@ export function RecipesManagementScreen({
                 <div className={styles.panelHeaderRow}>
                   <h3>Fases del Proceso ({phases.length})</h3>
                   <RecetaPhaseAddButton
-                    theme="dark"
+                    theme={theme}
                     label="Agregar Fase"
                     size="xl"
                     onClick={() => setPhaseModalOpen(true)}
@@ -620,7 +622,7 @@ export function RecipesManagementScreen({
                   {phases.map((phase, index) => (
                     <RecetaStepCard
                       key={phase.id}
-                      theme="dark"
+                      theme={theme}
                       selected
                       stepNumber={index + 1}
                       title={phase.title}
@@ -638,21 +640,21 @@ export function RecipesManagementScreen({
 
             <aside className={styles.editorSidebar}>
               <RecetaMetricCard
-                theme="dark"
+                theme={theme}
                 variant="type-2"
                 title="Tiempo total"
                 value={`${totalMinutes} min`}
                 size="xl"
               />
               <RecetaMetricCard
-                theme="dark"
+                theme={theme}
                 variant="type-1"
                 title="Fases definidas"
                 value={phases.length}
                 size="xl"
               />
               <RecetaTimelinePanel
-                theme="dark"
+                theme={theme}
                 title="Linea de Tiempo"
                 items={phases.map((phase) => ({
                   label: phase.title,
@@ -673,21 +675,21 @@ export function RecipesManagementScreen({
         </header>
         <section className={[styles.metricsRow, styles.metricsRowThree].join(' ')}>
           <RecetaMetricCard
-            theme="dark"
+            theme={theme}
             variant="type-1"
             title="Total recetas"
             value={totals.total}
             size="xl"
           />
           <RecetaMetricCard
-            theme="dark"
+            theme={theme}
             variant="type-2"
             title="Activas"
             value={totals.active}
             size="xl"
           />
           <RecetaMetricCard
-            theme="dark"
+            theme={theme}
             variant="type-3"
             title="Tiempo prom."
             value={`${totals.avg} min`}
@@ -696,14 +698,14 @@ export function RecipesManagementScreen({
         </section>
         <section className={[styles.toolbarRow, styles.toolbarRowList].join(' ')}>
           <RecetaSearch
-            theme="dark"
+            theme={theme}
             size="md"
             value={search}
             onChange={setSearch}
             className={[styles.searchGrow, styles.searchGrowList].join(' ')}
           />
           <RecetaFilterSelect
-            theme="dark"
+            theme={theme}
             size="md"
             className={[styles.filterSelect, styles.filterSelectList].join(' ')}
             value={categoryFilter}
@@ -711,7 +713,7 @@ export function RecipesManagementScreen({
             onChange={setCategoryFilter}
           />
           <RecetaFilterSelect
-            theme="dark"
+            theme={theme}
             size="md"
             className={[styles.filterSelect, styles.filterSelectList].join(' ')}
             value={statusFilter}
@@ -719,7 +721,7 @@ export function RecipesManagementScreen({
             onChange={(value) => setStatusFilter(value as 'all' | RecetaStatus)}
           />
           <RecetaActionButton
-            theme="dark"
+            theme={theme}
             size="md"
             label="Nueva Receta"
             className={[styles.toolbarAction, styles.toolbarActionList].join(' ')}
@@ -728,7 +730,7 @@ export function RecipesManagementScreen({
         </section>
         <section className={[styles.tableWrap, styles.tableWrapList].join(' ')}>
           <RecetaTableHeader
-            theme="dark"
+            theme={theme}
             size="md"
             className={[styles.tableHead, styles.listTableHead].join(' ')}
             columns={recipeListTableColumns}
@@ -749,7 +751,7 @@ export function RecipesManagementScreen({
                 }}
               >
                 <RecetaTableRow
-                  theme="dark"
+                  theme={theme}
                   size="xl"
                   density="compact"
                   className={styles.tableRow}
@@ -777,7 +779,7 @@ export function RecipesManagementScreen({
       <RecetaPhaseModal
         open={phaseModalOpen}
         onClose={() => setPhaseModalOpen(false)}
-        theme="dark"
+        theme={theme}
         size="md"
         phaseName={phaseName}
         onPhaseNameChange={setPhaseName}

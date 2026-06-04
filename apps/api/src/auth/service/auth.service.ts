@@ -3,6 +3,7 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -28,6 +29,8 @@ const DEFAULT_ROLE_CODE = 'OPERATOR';
 
 @Injectable()
 export class AuthService implements IAuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly authRepository: AuthRepository,
     private readonly authEmailRepository: AuthEmailRepository,
@@ -85,62 +88,90 @@ export class AuthService implements IAuthService {
     userAgent?: string,
   ): Promise<AuthTokens> {
     const resolvedTenantId = this.requireTenantId(tenantId);
+    const maskedIdentifier = this.maskIdentifier(dto.email);
 
-    const user = await this.authRepository.findByTenantAndEmailForAuth(resolvedTenantId, dto.email);
+    try {
+      const user = await this.authRepository.findByTenantAndEmailForAuth(
+        resolvedTenantId,
+        dto.email,
+      );
 
-    if (!user || !user.isActive || user.deletedAt) {
-      await this.auditService.logLogin({
-        tenantId: resolvedTenantId,
-        identifier: dto.email,
-        authMethod: AuthMethod.PASSWORD,
-        status: LoginAuditStatus.FAILED,
-        failureReason: 'User not found or inactive',
-        ipAddress,
-        userAgent,
-      });
-      throw new UnauthorizedException('Invalid credentials');
-    }
+      if (!user || !user.isActive || user.deletedAt) {
+        this.logger.warn(
+          `Login denied: user not found or inactive (tenant=${resolvedTenantId}, identifier=${maskedIdentifier}, ip=${ipAddress ?? 'n/a'})`,
+        );
+        await this.auditService.logLogin({
+          tenantId: resolvedTenantId,
+          identifier: dto.email,
+          authMethod: AuthMethod.PASSWORD,
+          status: LoginAuditStatus.FAILED,
+          failureReason: 'User not found or inactive',
+          ipAddress,
+          userAgent,
+        });
+        throw new UnauthorizedException('Invalid credentials');
+      }
 
-    if (user.lockedUntil && user.lockedUntil > new Date()) {
+      if (user.lockedUntil && user.lockedUntil > new Date()) {
+        this.logger.warn(
+          `Login denied: account locked (tenant=${resolvedTenantId}, userId=${user.id}, identifier=${maskedIdentifier}, lockedUntil=${user.lockedUntil.toISOString()}, ip=${ipAddress ?? 'n/a'})`,
+        );
+        await this.auditService.logLogin({
+          tenantId: resolvedTenantId,
+          userId: user.id,
+          identifier: dto.email,
+          authMethod: AuthMethod.PASSWORD,
+          status: LoginAuditStatus.LOCKED,
+          failureReason: 'Account locked',
+          ipAddress,
+          userAgent,
+        });
+        throw new UnauthorizedException('Invalid credentials');
+      }
+
+      const passwordMatch = await bcrypt.compare(dto.password, user.passwordHash);
+      if (!passwordMatch) {
+        this.logger.warn(
+          `Login denied: password mismatch (tenant=${resolvedTenantId}, userId=${user.id}, identifier=${maskedIdentifier}, ip=${ipAddress ?? 'n/a'})`,
+        );
+        await this.auditService.logLogin({
+          tenantId: resolvedTenantId,
+          userId: user.id,
+          identifier: dto.email,
+          authMethod: AuthMethod.PASSWORD,
+          status: LoginAuditStatus.FAILED,
+          failureReason: 'Invalid password',
+          ipAddress,
+          userAgent,
+        });
+        throw new UnauthorizedException('Invalid credentials');
+      }
+
       await this.auditService.logLogin({
         tenantId: resolvedTenantId,
         userId: user.id,
         identifier: dto.email,
         authMethod: AuthMethod.PASSWORD,
-        status: LoginAuditStatus.LOCKED,
-        failureReason: 'Account locked',
+        status: LoginAuditStatus.SUCCESS,
         ipAddress,
         userAgent,
       });
-      throw new UnauthorizedException('Invalid credentials');
+
+      this.logger.log(
+        `Login success (tenant=${resolvedTenantId}, userId=${user.id}, identifier=${maskedIdentifier}, ip=${ipAddress ?? 'n/a'})`,
+      );
+      return this.issueTokens(await this.resolveJwtPayload(user.id));
+    } catch (error) {
+      if (error instanceof UnauthorizedException || error instanceof BadRequestException) {
+        throw error;
+      }
+
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(
+        `Login failed with unexpected error (tenant=${resolvedTenantId}, identifier=${maskedIdentifier}, ip=${ipAddress ?? 'n/a'}): ${message}`,
+      );
+      throw error;
     }
-
-    const passwordMatch = await bcrypt.compare(dto.password, user.passwordHash);
-    if (!passwordMatch) {
-      await this.auditService.logLogin({
-        tenantId: resolvedTenantId,
-        userId: user.id,
-        identifier: dto.email,
-        authMethod: AuthMethod.PASSWORD,
-        status: LoginAuditStatus.FAILED,
-        failureReason: 'Invalid password',
-        ipAddress,
-        userAgent,
-      });
-      throw new UnauthorizedException('Invalid credentials');
-    }
-
-    await this.auditService.logLogin({
-      tenantId: resolvedTenantId,
-      userId: user.id,
-      identifier: dto.email,
-      authMethod: AuthMethod.PASSWORD,
-      status: LoginAuditStatus.SUCCESS,
-      ipAddress,
-      userAgent,
-    });
-
-    return this.issueTokens(await this.resolveJwtPayload(user.id));
   }
 
   async refresh(
@@ -261,6 +292,17 @@ export class AuthService implements IAuthService {
       throw new BadRequestException('x-tenant-id header is required');
     }
     return trimmed;
+  }
+
+  private maskIdentifier(identifier: string): string {
+    const value = identifier.trim();
+    const [local, domain] = value.split('@');
+    if (!local || !domain) {
+      return 'redacted';
+    }
+
+    const localMasked = local.length <= 2 ? `${local[0]}*` : `${local.slice(0, 2)}***`;
+    return `${localMasked}@${domain}`;
   }
 
   private async resolveJwtPayload(userId: string): Promise<JwtPayload> {

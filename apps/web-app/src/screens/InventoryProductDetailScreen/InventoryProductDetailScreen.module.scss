@@ -10,13 +10,14 @@
   font-weight: 600;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: #9ca3af;
+  color: var(--color-text-muted);
 }
 
 .infoGrid dd {
   margin: 4px 0 0;
   font-size: 16px;
   font-weight: 600;
+  color: var(--color-text-primary);
 }
 
 .siteTable {
@@ -46,7 +47,7 @@
   gap: 8px;
   align-items: center;
   padding: 12px 16px;
-  border-bottom: 1px solid #2e2e2e;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .siteHeader {
@@ -54,15 +55,15 @@
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #888888;
-  background: #202020;
+  color: var(--color-text-secondary);
+  background: var(--color-bg-surface-raised);
 }
 
 .siteRow {
-  background: #1c1c1c;
+  background: var(--color-bg-surface);
 
   &:hover {
-    background: #262626;
+    background: var(--color-bg-surface-hover);
   }
 }
 
@@ -74,15 +75,23 @@
 
 .input {
   width: 100%;
-  min-height: 38px;
-  padding: 8px 12px;
-  border: 0;
-  background: transparent;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-bg-surface);
+  color: var(--color-text-primary);
   font-size: 14px;
 }
 
-@media (max-width: 640px) {
-  .infoGrid {
-    grid-template-columns: 1fr;
-  }
+.textarea {
+  width: 100%;
+  min-height: 88px;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-bg-surface);
+  color: var(--color-text-primary);
+  font-size: 14px;
+  resize: vertical;
 }

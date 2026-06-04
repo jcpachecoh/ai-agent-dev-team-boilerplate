@@ -9,6 +9,7 @@ import { Activity, AlertOctagon, CheckCircle2, ChefHat, Clock3 } from 'lucide-re
 import { useEffect, useState } from 'react';
 
 import styles from './OperationsHubScreen.module.scss';
+import { useUiTheme } from '@/hooks/useUiTheme';
 
 interface OperationsHubScreenProps {
   operatorName?: string;
@@ -21,6 +22,7 @@ export function OperationsHubScreen({
   onLogout,
   onOpenRecipes,
 }: OperationsHubScreenProps): React.JSX.Element {
+  const theme = useUiTheme();
   const [clock, setClock] = useState(() =>
     new Date().toLocaleTimeString('es-CO', {
       hour: '2-digit',
@@ -54,16 +56,16 @@ export function OperationsHubScreen({
   return (
     <section className={styles.screen}>
       <OperationsHubHeader
-        theme="dark"
+        theme={theme}
         size="md"
         time={clock}
         dateLabel={dateLabel}
         brandSubtitle="PALOS DE LEÑA · BOGOTÁ"
       />
 
-      <OperationsStatsBar theme="dark" size="md">
+      <OperationsStatsBar theme={theme} size="md">
         <OperationsStatCard
-          theme="dark"
+          theme={theme}
           size="md"
           label="Estaciones activas"
           value="5/6"
@@ -72,7 +74,7 @@ export function OperationsHubScreen({
           valueColor="success"
         />
         <OperationsStatCard
-          theme="dark"
+          theme={theme}
           size="md"
           label="Alarmas activas"
           value="4"
@@ -81,7 +83,7 @@ export function OperationsHubScreen({
           valueColor="danger"
         />
         <OperationsStatCard
-          theme="dark"
+          theme={theme}
           size="md"
           label="Ordenes en curso"
           value="6"
@@ -90,7 +92,7 @@ export function OperationsHubScreen({
           valueColor="warning"
         />
         <OperationsStatCard
-          theme="dark"
+          theme={theme}
           size="md"
           label="Completadas hoy"
           value="12"
@@ -109,7 +111,7 @@ export function OperationsHubScreen({
           <div className={styles.operator}>
             <span>{operatorName}</span>
             {onLogout ? (
-              <LogoutButton variant="icon" size="sm" theme="dark" onClick={onLogout} />
+              <LogoutButton variant="icon" size="sm" theme={theme} onClick={onLogout} />
             ) : null}
           </div>
         </div>
@@ -122,7 +124,7 @@ export function OperationsHubScreen({
             tags={['MES', 'Quality']}
             icon={<ChefHat size={24} aria-hidden />}
             accent="purple"
-            theme="dark"
+            theme={theme}
             size="md"
             onAction={onOpenRecipes}
           />

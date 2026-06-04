@@ -12,9 +12,10 @@ import {
 } from '@restopsiq/ui';
 import { useEffect, useMemo, useState } from 'react';
 
+import { useUiTheme } from '@/hooks/useUiTheme';
 import { getErrorMessage } from '@/lib/graphql-client';
 
-import { PROVEEDOR_TABLE_SIZE, PROVEEDOR_UI_THEME, STOCK_UNIT_OPTIONS } from '../constants';
+import { PROVEEDOR_TABLE_SIZE, STOCK_UNIT_OPTIONS } from '../constants';
 import { useSupplyItems } from '../hooks/useSupplyItems';
 import {
   useCreateSupplierProduct,
@@ -66,6 +67,7 @@ export default function EditableSupplierProductsTable({
   linkedSupplyItemIds,
   isLoading,
 }: EditableSupplierProductsTableProps): React.JSX.Element {
+  const theme = useUiTheme();
   const [createOpen, setCreateOpen] = useState(false);
   const [createDraft, setCreateDraft] = useState<ProductDraft>(EMPTY_DRAFT);
   const [editingRow, setEditingRow] = useState<SupplierCatalogRow | null>(null);
@@ -112,7 +114,7 @@ export default function EditableSupplierProductsTable({
           moq: formatMoq(row.factorConversion, row.unidadCompra),
           status: row.catalogStatus,
           priceTrend: trend,
-          theme: PROVEEDOR_UI_THEME,
+          theme: theme,
           size: PROVEEDOR_TABLE_SIZE,
           rowKey: row.supplierProductId,
           onEdit: () => {
@@ -196,7 +198,7 @@ export default function EditableSupplierProductsTable({
       <div className={styles.catalogHeader}>
         <ProveedorActionButton
           variant="new-product"
-          theme={PROVEEDOR_UI_THEME}
+          theme={theme}
           size="md"
           onClick={() => {
             setCreateOpen(true);
@@ -209,7 +211,7 @@ export default function EditableSupplierProductsTable({
 
       <ProveedorCatalogTable
         rows={tableRows}
-        theme={PROVEEDOR_UI_THEME}
+        theme={theme}
         size={PROVEEDOR_TABLE_SIZE}
         emptyState={
           isLoading ? (
@@ -217,7 +219,7 @@ export default function EditableSupplierProductsTable({
           ) : rows.length === 0 ? (
             <EmptyState
               variant="create"
-              theme="dark"
+              theme={theme}
               title="Sin productos"
               description="Agrega el primer insumo al catálogo con el botón «Nuevo producto»."
             />
@@ -229,7 +231,7 @@ export default function EditableSupplierProductsTable({
         open={createOpen}
         title="Nuevo producto"
         subtitle="Agregar insumo al catálogo del proveedor"
-        theme={PROVEEDOR_UI_THEME}
+        theme={theme}
         size="md"
         onClose={closeCreateModal}
         onCancel={closeCreateModal}
@@ -335,7 +337,7 @@ export default function EditableSupplierProductsTable({
         open={editingRow !== null && editDraft !== null}
         title="Editar producto"
         subtitle={editingRow?.productName ?? 'Configurar precio y unidad'}
-        theme={PROVEEDOR_UI_THEME}
+        theme={theme}
         size="md"
         onClose={closeEditModal}
         onCancel={closeEditModal}

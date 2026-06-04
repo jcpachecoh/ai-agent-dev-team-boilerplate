@@ -7,7 +7,6 @@ import type {
   SupplierViewModel,
 } from './types';
 
-export const PROVEEDOR_UI_THEME = 'dark' as const;
 export const PROVEEDOR_TABLE_SIZE = 'xl' as const;
 
 export const STATUS_FILTER_OPTIONS: RecetaFilterOption[] = [
