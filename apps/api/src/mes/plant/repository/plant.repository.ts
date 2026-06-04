@@ -13,6 +13,7 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import type {
   CreateOrderWithExecutionsTxInput,
   CreatePhaseInputData,
+  CreatePhaseOnRecipeData,
   CreateRecipeWithPhasesTxInput,
   CreateWorkStationData,
   IPlantRepository,
@@ -23,6 +24,7 @@ import type {
   ReorderPhaseItem,
   UpdateExecutionData,
   UpdateOrderData,
+  UpdatePhaseInput,
   UpdateRecipeInput,
   UpdateWorkStationData,
 } from '../interfaces/plant.interfaces';
@@ -92,9 +94,12 @@ export class PlantRepository implements IPlantRepository {
 
   // ── Recipes ────────────────────────────────────────────────────────────────
 
-  findAllRecipes(tenantId: string): Promise<ProductionRecipe[]> {
+  findAllRecipes(tenantId: string) {
     return this.prisma.productionRecipe.findMany({
       where: { tenantId },
+      include: {
+        category: { select: { id: true, nombre: true } },
+      },
       orderBy: [{ isActive: 'desc' }, { updatedAt: 'desc' }],
     });
   }
@@ -115,6 +120,7 @@ export class PlantRepository implements IPlantRepository {
     return this.prisma.productionRecipe.findFirst({
       where: { id, tenantId },
       include: {
+        category: { select: { id: true, nombre: true } },
         phases: {
           orderBy: { order: 'asc' },
           include: { inputs: true },
@@ -136,12 +142,14 @@ export class PlantRepository implements IPlantRepository {
         data: {
           tenantId: input.tenantId,
           name: input.recipe.name,
+          categoryId: input.recipe.categoryId ?? null,
           finishedProductId: input.recipe.finishedProductId,
           batchSize: input.recipe.batchSize,
           batchUnit: input.recipe.batchUnit,
           estimatedMinutes: input.recipe.estimatedMinutes,
           version: input.recipe.version,
           notes: input.recipe.notes ?? null,
+          isActive: input.recipe.isActive ?? true,
         },
       });
 
@@ -198,6 +206,7 @@ export class PlantRepository implements IPlantRepository {
     sourceRecipeId: string,
     newRecipeData: {
       name: string;
+      categoryId?: string | null;
       finishedProductId: string;
       batchSize: Decimal;
       batchUnit: StockUnit;
@@ -225,6 +234,7 @@ export class PlantRepository implements IPlantRepository {
         data: {
           tenantId,
           name: newRecipeData.name,
+          categoryId: newRecipeData.categoryId ?? source.categoryId,
           finishedProductId: newRecipeData.finishedProductId,
           batchSize: newRecipeData.batchSize,
           batchUnit: newRecipeData.batchUnit,
@@ -295,6 +305,94 @@ export class PlantRepository implements IPlantRepository {
           data: { order: item.newOrder },
         });
       }
+    });
+  }
+
+  async createPhaseWithInputsTx(
+    tenantId: string,
+    recipeId: string,
+    phase: CreatePhaseOnRecipeData,
+  ): Promise<ProductionPhase> {
+    return this.prisma.$transaction(async (tx) => {
+      const createdPhase = await tx.productionPhase.create({
+        data: {
+          tenantId,
+          recipeId,
+          workStationId: phase.workStationId,
+          order: phase.order,
+          name: phase.name,
+          description: phase.description ?? null,
+          standardMinutes: phase.standardMinutes,
+          minOperators: phase.minOperators,
+          maxOperators: phase.maxOperators,
+          requiresQA: phase.requiresQA,
+        },
+      });
+
+      for (const phaseInput of phase.inputs) {
+        await tx.phaseInput.create({
+          data: {
+            tenantId,
+            phaseId: createdPhase.id,
+            supplyItemId: phaseInput.supplyItemId,
+            quantityPerBatch: phaseInput.quantityPerBatch,
+            unit: phaseInput.unit,
+            isOptional: phaseInput.isOptional,
+          },
+        });
+      }
+
+      return createdPhase;
+    });
+  }
+
+  updatePhase(tenantId: string, id: string, data: UpdatePhaseInput): Promise<ProductionPhase> {
+    const { inputs: _inputs, ...phaseData } = data;
+    return this.prisma.productionPhase.update({
+      where: { id },
+      data: phaseData,
+    });
+  }
+
+  async replacePhaseInputsTx(
+    tenantId: string,
+    phaseId: string,
+    inputs: CreatePhaseOnRecipeData['inputs'],
+  ): Promise<void> {
+    await this.prisma.$transaction(async (tx) => {
+      await tx.phaseInput.deleteMany({
+        where: { phaseId, tenantId },
+      });
+
+      for (const phaseInput of inputs) {
+        await tx.phaseInput.create({
+          data: {
+            tenantId,
+            phaseId,
+            supplyItemId: phaseInput.supplyItemId,
+            quantityPerBatch: phaseInput.quantityPerBatch,
+            unit: phaseInput.unit,
+            isOptional: phaseInput.isOptional,
+          },
+        });
+      }
+    });
+  }
+
+  countPhaseExecutions(tenantId: string, phaseId: string): Promise<number> {
+    return this.prisma.phaseExecution.count({
+      where: { phaseId, tenantId },
+    });
+  }
+
+  async deletePhase(tenantId: string, id: string): Promise<void> {
+    await this.prisma.$transaction(async (tx) => {
+      await tx.phaseInput.deleteMany({
+        where: { phaseId: id, tenantId },
+      });
+      await tx.productionPhase.delete({
+        where: { id },
+      });
     });
   }
 

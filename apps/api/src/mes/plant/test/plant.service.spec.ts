@@ -8,6 +8,7 @@ import {
   StockUnit,
 } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
+import { RecipeCategoriesService } from '../../../recipe-categories/service/recipe-categories.service';
 import { SupplyItemsService } from '../../../supplyitems/service/supplyitems.service';
 import { PlantRepository } from '../repository/plant.repository';
 import { PlantEventsService } from '../service/plant-events.service';
@@ -82,6 +83,11 @@ const repoMock = {
   findPhaseInputById: jest.fn(),
   createPhaseInput: jest.fn(),
   deletePhaseInput: jest.fn(),
+  createPhaseWithInputsTx: jest.fn(),
+  updatePhase: jest.fn(),
+  replacePhaseInputsTx: jest.fn(),
+  countPhaseExecutions: jest.fn(),
+  deletePhase: jest.fn(),
   createOrderWithExecutionsTx: jest.fn(),
   findOrders: jest.fn(),
   findOrderDetailById: jest.fn(),
@@ -98,6 +104,10 @@ const plantEventsServiceMock = {
   emitPhaseStatusChanged: jest.fn(),
 };
 
+const recipeCategoriesServiceMock = {
+  findOne: jest.fn(),
+};
+
 describe('PlantService', () => {
   let service: PlantService;
 
@@ -106,6 +116,7 @@ describe('PlantService', () => {
       providers: [
         PlantService,
         { provide: PlantRepository, useValue: repoMock },
+        { provide: RecipeCategoriesService, useValue: recipeCategoriesServiceMock },
         { provide: SupplyItemsService, useValue: supplyItemsServiceMock },
         { provide: PlantEventsService, useValue: plantEventsServiceMock },
       ],
@@ -153,6 +164,93 @@ describe('PlantService', () => {
         }),
       );
     });
+
+    it('resolves categoryId via RecipeCategoriesService when provided', async () => {
+      repoMock.findActiveRecipeByName.mockResolvedValue(null);
+      recipeCategoriesServiceMock.findOne.mockResolvedValue({
+        id: 'cat-1',
+        tenantId,
+        nombre: 'Platos',
+        descripcion: null,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      await service.createRecipe(tenantId, { ...createRecipeInput, categoryId: 'cat-1' });
+
+      expect(recipeCategoriesServiceMock.findOne).toHaveBeenCalledWith(tenantId, 'cat-1');
+      expect(repoMock.createRecipeWithPhasesTx).toHaveBeenCalledWith(
+        expect.objectContaining({
+          recipe: expect.objectContaining({ categoryId: 'cat-1' }),
+        }),
+      );
+    });
+
+    it('clears categoryId when omitted on create', async () => {
+      repoMock.findActiveRecipeByName.mockResolvedValue(null);
+
+      await service.createRecipe(tenantId, createRecipeInput);
+
+      expect(recipeCategoriesServiceMock.findOne).not.toHaveBeenCalled();
+      expect(repoMock.createRecipeWithPhasesTx).toHaveBeenCalledWith(
+        expect.objectContaining({
+          recipe: expect.objectContaining({ categoryId: null }),
+        }),
+      );
+    });
+
+    it('validates phase inputs and maps optional recipe and phase fields', async () => {
+      repoMock.findActiveRecipeByName.mockResolvedValue(null);
+      supplyItemsServiceMock.findOne.mockResolvedValue({ id: 'supply-1' });
+
+      await service.createRecipe(tenantId, {
+        ...createRecipeInput,
+        notes: 'Batch notes',
+        isActive: false,
+        phases: [
+          {
+            ...createRecipeInput.phases[0],
+            description: 'Phase description',
+            minOperators: 2,
+            maxOperators: 3,
+            requiresQA: true,
+            inputs: [
+              {
+                supplyItemId: 'supply-1',
+                quantityPerBatch: new Decimal('2'),
+                unit: StockUnit.KILOGRAMS,
+                isOptional: true,
+              },
+            ],
+          },
+        ],
+      });
+
+      expect(supplyItemsServiceMock.findOne).toHaveBeenCalledWith(tenantId, 'supply-1');
+      expect(repoMock.createRecipeWithPhasesTx).toHaveBeenCalledWith(
+        expect.objectContaining({
+          recipe: expect.objectContaining({
+            notes: 'Batch notes',
+            isActive: false,
+          }),
+          phases: [
+            expect.objectContaining({
+              description: 'Phase description',
+              minOperators: 2,
+              maxOperators: 3,
+              requiresQA: true,
+              inputs: [
+                expect.objectContaining({
+                  supplyItemId: 'supply-1',
+                  isOptional: true,
+                }),
+              ],
+            }),
+          ],
+        }),
+      );
+    });
   });
 
   describe('findRecipeById', () => {
@@ -194,6 +292,18 @@ describe('PlantService', () => {
       const result = await service.findRecipeById(tenantId, 'recipe-1');
 
       expect(result.totalStandardMinutes).toBe(35);
+    });
+
+    it('includes categoryName when recipe has a category', async () => {
+      repoMock.findRecipeDetailById.mockResolvedValue({
+        ...mockRecipe,
+        category: { id: 'cat-1', nombre: 'Platos principales' },
+        phases: [],
+      });
+
+      const result = await service.findRecipeById(tenantId, 'recipe-1');
+
+      expect(result.categoryName).toBe('Platos principales');
     });
 
     it('throws NotFoundException when recipe is missing', async () => {
@@ -315,6 +425,16 @@ describe('PlantService', () => {
 
       expect(result.name).toBe('Updated');
     });
+
+    it('allows updating code when duplicate lookup returns the same station', async () => {
+      repoMock.findWorkStationById.mockResolvedValue(mockWorkStation);
+      repoMock.findWorkStationByCode.mockResolvedValue(mockWorkStation);
+      repoMock.updateWorkStation.mockResolvedValue(mockWorkStation);
+
+      await expect(
+        service.updateWorkStation(tenantId, 'ws-1', { code: 'LINE-01' }),
+      ).resolves.toEqual(mockWorkStation);
+    });
   });
 
   describe('findAllWorkStations and findAllRecipes', () => {
@@ -353,6 +473,43 @@ describe('PlantService', () => {
         expect.objectContaining({ name: 'New name', version: 3 }),
       );
     });
+
+    it('resolves categoryId on update when provided', async () => {
+      repoMock.findRecipeById.mockResolvedValue(mockRecipe);
+      recipeCategoriesServiceMock.findOne.mockResolvedValue({
+        id: 'cat-2',
+        tenantId,
+        nombre: 'Postres',
+        descripcion: null,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      repoMock.updateRecipe.mockResolvedValue({ ...mockRecipe, categoryId: 'cat-2' });
+
+      await service.updateRecipe(tenantId, 'recipe-1', { categoryId: 'cat-2' });
+
+      expect(recipeCategoriesServiceMock.findOne).toHaveBeenCalledWith(tenantId, 'cat-2');
+      expect(repoMock.updateRecipe).toHaveBeenCalledWith(
+        tenantId,
+        'recipe-1',
+        expect.objectContaining({ categoryId: 'cat-2' }),
+      );
+    });
+
+    it('clears categoryId on update when null is provided', async () => {
+      repoMock.findRecipeById.mockResolvedValue(mockRecipe);
+      repoMock.updateRecipe.mockResolvedValue({ ...mockRecipe, categoryId: null });
+
+      await service.updateRecipe(tenantId, 'recipe-1', { categoryId: null });
+
+      expect(recipeCategoriesServiceMock.findOne).not.toHaveBeenCalled();
+      expect(repoMock.updateRecipe).toHaveBeenCalledWith(
+        tenantId,
+        'recipe-1',
+        expect.objectContaining({ categoryId: null }),
+      );
+    });
   });
 
   describe('cloneRecipe', () => {
@@ -387,6 +544,21 @@ describe('PlantService', () => {
         expect.objectContaining({ name: 'Pan integral (copia)', version: 2 }),
       );
       expect(result.id).toBe('recipe-clone');
+    });
+
+    it('clones recipe at version 1 when no prior active clone exists', async () => {
+      repoMock.findRecipeDetailById.mockResolvedValue({ ...mockRecipe, phases: [] });
+      repoMock.findActiveRecipeByName.mockResolvedValue(null);
+      repoMock.cloneRecipeTx.mockResolvedValue({ ...mockRecipe, id: 'recipe-clone-2' });
+
+      await service.cloneRecipe(tenantId, 'recipe-1');
+
+      expect(repoMock.updateRecipe).not.toHaveBeenCalled();
+      expect(repoMock.cloneRecipeTx).toHaveBeenCalledWith(
+        tenantId,
+        'recipe-1',
+        expect.objectContaining({ version: 1 }),
+      );
     });
   });
 
@@ -433,6 +605,15 @@ describe('PlantService', () => {
         ]),
       ).rejects.toThrow(BadRequestException);
     });
+
+    it('throws when a phase id does not belong to the recipe', async () => {
+      await expect(
+        service.reorderPhases(tenantId, 'recipe-1', [
+          { phaseId: 'phase-1', newOrder: 1 },
+          { phaseId: 'phase-other', newOrder: 2 },
+        ]),
+      ).rejects.toThrow(BadRequestException);
+    });
   });
 
   describe('createRecipe validation', () => {
@@ -473,6 +654,104 @@ describe('PlantService', () => {
       await expect(service.createRecipe(tenantId, createRecipeInput)).rejects.toThrow(
         NotFoundException,
       );
+    });
+  });
+
+  describe('createPhaseOnRecipe', () => {
+    it('creates a phase with validated inputs', async () => {
+      repoMock.findRecipeById.mockResolvedValue(mockRecipe);
+      repoMock.findWorkStationById.mockResolvedValue(mockWorkStation);
+      supplyItemsServiceMock.findOne.mockResolvedValue({ id: 'supply-1' });
+      repoMock.createPhaseWithInputsTx.mockResolvedValue({ id: 'phase-new' });
+
+      await service.createPhaseOnRecipe(tenantId, 'recipe-1', {
+        order: 2,
+        name: 'Horneado',
+        workStationId: 'ws-1',
+        standardMinutes: 30,
+        inputs: [
+          {
+            supplyItemId: 'supply-1',
+            quantityPerBatch: new Decimal('1'),
+            unit: StockUnit.UNIT,
+            isOptional: true,
+          },
+        ],
+      });
+
+      expect(supplyItemsServiceMock.findOne).toHaveBeenCalledWith(tenantId, 'supply-1');
+      expect(repoMock.createPhaseWithInputsTx).toHaveBeenCalled();
+    });
+  });
+
+  describe('updatePhase', () => {
+    const mockPhase = {
+      id: 'phase-1',
+      tenantId,
+      recipeId: 'recipe-1',
+      name: 'Mezclado',
+      order: 1,
+      workStationId: 'ws-1',
+      standardMinutes: 15,
+      minOperators: 1,
+      maxOperators: 4,
+      requiresQA: false,
+      description: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    it('replaces phase inputs when inputs are provided', async () => {
+      repoMock.findPhaseById.mockResolvedValue(mockPhase);
+      repoMock.updatePhase.mockResolvedValue(mockPhase);
+      supplyItemsServiceMock.findOne.mockResolvedValue({ id: 'supply-1' });
+      repoMock.replacePhaseInputsTx.mockResolvedValue(undefined);
+
+      await service.updatePhase(tenantId, 'phase-1', {
+        inputs: [
+          {
+            supplyItemId: 'supply-1',
+            quantityPerBatch: new Decimal('2'),
+            unit: StockUnit.KILOGRAMS,
+          },
+        ],
+      });
+
+      expect(repoMock.replacePhaseInputsTx).toHaveBeenCalledWith(
+        tenantId,
+        'phase-1',
+        expect.arrayContaining([
+          expect.objectContaining({ supplyItemId: 'supply-1', isOptional: false }),
+        ]),
+      );
+    });
+
+    it('throws when minOperators exceeds maxOperators', async () => {
+      repoMock.findPhaseById.mockResolvedValue(mockPhase);
+
+      await expect(
+        service.updatePhase(tenantId, 'phase-1', { minOperators: 5, maxOperators: 2 }),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('deletePhase', () => {
+    it('throws ConflictException when phase has executions', async () => {
+      repoMock.findPhaseById.mockResolvedValue({ id: 'phase-1', tenantId });
+      repoMock.countPhaseExecutions.mockResolvedValue(2);
+
+      await expect(service.deletePhase(tenantId, 'phase-1')).rejects.toThrow(ConflictException);
+      expect(repoMock.deletePhase).not.toHaveBeenCalled();
+    });
+
+    it('deletes phase when there are no executions', async () => {
+      repoMock.findPhaseById.mockResolvedValue({ id: 'phase-1', tenantId });
+      repoMock.countPhaseExecutions.mockResolvedValue(0);
+      repoMock.deletePhase.mockResolvedValue(undefined);
+
+      await service.deletePhase(tenantId, 'phase-1');
+
+      expect(repoMock.deletePhase).toHaveBeenCalledWith(tenantId, 'phase-1');
     });
   });
 

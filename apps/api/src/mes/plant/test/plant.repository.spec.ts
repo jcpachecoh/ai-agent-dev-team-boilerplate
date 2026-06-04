@@ -169,6 +169,9 @@ describe('PlantRepository', () => {
       await repository.findAllRecipes(tenantId);
       expect(prismaMock.productionRecipe.findMany).toHaveBeenCalledWith({
         where: { tenantId },
+        include: {
+          category: { select: { id: true, nombre: true } },
+        },
         orderBy: [{ isActive: 'desc' }, { updatedAt: 'desc' }],
       });
     });
@@ -195,6 +198,7 @@ describe('PlantRepository', () => {
       expect(prismaMock.productionRecipe.findFirst).toHaveBeenCalledWith({
         where: { id: 'recipe-1', tenantId },
         include: {
+          category: { select: { id: true, nombre: true } },
           phases: {
             orderBy: { order: 'asc' },
             include: { inputs: true },

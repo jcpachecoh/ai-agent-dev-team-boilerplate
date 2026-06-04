@@ -222,22 +222,22 @@ Folder **10 — GraphQL Auth** exercises auth through `{{graphqlUrl}}` (`http://
 
 **Global auth/email parity:** GraphQL now covers the full global auth surface from REST folder **01** (session + email flows). Operational **refresh** is still REST-only — there is no `POST /api/mes/auth/refresh` endpoint.
 
-| Request                  | GraphQL operation             | Auth header                 | Notes                                                    |
-| ------------------------ | ----------------------------- | --------------------------- | -------------------------------------------------------- |
-| Signup                   | `mutation signup`             | `x-tenant-id: {{tenantId}}` | optional tokens                                          |
-| Login                    | `mutation login`              | `x-tenant-id: {{tenantId}}` | `accessToken`, `refreshToken`, `globalUserId`            |
-| Me                       | `query me`                    | `Bearer {{accessToken}}`    | —                                                        |
-| Refresh Token            | `mutation refreshToken`       | `Bearer {{refreshToken}}`   | new tokens                                               |
-| Change Password          | `mutation changePassword`     | `Bearer {{accessToken}}`    | —                                                        |
-| Resend Verification      | `mutation resendVerification` | `x-tenant-id: {{tenantId}}` | sends OTP if user exists; anti-enumeration response      |
-| Verify Email             | `mutation verifyEmail`        | none                        | manual `{{otpCode}}` after Resend Verification           |
-| Me — Check emailVerified | `query me`                    | `Bearer {{accessToken}}`    | confirm `emailVerified: true` after Verify Email         |
-| Forgot Password          | `mutation forgotPassword`     | `x-tenant-id: {{tenantId}}` | manual `{{resetToken}}` from email                       |
-| Reset Password           | `mutation resetPassword`      | none                        | `input.token` = `{{resetToken}}`                         |
-| Logout                   | `mutation logout`             | `Bearer {{accessToken}}`    | —                                                        |
-| Login Operational        | `mutation loginOperational`   | `x-tenant-id: {{tenantId}}` | `mesAccessToken`, `mesRefreshToken`, `operationalUserId` |
-| Me Operational           | `query meOperational`         | `Bearer {{mesAccessToken}}` | —                                                        |
-| Logout Operational       | `mutation logoutOperational`  | `Bearer {{mesAccessToken}}` | —                                                        |
+| Request                  | GraphQL operation             | Auth header                 | Notes                                                     |
+| ------------------------ | ----------------------------- | --------------------------- | --------------------------------------------------------- |
+| Signup                   | `mutation signup`             | `x-tenant-id: {{tenantId}}` | optional tokens; enqueues verify-email OTP                |
+| Login                    | `mutation login`              | `x-tenant-id: {{tenantId}}` | `accessToken`, `refreshToken`, `globalUserId`             |
+| Me                       | `query me`                    | `Bearer {{accessToken}}`    | —                                                         |
+| Refresh Token            | `mutation refreshToken`       | `Bearer {{refreshToken}}`   | new tokens                                                |
+| Change Password          | `mutation changePassword`     | `Bearer {{accessToken}}`    | —                                                         |
+| Resend Verification      | `mutation resendVerification` | `x-tenant-id: {{tenantId}}` | resend OTP if signup email lost/expired; anti-enumeration |
+| Verify Email             | `mutation verifyEmail`        | none                        | manual `{{otpCode}}` after Signup or Resend Verification  |
+| Me — Check emailVerified | `query me`                    | `Bearer {{accessToken}}`    | confirm `emailVerified: true` after Verify Email          |
+| Forgot Password          | `mutation forgotPassword`     | `x-tenant-id: {{tenantId}}` | manual `{{resetToken}}` from email                        |
+| Reset Password           | `mutation resetPassword`      | none                        | `input.token` = `{{resetToken}}`                          |
+| Logout                   | `mutation logout`             | `Bearer {{accessToken}}`    | —                                                         |
+| Login Operational        | `mutation loginOperational`   | `x-tenant-id: {{tenantId}}` | `mesAccessToken`, `mesRefreshToken`, `operationalUserId`  |
+| Me Operational           | `query meOperational`         | `Bearer {{mesAccessToken}}` | —                                                         |
+| Logout Operational       | `mutation logoutOperational`  | `Bearer {{mesAccessToken}}` | —                                                         |
 
 **Prerequisites:** Start `apps/api` on `:3001`. Seed the database. Email flows (resend/verify/forgot/reset) need **Redis + email worker** when testing end-to-end delivery (same as REST folder 01).
 
@@ -245,7 +245,7 @@ Folder **10 — GraphQL Auth** exercises auth through `{{graphqlUrl}}` (`http://
 
 **Suggested run order:** top-to-bottom inside folder 10 after seed. Session block first, then email/password block in this order:
 
-1. **Resend Verification** — requires `x-tenant-id`; sends OTP when `{{authEmail}}` exists.
+1. **Resend Verification** — requires `x-tenant-id`; resends OTP when `{{authEmail}}` exists (also use after Signup if OTP expired).
 2. Copy OTP from email or worker logs → set `{{otpCode}}`.
 3. **Verify Email** — consumes OTP and sets `User.emailVerified = true` (AUTH-04).
 4. **Me — Check emailVerified** — optional; requires `Bearer {{accessToken}}` from **Login**.
@@ -273,6 +273,48 @@ Email/password auth targets the tenant-scoped `users` table. Every signup/login/
 | TestLab only (legacy)      | `test@restopsiq.dev`             | N/A for `/api/auth/login` |
 
 Signup generates unique `signupEmail` / `signupCedula` per run (201 or 409).
+
+---
+
+## AUTH-03 — Backend security validation
+
+Implemented in `apps/api` (REST source of truth) with GraphQL delegation in `apps/gateway`.
+
+| Rule             | Global (`User`)                                                                                 | MES (`OperationalUser`)                                                    |
+| ---------------- | ----------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| Password policy  | **> 8 characters** → minimum **9** (`@MinLength(9)` / gateway Zod `.min(9)`)                    | PIN format unchanged (4–6 digits)                                          |
+| Account lockout  | **5** failed password attempts → **15 min** lock (`loginAttempts` / `lockedUntil`)              | **3** failed PIN attempts → **15 min** lock + Redis IP rate limit (5/hour) |
+| Uniqueness       | `@@unique([tenantId, email])` and `@@unique([tenantId, cedula])` + service 409 + P2002 fallback | `@@unique([tenantId, cedulaHash])` + service check                         |
+| Sensitive fields | Responses must not include `passwordHash`, `pinHash`, `cedulaHash`, stored token hashes         | Same; `me` returns id/role/tenant only                                     |
+| JWT in responses | `accessToken` / `refreshToken` strings on login/signup/refresh only                             | `accessToken` / `refreshToken` on MES login only                           |
+
+**Postman (folder 01 → `05 AUTH-03 Security Validation`):**
+
+| Request                        | Purpose                                           |
+| ------------------------------ | ------------------------------------------------- |
+| Signup — Duplicate Email       | 409; no `passwordHash` in body                    |
+| Signup — Duplicate Cédula      | 409 with new email + seeded `{{mesOwnerCedula}}`  |
+| Signup — Weak Password 8 chars | 400 validation                                    |
+| GET Me — No Secret Fields      | After Login; no stored secrets in JSON            |
+| Lockout — Signup Isolated User | Creates `{{authLockoutEmail}}` (not seeded owner) |
+| Lockout — Failed Login 1–5     | Five wrong passwords, then locked login           |
+
+**Lockout testing notes:**
+
+- Do **not** run the lockout sequence against `{{email}}` (seeded owner) in automated Newman full runs.
+- After lockout tests, unlock the isolated user in SQL or wait 15 minutes:
+
+```sql
+UPDATE users
+SET "loginAttempts" = 0, "lockedUntil" = NULL
+WHERE email = '<authLockoutEmail from collection variables>';
+```
+
+- **JWT expiry** is not automated in Postman — edit an expired token or wait 15 minutes for global access TTL.
+
+**GraphQL (folder 10):** `Signup — Weak Password (negative)` and `Signup — Duplicate Email (negative)` mirror REST security cases.
+
+**LoginAudit failure reasons (global):** `password_invalido`, `cuenta_bloqueada` (plus existing messages for unknown user / refresh).
 
 ---
 
@@ -458,13 +500,13 @@ Forgot Password, Reset Password, Resend Verification, and Verify Email require *
 
 ### Email verification (REST folder **01 → 02 Email Verification** or GraphQL folder **10**)
 
-Signup does **not** send a verification OTP. Use **Resend Verification** to enqueue the OTP email.
+**Signup automatically sends a verification OTP** to the registered email. **Resend Verification** remains available if the user did not receive the email or the OTP expired.
 
-1. Run **Login** (folder 01 or 10) so `{{accessToken}}` is available for optional **Me — Check emailVerified**.
-2. Run **Resend Verification** with `x-tenant-id: {{tenantId}}` and `{{authEmail}}`.
-   - Always returns `200` with a generic message (anti-enumeration).
-   - Sends OTP only when the user exists.
+1. Run **Signup** (folder 01 or 10) — enqueues verify-email OTP for the new user (`emailVerified` stays `false`).
+2. Run **Login** so `{{accessToken}}` is available for optional **Me — Check emailVerified**.
 3. Copy the 6-digit OTP from the email or worker/dev logs → set `{{otpCode}}`.
+   - If no OTP arrived, run **Resend Verification** with `x-tenant-id: {{tenantId}}` and `{{authEmail}}` (or the signup email).
+   - Resend always returns `200` with a generic message (anti-enumeration).
 4. Run **Verify Email** (no auth header, no `x-tenant-id`).
    - Expected: `200 { "message": "Email verified successfully." }`
    - OTP is single-use; `User.emailVerified` is set to `true` (AUTH-04).

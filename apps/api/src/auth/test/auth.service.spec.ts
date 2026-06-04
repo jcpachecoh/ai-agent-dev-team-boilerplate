@@ -8,9 +8,11 @@ import { DocumentType, AuthMethod, LoginAuditStatus } from '@prisma/client';
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
 import * as bcrypt from 'bcrypt';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { AuthService } from '../service/auth.service';
 import { AuthRepository } from '../repository/auth.repository';
 import { AuthEmailRepository } from '../repository/auth-email.repository';
+import { AuthEmailService } from '../service/auth-email.service';
 import { AuditService } from '../../audit/service/audit.service';
 
 jest.mock('bcrypt');
@@ -65,6 +67,9 @@ const repoMock = {
   findJwtClaimsByUserId: jest.fn(),
   findRoleByTenantAndCode: jest.fn(),
   createUser: jest.fn(),
+  incrementLoginAttempts: jest.fn(),
+  lockUser: jest.fn(),
+  resetLoginAttempts: jest.fn(),
   saveRefreshToken: jest.fn(),
   updatePassword: jest.fn(),
 };
@@ -84,6 +89,10 @@ const jwtMock = {
   signAsync: jest.fn(),
 };
 
+const authEmailServiceMock = {
+  sendVerifyEmail: jest.fn(),
+};
+
 describe('AuthService', () => {
   let service: AuthService;
 
@@ -93,6 +102,7 @@ describe('AuthService', () => {
         AuthService,
         { provide: AuthRepository, useValue: repoMock },
         { provide: AuthEmailRepository, useValue: authEmailRepoMock },
+        { provide: AuthEmailService, useValue: authEmailServiceMock },
         { provide: JwtService, useValue: jwtMock },
         { provide: AuditService, useValue: auditServiceMock },
       ],
@@ -100,6 +110,7 @@ describe('AuthService', () => {
 
     service = module.get<AuthService>(AuthService);
     jest.clearAllMocks();
+    authEmailServiceMock.sendVerifyEmail.mockResolvedValue({ otpCode: '123456' });
   });
 
   describe('signup', () => {
@@ -123,6 +134,7 @@ describe('AuthService', () => {
         id: 'user-2',
         email: dto.email,
         roleId: 'role-op',
+        emailVerified: false,
       });
       (bcryptMock.hash as jest.Mock).mockResolvedValue('hashed-pw');
       jwtMock.signAsync
@@ -164,6 +176,81 @@ describe('AuthService', () => {
         }),
       );
       expect(bcryptMock.hash).toHaveBeenCalledWith(dto.password, 12);
+      expect(authEmailServiceMock.sendVerifyEmail).toHaveBeenCalledWith(
+        { id: 'user-2', email: dto.email },
+        { tenantId: TENANT_ID, tenantName: TENANT_ID },
+      );
+    });
+
+    it('does not set emailVerified on signup (remains false until verifyEmail)', async () => {
+      repoMock.findByTenantAndEmail.mockResolvedValue(null);
+      repoMock.findByTenantAndCedula.mockResolvedValue(null);
+      repoMock.findRoleByTenantAndCode.mockResolvedValue({
+        id: 'role-op',
+        code: 'OPERATOR',
+        isActive: true,
+      });
+      repoMock.createUser.mockResolvedValue({
+        id: 'user-2',
+        email: dto.email,
+        emailVerified: false,
+      });
+      (bcryptMock.hash as jest.Mock).mockResolvedValue('hashed-pw');
+      jwtMock.signAsync
+        .mockResolvedValueOnce('access-token')
+        .mockResolvedValueOnce('refresh-token');
+      repoMock.saveRefreshToken.mockResolvedValue(undefined);
+
+      await service.signup(TENANT_ID, dto);
+
+      expect(repoMock.createUser).toHaveBeenCalledWith(
+        expect.not.objectContaining({ emailVerified: expect.anything() }),
+      );
+      expect(authEmailServiceMock.sendVerifyEmail).toHaveBeenCalled();
+    });
+
+    it('returns tokens when verification email enqueue fails', async () => {
+      repoMock.findByTenantAndEmail.mockResolvedValue(null);
+      repoMock.findByTenantAndCedula.mockResolvedValue(null);
+      repoMock.findRoleByTenantAndCode.mockResolvedValue({
+        id: 'role-op',
+        code: 'OPERATOR',
+        isActive: true,
+      });
+      repoMock.createUser.mockResolvedValue({
+        id: 'user-2',
+        email: dto.email,
+        emailVerified: false,
+      });
+      authEmailServiceMock.sendVerifyEmail.mockRejectedValue(new Error('Redis unavailable'));
+      (bcryptMock.hash as jest.Mock).mockResolvedValue('hashed-pw');
+      jwtMock.signAsync
+        .mockResolvedValueOnce('access-token')
+        .mockResolvedValueOnce('refresh-token');
+      repoMock.saveRefreshToken.mockResolvedValue(undefined);
+
+      const result = await service.signup(TENANT_ID, dto);
+
+      expect(result).toEqual({ accessToken: 'access-token', refreshToken: 'refresh-token' });
+    });
+
+    it('does not send verification email when email is already registered', async () => {
+      repoMock.findByTenantAndEmail.mockResolvedValue(mockUserSafe);
+
+      await expect(service.signup(TENANT_ID, dto)).rejects.toThrow(ConflictException);
+
+      expect(repoMock.createUser).not.toHaveBeenCalled();
+      expect(authEmailServiceMock.sendVerifyEmail).not.toHaveBeenCalled();
+    });
+
+    it('does not send verification email when cédula is already registered', async () => {
+      repoMock.findByTenantAndEmail.mockResolvedValue(null);
+      repoMock.findByTenantAndCedula.mockResolvedValue(mockUserSafe);
+
+      await expect(service.signup(TENANT_ID, dto)).rejects.toThrow(ConflictException);
+
+      expect(repoMock.createUser).not.toHaveBeenCalled();
+      expect(authEmailServiceMock.sendVerifyEmail).not.toHaveBeenCalled();
     });
 
     it('allows signup on tenant B when lookup is tenant-scoped (same email may exist on another tenant)', async () => {
@@ -238,6 +325,44 @@ describe('AuthService', () => {
     it('throws BadRequestException when tenantId is missing', async () => {
       await expect(service.signup('', dto)).rejects.toThrow(BadRequestException);
     });
+
+    it('throws ConflictException on P2002 unique violation for email (race)', async () => {
+      repoMock.findByTenantAndEmail.mockResolvedValue(null);
+      repoMock.findByTenantAndCedula.mockResolvedValue(null);
+      repoMock.findRoleByTenantAndCode.mockResolvedValue({
+        id: 'role-op',
+        code: 'OPERATOR',
+        isActive: true,
+      });
+      (bcryptMock.hash as jest.Mock).mockResolvedValue('hashed-pw');
+      const p2002 = new PrismaClientKnownRequestError('Unique constraint failed', {
+        code: 'P2002',
+        clientVersion: 'test',
+        meta: { target: ['tenantId', 'email'] },
+      });
+      repoMock.createUser.mockRejectedValue(p2002);
+
+      await expect(service.signup(TENANT_ID, dto)).rejects.toThrow(ConflictException);
+    });
+
+    it('throws ConflictException on P2002 unique violation for cedula (race)', async () => {
+      repoMock.findByTenantAndEmail.mockResolvedValue(null);
+      repoMock.findByTenantAndCedula.mockResolvedValue(null);
+      repoMock.findRoleByTenantAndCode.mockResolvedValue({
+        id: 'role-op',
+        code: 'OPERATOR',
+        isActive: true,
+      });
+      (bcryptMock.hash as jest.Mock).mockResolvedValue('hashed-pw');
+      const p2002 = new PrismaClientKnownRequestError('Unique constraint failed', {
+        code: 'P2002',
+        clientVersion: 'test',
+        meta: { target: ['tenantId', 'cedula'] },
+      });
+      repoMock.createUser.mockRejectedValue(p2002);
+
+      await expect(service.signup(TENANT_ID, dto)).rejects.toThrow(ConflictException);
+    });
   });
 
   describe('login', () => {
@@ -247,6 +372,7 @@ describe('AuthService', () => {
       repoMock.findByTenantAndEmailForAuth.mockResolvedValue(mockUserWithPassword);
       repoMock.findJwtClaimsByUserId.mockResolvedValue(expectedJwtPayload);
       (bcryptMock.compare as jest.Mock).mockResolvedValue(true);
+      repoMock.resetLoginAttempts.mockResolvedValue(undefined);
       jwtMock.signAsync.mockResolvedValueOnce('access').mockResolvedValueOnce('refresh');
       (bcryptMock.hash as jest.Mock).mockResolvedValue('hashed-refresh');
       repoMock.saveRefreshToken.mockResolvedValue(undefined);
@@ -256,6 +382,7 @@ describe('AuthService', () => {
       expect(result).toHaveProperty('refreshToken');
       expect(jwtMock.signAsync).toHaveBeenCalledWith(expectedJwtPayload, { expiresIn: '15m' });
       expect(repoMock.findJwtClaimsByUserId).toHaveBeenCalledWith('user-1');
+      expect(repoMock.resetLoginAttempts).toHaveBeenCalledWith(mockUserWithPassword.id);
       expect(repoMock.findByTenantAndEmailForAuth).toHaveBeenCalledWith(TENANT_ID, dto.email);
       expect(auditServiceMock.logLogin).toHaveBeenCalledWith({
         tenantId: TENANT_ID,
@@ -289,21 +416,51 @@ describe('AuthService', () => {
       expect(auditServiceMock.logLogin).toHaveBeenCalledWith(
         expect.objectContaining({
           status: LoginAuditStatus.LOCKED,
-          failureReason: 'Account locked',
+          failureReason: 'cuenta_bloqueada',
         }),
       );
+      expect(repoMock.incrementLoginAttempts).not.toHaveBeenCalled();
     });
 
     it('throws UnauthorizedException and logs FAILED when password does not match', async () => {
       repoMock.findByTenantAndEmailForAuth.mockResolvedValue(mockUserWithPassword);
       (bcryptMock.compare as jest.Mock).mockResolvedValue(false);
+      repoMock.incrementLoginAttempts.mockResolvedValue(undefined);
       await expect(service.login(TENANT_ID, dto)).rejects.toThrow(UnauthorizedException);
+      expect(repoMock.incrementLoginAttempts).toHaveBeenCalledWith(mockUserWithPassword.id);
+      expect(repoMock.lockUser).not.toHaveBeenCalled();
       expect(auditServiceMock.logLogin).toHaveBeenCalledWith(
         expect.objectContaining({
           status: LoginAuditStatus.FAILED,
-          failureReason: 'Invalid password',
+          failureReason: 'password_invalido',
         }),
       );
+    });
+
+    it('does not increment loginAttempts when user does not exist', async () => {
+      repoMock.findByTenantAndEmailForAuth.mockResolvedValue(null);
+      await expect(service.login(TENANT_ID, dto)).rejects.toThrow(UnauthorizedException);
+      expect(repoMock.incrementLoginAttempts).not.toHaveBeenCalled();
+    });
+
+    it('locks account for 15 minutes on fifth failed password attempt', async () => {
+      repoMock.findByTenantAndEmailForAuth.mockResolvedValue({
+        ...mockUserWithPassword,
+        loginAttempts: 4,
+      });
+      (bcryptMock.compare as jest.Mock).mockResolvedValue(false);
+      repoMock.incrementLoginAttempts.mockResolvedValue(undefined);
+      repoMock.lockUser.mockResolvedValue(undefined);
+
+      const before = Date.now();
+      await expect(service.login(TENANT_ID, dto)).rejects.toThrow(UnauthorizedException);
+
+      expect(repoMock.incrementLoginAttempts).toHaveBeenCalledWith(mockUserWithPassword.id);
+      expect(repoMock.lockUser).toHaveBeenCalledWith(mockUserWithPassword.id, expect.any(Date));
+      const lockUntil = repoMock.lockUser.mock.calls[0][1] as Date;
+      const lockMs = lockUntil.getTime() - before;
+      expect(lockMs).toBeGreaterThanOrEqual(14 * 60 * 1000);
+      expect(lockMs).toBeLessThanOrEqual(16 * 60 * 1000);
     });
   });
 
@@ -320,6 +477,7 @@ describe('AuthService', () => {
       expect(result).toHaveProperty('accessToken', 'access');
       expect(jwtMock.signAsync).toHaveBeenCalledWith(expectedJwtPayload, { expiresIn: '15m' });
       expect(repoMock.findJwtClaimsByUserId).toHaveBeenCalledWith('user-1');
+      expect(repoMock.saveRefreshToken).toHaveBeenCalledWith('user-1', 'new-hashed-refresh');
       expect(auditServiceMock.logLogin).toHaveBeenCalledWith(
         expect.objectContaining({
           status: LoginAuditStatus.SUCCESS,
@@ -474,6 +632,7 @@ describe('AuthService', () => {
       const result = await service.changePassword('user-1', 'old-pass', 'new-pass123');
 
       expect(result).toEqual({ message: 'Password updated successfully.' });
+      expect(bcryptMock.hash).toHaveBeenCalledWith('new-pass123', 12);
       expect(repoMock.updatePassword).toHaveBeenCalledWith('user-1', 'new-hash', true);
     });
 
@@ -552,6 +711,7 @@ describe('AuthService', () => {
 
       await service.resetPassword('rawtoken', 'newpass123');
 
+      expect(bcryptMock.hash).toHaveBeenCalledWith('newpass123', 12);
       expect(repoMock.updatePassword).toHaveBeenCalledWith('user-1', 'hashed-new-pw');
     });
   });

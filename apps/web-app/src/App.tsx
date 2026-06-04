@@ -40,9 +40,7 @@ export default function App(): React.JSX.Element {
           <Route path="/inventory/movements" element={<InventoryMovementsPage />} />
           <Route path="/inventory/alerts" element={<InventoryAlertsPage />} />
           <Route path="/inventory/reports" element={<InventoryReportsPage />} />
-          <Route path="/recetas" element={<RecipesPage />} />
-          <Route path="/recetas/procesos" element={<RecipesPage />} />
-          <Route path="/recetas/historial" element={<RecipesPage />} />
+          <Route path="/recetas/*" element={<RecipesPage />} />
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/dispatch" element={<DispatchPage />} />
           <Route path="/users" element={<UsersPage />} />

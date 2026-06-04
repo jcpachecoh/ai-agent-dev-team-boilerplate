@@ -6,6 +6,7 @@ import * as bcrypt from 'bcrypt';
 import { AuthService } from '../service/auth.service';
 import { AuthRepository } from '../repository/auth.repository';
 import { AuthEmailRepository } from '../repository/auth-email.repository';
+import { AuthEmailService } from '../service/auth-email.service';
 import { AuditService } from '../../audit/service/audit.service';
 
 jest.mock('bcrypt');
@@ -42,6 +43,9 @@ const repoMock = {
   findJwtClaimsByUserId: jest.fn(),
   findRoleByTenantAndCode: jest.fn(),
   createUser: jest.fn(),
+  incrementLoginAttempts: jest.fn(),
+  lockUser: jest.fn(),
+  resetLoginAttempts: jest.fn(),
   saveRefreshToken: jest.fn(),
   updatePassword: jest.fn(),
 };
@@ -61,6 +65,10 @@ const jwtMock = {
   signAsync: jest.fn(),
 };
 
+const authEmailServiceMock = {
+  sendVerifyEmail: jest.fn(),
+};
+
 describe('AuthService — global User email login regression (USR-01 Task 09)', () => {
   let service: AuthService;
 
@@ -70,6 +78,7 @@ describe('AuthService — global User email login regression (USR-01 Task 09)', 
         AuthService,
         { provide: AuthRepository, useValue: repoMock },
         { provide: AuthEmailRepository, useValue: authEmailRepoMock },
+        { provide: AuthEmailService, useValue: authEmailServiceMock },
         { provide: JwtService, useValue: jwtMock },
         { provide: AuditService, useValue: auditServiceMock },
       ],
@@ -92,6 +101,7 @@ describe('AuthService — global User email login regression (USR-01 Task 09)', 
     (bcryptMock.compare as jest.Mock).mockResolvedValue(true);
     jwtMock.signAsync.mockResolvedValueOnce('access').mockResolvedValueOnce('refresh');
     (bcryptMock.hash as jest.Mock).mockResolvedValue('hashed-refresh');
+    repoMock.resetLoginAttempts.mockResolvedValue(undefined);
     repoMock.saveRefreshToken.mockResolvedValue(undefined);
 
     const result = await service.login(TENANT_ID, {

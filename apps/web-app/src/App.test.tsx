@@ -46,6 +46,12 @@ describe('App', () => {
     expect(screen.getByText(/estaciones activas/i)).toBeInTheDocument();
   });
 
+  it('renders recipe categories at /recetas/categorias', () => {
+    renderApp('/recetas/categorias');
+
+    expect(screen.getByRole('heading', { name: /categorías de recetas/i })).toBeInTheDocument();
+  });
+
   it('navigates to recetas module from sidebar', async () => {
     const user = userEvent.setup();
 

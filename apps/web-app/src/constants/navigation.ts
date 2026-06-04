@@ -100,6 +100,12 @@ export const navigationItems: NavItem[] = [
     children: [
       { id: 'rec-list', label: 'Lista de Recetas', path: '/recetas', icon: List },
       {
+        id: 'rec-categories',
+        label: 'Categorías',
+        path: '/recetas/categorias',
+        icon: Tags,
+      },
+      {
         id: 'rec-process',
         label: 'Control de Procesos',
         path: '/recetas/procesos',
@@ -169,6 +175,7 @@ const routeLabels: Record<string, string> = {
   '/inventory/alerts': 'Alertas',
   '/inventory/reports': 'Reportes',
   '/recetas': 'Lista de Recetas',
+  '/recetas/categorias': 'Categorías de Recetas',
   '/recetas/procesos': 'Control de Procesos',
   '/recetas/historial': 'Historial de Ejecuciones',
   '/reports': 'Panel de Supervisión',

@@ -12,6 +12,7 @@ import { LockModule } from './lock/lock.module';
 import { MesAuthModule } from './mes/auth/mes-auth.module';
 import { PlantModule } from './mes/plant/plant.module';
 import { SupplyItemsModule } from './supplyitems/supplyitems.module';
+import { RecipeCategoriesModule } from './recipe-categories/recipe-categories.module';
 import { SupplyCategoriesModule } from './supply-categories/supply-categories.module';
 import { InventoryModule } from './inventory/inventory.module';
 import { GraphqlModule } from './graphql/graphql.module';
@@ -33,6 +34,7 @@ import { TenantModule } from './tenant/tenant.module';
     LockModule,
     SupplyItemsModule,
     SupplyCategoriesModule,
+    RecipeCategoriesModule,
     InventoryModule,
     GraphqlModule,
     UserModule,

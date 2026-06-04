@@ -16,6 +16,11 @@ export class UpdateRecipeDto {
   @IsOptional()
   name?: string;
 
+  @ApiPropertyOptional({ example: 'recipe-category-uuid', nullable: true })
+  @IsString()
+  @IsOptional()
+  categoryId?: string | null;
+
   @ApiPropertyOptional({ example: 'finished-product-uuid' })
   @IsString()
   @IsOptional()

@@ -22,9 +22,13 @@ export class SignupDto {
   @MaxLength(50)
   roleCode?: string;
 
-  @ApiProperty({ example: 'strongPassword123', minLength: 8 })
+  @ApiProperty({
+    example: 'strongPassword123',
+    minLength: 9,
+    description: 'Must be more than 8 characters',
+  })
   @IsString()
-  @MinLength(8)
+  @MinLength(9, { message: 'password must be longer than 8 characters' })
   @MaxLength(72)
   password!: string;
 }

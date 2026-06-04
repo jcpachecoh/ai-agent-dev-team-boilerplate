@@ -6,6 +6,13 @@
   color: var(--color-text-primary);
 }
 
+.loadError {
+  margin: 0;
+  padding: 0.75rem 1.25rem;
+  color: $color-recipes-accent;
+  font-size: 0.9rem;
+}
+
 .content {
   display: flex;
   flex-direction: column;
@@ -317,11 +324,140 @@
   }
 }
 
+.panelCardTitle {
+  margin: 0 0 0.35rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.72rem;
+  color: rgba($color-operator-text, 0.7);
+}
+
+.panelCardHint {
+  margin: 0 0 0.75rem;
+  font-size: 0.75rem;
+  color: rgba($color-operator-text, 0.55);
+  line-height: 1.4;
+}
+
 .panelHeaderRow {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 0.6rem;
+}
+
+.editorFieldGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.editorField {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  color: rgba($color-operator-text, 0.75);
+}
+
+.editorFieldFull {
+  grid-column: 1 / -1;
+}
+
+.editorTextarea {
+  min-height: 4.5rem;
+  resize: vertical;
+  font-family: inherit;
+  line-height: 1.4;
+}
+
+.editorSelect,
+.editorInput {
+  border: 1px solid $color-recipes-divider;
+  border-radius: 0.35rem;
+  background: $color-recipes-surface;
+  color: $color-operator-text;
+  padding: 0.5rem 0.6rem;
+  font-size: 0.85rem;
+}
+
+.editorInput:read-only {
+  opacity: 0.75;
+}
+
+.modalListEmpty {
+  margin: 0;
+  padding: 0.65rem 0.75rem;
+  border: 1px dashed $color-recipes-divider;
+  border-radius: 0.35rem;
+  color: rgba($color-operator-text, 0.55);
+  font-size: 0.8rem;
+}
+
+.modalList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.modalListItem {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) 100px 110px auto;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.modalListItemValidation {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.modalListInput {
+  border: 1px solid $color-recipes-divider;
+  border-radius: 0.35rem;
+  background: $color-recipes-surface;
+  color: $color-operator-text;
+  padding: 0.45rem 0.55rem;
+  font-size: 0.85rem;
+}
+
+.modalListInputGrow {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid $color-recipes-divider;
+  border-radius: 0.35rem;
+  background: $color-recipes-surface;
+  color: $color-operator-text;
+  padding: 0.45rem 0.55rem;
+  font-size: 0.85rem;
+}
+
+.modalListUnit {
+  font-size: 0.72rem;
+  color: rgba($color-operator-text, 0.6);
+  white-space: nowrap;
+}
+
+.modalListUnitSelect {
+  border: 1px solid $color-recipes-divider;
+  border-radius: 0.35rem;
+  background: $color-recipes-surface;
+  color: $color-operator-text;
+  padding: 0.45rem 0.4rem;
+  font-size: 0.8rem;
+}
+
+.modalListRemove {
+  border: none;
+  background: transparent;
+  color: $color-recipes-accent;
+  font-size: 0.75rem;
+  cursor: pointer;
+  padding: 0.25rem 0.35rem;
 }
 .stepsList {
   display: flex;

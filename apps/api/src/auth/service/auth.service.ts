@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { AuthMethod, LoginAuditStatus } from '@prisma/client';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import type {
@@ -18,6 +19,7 @@ import type {
 } from '../interfaces/auth.interfaces';
 import { AuthRepository } from '../repository/auth.repository';
 import { AuthEmailRepository } from '../repository/auth-email.repository';
+import { AuthEmailService } from './auth-email.service';
 import { AuditService } from '../../audit/service/audit.service';
 import type { SignupDto } from '../controller/dto/signup.dto';
 import type { LoginDto } from '../controller/dto/login.dto';
@@ -26,6 +28,10 @@ const SALT_ROUNDS = 12;
 const ACCESS_TOKEN_TTL = '15m';
 const REFRESH_TOKEN_TTL = '7d';
 const DEFAULT_ROLE_CODE = 'OPERATOR';
+const MAX_LOGIN_ATTEMPTS = 5;
+const LOCK_DURATION_MS = 15 * 60 * 1000;
+const FAILURE_PASSWORD_INVALID = 'password_invalido';
+const FAILURE_ACCOUNT_LOCKED = 'cuenta_bloqueada';
 
 @Injectable()
 export class AuthService implements IAuthService {
@@ -34,6 +40,7 @@ export class AuthService implements IAuthService {
   constructor(
     private readonly authRepository: AuthRepository,
     private readonly authEmailRepository: AuthEmailRepository,
+    private readonly authEmailService: AuthEmailService,
     private readonly jwtService: JwtService,
     private readonly auditService: AuditService,
   ) {}
@@ -64,14 +71,31 @@ export class AuthService implements IAuthService {
     }
 
     const passwordHash = await bcrypt.hash(dto.password, SALT_ROUNDS);
-    const user = await this.authRepository.createUser({
-      tenantId: resolvedTenantId,
-      cedula: dto.cedula,
-      documentType: dto.documentType,
-      email: dto.email,
-      passwordHash,
-      roleId: role.id,
-    });
+    let user;
+    try {
+      user = await this.authRepository.createUser({
+        tenantId: resolvedTenantId,
+        cedula: dto.cedula,
+        documentType: dto.documentType,
+        email: dto.email,
+        passwordHash,
+        roleId: role.id,
+      });
+    } catch (error) {
+      this.rethrowUserUniqueViolation(error);
+    }
+
+    try {
+      await this.authEmailService.sendVerifyEmail(
+        { id: user.id, email: user.email },
+        { tenantId: resolvedTenantId, tenantName: resolvedTenantId },
+      );
+    } catch (error) {
+      this.logger.warn(
+        `[signup] Verification email enqueue failed for userId="${user.id}" — ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+
     return this.issueTokens({
       sub: user.id,
       email: user.email,
@@ -122,7 +146,7 @@ export class AuthService implements IAuthService {
           identifier: dto.email,
           authMethod: AuthMethod.PASSWORD,
           status: LoginAuditStatus.LOCKED,
-          failureReason: 'Account locked',
+          failureReason: FAILURE_ACCOUNT_LOCKED,
           ipAddress,
           userAgent,
         });
@@ -134,19 +158,21 @@ export class AuthService implements IAuthService {
         this.logger.warn(
           `Login denied: password mismatch (tenant=${resolvedTenantId}, userId=${user.id}, identifier=${maskedIdentifier}, ip=${ipAddress ?? 'n/a'})`,
         );
+        await this.handleFailedLogin(user);
         await this.auditService.logLogin({
           tenantId: resolvedTenantId,
           userId: user.id,
           identifier: dto.email,
           authMethod: AuthMethod.PASSWORD,
           status: LoginAuditStatus.FAILED,
-          failureReason: 'Invalid password',
+          failureReason: FAILURE_PASSWORD_INVALID,
           ipAddress,
           userAgent,
         });
         throw new UnauthorizedException('Invalid credentials');
       }
 
+      await this.authRepository.resetLoginAttempts(user.id);
       await this.auditService.logLogin({
         tenantId: resolvedTenantId,
         userId: user.id,
@@ -292,6 +318,36 @@ export class AuthService implements IAuthService {
       throw new BadRequestException('x-tenant-id header is required');
     }
     return trimmed;
+  }
+
+  private async handleFailedLogin(user: { id: string; loginAttempts: number }): Promise<void> {
+    await this.authRepository.incrementLoginAttempts(user.id);
+    if (user.loginAttempts + 1 >= MAX_LOGIN_ATTEMPTS) {
+      await this.authRepository.lockUser(user.id, new Date(Date.now() + LOCK_DURATION_MS));
+    }
+  }
+
+  /**
+   * Maps Prisma unique violations on User (tenantId+email / tenantId+cedula) to safe 409 responses.
+   */
+  private rethrowUserUniqueViolation(error: unknown): never {
+    if (error instanceof PrismaClientKnownRequestError && error.code === 'P2002') {
+      const target = error.meta?.target;
+      const fields: string[] = Array.isArray(target)
+        ? target.map(String)
+        : typeof target === 'string'
+          ? [target]
+          : [];
+      const normalized = fields.join(',').toLowerCase();
+      if (normalized.includes('email')) {
+        throw new ConflictException('Email already registered');
+      }
+      if (normalized.includes('cedula')) {
+        throw new ConflictException('Cédula already registered');
+      }
+      throw new ConflictException('User already registered');
+    }
+    throw error;
   }
 
   private maskIdentifier(identifier: string): string {

@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { AuthMethod, LoginAuditStatus, OperationalUser } from '@prisma/client';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { randomUUID } from 'crypto';
@@ -235,13 +236,21 @@ export class MesAuthService implements IMesAuthService {
     const pinHash = await bcrypt.hash(dto.pin, SALT_ROUNDS);
     const sedeId = dto.sedeId?.trim() ?? null;
 
-    const user = await this.mesAuthRepository.createUser({
-      tenantId: requester.tenantId,
-      cedulaHash,
-      pinHash,
-      role: dto.role,
-      sedeId,
-    });
+    let user: OperationalUser;
+    try {
+      user = await this.mesAuthRepository.createUser({
+        tenantId: requester.tenantId,
+        cedulaHash,
+        pinHash,
+        role: dto.role,
+        sedeId,
+      });
+    } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new ConflictException('La cédula ya está registrada en este tenant');
+      }
+      throw error;
+    }
 
     return {
       id: user.id,

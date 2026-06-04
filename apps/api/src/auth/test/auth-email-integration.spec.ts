@@ -319,4 +319,46 @@ describe('Auth Email Integration — G4 wiring (AuthController → AuthEmailServ
     expect(result).not.toHaveProperty('passwordHash');
     expect(auditServiceMock.logLogin).toHaveBeenCalled();
   });
+
+  it('signup enqueues verify-email with OTP payload containing userId, email, tenantId', async () => {
+    prismaMock.user.findUnique.mockResolvedValue(null);
+    prismaMock.user.create.mockResolvedValue({
+      ...mockUserSafe,
+      id: 'user-signup-001',
+      email: 'newuser@example.com',
+      emailVerified: false,
+    });
+
+    let capturedRedisValue: string | undefined;
+    redisMock.set.mockImplementation(async (_key: string, value: string) => {
+      capturedRedisValue = value;
+      return 'OK';
+    });
+
+    const result = await controller.signup(
+      {
+        email: 'newuser@example.com',
+        cedula: '99887766',
+        documentType: DocumentType.CC,
+        password: 'password123',
+      },
+      TENANT_ID,
+    );
+
+    expect(result).toEqual({ accessToken: 'mock-token', refreshToken: 'mock-token' });
+    expect(emailServiceMock.send).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: 'newuser@example.com',
+        template: expect.objectContaining({ type: 'verify-email' }),
+        priority: 'urgent',
+      }),
+    );
+    expect(capturedRedisValue).toBeDefined();
+    expect(JSON.parse(capturedRedisValue!)).toMatchObject({
+      userId: 'user-signup-001',
+      email: 'newuser@example.com',
+      tenantId: TENANT_ID,
+    });
+    expect(prismaMock.user.updateMany).not.toHaveBeenCalled();
+  });
 });

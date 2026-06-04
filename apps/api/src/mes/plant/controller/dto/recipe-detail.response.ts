@@ -72,6 +72,12 @@ export class RecipeDetailResponseDto {
   @ApiProperty({ example: 'Pan integral 500g' })
   name!: string;
 
+  @ApiPropertyOptional({ example: 'recipe-category-uuid', nullable: true })
+  categoryId!: string | null;
+
+  @ApiPropertyOptional({ example: 'Granos', nullable: true })
+  categoryName?: string | null;
+
   @ApiProperty({ example: 'finished-product-uuid' })
   finishedProductId!: string;
 

@@ -482,6 +482,36 @@
       "value": "",
       "type": "string",
       "description": "Global OPERATOR JWT — folder 11 Login Global Operator"
+    },
+    {
+      "key": "authLockoutEmail",
+      "value": "",
+      "type": "string",
+      "description": "Isolated user for AUTH-03 lockout tests"
+    },
+    {
+      "key": "authLockoutCedula",
+      "value": "",
+      "type": "string",
+      "description": "Cédula for lockout test user"
+    },
+    {
+      "key": "dupCedulaEmail",
+      "value": "",
+      "type": "string",
+      "description": "Generated email for duplicate cédula signup test"
+    },
+    {
+      "key": "weakPwEmail",
+      "value": "",
+      "type": "string",
+      "description": "Generated email for weak password test"
+    },
+    {
+      "key": "weakPwCedula",
+      "value": "",
+      "type": "string",
+      "description": "Generated cédula for weak password test"
     }
   ],
   "item": [
@@ -520,7 +550,7 @@
           "item": [
             {
               "name": "Signup",
-              "description": "Register a global User under the operational tenant.\n\nRequires header x-tenant-id: {{tenantId}}.\nBody: email, cedula, documentType (CC|CE|PASAPORTE|TI|PEP), password; optional roleCode (default OPERATOR).\nPre-request generates unique signupEmail/signupCedula per run.\nAccepts 201 (created) or 409 (already exists).",
+              "description": "Register a global User under the operational tenant.\n\nRequires header x-tenant-id: {{tenantId}}.\nBody: email, cedula, documentType (CC|CE|PASAPORTE|TI|PEP), password; optional roleCode (default OPERATOR).\nPre-request generates unique signupEmail/signupCedula per run.\nAccepts 201 (created) or 409 (already exists).\n\nOn 201: automatically enqueues verify-email OTP (emailVerified stays false until Verify Email). Requires Redis + email worker.",
               "event": [
                 {
                   "listen": "prerequest",
@@ -773,7 +803,7 @@
             },
             {
               "name": "Verify Email",
-              "description": "AUTH-04 / RES-226 — Verify the user's email address using the 6-digit OTP.\n\nPublic endpoint — no Authorization header required.\nNo x-tenant-id header required.\n\nPrerequisite: run Resend Verification first (Signup does NOT send an OTP). Copy the OTP from the email or worker/dev logs and set {{otpCode}} before running this request.\n\nExpected: 200 { message: 'Email verified successfully.' }\nSide effects: OTP consumed (single-use); User.emailVerified set to true.\n\nAfter success, run Me — Check emailVerified (requires Login + Bearer {{accessToken}}) to confirm emailVerified: true.",
+              "description": "AUTH-04 / RES-226 — Verify the user's email address using the 6-digit OTP.\n\nPublic endpoint — no Authorization header required.\nNo x-tenant-id header required.\n\nPrerequisite: Signup automatically sends an OTP. Copy it from the email or worker/dev logs and set {{otpCode}}. If missing or expired, run Resend Verification first.\n\nExpected: 200 { message: 'Email verified successfully.' }\nSide effects: OTP consumed (single-use); User.emailVerified set to true.\n\nAfter success, run Me — Check emailVerified (requires Login + Bearer {{accessToken}}) to confirm emailVerified: true.",
               "event": [
                 {
                   "listen": "test",
@@ -1165,6 +1195,523 @@
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"email\": \"unknown-{{$timestamp}}@palos-de-lena.dev\",\n  \"password\": \"{{password}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": "{{baseUrl}}/api/auth/login"
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "05 AUTH-03 Security Validation",
+          "description": "AUTH-03 negative cases and sensitive-field checks.\n\n**Does not use {{email}} (seeded owner)** for lockout — uses isolated {{authLockoutEmail}}.\n\nAfter lockout tests, reset via SQL or wait 15 minutes before reusing the lockout user.\n\n```sql\nUPDATE users SET \"loginAttempts\" = 0, \"lockedUntil\" = NULL WHERE email = '<authLockoutEmail used>';\n```\n\nJWT expiry: not automated — edit token or wait access TTL (15m).",
+          "item": [
+            {
+              "name": "Signup — Duplicate Email (negative)",
+              "description": "AUTH-03 — duplicate email in same tenant.\n\nUses seeded {{email}} (mes-owner@palos-de-lena.dev). Expect 409 Conflict. Response must not include passwordHash.",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 409 Conflict', () => pm.response.to.have.status(409));",
+                      "const body = pm.response.json();",
+                      "const forbidden = ['password', 'passwordHash', 'pin', 'pinHash', 'cedulaHash', 'tokenHash', 'secret'];",
+                      "forbidden.forEach((k) => {",
+                      "  pm.test('Response does not expose ' + k, () => pm.expect(body).to.not.have.property(k));",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-tenant-id",
+                    "value": "{{tenantId}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"{{email}}\",\n  \"cedula\": \"88776655\",\n  \"documentType\": \"CC\",\n  \"password\": \"{{password}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": "{{baseUrl}}/api/auth/signup"
+              },
+              "response": []
+            },
+            {
+              "name": "Signup — Duplicate Cédula (negative)",
+              "description": "AUTH-03 — duplicate cédula in same tenant (seeded owner cédula 12345678).\n\nNew unique email, existing cédula. Expect 409.",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.collectionVariables.set('dupCedulaEmail', 'dup-cedula-' + Date.now() + '@palos-de-lena.dev');"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 409 Conflict', () => pm.response.to.have.status(409));",
+                      "const body = pm.response.json();",
+                      "const forbidden = ['password', 'passwordHash', 'pin', 'pinHash', 'cedulaHash', 'tokenHash', 'secret'];",
+                      "forbidden.forEach((k) => {",
+                      "  pm.test('Response does not expose ' + k, () => pm.expect(body).to.not.have.property(k));",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-tenant-id",
+                    "value": "{{tenantId}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"{{dupCedulaEmail}}\",\n  \"cedula\": \"{{mesOwnerCedula}}\",\n  \"documentType\": \"CC\",\n  \"password\": \"{{password}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": "{{baseUrl}}/api/auth/signup"
+              },
+              "response": []
+            },
+            {
+              "name": "Signup — Weak Password 8 chars (negative)",
+              "description": "AUTH-03 — password must be > 8 characters (min 9). Exactly 8 chars must return 400 validation error.",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.collectionVariables.set('weakPwEmail', 'weakpw-' + Date.now() + '@palos-de-lena.dev');",
+                      "pm.collectionVariables.set('weakPwCedula', '88' + String(Date.now()).slice(-8));"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));",
+                      "const body = pm.response.json();",
+                      "const forbidden = ['password', 'passwordHash', 'pin', 'pinHash', 'cedulaHash', 'tokenHash', 'secret'];",
+                      "forbidden.forEach((k) => {",
+                      "  pm.test('Response does not expose ' + k, () => pm.expect(body).to.not.have.property(k));",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-tenant-id",
+                    "value": "{{tenantId}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"{{weakPwEmail}}\",\n  \"cedula\": \"{{weakPwCedula}}\",\n  \"documentType\": \"CC\",\n  \"password\": \"12345678\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": "{{baseUrl}}/api/auth/signup"
+              },
+              "response": []
+            },
+            {
+              "name": "GET Me — No Secret Fields",
+              "description": "AUTH-03 — GET /api/auth/me after Login must not expose passwordHash or stored refreshToken hash.\n\nPrerequisite: **01 Session → Login** (or valid {{accessToken}}).",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                      "const body = pm.response.json();",
+                      "const forbidden = ['password', 'passwordHash', 'pin', 'pinHash', 'cedulaHash', 'tokenHash', 'secret'];",
+                      "forbidden.forEach((k) => {",
+                      "  pm.test('Response does not expose ' + k, () => pm.expect(body).to.not.have.property(k));",
+                      "});",
+                      "pm.test('Has safe profile fields', () => {",
+                      "  const body = pm.response.json();",
+                      "  pm.expect(body).to.have.property('email');",
+                      "  pm.expect(body).to.have.property('roleCode');",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{accessToken}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/api/auth/me"
+              },
+              "response": []
+            },
+            {
+              "name": "Lockout — Signup Isolated User",
+              "description": "AUTH-03 — creates dedicated lockout test user (not seeded owner).\n\nRun once before lockout failure sequence.",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const ts = Date.now();",
+                      "pm.collectionVariables.set('authLockoutEmail', 'lockout-' + ts + '@palos-de-lena.dev');",
+                      "pm.collectionVariables.set('authLockoutCedula', '77' + String(ts).slice(-8));"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 201 or 409 if re-run', () => {",
+                      "  pm.expect([201, 409]).to.include(pm.response.code);",
+                      "});",
+                      "const body = pm.response.json();",
+                      "const forbidden = ['password', 'passwordHash', 'pin', 'pinHash', 'cedulaHash', 'tokenHash', 'secret'];",
+                      "forbidden.forEach((k) => {",
+                      "  pm.test('Response does not expose ' + k, () => pm.expect(body).to.not.have.property(k));",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-tenant-id",
+                    "value": "{{tenantId}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"{{authLockoutEmail}}\",\n  \"cedula\": \"{{authLockoutCedula}}\",\n  \"documentType\": \"CC\",\n  \"password\": \"{{password}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": "{{baseUrl}}/api/auth/signup"
+              },
+              "response": []
+            },
+            {
+              "name": "Lockout — Failed Login 1 of 5",
+              "description": "AUTH-03 — wrong password for {{authLockoutEmail}}. Run requests 1–5 in order, then Locked Login.",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 401', () => pm.response.to.have.status(401));",
+                      "const body = pm.response.json();",
+                      "const forbidden = ['password', 'passwordHash', 'pin', 'pinHash', 'cedulaHash', 'tokenHash', 'secret'];",
+                      "forbidden.forEach((k) => {",
+                      "  pm.test('Response does not expose ' + k, () => pm.expect(body).to.not.have.property(k));",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-tenant-id",
+                    "value": "{{tenantId}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"{{authLockoutEmail}}\",\n  \"password\": \"WrongLockout1!\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": "{{baseUrl}}/api/auth/login"
+              },
+              "response": []
+            },
+            {
+              "name": "Lockout — Failed Login 2 of 5",
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-tenant-id",
+                    "value": "{{tenantId}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"{{authLockoutEmail}}\",\n  \"password\": \"WrongLockout2!\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": "{{baseUrl}}/api/auth/login"
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": ["pm.test('Status 401', () => pm.response.to.have.status(401));"]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Lockout — Failed Login 3 of 5",
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-tenant-id",
+                    "value": "{{tenantId}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"{{authLockoutEmail}}\",\n  \"password\": \"WrongLockout3!\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": "{{baseUrl}}/api/auth/login"
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": ["pm.test('Status 401', () => pm.response.to.have.status(401));"]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Lockout — Failed Login 4 of 5",
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-tenant-id",
+                    "value": "{{tenantId}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"{{authLockoutEmail}}\",\n  \"password\": \"WrongLockout4!\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": "{{baseUrl}}/api/auth/login"
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": ["pm.test('Status 401', () => pm.response.to.have.status(401));"]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Lockout — Failed Login 5 of 5 (locks account)",
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-tenant-id",
+                    "value": "{{tenantId}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"{{authLockoutEmail}}\",\n  \"password\": \"WrongLockout5!\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": "{{baseUrl}}/api/auth/login"
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": ["pm.test('Status 401', () => pm.response.to.have.status(401));"]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Lockout — Login While Locked (negative)",
+              "description": "AUTH-03 — after 5 failures, login returns 401 (same message as invalid credentials). Check login_audits for LOCKED / cuenta_bloqueada.",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 401 when locked', () => pm.response.to.have.status(401));",
+                      "const body = pm.response.json();",
+                      "const forbidden = ['password', 'passwordHash', 'pin', 'pinHash', 'cedulaHash', 'tokenHash', 'secret'];",
+                      "forbidden.forEach((k) => {",
+                      "  pm.test('Response does not expose ' + k, () => pm.expect(body).to.not.have.property(k));",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-tenant-id",
+                    "value": "{{tenantId}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"{{authLockoutEmail}}\",\n  \"password\": \"{{password}}\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -3615,7 +4162,7 @@
     },
     {
       "name": "10 — GraphQL Auth",
-      "description": "GraphQL auth against {{graphqlUrl}} (apps/api :3001/graphql). Same auth services as REST folders 01/02.\n\n**Prerequisites:** API on :3001 only. Redis + email worker for email flows. Run `pnpm --filter=@restopsiq/api start:dev`.\n\n**Token parity with REST folders 01/02:**\n- Global: `data.login.accessToken` → {{accessToken}} (never use for plant/MES)\n- Operational: `data.loginOperational.accessToken` → {{mesAccessToken}} (same as REST folder 02)\n\n**Run order (top-to-bottom):** Signup → Login → Me → Refresh Token → Change Password → **Resend Verification → Verify Email → Me — Check emailVerified** (manual {{otpCode}}) → Forgot Password → Reset Password (manual {{resetToken}}) → Logout → Login Operational → Me Operational → Logout Operational.\n\n**Email verification (AUTH-04):** Signup does NOT send OTP. Run Resend Verification first, set {{otpCode}}, then Verify Email. Optional Me — Check emailVerified confirms emailVerified: true.\n\n**Password reset:** forgotPassword / resetPassword mirror REST folder 01. resetPassword uses input.token = {{resetToken}} (no x-tenant-id).\n\nCollection pre-request auto-login is **disabled** for `/graphql` URLs — run Login / Login Operational explicitly.",
+      "description": "GraphQL auth against {{graphqlUrl}} (apps/api :3001/graphql). Same auth services as REST folders 01/02.\n\n**Prerequisites:** API on :3001 only. Redis + email worker for email flows. Run `pnpm --filter=@restopsiq/api start:dev`.\n\n**Token parity with REST folders 01/02:**\n- Global: `data.login.accessToken` → {{accessToken}} (never use for plant/MES)\n- Operational: `data.loginOperational.accessToken` → {{mesAccessToken}} (same as REST folder 02)\n\n**Run order (top-to-bottom):** Signup → Login → Me → Refresh Token → Change Password → **Resend Verification → Verify Email → Me — Check emailVerified** (manual {{otpCode}}) → Forgot Password → Reset Password (manual {{resetToken}}) → Logout → Login Operational → Me Operational → Logout Operational.\n\n**Email verification (AUTH-04):** Signup sends OTP automatically. Set {{otpCode}} from email/worker logs, then Verify Email. Use Resend Verification if OTP expired. Optional Me — Check emailVerified confirms emailVerified: true.\n\n**Password reset:** forgotPassword / resetPassword mirror REST folder 01. resetPassword uses input.token = {{resetToken}} (no x-tenant-id).\n\nCollection pre-request auto-login is **disabled** for `/graphql` URLs — run Login / Login Operational explicitly.",
       "item": [
         {
           "name": "Signup",
@@ -3966,7 +4513,7 @@
         },
         {
           "name": "Verify Email",
-          "description": "AUTH-04 / RES-226 — GraphQL mutation verifyEmail delegates to POST /api/auth/verify-email.\n\nPrerequisite: Resend Verification first (Signup does NOT send OTP). Set {{otpCode}} from email/worker logs.\n\nOn success: OTP consumed; User.emailVerified set to true. Then run Me — Check emailVerified with Bearer {{accessToken}}.",
+          "description": "AUTH-04 / RES-226 — GraphQL mutation verifyEmail delegates to POST /api/auth/verify-email.\n\nPrerequisite: Signup sends OTP automatically. Set {{otpCode}} from email/worker logs, or run Resend Verification if missing/expired.\n\nOn success: OTP consumed; User.emailVerified set to true. Then run Me — Check emailVerified with Bearer {{accessToken}}.",
           "request": {
             "auth": {
               "type": "noauth"
@@ -4382,6 +4929,103 @@
                   "  pm.expect(json.errors).to.be.undefined;",
                   "});",
                   "pm.test('Has message', () => pm.expect(pm.response.json().data.logoutOperational.message).to.be.a('string'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Signup — Weak Password (negative)",
+          "description": "AUTH-03 GraphQL — gateway Zod min 9 before REST. Expect GraphQL validation error (no data.signup).",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation Signup($input: SignupInput!) { signup(input: $input) { accessToken refreshToken } }\",\n  \"variables\": {\n    \"input\": {\n      \"email\": \"weak-gql-{{$timestamp}}@palos-de-lena.dev\",\n      \"cedula\": \"66123456789\",\n      \"documentType\": \"CC\",\n      \"password\": \"12345678\"\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{graphqlUrl}}"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200 with GraphQL errors', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Has validation errors', () => {",
+                  "  pm.expect(json.errors).to.be.an('array').that.is.not.empty;",
+                  "});",
+                  "pm.test('No signup data on validation failure', () => {",
+                  "  pm.expect(json.data?.signup).to.be.undefined;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Signup — Duplicate Email (negative)",
+          "description": "AUTH-03 GraphQL — duplicate email delegates to REST 409.",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation Signup($input: SignupInput!) { signup(input: $input) { accessToken refreshToken } }\",\n  \"variables\": {\n    \"input\": {\n      \"email\": \"{{email}}\",\n      \"cedula\": \"55998877\",\n      \"documentType\": \"CC\",\n      \"password\": \"{{password}}\"\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{graphqlUrl}}"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('GraphQL conflict or REST conflict mapped', () => {",
+                  "  const hasGqlError = json.errors && json.errors.length > 0;",
+                  "  const msg = hasGqlError ? JSON.stringify(json.errors) : '';",
+                  "  pm.expect(hasGqlError || pm.response.code === 409).to.be.true;",
+                  "});"
                 ]
               }
             }
