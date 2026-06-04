@@ -95,6 +95,11 @@ export class CreateRecipeDto {
   @IsNotEmpty()
   name!: string;
 
+  @ApiPropertyOptional({ example: 'recipe-category-uuid', nullable: true })
+  @IsString()
+  @IsOptional()
+  categoryId?: string | null;
+
   @ApiProperty({ example: 'finished-product-uuid' })
   @IsString()
   @IsNotEmpty()
@@ -120,6 +125,11 @@ export class CreateRecipeDto {
   @IsString()
   @IsOptional()
   notes?: string;
+
+  @ApiPropertyOptional({ example: true, default: true })
+  @IsBoolean()
+  @IsOptional()
+  isActive?: boolean;
 
   @ApiProperty({ type: [CreatePhaseDto] })
   @IsArray()

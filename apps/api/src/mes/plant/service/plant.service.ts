@@ -14,6 +14,7 @@ import {
   type WorkStation,
 } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
+import { RecipeCategoriesService } from '../../../recipe-categories/service/recipe-categories.service';
 import { SupplyItemsService } from '../../../supplyitems/service/supplyitems.service';
 import { PlantRepository } from '../repository/plant.repository';
 import type {
@@ -21,6 +22,7 @@ import type {
   CreateOrderInput,
   CreatePhaseInputInput,
   CreatePhaseNestedInput,
+  CreatePhaseOnRecipeData,
   CreateRecipeWithPhasesInput,
   CreateRecipeWithPhasesTxInput,
   CreateWorkStationInput,
@@ -33,6 +35,7 @@ import type {
   PhaseStatusChange,
   RecipeDetailResponse,
   ReorderPhaseItem,
+  UpdatePhaseInput,
   UpdateRecipeInput,
   UpdateWorkStationInput,
 } from '../interfaces/plant.interfaces';
@@ -43,6 +46,7 @@ import { PlantEventsService } from './plant-events.service';
 export class PlantService implements IPlantService {
   constructor(
     private readonly plantRepository: PlantRepository,
+    private readonly recipeCategoriesService: RecipeCategoriesService,
     private readonly supplyItemsService: SupplyItemsService,
     private readonly plantEventsService: PlantEventsService,
   ) {}
@@ -105,6 +109,7 @@ export class PlantService implements IPlantService {
     input: CreateRecipeWithPhasesInput,
   ): Promise<ProductionRecipe> {
     await this.validateNestedPhases(tenantId, input.phases);
+    input.categoryId = await this.resolveCategoryId(tenantId, input.categoryId);
 
     const activeByName = await this.plantRepository.findActiveRecipeByName(tenantId, input.name);
     const version = activeByName ? activeByName.version + 1 : 1;
@@ -130,6 +135,7 @@ export class PlantService implements IPlantService {
 
     return {
       ...recipe,
+      categoryName: recipe.category?.nombre ?? null,
       totalStandardMinutes,
     };
   }
@@ -142,6 +148,10 @@ export class PlantService implements IPlantService {
     const recipe = await this.requireRecipe(tenantId, id);
 
     const updateData: UpdateRecipeInput & { version?: number } = { ...input };
+
+    if (input.categoryId !== undefined) {
+      updateData.categoryId = await this.resolveCategoryId(tenantId, input.categoryId);
+    }
 
     if (input.name !== undefined && input.name !== recipe.name) {
       const conflict = await this.plantRepository.findActiveRecipeByName(tenantId, input.name);
@@ -171,6 +181,7 @@ export class PlantService implements IPlantService {
 
     return this.plantRepository.cloneRecipeTx(tenantId, id, {
       name: cloneName,
+      categoryId: source.categoryId,
       finishedProductId: source.finishedProductId,
       batchSize: source.batchSize,
       batchUnit: source.batchUnit,
@@ -198,6 +209,77 @@ export class PlantService implements IPlantService {
     this.validateReorderItems(phases, items);
 
     await this.plantRepository.reorderPhasesTx(tenantId, recipeId, items);
+  }
+
+  async createPhaseOnRecipe(
+    tenantId: string,
+    recipeId: string,
+    input: CreatePhaseNestedInput,
+  ): Promise<ProductionPhase> {
+    await this.requireRecipe(tenantId, recipeId);
+    await this.validateNestedPhases(tenantId, [input]);
+
+    return this.plantRepository.createPhaseWithInputsTx(
+      tenantId,
+      recipeId,
+      this.toCreatePhaseOnRecipeData(input),
+    );
+  }
+
+  async updatePhase(
+    tenantId: string,
+    phaseId: string,
+    input: UpdatePhaseInput,
+  ): Promise<ProductionPhase> {
+    const phase = await this.requirePhase(tenantId, phaseId);
+
+    if (input.workStationId) {
+      await this.requireWorkStation(tenantId, input.workStationId);
+    }
+
+    if (
+      input.minOperators !== undefined &&
+      input.maxOperators !== undefined &&
+      input.minOperators > input.maxOperators
+    ) {
+      throw new BadRequestException(
+        `Phase "${input.name ?? phase.name}": minOperators cannot exceed maxOperators`,
+      );
+    }
+
+    const { inputs, ...phaseData } = input;
+    const updated = await this.plantRepository.updatePhase(tenantId, phaseId, phaseData);
+
+    if (inputs !== undefined) {
+      for (const phaseInput of inputs) {
+        await this.supplyItemsService.findOne(tenantId, phaseInput.supplyItemId);
+      }
+      await this.plantRepository.replacePhaseInputsTx(
+        tenantId,
+        phaseId,
+        inputs.map((phaseInput) => ({
+          supplyItemId: phaseInput.supplyItemId,
+          quantityPerBatch: phaseInput.quantityPerBatch,
+          unit: phaseInput.unit,
+          isOptional: phaseInput.isOptional ?? false,
+        })),
+      );
+    }
+
+    return updated;
+  }
+
+  async deletePhase(tenantId: string, phaseId: string): Promise<void> {
+    await this.requirePhase(tenantId, phaseId);
+
+    const executionCount = await this.plantRepository.countPhaseExecutions(tenantId, phaseId);
+    if (executionCount > 0) {
+      throw new ConflictException(
+        'Cannot delete a phase that has production executions. Cancel related orders first.',
+      );
+    }
+
+    await this.plantRepository.deletePhase(tenantId, phaseId);
   }
 
   async addPhaseInput(
@@ -696,12 +778,14 @@ export class PlantService implements IPlantService {
       deactivateRecipeId,
       recipe: {
         name: input.name,
+        categoryId: input.categoryId ?? null,
         finishedProductId: input.finishedProductId,
         batchSize: input.batchSize,
         batchUnit: input.batchUnit,
         estimatedMinutes: input.estimatedMinutes,
         version,
         notes: input.notes ?? null,
+        isActive: input.isActive ?? true,
       },
       phases: input.phases.map((phase) => ({
         order: phase.order,
@@ -718,6 +802,36 @@ export class PlantService implements IPlantService {
           unit: item.unit,
           isOptional: item.isOptional ?? false,
         })),
+      })),
+    };
+  }
+
+  private async resolveCategoryId(
+    tenantId: string,
+    categoryId?: string | null,
+  ): Promise<string | null> {
+    if (!categoryId) {
+      return null;
+    }
+    await this.recipeCategoriesService.findOne(tenantId, categoryId);
+    return categoryId;
+  }
+
+  private toCreatePhaseOnRecipeData(input: CreatePhaseNestedInput): CreatePhaseOnRecipeData {
+    return {
+      order: input.order,
+      name: input.name,
+      description: input.description ?? null,
+      workStationId: input.workStationId,
+      standardMinutes: input.standardMinutes,
+      minOperators: input.minOperators ?? 1,
+      maxOperators: input.maxOperators ?? 4,
+      requiresQA: input.requiresQA ?? false,
+      inputs: (input.inputs ?? []).map((item) => ({
+        supplyItemId: item.supplyItemId,
+        quantityPerBatch: item.quantityPerBatch,
+        unit: item.unit,
+        isOptional: item.isOptional ?? false,
       })),
     };
   }

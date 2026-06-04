@@ -17,6 +17,7 @@ export interface RecetaInfoPanelProps {
   onCategoryChange?: (value: string) => void;
   onYieldChange?: (value: string) => void;
   onDescriptionChange?: (value: string) => void;
+  showCategoryField?: boolean;
   theme?: RecetaTheme;
   className?: string;
 }
@@ -40,6 +41,7 @@ export function RecetaInfoPanel({
   onCategoryChange,
   onYieldChange,
   onDescriptionChange,
+  showCategoryField = true,
   theme = 'dark',
   className,
 }: RecetaInfoPanelProps): JSX.Element {
@@ -56,15 +58,17 @@ export function RecetaInfoPanel({
             onChange={(event) => onNameChange?.(event.target.value)}
           />
         </label>
-        <label className={styles.field}>
-          <span className={styles.label}>{categoryLabel}</span>
-          <input
-            className={styles.input}
-            value={categoryValue}
-            readOnly={!onCategoryChange}
-            onChange={(event) => onCategoryChange?.(event.target.value)}
-          />
-        </label>
+        {showCategoryField ? (
+          <label className={styles.field}>
+            <span className={styles.label}>{categoryLabel}</span>
+            <input
+              className={styles.input}
+              value={categoryValue}
+              readOnly={!onCategoryChange}
+              onChange={(event) => onCategoryChange?.(event.target.value)}
+            />
+          </label>
+        ) : null}
       </div>
       <div className={styles.gridSecondary}>
         <label className={styles.field}>
