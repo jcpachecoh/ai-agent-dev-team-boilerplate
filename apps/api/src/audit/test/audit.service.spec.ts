@@ -100,6 +100,35 @@ describe('AuditService', () => {
       );
     });
 
+    it('redacts audit blacklist keys: cedulaHash, refreshToken, accessToken, tokenHash', async () => {
+      repoMock.create.mockResolvedValue(undefined);
+      await service.log({
+        tenantId: 't-1',
+        action: AuditAction.UPDATE,
+        entityType: 'User',
+        entityId: 'u-1',
+        payload: {
+          cedulaHash: 'abc',
+          refreshToken: 'rt',
+          accessToken: 'at',
+          tokenHash: 'th',
+          email: 'a@b.com',
+        },
+      });
+
+      expect(repoMock.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          payload: {
+            cedulaHash: '[REDACTED]',
+            refreshToken: '[REDACTED]',
+            accessToken: '[REDACTED]',
+            tokenHash: '[REDACTED]',
+            email: 'a@b.com',
+          },
+        }),
+      );
+    });
+
     it('redacts fields ending in Hash, Token, Secret', async () => {
       repoMock.create.mockResolvedValue(undefined);
       await service.log({

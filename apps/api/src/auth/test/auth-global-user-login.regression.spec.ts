@@ -42,6 +42,9 @@ const repoMock = {
   findByIdForRefresh: jest.fn(),
   findRoleByTenantAndCode: jest.fn(),
   createUser: jest.fn(),
+  incrementLoginAttempts: jest.fn(),
+  lockUser: jest.fn(),
+  resetLoginAttempts: jest.fn(),
   saveRefreshToken: jest.fn(),
   updatePassword: jest.fn(),
 };
@@ -90,6 +93,7 @@ describe('AuthService — global User email login regression (USR-01 Task 09)', 
     (bcryptMock.compare as jest.Mock).mockResolvedValue(true);
     jwtMock.signAsync.mockResolvedValueOnce('access').mockResolvedValueOnce('refresh');
     (bcryptMock.hash as jest.Mock).mockResolvedValue('hashed-refresh');
+    repoMock.resetLoginAttempts.mockResolvedValue(undefined);
     repoMock.saveRefreshToken.mockResolvedValue(undefined);
 
     const result = await service.login(TENANT_ID, {

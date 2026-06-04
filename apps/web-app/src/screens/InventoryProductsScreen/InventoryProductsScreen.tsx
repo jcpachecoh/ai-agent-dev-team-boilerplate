@@ -26,8 +26,10 @@ import { INVENTORY_PAGE_SIZE } from '@/types/inventory';
 import { filterProducts, formatCurrency, stockToneForProduct } from '@/utils/inventory';
 
 import shared from '../inventory/shared.module.scss';
+import { useUiTheme } from '@/hooks/useUiTheme';
 
 export function InventoryProductsScreen(): React.JSX.Element {
+  const theme = useUiTheme();
   const navigate = useNavigate();
   const itemsQuery = useSupplyItems();
   const categoriesQuery = useSupplyCategories();
@@ -151,7 +153,7 @@ export function InventoryProductsScreen(): React.JSX.Element {
           subtitle={`Total: ${filtered.length} insumos • Página ${page} de ${totalPages}`}
           actionLabel="CREAR INSUMO"
           onAction={openCreate}
-          theme="dark"
+          theme={theme}
           size="xl"
           className={shared.pageHeaderHost}
         />
@@ -181,7 +183,7 @@ export function InventoryProductsScreen(): React.JSX.Element {
             setLowStockOnly(v);
             setPage(1);
           }}
-          theme="dark"
+          theme={theme}
           size="xl"
           className={shared.embedToolbar}
         />
@@ -197,14 +199,14 @@ export function InventoryProductsScreen(): React.JSX.Element {
       ) : (
         <section className={shared.tableWrap}>
           <div className={shared.tableHead}>
-            <InventarioTableHeader variant="product" theme="dark" size="xl" />
+            <InventarioTableHeader variant="product" theme={theme} size="xl" />
           </div>
           <div className={shared.tableBody}>
             {pageItems.map((product) => (
               <InventarioTableRow
                 key={product.id}
                 variant="product"
-                theme="dark"
+                theme={theme}
                 size="xl"
                 className={shared.tableRowHost}
                 sku={product.sku}
@@ -229,7 +231,7 @@ export function InventoryProductsScreen(): React.JSX.Element {
               summary={`Página ${page} de ${totalPages}`}
               onPrevious={() => setPage((p) => Math.max(1, p - 1))}
               onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
-              theme="dark"
+              theme={theme}
               size="md"
             />
           </footer>
@@ -237,6 +239,7 @@ export function InventoryProductsScreen(): React.JSX.Element {
       )}
 
       <ProductFormModal
+        theme={theme}
         open={modalOpen}
         mode={modalMode}
         product={editing}

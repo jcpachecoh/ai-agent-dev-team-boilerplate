@@ -2,7 +2,7 @@ import { OperationalRole, ProductionOrderStatus, ProductionShift, StockUnit } fr
 import { Test, TestingModule } from '@nestjs/testing';
 import { Decimal } from '@prisma/client/runtime/library';
 import { MES_ROLES_KEY } from '../../auth/decorators/roles.decorator';
-import { MesJwtGuard } from '../../auth/guards/mes-jwt.guard';
+import { PlantAuthGuard } from '../guards/plant-auth.guard';
 import { MesRolesGuard } from '../../auth/guards/mes-roles.guard';
 import type { MesJwtPayload } from '../../auth/interfaces/mes-auth.interfaces';
 import { PlantController } from '../controller/plant.controller';
@@ -67,7 +67,7 @@ describe('PlantController', () => {
         { provide: IncidentService, useValue: incidentServiceMock },
       ],
     })
-      .overrideGuard(MesJwtGuard)
+      .overrideGuard(PlantAuthGuard)
       .useValue({ canActivate: jest.fn().mockReturnValue(true) })
       .overrideGuard(MesRolesGuard)
       .useValue({ canActivate: jest.fn().mockReturnValue(true) })

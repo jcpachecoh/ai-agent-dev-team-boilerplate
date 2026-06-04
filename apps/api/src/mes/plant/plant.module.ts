@@ -3,10 +3,12 @@ import { JwtModule } from '@nestjs/jwt';
 import { ScheduleModule } from '@nestjs/schedule';
 import { Queue } from 'bullmq';
 import { PrismaModule } from '../../prisma/prisma.module';
+import { RecipeCategoriesModule } from '../../recipe-categories/recipe-categories.module';
 import { SupplyItemsModule } from '../../supplyitems/supplyitems.module';
+import { AuthModule } from '../../auth/auth.module';
 import { MesAuthModule } from '../auth/mes-auth.module';
-import { MesJwtGuard } from '../auth/guards/mes-jwt.guard';
 import { MesRolesGuard } from '../auth/guards/mes-roles.guard';
+import { PlantAuthGuard } from './guards/plant-auth.guard';
 import {
   ALARM_PUSH_ADAPTER,
   EMERGENCY_ALERT_ADAPTER,
@@ -45,7 +47,9 @@ function createPlantAlarmEventsPort(plantEventsService: PlantEventsService): IPl
   imports: [
     ScheduleModule.forRoot(),
     PrismaModule,
+    RecipeCategoriesModule,
     SupplyItemsModule,
+    AuthModule,
     MesAuthModule,
     JwtModule.register({
       secret:
@@ -68,7 +72,7 @@ function createPlantAlarmEventsPort(plantEventsService: PlantEventsService): IPl
     PhaseChainService,
     PlantEventsService,
     PlantGateway,
-    MesJwtGuard,
+    PlantAuthGuard,
     MesRolesGuard,
     {
       provide: PLANT_ALARM_QUEUE,

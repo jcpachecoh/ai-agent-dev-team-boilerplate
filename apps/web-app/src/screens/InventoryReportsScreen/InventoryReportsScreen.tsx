@@ -17,8 +17,10 @@ import { reportToCsv } from '@/utils/inventory';
 
 import shared from '../inventory/shared.module.scss';
 import styles from './InventoryReportsScreen.module.scss';
+import { useUiTheme } from '@/hooks/useUiTheme';
 
 export function InventoryReportsScreen(): React.JSX.Element {
+  const theme = useUiTheme();
   const [reportType, setReportType] = useState('category');
   const [dateStart, setDateStart] = useState('2026-05-01');
   const [dateEnd, setDateEnd] = useState('2026-05-29');
@@ -57,7 +59,7 @@ export function InventoryReportsScreen(): React.JSX.Element {
         <InventarioPageHeader
           title="Reportes de Inventario"
           subtitle="Genera reportes personalizados y exporta en CSV o PDF"
-          theme="dark"
+          theme={theme}
           size="xl"
           className={shared.pageHeaderHost}
         />
@@ -72,7 +74,7 @@ export function InventoryReportsScreen(): React.JSX.Element {
           onStartDateChange={setDateStart}
           onEndDateChange={setDateEnd}
           onGenerate={() => void handleGenerate()}
-          theme="dark"
+          theme={theme}
           size="md"
         />
       </section>
@@ -81,7 +83,7 @@ export function InventoryReportsScreen(): React.JSX.Element {
         <InventarioExportActions
           onExportCsv={handleExportCsv}
           onExportPdf={handleExportPdf}
-          theme="dark"
+          theme={theme}
           size="md"
         />
       </section>
@@ -107,20 +109,20 @@ export function InventoryReportsScreen(): React.JSX.Element {
             <div className={styles.dataTableCell}>
               <div className={[shared.tableWrap, shared.tableWrapInset].join(' ')}>
                 <div className={shared.tableBody}>
-                  <InventarioReportDataTable rows={data.rows} theme="dark" size="xl" />
+                  <InventarioReportDataTable rows={data.rows} theme={theme} size="xl" />
                 </div>
               </div>
             </div>
             <div className={styles.visualCell}>
               <InventarioPanel
                 title="Visualización"
-                theme="dark"
+                theme={theme}
                 size="xl"
                 className={styles.visualPanel}
               >
                 <div className={styles.distributionList}>
                   {data.distribution.map((item) => (
-                    <InventarioDistributionBar key={item.label} {...item} theme="dark" size="xl" />
+                    <InventarioDistributionBar key={item.label} {...item} theme={theme} size="xl" />
                   ))}
                 </div>
               </InventarioPanel>
@@ -128,10 +130,10 @@ export function InventoryReportsScreen(): React.JSX.Element {
           </section>
 
           <section className={shared.chartSection}>
-            <InventarioPanel title="Resumen del Período" theme="dark" size="xl">
+            <InventarioPanel title="Resumen del Período" theme={theme} size="xl">
               <div className={styles.statsRow}>
                 {data.summary.map((stat) => (
-                  <InventarioSummaryStat key={stat.label} {...stat} theme="dark" size="xl" />
+                  <InventarioSummaryStat key={stat.label} {...stat} theme={theme} size="xl" />
                 ))}
               </div>
             </InventarioPanel>

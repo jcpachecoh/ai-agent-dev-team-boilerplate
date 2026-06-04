@@ -29,6 +29,21 @@
     />
   </head>
   <body>
+    <script>
+      (function () {
+        var key = 'restopsiq.web-app.theme';
+        var theme;
+        try {
+          var saved = localStorage.getItem(key);
+          theme = saved === 'light' || saved === 'dark' ? saved : null;
+        } catch (e) {}
+        if (!theme && window.matchMedia('(prefers-color-scheme: light)').matches) {
+          theme = 'light';
+        }
+        if (!theme) theme = 'dark';
+        document.documentElement.dataset.theme = theme;
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

@@ -273,6 +273,48 @@ Signup generates unique `signupEmail` / `signupCedula` per run (201 or 409).
 
 ---
 
+## AUTH-03 — Backend security validation
+
+Implemented in `apps/api` (REST source of truth) with GraphQL delegation in `apps/gateway`.
+
+| Rule             | Global (`User`)                                                                                 | MES (`OperationalUser`)                                                    |
+| ---------------- | ----------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| Password policy  | **> 8 characters** → minimum **9** (`@MinLength(9)` / gateway Zod `.min(9)`)                    | PIN format unchanged (4–6 digits)                                          |
+| Account lockout  | **5** failed password attempts → **15 min** lock (`loginAttempts` / `lockedUntil`)              | **3** failed PIN attempts → **15 min** lock + Redis IP rate limit (5/hour) |
+| Uniqueness       | `@@unique([tenantId, email])` and `@@unique([tenantId, cedula])` + service 409 + P2002 fallback | `@@unique([tenantId, cedulaHash])` + service check                         |
+| Sensitive fields | Responses must not include `passwordHash`, `pinHash`, `cedulaHash`, stored token hashes         | Same; `me` returns id/role/tenant only                                     |
+| JWT in responses | `accessToken` / `refreshToken` strings on login/signup/refresh only                             | `accessToken` / `refreshToken` on MES login only                           |
+
+**Postman (folder 01 → `05 AUTH-03 Security Validation`):**
+
+| Request                        | Purpose                                           |
+| ------------------------------ | ------------------------------------------------- |
+| Signup — Duplicate Email       | 409; no `passwordHash` in body                    |
+| Signup — Duplicate Cédula      | 409 with new email + seeded `{{mesOwnerCedula}}`  |
+| Signup — Weak Password 8 chars | 400 validation                                    |
+| GET Me — No Secret Fields      | After Login; no stored secrets in JSON            |
+| Lockout — Signup Isolated User | Creates `{{authLockoutEmail}}` (not seeded owner) |
+| Lockout — Failed Login 1–5     | Five wrong passwords, then locked login           |
+
+**Lockout testing notes:**
+
+- Do **not** run the lockout sequence against `{{email}}` (seeded owner) in automated Newman full runs.
+- After lockout tests, unlock the isolated user in SQL or wait 15 minutes:
+
+```sql
+UPDATE users
+SET "loginAttempts" = 0, "lockedUntil" = NULL
+WHERE email = '<authLockoutEmail from collection variables>';
+```
+
+- **JWT expiry** is not automated in Postman — edit an expired token or wait 15 minutes for global access TTL.
+
+**GraphQL (folder 10):** `Signup — Weak Password (negative)` and `Signup — Duplicate Email (negative)` mirror REST security cases.
+
+**LoginAudit failure reasons (global):** `password_invalido`, `cuenta_bloqueada` (plus existing messages for unknown user / refresh).
+
+---
+
 ## USR-06 — OperationalUser Link
 
 Operational Auth uses `OperationalUser` (cédula + PIN). `OperationalUser.userId` is nullable and links to global `users.id` when backfilled — this does **not** merge the login flows or tokens.

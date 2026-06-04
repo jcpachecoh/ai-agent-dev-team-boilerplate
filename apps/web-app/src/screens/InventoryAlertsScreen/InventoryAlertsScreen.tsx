@@ -17,8 +17,10 @@ import { InventoryScreenState } from '@/components/inventory/InventoryScreenStat
 import type { InventoryAlert } from '@/types/inventory';
 
 import shared from '../inventory/shared.module.scss';
+import { useUiTheme } from '@/hooks/useUiTheme';
 
 export function InventoryAlertsScreen(): React.JSX.Element {
+  const theme = useUiTheme();
   const [alerts, setAlerts] = useState<InventoryAlert[]>([]);
   const [summary, setSummary] = useState({ critical: 0, warning: 0, resolvedToday: 0 });
   const [loading, setLoading] = useState(true);
@@ -81,7 +83,7 @@ export function InventoryAlertsScreen(): React.JSX.Element {
         <InventarioPageHeader
           title="Alertas de Stock Bajo"
           subtitle={`${alerts.length} alertas pendientes de resolución`}
-          theme="dark"
+          theme={theme}
           size="xl"
           className={shared.pageHeaderHost}
         />
@@ -93,7 +95,7 @@ export function InventoryAlertsScreen(): React.JSX.Element {
           value={String(summary.critical)}
           accent="danger"
           icon={<ShieldAlert aria-hidden />}
-          theme="dark"
+          theme={theme}
           size="xl"
         />
         <InventarioMetricCard
@@ -101,7 +103,7 @@ export function InventoryAlertsScreen(): React.JSX.Element {
           value={String(summary.warning)}
           accent="warning"
           icon={<AlertTriangle aria-hidden />}
-          theme="dark"
+          theme={theme}
           size="xl"
         />
         <InventarioMetricCard
@@ -109,7 +111,7 @@ export function InventoryAlertsScreen(): React.JSX.Element {
           value={String(summary.resolvedToday)}
           accent="success"
           icon={<CheckCircle aria-hidden />}
-          theme="dark"
+          theme={theme}
           size="xl"
         />
       </section>
@@ -121,14 +123,14 @@ export function InventoryAlertsScreen(): React.JSX.Element {
       ) : (
         <section className={shared.tableWrap}>
           <div className={shared.tableHead}>
-            <InventarioTableHeader variant="alert" theme="dark" size="xl" />
+            <InventarioTableHeader variant="alert" theme={theme} size="xl" />
           </div>
           <div className={shared.tableBody}>
             {alerts.map((alert) => (
               <InventarioTableRow
                 key={alert.id}
                 variant="alert"
-                theme="dark"
+                theme={theme}
                 size="xl"
                 className={shared.tableRowHost}
                 severity={alert.severity}

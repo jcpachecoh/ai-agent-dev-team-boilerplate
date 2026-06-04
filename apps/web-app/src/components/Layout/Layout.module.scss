@@ -3,14 +3,14 @@
 .shell {
   display: flex;
   min-height: 100dvh;
-  background: t.$color-bg-primary;
-  color: t.$color-text-primary;
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
 }
 
 .backdrop {
   position: fixed;
   inset: 0;
-  background: t.$color-overlay;
+  background: var(--color-overlay);
   z-index: 20;
   animation: fadeIn t.$layout-transition ease;
 }
@@ -27,7 +27,7 @@
   flex: 1;
   min-height: 0;
   overflow: auto;
-  background: t.$color-bg-primary;
+  background: var(--color-bg-primary);
 }
 
 @keyframes fadeIn {

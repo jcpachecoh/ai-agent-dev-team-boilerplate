@@ -15,8 +15,10 @@ import type { InventoryMovement } from '@/types/inventory';
 import { formatMovementQuantity, movementsToCsv } from '@/utils/inventory';
 
 import shared from '../inventory/shared.module.scss';
+import { useUiTheme } from '@/hooks/useUiTheme';
 
 export function InventoryMovementsScreen(): React.JSX.Element {
+  const theme = useUiTheme();
   const [movements, setMovements] = useState<InventoryMovement[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -87,11 +89,11 @@ export function InventoryMovementsScreen(): React.JSX.Element {
               variant="success"
               icon={<Download aria-hidden />}
               onClick={() => movementsToCsv(filtered)}
-              theme="dark"
+              theme={theme}
               size="md"
             />
           }
-          theme="dark"
+          theme={theme}
           size="xl"
           className={shared.pageHeaderHost}
         />
@@ -99,6 +101,7 @@ export function InventoryMovementsScreen(): React.JSX.Element {
 
       <section className={shared.toolbarSection}>
         <InventoryMovementsFilterBar
+          theme={theme}
           className={shared.embedFilters}
           search={search}
           movementType={movementType}
@@ -115,14 +118,14 @@ export function InventoryMovementsScreen(): React.JSX.Element {
 
       <section className={shared.tableWrap}>
         <div className={shared.tableHead}>
-          <InventarioTableHeader variant="movement" theme="dark" size="xl" />
+          <InventarioTableHeader variant="movement" theme={theme} size="xl" />
         </div>
         <div className={shared.tableBody}>
           {filtered.map((m) => (
             <InventarioTableRow
               key={m.id}
               variant="movement"
-              theme="dark"
+              theme={theme}
               size="xl"
               className={shared.tableRowHost}
               date={m.date}

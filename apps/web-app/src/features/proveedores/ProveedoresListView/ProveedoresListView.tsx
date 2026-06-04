@@ -10,6 +10,7 @@ import {
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import { useUiTheme } from '@/hooks/useUiTheme';
 import { getErrorMessage, isGraphqlConfigured } from '@/lib/graphql-client';
 
 import {
@@ -18,7 +19,6 @@ import {
   matchesStatusFilter,
   PAYMENT_FILTER_OPTIONS,
   PROVEEDOR_TABLE_SIZE,
-  PROVEEDOR_UI_THEME,
   STATUS_FILTER_OPTIONS,
 } from '../constants';
 import { useSupplierListMetrics } from '../hooks/useSuppliers';
@@ -32,6 +32,7 @@ import type { CondicionPagoFilter, SupplierStatusFilter } from '../types';
 import styles from '../proveedores.module.scss';
 
 export default function ProveedoresListView(): React.JSX.Element {
+  const theme = useUiTheme();
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<SupplierStatusFilter>('all');
@@ -69,10 +70,10 @@ export default function ProveedoresListView(): React.JSX.Element {
         productCount: supplier.productCount ?? 0,
         balance: formatCop(supplier.balanceCxp),
         lastPurchaseOrder: supplier.lastPurchaseOrderDate ?? '—',
-        theme: PROVEEDOR_UI_THEME,
+        theme: theme,
         size: PROVEEDOR_TABLE_SIZE,
       })),
-    [filteredSuppliers],
+    [filteredSuppliers, theme],
   );
 
   return (
@@ -86,7 +87,7 @@ export default function ProveedoresListView(): React.JSX.Element {
       )}
 
       <section className={styles.pageHeaderSection}>
-        <ProveedorPageHeader theme={PROVEEDOR_UI_THEME} size={PROVEEDOR_TABLE_SIZE} />
+        <ProveedorPageHeader theme={theme} size={PROVEEDOR_TABLE_SIZE} />
       </section>
 
       <section className={styles.metricsRow} aria-label="Indicadores de proveedores">
@@ -95,7 +96,7 @@ export default function ProveedoresListView(): React.JSX.Element {
           label="PROVEEDORES ACTIVOS"
           value={metrics.activeCount}
           valueColor="enterprise"
-          theme={PROVEEDOR_UI_THEME}
+          theme={theme}
           size={PROVEEDOR_TABLE_SIZE}
           loading={isPending}
         />
@@ -104,7 +105,7 @@ export default function ProveedoresListView(): React.JSX.Element {
           label="PENDIENTES APROBACIÓN"
           value={metrics.pendingCount}
           valueColor="warning"
-          theme={PROVEEDOR_UI_THEME}
+          theme={theme}
           size={PROVEEDOR_TABLE_SIZE}
           loading={isPending}
         />
@@ -113,7 +114,7 @@ export default function ProveedoresListView(): React.JSX.Element {
           label="SALDO CXP"
           value={formatCompactCop(metrics.totalBalanceCxp)}
           valueColor="warning"
-          theme={PROVEEDOR_UI_THEME}
+          theme={theme}
           size={PROVEEDOR_TABLE_SIZE}
           loading={isPending}
         />
@@ -121,7 +122,7 @@ export default function ProveedoresListView(): React.JSX.Element {
           className={styles.metricCard}
           label="TOTAL PRODUCTOS"
           value={metrics.totalProducts}
-          theme={PROVEEDOR_UI_THEME}
+          theme={theme}
           size={PROVEEDOR_TABLE_SIZE}
           loading={isPending}
         />
@@ -129,7 +130,7 @@ export default function ProveedoresListView(): React.JSX.Element {
 
       <section className={styles.toolbarRow} aria-label="Filtros y acciones">
         <RecetaSearch
-          theme={PROVEEDOR_UI_THEME}
+          theme={theme}
           size="md"
           value={search}
           onChange={setSearch}
@@ -138,7 +139,7 @@ export default function ProveedoresListView(): React.JSX.Element {
           className={styles.searchGrow}
         />
         <RecetaFilterSelect
-          theme={PROVEEDOR_UI_THEME}
+          theme={theme}
           size="md"
           className={styles.filterSelect}
           options={CATEGORY_FILTER_OPTIONS}
@@ -147,7 +148,7 @@ export default function ProveedoresListView(): React.JSX.Element {
           aria-label="Filtrar por categoría"
         />
         <RecetaFilterSelect
-          theme={PROVEEDOR_UI_THEME}
+          theme={theme}
           size="md"
           className={styles.filterSelect}
           options={STATUS_FILTER_OPTIONS}
@@ -156,7 +157,7 @@ export default function ProveedoresListView(): React.JSX.Element {
           aria-label="Filtrar por estado"
         />
         <RecetaFilterSelect
-          theme={PROVEEDOR_UI_THEME}
+          theme={theme}
           size="md"
           className={styles.filterSelect}
           options={PAYMENT_FILTER_OPTIONS}
@@ -167,13 +168,13 @@ export default function ProveedoresListView(): React.JSX.Element {
         <div className={styles.actionsStack}>
           <ProveedorActionButton
             variant="primary"
-            theme={PROVEEDOR_UI_THEME}
+            theme={theme}
             size="md"
             onClick={() => navigate('/proveedores/nuevo')}
           />
           <ProveedorActionButton
             variant="export"
-            theme={PROVEEDOR_UI_THEME}
+            theme={theme}
             size="md"
             className={styles.exportAction}
             onClick={() => window.alert('Exportar — próximamente')}
@@ -189,7 +190,7 @@ export default function ProveedoresListView(): React.JSX.Element {
         ) : (
           <ProveedorSuppliersTable
             rows={tableRows}
-            theme={PROVEEDOR_UI_THEME}
+            theme={theme}
             size={PROVEEDOR_TABLE_SIZE}
             onRowClick={(supplierId) => navigate(`/proveedores/${supplierId}`)}
             emptyState={isPending ? 'Cargando proveedores…' : 'No hay proveedores'}

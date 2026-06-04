@@ -66,16 +66,19 @@ export interface CreatePhaseNestedInput {
 
 export interface CreateRecipeWithPhasesInput {
   name: string;
+  categoryId?: string | null;
   finishedProductId: string;
   batchSize: Decimal;
   batchUnit: StockUnit;
   estimatedMinutes: number;
   notes?: string | null;
+  isActive?: boolean;
   phases: CreatePhaseNestedInput[];
 }
 
 export interface UpdateRecipeInput {
   name?: string;
+  categoryId?: string | null;
   finishedProductId?: string;
   batchSize?: Decimal;
   batchUnit?: StockUnit;
@@ -89,12 +92,14 @@ export interface CreateRecipeWithPhasesTxInput {
   tenantId: string;
   recipe: {
     name: string;
+    categoryId?: string | null;
     finishedProductId: string;
     batchSize: Decimal;
     batchUnit: StockUnit;
     estimatedMinutes: number;
     version: number;
     notes?: string | null;
+    isActive?: boolean;
   };
   phases: Array<{
     order: number;
@@ -116,11 +121,18 @@ export interface CreateRecipeWithPhasesTxInput {
   deactivateRecipeId?: string;
 }
 
+export type RecipeCategorySummary = {
+  id: string;
+  nombre: string;
+};
+
 export type RecipeWithPhasesAndInputs = ProductionRecipe & {
+  category: RecipeCategorySummary | null;
   phases: Array<ProductionPhase & { inputs: PhaseInput[] }>;
 };
 
 export interface RecipeDetailResponse extends ProductionRecipe {
+  categoryName?: string | null;
   phases: Array<ProductionPhase & { inputs: PhaseInput[] }>;
   totalStandardMinutes: number;
 }
@@ -132,6 +144,35 @@ export interface RecipeDetailResponse extends ProductionRecipe {
 export interface ReorderPhaseItem {
   phaseId: string;
   newOrder: number;
+}
+
+export interface UpdatePhaseInput {
+  order?: number;
+  name?: string;
+  description?: string | null;
+  workStationId?: string;
+  standardMinutes?: number;
+  minOperators?: number;
+  maxOperators?: number;
+  requiresQA?: boolean;
+  inputs?: CreatePhaseInputNestedInput[];
+}
+
+export interface CreatePhaseOnRecipeData {
+  order: number;
+  name: string;
+  description?: string | null;
+  workStationId: string;
+  standardMinutes: number;
+  minOperators: number;
+  maxOperators: number;
+  requiresQA: boolean;
+  inputs: Array<{
+    supplyItemId: string;
+    quantityPerBatch: Decimal;
+    unit: StockUnit;
+    isOptional: boolean;
+  }>;
 }
 
 export interface CreatePhaseInputInput {
@@ -450,6 +491,14 @@ export interface IPlantRepository {
   // Phases
   findPhaseById(tenantId: string, id: string): Promise<ProductionPhase | null>;
   findPhasesByRecipeId(tenantId: string, recipeId: string): Promise<ProductionPhase[]>;
+  createPhaseWithInputsTx(
+    tenantId: string,
+    recipeId: string,
+    phase: CreatePhaseOnRecipeData,
+  ): Promise<ProductionPhase>;
+  updatePhase(tenantId: string, id: string, data: UpdatePhaseInput): Promise<ProductionPhase>;
+  deletePhase(tenantId: string, id: string): Promise<void>;
+  countPhaseExecutions(tenantId: string, phaseId: string): Promise<number>;
   reorderPhasesTx(tenantId: string, recipeId: string, items: ReorderPhaseItem[]): Promise<void>;
 
   // Phase inputs
@@ -491,7 +540,14 @@ export interface IPlantService {
   cloneRecipe(tenantId: string, id: string): Promise<ProductionRecipe>;
   softDeleteRecipe(tenantId: string, id: string): Promise<ProductionRecipe>;
 
-  // Phases — PATCH /plant/recipes/:id/phases/reorder
+  // Phases — POST /plant/recipes/:id/phases, PATCH/DELETE /plant/phases/:id, reorder
+  createPhaseOnRecipe(
+    tenantId: string,
+    recipeId: string,
+    input: CreatePhaseNestedInput,
+  ): Promise<ProductionPhase>;
+  updatePhase(tenantId: string, phaseId: string, input: UpdatePhaseInput): Promise<ProductionPhase>;
+  deletePhase(tenantId: string, phaseId: string): Promise<void>;
   reorderPhases(tenantId: string, recipeId: string, items: ReorderPhaseItem[]): Promise<void>;
 
   // Phase inputs — POST/DELETE /plant/phases/:id/inputs

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 
 import UserMenu from '@/components/UserMenu';
+import ThemeSwitch from '@/components/ThemeSwitch';
 import { getBreadcrumbsForPath } from '@/constants/navigation';
 import { useLogout } from '@/features/auth/hooks/useLogout';
 
@@ -59,6 +60,8 @@ export default function Header({
           <Bell size={16} />
           <span className={styles.notificationDot} aria-hidden />
         </button>
+
+        <ThemeSwitch />
 
         <UserMenu onLogout={handleLogout} />
       </div>

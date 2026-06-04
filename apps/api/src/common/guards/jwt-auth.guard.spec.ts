@@ -1,5 +1,6 @@
 import { ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { GqlExecutionContext } from '@nestjs/graphql';
 import { Test, TestingModule } from '@nestjs/testing';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
@@ -43,5 +44,25 @@ describe('JwtAuthGuard', () => {
     const result = guard.canActivate(context);
     expect(result).toBe(true);
     superActivate.mockRestore();
+  });
+
+  it('getRequest returns HTTP request for non-graphql contexts', () => {
+    const req = { headers: {} };
+    const context = {
+      getType: () => 'http',
+      switchToHttp: () => ({ getRequest: () => req }),
+    } as unknown as ExecutionContext;
+
+    expect(guard.getRequest(context)).toBe(req);
+  });
+
+  it('getRequest returns GraphQL request from execution context', () => {
+    const req = { headers: {} };
+    const context = { getType: () => 'graphql' } as unknown as ExecutionContext;
+    jest.spyOn(GqlExecutionContext, 'create').mockReturnValue({
+      getContext: () => ({ req }),
+    } as GqlExecutionContext);
+
+    expect(guard.getRequest(context)).toBe(req);
   });
 });

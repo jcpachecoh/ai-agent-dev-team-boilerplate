@@ -9,15 +9,15 @@
   align-items: center;
   gap: t.$space-2;
   padding: t.$space-1;
-  border: 1px solid t.$color-brand-gold-border;
+  border: 1px solid var(--color-brand-gold-border);
   border-radius: t.$border-radius-sm;
-  background: t.$color-brand-gold-subtle;
-  color: t.$color-text-primary;
+  background: var(--color-brand-gold-subtle);
+  color: var(--color-text-primary);
   cursor: pointer;
   transition: background t.$layout-transition;
 
   &:hover {
-    background: rgba(200, 169, 110, 0.2);
+    background: var(--color-brand-gold-hover);
   }
 }
 
@@ -28,7 +28,7 @@
   width: 1.75rem;
   height: 1.75rem;
   border-radius: t.$border-radius-sm;
-  background: t.$color-bg-surface;
+  background: var(--color-bg-surface);
   color: t.$color-brand-gold;
 }
 
@@ -45,47 +45,47 @@
   right: 0;
   min-width: 12rem;
   padding: t.$space-2;
-  border: 1px solid t.$color-border;
+  border: 1px solid var(--color-border);
   border-radius: t.$border-radius-sm;
-  background: t.$color-bg-surface;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  background: var(--color-bg-surface);
+  box-shadow: 0 8px 24px var(--color-dropdown-shadow);
   z-index: 20;
 }
 
 .userInfo {
   padding: t.$space-2 t.$space-3 t.$space-3;
-  border-bottom: 1px solid t.$color-border;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .userName {
   display: block;
   font-size: t.$font-size-md;
   font-weight: t.$font-weight-semibold;
-  color: t.$color-text-primary;
+  color: var(--color-text-primary);
 }
 
 .userRole {
   display: block;
   margin-top: t.$space-1;
   font-size: t.$font-size-sm;
-  color: t.$color-text-secondary;
+  color: var(--color-text-secondary);
 }
 
 .logoutButton {
   width: 100%;
   margin-top: t.$space-2;
   padding: t.$space-2 t.$space-3;
-  border: 1px solid t.$color-border;
+  border: 1px solid var(--color-border);
   border-radius: t.$border-radius-sm;
   background: transparent;
-  color: t.$color-text-secondary;
+  color: var(--color-text-secondary);
   font-size: t.$font-size-sm;
   text-align: left;
   cursor: pointer;
 
   &:hover {
-    color: t.$color-text-primary;
-    background: t.$color-nav-hover;
+    color: var(--color-text-primary);
+    background: var(--color-nav-hover);
   }
 }
 

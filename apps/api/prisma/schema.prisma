@@ -456,9 +456,26 @@ model WorkStation {
   @@map("work_stations")
 }
 
+model RecipeCategory {
+  id          String   @id @default(cuid())
+  tenantId    String
+  nombre      String
+  descripcion String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  recipes ProductionRecipe[]
+
+  @@unique([tenantId, nombre])
+  @@index([tenantId, isActive])
+  @@map("recipe_categories")
+}
+
 model ProductionRecipe {
   id                String    @id @default(cuid())
   tenantId          String
+  categoryId        String?
   name              String
   finishedProductId String
   batchSize         Decimal   @db.Decimal(10, 3)
@@ -470,10 +487,12 @@ model ProductionRecipe {
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
-  phases ProductionPhase[]
-  orders ProductionOrder[]
+  category RecipeCategory? @relation(fields: [categoryId], references: [id])
+  phases   ProductionPhase[]
+  orders   ProductionOrder[]
 
   @@index([tenantId, isActive])
+  @@index([tenantId, categoryId])
   @@map("production_recipes")
 }
 

@@ -151,3 +151,4 @@ export * from './components/inventario/shared/inventario-types';
 export * from './components/ProfileHeader';
 export * from './components/InitialBadge';
 export * from './components/Sidebar';
+export * from './components/Switch';

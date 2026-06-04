@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { AuthMethod, LoginAuditStatus } from '@prisma/client';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import type {
@@ -27,6 +28,10 @@ const SALT_ROUNDS = 12;
 const ACCESS_TOKEN_TTL = '15m';
 const REFRESH_TOKEN_TTL = '7d';
 const DEFAULT_ROLE_CODE = 'OPERATOR';
+const MAX_LOGIN_ATTEMPTS = 5;
+const LOCK_DURATION_MS = 15 * 60 * 1000;
+const FAILURE_PASSWORD_INVALID = 'password_invalido';
+const FAILURE_ACCOUNT_LOCKED = 'cuenta_bloqueada';
 
 @Injectable()
 export class AuthService implements IAuthService {
@@ -66,14 +71,19 @@ export class AuthService implements IAuthService {
     }
 
     const passwordHash = await bcrypt.hash(dto.password, SALT_ROUNDS);
-    const user = await this.authRepository.createUser({
-      tenantId: resolvedTenantId,
-      cedula: dto.cedula,
-      documentType: dto.documentType,
-      email: dto.email,
-      passwordHash,
-      roleId: role.id,
-    });
+    let user;
+    try {
+      user = await this.authRepository.createUser({
+        tenantId: resolvedTenantId,
+        cedula: dto.cedula,
+        documentType: dto.documentType,
+        email: dto.email,
+        passwordHash,
+        roleId: role.id,
+      });
+    } catch (error) {
+      this.rethrowUserUniqueViolation(error);
+    }
 
     try {
       await this.authEmailService.sendVerifyEmail(
@@ -96,62 +106,92 @@ export class AuthService implements IAuthService {
     userAgent?: string,
   ): Promise<AuthTokens> {
     const resolvedTenantId = this.requireTenantId(tenantId);
+    const maskedIdentifier = this.maskIdentifier(dto.email);
 
-    const user = await this.authRepository.findByTenantAndEmailForAuth(resolvedTenantId, dto.email);
+    try {
+      const user = await this.authRepository.findByTenantAndEmailForAuth(
+        resolvedTenantId,
+        dto.email,
+      );
 
-    if (!user || !user.isActive || user.deletedAt) {
-      await this.auditService.logLogin({
-        tenantId: resolvedTenantId,
-        identifier: dto.email,
-        authMethod: AuthMethod.PASSWORD,
-        status: LoginAuditStatus.FAILED,
-        failureReason: 'User not found or inactive',
-        ipAddress,
-        userAgent,
-      });
-      throw new UnauthorizedException('Invalid credentials');
-    }
+      if (!user || !user.isActive || user.deletedAt) {
+        this.logger.warn(
+          `Login denied: user not found or inactive (tenant=${resolvedTenantId}, identifier=${maskedIdentifier}, ip=${ipAddress ?? 'n/a'})`,
+        );
+        await this.auditService.logLogin({
+          tenantId: resolvedTenantId,
+          identifier: dto.email,
+          authMethod: AuthMethod.PASSWORD,
+          status: LoginAuditStatus.FAILED,
+          failureReason: 'User not found or inactive',
+          ipAddress,
+          userAgent,
+        });
+        throw new UnauthorizedException('Invalid credentials');
+      }
 
-    if (user.lockedUntil && user.lockedUntil > new Date()) {
+      if (user.lockedUntil && user.lockedUntil > new Date()) {
+        this.logger.warn(
+          `Login denied: account locked (tenant=${resolvedTenantId}, userId=${user.id}, identifier=${maskedIdentifier}, lockedUntil=${user.lockedUntil.toISOString()}, ip=${ipAddress ?? 'n/a'})`,
+        );
+        await this.auditService.logLogin({
+          tenantId: resolvedTenantId,
+          userId: user.id,
+          identifier: dto.email,
+          authMethod: AuthMethod.PASSWORD,
+          status: LoginAuditStatus.LOCKED,
+          failureReason: FAILURE_ACCOUNT_LOCKED,
+          ipAddress,
+          userAgent,
+        });
+        throw new UnauthorizedException('Invalid credentials');
+      }
+
+      const passwordMatch = await bcrypt.compare(dto.password, user.passwordHash);
+      if (!passwordMatch) {
+        this.logger.warn(
+          `Login denied: password mismatch (tenant=${resolvedTenantId}, userId=${user.id}, identifier=${maskedIdentifier}, ip=${ipAddress ?? 'n/a'})`,
+        );
+        await this.handleFailedLogin(user);
+        await this.auditService.logLogin({
+          tenantId: resolvedTenantId,
+          userId: user.id,
+          identifier: dto.email,
+          authMethod: AuthMethod.PASSWORD,
+          status: LoginAuditStatus.FAILED,
+          failureReason: FAILURE_PASSWORD_INVALID,
+          ipAddress,
+          userAgent,
+        });
+        throw new UnauthorizedException('Invalid credentials');
+      }
+
+      await this.authRepository.resetLoginAttempts(user.id);
       await this.auditService.logLogin({
         tenantId: resolvedTenantId,
         userId: user.id,
         identifier: dto.email,
         authMethod: AuthMethod.PASSWORD,
-        status: LoginAuditStatus.LOCKED,
-        failureReason: 'Account locked',
+        status: LoginAuditStatus.SUCCESS,
         ipAddress,
         userAgent,
       });
-      throw new UnauthorizedException('Invalid credentials');
+
+      this.logger.log(
+        `Login success (tenant=${resolvedTenantId}, userId=${user.id}, identifier=${maskedIdentifier}, ip=${ipAddress ?? 'n/a'})`,
+      );
+      return this.issueTokens(user.id, user.email);
+    } catch (error) {
+      if (error instanceof UnauthorizedException || error instanceof BadRequestException) {
+        throw error;
+      }
+
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(
+        `Login failed with unexpected error (tenant=${resolvedTenantId}, identifier=${maskedIdentifier}, ip=${ipAddress ?? 'n/a'}): ${message}`,
+      );
+      throw error;
     }
-
-    const passwordMatch = await bcrypt.compare(dto.password, user.passwordHash);
-    if (!passwordMatch) {
-      await this.auditService.logLogin({
-        tenantId: resolvedTenantId,
-        userId: user.id,
-        identifier: dto.email,
-        authMethod: AuthMethod.PASSWORD,
-        status: LoginAuditStatus.FAILED,
-        failureReason: 'Invalid password',
-        ipAddress,
-        userAgent,
-      });
-      throw new UnauthorizedException('Invalid credentials');
-    }
-
-    await this.auditService.logLogin({
-      tenantId: resolvedTenantId,
-      userId: user.id,
-      identifier: dto.email,
-      authMethod: AuthMethod.PASSWORD,
-      status: LoginAuditStatus.SUCCESS,
-      ipAddress,
-      userAgent,
-    });
-
-    return this.issueTokens(user.id, user.email);
   }
 
   async refresh(
@@ -272,6 +312,47 @@ export class AuthService implements IAuthService {
       throw new BadRequestException('x-tenant-id header is required');
     }
     return trimmed;
+  }
+
+  private async handleFailedLogin(user: { id: string; loginAttempts: number }): Promise<void> {
+    await this.authRepository.incrementLoginAttempts(user.id);
+    if (user.loginAttempts + 1 >= MAX_LOGIN_ATTEMPTS) {
+      await this.authRepository.lockUser(user.id, new Date(Date.now() + LOCK_DURATION_MS));
+    }
+  }
+
+  /**
+   * Maps Prisma unique violations on User (tenantId+email / tenantId+cedula) to safe 409 responses.
+   */
+  private rethrowUserUniqueViolation(error: unknown): never {
+    if (error instanceof PrismaClientKnownRequestError && error.code === 'P2002') {
+      const target = error.meta?.target;
+      const fields: string[] = Array.isArray(target)
+        ? target.map(String)
+        : typeof target === 'string'
+          ? [target]
+          : [];
+      const normalized = fields.join(',').toLowerCase();
+      if (normalized.includes('email')) {
+        throw new ConflictException('Email already registered');
+      }
+      if (normalized.includes('cedula')) {
+        throw new ConflictException('Cédula already registered');
+      }
+      throw new ConflictException('User already registered');
+    }
+    throw error;
+  }
+
+  private maskIdentifier(identifier: string): string {
+    const value = identifier.trim();
+    const [local, domain] = value.split('@');
+    if (!local || !domain) {
+      return 'redacted';
+    }
+
+    const localMasked = local.length <= 2 ? `${local[0]}*` : `${local.slice(0, 2)}***`;
+    return `${localMasked}@${domain}`;
   }
 
   private async issueTokens(userId: string, email: string): Promise<AuthTokens> {

@@ -5,6 +5,7 @@ import { InventoryScreenState } from '@/components/inventory/InventoryScreenStat
 import { useSupplyItem } from '@/features/inventario/hooks/useSupplyItem';
 import { useSupplyItemPriceHistory } from '@/features/inventario/hooks/useSupplyItemPriceHistory';
 import { useSupplyItemSuppliers } from '@/features/inventario/hooks/useSupplyItemSuppliers';
+import { useUiTheme } from '@/hooks/useUiTheme';
 import { STOCK_UNIT_OPTIONS } from '@/types/inventory';
 import { formatCurrency } from '@/utils/inventory';
 
@@ -15,7 +16,16 @@ function unitLabel(unit: string): string {
   return STOCK_UNIT_OPTIONS.find((u) => u.value === unit)?.label ?? unit;
 }
 
+function formatHistoryDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('es-CO', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
 export function InventoryProductDetailScreen(): React.JSX.Element {
+  const theme = useUiTheme();
   const { id = '' } = useParams();
   const productQuery = useSupplyItem(id);
   const suppliersQuery = useSupplyItemSuppliers(id);
@@ -44,15 +54,15 @@ export function InventoryProductDetailScreen(): React.JSX.Element {
       <section className={shared.pageHeader}>
         <InventarioPageHeader
           title={product.name}
-          subtitle={`${product.sku} · ${product.category} · ${product.supplier}`}
-          theme="dark"
+          subtitle={`SKU ${product.sku} · ${product.category} · ${product.supplier}`}
+          theme={theme}
           size="xl"
           className={shared.pageHeaderHost}
         />
       </section>
 
       <section className={shared.detailBlock}>
-        <InventarioPanel title="Información general" theme="dark" size="xl">
+        <InventarioPanel title="Información general" theme={theme} size="xl">
           <dl className={styles.infoGrid}>
             <div>
               <dt>Costo promedio (CPP)</dt>
@@ -85,78 +95,68 @@ export function InventoryProductDetailScreen(): React.JSX.Element {
       </section>
 
       <section className={shared.detailBlock}>
-        <InventarioPanel title="Proveedores vinculados" theme="dark" size="xl">
-          {suppliersQuery.isLoading ? (
-            <p className={styles.muted}>Cargando proveedores…</p>
-          ) : suppliers.length === 0 ? (
-            <p className={styles.muted}>
-              Sin proveedores asociados. Vincule desde el módulo Proveedores.
-            </p>
-          ) : (
-            <div
-              className={[shared.tableWrap, shared.tableWrapInset, styles.supplierGrid].join(' ')}
-            >
-              <div className={styles.siteTable}>
-                <div className={styles.siteHeader} role="row">
-                  <span>Proveedor</span>
-                  <span>NIT</span>
-                  <span>Precio</span>
-                  <span>Unidad</span>
-                  <span>Lead time</span>
-                  <span>Principal</span>
-                </div>
-                {suppliers.map((row) => (
-                  <div key={row.supplierId} className={styles.siteRow} role="row">
-                    <span>{row.razonSocial}</span>
-                    <span>{row.nit}</span>
-                    <span>{formatCurrency(row.precioUnitario)}</span>
-                    <span>{unitLabel(row.unidadCompra)}</span>
-                    <span>{row.tiempoEntregaDias} días</span>
-                    <span>{row.esProveedorPrincipal ? 'Sí' : '—'}</span>
+        <InventarioPanel title="Proveedores" theme={theme} size="xl">
+          <div className={[shared.tableWrap, shared.tableWrapInset].join(' ')}>
+            <div className={shared.tableBody}>
+              {suppliersQuery.isLoading ? (
+                <p className={styles.muted}>Cargando proveedores…</p>
+              ) : suppliers.length === 0 ? (
+                <p className={styles.muted}>Sin proveedores asociados.</p>
+              ) : (
+                <div className={[styles.siteTable, styles.supplierGrid].join(' ')}>
+                  <div className={styles.siteHeader} role="row">
+                    <span>Proveedor</span>
+                    <span>NIT</span>
+                    <span>Precio</span>
+                    <span>Unidad</span>
+                    <span>Lead time</span>
+                    <span>Principal</span>
                   </div>
-                ))}
-              </div>
+                  {suppliers.map((row) => (
+                    <div key={row.supplierId} className={styles.siteRow} role="row">
+                      <span>{row.razonSocial}</span>
+                      <span>{row.nit}</span>
+                      <span>{formatCurrency(row.precioUnitario)}</span>
+                      <span>{unitLabel(row.unidadCompra)}</span>
+                      <span>{row.tiempoEntregaDias} días</span>
+                      <span>{row.esProveedorPrincipal ? 'Sí' : '—'}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </InventarioPanel>
       </section>
 
       <section className={shared.detailBlock}>
-        <InventarioPanel title="Historial de costo" theme="dark" size="xl">
-          {historyQuery.isLoading ? (
-            <p className={styles.muted}>Cargando historial…</p>
-          ) : history.length === 0 ? (
-            <p className={styles.muted}>Sin movimientos de costo registrados.</p>
-          ) : (
-            <div
-              className={[shared.tableWrap, shared.tableWrapInset, styles.historyGrid].join(' ')}
-            >
-              <div className={styles.siteTable}>
-                <div className={styles.siteHeader} role="row">
-                  <span>Fecha</span>
-                  <span>Anterior</span>
-                  <span>Nuevo</span>
-                  <span>Motivo</span>
-                </div>
-                {history.map((entry) => (
-                  <div key={entry.id} className={styles.siteRow} role="row">
-                    <span>{new Date(entry.createdAt).toLocaleString('es-CO')}</span>
-                    <span>{formatCurrency(entry.costoAnterior)}</span>
-                    <span>{formatCurrency(entry.costoNuevo)}</span>
-                    <span>{entry.motivo ?? entry.referenciaTipo ?? '—'}</span>
+        <InventarioPanel title="Historial de costos" theme={theme} size="xl">
+          <div className={[shared.tableWrap, shared.tableWrapInset].join(' ')}>
+            <div className={shared.tableBody}>
+              {historyQuery.isLoading ? (
+                <p className={styles.muted}>Cargando historial…</p>
+              ) : history.length === 0 ? (
+                <p className={styles.muted}>Sin movimientos de costo registrados.</p>
+              ) : (
+                <div className={[styles.siteTable, styles.historyGrid].join(' ')}>
+                  <div className={styles.siteHeader} role="row">
+                    <span>Fecha</span>
+                    <span>Costo anterior</span>
+                    <span>Costo nuevo</span>
+                    <span>Motivo</span>
                   </div>
-                ))}
-              </div>
+                  {history.map((entry) => (
+                    <div key={entry.id} className={styles.siteRow} role="row">
+                      <span>{formatHistoryDate(entry.createdAt)}</span>
+                      <span>{formatCurrency(entry.costoAnterior)}</span>
+                      <span>{formatCurrency(entry.costoNuevo)}</span>
+                      <span>{entry.motivo ?? '—'}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-          )}
-        </InventarioPanel>
-      </section>
-
-      <section className={shared.detailBlock}>
-        <InventarioPanel title="Stock por sede y movimientos" theme="dark" size="xl">
-          <p className={styles.muted}>
-            Disponible cuando se integre el módulo de bodega y movimientos de inventario.
-          </p>
+          </div>
         </InventarioPanel>
       </section>
     </div>

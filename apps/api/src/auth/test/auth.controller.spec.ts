@@ -81,10 +81,11 @@ describe('AuthController', () => {
         email: 'a@b.com',
         cedula: '12345678',
         documentType: DocumentType.CC,
-        password: 'pass1234',
+        password: 'pass12345',
       };
       const result = await controller.signup(dto, TENANT_ID);
       expect(result).toEqual(tokens);
+      expect(result).not.toHaveProperty('passwordHash');
       expect(serviceMock.signup).toHaveBeenCalledWith(TENANT_ID, dto);
     });
 
@@ -93,7 +94,7 @@ describe('AuthController', () => {
         email: 'a@b.com',
         cedula: '12345678',
         documentType: DocumentType.CC,
-        password: 'pass1234',
+        password: 'pass12345',
       };
       expect(() => controller.signup(dto, '')).toThrow(BadRequestException);
     });
@@ -106,6 +107,7 @@ describe('AuthController', () => {
       const req = { headers: {}, socket: { remoteAddress: '1.2.3.4' } } as never;
       const result = await controller.login(dto, TENANT_ID, req);
       expect(result).toEqual(tokens);
+      expect(result).not.toHaveProperty('passwordHash');
       expect(serviceMock.login).toHaveBeenCalledWith(TENANT_ID, dto, '1.2.3.4', undefined);
     });
 
@@ -127,6 +129,7 @@ describe('AuthController', () => {
       } as never;
       const result = await controller.refresh(req);
       expect(result).toEqual(tokens);
+      expect(result).not.toHaveProperty('passwordHash');
       expect(serviceMock.refresh).toHaveBeenCalledWith(
         'user-1',
         'raw-refresh',
@@ -177,6 +180,7 @@ describe('AuthController', () => {
         'NewPass123!',
       );
       expect(result).toEqual({ message: 'Password updated successfully.' });
+      expect(result).not.toHaveProperty('passwordHash');
     });
 
     it('propagates UnauthorizedException from AuthService.changePassword', async () => {
@@ -243,6 +247,7 @@ describe('AuthController', () => {
 
       expect(serviceMock.resetPassword).toHaveBeenCalledWith('raw-token-hex', 'NewPass123!');
       expect(result).toHaveProperty('message');
+      expect(result).not.toHaveProperty('passwordHash');
     });
 
     it('propagates BadRequestException from authService.resetPassword', async () => {

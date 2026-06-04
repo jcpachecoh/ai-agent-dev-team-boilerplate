@@ -1,3 +1,5 @@
+import { readFileSync } from 'fs';
+import { join } from 'path';
 import { JwtStrategy } from '../strategies/jwt.strategy';
 import { JwtRefreshStrategy } from '../strategies/jwt-refresh.strategy';
 
@@ -6,6 +8,12 @@ describe('JwtStrategy', () => {
 
   beforeEach(() => {
     strategy = new JwtStrategy();
+  });
+
+  it('configures ignoreExpiration false so expired access tokens are rejected', () => {
+    const source = readFileSync(join(__dirname, '../strategies/jwt.strategy.ts'), 'utf8');
+    expect(source).toMatch(/ignoreExpiration:\s*false/);
+    expect(strategy).toBeDefined();
   });
 
   it('returns the payload unchanged', () => {
@@ -19,6 +27,12 @@ describe('JwtRefreshStrategy', () => {
 
   beforeEach(() => {
     strategy = new JwtRefreshStrategy();
+  });
+
+  it('configures ignoreExpiration false so expired refresh tokens are rejected', () => {
+    const source = readFileSync(join(__dirname, '../strategies/jwt-refresh.strategy.ts'), 'utf8');
+    expect(source).toMatch(/ignoreExpiration:\s*false/);
+    expect(strategy).toBeDefined();
   });
 
   it('extracts refreshToken from Authorization header and merges with payload', () => {

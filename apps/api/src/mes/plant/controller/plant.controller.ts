@@ -11,6 +11,7 @@ import {
   Post,
   Query,
   Req,
+  UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -25,6 +26,7 @@ import {
 import {
   OperationalRole,
   type PhaseInput,
+  type ProductionPhase,
   type ProductionRecipe,
   type WorkStation,
 } from '@prisma/client';
@@ -32,14 +34,16 @@ import { Decimal } from '@prisma/client/runtime/library';
 import type { Request } from 'express';
 import { Public } from '../../../common/decorators/public.decorator';
 import { Roles } from '../../auth/decorators/roles.decorator';
-import { MesJwtGuard } from '../../auth/guards/mes-jwt.guard';
 import { MesRolesGuard } from '../../auth/guards/mes-roles.guard';
+import { PlantAuthGuard } from '../guards/plant-auth.guard';
 import type { MesJwtPayload } from '../../auth/interfaces/mes-auth.interfaces';
 import type {
   ChainResult,
   CreateOrderInput,
   CreatePhaseInputInput,
+  CreatePhaseNestedInput,
   CreateRecipeWithPhasesInput,
+  UpdatePhaseInput,
   IncidentResponse,
   ListIncidentsFilters,
   ListOrdersFilters,
@@ -64,6 +68,8 @@ import { OrderDetailResponseDto, OrderListItemResponseDto } from './dto/order-de
 import { PauseOrderDto } from './dto/pause-order.dto';
 import { QaApproveDto } from './dto/qa-approve.dto';
 import { ReorderPhaseItemDto } from './dto/reorder-phases.dto';
+import { UpdatePhaseDto } from './dto/update-phase.dto';
+import { CreatePhaseDto } from './dto/create-recipe.dto';
 import { ResolveIncidentDto } from './dto/resolve-incident.dto';
 import { RecipeDetailResponseDto } from './dto/recipe-detail.response';
 import { UpdateRecipeDto } from './dto/update-recipe.dto';
@@ -75,12 +81,12 @@ const SUPERVISOR_ROLES = [
   OperationalRole.OWNER,
 ] as const;
 
-type MesRequest = Request & { user: MesJwtPayload };
+type MesRequest = Request & { user: MesJwtPayload & { tenantId?: string } };
 
 @ApiTags('plant')
 @Controller('plant')
 @Public()
-@UseGuards(MesJwtGuard)
+@UseGuards(PlantAuthGuard)
 @ApiBearerAuth()
 export class PlantController {
   constructor(
@@ -88,6 +94,19 @@ export class PlantController {
     private readonly phaseChainService: PhaseChainService,
     private readonly incidentService: IncidentService,
   ) {}
+
+  /** MES JWT carries tenantId; platform login uses x-tenant-id on existing plant routes. */
+  private resolveTenantId(req: MesRequest): string {
+    const fromJwt = req.user?.tenantId;
+    if (typeof fromJwt === 'string' && fromJwt.trim()) {
+      return fromJwt.trim();
+    }
+    const header = req.headers['x-tenant-id'];
+    if (typeof header === 'string' && header.trim()) {
+      return header.trim();
+    }
+    throw new UnauthorizedException('Tenant is required (JWT tenantId or x-tenant-id header)');
+  }
 
   // ── Workstations ─────────────────────────────────────────────────────────────
 
@@ -99,14 +118,14 @@ export class PlantController {
     @Req() req: MesRequest,
     @Body() dto: CreateWorkstationDto,
   ): Promise<WorkStation> {
-    return this.plantService.createWorkStation(req.user.tenantId, dto);
+    return this.plantService.createWorkStation(this.resolveTenantId(req), dto);
   }
 
   @ApiOperation({ summary: 'List work stations' })
   @ApiOkResponse({ description: 'Array of work stations' })
   @Get('workstations')
   findAllWorkStations(@Req() req: MesRequest): Promise<WorkStation[]> {
-    return this.plantService.findAllWorkStations(req.user.tenantId);
+    return this.plantService.findAllWorkStations(this.resolveTenantId(req));
   }
 
   @ApiOperation({ summary: 'Update a work station' })
@@ -118,7 +137,7 @@ export class PlantController {
     @Param('id') id: string,
     @Body() dto: UpdateWorkstationDto,
   ): Promise<WorkStation> {
-    return this.plantService.updateWorkStation(req.user.tenantId, id, dto);
+    return this.plantService.updateWorkStation(this.resolveTenantId(req), id, dto);
   }
 
   @ApiOperation({ summary: 'Soft-delete a work station' })
@@ -126,7 +145,7 @@ export class PlantController {
   @ApiOkResponse({ description: 'Work station deactivated' })
   @Delete('workstations/:id')
   softDeleteWorkStation(@Req() req: MesRequest, @Param('id') id: string): Promise<WorkStation> {
-    return this.plantService.softDeleteWorkStation(req.user.tenantId, id);
+    return this.plantService.softDeleteWorkStation(this.resolveTenantId(req), id);
   }
 
   // ── Recipes ──────────────────────────────────────────────────────────────────
@@ -136,14 +155,14 @@ export class PlantController {
   @Post('recipes')
   @HttpCode(HttpStatus.CREATED)
   createRecipe(@Req() req: MesRequest, @Body() dto: CreateRecipeDto): Promise<ProductionRecipe> {
-    return this.plantService.createRecipe(req.user.tenantId, this.toCreateRecipeInput(dto));
+    return this.plantService.createRecipe(this.resolveTenantId(req), this.toCreateRecipeInput(dto));
   }
 
   @ApiOperation({ summary: 'List production recipes' })
   @ApiOkResponse({ description: 'Array of recipes' })
   @Get('recipes')
   findAllRecipes(@Req() req: MesRequest): Promise<ProductionRecipe[]> {
-    return this.plantService.findAllRecipes(req.user.tenantId);
+    return this.plantService.findAllRecipes(this.resolveTenantId(req));
   }
 
   @ApiOperation({ summary: 'Reorder phases for a recipe' })
@@ -157,7 +176,49 @@ export class PlantController {
     @Body(new ParseArrayPipe({ items: ReorderPhaseItemDto }))
     items: ReorderPhaseItemDto[],
   ): Promise<void> {
-    return this.plantService.reorderPhases(req.user.tenantId, id, items);
+    return this.plantService.reorderPhases(this.resolveTenantId(req), id, items);
+  }
+
+  @ApiOperation({ summary: 'Add a phase to an existing recipe' })
+  @ApiParam({ name: 'id', description: 'Recipe ID' })
+  @ApiCreatedResponse({ description: 'Phase created' })
+  @Post('recipes/:id/phases')
+  @HttpCode(HttpStatus.CREATED)
+  createRecipePhase(
+    @Req() req: MesRequest,
+    @Param('id') id: string,
+    @Body() dto: CreatePhaseDto,
+  ): Promise<ProductionPhase> {
+    return this.plantService.createPhaseOnRecipe(
+      this.resolveTenantId(req),
+      id,
+      this.toCreatePhaseNestedInput(dto),
+    );
+  }
+
+  @ApiOperation({ summary: 'Update a production phase' })
+  @ApiParam({ name: 'id', description: 'Phase ID' })
+  @ApiOkResponse({ description: 'Phase updated' })
+  @Patch('phases/:id')
+  updatePhase(
+    @Req() req: MesRequest,
+    @Param('id') id: string,
+    @Body() dto: UpdatePhaseDto,
+  ): Promise<ProductionPhase> {
+    return this.plantService.updatePhase(
+      this.resolveTenantId(req),
+      id,
+      this.toUpdatePhaseInput(dto),
+    );
+  }
+
+  @ApiOperation({ summary: 'Delete a production phase' })
+  @ApiParam({ name: 'id', description: 'Phase ID' })
+  @ApiNoContentResponse({ description: 'Phase deleted' })
+  @Delete('phases/:id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  deletePhase(@Req() req: MesRequest, @Param('id') id: string): Promise<void> {
+    return this.plantService.deletePhase(this.resolveTenantId(req), id);
   }
 
   @ApiOperation({ summary: 'Clone a production recipe' })
@@ -166,7 +227,7 @@ export class PlantController {
   @Post('recipes/:id/clone')
   @HttpCode(HttpStatus.CREATED)
   cloneRecipe(@Req() req: MesRequest, @Param('id') id: string): Promise<ProductionRecipe> {
-    return this.plantService.cloneRecipe(req.user.tenantId, id);
+    return this.plantService.cloneRecipe(this.resolveTenantId(req), id);
   }
 
   @ApiOperation({ summary: 'Get recipe detail with phases, inputs, and total standard minutes' })
@@ -174,7 +235,7 @@ export class PlantController {
   @ApiOkResponse({ type: RecipeDetailResponseDto })
   @Get('recipes/:id')
   findRecipeById(@Req() req: MesRequest, @Param('id') id: string): Promise<RecipeDetailResponse> {
-    return this.plantService.findRecipeById(req.user.tenantId, id);
+    return this.plantService.findRecipeById(this.resolveTenantId(req), id);
   }
 
   @ApiOperation({ summary: 'Update production recipe metadata' })
@@ -186,7 +247,11 @@ export class PlantController {
     @Param('id') id: string,
     @Body() dto: UpdateRecipeDto,
   ): Promise<ProductionRecipe> {
-    return this.plantService.updateRecipe(req.user.tenantId, id, this.toUpdateRecipeInput(dto));
+    return this.plantService.updateRecipe(
+      this.resolveTenantId(req),
+      id,
+      this.toUpdateRecipeInput(dto),
+    );
   }
 
   @ApiOperation({ summary: 'Soft-delete a production recipe' })
@@ -194,7 +259,7 @@ export class PlantController {
   @ApiOkResponse({ description: 'Recipe deactivated' })
   @Delete('recipes/:id')
   softDeleteRecipe(@Req() req: MesRequest, @Param('id') id: string): Promise<ProductionRecipe> {
-    return this.plantService.softDeleteRecipe(req.user.tenantId, id);
+    return this.plantService.softDeleteRecipe(this.resolveTenantId(req), id);
   }
 
   // ── Phase inputs ─────────────────────────────────────────────────────────────
@@ -210,7 +275,7 @@ export class PlantController {
     @Body() dto: CreatePhaseInputDto,
   ): Promise<PhaseInput> {
     return this.plantService.addPhaseInput(
-      req.user.tenantId,
+      this.resolveTenantId(req),
       phaseId,
       this.toCreatePhaseInputInput(dto),
     );
@@ -226,7 +291,7 @@ export class PlantController {
     @Param('id') phaseId: string,
     @Param('inputId') inputId: string,
   ): Promise<PhaseInput> {
-    return this.plantService.removePhaseInput(req.user.tenantId, phaseId, inputId);
+    return this.plantService.removePhaseInput(this.resolveTenantId(req), phaseId, inputId);
   }
 
   // ── Production orders ────────────────────────────────────────────────────────
@@ -235,10 +300,10 @@ export class PlantController {
   @ApiCreatedResponse({ type: OrderDetailResponseDto })
   @Post('orders')
   @HttpCode(HttpStatus.CREATED)
-  @UseGuards(MesJwtGuard, MesRolesGuard)
+  @UseGuards(PlantAuthGuard, MesRolesGuard)
   @Roles(...SUPERVISOR_ROLES)
   createOrder(@Req() req: MesRequest, @Body() dto: CreateOrderDto): Promise<OrderDetailResponse> {
-    return this.plantService.createOrder(req.user.tenantId, this.toCreateOrderInput(dto));
+    return this.plantService.createOrder(this.resolveTenantId(req), this.toCreateOrderInput(dto));
   }
 
   @ApiOperation({ summary: 'List production orders' })
@@ -248,7 +313,7 @@ export class PlantController {
     @Req() req: MesRequest,
     @Query() query: ListOrdersQueryDto,
   ): Promise<OrderListItemResponse[]> {
-    return this.plantService.findOrders(req.user.tenantId, this.toListOrdersFilters(query));
+    return this.plantService.findOrders(this.resolveTenantId(req), this.toListOrdersFilters(query));
   }
 
   @ApiOperation({ summary: 'Get production order detail' })
@@ -256,69 +321,74 @@ export class PlantController {
   @ApiOkResponse({ type: OrderDetailResponseDto })
   @Get('orders/:id')
   findOrderById(@Req() req: MesRequest, @Param('id') id: string): Promise<OrderDetailResponse> {
-    return this.plantService.findOrderById(req.user.tenantId, id);
+    return this.plantService.findOrderById(this.resolveTenantId(req), id);
   }
 
   @ApiOperation({ summary: 'Plan a draft production order' })
   @ApiParam({ name: 'id', description: 'Production order ID' })
   @ApiOkResponse({ type: OrderDetailResponseDto })
   @Patch('orders/:id/plan')
-  @UseGuards(MesJwtGuard, MesRolesGuard)
+  @UseGuards(PlantAuthGuard, MesRolesGuard)
   @Roles(...SUPERVISOR_ROLES)
   planOrder(@Req() req: MesRequest, @Param('id') id: string): Promise<OrderDetailResponse> {
-    return this.plantService.planOrder(req.user.tenantId, id);
+    return this.plantService.planOrder(this.resolveTenantId(req), id);
   }
 
   @ApiOperation({ summary: 'Pause an in-process production order' })
   @ApiParam({ name: 'id', description: 'Production order ID' })
   @ApiOkResponse({ type: OrderDetailResponseDto })
   @Post('orders/:id/pause')
-  @UseGuards(MesJwtGuard, MesRolesGuard)
+  @UseGuards(PlantAuthGuard, MesRolesGuard)
   @Roles(...SUPERVISOR_ROLES)
   pauseOrder(
     @Req() req: MesRequest,
     @Param('id') id: string,
     @Body() dto: PauseOrderDto,
   ): Promise<OrderDetailResponse> {
-    return this.plantService.pauseOrder(req.user.tenantId, id, dto);
+    return this.plantService.pauseOrder(this.resolveTenantId(req), id, dto);
   }
 
   @ApiOperation({ summary: 'Resume a paused production order' })
   @ApiParam({ name: 'id', description: 'Production order ID' })
   @ApiOkResponse({ type: OrderDetailResponseDto })
   @Post('orders/:id/resume')
-  @UseGuards(MesJwtGuard, MesRolesGuard)
+  @UseGuards(PlantAuthGuard, MesRolesGuard)
   @Roles(...SUPERVISOR_ROLES)
   resumeOrder(@Req() req: MesRequest, @Param('id') id: string): Promise<OrderDetailResponse> {
-    return this.plantService.resumeOrder(req.user.tenantId, id);
+    return this.plantService.resumeOrder(this.resolveTenantId(req), id);
   }
 
   @ApiOperation({ summary: 'Cancel a production order' })
   @ApiParam({ name: 'id', description: 'Production order ID' })
   @ApiOkResponse({ type: OrderDetailResponseDto })
   @Post('orders/:id/cancel')
-  @UseGuards(MesJwtGuard, MesRolesGuard)
+  @UseGuards(PlantAuthGuard, MesRolesGuard)
   @Roles(...SUPERVISOR_ROLES)
   cancelOrder(
     @Req() req: MesRequest,
     @Param('id') id: string,
     @Body() dto: CancelOrderDto,
   ): Promise<OrderDetailResponse> {
-    return this.plantService.cancelOrder(req.user.tenantId, id, dto, req.user.sub);
+    return this.plantService.cancelOrder(this.resolveTenantId(req), id, dto, req.user.sub);
   }
 
   @ApiOperation({ summary: 'Supervisor QA approval for a completed phase execution' })
   @ApiParam({ name: 'id', description: 'Phase execution ID' })
   @ApiOkResponse({ description: 'QA approved; next QA_PENDING execution promoted to READY' })
   @Post('executions/:id/qa-approve')
-  @UseGuards(MesJwtGuard, MesRolesGuard)
+  @UseGuards(PlantAuthGuard, MesRolesGuard)
   @Roles(...SUPERVISOR_ROLES)
   qaApproveExecution(
     @Req() req: MesRequest,
     @Param('id') id: string,
     @Body() dto: QaApproveDto,
   ): Promise<ChainResult> {
-    return this.phaseChainService.qaApproveExecution(req.user.tenantId, id, req.user.sub, dto);
+    return this.phaseChainService.qaApproveExecution(
+      this.resolveTenantId(req),
+      id,
+      req.user.sub,
+      dto,
+    );
   }
 
   // ── Incidents ────────────────────────────────────────────────────────────────
@@ -331,7 +401,7 @@ export class PlantController {
     @Req() req: MesRequest,
     @Body() dto: CreateIncidentDto,
   ): Promise<IncidentResponse> {
-    return this.incidentService.createIncident(req.user.tenantId, req.user.sub, {
+    return this.incidentService.createIncident(this.resolveTenantId(req), req.user.sub, {
       workStationId: dto.workStationId,
       executionId: dto.executionId ?? null,
       orderId: dto.orderId ?? null,
@@ -345,7 +415,7 @@ export class PlantController {
   @ApiOperation({ summary: 'List production incidents (supervisor+)' })
   @ApiOkResponse({ type: [IncidentResponseDto] })
   @Get('incidents')
-  @UseGuards(MesJwtGuard, MesRolesGuard)
+  @UseGuards(PlantAuthGuard, MesRolesGuard)
   @Roles(...SUPERVISOR_ROLES)
   listIncidents(
     @Req() req: MesRequest,
@@ -354,7 +424,7 @@ export class PlantController {
     @Query('offset') offset?: string,
   ): Promise<IncidentResponse[]> {
     return this.incidentService.listIncidents(
-      req.user.tenantId,
+      this.resolveTenantId(req),
       this.toListIncidentsFilters(query),
       {
         limit: limit !== undefined ? Number(limit) : undefined,
@@ -367,14 +437,14 @@ export class PlantController {
   @ApiParam({ name: 'id', description: 'Incident ID' })
   @ApiOkResponse({ type: IncidentResponseDto })
   @Patch('incidents/:id/resolve')
-  @UseGuards(MesJwtGuard, MesRolesGuard)
+  @UseGuards(PlantAuthGuard, MesRolesGuard)
   @Roles(...SUPERVISOR_ROLES)
   resolveIncident(
     @Req() req: MesRequest,
     @Param('id') id: string,
     @Body() dto: ResolveIncidentDto,
   ): Promise<IncidentResponse> {
-    return this.incidentService.resolveIncident(req.user.tenantId, id, req.user.sub, dto);
+    return this.incidentService.resolveIncident(this.resolveTenantId(req), id, req.user.sub, dto);
   }
 
   // ── DTO mappers (decimal strings → Prisma Decimal) ───────────────────────────
@@ -382,26 +452,51 @@ export class PlantController {
   private toCreateRecipeInput(dto: CreateRecipeDto): CreateRecipeWithPhasesInput {
     return {
       name: dto.name,
+      categoryId: dto.categoryId,
       finishedProductId: dto.finishedProductId,
       batchSize: new Decimal(dto.batchSize),
       batchUnit: dto.batchUnit,
       estimatedMinutes: dto.estimatedMinutes,
       notes: dto.notes ?? null,
-      phases: dto.phases.map((phase) => ({
-        order: phase.order,
-        name: phase.name,
-        description: phase.description ?? null,
-        workStationId: phase.workStationId,
-        standardMinutes: phase.standardMinutes,
-        minOperators: phase.minOperators,
-        maxOperators: phase.maxOperators,
-        requiresQA: phase.requiresQA,
-        inputs: phase.inputs?.map((input) => ({
-          supplyItemId: input.supplyItemId,
-          quantityPerBatch: new Decimal(input.quantityPerBatch),
-          unit: input.unit,
-          isOptional: input.isOptional,
-        })),
+      isActive: dto.isActive,
+      phases: dto.phases.map((phase) => this.toCreatePhaseNestedInput(phase)),
+    };
+  }
+
+  private toCreatePhaseNestedInput(dto: CreatePhaseDto): CreatePhaseNestedInput {
+    return {
+      order: dto.order,
+      name: dto.name,
+      description: dto.description ?? null,
+      workStationId: dto.workStationId,
+      standardMinutes: dto.standardMinutes,
+      minOperators: dto.minOperators,
+      maxOperators: dto.maxOperators,
+      requiresQA: dto.requiresQA,
+      inputs: dto.inputs?.map((input) => ({
+        supplyItemId: input.supplyItemId,
+        quantityPerBatch: new Decimal(input.quantityPerBatch),
+        unit: input.unit,
+        isOptional: input.isOptional,
+      })),
+    };
+  }
+
+  private toUpdatePhaseInput(dto: UpdatePhaseDto): UpdatePhaseInput {
+    return {
+      order: dto.order,
+      name: dto.name,
+      description: dto.description,
+      workStationId: dto.workStationId,
+      standardMinutes: dto.standardMinutes,
+      minOperators: dto.minOperators,
+      maxOperators: dto.maxOperators,
+      requiresQA: dto.requiresQA,
+      inputs: dto.inputs?.map((input) => ({
+        supplyItemId: input.supplyItemId,
+        quantityPerBatch: new Decimal(input.quantityPerBatch),
+        unit: input.unit,
+        isOptional: input.isOptional,
       })),
     };
   }
@@ -409,6 +504,7 @@ export class PlantController {
   private toUpdateRecipeInput(dto: UpdateRecipeDto): UpdateRecipeInput {
     return {
       name: dto.name,
+      categoryId: dto.categoryId,
       finishedProductId: dto.finishedProductId,
       batchSize: dto.batchSize !== undefined ? new Decimal(dto.batchSize) : undefined,
       batchUnit: dto.batchUnit,
