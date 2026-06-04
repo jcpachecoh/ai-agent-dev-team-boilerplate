@@ -132,8 +132,10 @@
 
 .tableSection {
   flex: 1;
+  min-width: 0;
   min-height: 0;
   padding: 0.75rem 1.25rem 1.25rem;
+  overflow-x: auto;
 }
 
 .detailHeaderSection {

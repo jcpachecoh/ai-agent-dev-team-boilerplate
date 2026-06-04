@@ -45,11 +45,6 @@ export interface BreadcrumbItem {
   path?: string;
 }
 
-export const MOCK_USER = {
-  name: 'Carlos Mendez',
-  role: 'Supervisor',
-};
-
 export function getUserInitials(name: string): string {
   return name
     .split(' ')

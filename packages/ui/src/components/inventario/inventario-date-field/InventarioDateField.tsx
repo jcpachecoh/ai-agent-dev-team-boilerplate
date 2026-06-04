@@ -21,16 +21,20 @@ export function InventarioDateField({
   'aria-label': ariaLabel,
 }: InventarioDateFieldProps): React.JSX.Element {
   return (
-    <input
-      type="date"
-      className={[styles.dateInput, styles[`theme--${theme}`], styles[`size--${size}`], className]
+    <div
+      className={[styles.wrap, styles[`theme--${theme}`], styles[`size--${size}`], className]
         .filter(Boolean)
         .join(' ')}
-      value={value}
-      disabled={disabled}
-      aria-label={ariaLabel}
-      onChange={(event) => onChange?.(event.target.value)}
-    />
+    >
+      <input
+        type="date"
+        className={styles.dateInput}
+        value={value}
+        disabled={disabled}
+        aria-label={ariaLabel}
+        onChange={(event) => onChange?.(event.target.value)}
+      />
+    </div>
   );
 }
 

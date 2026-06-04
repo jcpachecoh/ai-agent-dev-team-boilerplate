@@ -21,3 +21,19 @@ export const LOGOUT_MUTATION = `
     logout
   }
 `;
+
+export const ME_QUERY = `
+  query Me {
+    me {
+      id
+      tenantId
+      email
+      cedula
+      documentType
+      emailVerified
+      isActive
+      roleCode
+      createdAt
+    }
+  }
+`;

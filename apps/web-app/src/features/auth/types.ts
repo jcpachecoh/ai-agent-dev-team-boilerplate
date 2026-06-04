@@ -18,3 +18,22 @@ export interface SignupInput {
 }
 
 export type SignupResponse = LoginResponse;
+
+export interface AuthUserProfile {
+  id: string;
+  tenantId: string;
+  email: string;
+  cedula: string;
+  documentType: SignupDocumentType;
+  emailVerified: boolean;
+  isActive: boolean;
+  roleCode: string;
+  createdAt: string;
+}
+
+export interface AuthUserViewModel {
+  id: string;
+  email: string;
+  displayName: string;
+  displayRole: string;
+}

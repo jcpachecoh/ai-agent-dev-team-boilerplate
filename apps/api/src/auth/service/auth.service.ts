@@ -24,7 +24,7 @@ import type { SignupDto } from '../controller/dto/signup.dto';
 import type { LoginDto } from '../controller/dto/login.dto';
 
 const SALT_ROUNDS = 12;
-const ACCESS_TOKEN_TTL = '15m';
+const ACCESS_TOKEN_TTL = '60m';
 const REFRESH_TOKEN_TTL = '7d';
 const DEFAULT_ROLE_CODE = 'OPERATOR';
 const MAX_LOGIN_ATTEMPTS = 5;

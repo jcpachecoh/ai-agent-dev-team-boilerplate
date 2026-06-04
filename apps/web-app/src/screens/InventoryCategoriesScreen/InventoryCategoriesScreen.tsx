@@ -2,6 +2,7 @@ import {
   InventarioPageToolbar,
   InventarioPagination,
   InventarioSearch,
+  InventarioSelect,
   InventarioTableHeader,
   InventarioTableRow,
   toast,
@@ -20,7 +21,15 @@ import type { SupplyCategoryApi, SupplyCategoryFormValues } from '@/features/inv
 import { getErrorMessage } from '@/lib/graphql-client';
 import { INVENTORY_PAGE_SIZE } from '@/types/inventory';
 
+import { useUiTheme } from '@/hooks/useUiTheme';
+
 import shared from '../inventory/shared.module.scss';
+
+const STATUS_FILTER_OPTIONS = [
+  { value: 'all', label: 'Todas' },
+  { value: 'active', label: 'Activas' },
+  { value: 'inactive', label: 'Inactivas' },
+] as const;
 
 function filterCategories(
   items: SupplyCategoryApi[],
@@ -38,6 +47,7 @@ function filterCategories(
 }
 
 export function InventoryCategoriesScreen(): React.JSX.Element {
+  const theme = useUiTheme();
   const categoriesQuery = useSupplyCategories('all');
   const createMutation = useCreateSupplyCategory();
   const updateMutation = useUpdateSupplyCategory();
@@ -112,7 +122,7 @@ export function InventoryCategoriesScreen(): React.JSX.Element {
       }
       actionLabel="CREAR CATEGORÍA"
       onAction={openCreate}
-      theme="dark"
+      theme={theme}
       size="xl"
       className={shared.pageHeaderHost}
     />
@@ -142,7 +152,7 @@ export function InventoryCategoriesScreen(): React.JSX.Element {
       {!categoriesQuery.isLoading ? (
         <>
           <section className={shared.toolbarSection}>
-            <div className={shared.embedToolbar}>
+            <div className={[shared.embedToolbar, shared.embedToolbarInline].join(' ')}>
               <InventarioSearch
                 value={search}
                 onChange={(v) => {
@@ -150,35 +160,22 @@ export function InventoryCategoriesScreen(): React.JSX.Element {
                   setPage(1);
                 }}
                 placeholder="Buscar por nombre o descripción…"
-                theme="dark"
-                size="xl"
+                theme={theme}
+                size="md"
+                className={shared.toolbarSearch}
               />
-              <div className={shared.statusFilters}>
-                {(
-                  [
-                    { value: 'all', label: 'Todas' },
-                    { value: 'active', label: 'Activas' },
-                    { value: 'inactive', label: 'Inactivas' },
-                  ] as const
-                ).map((opt) => (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    className={[
-                      shared.statusFilterBtn,
-                      status === opt.value ? shared.statusFilterBtnActive : '',
-                    ]
-                      .filter(Boolean)
-                      .join(' ')}
-                    onClick={() => {
-                      setStatus(opt.value);
-                      setPage(1);
-                    }}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
+              <InventarioSelect
+                options={[...STATUS_FILTER_OPTIONS]}
+                value={status}
+                onChange={(v) => {
+                  setStatus(v as 'all' | 'active' | 'inactive');
+                  setPage(1);
+                }}
+                theme={theme}
+                size="md"
+                aria-label="Filtrar por estado"
+                className={shared.toolbarSelect}
+              />
             </div>
           </section>
 
@@ -192,14 +189,14 @@ export function InventoryCategoriesScreen(): React.JSX.Element {
           ) : (
             <section className={shared.tableWrap}>
               <div className={shared.tableHead}>
-                <InventarioTableHeader variant="category" theme="dark" size="xl" />
+                <InventarioTableHeader variant="category" theme={theme} size="xl" />
               </div>
               <div className={shared.tableBody}>
                 {pageItems.map((category) => (
                   <InventarioTableRow
                     key={category.id}
                     variant="category"
-                    theme="dark"
+                    theme={theme}
                     size="xl"
                     className={shared.tableRowHost}
                     nombre={category.nombre}
@@ -217,7 +214,7 @@ export function InventoryCategoriesScreen(): React.JSX.Element {
                   summary={`Página ${page} de ${totalPages}`}
                   onPrevious={() => setPage((p) => Math.max(1, p - 1))}
                   onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  theme="dark"
+                  theme={theme}
                   size="md"
                 />
               </footer>
@@ -225,6 +222,7 @@ export function InventoryCategoriesScreen(): React.JSX.Element {
           )}
 
           <CategoryFormModal
+            theme={theme}
             open={modalOpen}
             mode={modalMode}
             category={editing}

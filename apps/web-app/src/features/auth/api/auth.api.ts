@@ -1,6 +1,12 @@
 import { GraphqlRequestError, graphqlRequest } from '@/lib/graphql-client';
-import type { LoginInput, LoginResponse, SignupInput, SignupResponse } from '../types';
-import { LOGIN_MUTATION, LOGOUT_MUTATION, SIGNUP_MUTATION } from './auth.graphql';
+import type {
+  AuthUserProfile,
+  LoginInput,
+  LoginResponse,
+  SignupInput,
+  SignupResponse,
+} from '../types';
+import { LOGIN_MUTATION, LOGOUT_MUTATION, ME_QUERY, SIGNUP_MUTATION } from './auth.graphql';
 
 export class AuthApiError extends Error {
   constructor(
@@ -50,7 +56,16 @@ export async function logoutGlobalUser(): Promise<void> {
   }
 }
 
-type AuthOperation = 'login' | 'signup' | 'logout';
+export async function fetchCurrentUser(): Promise<AuthUserProfile> {
+  try {
+    const data = await graphqlRequest<{ me: AuthUserProfile }>(ME_QUERY);
+    return data.me;
+  } catch (error) {
+    throw toAuthApiError(error, 'me');
+  }
+}
+
+type AuthOperation = 'login' | 'signup' | 'logout' | 'me';
 
 function toAuthApiError(error: unknown, operation: AuthOperation): AuthApiError {
   if (error instanceof GraphqlRequestError) {
@@ -73,7 +88,9 @@ function toAuthApiError(error: unknown, operation: AuthOperation): AuthApiError 
       ? 'No pudimos crear la cuenta. Intente nuevamente.'
       : operation === 'logout'
         ? 'No pudimos cerrar sesión. Intente nuevamente.'
-        : 'No pudimos iniciar sesión. Intente nuevamente.',
+        : operation === 'me'
+          ? 'No pudimos cargar tu perfil. Intente nuevamente.'
+          : 'No pudimos iniciar sesión. Intente nuevamente.',
   );
 }
 
@@ -110,10 +127,15 @@ function mapGraphqlMessage(
   if (operation === 'signup' && status === 400) {
     return error.message || 'Datos de registro inválidos. Revisa los campos e intenta de nuevo.';
   }
+  if (operation === 'me' && (status === 401 || error.code === 'UNAUTHENTICATED')) {
+    return 'Sesión expirada. Inicia sesión de nuevo.';
+  }
   if (error.message) {
     return error.message;
   }
   return operation === 'signup'
     ? 'No pudimos crear la cuenta. Intente nuevamente.'
-    : 'No pudimos iniciar sesión. Intente nuevamente.';
+    : operation === 'me'
+      ? 'No pudimos cargar tu perfil. Intente nuevamente.'
+      : 'No pudimos iniciar sesión. Intente nuevamente.';
 }

@@ -34,17 +34,43 @@ $sidebar-transition: 300ms ease;
   }
 
   .header {
-    min-height: 0;
-    height: 0;
-    padding: 0;
-    overflow: hidden;
-    border-bottom: none;
+    min-height: auto;
+    padding: $spacing-sm;
+    overflow: visible;
+    border-bottom: 1px solid var(--sidebar-border);
+  }
+
+  .headerRow {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: $spacing-sm;
+  }
+
+  .collapseButton {
+    margin-left: 0;
   }
 
   .brandSubtitle,
   .brandTitle,
-  .brandHeading {
+  .brandHeading,
+  .brandText {
     display: none;
+  }
+
+  .brandHeadingCollapsed {
+    display: block;
+    flex: 0 0 auto;
+    margin: 0;
+    line-height: 0;
+  }
+
+  .brandLogoCollapsed {
+    display: block;
+    width: 4.5rem;
+    height: 4.5rem;
+    max-width: 100%;
+    object-fit: contain;
   }
 
   .nav {
@@ -79,12 +105,8 @@ $sidebar-transition: 300ms ease;
 
   .footer {
     padding: $spacing-sm;
-  }
-
-  .footerRow {
-    flex-direction: column;
-    align-items: center;
-    gap: $spacing-sm;
+    display: flex;
+    justify-content: center;
   }
 
   .profileCompact {
@@ -150,6 +172,19 @@ $sidebar-transition: 300ms ease;
   border-bottom: 1px solid var(--sidebar-border);
 }
 
+.headerRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+  min-height: 2.5rem;
+}
+
+.brandText {
+  flex: 1;
+  min-width: 0;
+}
+
 .brandSubtitle {
   margin: 0;
   font-family: $font-family-mono;
@@ -171,6 +206,8 @@ $sidebar-transition: 300ms ease;
 }
 
 .brandHeading {
+  flex: 1;
+  min-width: 0;
   margin: 0;
   line-height: 0;
 }
@@ -342,19 +379,13 @@ $sidebar-transition: 300ms ease;
   border-top: 1px solid var(--sidebar-border);
 }
 
-.footerRow {
-  display: flex;
-  align-items: center;
-  gap: $spacing-sm;
-}
-
 .profileHeader {
-  flex: 1;
+  width: 100%;
   min-width: 0;
 }
 
 .profileCompact {
-  flex: 1;
+  flex: 0 0 auto;
   display: flex;
   justify-content: center;
 }
@@ -364,6 +395,7 @@ $sidebar-transition: 300ms ease;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  margin-left: auto;
   width: 2rem;
   height: 2rem;
   padding: 0;

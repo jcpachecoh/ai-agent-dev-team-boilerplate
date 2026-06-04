@@ -36,8 +36,10 @@ export interface SidebarProps {
   overlay?: boolean;
   brandSubtitle?: string;
   brandTitle?: string;
-  /** When set, replaces subtitle/title text with the brand image. */
+  /** When set, replaces subtitle/title text with the brand image (expanded sidebar). */
   brandLogoSrc?: string;
+  /** Monogram shown when the sidebar is collapsed; defaults to `brandLogoSrc`. */
+  brandLogoCollapsedSrc?: string;
   brandLogoAlt?: string;
   activePath?: string;
   user?: SidebarUser;

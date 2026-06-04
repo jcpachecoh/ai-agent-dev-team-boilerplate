@@ -1,23 +1,28 @@
-import { ChevronDown } from 'lucide-react';
-import React, { type JSX, type SelectHTMLAttributes } from 'react';
+import React, { type JSX } from 'react';
 
+import {
+  InventarioSelect,
+  type InventarioSelectOption,
+} from '../../inventario/inventario-select/InventarioSelect';
 import type { RecetaSize, RecetaTheme } from '../shared/receta-types';
-import styles from './RecetaFilterSelect.module.scss';
 
 export interface RecetaFilterOption {
   value: string;
   label: string;
 }
 
-export interface RecetaFilterSelectProps extends Omit<
-  SelectHTMLAttributes<HTMLSelectElement>,
-  'size' | 'onChange'
-> {
+export interface RecetaFilterSelectProps {
   options: RecetaFilterOption[];
   value?: string;
   onChange?: (value: string) => void;
   theme?: RecetaTheme;
   size?: RecetaSize;
+  className?: string;
+  disabled?: boolean;
+  placeholder?: string;
+  'aria-label'?: string;
+  /** Kept for form labels; forwarded to `aria-label` when no explicit label is set. */
+  id?: string;
 }
 
 export function RecetaFilterSelect({
@@ -27,27 +32,25 @@ export function RecetaFilterSelect({
   theme = 'dark',
   size = 'xl',
   className,
-  ...props
+  disabled,
+  placeholder,
+  'aria-label': ariaLabel,
+  id,
 }: RecetaFilterSelectProps): JSX.Element {
-  const handleChange: React.ChangeEventHandler<HTMLSelectElement> = (event) => {
-    onChange?.(event.target.value);
-  };
+  const inventarioOptions: InventarioSelectOption[] = options;
 
   return (
-    <div
-      className={[styles.selectWrap, styles[`theme--${theme}`], styles[`size--${size}`], className]
-        .filter(Boolean)
-        .join(' ')}
-    >
-      <select className={styles.select} value={value} onChange={handleChange} {...props}>
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-      <ChevronDown className={styles.chevron} aria-hidden />
-    </div>
+    <InventarioSelect
+      options={inventarioOptions}
+      value={value}
+      onChange={onChange}
+      theme={theme}
+      size={size}
+      className={className}
+      disabled={disabled}
+      placeholder={placeholder}
+      aria-label={ariaLabel ?? id}
+    />
   );
 }
 

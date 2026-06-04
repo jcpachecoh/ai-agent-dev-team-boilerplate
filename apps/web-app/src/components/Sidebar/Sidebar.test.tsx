@@ -18,7 +18,6 @@ describe('Sidebar', () => {
     expect(screen.getByRole('img', { name: /palos de leña/i })).toBeInTheDocument();
     expect(screen.getByText('Inventario')).toBeInTheDocument();
     expect(screen.getByText('Recetas')).toBeInTheDocument();
-    expect(screen.getByText('Carlos Mendez')).toBeInTheDocument();
   });
 
   it('navigates to recetas when submenu link is clicked', async () => {
