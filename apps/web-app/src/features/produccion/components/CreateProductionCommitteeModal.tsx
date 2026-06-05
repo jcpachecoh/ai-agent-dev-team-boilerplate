@@ -47,6 +47,37 @@ export function CreateProductionCommitteeModal({
     }
   }, [open]);
 
+  // #region agent log
+  useEffect(() => {
+    if (!open) return;
+    const frame = requestAnimationFrame(() => {
+      const dialog = document.querySelector('[aria-labelledby="inventario-modal-title"]');
+      const footer = dialog?.querySelector('footer');
+      const saveBtn = footer?.querySelector('button:last-of-type');
+      if (!footer || !saveBtn) return;
+      const footerStyle = getComputedStyle(footer);
+      const saveStyle = getComputedStyle(saveBtn);
+      fetch('http://127.0.0.1:7828/ingest/355d2ecf-3818-453c-8510-c7b3fe83712b', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '459dc6' },
+        body: JSON.stringify({
+          sessionId: '459dc6',
+          runId: 'post-fix',
+          hypothesisId: 'H1-H2',
+          location: 'CreateProductionCommitteeModal.tsx:modal-styles',
+          message: 'committee modal footer and save button computed styles',
+          data: {
+            footerJustifyContent: footerStyle.justifyContent,
+            saveColor: saveStyle.color,
+          },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [open]);
+  // #endregion
+
   const users = usersQuery.data ?? [];
 
   const toggleUser = (userId: string) => {
@@ -80,9 +111,9 @@ export function CreateProductionCommitteeModal({
     <InventarioModal
       open={open}
       theme={theme}
-      size="xl"
+      size="md"
       title="Nuevo comité de producción"
-      subtitle="Asigne usuarios con rol OPERATIONS_ADMIN. El consecutivo (OP0001, OP0002…) se genera automáticamente."
+      subtitle="Asigne usuarios."
       onClose={onClose}
       onSave={() => void handleSave()}
       saveLabel={createMutation.isPending ? 'Creando…' : 'Crear comité'}
@@ -130,7 +161,7 @@ export function CreateProductionCommitteeModal({
           </InventarioFormField>
 
           <div className={styles.formGridWide}>
-            <p className={styles.hint}>Miembros del comité (OPERATIONS_ADMIN)</p>
+            <p className={styles.hint}>Miembros del comité</p>
             <ul className={styles.memberCheckboxList}>
               {users.map((user) => (
                 <li key={user.userId}>

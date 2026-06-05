@@ -99,6 +99,8 @@
 }
 
 .footer {
+  display: flex;
+  justify-content: flex-end;
   padding: 16px 24px;
   border-top: $border-width solid var(--inventario-border);
 }
