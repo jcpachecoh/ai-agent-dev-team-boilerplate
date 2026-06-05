@@ -7,8 +7,8 @@ import { RecipeCategoriesModule } from '../../recipe-categories/recipe-categorie
 import { SupplyItemsModule } from '../../supplyitems/supplyitems.module';
 import { AuthModule } from '../../auth/auth.module';
 import { MesAuthModule } from '../auth/mes-auth.module';
-import { MesRolesGuard } from '../auth/guards/mes-roles.guard';
 import { PlantAuthGuard } from './guards/plant-auth.guard';
+import { PlantRolesGuard } from './guards/plant-roles.guard';
 import {
   ALARM_PUSH_ADAPTER,
   EMERGENCY_ALERT_ADAPTER,
@@ -21,6 +21,7 @@ import { PlantController } from './controller/plant.controller';
 import { PlantGateway } from './gateway/plant.gateway';
 import { AlarmRepository } from './repository/alarm.repository';
 import { IncidentRepository } from './repository/incident.repository';
+import { CommitteeRepository } from './repository/committee.repository';
 import { PlantRepository } from './repository/plant.repository';
 import { AlarmEvaluatorService } from './service/alarm-evaluator.service';
 import { AlarmNotificationService } from './service/alarm-notification.service';
@@ -32,6 +33,7 @@ import {
 import { IncidentService } from './service/incident.service';
 import { PhaseChainService } from './service/phase-chain.service';
 import { PlantEventsService } from './service/plant-events.service';
+import { CommitteeService } from './service/committee.service';
 import { PlantService } from './service/plant.service';
 import { ProductionOrderPdfService } from './service/production-order-pdf.service';
 import { AlarmNotificationWorker } from './worker/alarm-notification.worker';
@@ -62,8 +64,10 @@ function createPlantAlarmEventsPort(plantEventsService: PlantEventsService): IPl
   controllers: [PlantController],
   providers: [
     PlantRepository,
+    CommitteeRepository,
     AlarmRepository,
     IncidentRepository,
+    CommitteeService,
     PlantService,
     ProductionOrderPdfService,
     IncidentService,
@@ -75,7 +79,7 @@ function createPlantAlarmEventsPort(plantEventsService: PlantEventsService): IPl
     PlantEventsService,
     PlantGateway,
     PlantAuthGuard,
-    MesRolesGuard,
+    PlantRolesGuard,
     {
       provide: PLANT_ALARM_QUEUE,
       useFactory: () =>

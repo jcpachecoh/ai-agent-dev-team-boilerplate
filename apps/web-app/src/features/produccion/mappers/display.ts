@@ -2,9 +2,15 @@ import type { StatusType } from '@restopsiq/ui';
 
 import { STOCK_UNIT_OPTIONS } from '@/types/inventory';
 
-import { ORDER_STATUS_LABELS, PRIORITY_LABELS, SHIFT_LABELS } from '../constants';
+import {
+  COMMITTEE_STATUS_LABELS,
+  ORDER_STATUS_LABELS,
+  PRIORITY_LABELS,
+  SHIFT_LABELS,
+} from '../constants';
 import type {
   PhaseExecutionDetail,
+  ProductionCommitteeStatus,
   ProductionOrderStatus,
   ProductionPriority,
   ProductionShift,
@@ -12,6 +18,25 @@ import type {
 
 export function formatOrderStatus(status: ProductionOrderStatus): string {
   return ORDER_STATUS_LABELS[status] ?? status;
+}
+
+export function formatCommitteeStatus(status: ProductionCommitteeStatus): string {
+  return COMMITTEE_STATUS_LABELS[status] ?? status;
+}
+
+export function committeeStatusToBadge(status: ProductionCommitteeStatus): StatusType {
+  switch (status) {
+    case 'DRAFT':
+      return 'DRAFT';
+    case 'ACTIVE':
+      return 'PROCESSING';
+    case 'CLOSED':
+      return 'COMPLETED';
+    case 'CANCELLED':
+      return 'CANCELLED';
+    default:
+      return 'PENDING';
+  }
 }
 
 export function formatPriority(priority: ProductionPriority): string {

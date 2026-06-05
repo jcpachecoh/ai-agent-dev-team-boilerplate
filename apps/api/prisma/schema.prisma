@@ -321,10 +321,11 @@ model User {
 
   role Role @relation(fields: [roleId], references: [id])
 
-  operationalProfile OperationalUser?
-  userPermissions    UserPermission[]
-  loginAudits        LoginAudit[]
-  auditLogs          AuditLog[]
+  operationalProfile     OperationalUser?
+  userPermissions        UserPermission[]
+  loginAudits            LoginAudit[]
+  auditLogs              AuditLog[]
+  committeeMemberships   ProductionCommitteeMember[]
 
   @@unique([tenantId, email])
   @@unique([tenantId, cedula])
@@ -616,6 +617,45 @@ enum ProductionQualityCheckType {
   RECIBE
 }
 
+enum ProductionCommitteeStatus {
+  DRAFT
+  ACTIVE
+  CLOSED
+  CANCELLED
+}
+
+model ProductionCommittee {
+  id          String                    @id @default(cuid())
+  tenantId    String
+  number      String
+  status      ProductionCommitteeStatus @default(DRAFT)
+  ordersCount Int                       @default(0)
+  createdAt   DateTime                  @default(now())
+  updatedAt   DateTime                  @updatedAt
+
+  members ProductionCommitteeMember[]
+  orders  ProductionOrder[]
+
+  @@unique([tenantId, number])
+  @@index([tenantId, status])
+  @@map("production_committees")
+}
+
+model ProductionCommitteeMember {
+  id          String   @id @default(cuid())
+  committeeId String
+  userId      String
+  createdAt   DateTime @default(now())
+
+  committee ProductionCommittee @relation(fields: [committeeId], references: [id], onDelete: Cascade)
+  user      User                @relation(fields: [userId], references: [id])
+
+  @@unique([committeeId, userId])
+  @@index([committeeId])
+  @@index([userId])
+  @@map("production_committee_members")
+}
+
 model ProductionOrder {
   id               String                @id @default(cuid())
   tenantId         String
@@ -640,10 +680,12 @@ model ProductionOrder {
   deliveryDate     DateTime?
   packageWeight    Decimal?              @db.Decimal(10, 3)
   batchWeight      Decimal?              @db.Decimal(10, 3)
+  committeeId      String?
   createdAt        DateTime              @default(now())
   updatedAt        DateTime              @updatedAt
 
   recipe          ProductionRecipe           @relation(fields: [recipeId], references: [id])
+  committee       ProductionCommittee?       @relation(fields: [committeeId], references: [id])
   executions      PhaseExecution[]
   alarmDispatches PlantAlarmDispatch[]
   incidents       ProductionIncident[]
@@ -653,6 +695,7 @@ model ProductionOrder {
 
   @@index([tenantId, status])
   @@index([tenantId, plannedStartAt])
+  @@index([committeeId])
   @@map("production_orders")
 }
 

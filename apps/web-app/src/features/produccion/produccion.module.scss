@@ -13,7 +13,7 @@
   flex-direction: column;
   flex: 1;
   gap: 1rem;
-  padding: 1rem 1.25rem 1.5rem;
+  padding: 2rem 1.25rem 1.5rem;
   overflow: auto;
 }
 
@@ -21,13 +21,33 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
-  align-items: flex-end;
+  align-items: center;
+}
+
+@media (min-width: 900px) {
+  .filtersRow {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) repeat(4, minmax(0, 1fr));
+    align-items: center;
+  }
+
+  .filtersRowThree {
+    grid-template-columns: minmax(0, 2fr) repeat(2, minmax(0, 1fr));
+  }
+}
+
+.searchGrow {
+  flex: 1 1 12rem;
+  min-width: min(100%, 12rem);
+  width: 100%;
+  --control-width: 100%;
 }
 
 .filterField {
-  min-width: 11rem;
-  flex: 1;
-  max-width: 16rem;
+  min-width: 10rem;
+  flex: 1 1 10rem;
+  max-width: 100%;
+  --control-width: 100%;
 }
 
 .tableWrap {
@@ -62,6 +82,27 @@
   align-items: center;
 }
 
+.toolbarActions {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.5rem;
+  align-items: center;
+  flex-shrink: 0;
+  align-self: center;
+
+  @media (max-width: 640px) {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+}
+
+.tableCellActions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.35rem;
+}
+
 .detailPanel {
   border: 1px solid var(--color-border);
   border-left: 3px solid #e8943a;
@@ -84,6 +125,12 @@
 .detailTitle {
   margin: 0;
   font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.sectionTitle {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
   font-weight: 600;
 }
 
@@ -213,9 +260,16 @@
 
 .detailActions {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 0.5rem;
   align-items: center;
+  flex-shrink: 0;
+  align-self: center;
+
+  @media (max-width: 640px) {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
 }
 
 .detailSummary {
@@ -376,6 +430,34 @@
 :global([data-theme='dark']) {
   .tableInput {
     color-scheme: dark;
+  }
+
+  .memberCheckboxList {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    max-height: 14rem;
+    overflow: auto;
+  }
+
+  .memberCheckboxLabel {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    font-size: 0.9rem;
+  }
+
+  .memberList {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
   }
 
   .documentTable {

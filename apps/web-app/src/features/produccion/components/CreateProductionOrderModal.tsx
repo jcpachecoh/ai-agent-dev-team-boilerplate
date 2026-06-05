@@ -12,6 +12,7 @@ import { useUiTheme } from '@/hooks/useUiTheme';
 
 import { PlantApiError } from '@/api/plant/client';
 import { PRIORITY_FORM_OPTIONS, SHIFT_FORM_OPTIONS } from '../constants';
+import { useProductionCommittees } from '../hooks/useProductionCommittees';
 import { useCreateProductionOrder, useProductionRecipes } from '../hooks/useProductionOrders';
 import { datetimeLocalToIso, defaultPlannedWindow } from '../mappers/display';
 import type { CreateProductionOrderInput, ProductionPriority, ProductionShift } from '../types';
@@ -40,24 +41,33 @@ export interface CreateProductionOrderModalProps {
   open: boolean;
   onClose: () => void;
   onCreated?: (orderId: string) => void;
+  /** Pre-select committee when creating OP from committee detail. */
+  defaultCommitteeId?: string;
+  /** Hide committee selector when committee is fixed. */
+  lockCommittee?: boolean;
 }
 
 export function CreateProductionOrderModal({
   open,
   onClose,
   onCreated,
+  defaultCommitteeId,
+  lockCommittee = false,
 }: CreateProductionOrderModalProps): React.JSX.Element | null {
   const theme = useUiTheme();
   const recipesQuery = useProductionRecipes();
+  const committeesQuery = useProductionCommittees({ status: 'ACTIVE' });
   const createMutation = useCreateProductionOrder();
 
   const [form, setForm] = useState(emptyFormState);
+  const [committeeId, setCommitteeId] = useState('');
 
   useEffect(() => {
     if (open) {
       setForm(emptyFormState());
+      setCommitteeId(defaultCommitteeId ?? '');
     }
-  }, [open]);
+  }, [open, defaultCommitteeId]);
 
   // #region agent log
   useEffect(() => {
@@ -95,7 +105,9 @@ export function CreateProductionOrderModal({
   // #endregion
 
   const recipes = recipesQuery.data ?? [];
+  const activeCommittees = committeesQuery.data ?? [];
   const selectedRecipe = recipes.find((r) => r.id === form.recipeId);
+  const selectedCommittee = activeCommittees.find((c) => c.id === committeeId);
 
   const recipeOptions = recipes.map((r) => ({
     value: r.id,
@@ -132,6 +144,10 @@ export function CreateProductionOrderModal({
       toast.error('La fecha de fin debe ser posterior al inicio.');
       return;
     }
+    if (!committeeId) {
+      toast.error('Seleccione un comité de producción activo.');
+      return;
+    }
 
     const input: CreateProductionOrderInput = {
       recipeId: form.recipeId,
@@ -140,13 +156,15 @@ export function CreateProductionOrderModal({
       priority: form.priority,
       plannedStartAt: startIso,
       plannedEndAt: endIso,
+      committeeId,
       ...(form.notes.trim() ? { notes: form.notes.trim() } : {}),
     };
 
     try {
       const created = await createMutation.mutateAsync(input);
+      const committeeLabel = selectedCommittee ? ` en comité ${selectedCommittee.number}` : '';
       toast.success(
-        `OP ${created.number} creada con ${created.executions.length} fases en PENDING.`,
+        `OP ${created.number} creada${committeeLabel} con ${created.executions.length} fases en PENDING.`,
       );
       onCreated?.(created.id);
       onClose();
@@ -163,12 +181,16 @@ export function CreateProductionOrderModal({
       theme={theme}
       size="xl"
       title="Nueva orden de producción"
-      subtitle="Se generará una PhaseExecution por fase de la receta (estado PENDING). Planifique después para liberar la fase 1 en planta."
+      subtitle="La OP tomará el consecutivo del comité (ej. OP0001-01, OP0001-02). Se generará una PhaseExecution por fase en PENDING."
       onClose={onClose}
       onSave={() => void handleSave()}
       saveLabel={createMutation.isPending ? 'Creando…' : 'Crear orden de producción'}
       saveLoading={createMutation.isPending}
-      saveDisabled={recipes.length === 0 || recipesQuery.isPending}
+      saveDisabled={
+        recipes.length === 0 ||
+        recipesQuery.isPending ||
+        (!lockCommittee && activeCommittees.length === 0)
+      }
       saveAccent="orange"
     >
       {recipesQuery.isPending && (
@@ -190,6 +212,45 @@ export function CreateProductionOrderModal({
 
       {recipes.length > 0 && (
         <div className={styles.modalFormGrid}>
+          {!lockCommittee && (
+            <InventarioFormField
+              theme={theme}
+              size="md"
+              label="Comité de producción"
+              inputType="select"
+              bareControl
+              className={styles.formGridWide}
+            >
+              <InventarioSelect
+                theme={theme}
+                size="md"
+                value={committeeId}
+                onChange={setCommitteeId}
+                options={
+                  activeCommittees.length > 0
+                    ? [
+                        { value: '', label: 'Seleccionar comité…' },
+                        ...activeCommittees.map((committee) => ({
+                          value: committee.id,
+                          label: `${committee.number} (${committee.ordersCount} OPs)`,
+                        })),
+                      ]
+                    : [{ value: '', label: 'No hay comités activos' }]
+                }
+                aria-label="Comité de producción"
+              />
+            </InventarioFormField>
+          )}
+
+          {lockCommittee && selectedCommittee && (
+            <div className={[styles.formGridWide, styles.hint].join(' ')}>
+              <p>
+                Comité: <strong>{selectedCommittee.number}</strong> ({selectedCommittee.ordersCount}{' '}
+                OPs creadas)
+              </p>
+            </div>
+          )}
+
           <InventarioFormField
             theme={theme}
             size="md"

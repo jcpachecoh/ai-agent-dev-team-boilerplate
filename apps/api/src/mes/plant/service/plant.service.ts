@@ -42,12 +42,14 @@ import type {
   UpdateWorkStationInput,
 } from '../interfaces/plant.interfaces';
 import { ConsumedInputsAction } from '../interfaces/plant.interfaces';
+import { CommitteeService } from './committee.service';
 import { PlantEventsService } from './plant-events.service';
 
 @Injectable()
 export class PlantService implements IPlantService {
   constructor(
     private readonly plantRepository: PlantRepository,
+    private readonly committeeService: CommitteeService,
     private readonly recipeCategoriesService: RecipeCategoriesService,
     private readonly supplyItemsService: SupplyItemsService,
     private readonly plantEventsService: PlantEventsService,
@@ -328,7 +330,20 @@ export class PlantService implements IPlantService {
       throw new BadRequestException('Production recipe is inactive and cannot be used for orders');
     }
 
-    const number = await this.generateOrderNumber(tenantId);
+    if (!input.committeeId) {
+      throw new BadRequestException('committeeId is required to create a production order');
+    }
+
+    const committee = await this.committeeService.assertCommitteeActiveForOrder(
+      tenantId,
+      input.committeeId,
+    );
+
+    const number = await this.generateOrderNumberForCommittee(
+      tenantId,
+      input.committeeId,
+      committee.number,
+    );
     const plannedQuantity = new Decimal(input.batchCount).mul(recipe.batchSize);
 
     const { executions } = await this.plantRepository.createOrderWithExecutionsTx({
@@ -345,6 +360,7 @@ export class PlantService implements IPlantService {
       plannedEndAt: input.plannedEndAt,
       supervisorId: input.supervisorId ?? null,
       notes: input.notes ?? null,
+      committeeId: input.committeeId,
     });
 
     if (executions.length !== recipe.phases.length) {
@@ -376,6 +392,8 @@ export class PlantService implements IPlantService {
       shift: order.shift,
       plannedStartAt: order.plannedStartAt,
       recipeId: order.recipeId,
+      committeeId: order.committeeId,
+      committeeNumber: order.committee?.number ?? null,
     }));
   }
 
@@ -612,43 +630,45 @@ export class PlantService implements IPlantService {
     }
   }
 
-  private parseOrderSequence(number: string): number | null {
+  private parseCommitteeOrderSequence(number: string, committeeNumber: string): number | null {
     const trimmed = number.trim();
     if (!trimmed) {
       return null;
     }
 
-    const legacyMatch = trimmed.match(/^\d{4}-(\d+)$/);
-    if (legacyMatch) {
-      const seq = Number.parseInt(legacyMatch[1], 10);
-      return Number.isNaN(seq) ? null : seq;
+    const escapedCommitteeNumber = committeeNumber.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const match = new RegExp(`^${escapedCommitteeNumber}-(\\d{2})$`, 'i').exec(trimmed);
+    if (!match) {
+      return null;
     }
 
-    if (/^\d+$/.test(trimmed)) {
-      const seq = Number.parseInt(trimmed, 10);
-      return Number.isNaN(seq) ? null : seq;
-    }
-
-    return null;
+    const seq = Number.parseInt(match[1], 10);
+    return Number.isNaN(seq) ? null : seq;
   }
 
-  private async generateOrderNumber(tenantId: string): Promise<string> {
-    const orders = await this.plantRepository.findOrders(tenantId, {});
+  private async generateOrderNumberForCommittee(
+    tenantId: string,
+    committeeId: string,
+    committeeNumber: string,
+  ): Promise<string> {
+    const orders = await this.plantRepository.findOrders(tenantId, { committeeId });
 
     let maxSeq = 0;
     for (const order of orders) {
-      const seq = this.parseOrderSequence(order.number);
+      const seq = this.parseCommitteeOrderSequence(order.number, committeeNumber);
       if (seq !== null && seq > maxSeq) {
         maxSeq = seq;
       }
     }
 
     const next = maxSeq + 1;
-    if (next > 9999) {
-      throw new ConflictException('Production order number limit reached (9999)');
+    if (next > 99) {
+      throw new ConflictException(
+        `Production order limit reached for committee ${committeeNumber} (99)`,
+      );
     }
 
-    return String(next).padStart(4, '0');
+    return `${committeeNumber}-${String(next).padStart(2, '0')}`;
   }
 
   private mapOrderDetail(detail: OrderDetail): OrderDetailResponse {
@@ -677,6 +697,8 @@ export class PlantService implements IPlantService {
       deliveryDate: detail.deliveryDate,
       packageWeight: detail.recipe.packageWeight?.toString() ?? null,
       batchWeight: detail.batchWeight?.toString() ?? null,
+      committeeId: detail.committeeId,
+      committeeNumber: detail.committee?.number ?? null,
       createdAt: detail.createdAt,
       updatedAt: detail.updatedAt,
       materials: detail.materials.map((material) => ({

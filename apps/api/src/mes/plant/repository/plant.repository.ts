@@ -19,6 +19,7 @@ import type {
   IPlantRepository,
   ListOrdersFilters,
   OrderDetail,
+  OrderListRow,
   OrderMaterialSnapshotLine,
   OrderWithExecutions,
   RecipeWithPhasesAndInputs,
@@ -454,8 +455,14 @@ export class PlantRepository implements IPlantRepository {
           plannedEndAt: input.plannedEndAt,
           supervisorId: input.supervisorId ?? null,
           notes: input.notes ?? null,
+          committeeId: input.committeeId,
           status: ProductionOrderStatus.DRAFT,
         },
+      });
+
+      await tx.productionCommittee.update({
+        where: { id: input.committeeId },
+        data: { ordersCount: { increment: 1 } },
       });
 
       const phases = await tx.productionPhase.findMany({
@@ -482,7 +489,7 @@ export class PlantRepository implements IPlantRepository {
     });
   }
 
-  findOrders(tenantId: string, filters: ListOrdersFilters): Promise<ProductionOrder[]> {
+  findOrders(tenantId: string, filters: ListOrdersFilters): Promise<OrderListRow[]> {
     const plannedStartAt =
       filters.plannedStartFrom || filters.plannedStartTo
         ? {
@@ -497,7 +504,11 @@ export class PlantRepository implements IPlantRepository {
         ...(filters.status ? { status: filters.status } : {}),
         ...(filters.shift ? { shift: filters.shift } : {}),
         ...(filters.priority ? { priority: filters.priority } : {}),
+        ...(filters.committeeId ? { committeeId: filters.committeeId } : {}),
         ...(plannedStartAt ? { plannedStartAt } : {}),
+      },
+      include: {
+        committee: { select: { id: true, number: true } },
       },
       orderBy: { plannedStartAt: 'desc' },
     });
@@ -508,6 +519,7 @@ export class PlantRepository implements IPlantRepository {
       where: { id, tenantId },
       include: {
         recipe: { select: { id: true, name: true, packageWeight: true } },
+        committee: { select: { id: true, number: true } },
         executions: {
           orderBy: { phase: { order: 'asc' } },
           include: {

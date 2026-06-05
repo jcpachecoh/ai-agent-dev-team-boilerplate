@@ -4,6 +4,7 @@ import {
   RecetaActionButton,
   RecetaFilterSelect,
   RecetaMetricCard,
+  RecetaSearch,
   RecetaTableHeader,
   RecetaUtilityButton,
   StatusBadge,
@@ -32,6 +33,7 @@ import {
   useProductionOrders,
   useProductionRecipes,
 } from '../hooks/useProductionOrders';
+import { useProductionCommittees } from '../hooks/useProductionCommittees';
 import { useDownloadProductionOrderPdf } from '../hooks/useDownloadProductionOrderPdf';
 import {
   formatPlannedDate,
@@ -69,9 +71,11 @@ export default function ProductionOrdersListView(): React.JSX.Element {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [shiftFilter, setShiftFilter] = useState<string>('all');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
+  const [committeeFilter, setCommitteeFilter] = useState<string>('all');
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [downloadingPdfId, setDownloadingPdfId] = useState<string | null>(null);
 
@@ -80,10 +84,12 @@ export default function ProductionOrdersListView(): React.JSX.Element {
     if (statusFilter !== 'all') result.status = statusFilter as ProductionOrderStatus;
     if (shiftFilter !== 'all') result.shift = shiftFilter as ProductionShift;
     if (priorityFilter !== 'all') result.priority = priorityFilter as ProductionPriority;
+    if (committeeFilter !== 'all') result.committeeId = committeeFilter;
     return result;
-  }, [priorityFilter, shiftFilter, statusFilter]);
+  }, [committeeFilter, priorityFilter, shiftFilter, statusFilter]);
 
   const ordersQuery = useProductionOrders(filters);
+  const committeesQuery = useProductionCommittees({});
   const recipesQuery = useProductionRecipes();
   const planMutation = usePlanProductionOrder();
   const downloadPdfMutation = useDownloadProductionOrderPdf();
@@ -97,6 +103,37 @@ export default function ProductionOrdersListView(): React.JSX.Element {
   }, [recipesQuery.data]);
 
   const orders = ordersQuery.data ?? [];
+
+  const committeeFilterOptions = useMemo(() => {
+    const committees = committeesQuery.data ?? [];
+    return [
+      { value: 'all', label: 'Todos los comités' },
+      ...committees.map((committee) => ({
+        value: committee.id,
+        label: committee.number,
+      })),
+    ];
+  }, [committeesQuery.data]);
+
+  const filteredOrders = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    if (!term) return orders;
+
+    return orders.filter((order) => {
+      const recipeName = recipeNameById.get(order.recipeId) ?? '';
+      const haystack = [
+        order.number,
+        recipeName,
+        order.committeeNumber ?? '',
+        formatPriority(order.priority),
+        formatShift(order.shift),
+      ]
+        .join(' ')
+        .toLowerCase();
+
+      return haystack.includes(term);
+    });
+  }, [orders, recipeNameById, search]);
 
   // #region agent log
   useEffect(() => {
@@ -136,13 +173,13 @@ export default function ProductionOrdersListView(): React.JSX.Element {
   }, [location.pathname, location.state, navigate]);
 
   const metrics = useMemo(() => {
-    const active = orders.filter(
+    const active = filteredOrders.filter(
       (o) => o.status === 'IN_PROCESS' || o.status === 'PLANNED' || o.status === 'PAUSED',
     ).length;
-    const draft = orders.filter((o) => o.status === 'DRAFT').length;
-    const completed = orders.filter((o) => o.status === 'COMPLETED').length;
-    return { total: orders.length, active, draft, completed };
-  }, [orders]);
+    const draft = filteredOrders.filter((o) => o.status === 'DRAFT').length;
+    const completed = filteredOrders.filter((o) => o.status === 'COMPLETED').length;
+    return { total: filteredOrders.length, active, draft, completed };
+  }, [filteredOrders]);
 
   const handlePlan = async (order: ProductionOrderListItem, event: React.MouseEvent) => {
     event.stopPropagation();
@@ -189,6 +226,15 @@ export default function ProductionOrdersListView(): React.JSX.Element {
       />
 
       <div className={styles.filtersRow}>
+        <RecetaSearch
+          theme={theme}
+          size={RECETA_TABLE_SIZE}
+          value={search}
+          onChange={setSearch}
+          placeholder="Buscar OP, receta o comité…"
+          ariaLabel="Buscar órdenes de producción"
+          className={styles.searchGrow}
+        />
         <div className={styles.filterField}>
           <RecetaFilterSelect
             theme={theme}
@@ -217,6 +263,16 @@ export default function ProductionOrdersListView(): React.JSX.Element {
             value={priorityFilter}
             options={[...PRIORITY_FILTER_OPTIONS]}
             onChange={setPriorityFilter}
+          />
+        </div>
+        <div className={styles.filterField}>
+          <RecetaFilterSelect
+            theme={theme}
+            size={RECETA_TABLE_SIZE}
+            aria-label="Filtrar por comité"
+            value={committeeFilter}
+            options={committeeFilterOptions}
+            onChange={setCommitteeFilter}
           />
         </div>
       </div>
@@ -272,18 +328,22 @@ export default function ProductionOrdersListView(): React.JSX.Element {
         </div>
       )}
 
-      {!ordersQuery.isPending && !ordersQuery.isError && orders.length === 0 && (
+      {!ordersQuery.isPending && !ordersQuery.isError && filteredOrders.length === 0 && (
         <InventoryScreenState
           variant="empty"
-          message="No hay órdenes de producción. Cree la primera OP para generar las ejecuciones por fase."
+          message={
+            orders.length === 0
+              ? 'No hay órdenes de producción. Cree la primera OP para generar las ejecuciones por fase.'
+              : 'No hay órdenes que coincidan con los filtros o la búsqueda.'
+          }
         />
       )}
 
-      {orders.length > 0 && (
+      {filteredOrders.length > 0 && (
         <div className={styles.tableWrap}>
           <RecetaTableHeader theme={theme} size={RECETA_TABLE_SIZE} columns={TABLE_COLUMNS} />
           <div className={styles.tableBody} role="rowgroup">
-            {orders.map((order) => {
+            {filteredOrders.map((order) => {
               const recipeName = recipeNameById.get(order.recipeId) ?? order.recipeId.slice(0, 8);
               return (
                 <OrderTableRow

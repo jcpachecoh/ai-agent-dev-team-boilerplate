@@ -222,6 +222,7 @@ export interface CreateOrderInput {
   plannedEndAt: Date;
   supervisorId?: string | null;
   notes?: string | null;
+  committeeId: string;
 }
 
 export interface CreateOrderWithExecutionsTxInput {
@@ -238,6 +239,7 @@ export interface CreateOrderWithExecutionsTxInput {
   plannedEndAt: Date;
   supervisorId?: string | null;
   notes?: string | null;
+  committeeId: string;
 }
 
 export interface ListOrdersFilters {
@@ -246,6 +248,7 @@ export interface ListOrdersFilters {
   priority?: ProductionPriority;
   plannedStartFrom?: Date;
   plannedStartTo?: Date;
+  committeeId?: string;
 }
 
 export interface UpdateOrderData {
@@ -285,6 +288,10 @@ export interface CompleteExecutionInput {
   notes?: string | null;
 }
 
+export type OrderListRow = ProductionOrder & {
+  committee?: { id: string; number: string } | null;
+};
+
 export interface OrderListItemResponse {
   id: string;
   tenantId: string;
@@ -295,6 +302,8 @@ export interface OrderListItemResponse {
   plannedStartAt: Date;
   recipeId: string;
   recipeName?: string;
+  committeeId?: string | null;
+  committeeNumber?: string | null;
 }
 
 export type OrderExecutionDetail = PhaseExecution & {
@@ -311,6 +320,7 @@ export type ActiveOperatorSessionDetail = {
 
 export type OrderDetail = ProductionOrder & {
   recipe: Pick<ProductionRecipe, 'id' | 'name' | 'packageWeight'>;
+  committee?: { id: string; number: string } | null;
   executions: OrderExecutionDetail[];
   activeSessions: ActiveOperatorSessionDetail[];
   materials: ProductionOrderMaterial[];
@@ -343,6 +353,8 @@ export interface OrderDetailResponse {
   deliveryDate: Date | null;
   packageWeight: string | null;
   batchWeight: string | null;
+  committeeId: string | null;
+  committeeNumber: string | null;
   createdAt: Date;
   updatedAt: Date;
   materials: Array<{
@@ -565,7 +577,7 @@ export interface IPlantRepository {
   createOrderWithExecutionsTx(
     input: CreateOrderWithExecutionsTxInput,
   ): Promise<OrderWithExecutions>;
-  findOrders(tenantId: string, filters: ListOrdersFilters): Promise<ProductionOrder[]>;
+  findOrders(tenantId: string, filters: ListOrdersFilters): Promise<OrderListRow[]>;
   findOrderDetailById(tenantId: string, id: string): Promise<OrderDetail | null>;
   replaceOrderMaterialsTx(
     tenantId: string,

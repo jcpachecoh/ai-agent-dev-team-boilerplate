@@ -1,12 +1,18 @@
 import type {
+  CreateProductionCommitteeInput,
   CreateProductionOrderInput,
+  ListProductionCommitteesFilters,
   ListProductionOrdersFilters,
+  OperationsAdminUser,
+  ProductionCommitteeDetail,
+  ProductionCommitteeListItem,
   ProductionOrderDetail,
   ProductionOrderListItem,
   ProductionRecipeSummary,
   UpdateExecutionRouteInput,
   UpdateProductionOrderDocumentInput,
   UpdateProductionOrderInput,
+  UpdateProductionCommitteeInput,
 } from '../types';
 import { triggerBrowserDownload } from '../utils/download';
 
@@ -41,8 +47,18 @@ function buildOrdersQuery(filters: ListProductionOrdersFilters): string {
   if (filters.priority) params.set('priority', filters.priority);
   if (filters.plannedStartFrom) params.set('plannedStartFrom', filters.plannedStartFrom);
   if (filters.plannedStartTo) params.set('plannedStartTo', filters.plannedStartTo);
+  if (filters.committeeId) params.set('committeeId', filters.committeeId);
   const qs = params.toString();
   return qs ? `/plant/orders?${qs}` : '/plant/orders';
+}
+
+function buildCommitteesQuery(filters: ListProductionCommitteesFilters): string {
+  const params = new URLSearchParams();
+  if (filters.status) params.set('status', filters.status);
+  if (filters.page) params.set('page', String(filters.page));
+  if (filters.limit) params.set('limit', String(filters.limit));
+  const qs = params.toString();
+  return qs ? `/plant/committees?${qs}` : '/plant/committees';
 }
 
 export function fetchProductionOrders(
@@ -111,4 +127,43 @@ export async function downloadProductionOrderPdf(orderId: string): Promise<void>
 
 export function fetchProductionRecipes(): Promise<ProductionRecipeSummary[]> {
   return plantFetch<ProductionRecipeSummary[]>('/plant/recipes');
+}
+
+export function fetchProductionCommittees(
+  filters: ListProductionCommitteesFilters = {},
+): Promise<ProductionCommitteeListItem[]> {
+  return plantFetch<ProductionCommitteeListItem[]>(buildCommitteesQuery(filters));
+}
+
+export function fetchProductionCommitteeById(id: string): Promise<ProductionCommitteeDetail> {
+  return plantFetch<ProductionCommitteeDetail>(`/plant/committees/${id}`);
+}
+
+export function createProductionCommittee(
+  input: CreateProductionCommitteeInput,
+): Promise<ProductionCommitteeDetail> {
+  return plantFetch<ProductionCommitteeDetail>('/plant/committees', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export function updateProductionCommittee(
+  id: string,
+  input: UpdateProductionCommitteeInput,
+): Promise<ProductionCommitteeDetail> {
+  return plantFetch<ProductionCommitteeDetail>(`/plant/committees/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  });
+}
+
+export function closeProductionCommittee(id: string): Promise<ProductionCommitteeDetail> {
+  return plantFetch<ProductionCommitteeDetail>(`/plant/committees/${id}/close`, {
+    method: 'POST',
+  });
+}
+
+export function fetchOperationsAdminUsers(): Promise<OperationsAdminUser[]> {
+  return plantFetch<OperationsAdminUser[]>('/plant/committees/eligible-members');
 }

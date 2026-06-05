@@ -128,6 +128,12 @@ export const navigationItems: NavItem[] = [
         path: '/produccion/ordenes',
         icon: ClipboardList,
       },
+      {
+        id: 'prod-committees',
+        label: 'Comités de producción',
+        path: '/produccion/comites',
+        icon: Users,
+      },
     ],
   },
   {
@@ -191,6 +197,8 @@ const routeLabels: Record<string, string> = {
   '/recetas/historial': 'Historial de Ejecuciones',
   '/produccion/ordenes': 'Órdenes de producción',
   '/produccion/ordenes/nueva': 'Nueva OP',
+  '/produccion/comites': 'Comités de producción',
+  '/produccion/comites/nuevo': 'Nuevo comité',
   '/reports': 'Panel de Supervisión',
   '/dispatch': 'Centro de Despacho',
   '/users': 'Usuarios',

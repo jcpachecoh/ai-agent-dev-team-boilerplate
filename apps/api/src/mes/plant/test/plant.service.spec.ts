@@ -2,6 +2,7 @@ import { BadRequestException, ConflictException, NotFoundException } from '@nest
 import { Test, TestingModule } from '@nestjs/testing';
 import {
   PhaseExecutionStatus,
+  ProductionCommitteeStatus,
   ProductionOrderStatus,
   ProductionPriority,
   ProductionShift,
@@ -11,6 +12,7 @@ import { Decimal } from '@prisma/client/runtime/library';
 import { RecipeCategoriesService } from '../../../recipe-categories/service/recipe-categories.service';
 import { SupplyItemsService } from '../../../supplyitems/service/supplyitems.service';
 import { PlantRepository } from '../repository/plant.repository';
+import { CommitteeService } from '../service/committee.service';
 import { PlantEventsService } from '../service/plant-events.service';
 import { PlantService } from '../service/plant.service';
 import type { CreateRecipeWithPhasesInput } from '../interfaces/plant.interfaces';
@@ -109,6 +111,10 @@ const recipeCategoriesServiceMock = {
   findOne: jest.fn(),
 };
 
+const committeeServiceMock = {
+  assertCommitteeActiveForOrder: jest.fn(),
+};
+
 describe('PlantService', () => {
   let service: PlantService;
 
@@ -117,6 +123,7 @@ describe('PlantService', () => {
       providers: [
         PlantService,
         { provide: PlantRepository, useValue: repoMock },
+        { provide: CommitteeService, useValue: committeeServiceMock },
         { provide: RecipeCategoriesService, useValue: recipeCategoriesServiceMock },
         { provide: SupplyItemsService, useValue: supplyItemsServiceMock },
         { provide: PlantEventsService, useValue: plantEventsServiceMock },
@@ -854,6 +861,20 @@ describe('PlantService', () => {
   describe('production orders', () => {
     const plannedStartAt = new Date('2026-05-27T08:00:00Z');
     const plannedEndAt = new Date('2026-05-27T12:00:00Z');
+    const committeeId = 'committee-1';
+    const activeCommittee = {
+      id: committeeId,
+      tenantId,
+      number: 'OP0001',
+      status: ProductionCommitteeStatus.ACTIVE,
+      ordersCount: 0,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    beforeEach(() => {
+      committeeServiceMock.assertCommitteeActiveForOrder.mockResolvedValue(activeCommittee);
+    });
 
     const recipeWithPhases = {
       ...mockRecipe,
@@ -916,6 +937,7 @@ describe('PlantService', () => {
       deliveryDate: null,
       packageWeight: null,
       batchWeight: null,
+      committeeId: null,
       createdAt: new Date(),
       updatedAt: new Date(),
       recipe: { id: 'recipe-1', name: 'Pan integral', packageWeight: null },
@@ -983,6 +1005,7 @@ describe('PlantService', () => {
         shift: ProductionShift.MORNING,
         plannedStartAt,
         plannedEndAt,
+        committeeId,
       });
 
       expect(repoMock.createOrderWithExecutionsTx).toHaveBeenCalledWith(
@@ -990,6 +1013,8 @@ describe('PlantService', () => {
           tenantId,
           recipeId: 'recipe-1',
           batchCount: 2,
+          number: 'OP0001-01',
+          committeeId,
         }),
       );
       expect(result.executions).toHaveLength(2);
@@ -1177,6 +1202,7 @@ describe('PlantService', () => {
           shift: ProductionShift.MORNING,
           plannedStartAt,
           plannedEndAt,
+          committeeId,
         }),
       ).rejects.toThrow(BadRequestException);
     });
@@ -1377,6 +1403,7 @@ describe('PlantService', () => {
           shift: ProductionShift.MORNING,
           plannedStartAt,
           plannedEndAt,
+          committeeId,
         }),
       ).rejects.toThrow(NotFoundException);
     });
@@ -1396,6 +1423,7 @@ describe('PlantService', () => {
           shift: ProductionShift.MORNING,
           plannedStartAt,
           plannedEndAt,
+          committeeId,
         }),
       ).rejects.toThrow(ConflictException);
     });
@@ -1428,13 +1456,14 @@ describe('PlantService', () => {
           shift: ProductionShift.MORNING,
           plannedStartAt: plannedEndAt,
           plannedEndAt: plannedStartAt,
+          committeeId,
         }),
       ).rejects.toThrow(BadRequestException);
     });
 
-    it('createOrder increments order number sequence from last OP', async () => {
+    it('createOrder assigns committee-scoped OP number', async () => {
       repoMock.findRecipeDetailById.mockResolvedValue(recipeWithPhases);
-      repoMock.findOrders.mockResolvedValue([{ number: '0133' }, { number: '2026-0120' }]);
+      repoMock.findOrders.mockResolvedValue([{ number: 'OP0001-01' }, { number: 'OP0001-03' }]);
       repoMock.createOrderWithExecutionsTx.mockResolvedValue({
         order: { id: 'order-1' },
         executions: [
@@ -1455,13 +1484,71 @@ describe('PlantService', () => {
         shift: ProductionShift.MORNING,
         plannedStartAt,
         plannedEndAt,
+        committeeId,
       });
 
+      expect(repoMock.findOrders).toHaveBeenCalledWith(tenantId, { committeeId });
       expect(repoMock.createOrderWithExecutionsTx).toHaveBeenCalledWith(
         expect.objectContaining({
-          number: '0134',
+          number: 'OP0001-04',
+          committeeId,
         }),
       );
+    });
+
+    it('createOrder validates active committee and passes committeeId to repository', async () => {
+      repoMock.findRecipeDetailById.mockResolvedValue(recipeWithPhases);
+      repoMock.findOrders.mockResolvedValue([]);
+      repoMock.createOrderWithExecutionsTx.mockResolvedValue({
+        order: { id: 'order-1' },
+        executions: [
+          { id: 'exec-1', orderId: 'order-1', status: PhaseExecutionStatus.PENDING },
+          { id: 'exec-2', orderId: 'order-1', status: PhaseExecutionStatus.PENDING },
+        ],
+      });
+      repoMock.findOrderDetailById.mockResolvedValue(
+        buildOrderDetail(ProductionOrderStatus.DRAFT, [
+          PhaseExecutionStatus.PENDING,
+          PhaseExecutionStatus.PENDING,
+        ]),
+      );
+
+      await service.createOrder(tenantId, {
+        recipeId: 'recipe-1',
+        batchCount: 2,
+        shift: ProductionShift.MORNING,
+        plannedStartAt,
+        plannedEndAt,
+        committeeId,
+      });
+
+      expect(committeeServiceMock.assertCommitteeActiveForOrder).toHaveBeenCalledWith(
+        tenantId,
+        committeeId,
+      );
+      expect(repoMock.createOrderWithExecutionsTx).toHaveBeenCalledWith(
+        expect.objectContaining({
+          number: 'OP0001-01',
+          committeeId,
+        }),
+      );
+    });
+
+    it('createOrder without committeeId throws BadRequestException', async () => {
+      repoMock.findRecipeDetailById.mockResolvedValue(recipeWithPhases);
+
+      await expect(
+        service.createOrder(tenantId, {
+          recipeId: 'recipe-1',
+          batchCount: 2,
+          shift: ProductionShift.MORNING,
+          plannedStartAt,
+          plannedEndAt,
+          committeeId: '',
+        }),
+      ).rejects.toThrow(BadRequestException);
+
+      expect(committeeServiceMock.assertCommitteeActiveForOrder).not.toHaveBeenCalled();
     });
 
     it('planOrder throws when first execution is not PENDING', async () => {

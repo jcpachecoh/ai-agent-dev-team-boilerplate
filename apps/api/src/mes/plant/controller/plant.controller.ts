@@ -35,8 +35,8 @@ import { Decimal } from '@prisma/client/runtime/library';
 import type { Request, Response } from 'express';
 import { Public } from '../../../common/decorators/public.decorator';
 import { Roles } from '../../auth/decorators/roles.decorator';
-import { MesRolesGuard } from '../../auth/guards/mes-roles.guard';
 import { PlantAuthGuard } from '../guards/plant-auth.guard';
+import { PlantRolesGuard } from '../guards/plant-roles.guard';
 import type { MesJwtPayload } from '../../auth/interfaces/mes-auth.interfaces';
 import type {
   ChainResult,
@@ -53,10 +53,27 @@ import type {
   RecipeDetailResponse,
   UpdateRecipeInput,
 } from '../interfaces/plant.interfaces';
+import type {
+  CommitteeDetailResponse,
+  CommitteeListItemResponse,
+  CreateCommitteeInput,
+  EligibleCommitteeMemberResponse,
+  ListCommitteesFilters,
+  UpdateCommitteeInput,
+} from '../interfaces/committee.interfaces';
+import { CommitteeService } from '../service/committee.service';
 import { PhaseChainService } from '../service/phase-chain.service';
 import { IncidentService } from '../service/incident.service';
 import { PlantService } from '../service/plant.service';
 import { ProductionOrderPdfService } from '../service/production-order-pdf.service';
+import {
+  CommitteeDetailResponseDto,
+  CommitteeListItemResponseDto,
+  EligibleCommitteeMemberResponseDto,
+} from './dto/committee.response';
+import { CreateCommitteeDto } from './dto/create-committee.dto';
+import { ListCommitteesQueryDto } from './dto/list-committees-query.dto';
+import { UpdateCommitteeDto } from './dto/update-committee.dto';
 import { CancelOrderDto } from './dto/cancel-order.dto';
 import { CreateIncidentDto } from './dto/create-incident.dto';
 import { CreateOrderDto } from './dto/create-order.dto';
@@ -93,6 +110,7 @@ type MesRequest = Request & { user: MesJwtPayload & { tenantId?: string } };
 export class PlantController {
   constructor(
     private readonly plantService: PlantService,
+    private readonly committeeService: CommitteeService,
     private readonly phaseChainService: PhaseChainService,
     private readonly incidentService: IncidentService,
     private readonly productionOrderPdfService: ProductionOrderPdfService,
@@ -297,13 +315,93 @@ export class PlantController {
     return this.plantService.removePhaseInput(this.resolveTenantId(req), phaseId, inputId);
   }
 
+  // ── Production committees ────────────────────────────────────────────────────
+
+  @ApiOperation({ summary: 'Create a production committee' })
+  @ApiCreatedResponse({ type: CommitteeDetailResponseDto })
+  @Post('committees')
+  @HttpCode(HttpStatus.CREATED)
+  @UseGuards(PlantAuthGuard, PlantRolesGuard)
+  @Roles(...SUPERVISOR_ROLES)
+  createCommittee(
+    @Req() req: MesRequest,
+    @Body() dto: CreateCommitteeDto,
+  ): Promise<CommitteeDetailResponse> {
+    return this.committeeService.createCommittee(
+      this.resolveTenantId(req),
+      this.toCreateCommitteeInput(dto),
+    );
+  }
+
+  @ApiOperation({ summary: 'List production committees' })
+  @ApiOkResponse({ type: [CommitteeListItemResponseDto] })
+  @Get('committees')
+  findCommittees(
+    @Req() req: MesRequest,
+    @Query() query: ListCommitteesQueryDto,
+  ): Promise<CommitteeListItemResponse[]> {
+    return this.committeeService.listCommittees(
+      this.resolveTenantId(req),
+      this.toListCommitteesFilters(query),
+    );
+  }
+
+  @ApiOperation({ summary: 'List users eligible as committee members (OPERATIONS_ADMIN)' })
+  @ApiOkResponse({ type: [EligibleCommitteeMemberResponseDto] })
+  @Get('committees/eligible-members')
+  findEligibleCommitteeMembers(@Req() req: MesRequest): Promise<EligibleCommitteeMemberResponse[]> {
+    return this.committeeService.listEligibleMembers(this.resolveTenantId(req));
+  }
+
+  @ApiOperation({ summary: 'Get production committee detail' })
+  @ApiParam({ name: 'id', description: 'Production committee ID' })
+  @ApiOkResponse({ type: CommitteeDetailResponseDto })
+  @Get('committees/:id')
+  findCommitteeById(
+    @Req() req: MesRequest,
+    @Param('id') id: string,
+  ): Promise<CommitteeDetailResponse> {
+    return this.committeeService.getCommitteeDetail(this.resolveTenantId(req), id);
+  }
+
+  @ApiOperation({ summary: 'Update a production committee' })
+  @ApiParam({ name: 'id', description: 'Production committee ID' })
+  @ApiOkResponse({ type: CommitteeDetailResponseDto })
+  @Patch('committees/:id')
+  @UseGuards(PlantAuthGuard, PlantRolesGuard)
+  @Roles(...SUPERVISOR_ROLES)
+  updateCommittee(
+    @Req() req: MesRequest,
+    @Param('id') id: string,
+    @Body() dto: UpdateCommitteeDto,
+  ): Promise<CommitteeDetailResponse> {
+    return this.committeeService.updateCommittee(
+      this.resolveTenantId(req),
+      id,
+      this.toUpdateCommitteeInput(dto),
+    );
+  }
+
+  @ApiOperation({ summary: 'Close an active production committee' })
+  @ApiParam({ name: 'id', description: 'Production committee ID' })
+  @ApiOkResponse({ type: CommitteeDetailResponseDto })
+  @Post('committees/:id/close')
+  @UseGuards(PlantAuthGuard, PlantRolesGuard)
+  @Roles(...SUPERVISOR_ROLES)
+  closeCommittee(
+    @Req() req: MesRequest,
+    @Param('id') id: string,
+  ): Promise<CommitteeDetailResponse> {
+    return this.committeeService.closeCommittee(this.resolveTenantId(req), id);
+  }
+
   // ── Production orders ────────────────────────────────────────────────────────
 
   @ApiOperation({ summary: 'Create a production order with phase executions' })
   @ApiCreatedResponse({ type: OrderDetailResponseDto })
   @Post('orders')
   @HttpCode(HttpStatus.CREATED)
-  @UseGuards(PlantAuthGuard, MesRolesGuard)
+  @UseGuards(PlantAuthGuard, PlantRolesGuard)
   @Roles(...SUPERVISOR_ROLES)
   createOrder(@Req() req: MesRequest, @Body() dto: CreateOrderDto): Promise<OrderDetailResponse> {
     return this.plantService.createOrder(this.resolveTenantId(req), this.toCreateOrderInput(dto));
@@ -330,7 +428,7 @@ export class PlantController {
   @ApiOperation({ summary: 'Download production order PDF document' })
   @ApiParam({ name: 'id', description: 'Production order ID' })
   @Get('orders/:id/pdf')
-  @UseGuards(PlantAuthGuard, MesRolesGuard)
+  @UseGuards(PlantAuthGuard, PlantRolesGuard)
   @Roles(...SUPERVISOR_ROLES)
   async downloadOrderPdf(
     @Req() req: MesRequest,
@@ -348,7 +446,7 @@ export class PlantController {
   @ApiParam({ name: 'id', description: 'Production order ID' })
   @ApiOkResponse({ type: OrderDetailResponseDto })
   @Patch('orders/:id/plan')
-  @UseGuards(PlantAuthGuard, MesRolesGuard)
+  @UseGuards(PlantAuthGuard, PlantRolesGuard)
   @Roles(...SUPERVISOR_ROLES)
   planOrder(@Req() req: MesRequest, @Param('id') id: string): Promise<OrderDetailResponse> {
     return this.plantService.planOrder(this.resolveTenantId(req), id);
@@ -358,7 +456,7 @@ export class PlantController {
   @ApiParam({ name: 'id', description: 'Production order ID' })
   @ApiOkResponse({ type: OrderDetailResponseDto })
   @Post('orders/:id/pause')
-  @UseGuards(PlantAuthGuard, MesRolesGuard)
+  @UseGuards(PlantAuthGuard, PlantRolesGuard)
   @Roles(...SUPERVISOR_ROLES)
   pauseOrder(
     @Req() req: MesRequest,
@@ -372,7 +470,7 @@ export class PlantController {
   @ApiParam({ name: 'id', description: 'Production order ID' })
   @ApiOkResponse({ type: OrderDetailResponseDto })
   @Post('orders/:id/resume')
-  @UseGuards(PlantAuthGuard, MesRolesGuard)
+  @UseGuards(PlantAuthGuard, PlantRolesGuard)
   @Roles(...SUPERVISOR_ROLES)
   resumeOrder(@Req() req: MesRequest, @Param('id') id: string): Promise<OrderDetailResponse> {
     return this.plantService.resumeOrder(this.resolveTenantId(req), id);
@@ -382,7 +480,7 @@ export class PlantController {
   @ApiParam({ name: 'id', description: 'Production order ID' })
   @ApiOkResponse({ type: OrderDetailResponseDto })
   @Post('orders/:id/cancel')
-  @UseGuards(PlantAuthGuard, MesRolesGuard)
+  @UseGuards(PlantAuthGuard, PlantRolesGuard)
   @Roles(...SUPERVISOR_ROLES)
   cancelOrder(
     @Req() req: MesRequest,
@@ -396,7 +494,7 @@ export class PlantController {
   @ApiParam({ name: 'id', description: 'Phase execution ID' })
   @ApiOkResponse({ description: 'QA approved; next QA_PENDING execution promoted to READY' })
   @Post('executions/:id/qa-approve')
-  @UseGuards(PlantAuthGuard, MesRolesGuard)
+  @UseGuards(PlantAuthGuard, PlantRolesGuard)
   @Roles(...SUPERVISOR_ROLES)
   qaApproveExecution(
     @Req() req: MesRequest,
@@ -435,7 +533,7 @@ export class PlantController {
   @ApiOperation({ summary: 'List production incidents (supervisor+)' })
   @ApiOkResponse({ type: [IncidentResponseDto] })
   @Get('incidents')
-  @UseGuards(PlantAuthGuard, MesRolesGuard)
+  @UseGuards(PlantAuthGuard, PlantRolesGuard)
   @Roles(...SUPERVISOR_ROLES)
   listIncidents(
     @Req() req: MesRequest,
@@ -457,7 +555,7 @@ export class PlantController {
   @ApiParam({ name: 'id', description: 'Incident ID' })
   @ApiOkResponse({ type: IncidentResponseDto })
   @Patch('incidents/:id/resolve')
-  @UseGuards(PlantAuthGuard, MesRolesGuard)
+  @UseGuards(PlantAuthGuard, PlantRolesGuard)
   @Roles(...SUPERVISOR_ROLES)
   resolveIncident(
     @Req() req: MesRequest,
@@ -563,6 +661,29 @@ export class PlantController {
       plannedEndAt: new Date(dto.plannedEndAt),
       supervisorId: dto.supervisorId ?? null,
       notes: dto.notes ?? null,
+      committeeId: dto.committeeId ?? null,
+    };
+  }
+
+  private toCreateCommitteeInput(dto: CreateCommitteeDto): CreateCommitteeInput {
+    return {
+      memberUserIds: dto.memberUserIds,
+      status: dto.status,
+    };
+  }
+
+  private toUpdateCommitteeInput(dto: UpdateCommitteeDto): UpdateCommitteeInput {
+    return {
+      status: dto.status,
+      memberUserIds: dto.memberUserIds,
+    };
+  }
+
+  private toListCommitteesFilters(query: ListCommitteesQueryDto): ListCommitteesFilters {
+    return {
+      status: query.status,
+      page: query.page,
+      limit: query.limit,
     };
   }
 
@@ -573,6 +694,7 @@ export class PlantController {
       priority: query.priority,
       plannedStartFrom: query.plannedStartFrom ? new Date(query.plannedStartFrom) : undefined,
       plannedStartTo: query.plannedStartTo ? new Date(query.plannedStartTo) : undefined,
+      committeeId: query.committeeId,
     };
   }
 

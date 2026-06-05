@@ -12,7 +12,7 @@
  *   supplyItemId = SEED_SUPPLY_ITEM_ID (optional; also captured by Create Supply Item)
  *
  * Global User + Role (USR-01):
- *   Roles: OWNER, SUPERVISOR, MANAGER, OPERATOR (tenant-scoped)
+ *   Roles: OWNER, SUPERVISOR, MANAGER, OPERATOR, OPERATIONS_ADMIN (tenant-scoped)
  *
  * Global Permission catalog (USR-02):
  *   13 permission codes — see PERMISSION_SEEDS (ids cccccccc-0000-0000-0000-000000000001…013)
@@ -64,6 +64,7 @@ const ROLE_OWNER_ID = 'aaaaaaaa-0000-0000-0000-000000000001';
 const ROLE_SUPERVISOR_ID = 'aaaaaaaa-0000-0000-0000-000000000002';
 const ROLE_MANAGER_ID = 'aaaaaaaa-0000-0000-0000-000000000003';
 const ROLE_OPERATOR_ID = 'aaaaaaaa-0000-0000-0000-000000000004';
+const ROLE_OPERATIONS_ADMIN_ID = 'aaaaaaaa-0000-0000-0000-000000000005';
 
 const GLOBAL_MES_OWNER_USER_ID = '11111111-0000-0000-0000-000000000004';
 const GLOBAL_MES_OPERATOR_USER_ID = '11111111-0000-0000-0000-000000000005';
@@ -76,6 +77,11 @@ const ROLE_SEEDS = [
   { id: ROLE_SUPERVISOR_ID, code: 'SUPERVISOR', name: 'Supervisor' },
   { id: ROLE_MANAGER_ID, code: 'MANAGER', name: 'Manager' },
   { id: ROLE_OPERATOR_ID, code: 'OPERATOR', name: 'Operator' },
+  {
+    id: ROLE_OPERATIONS_ADMIN_ID,
+    code: 'OPERATIONS_ADMIN',
+    name: 'Administrador de Operaciones',
+  },
 ] as const;
 
 const PERMISSION_SEEDS = [
@@ -196,6 +202,24 @@ const PERMISSION_SEEDS = [
     resource: 'items',
     action: 'manage',
   },
+  {
+    id: 'cccccccc-0000-0000-0000-000000000014',
+    code: 'plant.committees.read',
+    name: 'Read production committees',
+    description: 'List and view production committees',
+    module: 'plant',
+    resource: 'committees',
+    action: 'read',
+  },
+  {
+    id: 'cccccccc-0000-0000-0000-000000000015',
+    code: 'plant.committees.manage',
+    name: 'Manage production committees',
+    description: 'Create, update, and close production committees',
+    module: 'plant',
+    resource: 'committees',
+    action: 'manage',
+  },
 ] as const;
 
 const MANAGER_SUPERVISOR_PERMISSION_CODES = [
@@ -210,15 +234,20 @@ const MANAGER_SUPERVISOR_PERMISSION_CODES = [
   'plant.executions.qa_approve',
   'supply.items.read',
   'supply.items.manage',
+  'plant.committees.read',
+  'plant.committees.manage',
 ] as const;
 
 const OPERATOR_PERMISSION_CODES = ['plant.orders.read', 'supply.items.read'] as const;
+
+const OPERATIONS_ADMIN_PERMISSION_CODES = ['plant.orders.read', 'plant.committees.read'] as const;
 
 const ROLE_PERMISSION_MATRIX: Record<string, readonly string[]> = {
   OWNER: PERMISSION_SEEDS.map((permissionSeed) => permissionSeed.code),
   MANAGER: MANAGER_SUPERVISOR_PERMISSION_CODES,
   SUPERVISOR: MANAGER_SUPERVISOR_PERMISSION_CODES,
   OPERATOR: OPERATOR_PERMISSION_CODES,
+  OPERATIONS_ADMIN: OPERATIONS_ADMIN_PERMISSION_CODES,
 };
 
 /** Matches MesAuthService cédula hashing (HMAC-SHA256 or SHA-256 fallback). */

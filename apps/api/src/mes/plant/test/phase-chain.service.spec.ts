@@ -82,6 +82,7 @@ const buildOrderDetail = (
   deliveryDate: null,
   packageWeight: null,
   batchWeight: null,
+  committeeId: null,
   createdAt: new Date(),
   updatedAt: new Date(),
   recipe: { id: 'recipe-1', name: 'Pan integral', packageWeight: null },

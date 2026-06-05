@@ -1,4 +1,9 @@
-import type { ProductionOrderStatus, ProductionPriority, ProductionShift } from './types';
+import type {
+  ProductionCommitteeStatus,
+  ProductionOrderStatus,
+  ProductionPriority,
+  ProductionShift,
+} from './types';
 
 export const ORDER_STATUS_FILTER_OPTIONS = [
   { value: 'all', label: 'Todos los estados' },
@@ -52,5 +57,28 @@ export const SHIFT_LABELS: Record<ProductionShift, string> = {
 /** Grid columns for OP list table — keep in sync with RecetaTableHeader. */
 export const OP_TABLE_COLUMNS =
   'minmax(7rem, 0.9fr) minmax(10rem, 1.4fr) minmax(6rem, 0.8fr) minmax(5rem, 0.7fr) minmax(5rem, 0.7fr) minmax(8rem, 1fr) minmax(6rem, 0.8fr)';
+
+export const COMMITTEE_STATUS_FILTER_OPTIONS = [
+  { value: 'all', label: 'Todos los estados' },
+  { value: 'DRAFT', label: 'Borrador' },
+  { value: 'ACTIVE', label: 'Activo' },
+  { value: 'CLOSED', label: 'Cerrado' },
+  { value: 'CANCELLED', label: 'Cancelado' },
+] as const;
+
+export const COMMITTEE_STATUS_LABELS: Record<ProductionCommitteeStatus, string> = {
+  DRAFT: 'Borrador',
+  ACTIVE: 'Activo',
+  CLOSED: 'Cerrado',
+  CANCELLED: 'Cancelado',
+};
+
+/** Grid columns for committee list table. */
+export const COMMITTEE_TABLE_COLUMNS =
+  'minmax(7rem, 0.9fr) minmax(6rem, 0.8fr) minmax(5rem, 0.7fr) minmax(5rem, 0.7fr) minmax(8rem, 1fr) minmax(6rem, 0.8fr)';
+
+/** Grid columns for orders table inside committee detail — keep in sync with RecetaTableHeader. */
+export const COMMITTEE_ORDER_TABLE_COLUMNS =
+  'minmax(7rem, 0.9fr) minmax(6rem, 0.8fr) minmax(5rem, 0.7fr) minmax(5rem, 0.7fr) minmax(8rem, 1fr) minmax(6rem, 0.8fr)';
 
 export const RECETA_TABLE_SIZE = 'md' as const;

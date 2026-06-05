@@ -67,4 +67,12 @@ export class CreateOrderDto {
   @IsString()
   @IsOptional()
   notes?: string;
+
+  @ApiProperty({
+    example: 'committee-uuid',
+    description: 'Active production committee that groups this order (OP number: OP0001-01, …)',
+  })
+  @IsString()
+  @IsNotEmpty()
+  committeeId!: string;
 }

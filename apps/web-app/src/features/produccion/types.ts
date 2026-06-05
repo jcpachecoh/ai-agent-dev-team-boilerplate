@@ -18,6 +18,56 @@ export type PhaseExecutionStatus =
   | 'QA_PENDING'
   | 'COMPLETED';
 
+export type ProductionCommitteeStatus = 'DRAFT' | 'ACTIVE' | 'CLOSED' | 'CANCELLED';
+
+export interface ProductionCommitteeListItem {
+  id: string;
+  number: string;
+  status: ProductionCommitteeStatus;
+  ordersCount: number;
+  memberCount: number;
+  createdAt: string;
+}
+
+export interface ProductionCommitteeMember {
+  userId: string;
+  email: string;
+  roleCode: string;
+}
+
+export interface ProductionCommitteeDetail {
+  id: string;
+  tenantId: string;
+  number: string;
+  status: ProductionCommitteeStatus;
+  ordersCount: number;
+  members: ProductionCommitteeMember[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface OperationsAdminUser {
+  userId: string;
+  email: string;
+  roleCode: string;
+}
+
+export interface CreateProductionCommitteeInput {
+  memberUserIds: string[];
+  status?: 'DRAFT' | 'ACTIVE';
+}
+
+export interface UpdateProductionCommitteeInput {
+  status?: ProductionCommitteeStatus;
+  memberUserIds?: string[];
+}
+
+export interface ListProductionCommitteesFilters {
+  status?: ProductionCommitteeStatus;
+  page?: number;
+  limit?: number;
+}
+
 export interface ProductionOrderListItem {
   id: string;
   tenantId: string;
@@ -28,6 +78,8 @@ export interface ProductionOrderListItem {
   plannedStartAt: string;
   recipeId: string;
   recipeName?: string;
+  committeeId?: string | null;
+  committeeNumber?: string | null;
 }
 
 export type ProductionQualityCheckType =
@@ -112,6 +164,8 @@ export interface ProductionOrderDetail {
   deliveryDate: string | null;
   packageWeight: string | null;
   batchWeight: string | null;
+  committeeId?: string | null;
+  committeeNumber?: string | null;
   createdAt: string;
   updatedAt: string;
   materials: ProductionOrderMaterial[];
@@ -148,6 +202,7 @@ export interface CreateProductionOrderInput {
   productionDate?: string;
   deliveryDate?: string;
   batchWeight?: string;
+  committeeId: string;
 }
 
 export interface UpdateProductionOrderInput {
@@ -196,10 +251,17 @@ export interface UpdateExecutionRouteInput {
   notes?: string;
 }
 
+/** Router state when opening an OP from committee detail vs orders list. */
+export interface ProductionOrderDetailNavState {
+  fromCommitteeId?: string;
+  fromCommitteeNumber?: string;
+}
+
 export interface ListProductionOrdersFilters {
   status?: ProductionOrderStatus;
   shift?: ProductionShift;
   priority?: ProductionPriority;
   plannedStartFrom?: string;
   plannedStartTo?: string;
+  committeeId?: string;
 }

@@ -1,7 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { downloadProductionOrderPdf } from './produccion.api';
-import { plantFetchBlob } from '@/api/plant/client';
+import {
+  closeProductionCommittee,
+  createProductionCommittee,
+  downloadProductionOrderPdf,
+  fetchOperationsAdminUsers,
+  fetchProductionCommittees,
+} from './produccion.api';
+import { plantFetch, plantFetchBlob } from '@/api/plant/client';
 
 vi.mock('@/api/plant/client', () => ({
   plantFetch: vi.fn(),
@@ -13,6 +19,44 @@ const triggerBrowserDownloadMock = vi.fn();
 vi.mock('../utils/download', () => ({
   triggerBrowserDownload: (...args: unknown[]) => triggerBrowserDownloadMock(...args),
 }));
+
+describe('production committees API', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('fetchProductionCommittees builds status query', async () => {
+    vi.mocked(plantFetch).mockResolvedValue([]);
+    await fetchProductionCommittees({ status: 'ACTIVE' });
+    expect(plantFetch).toHaveBeenCalledWith('/plant/committees?status=ACTIVE');
+  });
+
+  it('createProductionCommittee posts member ids', async () => {
+    vi.mocked(plantFetch).mockResolvedValue({ id: 'c1', number: 'OP0001' });
+    await createProductionCommittee({
+      memberUserIds: ['user-1'],
+      status: 'ACTIVE',
+    });
+    expect(plantFetch).toHaveBeenCalledWith('/plant/committees', {
+      method: 'POST',
+      body: JSON.stringify({ memberUserIds: ['user-1'], status: 'ACTIVE' }),
+    });
+  });
+
+  it('closeProductionCommittee posts to close endpoint', async () => {
+    vi.mocked(plantFetch).mockResolvedValue({ id: 'c1', status: 'CLOSED' });
+    await closeProductionCommittee('c1');
+    expect(plantFetch).toHaveBeenCalledWith('/plant/committees/c1/close', {
+      method: 'POST',
+    });
+  });
+
+  it('fetchOperationsAdminUsers calls eligible-members endpoint', async () => {
+    vi.mocked(plantFetch).mockResolvedValue([]);
+    await fetchOperationsAdminUsers();
+    expect(plantFetch).toHaveBeenCalledWith('/plant/committees/eligible-members');
+  });
+});
 
 describe('downloadProductionOrderPdf', () => {
   beforeEach(() => {

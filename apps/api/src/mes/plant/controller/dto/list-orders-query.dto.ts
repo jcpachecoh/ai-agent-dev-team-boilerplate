@@ -1,6 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { ProductionOrderStatus, ProductionPriority, ProductionShift } from '@prisma/client';
-import { IsDateString, IsEnum, IsOptional } from 'class-validator';
+import { IsDateString, IsEnum, IsOptional, IsString } from 'class-validator';
 
 export class ListOrdersQueryDto {
   @ApiPropertyOptional({ enum: ProductionOrderStatus })
@@ -33,4 +33,9 @@ export class ListOrdersQueryDto {
   @IsDateString()
   @IsOptional()
   plannedStartTo?: string;
+
+  @ApiPropertyOptional({ example: 'committee-uuid' })
+  @IsString()
+  @IsOptional()
+  committeeId?: string;
 }

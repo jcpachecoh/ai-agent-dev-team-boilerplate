@@ -25,6 +25,9 @@ const txMock = {
   productionOrder: {
     create: jest.fn(),
   },
+  productionCommittee: {
+    update: jest.fn(),
+  },
   phaseExecution: {
     create: jest.fn(),
     findFirst: jest.fn(),
@@ -432,9 +435,11 @@ describe('PlantRepository', () => {
         .mockResolvedValueOnce({ id: 'exec-1', status: PhaseExecutionStatus.PENDING })
         .mockResolvedValueOnce({ id: 'exec-2', status: PhaseExecutionStatus.PENDING });
 
+      txMock.productionCommittee.update.mockResolvedValue({ id: 'committee-1', ordersCount: 1 });
+
       const result = await repository.createOrderWithExecutionsTx({
         tenantId,
-        number: '2026-1',
+        number: 'OP0001-01',
         recipeId: 'recipe-1',
         recipeVersion: 1,
         batchCount: 2,
@@ -446,14 +451,20 @@ describe('PlantRepository', () => {
         plannedEndAt,
         supervisorId: null,
         notes: null,
+        committeeId: 'committee-1',
       });
 
       expect(txMock.productionOrder.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
           tenantId,
-          number: '2026-1',
+          number: 'OP0001-01',
+          committeeId: 'committee-1',
           status: 'DRAFT',
         }),
+      });
+      expect(txMock.productionCommittee.update).toHaveBeenCalledWith({
+        where: { id: 'committee-1' },
+        data: { ordersCount: { increment: 1 } },
       });
       expect(txMock.phaseExecution.create).toHaveBeenCalledTimes(2);
       expect(txMock.phaseExecution.create).toHaveBeenCalledWith({
@@ -488,6 +499,9 @@ describe('PlantRepository', () => {
           shift: 'MORNING',
           priority: 'NORMAL',
           plannedStartAt: { gte: from, lte: to },
+        },
+        include: {
+          committee: { select: { id: true, number: true } },
         },
         orderBy: { plannedStartAt: 'desc' },
       });

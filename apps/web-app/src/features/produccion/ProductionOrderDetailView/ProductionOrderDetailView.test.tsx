@@ -41,10 +41,13 @@ vi.mock('@restopsiq/ui', async (importOriginal) => {
   };
 });
 
-function renderDetail(orderId = 'order-1'): void {
+function renderDetail(
+  orderId = 'order-1',
+  state?: { fromCommitteeId?: string; fromCommitteeNumber?: string },
+): void {
   render(
     <TestQueryProvider>
-      <MemoryRouter initialEntries={[`/produccion/ordenes/${orderId}`]}>
+      <MemoryRouter initialEntries={[{ pathname: `/produccion/ordenes/${orderId}`, state }]}>
         <Routes>
           <Route path="/produccion/ordenes/:orderId" element={<ProductionOrderDetailView />} />
         </Routes>
@@ -79,12 +82,33 @@ describe('ProductionOrderDetailView', () => {
     expect(screen.getByText(/AJIACO BASE/)).toBeInTheDocument();
   });
 
+  it('shows back link to orders list by default', async () => {
+    renderDetail();
+    await screen.findByText('OP 2026-0134');
+    expect(screen.getByRole('link', { name: /Volver a órdenes/i })).toHaveAttribute(
+      'href',
+      '/produccion/ordenes',
+    );
+  });
+
+  it('shows back link to committee when opened from committee detail', async () => {
+    renderDetail('order-1', {
+      fromCommitteeId: 'committee-1',
+      fromCommitteeNumber: 'OP0002',
+    });
+    await screen.findByText('OP 2026-0134');
+    expect(screen.getByRole('link', { name: /Volver al comité OP0002/i })).toHaveAttribute(
+      'href',
+      '/produccion/comites/committee-1',
+    );
+  });
+
   it('calls download PDF mutation when PDF button is clicked', async () => {
     const user = userEvent.setup();
     renderDetail();
 
     await screen.findByText('OP 2026-0134');
-    await user.click(screen.getByRole('button', { name: 'PDF' }));
+    await user.click(screen.getByRole('button', { name: /Descargar PDF de OP 2026-0134/i }));
 
     expect(downloadPdfMutateAsyncMock).toHaveBeenCalledWith('order-1');
   });

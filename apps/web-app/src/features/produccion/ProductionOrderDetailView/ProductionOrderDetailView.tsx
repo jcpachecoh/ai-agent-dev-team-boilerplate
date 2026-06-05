@@ -3,7 +3,6 @@ import {
   InventarioFormActions,
   InventarioFormField,
   InventarioPageToolbar,
-  InventarioPrimaryButton,
   InventarioSelect,
   RecetaActionButton,
   RecetaProgressIndicator,
@@ -13,7 +12,7 @@ import {
 } from '@restopsiq/ui';
 import { ArrowLeft, Pencil } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useLocation, useParams } from 'react-router-dom';
 
 import { InventoryScreenState } from '@/components/inventory/InventoryScreenState';
 import { useUiTheme } from '@/hooks/useUiTheme';
@@ -40,6 +39,7 @@ import {
 } from '../mappers/display';
 import type {
   ProductionOrderDetail,
+  ProductionOrderDetailNavState,
   ProductionOrderStatus,
   ProductionPriority,
   ProductionShift,
@@ -50,6 +50,22 @@ function getErrorMessage(error: unknown): string {
   if (error instanceof PlantApiError) return error.message;
   if (error instanceof Error) return error.message;
   return 'Ocurrió un error inesperado.';
+}
+
+function resolveOrderDetailBackLink(state: ProductionOrderDetailNavState | null | undefined): {
+  to: string;
+  label: string;
+} {
+  if (state?.fromCommitteeId) {
+    return {
+      to: `/produccion/comites/${state.fromCommitteeId}`,
+      label: state.fromCommitteeNumber
+        ? `Volver al comité ${state.fromCommitteeNumber}`
+        : 'Volver al comité',
+    };
+  }
+
+  return { to: '/produccion/ordenes', label: 'Volver a órdenes' };
 }
 
 function mapExecutionStatus(status: string): ProductionOrderStatus {
@@ -80,8 +96,13 @@ function formFromOrder(order: ProductionOrderDetail): EditFormState {
 
 export default function ProductionOrderDetailView(): React.JSX.Element {
   const theme = useUiTheme();
+  const location = useLocation();
   const { orderId } = useParams();
   const orderQuery = useProductionOrder(orderId);
+  const backLink = useMemo(
+    () => resolveOrderDetailBackLink(location.state as ProductionOrderDetailNavState | null),
+    [location.state],
+  );
   const planMutation = usePlanProductionOrder();
   const updateMutation = useUpdateProductionOrder();
   const downloadPdfMutation = useDownloadProductionOrderPdf();
@@ -152,8 +173,8 @@ export default function ProductionOrderDetailView(): React.JSX.Element {
         <div className={styles.errorBox} role="alert">
           {getErrorMessage(orderQuery.error)}
         </div>
-        <Link to="/produccion/ordenes" className={styles.backLink}>
-          Volver al listado
+        <Link to={backLink.to} className={styles.backLink}>
+          {backLink.label}
         </Link>
       </div>
     );
@@ -265,9 +286,9 @@ export default function ProductionOrderDetailView(): React.JSX.Element {
 
   return (
     <div className={styles.content}>
-      <Link to="/produccion/ordenes" className={styles.backLink}>
+      <Link to={backLink.to} className={styles.backLink}>
         <ArrowLeft size={16} aria-hidden />
-        Volver a órdenes
+        {backLink.label}
       </Link>
 
       <InventarioPageToolbar
@@ -276,31 +297,25 @@ export default function ProductionOrderDetailView(): React.JSX.Element {
         title={`OP ${order.number}`}
         subtitle={`${order.recipeName} · v${order.recipeVersion}`}
         action={
-          <div className={styles.detailActions}>
-            <RecetaUtilityButton
-              theme={theme}
-              size="sm"
-              variant="pdf"
-              disabled={downloadPdfMutation.isPending}
-              onClick={() => void handleDownloadPdf()}
-            />
+          <div className={styles.toolbarActions}>
             {canEdit && !editing && (
               <>
                 <RecetaActionButton
                   theme={theme}
-                  size="sm"
+                  size="md"
                   accent="orange"
-                  variant="soft"
+                  variant="solid"
                   label="Planificar"
                   loading={planMutation.isPending}
                   onClick={() => void handlePlan()}
                 />
-                <InventarioPrimaryButton
+                <RecetaActionButton
                   theme={theme}
                   size="md"
-                  variant="ghost"
+                  accent="orange"
+                  variant="soft"
                   label="Editar"
-                  icon={<Pencil size={16} aria-hidden />}
+                  icon={<Pencil aria-hidden size={14} />}
                   onClick={() => setEditing(true)}
                 />
               </>

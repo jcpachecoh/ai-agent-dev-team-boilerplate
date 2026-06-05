@@ -38,6 +38,8 @@ const orderDetail: OrderDetailResponse = {
   deliveryDate: null,
   packageWeight: '440.000',
   batchWeight: '249.200',
+  committeeId: null,
+  committeeNumber: null,
   createdAt: new Date('2026-06-04T08:00:00Z'),
   updatedAt: new Date('2026-06-04T08:00:00Z'),
   materials: [

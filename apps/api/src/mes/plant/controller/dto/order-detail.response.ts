@@ -14,7 +14,7 @@ export class OrderListItemResponseDto {
   @ApiProperty({ example: 'palos-de-lena' })
   tenantId!: string;
 
-  @ApiProperty({ example: '0134' })
+  @ApiProperty({ example: 'OP0001-01' })
   number!: string;
 
   @ApiProperty({ enum: ProductionOrderStatus })
@@ -34,6 +34,12 @@ export class OrderListItemResponseDto {
 
   @ApiPropertyOptional({ example: 'Pan integral 500g' })
   recipeName?: string;
+
+  @ApiPropertyOptional({ example: 'committee-uuid', nullable: true })
+  committeeId?: string | null;
+
+  @ApiPropertyOptional({ example: 'OP0001', nullable: true })
+  committeeNumber?: string | null;
 }
 
 export class OrderExecutionResponseDto {
@@ -104,7 +110,7 @@ export class OrderDetailResponseDto {
   @ApiProperty({ example: 'palos-de-lena' })
   tenantId!: string;
 
-  @ApiProperty({ example: '0134' })
+  @ApiProperty({ example: 'OP0001-01' })
   number!: string;
 
   @ApiProperty({ example: 'recipe-uuid' })
@@ -154,6 +160,12 @@ export class OrderDetailResponseDto {
 
   @ApiPropertyOptional({ nullable: true })
   notes!: string | null;
+
+  @ApiPropertyOptional({ example: 'committee-uuid', nullable: true })
+  committeeId!: string | null;
+
+  @ApiPropertyOptional({ example: 'OP0001', nullable: true })
+  committeeNumber!: string | null;
 
   @ApiProperty()
   createdAt!: Date;

@@ -14,6 +14,7 @@ import LoginPage from '@/pages/LoginPage';
 import SignupPage from '@/pages/SignupPage';
 import NotFoundPage from '@/pages/NotFoundPage';
 import PayrollPage from '@/pages/PayrollPage';
+import ProduccionComitesPage from '@/pages/ProduccionComitesPage/ProduccionComitesPage';
 import ProduccionPage from '@/pages/ProduccionPage';
 import ProveedoresPage from '@/pages/ProveedoresPage';
 import RecipesPage from '@/pages/RecipesPage';
@@ -46,6 +47,7 @@ export default function App(): React.JSX.Element {
           <Route path="/recetas/procesos" element={<RecipesPage />} />
           <Route path="/recetas/historial" element={<RecipesPage />} />
           <Route path="/produccion/ordenes/*" element={<ProduccionPage />} />
+          <Route path="/produccion/comites/*" element={<ProduccionComitesPage />} />
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/dispatch" element={<DispatchPage />} />
           <Route path="/users" element={<UsersPage />} />
