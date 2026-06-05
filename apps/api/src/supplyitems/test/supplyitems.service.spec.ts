@@ -18,6 +18,7 @@ const mockSupplyItem = {
   costoPromedioPonderado: '100.0',
   stockMinimoBodega: '10.0',
   stockMaximoBodega: '50.0',
+  stockActualBodega: '0',
   aplicaVencimiento: false,
   aplicaLote: false,
   isActive: true,
@@ -137,6 +138,28 @@ describe('SupplyItemsService', () => {
           stockMaximoBodega: '5',
         }),
       ).rejects.toThrow(BadRequestException);
+    });
+
+    it('throws BadRequestException when stockActualBodega is negative', async () => {
+      repoMock.categoryExists.mockResolvedValue(true);
+      repoMock.findByCodigoInterno.mockResolvedValue(null);
+
+      await expect(
+        service.create(tenantId, { ...createInput, stockActualBodega: '-1' }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('accepts BOX as unidadBase', async () => {
+      repoMock.categoryExists.mockResolvedValue(true);
+      repoMock.findByCodigoInterno.mockResolvedValue(null);
+      repoMock.create.mockResolvedValue({ ...mockSupplyItem, unidadBase: StockUnit.BOX });
+
+      await service.create(tenantId, { ...createInput, unidadBase: StockUnit.BOX });
+
+      expect(repoMock.create).toHaveBeenCalledWith(
+        tenantId,
+        expect.objectContaining({ unidadBase: StockUnit.BOX }),
+      );
     });
 
     it('throws ConflictException on prisma unique violation', async () => {

@@ -2126,7 +2126,7 @@
     },
     {
       "name": "04 — Supply Items",
-      "description": "Supply catalog CRUD.\n\nAuth: Bearer {{accessToken}} + x-tenant-id: {{tenantId}} on every request.\nPrerequisite: **01 — Global Auth → 01 Session → Login**.\nUSR-05: writes may create two audit_logs rows (interceptor + SupplyItem snapshot).",
+      "description": "Supply catalog CRUD (SupplyItem = insumo / materia prima).\n\nAuth: Bearer {{accessToken}} + x-tenant-id: {{tenantId}} on every request.\nPrerequisite: **01 — Global Auth → 01 Session → Login**.\n\nStockUnit includes BOX. stockActualBodega = MVP current warehouse stock (default 0). stockDisponible in responses mirrors stockActualBodega.\nUSR-05: writes may create two audit_logs rows (interceptor + SupplyItem snapshot).",
       "item": [
         {
           "name": "Create Supply Item",
@@ -2172,6 +2172,9 @@
                   "pm.test('Has id', () => pm.expect(pm.response.json()).to.have.property('id'));",
                   "pm.test('Has codigoInterno', () => pm.expect(pm.response.json()).to.have.property('codigoInterno'));",
                   "const body = pm.response.json();",
+                  "pm.test('Has stockActualBodega', () => pm.expect(body).to.have.property('stockActualBodega'));",
+                  "pm.test('stockActualBodega is number', () => pm.expect(body.stockActualBodega).to.be.a('number'));",
+                  "pm.test('stockDisponible matches stockActualBodega', () => pm.expect(body.stockDisponible).to.equal(body.stockActualBodega));",
                   "if (body.id) pm.collectionVariables.set('supplyItemId', body.id);"
                 ]
               }
@@ -2191,7 +2194,57 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Aceite de Cocina\",\n  \"codigoInterno\": \"{{supplyItemCode}}\",\n  \"categoriaId\": \"{{categoryId}}\",\n  \"descripcion\": \"Aceite vegetal refinado para cocinar\",\n  \"unidadBase\": \"LITERS\",\n  \"factorConversion\": \"1\",\n  \"costoPromedioPonderado\": \"8500\",\n  \"stockMinimoBodega\": \"5\",\n  \"stockMaximoBodega\": \"50\",\n  \"aplicaVencimiento\": false,\n  \"aplicaLote\": false,\n  \"isActive\": true\n}",
+              "raw": "{\n  \"nombre\": \"Aceite de Cocina\",\n  \"codigoInterno\": \"{{supplyItemCode}}\",\n  \"categoriaId\": \"{{categoryId}}\",\n  \"descripcion\": \"Aceite vegetal refinado para cocinar\",\n  \"unidadBase\": \"LITERS\",\n  \"factorConversion\": \"1\",\n  \"costoPromedioPonderado\": \"8500\",\n  \"stockMinimoBodega\": \"5\",\n  \"stockMaximoBodega\": \"50\",\n  \"stockActualBodega\": \"{{stockActualBodega}}\",\n  \"aplicaVencimiento\": false,\n  \"aplicaLote\": false,\n  \"isActive\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/supply-items"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Supply Item — BOX",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.collectionVariables.set('supplyItemCode', 'SI-BOX-' + Date.now());"]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('unidadBase is BOX', () => pm.expect(body.unidadBase).to.equal('BOX'));",
+                  "pm.test('stockActualBodega is 24', () => pm.expect(body.stockActualBodega).to.equal(24));",
+                  "pm.test('stockDisponible matches stockActualBodega', () => pm.expect(body.stockDisponible).to.equal(body.stockActualBodega));",
+                  "if (body.id) pm.collectionVariables.set('supplyItemId', body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Caja empaque (seed test)\",\n  \"codigoInterno\": \"{{supplyItemCode}}\",\n  \"categoriaId\": \"bbbbbbbb-0000-0000-0000-000000000008\",\n  \"descripcion\": \"Insumo con unidad base BOX\",\n  \"unidadBase\": \"BOX\",\n  \"factorConversion\": \"1\",\n  \"costoPromedioPonderado\": \"1200\",\n  \"stockMinimoBodega\": \"2\",\n  \"stockMaximoBodega\": \"100\",\n  \"stockActualBodega\": \"24\",\n  \"aplicaVencimiento\": false,\n  \"aplicaLote\": false,\n  \"isActive\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2211,7 +2264,11 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                  "pm.test('Is array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                  "pm.test('Is array', () => pm.expect(pm.response.json()).to.be.an('array'));",
+                  "const items = pm.response.json();",
+                  "if (items.length > 0) {",
+                  "  pm.test('First item has stockActualBodega', () => pm.expect(items[0]).to.have.property('stockActualBodega'));",
+                  "}"
                 ]
               }
             }
@@ -2239,7 +2296,10 @@
                   "pm.test('Status 200', () => pm.response.to.have.status(200));",
                   "pm.test('ID matches captured supplyItemId', () => {",
                   "  pm.expect(pm.response.json().id).to.equal(pm.collectionVariables.get('supplyItemId'));",
-                  "});"
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.test('Has stockActualBodega', () => pm.expect(body).to.have.property('stockActualBodega'));",
+                  "pm.test('stockDisponible matches stockActualBodega', () => pm.expect(body.stockDisponible).to.equal(body.stockActualBodega));"
                 ]
               }
             }
@@ -2268,7 +2328,10 @@
                   "pm.test('Has id', () => pm.expect(pm.response.json()).to.have.property('id'));",
                   "pm.test('descripcion was updated', () => {",
                   "  pm.expect(pm.response.json().descripcion).to.equal('Aceite refinado — actualizado');",
-                  "});"
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.test('stockActualBodega was updated', () => pm.expect(body.stockActualBodega).to.equal(30));",
+                  "pm.test('stockDisponible matches stockActualBodega', () => pm.expect(body.stockDisponible).to.equal(body.stockActualBodega));"
                 ]
               }
             }
@@ -2287,7 +2350,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"descripcion\": \"Aceite refinado — actualizado\"\n}",
+              "raw": "{\n  \"descripcion\": \"Aceite refinado — actualizado\",\n  \"stockActualBodega\": \"30\"\n}",
               "options": {
                 "raw": {
                   "language": "json"

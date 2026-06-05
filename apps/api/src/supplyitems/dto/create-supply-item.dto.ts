@@ -51,6 +51,11 @@ export class CreateSupplyItemDto {
   @IsNumberString()
   stockMaximoBodega!: string;
 
+  @ApiPropertyOptional({ example: '0', description: 'Current warehouse stock; defaults to 0' })
+  @IsNumberString()
+  @IsOptional()
+  stockActualBodega?: string;
+
   @ApiPropertyOptional({ default: false })
   @IsBoolean()
   @IsOptional()

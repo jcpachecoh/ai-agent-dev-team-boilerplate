@@ -8,7 +8,7 @@ This specification defines the database schema for the Suppliers Catalog, which 
 
 - Multi-tenancy: Every record must be scoped by `tenantId`.
 - Suppliers: Manage basic information, payment conditions, and ratings.
-- Insumos: Minimal representation of items that can be purchased.
+- **Insumos:** Implemented as `SupplyItem` (materia prima / raw materials). `stockActualBodega` holds MVP on-hand quantity; `BOX` is a valid `StockUnit` for base and purchase units.
 - Supplier Products: Define which suppliers provide which insumos, including pricing and conversion factors.
 
 ## Database Schema (Prisma)
@@ -34,6 +34,7 @@ This specification defines the database schema for the Suppliers Catalog, which 
 - `KILOGRAMS`
 - `ML`
 - `LITERS`
+- `BOX`
 
 ### Models
 

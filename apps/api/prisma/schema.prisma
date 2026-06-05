@@ -167,6 +167,7 @@ enum StockUnit {
   KILOGRAMS
   ML
   LITERS
+  BOX
 }
 
 model SupplyItem {
@@ -181,6 +182,7 @@ model SupplyItem {
   costoPromedioPonderado Decimal
   stockMinimoBodega      Decimal
   stockMaximoBodega      Decimal
+  stockActualBodega      Decimal   @default(0)
   aplicaVencimiento      Boolean   @default(false)
   aplicaLote             Boolean   @default(false)
   isActive               Boolean   @default(true)
@@ -490,7 +492,7 @@ model ProductionRecipe {
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
-  category RecipeCategory? @relation(fields: [categoryId], references: [id])
+  category RecipeCategory?   @relation(fields: [categoryId], references: [id])
   phases   ProductionPhase[]
   orders   ProductionOrder[]
 

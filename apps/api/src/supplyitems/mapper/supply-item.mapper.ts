@@ -28,6 +28,7 @@ export function toSupplyItemResponse(item: SupplyItemWithRelations): SupplyItemR
     costoPromedioPonderado: decimalToNumber(item.costoPromedioPonderado),
     stockMinimoBodega: decimalToNumber(item.stockMinimoBodega),
     stockMaximoBodega: decimalToNumber(item.stockMaximoBodega),
+    stockActualBodega: decimalToNumber(item.stockActualBodega),
     aplicaVencimiento: item.aplicaVencimiento,
     aplicaLote: item.aplicaLote,
     isActive: item.isActive,
@@ -37,7 +38,7 @@ export function toSupplyItemResponse(item: SupplyItemWithRelations): SupplyItemR
           razonSocial: principal.supplier.razonSocial,
         }
       : null,
-    stockDisponible: 0,
+    stockDisponible: decimalToNumber(item.stockActualBodega),
     createdAt: item.createdAt.toISOString(),
     updatedAt: item.updatedAt.toISOString(),
   };

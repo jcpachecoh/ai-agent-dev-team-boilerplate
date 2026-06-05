@@ -54,6 +54,9 @@ export class SupplyItemResponseDto {
   @ApiProperty()
   stockMaximoBodega!: number;
 
+  @ApiProperty({ description: 'Current warehouse stock quantity' })
+  stockActualBodega!: number;
+
   @ApiProperty()
   aplicaVencimiento!: boolean;
 
@@ -67,7 +70,7 @@ export class SupplyItemResponseDto {
   proveedorPrincipal?: ProveedorPrincipalDto | null;
 
   @ApiPropertyOptional({
-    description: 'Placeholder until warehouse stock is integrated',
+    description: 'Alias of stockActualBodega for legacy clients',
     nullable: true,
   })
   stockDisponible!: number | null;

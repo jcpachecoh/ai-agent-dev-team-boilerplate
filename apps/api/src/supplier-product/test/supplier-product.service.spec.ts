@@ -102,6 +102,26 @@ describe('SupplierProductService', () => {
     ).resolves.toEqual(mockSupplierProduct);
   });
 
+  it('accepts BOX as unidadCompra', async () => {
+    repoMock.assertSupplierExists.mockResolvedValue(true);
+    repoMock.assertSupplyItemExists.mockResolvedValue(true);
+    repoMock.findExisting.mockResolvedValue(null);
+    repoMock.create.mockResolvedValue(mockSupplierProduct);
+
+    await service.create(tenantId, {
+      supplierId: 'sup-1',
+      supplyItemId: 'item-1',
+      precioUnitario: 12.5,
+      unidadCompra: 'BOX',
+      factorConversion: 1,
+    });
+
+    expect(repoMock.create).toHaveBeenCalledWith(
+      tenantId,
+      expect.objectContaining({ unidadCompra: 'BOX' }),
+    );
+  });
+
   it('throws when supply item is missing', async () => {
     repoMock.assertSupplierExists.mockResolvedValue(true);
     repoMock.assertSupplyItemExists.mockResolvedValue(false);

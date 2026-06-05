@@ -34,6 +34,7 @@ const baseItem = {
   costoPromedioPonderado: new Decimal('100'),
   stockMinimoBodega: new Decimal('5'),
   stockMaximoBodega: new Decimal('50'),
+  stockActualBodega: new Decimal('12'),
   aplicaVencimiento: false,
   aplicaLote: false,
   isActive: true,
@@ -77,6 +78,8 @@ describe('toSupplyItemResponse', () => {
       supplierId: 'sup-1',
       razonSocial: 'Proveedor SA',
     });
+    expect(dto.stockActualBodega).toBe(12);
+    expect(dto.stockDisponible).toBe(12);
   });
 
   it('omits category and principal supplier when absent', () => {
