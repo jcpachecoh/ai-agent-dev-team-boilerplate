@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { downloadProductionOrderPdf } from './produccion.api';
-import { plantFetchBlob } from './plant.client';
+import { plantFetchBlob } from '@/api/plant/client';
 
-vi.mock('./plant.client', () => ({
+vi.mock('@/api/plant/client', () => ({
   plantFetch: vi.fn(),
   plantFetchBlob: vi.fn(),
 }));

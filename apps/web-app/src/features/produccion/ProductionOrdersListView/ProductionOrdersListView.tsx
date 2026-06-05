@@ -19,7 +19,7 @@ import { CreateProductionOrderModal } from '../components/CreateProductionOrderM
 import { InventoryScreenState } from '@/components/inventory/InventoryScreenState';
 import { useUiTheme } from '@/hooks/useUiTheme';
 
-import { PlantApiError } from '../api/plant.client';
+import { PlantApiError } from '@/api/plant/client';
 import {
   OP_TABLE_COLUMNS,
   ORDER_STATUS_FILTER_OPTIONS,
@@ -266,8 +266,8 @@ export default function ProductionOrdersListView(): React.JSX.Element {
         <div className={styles.errorBox} role="alert">
           {getErrorMessage(ordersQuery.error)}
           <p className={styles.hint}>
-            Asegúrese de que la API esté en marcha y que VITE_MES_CEDULA / VITE_MES_PIN correspondan
-            a un supervisor del tenant.
+            Asegúrese de que la API esté en marcha y de haber iniciado sesión con un usuario con
+            permisos de producción.
           </p>
         </div>
       )}

@@ -18,7 +18,7 @@ import { Link, useParams } from 'react-router-dom';
 import { InventoryScreenState } from '@/components/inventory/InventoryScreenState';
 import { useUiTheme } from '@/hooks/useUiTheme';
 
-import { PlantApiError } from '../api/plant.client';
+import { PlantApiError } from '@/api/plant/client';
 import { ProductionOrderDocumentPanel } from '../components/ProductionOrderDocumentPanel';
 import { PRIORITY_FORM_OPTIONS, SHIFT_FORM_OPTIONS } from '../constants';
 import {

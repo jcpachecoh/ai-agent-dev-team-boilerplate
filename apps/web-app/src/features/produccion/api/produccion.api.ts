@@ -10,7 +10,7 @@ import type {
 } from '../types';
 import { triggerBrowserDownload } from '../utils/download';
 
-import { plantFetch, plantFetchBlob } from './plant.client';
+import { plantFetch, plantFetchBlob } from '@/api/plant/client';
 
 function normalizeOrderDetail(order: ProductionOrderDetail): ProductionOrderDetail {
   return {

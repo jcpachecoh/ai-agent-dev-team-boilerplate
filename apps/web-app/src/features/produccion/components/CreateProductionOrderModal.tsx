@@ -10,7 +10,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { InventoryScreenState } from '@/components/inventory/InventoryScreenState';
 import { useUiTheme } from '@/hooks/useUiTheme';
 
-import { PlantApiError } from '../api/plant.client';
+import { PlantApiError } from '@/api/plant/client';
 import { PRIORITY_FORM_OPTIONS, SHIFT_FORM_OPTIONS } from '../constants';
 import { useCreateProductionOrder, useProductionRecipes } from '../hooks/useProductionOrders';
 import { datetimeLocalToIso, defaultPlannedWindow } from '../mappers/display';

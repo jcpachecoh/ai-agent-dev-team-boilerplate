@@ -11,7 +11,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useUiTheme } from '@/hooks/useUiTheme';
 import { STOCK_UNIT_OPTIONS } from '@/types/inventory';
 
-import { PlantApiError } from '../api/plant.client';
+import { PlantApiError } from '@/api/plant/client';
 import { useUpdateProductionOrderDocument } from '../hooks/useProductionOrders';
 import {
   QUALITY_CHECK_LABELS,

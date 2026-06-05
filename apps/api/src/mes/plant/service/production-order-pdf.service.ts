@@ -34,6 +34,7 @@ const UNIT_LABELS: Record<StockUnit, string> = {
   [StockUnit.KILOGRAMS]: 'KG',
   [StockUnit.ML]: 'ML',
   [StockUnit.LITERS]: 'LT',
+  [StockUnit.BOX]: 'CAJ',
 };
 
 interface TableColumn {

@@ -38,6 +38,7 @@ const emptyForm: InventoryProductFormValues = {
   costPrice: '0',
   minStock: '0',
   maxStock: '100',
+  currentStock: '0',
   unidadBase: 'UNIT',
   factorConversion: '1',
   aplicaVencimiento: false,
@@ -77,12 +78,20 @@ export function ProductFormModal({
     const cost = Number(values.costPrice);
     const min = Number(values.minStock);
     const max = Number(values.maxStock);
+    const current = Number(values.currentStock);
     if (!values.sku.trim() || !values.name.trim() || !values.categoryId) {
       setFormError('Complete SKU, nombre y categoría.');
       return;
     }
-    if (Number.isNaN(cost) || Number.isNaN(min) || Number.isNaN(max) || min > max) {
-      setFormError('Revise costo y límites de stock (mínimo ≤ máximo).');
+    if (
+      Number.isNaN(cost) ||
+      Number.isNaN(min) ||
+      Number.isNaN(max) ||
+      Number.isNaN(current) ||
+      current < 0 ||
+      min > max
+    ) {
+      setFormError('Revise costo y stock (actual ≥ 0, mínimo ≤ máximo).');
       return;
     }
     setFormError(null);
@@ -170,6 +179,15 @@ export function ProductFormModal({
             type="number"
             value={values.maxStock}
             onChange={(e) => update({ maxStock: e.target.value })}
+          />
+        </InventarioFormField>
+        <InventarioFormField label="Stock actual" theme={theme} size="md">
+          <input
+            className={styles.input}
+            type="number"
+            min="0"
+            value={values.currentStock}
+            onChange={(e) => update({ currentStock: e.target.value })}
           />
         </InventarioFormField>
         <div className={styles.togglePair}>
