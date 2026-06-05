@@ -52,18 +52,6 @@ export function ProductionOrderDocumentHeaderFields({
         />
       </InventarioFormField>
 
-      <InventarioFormField theme={theme} size="md" label="Lote PT" inputType="input">
-        <input
-          className={styles.input}
-          type="text"
-          value={value.lotNumber}
-          disabled={disabled}
-          onChange={(event) => patch({ lotNumber: event.target.value })}
-          placeholder="Ej. LOTE-0134"
-          aria-label="Lote PT"
-        />
-      </InventarioFormField>
-
       <InventarioFormField
         theme={theme}
         size="md"

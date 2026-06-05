@@ -128,11 +128,6 @@ export class ProductionOrderPdfService {
       { width: rightWidth - 8 },
     );
     doc.text(`OP. N°: ${order.number}`, MARGIN + 4, y + rowHeight + 5, { width: leftWidth - 8 });
-    if (order.lotNumber) {
-      doc.text(`LOTE PT: ${order.lotNumber}`, MARGIN + leftWidth + 4, y + rowHeight + 5, {
-        width: rightWidth - 8,
-      });
-    }
 
     doc.y = y + rowHeight * 2 + 6;
   }
