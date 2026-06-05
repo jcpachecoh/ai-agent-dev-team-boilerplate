@@ -3,6 +3,7 @@ import { X } from 'lucide-react';
 import { useEffect, useId, useState, type JSX } from 'react';
 
 import type { PlantRecipeCategory } from '@/api/plant';
+import type { UiTheme } from '@/constants/theme';
 import type { RecipeCategoryFormValues } from '@/features/recetas/types';
 
 import styles from './RecipeCategoryFormModal.module.scss';
@@ -10,6 +11,7 @@ import styles from './RecipeCategoryFormModal.module.scss';
 export interface RecipeCategoryFormModalProps {
   open: boolean;
   mode: 'create' | 'edit';
+  theme?: UiTheme;
   category?: PlantRecipeCategory;
   saving?: boolean;
   onClose: () => void;
@@ -33,6 +35,7 @@ function categoryToFormValues(category: PlantRecipeCategory): RecipeCategoryForm
 export function RecipeCategoryFormModal({
   open,
   mode,
+  theme = 'dark',
   category,
   saving = false,
   onClose,
@@ -107,7 +110,7 @@ export function RecipeCategoryFormModal({
           <label className={styles.field}>
             <span className={styles.fieldLabel}>Nombre *</span>
             <RecetaTextInput
-              theme="dark"
+              theme={theme}
               className={styles.fullWidthControl}
               value={values.nombre}
               onChange={(event) => update({ nombre: event.target.value })}
@@ -153,14 +156,14 @@ export function RecipeCategoryFormModal({
 
         <footer className={styles.footer}>
           <RecetaFormButton
-            theme="dark"
+            theme={theme}
             variant="cancel"
             label="Cancelar"
             onClick={onClose}
             disabled={saving}
           />
           <RecetaFormButton
-            theme="dark"
+            theme={theme}
             variant="save"
             label={mode === 'create' ? 'Crear categoría' : 'Guardar cambios'}
             onClick={handleSave}

@@ -14,6 +14,7 @@ import LoginPage from '@/pages/LoginPage';
 import SignupPage from '@/pages/SignupPage';
 import NotFoundPage from '@/pages/NotFoundPage';
 import PayrollPage from '@/pages/PayrollPage';
+import ProduccionPage from '@/pages/ProduccionPage';
 import ProveedoresPage from '@/pages/ProveedoresPage';
 import RecipesPage from '@/pages/RecipesPage';
 import ReportsPage from '@/pages/ReportsPage';
@@ -40,7 +41,11 @@ export default function App(): React.JSX.Element {
           <Route path="/inventory/movements" element={<InventoryMovementsPage />} />
           <Route path="/inventory/alerts" element={<InventoryAlertsPage />} />
           <Route path="/inventory/reports" element={<InventoryReportsPage />} />
-          <Route path="/recetas/*" element={<RecipesPage />} />
+          <Route path="/recetas" element={<RecipesPage />} />
+          <Route path="/recetas/categorias" element={<RecipesPage />} />
+          <Route path="/recetas/procesos" element={<RecipesPage />} />
+          <Route path="/recetas/historial" element={<RecipesPage />} />
+          <Route path="/produccion/ordenes/*" element={<ProduccionPage />} />
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/dispatch" element={<DispatchPage />} />
           <Route path="/users" element={<UsersPage />} />

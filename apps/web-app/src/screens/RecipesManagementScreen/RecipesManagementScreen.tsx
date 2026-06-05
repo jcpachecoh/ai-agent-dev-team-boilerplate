@@ -276,6 +276,18 @@ function parseBatchSize(yieldText: string): string {
   return value.toFixed(3);
 }
 
+function formatOptionalPackageWeight(value: string): string | null {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+  const parsed = Number.parseFloat(trimmed.replace(',', '.'));
+  if (Number.isNaN(parsed) || parsed <= 0) {
+    return null;
+  }
+  return parsed.toFixed(3);
+}
+
 interface RecipesManagementScreenProps {
   view?: RecipesView;
 }
@@ -294,6 +306,7 @@ export function RecipesManagementScreen({
   const [notes, setNotes] = useState('');
   const [batchSize, setBatchSize] = useState('1');
   const [batchUnit, setBatchUnit] = useState<StockUnit>('KILOGRAMS');
+  const [packageWeight, setPackageWeight] = useState('');
   const [recipeActive, setRecipeActive] = useState(true);
   const [categoryId, setCategoryId] = useState('');
   const [estimatedMinutes, setEstimatedMinutes] = useState('30');
@@ -353,6 +366,55 @@ export function RecipesManagementScreen({
       workstationsQuery.isLoading ||
       (Boolean(editingRecipeId) && recipeDetailQuery.isLoading));
 
+  // #region agent log
+  useEffect(() => {
+    if (currentView !== 'editor' || editorLoading) return;
+    const labelEl = document.querySelector('[class*="editorField"] span');
+    const inputEl = document.querySelector('[class*="editorInput"]');
+    fetch('http://127.0.0.1:7828/ingest/355d2ecf-3818-453c-8510-c7b3fe83712b', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'd2ab57' },
+      body: JSON.stringify({
+        sessionId: 'd2ab57',
+        runId: 'post-fix-receta-editor',
+        hypothesisId: 'H1',
+        location: 'RecipesManagementScreen.tsx:editor-theme-probe',
+        message: 'Recipe editor light mode probe',
+        data: {
+          uiTheme: theme,
+          dataTheme: document.documentElement.dataset.theme ?? null,
+          labelColor: labelEl ? getComputedStyle(labelEl).color : null,
+          inputBackground: inputEl ? getComputedStyle(inputEl).backgroundColor : null,
+          inputColor: inputEl ? getComputedStyle(inputEl).color : null,
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+  }, [currentView, theme, editorLoading]);
+
+  useEffect(() => {
+    if (currentView !== 'history') return;
+    const itemEl = document.querySelector('[class*="RecetaHistoryAccordion"] [data-state]');
+    fetch('http://127.0.0.1:7828/ingest/355d2ecf-3818-453c-8510-c7b3fe83712b', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'd2ab57' },
+      body: JSON.stringify({
+        sessionId: 'd2ab57',
+        runId: 'post-fix-history',
+        hypothesisId: 'H1',
+        location: 'RecipesManagementScreen.tsx:history-theme-probe',
+        message: 'History accordion light mode probe',
+        data: {
+          uiTheme: theme,
+          dataTheme: document.documentElement.dataset.theme ?? null,
+          itemBackground: itemEl ? getComputedStyle(itemEl).backgroundColor : null,
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+  }, [currentView, theme]);
+  // #endregion
+
   const totalMinutes = useMemo(
     () => phases.reduce((sum, phase) => sum + phase.durationMin, 0),
     [phases],
@@ -385,6 +447,7 @@ export function RecipesManagementScreen({
     setFinishedProductId(detail.finishedProductId);
     setBatchSize(String(detail.batchSize));
     setBatchUnit(detail.batchUnit as StockUnit);
+    setPackageWeight(detail.packageWeight ?? '');
     setRecipeActive(detail.isActive);
     setCategoryId(detail.categoryId ?? '');
     setEstimatedMinutes(String(detail.estimatedMinutes));
@@ -499,6 +562,7 @@ export function RecipesManagementScreen({
     setNotes('');
     setBatchSize('1');
     setBatchUnit('KILOGRAMS');
+    setPackageWeight('');
     setRecipeActive(true);
     setCategoryId('');
     setEstimatedMinutes('30');
@@ -555,6 +619,7 @@ export function RecipesManagementScreen({
       finishedProductId,
       batchSize: parseBatchSize(batchSize),
       batchUnit,
+      packageWeight: formatOptionalPackageWeight(packageWeight),
       estimatedMinutes: estimatedMinutesValue,
       notes: notes.trim() || undefined,
       isActive: recipeActive,
@@ -1026,7 +1091,7 @@ export function RecipesManagementScreen({
             />
           </section>
           <section className={styles.historyWrap}>
-            <RecetaHistoryAccordion theme="dark" size="xl" items={filteredHistoryRows} />
+            <RecetaHistoryAccordion theme={theme} size="xl" items={filteredHistoryRows} />
           </section>
         </>
       );
@@ -1057,13 +1122,13 @@ export function RecipesManagementScreen({
             <div className={styles.editorActions}>
               <RecetaFormButton
                 variant="discard"
-                theme="dark"
+                theme={theme}
                 label="Descartar"
                 onClick={handleDiscardEditor}
               />
               <RecetaFormButton
                 variant="save"
-                theme="dark"
+                theme={theme}
                 label={saving ? 'Guardando...' : 'Guardar Receta'}
                 disabled={saving || editorLoading}
                 onClick={() => void handleSaveRecipe()}
@@ -1141,6 +1206,17 @@ export function RecipesManagementScreen({
                         </option>
                       ))}
                     </select>
+                  </label>
+                  <label className={styles.editorField}>
+                    <span>Peso aprox. por paquete (kg)</span>
+                    <input
+                      className={styles.editorInput}
+                      type="text"
+                      inputMode="decimal"
+                      placeholder="Ej. 440"
+                      value={packageWeight}
+                      onChange={(event) => setPackageWeight(event.target.value)}
+                    />
                   </label>
                   <label className={styles.editorField}>
                     <span>Tiempo estimado (min) *</span>
@@ -1363,7 +1439,7 @@ export function RecipesManagementScreen({
       <RecetaPhaseModal
         open={phaseModalOpen}
         onClose={closePhaseModal}
-        theme="dark"
+        theme={theme}
         size="md"
         title={editingPhaseId ? 'Editar Fase de Proceso' : 'Nueva Fase de Proceso'}
         saveLabel={editingPhaseId ? 'Actualizar Fase' : 'Guardar Fase'}

@@ -1,11 +1,11 @@
-import { BookOpen, Clock3, Layers, Utensils } from 'lucide-react';
+import { BookOpen, Clock3, Factory, Utensils } from 'lucide-react';
 import React, { type JSX, type ReactNode } from 'react';
 
 import { Skeleton } from '../../feedback/skeleton';
 import type { RecetaSize, RecetaTheme } from '../shared/receta-types';
 import styles from './RecetaMetricCard.module.scss';
 
-export type RecetaMetricCardVariant = 'type-1' | 'type-2' | 'type-3';
+export type RecetaMetricCardVariant = 'type-1' | 'type-2' | 'type-3' | 'type-4';
 
 export interface RecetaMetricCardProps {
   variant?: RecetaMetricCardVariant;
@@ -23,6 +23,7 @@ const variantIcons: Record<RecetaMetricCardVariant, JSX.Element> = {
   'type-1': <BookOpen aria-hidden />,
   'type-2': <Clock3 aria-hidden />,
   'type-3': <Utensils aria-hidden />,
+  'type-4': <Factory aria-hidden />,
 };
 
 export function RecetaMetricCard({

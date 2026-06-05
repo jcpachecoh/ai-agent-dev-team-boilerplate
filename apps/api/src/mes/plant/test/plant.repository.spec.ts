@@ -29,6 +29,10 @@ const txMock = {
     create: jest.fn(),
     findFirst: jest.fn(),
   },
+  productionOrderMaterial: {
+    deleteMany: jest.fn(),
+    createMany: jest.fn(),
+  },
 };
 
 const prismaMock = {
@@ -493,8 +497,11 @@ describe('PlantRepository', () => {
       prismaMock.productionOrder.findFirst.mockResolvedValue({
         id: 'order-1',
         tenantId,
-        recipe: { id: 'recipe-1', name: 'Pan' },
+        recipe: { id: 'recipe-1', name: 'Pan', packageWeight: null },
         executions: [],
+        materials: [],
+        byproducts: [],
+        qualityChecks: [],
       });
       prismaMock.operatorSession.findMany.mockResolvedValue([
         {
@@ -570,6 +577,47 @@ describe('PlantRepository', () => {
       prismaMock.productionOrder.findFirst.mockResolvedValue(null);
 
       await expect(repository.findOrderDetailById(tenantId, 'missing')).resolves.toBeNull();
+    });
+
+    it('replaceOrderMaterialsTx deletes existing rows and inserts snapshot lines', async () => {
+      prismaMock.$transaction.mockImplementation(async (callback) => callback(txMock));
+      txMock.productionOrderMaterial.deleteMany.mockResolvedValue({ count: 1 });
+      txMock.productionOrderMaterial.createMany.mockResolvedValue({ count: 1 });
+
+      await repository.replaceOrderMaterialsTx(tenantId, 'order-1', [
+        {
+          supplyItemId: 'supply-1',
+          materialName: 'Harina',
+          requiredQuantity: new Decimal('4'),
+          unit: StockUnit.KILOGRAMS,
+          sortOrder: 0,
+        },
+      ]);
+
+      expect(txMock.productionOrderMaterial.deleteMany).toHaveBeenCalledWith({
+        where: { tenantId, orderId: 'order-1' },
+      });
+      expect(txMock.productionOrderMaterial.createMany).toHaveBeenCalledWith({
+        data: [
+          expect.objectContaining({
+            tenantId,
+            orderId: 'order-1',
+            supplyItemId: 'supply-1',
+            materialName: 'Harina',
+            sortOrder: 0,
+          }),
+        ],
+      });
+    });
+
+    it('replaceOrderMaterialsTx skips createMany when snapshot is empty', async () => {
+      prismaMock.$transaction.mockImplementation(async (callback) => callback(txMock));
+      txMock.productionOrderMaterial.deleteMany.mockResolvedValue({ count: 0 });
+
+      await repository.replaceOrderMaterialsTx(tenantId, 'order-1', []);
+
+      expect(txMock.productionOrderMaterial.deleteMany).toHaveBeenCalled();
+      expect(txMock.productionOrderMaterial.createMany).not.toHaveBeenCalled();
     });
   });
 });

@@ -28,42 +28,10 @@
   width: 100%;
   overflow: hidden;
 
-  &:has(input[type='date']) {
+  &:has(input[type='date']),
+  &:has(input[type='datetime-local']),
+  &:has(input[type='time']) {
     overflow: visible;
-  }
-
-  input[type='date'] {
-    position: relative;
-
-    &::-webkit-calendar-picker-indicator {
-      position: absolute;
-      top: 50%;
-      right: calc(var(--control-padding-x) * 0.35);
-      transform: translateY(-50%);
-      cursor: pointer;
-      opacity: 1;
-      width: 1.125rem;
-      height: 1.125rem;
-      margin: 0;
-    }
-  }
-}
-
-.field.theme--dark .control input[type='date'] {
-  color-scheme: dark;
-
-  &::-webkit-calendar-picker-indicator {
-    filter: brightness(0) invert(1);
-    opacity: 1;
-  }
-}
-
-.field.theme--light .control input[type='date'] {
-  color-scheme: light;
-
-  &::-webkit-calendar-picker-indicator {
-    filter: none;
-    opacity: 0.75;
   }
 }
 

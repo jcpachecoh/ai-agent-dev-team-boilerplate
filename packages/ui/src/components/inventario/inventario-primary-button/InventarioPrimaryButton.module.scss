@@ -51,6 +51,16 @@
   }
 }
 
+.variant--orange {
+  background: #e8943a;
+  color: $color-white;
+  border-color: #e8943a;
+
+  &:hover:not(:disabled) {
+    filter: brightness(1.06);
+  }
+}
+
 .icon svg {
   width: 16px;
   height: 16px;

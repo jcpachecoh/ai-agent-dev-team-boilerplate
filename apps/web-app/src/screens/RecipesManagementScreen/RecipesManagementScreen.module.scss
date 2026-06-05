@@ -329,13 +329,13 @@
   text-transform: uppercase;
   letter-spacing: 0.06em;
   font-size: 0.72rem;
-  color: rgba($color-operator-text, 0.7);
+  color: var(--color-text-secondary);
 }
 
 .panelCardHint {
   margin: 0 0 0.75rem;
   font-size: 0.75rem;
-  color: rgba($color-operator-text, 0.55);
+  color: var(--color-text-muted);
   line-height: 1.4;
 }
 
@@ -357,7 +357,7 @@
   flex-direction: column;
   gap: 0.35rem;
   font-size: 0.72rem;
-  color: rgba($color-operator-text, 0.75);
+  color: var(--color-text-secondary);
 }
 
 .editorFieldFull {
@@ -373,12 +373,36 @@
 
 .editorSelect,
 .editorInput {
-  border: 1px solid $color-recipes-divider;
+  border: 1px solid var(--color-border);
   border-radius: 0.35rem;
-  background: $color-recipes-surface;
-  color: $color-operator-text;
+  background: var(--color-bg-surface-raised, var(--color-bg-surface));
+  color: var(--color-text-primary);
   padding: 0.5rem 0.6rem;
   font-size: 0.85rem;
+
+  &::placeholder {
+    color: var(--color-input-placeholder, var(--color-text-muted));
+  }
+}
+
+:global([data-theme='light']) {
+  .editorSelect,
+  .editorInput,
+  .modalListInput,
+  .modalListInputGrow,
+  .modalListUnitSelect {
+    color-scheme: light;
+  }
+}
+
+:global([data-theme='dark']) {
+  .editorSelect,
+  .editorInput,
+  .modalListInput,
+  .modalListInputGrow,
+  .modalListUnitSelect {
+    color-scheme: dark;
+  }
 }
 
 .editorInput:read-only {
@@ -388,9 +412,9 @@
 .modalListEmpty {
   margin: 0;
   padding: 0.65rem 0.75rem;
-  border: 1px dashed $color-recipes-divider;
+  border: 1px dashed var(--color-border);
   border-radius: 0.35rem;
-  color: rgba($color-operator-text, 0.55);
+  color: var(--color-text-muted);
   font-size: 0.8rem;
 }
 
@@ -417,10 +441,10 @@
 }
 
 .modalListInput {
-  border: 1px solid $color-recipes-divider;
+  border: 1px solid var(--color-border);
   border-radius: 0.35rem;
-  background: $color-recipes-surface;
-  color: $color-operator-text;
+  background: var(--color-bg-surface-raised, var(--color-bg-surface));
+  color: var(--color-text-primary);
   padding: 0.45rem 0.55rem;
   font-size: 0.85rem;
 }
@@ -428,25 +452,25 @@
 .modalListInputGrow {
   flex: 1;
   min-width: 0;
-  border: 1px solid $color-recipes-divider;
+  border: 1px solid var(--color-border);
   border-radius: 0.35rem;
-  background: $color-recipes-surface;
-  color: $color-operator-text;
+  background: var(--color-bg-surface-raised, var(--color-bg-surface));
+  color: var(--color-text-primary);
   padding: 0.45rem 0.55rem;
   font-size: 0.85rem;
 }
 
 .modalListUnit {
   font-size: 0.72rem;
-  color: rgba($color-operator-text, 0.6);
+  color: var(--color-text-secondary);
   white-space: nowrap;
 }
 
 .modalListUnitSelect {
-  border: 1px solid $color-recipes-divider;
+  border: 1px solid var(--color-border);
   border-radius: 0.35rem;
-  background: $color-recipes-surface;
-  color: $color-operator-text;
+  background: var(--color-bg-surface-raised, var(--color-bg-surface));
+  color: var(--color-text-primary);
   padding: 0.45rem 0.4rem;
   font-size: 0.8rem;
 }

@@ -17,6 +17,7 @@ export type UpdatePlantRecipePayload = Partial<
     | 'finishedProductId'
     | 'batchSize'
     | 'batchUnit'
+    | 'packageWeight'
     | 'estimatedMinutes'
     | 'notes'
     | 'isActive'

@@ -64,10 +64,17 @@
   border-color: var(--inventario-border);
 }
 
-.save {
+.saveAccent--teal .save {
   background: inventario.$inventario-teal;
   color: $color-white;
   border-color: inventario.$inventario-teal;
+  font-weight: $font-weight-semibold;
+}
+
+.saveAccent--orange .save {
+  background: #e8943a;
+  color: $color-white;
+  border-color: #e8943a;
   font-weight: $font-weight-semibold;
 }
 

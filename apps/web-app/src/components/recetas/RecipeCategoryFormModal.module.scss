@@ -7,7 +7,7 @@
   display: grid;
   place-items: center;
   padding: 1rem;
-  background: $color-backdrop-modal;
+  background: var(--color-overlay);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
 }
@@ -17,10 +17,10 @@
   flex-direction: column;
   width: min(100%, 560px);
   max-height: min(92dvh, 720px);
-  border: 1px solid $color-recipes-divider;
+  border: 1px solid var(--color-border);
   border-radius: 0.5rem;
-  background: $color-recipes-surface;
-  color: $color-operator-text;
+  background: var(--color-bg-surface);
+  color: var(--color-text-primary);
   overflow: hidden;
 }
 
@@ -30,7 +30,7 @@
   justify-content: space-between;
   gap: 1rem;
   padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid $color-recipes-divider;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .title {
@@ -41,7 +41,7 @@
 .subtitle {
   margin: 0.25rem 0 0;
   font-size: 0.75rem;
-  color: rgba($color-operator-text, 0.5);
+  color: var(--color-text-muted);
 }
 
 .closeButton {
@@ -49,11 +49,16 @@
   place-items: center;
   width: 36px;
   height: 36px;
-  border: 1px solid $color-recipes-divider;
+  border: 1px solid var(--color-border);
   border-radius: 0.35rem;
   background: transparent;
-  color: $color-operator-text;
+  color: var(--color-text-secondary);
   cursor: pointer;
+
+  &:hover {
+    color: var(--color-text-primary);
+    background: var(--color-bg-surface-hover);
+  }
 }
 
 .body {
@@ -72,7 +77,7 @@
 
 .fieldLabel {
   font-size: 0.75rem;
-  color: rgba($color-operator-text, 0.7);
+  color: var(--color-text-secondary);
 }
 
 .fullWidthControl {
@@ -83,14 +88,18 @@
   width: 100%;
   min-height: 5rem;
   resize: vertical;
-  border: 1px solid $color-recipes-divider;
+  border: 1px solid var(--color-border);
   border-radius: 0.35rem;
-  background: #0d0d0d;
-  color: $color-operator-text;
+  background: var(--color-bg-surface-raised, var(--color-bg-primary));
+  color: var(--color-text-primary);
   padding: 0.55rem 0.65rem;
   font-size: 0.85rem;
   font-family: inherit;
   line-height: 1.4;
+
+  &::placeholder {
+    color: var(--color-input-placeholder, var(--color-text-muted));
+  }
 }
 
 .toggleField {
@@ -114,16 +123,16 @@
 
 .toggleHint {
   font-size: 0.72rem;
-  color: rgba($color-operator-text, 0.5);
+  color: var(--color-text-muted);
 }
 
 .toggle {
   position: relative;
   width: 44px;
   height: 24px;
-  border: 1px solid $color-recipes-divider;
+  border: 1px solid var(--color-border);
   border-radius: 999px;
-  background: rgba($color-operator-text, 0.15);
+  background: var(--color-bg-surface-hover);
   cursor: pointer;
 }
 
@@ -139,7 +148,7 @@
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: $color-operator-text;
+  background: var(--color-text-primary);
   transition: transform 0.15s ease;
 }
 
@@ -158,5 +167,5 @@
   justify-content: flex-end;
   gap: 0.65rem;
   padding: 1rem 1.5rem;
-  border-top: 1px solid $color-recipes-divider;
+  border-top: 1px solid var(--color-border);
 }

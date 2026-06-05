@@ -55,9 +55,9 @@
   justify-content: space-between;
   gap: 1rem;
   padding: 14px 16px;
-  border: 1px solid rgb(255 255 255 / 12%);
+  border: 1px solid var(--inventario-border);
   border-radius: t.$border-radius-sm;
-  background: rgb(255 255 255 / 4%);
+  background: var(--inventario-hover);
 }
 
 .toggleCopy {
@@ -72,12 +72,12 @@
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: rgb(255 255 255 / 55%);
+  color: var(--inventario-muted);
 }
 
 .toggleHint {
   font-size: t.$font-size-sm;
-  color: rgb(255 255 255 / 88%);
+  color: var(--inventario-text);
 }
 
 .toggle {
@@ -88,7 +88,7 @@
   padding: 0;
   border: none;
   border-radius: 999px;
-  background: rgb(255 255 255 / 18%);
+  background: var(--inventario-track);
   cursor: pointer;
   transition: background 0.2s ease;
 
@@ -131,9 +131,9 @@
   justify-content: space-between;
   gap: 12px;
   padding: 12px 14px;
-  border: 1px solid rgb(255 255 255 / 12%);
+  border: 1px solid var(--inventario-border);
   border-radius: t.$border-radius-sm;
-  background: rgb(255 255 255 / 4%);
+  background: var(--inventario-hover);
 }
 
 .toggleFieldLabel {
@@ -141,7 +141,7 @@
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: rgb(255 255 255 / 55%);
+  color: var(--inventario-muted);
 }
 
 @media (max-width: 640px) {

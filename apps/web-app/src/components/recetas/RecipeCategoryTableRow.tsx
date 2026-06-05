@@ -1,11 +1,13 @@
 import { InventarioIconButton, RecetaEditButton, RecetaStatusButton } from '@restopsiq/ui';
 import type { CSSProperties, JSX } from 'react';
 
+import type { UiTheme } from '@/constants/theme';
 import type { RecetaStatus } from '@/features/recetas/types';
 
 import styles from './RecipeCategoryTableRow.module.scss';
 
 export interface RecipeCategoryTableRowProps {
+  theme?: UiTheme;
   code: string;
   nombre: string;
   descripcion: string;
@@ -17,6 +19,7 @@ export interface RecipeCategoryTableRowProps {
 }
 
 export function RecipeCategoryTableRow({
+  theme = 'dark',
   code,
   nombre,
   descripcion,
@@ -46,7 +49,7 @@ export function RecipeCategoryTableRow({
       <span className={styles.status} role="cell">
         <RecetaStatusButton
           status={status}
-          theme="dark"
+          theme={theme}
           size="sm"
           onClick={(event) => {
             event.stopPropagation();
@@ -56,7 +59,7 @@ export function RecipeCategoryTableRow({
       </span>
       <span className={styles.actions} role="cell">
         <RecetaEditButton
-          theme="dark"
+          theme={theme}
           size="sm"
           onClick={(event) => {
             event.stopPropagation();
@@ -71,7 +74,7 @@ export function RecipeCategoryTableRow({
         >
           <InventarioIconButton
             variant="delete"
-            theme="dark"
+            theme={theme}
             ariaLabel="Eliminar categoría"
             onClick={() => onDelete?.()}
           />

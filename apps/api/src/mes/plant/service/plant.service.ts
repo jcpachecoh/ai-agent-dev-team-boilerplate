@@ -31,8 +31,10 @@ import type {
   OrderDetail,
   OrderDetailResponse,
   OrderListItemResponse,
+  OrderMaterialSnapshotLine,
   PauseOrderInput,
   PhaseStatusChange,
+  RecipeWithPhasesAndInputs,
   RecipeDetailResponse,
   ReorderPhaseItem,
   UpdatePhaseInput,
@@ -185,6 +187,7 @@ export class PlantService implements IPlantService {
       finishedProductId: source.finishedProductId,
       batchSize: source.batchSize,
       batchUnit: source.batchUnit,
+      packageWeight: source.packageWeight,
       estimatedMinutes: source.estimatedMinutes,
       version,
       notes: source.notes,
@@ -377,7 +380,13 @@ export class PlantService implements IPlantService {
   }
 
   async findOrderById(tenantId: string, id: string): Promise<OrderDetailResponse> {
-    const detail = await this.requireOrderDetail(tenantId, id);
+    let detail = await this.requireOrderDetail(tenantId, id);
+
+    if (this.shouldEnsureMaterialSnapshot(detail)) {
+      await this.createMaterialSnapshot(tenantId, detail);
+      detail = await this.requireOrderDetail(tenantId, id);
+    }
+
     return this.mapOrderDetail(detail);
   }
 
@@ -402,6 +411,7 @@ export class PlantService implements IPlantService {
     await this.plantRepository.updateExecution(tenantId, firstExecution.id, {
       status: PhaseExecutionStatus.READY,
     });
+    await this.createMaterialSnapshot(tenantId, detail);
 
     this.plantEventsService.emitPhaseStatusChanges(tenantId, [
       {
@@ -602,23 +612,43 @@ export class PlantService implements IPlantService {
     }
   }
 
+  private parseOrderSequence(number: string): number | null {
+    const trimmed = number.trim();
+    if (!trimmed) {
+      return null;
+    }
+
+    const legacyMatch = trimmed.match(/^\d{4}-(\d+)$/);
+    if (legacyMatch) {
+      const seq = Number.parseInt(legacyMatch[1], 10);
+      return Number.isNaN(seq) ? null : seq;
+    }
+
+    if (/^\d+$/.test(trimmed)) {
+      const seq = Number.parseInt(trimmed, 10);
+      return Number.isNaN(seq) ? null : seq;
+    }
+
+    return null;
+  }
+
   private async generateOrderNumber(tenantId: string): Promise<string> {
-    const year = new Date().getFullYear();
-    const prefix = `${year}-`;
     const orders = await this.plantRepository.findOrders(tenantId, {});
 
     let maxSeq = 0;
     for (const order of orders) {
-      if (!order.number.startsWith(prefix)) {
-        continue;
-      }
-      const seq = Number.parseInt(order.number.slice(prefix.length), 10);
-      if (!Number.isNaN(seq) && seq > maxSeq) {
+      const seq = this.parseOrderSequence(order.number);
+      if (seq !== null && seq > maxSeq) {
         maxSeq = seq;
       }
     }
 
-    return `${prefix}${maxSeq + 1}`;
+    const next = maxSeq + 1;
+    if (next > 9999) {
+      throw new ConflictException('Production order number limit reached (9999)');
+    }
+
+    return String(next).padStart(4, '0');
   }
 
   private mapOrderDetail(detail: OrderDetail): OrderDetailResponse {
@@ -642,8 +672,40 @@ export class PlantService implements IPlantService {
       actualEndAt: detail.actualEndAt,
       supervisorId: detail.supervisorId,
       notes: detail.notes,
+      lotNumber: detail.lotNumber,
+      productionDate: detail.productionDate,
+      deliveryDate: detail.deliveryDate,
+      packageWeight: detail.recipe.packageWeight?.toString() ?? null,
+      batchWeight: detail.batchWeight?.toString() ?? null,
       createdAt: detail.createdAt,
       updatedAt: detail.updatedAt,
+      materials: detail.materials.map((material) => ({
+        id: material.id,
+        supplyItemId: material.supplyItemId,
+        materialName: material.materialName,
+        lotNumber: material.lotNumber,
+        requiredQuantity: material.requiredQuantity.toString(),
+        consumedQuantity: material.consumedQuantity?.toString() ?? null,
+        unit: material.unit,
+        sortOrder: material.sortOrder,
+      })),
+      byproducts: detail.byproducts.map((byproduct) => ({
+        id: byproduct.id,
+        itemName: byproduct.itemName,
+        unit: byproduct.unit,
+        actualQuantity: byproduct.actualQuantity?.toString() ?? null,
+        lotNumber: byproduct.lotNumber,
+        expirationDate: byproduct.expirationDate,
+      })),
+      qualityChecks: detail.qualityChecks.map((check) => ({
+        id: check.id,
+        checkType: check.checkType,
+        temperature: check.temperature,
+        color: check.color,
+        smell: check.smell,
+        texture: check.texture,
+        notes: check.notes,
+      })),
       executions: detail.executions.map((execution) => ({
         id: execution.id,
         phaseId: execution.phaseId,
@@ -657,7 +719,12 @@ export class PlantService implements IPlantService {
         producedQuantity: execution.producedQuantity?.toString() ?? null,
         qaApprovedAt: execution.qaApprovedAt,
         qaApprovedBy: execution.qaApprovedBy,
+        startedAt: execution.startedAt,
         completedAt: execution.completedAt,
+        operatorCount: execution.operatorCount,
+        deliveredQuantity: execution.deliveredQuantity?.toString() ?? null,
+        responsibleUserId: execution.responsibleUserId,
+        responsibleName: null,
         notes: execution.notes,
       })),
       activeOperators: detail.activeSessions.map((session) => ({
@@ -668,6 +735,76 @@ export class PlantService implements IPlantService {
         startedAt: session.startedAt,
       })),
     };
+  }
+
+  private shouldEnsureMaterialSnapshot(detail: OrderDetail): boolean {
+    if (detail.materials.length > 0) {
+      return false;
+    }
+
+    return (
+      detail.status === ProductionOrderStatus.PLANNED ||
+      detail.status === ProductionOrderStatus.IN_PROCESS ||
+      detail.status === ProductionOrderStatus.PAUSED ||
+      detail.status === ProductionOrderStatus.COMPLETED
+    );
+  }
+
+  private async createMaterialSnapshot(tenantId: string, order: OrderDetail): Promise<void> {
+    const recipe = await this.plantRepository.findRecipeDetailById(tenantId, order.recipeId);
+    if (!recipe) {
+      throw new NotFoundException(`Production recipe with ID "${order.recipeId}" not found`);
+    }
+
+    const materials = await this.aggregateMaterialsFromRecipe(tenantId, recipe, order.batchCount);
+    await this.plantRepository.replaceOrderMaterialsTx(tenantId, order.id, materials);
+  }
+
+  private async aggregateMaterialsFromRecipe(
+    tenantId: string,
+    recipe: RecipeWithPhasesAndInputs,
+    batchCount: number,
+  ): Promise<OrderMaterialSnapshotLine[]> {
+    const aggregated = new Map<string, OrderMaterialSnapshotLine>();
+    const nameCache = new Map<string, string>();
+    let sortOrder = 0;
+
+    for (const phase of recipe.phases) {
+      for (const input of phase.inputs) {
+        const requiredQuantity = new Decimal(input.quantityPerBatch).mul(batchCount);
+        const existing = aggregated.get(input.supplyItemId);
+
+        if (existing) {
+          existing.requiredQuantity = existing.requiredQuantity.add(requiredQuantity);
+          continue;
+        }
+
+        let materialName = nameCache.get(input.supplyItemId);
+        if (!materialName) {
+          materialName = await this.resolveSupplyItemName(tenantId, input.supplyItemId);
+          nameCache.set(input.supplyItemId, materialName);
+        }
+
+        aggregated.set(input.supplyItemId, {
+          supplyItemId: input.supplyItemId,
+          materialName,
+          requiredQuantity,
+          unit: input.unit,
+          sortOrder: sortOrder++,
+        });
+      }
+    }
+
+    return Array.from(aggregated.values()).sort((left, right) => left.sortOrder - right.sortOrder);
+  }
+
+  private async resolveSupplyItemName(tenantId: string, supplyItemId: string): Promise<string> {
+    try {
+      const item = await this.supplyItemsService.findOne(tenantId, supplyItemId);
+      return item.nombre;
+    } catch {
+      return supplyItemId;
+    }
   }
 
   private appendOrderMetadata(
@@ -782,6 +919,7 @@ export class PlantService implements IPlantService {
         finishedProductId: input.finishedProductId,
         batchSize: input.batchSize,
         batchUnit: input.batchUnit,
+        packageWeight: input.packageWeight ?? null,
         estimatedMinutes: input.estimatedMinutes,
         version,
         notes: input.notes ?? null,

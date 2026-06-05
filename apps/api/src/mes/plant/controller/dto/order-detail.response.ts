@@ -14,7 +14,7 @@ export class OrderListItemResponseDto {
   @ApiProperty({ example: 'palos-de-lena' })
   tenantId!: string;
 
-  @ApiProperty({ example: '2026-00042' })
+  @ApiProperty({ example: '0134' })
   number!: string;
 
   @ApiProperty({ enum: ProductionOrderStatus })
@@ -104,7 +104,7 @@ export class OrderDetailResponseDto {
   @ApiProperty({ example: 'palos-de-lena' })
   tenantId!: string;
 
-  @ApiProperty({ example: '2026-00042' })
+  @ApiProperty({ example: '0134' })
   number!: string;
 
   @ApiProperty({ example: 'recipe-uuid' })

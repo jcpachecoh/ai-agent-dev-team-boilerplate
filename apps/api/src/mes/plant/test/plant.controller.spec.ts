@@ -9,6 +9,7 @@ import { PlantController } from '../controller/plant.controller';
 import { IncidentService } from '../service/incident.service';
 import { PhaseChainService } from '../service/phase-chain.service';
 import { PlantService } from '../service/plant.service';
+import { ProductionOrderPdfService } from '../service/production-order-pdf.service';
 
 const tenantId = 'palos-de-lena';
 
@@ -55,6 +56,10 @@ const incidentServiceMock = {
   resolveIncident: jest.fn(),
 };
 
+const productionOrderPdfServiceMock = {
+  buildPdf: jest.fn(),
+};
+
 describe('PlantController', () => {
   let controller: PlantController;
 
@@ -65,6 +70,7 @@ describe('PlantController', () => {
         { provide: PlantService, useValue: serviceMock },
         { provide: PhaseChainService, useValue: phaseChainServiceMock },
         { provide: IncidentService, useValue: incidentServiceMock },
+        { provide: ProductionOrderPdfService, useValue: productionOrderPdfServiceMock },
       ],
     })
       .overrideGuard(PlantAuthGuard)

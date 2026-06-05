@@ -11,6 +11,7 @@ import {
   Post,
   Query,
   Req,
+  Res,
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
@@ -31,7 +32,7 @@ import {
   type WorkStation,
 } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
-import type { Request } from 'express';
+import type { Request, Response } from 'express';
 import { Public } from '../../../common/decorators/public.decorator';
 import { Roles } from '../../auth/decorators/roles.decorator';
 import { MesRolesGuard } from '../../auth/guards/mes-roles.guard';
@@ -55,6 +56,7 @@ import type {
 import { PhaseChainService } from '../service/phase-chain.service';
 import { IncidentService } from '../service/incident.service';
 import { PlantService } from '../service/plant.service';
+import { ProductionOrderPdfService } from '../service/production-order-pdf.service';
 import { CancelOrderDto } from './dto/cancel-order.dto';
 import { CreateIncidentDto } from './dto/create-incident.dto';
 import { CreateOrderDto } from './dto/create-order.dto';
@@ -93,6 +95,7 @@ export class PlantController {
     private readonly plantService: PlantService,
     private readonly phaseChainService: PhaseChainService,
     private readonly incidentService: IncidentService,
+    private readonly productionOrderPdfService: ProductionOrderPdfService,
   ) {}
 
   /** MES JWT carries tenantId; platform login uses x-tenant-id on existing plant routes. */
@@ -324,6 +327,23 @@ export class PlantController {
     return this.plantService.findOrderById(this.resolveTenantId(req), id);
   }
 
+  @ApiOperation({ summary: 'Download production order PDF document' })
+  @ApiParam({ name: 'id', description: 'Production order ID' })
+  @Get('orders/:id/pdf')
+  @UseGuards(PlantAuthGuard, MesRolesGuard)
+  @Roles(...SUPERVISOR_ROLES)
+  async downloadOrderPdf(
+    @Req() req: MesRequest,
+    @Param('id') id: string,
+    @Res() res: Response,
+  ): Promise<void> {
+    const tenantId = this.resolveTenantId(req);
+    const { buffer, number } = await this.productionOrderPdfService.buildPdf(tenantId, id);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="OP-${number}.pdf"`);
+    res.send(buffer);
+  }
+
   @ApiOperation({ summary: 'Plan a draft production order' })
   @ApiParam({ name: 'id', description: 'Production order ID' })
   @ApiOkResponse({ type: OrderDetailResponseDto })
@@ -456,6 +476,10 @@ export class PlantController {
       finishedProductId: dto.finishedProductId,
       batchSize: new Decimal(dto.batchSize),
       batchUnit: dto.batchUnit,
+      packageWeight:
+        dto.packageWeight != null && dto.packageWeight !== ''
+          ? new Decimal(dto.packageWeight)
+          : null,
       estimatedMinutes: dto.estimatedMinutes,
       notes: dto.notes ?? null,
       isActive: dto.isActive,
@@ -508,6 +532,12 @@ export class PlantController {
       finishedProductId: dto.finishedProductId,
       batchSize: dto.batchSize !== undefined ? new Decimal(dto.batchSize) : undefined,
       batchUnit: dto.batchUnit,
+      packageWeight:
+        dto.packageWeight === undefined
+          ? undefined
+          : dto.packageWeight === null || dto.packageWeight === ''
+            ? null
+            : new Decimal(dto.packageWeight),
       estimatedMinutes: dto.estimatedMinutes,
       notes: dto.notes,
       isActive: dto.isActive,

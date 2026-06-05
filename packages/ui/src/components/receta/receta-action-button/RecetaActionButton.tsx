@@ -4,7 +4,7 @@ import React, { type ButtonHTMLAttributes, type JSX, type ReactNode } from 'reac
 import type { RecetaSize, RecetaTheme } from '../shared/receta-types';
 import styles from './RecetaActionButton.module.scss';
 
-export type RecetaActionAccent = 'purple' | 'teal' | 'gold';
+export type RecetaActionAccent = 'purple' | 'teal' | 'gold' | 'orange';
 export type RecetaActionVariant = 'soft' | 'solid';
 
 export interface RecetaActionButtonProps extends Omit<

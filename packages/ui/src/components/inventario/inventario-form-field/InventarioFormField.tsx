@@ -30,9 +30,8 @@ export function InventarioFormField({
   const controlId = htmlFor ?? `inventario-field-${label.toLowerCase().replace(/\s+/g, '-')}`;
   const controlClass = bareControl ? styles.controlBare : styles.control;
   const Wrapper = bareControl ? 'div' : 'label';
-  const wrapperProps = bareControl
-    ? {}
-    : { htmlFor: htmlFor ?? (!children && inputType === 'input' ? controlId : undefined) };
+  const linkedId = htmlFor ?? (!children && inputType === 'input' ? controlId : undefined);
+  const wrapperProps = bareControl ? {} : { htmlFor: linkedId };
 
   return (
     <Wrapper
