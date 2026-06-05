@@ -83,6 +83,9 @@ export class SupplyItemType {
   @Field(() => Float)
   stockMaximoBodega!: number;
 
+  @Field(() => Float)
+  stockActualBodega!: number;
+
   @Field()
   aplicaVencimiento!: boolean;
 
@@ -193,6 +196,11 @@ export class CreateSupplyItemInputDto {
   @IsNumberString()
   stockMaximoBodega!: string;
 
+  @Field(() => String, { nullable: true })
+  @IsNumberString()
+  @IsOptional()
+  stockActualBodega?: string;
+
   @Field(() => Boolean, { nullable: true })
   @IsBoolean()
   @IsOptional()
@@ -259,6 +267,11 @@ export class UpdateSupplyItemInputDto {
   @IsOptional()
   stockMaximoBodega?: string;
 
+  @Field(() => String, { nullable: true })
+  @IsNumberString()
+  @IsOptional()
+  stockActualBodega?: string;
+
   @Field(() => Boolean, { nullable: true })
   @IsBoolean()
   @IsOptional()
@@ -299,6 +312,7 @@ function toSupplyItemType(item: SupplyItemWithRelations): SupplyItemType {
     costoPromedioPonderado: decimalToNumber(item.costoPromedioPonderado),
     stockMinimoBodega: decimalToNumber(item.stockMinimoBodega),
     stockMaximoBodega: decimalToNumber(item.stockMaximoBodega),
+    stockActualBodega: decimalToNumber(item.stockActualBodega),
     aplicaVencimiento: item.aplicaVencimiento,
     aplicaLote: item.aplicaLote,
     isActive: item.isActive,
@@ -308,7 +322,7 @@ function toSupplyItemType(item: SupplyItemWithRelations): SupplyItemType {
           razonSocial: principal.supplier.razonSocial,
         }
       : null,
-    stockDisponible: 0,
+    stockDisponible: decimalToNumber(item.stockActualBodega),
   };
 }
 

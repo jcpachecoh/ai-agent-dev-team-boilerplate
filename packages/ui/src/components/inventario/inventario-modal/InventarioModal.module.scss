@@ -41,6 +41,12 @@
   --modal-width: 860px;
 }
 
+.modalAccentOrange {
+  box-shadow:
+    0 24px 48px rgba($color-black, 0.4),
+    0 0 0 1px rgba(232, 148, 58, 0.18);
+}
+
 .header {
   display: flex;
   align-items: flex-start;

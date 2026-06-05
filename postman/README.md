@@ -360,6 +360,23 @@ See also folder **09 — RBAC Foundation** (seed matrix reference).
 
 ---
 
+## 04 — Supply Items (Insumo / materia prima)
+
+`SupplyItem` is the backend name for **insumo** (raw material). Categories are **flexible** (`SupplyCategory` per tenant), not a fixed enum.
+
+| Concept               | API field / enum                                                                    |
+| --------------------- | ----------------------------------------------------------------------------------- |
+| Base unit             | `unidadBase` → `StockUnit`: `UNIT`, `GRAMS`, `KILOGRAMS`, `ML`, `LITERS`, **`BOX`** |
+| Min / max thresholds  | `stockMinimoBodega`, `stockMaximoBodega`                                            |
+| Current stock (MVP)   | `stockActualBodega` (optional on create/update; default `0`)                        |
+| Legacy response alias | `stockDisponible` (= `stockActualBodega`)                                           |
+
+**Postman folder 04:** **Create Supply Item** sends `stockActualBodega` from `{{stockActualBodega}}`. **Create Supply Item — BOX** uses `unidadBase: BOX` and category `bbbbbbbb-0000-0000-0000-000000000008` (Empaque seed). **Update Supply Item** patches `stockActualBodega` and asserts it in the response.
+
+**Inventory API** (`/api/inventory/*`, when used) derives low-stock alerts from `stockActualBodega` vs `stockMinimoBodega`. Warehouse **movements**, **MenuProduct**, and **recipe BOM** are out of scope. **Frontend** was not updated in this backend closure.
+
+---
+
 ## USR-05 — Audit Verification (SQL only)
 
 There is no audit read API. After running auth and supply-items requests, verify rows in PostgreSQL using SQL in folder **08 — Audit Verification**.

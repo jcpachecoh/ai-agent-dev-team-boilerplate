@@ -89,6 +89,7 @@ export class SupplyItemsRepository implements ISupplyitemsRepository {
         costoPromedioPonderado: data.costoPromedioPonderado ?? '0',
         stockMinimoBodega: data.stockMinimoBodega,
         stockMaximoBodega: data.stockMaximoBodega,
+        stockActualBodega: data.stockActualBodega ?? '0',
         aplicaVencimiento: data.aplicaVencimiento ?? false,
         aplicaLote: data.aplicaLote ?? false,
         isActive: data.isActive ?? true,
@@ -119,6 +120,9 @@ export class SupplyItemsRepository implements ISupplyitemsRepository {
           : {}),
         ...(data.stockMaximoBodega !== undefined
           ? { stockMaximoBodega: data.stockMaximoBodega }
+          : {}),
+        ...(data.stockActualBodega !== undefined
+          ? { stockActualBodega: data.stockActualBodega }
           : {}),
         ...(data.aplicaVencimiento !== undefined
           ? { aplicaVencimiento: data.aplicaVencimiento }

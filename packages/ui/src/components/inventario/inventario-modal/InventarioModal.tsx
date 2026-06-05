@@ -1,7 +1,10 @@
 import { X } from 'lucide-react';
 import React, { type JSX, type ReactNode, useEffect } from 'react';
 
-import { InventarioFormActions } from '../inventario-form-actions/InventarioFormActions';
+import {
+  InventarioFormActions,
+  type InventarioFormActionsSaveAccent,
+} from '../inventario-form-actions/InventarioFormActions';
 import type { InventarioSize, InventarioTheme } from '../shared/inventario-types';
 import styles from './InventarioModal.module.scss';
 
@@ -14,6 +17,8 @@ export interface InventarioModalProps {
   onSave?: () => void;
   saveLoading?: boolean;
   saveDisabled?: boolean;
+  saveLabel?: string;
+  saveAccent?: InventarioFormActionsSaveAccent;
   children?: ReactNode;
   theme?: InventarioTheme;
   size?: InventarioSize;
@@ -29,6 +34,8 @@ export function InventarioModal({
   onSave,
   saveLoading = false,
   saveDisabled = false,
+  saveLabel,
+  saveAccent = 'teal',
   children,
   theme = 'light',
   size = 'md',
@@ -57,7 +64,13 @@ export function InventarioModal({
       onClick={onClose}
     >
       <div
-        className={[styles.modal, styles[`size--${size}`]].join(' ')}
+        className={[
+          styles.modal,
+          styles[`size--${size}`],
+          saveAccent === 'orange' && styles.modalAccentOrange,
+        ]
+          .filter(Boolean)
+          .join(' ')}
         role="dialog"
         aria-modal="true"
         aria-labelledby="inventario-modal-title"
@@ -83,6 +96,8 @@ export function InventarioModal({
             onSave={onSave}
             saveLoading={saveLoading}
             saveDisabled={saveDisabled}
+            saveLabel={saveLabel}
+            saveAccent={saveAccent}
           />
         </footer>
       </div>

@@ -122,6 +122,13 @@
       "description": "codigoInterno of seeded supply item. Create Supply Item pre-request overwrites with SI-<timestamp>."
     },
     {
+      "key": "stockActualBodega",
+      "value": "10",
+      "type": "default",
+      "enabled": true,
+      "description": "Example current stock for 04 — Supply Items create/update bodies (stockActualBodega). Seeded aceite uses 25; arroz uses 50."
+    },
+    {
       "key": "testLabUserId",
       "value": "cccccccc-0000-0000-0000-000000000003",
       "type": "default",

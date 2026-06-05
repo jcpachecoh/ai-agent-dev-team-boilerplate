@@ -49,6 +49,12 @@ const OPERATIONAL_TENANT_ID = 'palos-de-lena';
 
 const SEED_CATEGORY_ID = 'bbbbbbbb-0000-0000-0000-000000000002';
 const SEED_CATEGORY_GRANOS_ID = 'bbbbbbbb-0000-0000-0000-000000000003';
+/** Canonical supply categories (epic examples) — flexible model, fixed seed IDs for Postman. */
+const SEED_CATEGORY_CARNICOS_ID = 'bbbbbbbb-0000-0000-0000-000000000004';
+const SEED_CATEGORY_LACTEOS_ID = 'bbbbbbbb-0000-0000-0000-000000000005';
+const SEED_CATEGORY_BEBIDAS_ID = 'bbbbbbbb-0000-0000-0000-000000000006';
+const SEED_CATEGORY_ASEO_ID = 'bbbbbbbb-0000-0000-0000-000000000007';
+const SEED_CATEGORY_EMPAQUE_ID = 'bbbbbbbb-0000-0000-0000-000000000008';
 const SEED_SUPPLY_ITEM_ID = 'ffffffff-0000-0000-0000-000000000006';
 const SEED_SUPPLY_ITEM_ARROZ_ID = 'ffffffff-0000-0000-0000-000000000007';
 const SEED_SUPPLIER_ID = 'dddddddd-0000-0000-0000-000000000001';
@@ -363,6 +369,7 @@ async function main() {
       tenantId: OPERATIONAL_TENANT_ID,
       categoriaId: SEED_CATEGORY_ID,
       nombre: 'Aceite de Cocina (seed)',
+      stockActualBodega: 25,
       isActive: true,
     },
     create: {
@@ -377,6 +384,7 @@ async function main() {
       costoPromedioPonderado: 8500,
       stockMinimoBodega: 5,
       stockMaximoBodega: 50,
+      stockActualBodega: 25,
       aplicaVencimiento: false,
       aplicaLote: false,
       isActive: true,
@@ -396,6 +404,26 @@ async function main() {
   });
   console.log('SupplyCategory:', categoryGranos.nombre, '—', categoryGranos.id);
 
+  const canonicalCategories = [
+    { id: SEED_CATEGORY_CARNICOS_ID, nombre: 'Cárnicos' },
+    { id: SEED_CATEGORY_LACTEOS_ID, nombre: 'Lácteos' },
+    { id: SEED_CATEGORY_BEBIDAS_ID, nombre: 'Bebidas' },
+    { id: SEED_CATEGORY_ASEO_ID, nombre: 'Aseo' },
+    { id: SEED_CATEGORY_EMPAQUE_ID, nombre: 'Empaque' },
+  ] as const;
+  for (const cat of canonicalCategories) {
+    const row = await prisma.supplyCategory.upsert({
+      where: { id: cat.id },
+      update: { tenantId: OPERATIONAL_TENANT_ID, nombre: cat.nombre, isActive: true },
+      create: {
+        id: cat.id,
+        tenantId: OPERATIONAL_TENANT_ID,
+        nombre: cat.nombre,
+      },
+    });
+    console.log('SupplyCategory:', row.nombre, '—', row.id);
+  }
+
   const supplyItemArroz = await prisma.supplyItem.upsert({
     where: { id: SEED_SUPPLY_ITEM_ARROZ_ID },
     update: {
@@ -403,6 +431,7 @@ async function main() {
       categoriaId: SEED_CATEGORY_GRANOS_ID,
       nombre: 'Arroz Premium (seed)',
       stockMinimoBodega: 20,
+      stockActualBodega: 50,
       isActive: true,
     },
     create: {
@@ -416,6 +445,7 @@ async function main() {
       costoPromedioPonderado: 4200,
       stockMinimoBodega: 20,
       stockMaximoBodega: 200,
+      stockActualBodega: 50,
       isActive: true,
     },
   });

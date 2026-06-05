@@ -116,6 +116,15 @@ export class CreateRecipeDto {
   @IsEnum(StockUnit)
   batchUnit!: StockUnit;
 
+  @ApiPropertyOptional({
+    description: 'Approximate weight per package in kg (decimal string)',
+    example: '440.000',
+    nullable: true,
+  })
+  @IsNumberString()
+  @IsOptional()
+  packageWeight?: string | null;
+
   @ApiProperty({ example: 120 })
   @IsInt()
   @Min(1)

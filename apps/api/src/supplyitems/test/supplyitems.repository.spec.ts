@@ -115,9 +115,31 @@ describe('SupplyItemsRepository', () => {
       expect.objectContaining({
         data: expect.objectContaining({
           costoPromedioPonderado: '0',
+          stockActualBodega: '0',
           aplicaVencimiento: false,
           isActive: true,
         }),
+      }),
+    );
+  });
+
+  it('create persists explicit stockActualBodega', async () => {
+    prismaMock.supplyItem.create.mockResolvedValue(item);
+
+    await repository.create(tenantId, {
+      nombre: 'Tomato',
+      codigoInterno: 'TOM-2',
+      categoriaId: 'cat-1',
+      unidadBase: StockUnit.BOX,
+      factorConversion: '1',
+      stockMinimoBodega: '1',
+      stockMaximoBodega: '10',
+      stockActualBodega: '12.5',
+    });
+
+    expect(prismaMock.supplyItem.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ stockActualBodega: '12.5', unidadBase: StockUnit.BOX }),
       }),
     );
   });
@@ -130,6 +152,18 @@ describe('SupplyItemsRepository', () => {
     expect(prismaMock.supplyItem.update).toHaveBeenCalledWith({
       where: { id: 'item-1' },
       data: { nombre: 'Nuevo', isActive: false },
+      include: expect.any(Object),
+    });
+  });
+
+  it('update patches stockActualBodega when provided', async () => {
+    prismaMock.supplyItem.update.mockResolvedValue(item);
+
+    await repository.update(tenantId, 'item-1', { stockActualBodega: '30' });
+
+    expect(prismaMock.supplyItem.update).toHaveBeenCalledWith({
+      where: { id: 'item-1' },
+      data: { stockActualBodega: '30' },
       include: expect.any(Object),
     });
   });

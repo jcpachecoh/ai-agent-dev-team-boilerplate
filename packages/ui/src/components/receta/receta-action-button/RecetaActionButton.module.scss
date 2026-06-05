@@ -95,3 +95,15 @@
   background: receta.$receta-gold;
   color: $color-black;
 }
+
+.accent--orange.variant--soft {
+  border-color: receta.$receta-orange;
+  background: rgba(receta.$receta-orange, 0.14);
+  color: receta.$receta-orange;
+}
+
+.accent--orange.variant--solid {
+  border-color: receta.$receta-orange;
+  background: receta.$receta-orange;
+  color: $color-white;
+}

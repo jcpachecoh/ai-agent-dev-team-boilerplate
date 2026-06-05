@@ -58,6 +58,11 @@ export class UpdateSupplyItemDto {
   stockMaximoBodega?: string;
 
   @ApiPropertyOptional()
+  @IsNumberString()
+  @IsOptional()
+  stockActualBodega?: string;
+
+  @ApiPropertyOptional()
   @IsBoolean()
   @IsOptional()
   aplicaVencimiento?: boolean;

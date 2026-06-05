@@ -5,6 +5,8 @@ import {
   BarChart3,
   Box,
   ChefHat,
+  ClipboardList,
+  Factory,
   FileText,
   History,
   Key,
@@ -115,6 +117,20 @@ export const navigationItems: NavItem[] = [
     ],
   },
   {
+    id: 'produccion',
+    label: 'Producción',
+    icon: Factory,
+    accent: 'orange',
+    children: [
+      {
+        id: 'prod-orders',
+        label: 'Órdenes de producción',
+        path: '/produccion/ordenes',
+        icon: ClipboardList,
+      },
+    ],
+  },
+  {
     id: 'supervision',
     label: 'Panel de Supervisión',
     path: '/reports',
@@ -173,6 +189,8 @@ const routeLabels: Record<string, string> = {
   '/recetas/categorias': 'Categorías de Recetas',
   '/recetas/procesos': 'Control de Procesos',
   '/recetas/historial': 'Historial de Ejecuciones',
+  '/produccion/ordenes': 'Órdenes de producción',
+  '/produccion/ordenes/nueva': 'Nueva OP',
   '/reports': 'Panel de Supervisión',
   '/dispatch': 'Centro de Despacho',
   '/users': 'Usuarios',

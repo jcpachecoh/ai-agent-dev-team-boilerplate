@@ -58,6 +58,7 @@ export interface CreateSupplyItemData {
   costoPromedioPonderado?: string;
   stockMinimoBodega: string;
   stockMaximoBodega: string;
+  stockActualBodega?: string;
   aplicaVencimiento?: boolean;
   aplicaLote?: boolean;
   isActive?: boolean;
@@ -73,6 +74,7 @@ export interface UpdateSupplyItemData {
   costoPromedioPonderado?: string;
   stockMinimoBodega?: string;
   stockMaximoBodega?: string;
+  stockActualBodega?: string;
   aplicaVencimiento?: boolean;
   aplicaLote?: boolean;
   isActive?: boolean;

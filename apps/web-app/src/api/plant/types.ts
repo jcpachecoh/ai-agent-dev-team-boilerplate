@@ -17,6 +17,7 @@ export type PlantProductionRecipe = {
   finishedProductId: string;
   batchSize: string;
   batchUnit: string;
+  packageWeight: string | null;
   estimatedMinutes: number;
   version: number;
   isActive: boolean;
@@ -122,6 +123,7 @@ export type CreatePlantRecipeInput = {
   finishedProductId: string;
   batchSize: string;
   batchUnit: string;
+  packageWeight?: string | null;
   estimatedMinutes: number;
   notes?: string;
   isActive?: boolean;

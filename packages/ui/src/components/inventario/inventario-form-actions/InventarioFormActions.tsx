@@ -4,6 +4,8 @@ import React, { type JSX } from 'react';
 import type { InventarioSize, InventarioTheme } from '../shared/inventario-types';
 import styles from './InventarioFormActions.module.scss';
 
+export type InventarioFormActionsSaveAccent = 'teal' | 'orange';
+
 export interface InventarioFormActionsProps {
   onCancel?: () => void;
   onSave?: () => void;
@@ -11,6 +13,7 @@ export interface InventarioFormActionsProps {
   saveLabel?: string;
   saveDisabled?: boolean;
   saveLoading?: boolean;
+  saveAccent?: InventarioFormActionsSaveAccent;
   theme?: InventarioTheme;
   size?: InventarioSize;
   className?: string;
@@ -23,13 +26,20 @@ export function InventarioFormActions({
   saveLabel = 'Guardar',
   saveDisabled = false,
   saveLoading = false,
+  saveAccent = 'teal',
   theme = 'light',
   size = 'md',
   className,
 }: InventarioFormActionsProps): JSX.Element {
   return (
     <div
-      className={[styles.actions, styles[`theme--${theme}`], styles[`size--${size}`], className]
+      className={[
+        styles.actions,
+        styles[`theme--${theme}`],
+        styles[`size--${size}`],
+        styles[`saveAccent--${saveAccent}`],
+        className,
+      ]
         .filter(Boolean)
         .join(' ')}
     >

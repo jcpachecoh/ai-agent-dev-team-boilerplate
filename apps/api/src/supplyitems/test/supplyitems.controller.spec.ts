@@ -1,6 +1,7 @@
 import { CanActivate } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { StockUnit } from '@prisma/client';
+import { Decimal } from '@prisma/client/runtime/library';
 import { PermissionsGuard } from '../../common/guards/permissions.guard';
 import { SupplyItemsController } from '../controller/supplyitems.controller';
 import { SupplyItemsService } from '../service/supplyitems.service';
@@ -18,6 +19,7 @@ const mockSupplyItem = {
   costoPromedioPonderado: 100,
   stockMinimoBodega: 10,
   stockMaximoBodega: 50,
+  stockActualBodega: 0,
   aplicaVencimiento: false,
   aplicaLote: false,
   isActive: true,
@@ -74,6 +76,24 @@ describe('SupplyItemsController', () => {
 
       expect(result).toHaveLength(1);
       expect(result[0]?.codigoInterno).toBe('INS-001');
+    });
+  });
+
+  describe('findOne response shape', () => {
+    it('includes stockActualBodega and stockDisponible in REST DTO', async () => {
+      serviceMock.findOne.mockResolvedValue({
+        ...mockSupplyItem,
+        stockActualBodega: new Decimal('15'),
+        factorConversion: new Decimal('1'),
+        costoPromedioPonderado: new Decimal('100'),
+        stockMinimoBodega: new Decimal('10'),
+        stockMaximoBodega: new Decimal('50'),
+      });
+
+      const result = await controller.findOne('item-1', tenantId);
+
+      expect(result.stockActualBodega).toBe(15);
+      expect(result.stockDisponible).toBe(15);
     });
   });
 });

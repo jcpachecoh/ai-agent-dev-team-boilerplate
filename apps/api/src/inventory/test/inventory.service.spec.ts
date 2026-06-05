@@ -10,6 +10,7 @@ function buildItem(
     id: string;
     nombre: string;
     stockMinimoBodega: string;
+    stockActualBodega: string;
     costoPromedioPonderado: string;
     categoriaNombre: string;
     supplierName: string | null;
@@ -28,6 +29,7 @@ function buildItem(
     costoPromedioPonderado: overrides.costoPromedioPonderado ?? '1200',
     stockMinimoBodega: overrides.stockMinimoBodega ?? '20',
     stockMaximoBodega: '100',
+    stockActualBodega: overrides.stockActualBodega ?? '0',
     aplicaVencimiento: false,
     aplicaLote: false,
     isActive: true,
@@ -111,7 +113,7 @@ describe('InventoryService', () => {
   });
 
   describe('getAlerts', () => {
-    it('builds critical alerts when stock is below minimum (v1 stock is 0)', async () => {
+    it('builds critical alerts when stock is below minimum', async () => {
       repositoryMock.findActiveForAlerts.mockResolvedValue([
         buildItem({ id: 'crit', stockMinimoBodega: '20' }),
         buildItem({ id: 'crit-2', stockMinimoBodega: '4' }),
@@ -133,6 +135,16 @@ describe('InventoryService', () => {
       const alerts = await service.getAlerts(tenantId);
 
       expect(alerts[0]?.supplier).toBe('Sin proveedor principal');
+    });
+
+    it('does not alert when stockActualBodega is at or above minimum', async () => {
+      repositoryMock.findActiveForAlerts.mockResolvedValue([
+        buildItem({ id: 'ok-stock', stockMinimoBodega: '20', stockActualBodega: '25' }),
+      ]);
+
+      const alerts = await service.getAlerts(tenantId);
+
+      expect(alerts).toHaveLength(0);
     });
 
     it('omits resolved alerts', async () => {
@@ -181,14 +193,16 @@ describe('InventoryService', () => {
 
     it('builds valuation report with formatted currency labels', async () => {
       repositoryMock.findActiveForReport.mockResolvedValue([
-        buildItem({ costoPromedioPonderado: '5000' }),
-        buildItem({ id: 'item-2', costoPromedioPonderado: '3000' }),
+        buildItem({ costoPromedioPonderado: '5000', stockActualBodega: '2' }),
+        buildItem({ id: 'item-2', costoPromedioPonderado: '3000', stockActualBodega: '4' }),
       ]);
 
       const report = await service.getReport(tenantId, 'valuation');
 
       expect(report.summary[1]?.label).toBe('Valor catálogo (CPP)');
       expect(report.distribution[0]?.value).toContain('$');
+      // 5000*2 + 3000*4 = 22000 aggregated in rows
+      expect(report.rows.reduce((sum, r) => sum + r.quantity, 0)).toBe(22000);
     });
 
     it('returns zero percent when there are no items', async () => {

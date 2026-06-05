@@ -22,7 +22,7 @@ export class InventoryService implements IInventoryService {
 
     const enriched = items.map((item) => ({
       item,
-      stock: 0,
+      stock: decimalToNumber(item.stockActualBodega),
       cpp: decimalToNumber(item.costoPromedioPonderado),
       min: decimalToNumber(item.stockMinimoBodega),
     }));
@@ -71,7 +71,7 @@ export class InventoryService implements IInventoryService {
     const alerts: InventoryAlertDto[] = [];
 
     for (const item of items) {
-      const currentStock = 0;
+      const currentStock = decimalToNumber(item.stockActualBodega);
       const threshold = decimalToNumber(item.stockMinimoBodega);
       if (threshold <= 0 || currentStock >= threshold) continue;
 
@@ -116,9 +116,10 @@ export class InventoryService implements IInventoryService {
       const key = item.categoria.nombre;
       const current = groups.get(key) ?? { count: 0, value: 0 };
       const cpp = decimalToNumber(item.costoPromedioPonderado);
+      const stock = decimalToNumber(item.stockActualBodega);
       groups.set(key, {
         count: current.count + 1,
-        value: current.value + (type === 'valuation' ? cpp : 1),
+        value: current.value + (type === 'valuation' ? cpp * stock : 1),
       });
     }
 

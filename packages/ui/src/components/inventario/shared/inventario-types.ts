@@ -34,7 +34,7 @@ export interface InventarioTableColumn {
   width?: string;
 }
 
-export type InventarioPrimaryButtonVariant = 'primary' | 'success' | 'danger' | 'ghost';
+export type InventarioPrimaryButtonVariant = 'primary' | 'success' | 'danger' | 'ghost' | 'orange';
 
 export type InventarioIconButtonVariant = 'edit' | 'delete' | 'view' | 'order' | 'resolve';
 

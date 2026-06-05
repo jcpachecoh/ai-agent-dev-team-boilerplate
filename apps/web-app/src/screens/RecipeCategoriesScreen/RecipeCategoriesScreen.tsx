@@ -7,7 +7,7 @@ import {
   type RecetaTableColumn,
   toast,
 } from '@restopsiq/ui';
-import { useMemo, useState, type JSX } from 'react';
+import { useEffect, useMemo, useState, type JSX } from 'react';
 
 import type { PlantRecipeCategory } from '@/api/plant';
 import { RecipeCategoryFormModal } from '@/components/recetas/RecipeCategoryFormModal';
@@ -20,6 +20,7 @@ import {
 } from '@/features/recetas/hooks';
 import { formatCategoryCode } from '@/features/recetas/mappers/recipes.mapper';
 import type { RecipeCategoryFormValues, RecetaStatus } from '@/features/recetas/types';
+import { useUiTheme } from '@/hooks/useUiTheme';
 import { getErrorMessage } from '@/lib/graphql-client';
 
 import listStyles from '../RecipesManagementScreen/RecipesManagementScreen.module.scss';
@@ -58,6 +59,7 @@ function filterCategories(
 }
 
 export function RecipeCategoriesScreen(): JSX.Element {
+  const theme = useUiTheme();
   const categoriesQuery = useRecipeCategories('all');
   const createMutation = useCreateRecipeCategory();
   const updateMutation = useUpdateRecipeCategory();
@@ -89,6 +91,29 @@ export function RecipeCategoriesScreen(): JSX.Element {
     : null;
 
   const saving = createMutation.isPending || updateMutation.isPending || deleteMutation.isPending;
+
+  // #region agent log
+  useEffect(() => {
+    const rowEl = document.querySelector('[class*="RecipeCategoryTableRow"]');
+    fetch('http://127.0.0.1:7828/ingest/355d2ecf-3818-453c-8510-c7b3fe83712b', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'd2ab57' },
+      body: JSON.stringify({
+        sessionId: 'd2ab57',
+        runId: 'post-fix-categorias',
+        hypothesisId: 'H1',
+        location: 'RecipeCategoriesScreen.tsx:theme-probe',
+        message: 'Recipe categories theme probe',
+        data: {
+          uiTheme: theme,
+          dataTheme: document.documentElement.dataset.theme ?? null,
+          rowBackground: rowEl ? getComputedStyle(rowEl).backgroundColor : null,
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+  }, [theme]);
+  // #endregion
 
   const openCreate = () => {
     setModalMode('create');
@@ -163,21 +188,21 @@ export function RecipeCategoriesScreen(): JSX.Element {
 
         <section className={[listStyles.metricsRow, listStyles.metricsRowThree].join(' ')}>
           <RecetaMetricCard
-            theme="dark"
+            theme={theme}
             variant="type-1"
             title="Total categorías"
             value={totals.total}
             size="xl"
           />
           <RecetaMetricCard
-            theme="dark"
+            theme={theme}
             variant="type-2"
             title="Activas"
             value={totals.active}
             size="xl"
           />
           <RecetaMetricCard
-            theme="dark"
+            theme={theme}
             variant="type-3"
             title="Inactivas"
             value={totals.inactive}
@@ -187,14 +212,14 @@ export function RecipeCategoriesScreen(): JSX.Element {
 
         <section className={[listStyles.toolbarRow, listStyles.toolbarRowList].join(' ')}>
           <RecetaSearch
-            theme="dark"
+            theme={theme}
             size="md"
             value={search}
             onChange={setSearch}
             className={[listStyles.searchGrow, listStyles.searchGrowList].join(' ')}
           />
           <RecetaFilterSelect
-            theme="dark"
+            theme={theme}
             size="md"
             className={[listStyles.filterSelect, listStyles.filterSelectList].join(' ')}
             value={statusFilter}
@@ -202,7 +227,7 @@ export function RecipeCategoriesScreen(): JSX.Element {
             onChange={(value) => setStatusFilter(value as 'all' | RecetaStatus)}
           />
           <RecetaActionButton
-            theme="dark"
+            theme={theme}
             size="md"
             label="Nueva Categoría"
             className={[listStyles.toolbarAction, listStyles.toolbarActionList].join(' ')}
@@ -212,7 +237,7 @@ export function RecipeCategoriesScreen(): JSX.Element {
 
         <section className={[listStyles.tableWrap, listStyles.tableWrapList].join(' ')}>
           <RecetaTableHeader
-            theme="dark"
+            theme={theme}
             size="md"
             className={[listStyles.tableHead, listStyles.listTableHead].join(' ')}
             columns={categoryListTableColumns}
@@ -240,6 +265,7 @@ export function RecipeCategoriesScreen(): JSX.Element {
                   }}
                 >
                   <RecipeCategoryTableRow
+                    theme={theme}
                     code={formatCategoryCode(category, index)}
                     nombre={category.nombre}
                     descripcion={category.descripcion ?? ''}
@@ -259,6 +285,7 @@ export function RecipeCategoriesScreen(): JSX.Element {
       <RecipeCategoryFormModal
         open={modalOpen}
         mode={modalMode}
+        theme={theme}
         category={editing}
         saving={saving}
         onClose={() => setModalOpen(false)}

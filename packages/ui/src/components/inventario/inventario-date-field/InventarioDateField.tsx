@@ -1,3 +1,5 @@
+import { Calendar } from 'lucide-react';
+
 import type { InventarioSize, InventarioTheme } from '../shared/inventario-types';
 import styles from './InventarioDateField.module.scss';
 
@@ -34,6 +36,7 @@ export function InventarioDateField({
         aria-label={ariaLabel}
         onChange={(event) => onChange?.(event.target.value)}
       />
+      <Calendar className={styles.calendarIcon} aria-hidden strokeWidth={1.75} />
     </div>
   );
 }

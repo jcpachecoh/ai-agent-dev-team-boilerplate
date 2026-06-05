@@ -9,6 +9,10 @@ import type {
   ProductionOrderStatus,
   ProductionPhase,
   ProductionPriority,
+  ProductionByproduct,
+  ProductionOrderMaterial,
+  ProductionQualityCheck,
+  ProductionQualityCheckType,
   ProductionRecipe,
   ProductionShift,
   StockUnit,
@@ -70,6 +74,7 @@ export interface CreateRecipeWithPhasesInput {
   finishedProductId: string;
   batchSize: Decimal;
   batchUnit: StockUnit;
+  packageWeight?: Decimal | null;
   estimatedMinutes: number;
   notes?: string | null;
   isActive?: boolean;
@@ -82,6 +87,7 @@ export interface UpdateRecipeInput {
   finishedProductId?: string;
   batchSize?: Decimal;
   batchUnit?: StockUnit;
+  packageWeight?: Decimal | null;
   estimatedMinutes?: number;
   notes?: string | null;
   isActive?: boolean;
@@ -96,6 +102,7 @@ export interface CreateRecipeWithPhasesTxInput {
     finishedProductId: string;
     batchSize: Decimal;
     batchUnit: StockUnit;
+    packageWeight?: Decimal | null;
     estimatedMinutes: number;
     version: number;
     notes?: string | null;
@@ -135,6 +142,14 @@ export interface RecipeDetailResponse extends ProductionRecipe {
   categoryName?: string | null;
   phases: Array<ProductionPhase & { inputs: PhaseInput[] }>;
   totalStandardMinutes: number;
+}
+
+export interface OrderMaterialSnapshotLine {
+  supplyItemId: string;
+  materialName: string;
+  requiredQuantity: Decimal;
+  unit: StockUnit;
+  sortOrder: number;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -295,9 +310,12 @@ export type ActiveOperatorSessionDetail = {
 };
 
 export type OrderDetail = ProductionOrder & {
-  recipe: Pick<ProductionRecipe, 'id' | 'name'>;
+  recipe: Pick<ProductionRecipe, 'id' | 'name' | 'packageWeight'>;
   executions: OrderExecutionDetail[];
   activeSessions: ActiveOperatorSessionDetail[];
+  materials: ProductionOrderMaterial[];
+  byproducts: ProductionByproduct[];
+  qualityChecks: ProductionQualityCheck[];
 };
 
 export interface OrderDetailResponse {
@@ -320,8 +338,40 @@ export interface OrderDetailResponse {
   actualEndAt: Date | null;
   supervisorId: string | null;
   notes: string | null;
+  lotNumber: string | null;
+  productionDate: Date | null;
+  deliveryDate: Date | null;
+  packageWeight: string | null;
+  batchWeight: string | null;
   createdAt: Date;
   updatedAt: Date;
+  materials: Array<{
+    id: string;
+    supplyItemId?: string | null;
+    materialName: string;
+    lotNumber: string | null;
+    requiredQuantity: string;
+    consumedQuantity: string | null;
+    unit: StockUnit;
+    sortOrder?: number;
+  }>;
+  byproducts: Array<{
+    id: string;
+    itemName: string;
+    unit: StockUnit;
+    actualQuantity: string | null;
+    lotNumber: string | null;
+    expirationDate: Date | null;
+  }>;
+  qualityChecks: Array<{
+    id: string;
+    checkType: ProductionQualityCheckType;
+    temperature: string | null;
+    color: string | null;
+    smell: string | null;
+    texture: string | null;
+    notes: string | null;
+  }>;
   executions: Array<{
     id: string;
     phaseId: string;
@@ -335,7 +385,12 @@ export interface OrderDetailResponse {
     producedQuantity: string | null;
     qaApprovedAt: Date | null;
     qaApprovedBy: string | null;
+    startedAt: Date | null;
     completedAt: Date | null;
+    operatorCount: number | null;
+    deliveredQuantity: string | null;
+    responsibleUserId: string | null;
+    responsibleName: string | null;
     notes: string | null;
   }>;
   activeOperators: Array<{
@@ -512,6 +567,11 @@ export interface IPlantRepository {
   ): Promise<OrderWithExecutions>;
   findOrders(tenantId: string, filters: ListOrdersFilters): Promise<ProductionOrder[]>;
   findOrderDetailById(tenantId: string, id: string): Promise<OrderDetail | null>;
+  replaceOrderMaterialsTx(
+    tenantId: string,
+    orderId: string,
+    materials: OrderMaterialSnapshotLine[],
+  ): Promise<void>;
   updateOrder(tenantId: string, id: string, data: UpdateOrderData): Promise<ProductionOrder>;
   findExecutionById(tenantId: string, id: string): Promise<PhaseExecution | null>;
   updateExecution(tenantId: string, id: string, data: UpdateExecutionData): Promise<PhaseExecution>;

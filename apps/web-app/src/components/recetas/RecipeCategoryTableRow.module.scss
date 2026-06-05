@@ -10,9 +10,9 @@
   width: 100%;
   min-height: 72px;
   padding: 0 1.25rem;
-  border-bottom: 1px solid $color-recipes-divider;
-  background: $color-recipes-surface;
-  color: $color-operator-text;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg-surface);
+  color: var(--color-text-primary);
   box-sizing: border-box;
   font-family: inherit;
 }
@@ -25,7 +25,7 @@
   white-space: nowrap;
   font-family: $font-family-mono;
   font-size: 0.75rem;
-  color: rgba($color-operator-text, 0.55);
+  color: var(--color-text-muted);
   font-variant-numeric: tabular-nums;
 }
 

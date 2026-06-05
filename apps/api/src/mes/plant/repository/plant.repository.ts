@@ -19,6 +19,7 @@ import type {
   IPlantRepository,
   ListOrdersFilters,
   OrderDetail,
+  OrderMaterialSnapshotLine,
   OrderWithExecutions,
   RecipeWithPhasesAndInputs,
   ReorderPhaseItem,
@@ -146,6 +147,7 @@ export class PlantRepository implements IPlantRepository {
           finishedProductId: input.recipe.finishedProductId,
           batchSize: input.recipe.batchSize,
           batchUnit: input.recipe.batchUnit,
+          packageWeight: input.recipe.packageWeight ?? null,
           estimatedMinutes: input.recipe.estimatedMinutes,
           version: input.recipe.version,
           notes: input.recipe.notes ?? null,
@@ -210,6 +212,7 @@ export class PlantRepository implements IPlantRepository {
       finishedProductId: string;
       batchSize: Decimal;
       batchUnit: StockUnit;
+      packageWeight?: Decimal | null;
       estimatedMinutes: number;
       version: number;
       notes?: string | null;
@@ -238,6 +241,7 @@ export class PlantRepository implements IPlantRepository {
           finishedProductId: newRecipeData.finishedProductId,
           batchSize: newRecipeData.batchSize,
           batchUnit: newRecipeData.batchUnit,
+          packageWeight: newRecipeData.packageWeight ?? source.packageWeight,
           estimatedMinutes: newRecipeData.estimatedMinutes,
           version: newRecipeData.version,
           notes: newRecipeData.notes ?? null,
@@ -503,7 +507,7 @@ export class PlantRepository implements IPlantRepository {
     const order = await this.prisma.productionOrder.findFirst({
       where: { id, tenantId },
       include: {
-        recipe: { select: { id: true, name: true } },
+        recipe: { select: { id: true, name: true, packageWeight: true } },
         executions: {
           orderBy: { phase: { order: 'asc' } },
           include: {
@@ -518,6 +522,9 @@ export class PlantRepository implements IPlantRepository {
             },
           },
         },
+        materials: { orderBy: { sortOrder: 'asc' } },
+        byproducts: true,
+        qualityChecks: true,
       },
     });
 
@@ -545,7 +552,38 @@ export class PlantRepository implements IPlantRepository {
       recipe: order.recipe,
       executions: order.executions,
       activeSessions,
+      materials: order.materials,
+      byproducts: order.byproducts,
+      qualityChecks: order.qualityChecks,
     };
+  }
+
+  async replaceOrderMaterialsTx(
+    tenantId: string,
+    orderId: string,
+    materials: OrderMaterialSnapshotLine[],
+  ): Promise<void> {
+    await this.prisma.$transaction(async (tx) => {
+      await tx.productionOrderMaterial.deleteMany({
+        where: { tenantId, orderId },
+      });
+
+      if (materials.length === 0) {
+        return;
+      }
+
+      await tx.productionOrderMaterial.createMany({
+        data: materials.map((material) => ({
+          tenantId,
+          orderId,
+          supplyItemId: material.supplyItemId,
+          materialName: material.materialName,
+          requiredQuantity: material.requiredQuantity,
+          unit: material.unit,
+          sortOrder: material.sortOrder,
+        })),
+      });
+    });
   }
 
   async updateOrder(tenantId: string, id: string, data: UpdateOrderData): Promise<ProductionOrder> {

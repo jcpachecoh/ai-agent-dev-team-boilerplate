@@ -91,6 +91,7 @@ const repoMock = {
   createOrderWithExecutionsTx: jest.fn(),
   findOrders: jest.fn(),
   findOrderDetailById: jest.fn(),
+  replaceOrderMaterialsTx: jest.fn(),
   updateOrder: jest.fn(),
   updateExecution: jest.fn(),
 };
@@ -910,9 +911,17 @@ describe('PlantService', () => {
       actualEndAt: null,
       supervisorId: null,
       notes: null,
+      lotNumber: null,
+      productionDate: null,
+      deliveryDate: null,
+      packageWeight: null,
+      batchWeight: null,
       createdAt: new Date(),
       updatedAt: new Date(),
-      recipe: { id: 'recipe-1', name: 'Pan integral' },
+      recipe: { id: 'recipe-1', name: 'Pan integral', packageWeight: null },
+      materials: [],
+      byproducts: [],
+      qualityChecks: [],
       executions: executionStatuses.map((executionStatus, index) => ({
         id: `exec-${index + 1}`,
         tenantId,
@@ -925,7 +934,11 @@ describe('PlantService', () => {
         producedQuantity: null,
         qaApprovedAt: null,
         qaApprovedBy: null,
+        startedAt: null,
         completedAt: null,
+        operatorCount: null,
+        deliveredQuantity: null,
+        responsibleUserId: null,
         notes: null,
         createdAt: new Date(),
         phase: {
@@ -995,12 +1008,19 @@ describe('PlantService', () => {
         PhaseExecutionStatus.PENDING,
       ]);
 
+      repoMock.findRecipeDetailById.mockResolvedValue(recipeWithPhases);
+      repoMock.replaceOrderMaterialsTx.mockResolvedValue(undefined);
       repoMock.findOrderDetailById
         .mockResolvedValueOnce(draftDetail)
         .mockResolvedValueOnce(plannedDetail);
 
       await service.planOrder(tenantId, 'order-1');
 
+      expect(repoMock.replaceOrderMaterialsTx).toHaveBeenCalledWith(
+        tenantId,
+        'order-1',
+        expect.any(Array),
+      );
       expect(repoMock.updateOrder).toHaveBeenCalledWith(tenantId, 'order-1', {
         status: ProductionOrderStatus.PLANNED,
       });
@@ -1224,6 +1244,129 @@ describe('PlantService', () => {
       await expect(service.findOrderById(tenantId, 'missing')).rejects.toThrow(NotFoundException);
     });
 
+    it('findOrderById backfills material snapshot for planned orders without materials', async () => {
+      const plannedWithoutMaterials = buildOrderDetail(ProductionOrderStatus.PLANNED, [
+        PhaseExecutionStatus.READY,
+        PhaseExecutionStatus.PENDING,
+      ]);
+      const plannedWithMaterials = {
+        ...plannedWithoutMaterials,
+        materials: [
+          {
+            id: 'mat-1',
+            tenantId,
+            orderId: 'order-1',
+            supplyItemId: 'supply-1',
+            materialName: 'Harina',
+            lotNumber: null,
+            requiredQuantity: new Decimal('4'),
+            consumedQuantity: null,
+            unit: StockUnit.KILOGRAMS,
+            sortOrder: 0,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+        ],
+      };
+      const recipeWithInputs = {
+        ...recipeWithPhases,
+        phases: [
+          {
+            ...recipeWithPhases.phases[0],
+            inputs: [
+              {
+                supplyItemId: 'supply-1',
+                quantityPerBatch: new Decimal('2'),
+                unit: StockUnit.KILOGRAMS,
+              },
+            ],
+          },
+          recipeWithPhases.phases[1],
+        ],
+      };
+
+      repoMock.findOrderDetailById
+        .mockResolvedValueOnce(plannedWithoutMaterials)
+        .mockResolvedValueOnce(plannedWithMaterials);
+      repoMock.findRecipeDetailById.mockResolvedValue(recipeWithInputs);
+      repoMock.replaceOrderMaterialsTx.mockResolvedValue(undefined);
+      supplyItemsServiceMock.findOne.mockResolvedValue({ nombre: 'Harina' });
+
+      const result = await service.findOrderById(tenantId, 'order-1');
+
+      expect(repoMock.replaceOrderMaterialsTx).toHaveBeenCalledWith(
+        tenantId,
+        'order-1',
+        expect.arrayContaining([
+          expect.objectContaining({
+            supplyItemId: 'supply-1',
+            materialName: 'Harina',
+          }),
+        ]),
+      );
+      expect(result.materials).toHaveLength(1);
+      expect(result.materials[0]?.materialName).toBe('Harina');
+    });
+
+    it('findOrderById aggregates duplicate supply items and falls back to supplyItemId when lookup fails', async () => {
+      const plannedWithoutMaterials = buildOrderDetail(ProductionOrderStatus.IN_PROCESS, [
+        PhaseExecutionStatus.IN_PROCESS,
+        PhaseExecutionStatus.PENDING,
+      ]);
+      const plannedWithMaterials = {
+        ...plannedWithoutMaterials,
+        materials: [
+          {
+            id: 'mat-1',
+            tenantId,
+            orderId: 'order-1',
+            supplyItemId: 'supply-1',
+            materialName: 'supply-1',
+            lotNumber: null,
+            requiredQuantity: new Decimal('8'),
+            consumedQuantity: null,
+            unit: StockUnit.KILOGRAMS,
+            sortOrder: 0,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+        ],
+      };
+      const recipeWithDuplicateInputs = {
+        ...recipeWithPhases,
+        phases: recipeWithPhases.phases.map((phase) => ({
+          ...phase,
+          inputs: [
+            {
+              supplyItemId: 'supply-1',
+              quantityPerBatch: new Decimal('2'),
+              unit: StockUnit.KILOGRAMS,
+            },
+          ],
+        })),
+      };
+
+      repoMock.findOrderDetailById
+        .mockResolvedValueOnce(plannedWithoutMaterials)
+        .mockResolvedValueOnce(plannedWithMaterials);
+      repoMock.findRecipeDetailById.mockResolvedValue(recipeWithDuplicateInputs);
+      repoMock.replaceOrderMaterialsTx.mockResolvedValue(undefined);
+      supplyItemsServiceMock.findOne.mockRejectedValue(
+        new NotFoundException('missing supply item'),
+      );
+
+      const result = await service.findOrderById(tenantId, 'order-1');
+
+      expect(repoMock.replaceOrderMaterialsTx).toHaveBeenCalledWith(tenantId, 'order-1', [
+        expect.objectContaining({
+          supplyItemId: 'supply-1',
+          materialName: 'supply-1',
+          requiredQuantity: expect.objectContaining({ toString: expect.any(Function) }),
+        }),
+      ]);
+      expect(result.materials[0]?.materialName).toBe('supply-1');
+    });
+
     it('createOrder throws NotFoundException when recipe is missing', async () => {
       repoMock.findRecipeDetailById.mockResolvedValue(null);
 
@@ -1289,9 +1432,9 @@ describe('PlantService', () => {
       ).rejects.toThrow(BadRequestException);
     });
 
-    it('createOrder increments order number sequence for current year', async () => {
+    it('createOrder increments order number sequence from last OP', async () => {
       repoMock.findRecipeDetailById.mockResolvedValue(recipeWithPhases);
-      repoMock.findOrders.mockResolvedValue([{ number: `${new Date().getFullYear()}-7` }]);
+      repoMock.findOrders.mockResolvedValue([{ number: '0133' }, { number: '2026-0120' }]);
       repoMock.createOrderWithExecutionsTx.mockResolvedValue({
         order: { id: 'order-1' },
         executions: [
@@ -1316,7 +1459,7 @@ describe('PlantService', () => {
 
       expect(repoMock.createOrderWithExecutionsTx).toHaveBeenCalledWith(
         expect.objectContaining({
-          number: `${new Date().getFullYear()}-8`,
+          number: '0134',
         }),
       );
     });

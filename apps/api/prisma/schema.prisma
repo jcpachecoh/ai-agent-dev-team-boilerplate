@@ -167,6 +167,7 @@ enum StockUnit {
   KILOGRAMS
   ML
   LITERS
+  BOX
 }
 
 model SupplyItem {
@@ -181,6 +182,7 @@ model SupplyItem {
   costoPromedioPonderado Decimal
   stockMinimoBodega      Decimal
   stockMaximoBodega      Decimal
+  stockActualBodega      Decimal   @default(0)
   aplicaVencimiento      Boolean   @default(false)
   aplicaLote             Boolean   @default(false)
   isActive               Boolean   @default(true)
@@ -190,6 +192,7 @@ model SupplyItem {
   categoria        SupplyCategory           @relation(fields: [categoriaId], references: [id])
   supplierProducts SupplierProduct[]
   priceHistory     SupplyItemPriceHistory[]
+  orderMaterials   ProductionOrderMaterial[]
 
   @@unique([tenantId, codigoInterno])
   @@index([tenantId, categoriaId])
@@ -422,9 +425,10 @@ model OperationalUser {
   updatedAt     DateTime        @updatedAt
 
   user              User?                @relation(fields: [userId], references: [id])
-  operatorSessions  OperatorSession[]
-  reportedIncidents ProductionIncident[] @relation("IncidentReporter")
-  resolvedIncidents ProductionIncident[] @relation("IncidentResolver")
+  operatorSessions       OperatorSession[]
+  reportedIncidents      ProductionIncident[] @relation("IncidentReporter")
+  resolvedIncidents      ProductionIncident[] @relation("IncidentResolver")
+  responsibleExecutions  PhaseExecution[]     @relation("ExecutionResponsible")
 
   @@unique([tenantId, cedulaHash])
   @@index([tenantId])
@@ -480,6 +484,7 @@ model ProductionRecipe {
   finishedProductId String
   batchSize         Decimal   @db.Decimal(10, 3)
   batchUnit         StockUnit
+  packageWeight     Decimal?  @db.Decimal(10, 3)
   estimatedMinutes  Int
   version           Int       @default(1)
   isActive          Boolean   @default(true)
@@ -487,7 +492,7 @@ model ProductionRecipe {
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
-  category RecipeCategory? @relation(fields: [categoryId], references: [id])
+  category RecipeCategory?   @relation(fields: [categoryId], references: [id])
   phases   ProductionPhase[]
   orders   ProductionOrder[]
 
@@ -603,6 +608,14 @@ enum IncidentType {
   OTHER
 }
 
+enum ProductionQualityCheckType {
+  LIBERACION_MP
+  CORRECCION
+  ACCION_CORRECTIVA
+  ENTREGA
+  RECIBE
+}
+
 model ProductionOrder {
   id               String                @id @default(cuid())
   tenantId         String
@@ -622,13 +635,21 @@ model ProductionOrder {
   actualEndAt      DateTime?
   supervisorId     String?
   notes            String?
+  lotNumber        String?
+  productionDate   DateTime?
+  deliveryDate     DateTime?
+  packageWeight    Decimal?              @db.Decimal(10, 3)
+  batchWeight      Decimal?              @db.Decimal(10, 3)
   createdAt        DateTime              @default(now())
   updatedAt        DateTime              @updatedAt
 
-  recipe          ProductionRecipe     @relation(fields: [recipeId], references: [id])
+  recipe          ProductionRecipe           @relation(fields: [recipeId], references: [id])
   executions      PhaseExecution[]
   alarmDispatches PlantAlarmDispatch[]
   incidents       ProductionIncident[]
+  materials       ProductionOrderMaterial[]
+  byproducts      ProductionByproduct[]
+  qualityChecks   ProductionQualityCheck[]
 
   @@index([tenantId, status])
   @@index([tenantId, plannedStartAt])
@@ -648,14 +669,18 @@ model PhaseExecution {
   producedQuantity Decimal?             @db.Decimal(10, 3)
   qaApprovedAt     DateTime?
   qaApprovedBy     String?
-  startedAt        DateTime?
-  completedAt      DateTime?
-  notes            String?
-  createdAt        DateTime             @default(now())
+  startedAt           DateTime?
+  completedAt         DateTime?
+  notes               String?
+  operatorCount       Int?
+  deliveredQuantity   Decimal?             @db.Decimal(10, 3)
+  responsibleUserId   String?
+  createdAt           DateTime             @default(now())
 
   order           ProductionOrder      @relation(fields: [orderId], references: [id])
   phase           ProductionPhase      @relation(fields: [phaseId], references: [id])
   workStation     WorkStation          @relation(fields: [workStationId], references: [id])
+  responsibleUser OperationalUser?     @relation("ExecutionResponsible", fields: [responsibleUserId], references: [id])
   sessions        OperatorSession[]
   alarmDispatches PlantAlarmDispatch[]
   incidents       ProductionIncident[]
@@ -663,7 +688,65 @@ model PhaseExecution {
   @@index([orderId])
   @@index([tenantId, workStationId, status])
   @@index([tenantId, status, startedAt])
+  @@index([responsibleUserId])
   @@map("phase_executions")
+}
+
+model ProductionOrderMaterial {
+  id               String    @id @default(cuid())
+  tenantId         String
+  orderId          String
+  supplyItemId     String?
+  materialName     String
+  lotNumber        String?
+  requiredQuantity Decimal   @db.Decimal(10, 3)
+  consumedQuantity Decimal?  @db.Decimal(10, 3)
+  unit             StockUnit
+  sortOrder        Int       @default(0)
+
+  order      ProductionOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  supplyItem SupplyItem?     @relation(fields: [supplyItemId], references: [id])
+
+  @@unique([orderId, supplyItemId])
+  @@index([orderId])
+  @@index([tenantId, orderId])
+  @@map("production_order_materials")
+}
+
+model ProductionByproduct {
+  id             String    @id @default(cuid())
+  tenantId       String
+  orderId        String
+  itemName       String
+  unit           StockUnit
+  actualQuantity Decimal?  @db.Decimal(10, 3)
+  lotNumber      String?
+  expirationDate DateTime?
+
+  order ProductionOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([tenantId, orderId])
+  @@map("production_byproducts")
+}
+
+model ProductionQualityCheck {
+  id          String                     @id @default(cuid())
+  tenantId    String
+  orderId     String
+  checkType   ProductionQualityCheckType
+  temperature String?
+  color       String?
+  smell       String?
+  texture     String?
+  notes       String?
+
+  order ProductionOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@unique([orderId, checkType])
+  @@index([orderId])
+  @@index([tenantId, orderId])
+  @@map("production_quality_checks")
 }
 
 model PlantAlarmDispatch {

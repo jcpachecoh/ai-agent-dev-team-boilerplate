@@ -38,6 +38,7 @@ export interface InventoryProductFormValues {
   costPrice: string;
   minStock: string;
   maxStock: string;
+  currentStock: string;
   unidadBase: StockUnit;
   factorConversion: string;
   aplicaVencimiento: boolean;

@@ -20,7 +20,7 @@ export const UpdateSupplierSchema = CreateSupplierSchema.partial().extend({
   isActive: z.boolean().optional(),
 });
 
-const StockUnitSchema = z.enum(['UNIT', 'GRAMS', 'KILOGRAMS', 'ML', 'LITERS']);
+const StockUnitSchema = z.enum(['UNIT', 'GRAMS', 'KILOGRAMS', 'ML', 'LITERS', 'BOX']);
 
 export const CreateSupplierProductSchema = z.object({
   supplierId: z.string().min(1),

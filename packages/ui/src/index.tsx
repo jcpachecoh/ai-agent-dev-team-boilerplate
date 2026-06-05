@@ -119,6 +119,7 @@ export * from './components/inventario/inventario-bar-row';
 export * from './components/inventario/inventario-context-badge';
 export * from './components/inventario/inventario-dashboard-preview';
 export * from './components/inventario/inventario-date-field';
+export * from './components/inventario/inventario-datetime-field';
 export * from './components/inventario/inventario-distribution-bar';
 export * from './components/inventario/inventario-export-actions';
 export * from './components/inventario/inventario-filter-toolbar';

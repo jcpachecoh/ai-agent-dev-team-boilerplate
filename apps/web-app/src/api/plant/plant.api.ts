@@ -84,6 +84,7 @@ export async function updatePlantRecipe(
       | 'finishedProductId'
       | 'batchSize'
       | 'batchUnit'
+      | 'packageWeight'
       | 'estimatedMinutes'
       | 'notes'
       | 'isActive'

@@ -110,3 +110,11 @@
     color: var(--metric-accent);
   }
 }
+
+.variant--type-4 {
+  --metric-accent: #{receta.$receta-orange};
+
+  .value {
+    color: var(--metric-accent);
+  }
+}

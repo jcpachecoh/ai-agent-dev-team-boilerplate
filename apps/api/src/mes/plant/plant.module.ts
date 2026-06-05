@@ -33,6 +33,7 @@ import { IncidentService } from './service/incident.service';
 import { PhaseChainService } from './service/phase-chain.service';
 import { PlantEventsService } from './service/plant-events.service';
 import { PlantService } from './service/plant.service';
+import { ProductionOrderPdfService } from './service/production-order-pdf.service';
 import { AlarmNotificationWorker } from './worker/alarm-notification.worker';
 
 function createPlantAlarmEventsPort(plantEventsService: PlantEventsService): IPlantAlarmEvents {
@@ -64,6 +65,7 @@ function createPlantAlarmEventsPort(plantEventsService: PlantEventsService): IPl
     AlarmRepository,
     IncidentRepository,
     PlantService,
+    ProductionOrderPdfService,
     IncidentService,
     AlarmEvaluatorService,
     AlarmService,

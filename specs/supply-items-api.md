@@ -2,7 +2,20 @@
 
 ## Overview
 
-This specification defines the RESTful API for managing Supply Items, including CRUD operations and visibility into associated suppliers.
+This specification defines the RESTful API for managing **Supply Items** (`SupplyItem` / table `supply_items`), the backend implementation of **Insumo / materia prima** in the supply catalog epic. Menu products (`MenuProduct`) and recipe BOM are **out of scope**.
+
+**SupplyCategory** remains a tenant-scoped, flexible catalog (not a fixed enum). **Frontend** (`apps/web-app`) is not part of this backend closure track.
+
+### Stock and units (MVP)
+
+| Field                                     | Role                                                                                               |
+| ----------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `unidadBase`                              | `StockUnit` including `BOX` (English enum values)                                                  |
+| `stockMinimoBodega` / `stockMaximoBodega` | Alert thresholds (unchanged names)                                                                 |
+| `stockActualBodega`                       | MVP **current warehouse stock**; `Decimal`, default `0`; optional on create/update; must be `>= 0` |
+| `stockDisponible` (response)              | Legacy alias of `stockActualBodega` for clients                                                    |
+
+**Inventory** (`/api/inventory/*`) dashboard, alerts, and valuation reports read `stockActualBodega` (not a hardcoded zero). Automatic stock from **inventory movements** and **CPP recalculation on receipt** remain deferred.
 
 ## API Endpoints
 
@@ -26,11 +39,12 @@ This specification defines the RESTful API for managing Supply Items, including 
 - `codigoInterno`: String (Unique per tenant)
 - `categoriaId`: String (UUID/CUID of a valid category)
 - `descripcion`: String (Optional)
-- `unidadBase`: StockUnit (Enum)
+- `unidadBase`: StockUnit (Enum: `UNIT`, `GRAMS`, `KILOGRAMS`, `ML`, `LITERS`, `BOX`)
 - `factorConversion`: Numeric String (Decimal)
 - `costoPromedioPonderado`: Numeric String (Decimal)
 - `stockMinimoBodega`: Numeric String (Decimal)
 - `stockMaximoBodega`: Numeric String (Decimal)
+- `stockActualBodega`: Numeric String (Decimal, optional on create; defaults to `0`)
 - `aplicaVencimiento`: Boolean
 - `aplicaLote`: Boolean
 - `isActive`: Boolean
@@ -46,6 +60,7 @@ This specification defines the RESTful API for managing Supply Items, including 
 - **Decimal Precision**: All fields involving measurements or money (`factorConversion`, `costoPromedioPonderado`, thresholds) must use `Decimal`. DTOs should accept them as numeric strings.
 - **Uniqueness**: `codigoInterno` must be unique within the same `tenantId`.
 - **Validation**: `categoriaId` must belong to the same `tenantId` as the supply item.
+- **stockActualBodega**: Writable on create/update when provided; omitted on create → `0`. No cross-check against min/max in MVP.
 
 ## Architecture
 

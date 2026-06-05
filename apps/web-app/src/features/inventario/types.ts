@@ -66,6 +66,7 @@ export interface CreateSupplyItemInput {
   costoPromedioPonderado?: string;
   stockMinimoBodega: string;
   stockMaximoBodega: string;
+  stockActualBodega?: string;
   aplicaVencimiento?: boolean;
   aplicaLote?: boolean;
   isActive?: boolean;

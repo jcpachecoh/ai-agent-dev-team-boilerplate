@@ -42,6 +42,9 @@ export class SupplyItemsService implements ISupplyitemsService {
     await this.assertCategory(tenantId, data.categoriaId);
     await this.assertCodigoUnique(tenantId, data.codigoInterno);
     this.assertStockRange(data.stockMinimoBodega, data.stockMaximoBodega);
+    if (data.stockActualBodega !== undefined) {
+      this.assertNonNegativeStockActual(data.stockActualBodega);
+    }
 
     try {
       return await this.supplyItemsRepository.create(tenantId, data);
@@ -69,6 +72,9 @@ export class SupplyItemsService implements ISupplyitemsService {
     const min = data.stockMinimoBodega ?? String(existing.stockMinimoBodega);
     const max = data.stockMaximoBodega ?? String(existing.stockMaximoBodega);
     this.assertStockRange(min, max);
+    if (data.stockActualBodega !== undefined) {
+      this.assertNonNegativeStockActual(data.stockActualBodega);
+    }
 
     try {
       return await this.supplyItemsRepository.update(tenantId, id, data);
@@ -117,6 +123,12 @@ export class SupplyItemsService implements ISupplyitemsService {
   private assertStockRange(min: string, max: string): void {
     if (Number(min) > Number(max)) {
       throw new BadRequestException('stockMinimoBodega cannot exceed stockMaximoBodega');
+    }
+  }
+
+  private assertNonNegativeStockActual(value: string): void {
+    if (Number(value) < 0) {
+      throw new BadRequestException('stockActualBodega cannot be negative');
     }
   }
 
