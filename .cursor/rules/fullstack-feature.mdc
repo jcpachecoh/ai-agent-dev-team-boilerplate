@@ -1,0 +1,96 @@
+---
+description: Workflow para implementar una feature completa de extremo a extremo en Palos de Leños (schema → backend → frontend). Aplicar cuando se implemente una funcionalidad nueva, un módulo completo, o cuando el agente coordine cambios en backend y frontend a la vez.
+globs:
+  - "src/**"
+  - "prisma/**"
+alwaysApply: false
+---
+
+# Fullstack Feature Workflow — Palos de Leños
+
+## Orden obligatorio de implementación
+
+Al implementar una feature completa, seguir SIEMPRE este orden:
+
+```
+1. Schema Prisma  →  2. Migration  →  3. Seed (si aplica)
+   ↓
+4. NestJS Entity  →  5. DTOs/Inputs  →  6. Service  →  7. Resolver
+   ↓
+8. GraphQL query/mutation strings (frontend)
+   ↓
+9. Apollo hook  →  10. Componente UI  →  11. SCSS Module
+   ↓
+12. Tests (service + componente)
+```
+
+**Nunca empezar por el frontend si el schema no está definido.**
+
+## Checklist por capa
+
+### 📦 Capa de datos (Prisma)
+- [ ] Modelo creado con `id`, `createdAt`, `updatedAt`, `deletedAt`
+- [ ] `restaurantId` en modelos de negocio con `@@index`
+- [ ] Relaciones con `onDelete` explícito
+- [ ] Migración generada y revisada
+- [ ] Seed con `upsert` idempotente
+
+### 🔧 Capa de negocio (NestJS)
+- [ ] Entity `@ObjectType()` con `@HideField()` en campos sensibles
+- [ ] Input DTOs con validaciones `class-validator`
+- [ ] Service con lógica encapsulada, sin `any`
+- [ ] Resolver delega al service, con `@UseGuards(JwtAuthGuard)`
+- [ ] Módulo registrado en `AppModule`
+
+### 🖥️ Capa de presentación (React)
+- [ ] Query/mutation GraphQL definida en `src/graphql/`
+- [ ] Hook custom en `features/<domain>/hooks/`
+- [ ] Componente separado en `components/kds/` si es reutilizable
+- [ ] SCSS Module con variables del sistema
+- [ ] Loading skeleton y estado de error manejados
+
+### ✅ Calidad
+- [ ] Tests del service (happy path + error)
+- [ ] Sin `console.log` ni `any`
+- [ ] Sin N+1 queries
+- [ ] Tipos TypeScript en backend y frontend alineados
+
+## Convenciones de naming cross-stack
+
+| Capa | Ejemplo |
+|------|---------|
+| Prisma model | `KdsStation` |
+| Prisma table | `kds_stations` |
+| NestJS módulo | `KdsStationsModule` |
+| GraphQL type | `KdsStation` |
+| GraphQL query | `kdsStations`, `kdsStation(id:)` |
+| GraphQL mutation | `createKdsStation`, `updateKdsStation` |
+| React hook | `useKdsStations`, `useKdsStation` |
+| React componente | `KdsStationCard`, `KdsStationBoard` |
+| SCSS module | `KdsStationCard.module.scss` |
+
+## Gestión de errores cross-stack
+
+```
+Backend error          →   NestJS lanza NotFoundException/ForbiddenException
+GraphQL response       →   errors[] en la respuesta Apollo
+Frontend Apollo        →   error del useQuery/useMutation
+UI                     →   <ErrorBanner> o toast notification
+```
+
+## Variables de entorno por capa
+
+```
+# Backend (.env)
+DATABASE_URL=
+DIRECT_URL=          # Para migrations en conexiones pooled
+JWT_SECRET=
+ELEVENLABS_API_KEY=
+
+# Frontend (.env)
+VITE_API_URL=
+VITE_SOCKET_URL=
+VITE_GRAPHQL_URL=
+```
+
+**Regla:** Nunca hardcodear URLs o keys. En frontend, todo via `import.meta.env.VITE_*`.
