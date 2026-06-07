@@ -1,0 +1,179 @@
+---
+description: Mejores prácticas para NestJS con GraphQL code-first. Aplicar siempre que se cree o modifique un módulo, resolver, DTO, guard, interceptor o servicio en el backend de Palos de Leños.
+globs:
+  - "src/**/*.resolver.ts"
+  - "src/**/*.service.ts"
+  - "src/**/*.module.ts"
+  - "src/**/dto/**/*.ts"
+  - "src/**/entities/**/*.ts"
+alwaysApply: false
+---
+
+# NestJS + GraphQL — Palos de Leños
+
+## Estructura de módulo
+
+Cada feature sigue esta estructura estricta:
+
+```
+src/
+└── <feature>/
+    ├── <feature>.module.ts
+    ├── <feature>.resolver.ts
+    ├── <feature>.service.ts
+    ├── dto/
+    │   ├── create-<feature>.input.ts
+    │   ├── update-<feature>.input.ts
+    │   └── <feature>.args.ts          # paginación / filtros
+    ├── entities/
+    │   └── <feature>.entity.ts
+    └── <feature>.spec.ts
+```
+
+## Reglas obligatorias
+
+### Resolvers
+- Siempre usar `@UseGuards(JwtAuthGuard)` en resolvers que requieren autenticación.
+- Separar Queries y Mutations con comentarios `// ─── Queries ───` y `// ─── Mutations ───`.
+- El resolver NO contiene lógica de negocio — delega TODO al service.
+- Usar `@CurrentUser()` decorator para obtener el usuario autenticado, nunca acceder al context directamente.
+
+```typescript
+@Resolver(() => Order)
+@UseGuards(JwtAuthGuard)
+export class OrderResolver {
+  constructor(private readonly orderService: OrderService) {}
+
+  // ─── Queries ───────────────────────────────────────────
+  @Query(() => [Order], { name: 'orders' })
+  findAll(@CurrentUser() user: User, @Args() args: OrderArgs) {
+    return this.orderService.findAll(user.restaurantId, args);
+  }
+
+  // ─── Mutations ─────────────────────────────────────────
+  @Mutation(() => Order)
+  createOrder(
+    @CurrentUser() user: User,
+    @Args('input') input: CreateOrderInput,
+  ) {
+    return this.orderService.create(user.restaurantId, input);
+  }
+}
+```
+
+### DTOs / Inputs
+
+- Usar `@InputType()` para mutations, `@ArgsType()` para queries con filtros.
+- Validar siempre con `class-validator`. Nunca omitir validaciones en inputs públicos.
+- Usar `@IsOptional()` explícitamente en campos opcionales — nunca confiar en `undefined`.
+- Para paginación usar el patrón cursor-based con `take` y `cursor`:
+
+```typescript
+@ArgsType()
+export class OrderArgs {
+  @Field(() => Int, { nullable: true })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  take?: number = 20;
+
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  cursor?: string;
+
+  @Field(() => OrderStatus, { nullable: true })
+  @IsOptional()
+  status?: OrderStatus;
+}
+```
+
+### Entities (ObjectTypes)
+
+- Un entity = un `@ObjectType()` alineado 1:1 con el modelo Prisma.
+- Agregar `@HideField()` en campos sensibles (passwords, tokens internos).
+- Usar `@Field(() => [SubEntity], { nullable: 'itemsAndList' })` para relaciones opcionales.
+
+```typescript
+@ObjectType()
+export class Order {
+  @Field(() => ID)
+  id: string;
+
+  @Field(() => OrderStatus)
+  status: OrderStatus;
+
+  @Field(() => [OrderItem], { nullable: 'itemsAndList' })
+  items?: OrderItem[];
+
+  @HideField()
+  restaurantId: string;
+
+  @Field()
+  createdAt: Date;
+}
+```
+
+### Services
+
+- Inyectar `PrismaService` — nunca usar repositorios custom en esta app.
+- Manejar errores con excepciones tipadas de NestJS (`NotFoundException`, `ForbiddenException`).
+- Usar transacciones Prisma (`prisma.$transaction`) para operaciones multi-tabla.
+- Nunca hacer N+1: usar `include` o `select` con DataLoader cuando se cargan relaciones.
+
+```typescript
+@Injectable()
+export class OrderService {
+  constructor(private prisma: PrismaService) {}
+
+  async findAll(restaurantId: string, args: OrderArgs) {
+    return this.prisma.order.findMany({
+      where: { restaurantId, ...(args.status && { status: args.status }) },
+      take: args.take,
+      ...(args.cursor && { cursor: { id: args.cursor }, skip: 1 }),
+      include: { items: { include: { menuItem: true } } },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async create(restaurantId: string, input: CreateOrderInput) {
+    return this.prisma.$transaction(async (tx) => {
+      const order = await tx.order.create({
+        data: { restaurantId, ...input },
+        include: { items: true },
+      });
+      return order;
+    });
+  }
+}
+```
+
+### Módulos
+
+- Cada módulo exporta su service si otros módulos lo necesitan.
+- Registrar `forwardRef()` solo cuando exista dependencia circular real — evitar su abuso.
+- Usar `ConfigModule.forRoot({ isGlobal: true })` solo en `AppModule`.
+
+## Anti-patrones prohibidos
+
+- ❌ Lógica de negocio en resolvers
+- ❌ `any` en TypeScript — usar tipos explícitos o `unknown`
+- ❌ `prisma.findFirst` sin `where` — siempre filtrar por `restaurantId`
+- ❌ Queries sin paginación en listas públicas
+- ❌ Campos sensibles expuestos en ObjectTypes sin `@HideField()`
+- ❌ `try/catch` silenciosos que swallean errores sin loggear
+
+## Subscriptions (Socket.IO real-time)
+
+Para eventos KDS usar el gateway de Socket.IO, NO GraphQL Subscriptions, por performance:
+
+```typescript
+// En el service, emitir via KdsGateway
+await this.kdsGateway.emitOrderUpdate(restaurantId, order);
+```
+
+## Testing
+
+- Un archivo `*.spec.ts` por cada service y resolver.
+- Mockear `PrismaService` con `jest.mock` o con un `PrismaServiceMock`.
+- Probar el happy path + al menos un caso de error por método público.

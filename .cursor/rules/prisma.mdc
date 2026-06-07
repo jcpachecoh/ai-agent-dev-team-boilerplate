@@ -1,0 +1,170 @@
+---
+description: Mejores prácticas de Prisma ORM para Palos de Leños. Aplicar cuando se modifique el schema, se creen migraciones, se escriban seeds, o se construyan queries complejas.
+globs:
+  - "prisma/schema.prisma"
+  - "prisma/migrations/**"
+  - "prisma/seed.ts"
+  - "src/**/*.service.ts"
+alwaysApply: false
+---
+
+# Prisma ORM — Palos de Leños
+
+## Convenciones de schema
+
+### Nomenclatura
+- Modelos en **PascalCase** singular: `Order`, `MenuItem`, `KdsStation`
+- Campos en **camelCase**: `restaurantId`, `createdAt`
+- Enums en **PascalCase**: `OrderStatus`, `StationType`
+- Tablas mapeadas en **snake_case** via `@@map`: `@@map("orders")`
+
+### Campos obligatorios en todo modelo
+
+```prisma
+model Order {
+  id          String      @id @default(cuid())
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  deletedAt   DateTime?   // soft delete — NUNCA borrar registros KDS
+
+  // ... campos del dominio
+
+  @@map("orders")
+}
+```
+
+### Multi-tenancy
+
+Todos los modelos de negocio deben incluir `restaurantId` con índice compuesto:
+
+```prisma
+model Order {
+  id           String     @id @default(cuid())
+  restaurantId String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
+
+  @@index([restaurantId, createdAt(sort: Desc)])
+  @@map("orders")
+}
+```
+
+### Relaciones
+
+- Usar `onDelete: Cascade` solo cuando el child no tiene sentido sin el parent.
+- Usar `onDelete: Restrict` para datos históricos (pedidos, logs) que deben preservarse.
+- Siempre definir el lado inverso de la relación.
+
+```prisma
+model OrderItem {
+  id         String   @id @default(cuid())
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId    String
+  menuItem   MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Restrict)
+  menuItemId String
+
+  @@index([orderId])
+  @@map("order_items")
+}
+```
+
+### Enums
+
+```prisma
+enum OrderStatus {
+  PENDING
+  IN_PROGRESS
+  READY
+  DELIVERED
+  CANCELLED
+
+  @@map("order_status")
+}
+```
+
+## Migraciones
+
+- Nunca editar archivos de migración ya aplicados en producción.
+- Naming: `YYYYMMDD_descripcion_corta` — el CLI lo genera automáticamente.
+- Para cambios destructivos, crear migración en dos fases: añadir columna nullable → backfill → añadir NOT NULL.
+- Siempre revisar el SQL generado antes de aplicar: `npx prisma migrate diff`.
+
+```bash
+# Flujo estándar
+npx prisma migrate dev --name add_kds_station_type
+npx prisma migrate deploy  # solo en producción/CI
+```
+
+## Seeds
+
+- Usar upserts idempotentes — el seed debe poder ejecutarse N veces sin errores.
+- Organizar por entidad con `seedRestaurants()`, `seedMenuItems()`, etc.
+
+```typescript
+// prisma/seed.ts
+async function seedKdsStations(restaurantId: string) {
+  const stations = [
+    { name: 'Cocina Caliente', type: StationType.HOT },
+    { name: 'Cocina Fría', type: StationType.COLD },
+    { name: 'Barra', type: StationType.BAR },
+  ];
+
+  for (const station of stations) {
+    await prisma.kdsStation.upsert({
+      where: { restaurantId_name: { restaurantId, name: station.name } },
+      update: {},
+      create: { restaurantId, ...station },
+    });
+  }
+}
+```
+
+## Queries optimizadas
+
+### Paginación cursor-based (preferida sobre offset)
+
+```typescript
+const orders = await prisma.order.findMany({
+  where: { restaurantId, status: OrderStatus.PENDING },
+  take: 20,
+  ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+  orderBy: { createdAt: 'desc' },
+  select: {
+    id: true,
+    status: true,
+    createdAt: true,
+    items: {
+      select: {
+        id: true,
+        quantity: true,
+        menuItem: { select: { name: true } },
+      },
+    },
+  },
+});
+```
+
+### Evitar N+1
+
+- Usar `include` / `select` anidado en lugar de múltiples queries.
+- Para listas grandes con relaciones, implementar DataLoader.
+
+### Soft delete helper
+
+```typescript
+// Nunca usar prisma.order.delete() — usar:
+await prisma.order.update({
+  where: { id },
+  data: { deletedAt: new Date() },
+});
+
+// En queries, siempre filtrar:
+where: { restaurantId, deletedAt: null }
+```
+
+## Anti-patrones prohibidos
+
+- ❌ `prisma.model.delete()` — siempre soft delete
+- ❌ Queries sin `restaurantId` en modelos multi-tenant
+- ❌ `findFirst` sin `orderBy` — resultados no deterministas
+- ❌ Selects con `include` ilimitado en relaciones anidadas (max 2 niveles)
+- ❌ Migraciones con `DROP COLUMN` sin verificar que no hay datos críticos
