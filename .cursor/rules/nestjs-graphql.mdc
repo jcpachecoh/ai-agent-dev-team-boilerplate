@@ -1,11 +1,13 @@
 ---
-description: Mejores prácticas para NestJS con GraphQL code-first. Aplicar siempre que se cree o modifique un módulo, resolver, DTO, guard, interceptor o servicio en el backend de Palos de Leños.
+description: Mejores prácticas para NestJS con GraphQL code-first. Aplicar siempre que se cree o modifique un módulo, resolver, DTO, guard, interceptor, servicio o repositorio en el backend de Palos de Leños.
 globs:
-  - "src/**/*.resolver.ts"
-  - "src/**/*.service.ts"
-  - "src/**/*.module.ts"
-  - "src/**/dto/**/*.ts"
-  - "src/**/entities/**/*.ts"
+  - "apps/api/src/**/*.resolver.ts"
+  - "apps/api/src/**/*.service.ts"
+  - "apps/api/src/**/*.repository.ts"
+  - "apps/api/src/**/*.module.ts"
+  - "apps/api/src/**/dto/**/*.ts"
+  - "apps/api/src/**/entities/**/*.ts"
+  - "apps/api/src/**/interfaces/**/*.ts"
 alwaysApply: false
 ---
 
@@ -13,167 +15,293 @@ alwaysApply: false
 
 ## Estructura de módulo
 
-Cada feature sigue esta estructura estricta:
+Cada feature sigue esta estructura:
 
 ```
-src/
+apps/api/src/
 └── <feature>/
     ├── <feature>.module.ts
-    ├── <feature>.resolver.ts
-    ├── <feature>.service.ts
-    ├── dto/
-    │   ├── create-<feature>.input.ts
-    │   ├── update-<feature>.input.ts
-    │   └── <feature>.args.ts          # paginación / filtros
-    ├── entities/
-    │   └── <feature>.entity.ts
-    └── <feature>.spec.ts
+    ├── resolver/
+    │   └── <feature>.resolver.ts        # ObjectTypes, InputTypes y Resolver co-localizados
+    ├── service/
+    │   └── <feature>.service.ts         # lógica de negocio, orquesta el repository
+    ├── repository/
+    │   └── <feature>.repository.ts      # acceso directo a PrismaService
+    └── interfaces/
+        └── <feature>.interfaces.ts      # tipos TypeScript, no GraphQL
 ```
 
-## Reglas obligatorias
+## Tenant ID
 
-### Resolvers
-- Siempre usar `@UseGuards(JwtAuthGuard)` en resolvers que requieren autenticación.
-- Separar Queries y Mutations con comentarios `// ─── Queries ───` y `// ─── Mutations ───`.
-- El resolver NO contiene lógica de negocio — delega TODO al service.
-- Usar `@CurrentUser()` decorator para obtener el usuario autenticado, nunca acceder al context directamente.
+El `tenantId` se extrae del header `x-tenant-id`, **no** de un JWT claim. Usar el helper compartido o un método privado en el resolver:
 
 ```typescript
-@Resolver(() => Order)
-@UseGuards(JwtAuthGuard)
-export class OrderResolver {
-  constructor(private readonly orderService: OrderService) {}
+// Opción 1 — helper compartido (preferida)
+import { getTenantIdFromContext, type GqlRequestContext } from '../../common/graphql/tenant-from-context';
+
+@Query(() => [RecipeType])
+recipes(@Context() context: GqlRequestContext): Promise<Recipe[]> {
+  return this.recipeService.findAll(getTenantIdFromContext(context));
+}
+
+// Opción 2 — método privado en el resolver
+private getTenantId(context: { req?: { headers?: Record<string, unknown> } }): string {
+  const tenantId = context.req?.headers?.['x-tenant-id'];
+  if (typeof tenantId !== 'string' || !tenantId.trim()) {
+    throw new Error('x-tenant-id header is required');
+  }
+  return tenantId.trim();
+}
+```
+
+## Autenticación
+
+El proyecto tiene **dos sistemas de auth independientes**:
+
+| Sistema | Para | Guard |
+|---|---|---|
+| JWT email auth | Global users (backoffice) | `GqlJwtAuthGuard`, `@CurrentUser()` |
+| PIN/cédula auth | MES operational users | `MesAuthGuard` o validación en service |
+
+- Rutas públicas: decorar con `@Public()`.
+- Rutas JWT: usar `@UseGuards(GqlJwtAuthGuard)` + `@CurrentUser()`.
+- Mayoría de resolvers de negocio usan solo `x-tenant-id` header sin JWT guard.
+
+## Resolvers
+
+### Patrón estándar
+
+- ObjectTypes, InputTypes y el Resolver pueden ir co-localizados en el mismo archivo resolver.
+- El resolver NO contiene lógica de negocio — delega al service.
+- Queries y Mutations separados con comentarios.
+- Subscriptions vía `graphql-subscriptions` PubSub para realtime.
+
+```typescript
+@ObjectType('WorkStation')
+export class WorkStationType {
+  @Field(() => ID) id!: string;
+  @Field() tenantId!: string;
+  @Field() name!: string;
+  @Field() code!: string;
+  @Field(() => String, { nullable: true }) location?: string;
+  @Field() isActive!: boolean;
+  @Field() createdAt!: Date;
+}
+
+@InputType('CreateWorkStationInput')
+export class CreateWorkStationInputDto {
+  @Field()
+  @IsString()
+  @IsNotEmpty()
+  name!: string;
+
+  @Field()
+  @IsString()
+  @IsNotEmpty()
+  code!: string;
+
+  @Field(() => String, { nullable: true })
+  @IsString()
+  @IsOptional()
+  location?: string;
+}
+
+@Resolver(() => WorkStationType)
+export class WorkStationResolver {
+  constructor(
+    private readonly workStationService: WorkStationService,
+    @Inject(PUB_SUB) private readonly pubSub: PubSub,
+  ) {}
 
   // ─── Queries ───────────────────────────────────────────
-  @Query(() => [Order], { name: 'orders' })
-  findAll(@CurrentUser() user: User, @Args() args: OrderArgs) {
-    return this.orderService.findAll(user.restaurantId, args);
+  @Query(() => [WorkStationType])
+  workStations(
+    @Context() context: GqlRequestContext,
+    @Args('limit', { type: () => Int, nullable: true }) limit?: number,
+    @Args('offset', { type: () => Int, nullable: true }) offset?: number,
+  ) {
+    return this.workStationService.findAll(getTenantIdFromContext(context), { limit, offset });
+  }
+
+  @Query(() => WorkStationType, { nullable: true })
+  async workStation(
+    @Context() context: GqlRequestContext,
+    @Args('id', { type: () => ID }) id: string,
+  ) {
+    try {
+      return await this.workStationService.findById(id, getTenantIdFromContext(context));
+    } catch {
+      return null;
+    }
   }
 
   // ─── Mutations ─────────────────────────────────────────
-  @Mutation(() => Order)
-  createOrder(
-    @CurrentUser() user: User,
-    @Args('input') input: CreateOrderInput,
+  @Mutation(() => WorkStationType)
+  async createWorkStation(
+    @Context() context: GqlRequestContext,
+    @Args('input') input: CreateWorkStationInputDto,
   ) {
-    return this.orderService.create(user.restaurantId, input);
+    const result = await this.workStationService.create(getTenantIdFromContext(context), input);
+    await this.pubSub.publish('workStationCreated', { workStationCreated: result });
+    return result;
+  }
+
+  // ─── Subscriptions ─────────────────────────────────────
+  @Subscription(() => WorkStationType)
+  workStationCreated(): AsyncIterator<unknown> {
+    return this.pubSub.asyncIterator('workStationCreated');
   }
 }
 ```
 
-### DTOs / Inputs
+### ObjectTypes
 
-- Usar `@InputType()` para mutations, `@ArgsType()` para queries con filtros.
-- Validar siempre con `class-validator`. Nunca omitir validaciones en inputs públicos.
-- Usar `@IsOptional()` explícitamente en campos opcionales — nunca confiar en `undefined`.
-- Para paginación usar el patrón cursor-based con `take` y `cursor`:
+- Tipado 1:1 con el modelo Prisma.
+- Campos sensibles (`passwordHash`, `pinHash`, `cedulaHash`, `refreshToken`): **no exponer** — omitir del ObjectType.
+- Usar `@Field(() => Type, { nullable: true })` para campos opcionales.
+- Campos `Decimal` de Prisma → `@Field(() => Float)` en GraphQL.
 
 ```typescript
-@ArgsType()
-export class OrderArgs {
+@ObjectType('Supplier')
+export class SupplierType {
+  @Field(() => ID) id!: string;
+  @Field() tenantId!: string;
+  @Field() razonSocial!: string;
+  @Field() nit!: string;
+  @Field(() => String, { nullable: true }) dv?: string;
+  @Field() isActive!: boolean;
+  @Field() createdAt!: Date;
+  @Field() updatedAt!: Date;
+  // passwordHash, etc. — NUNCA exponer
+}
+```
+
+## Services
+
+- Inyectar el **Repository** del módulo, no `PrismaService` directamente.
+- Manejar errores con excepciones tipadas de NestJS (`NotFoundException`, `ConflictException`, `ForbiddenException`).
+- Validar inputs con Zod o `class-validator` según el patrón del módulo.
+
+```typescript
+@Injectable()
+export class WorkStationService {
+  constructor(private readonly workStationRepository: WorkStationRepository) {}
+
+  async findAll(tenantId: string, opts: { limit?: number; offset?: number } = {}) {
+    return this.workStationRepository.findAll(tenantId, opts);
+  }
+
+  async findById(id: string, tenantId: string) {
+    const station = await this.workStationRepository.findById(id, tenantId);
+    if (!station) throw new NotFoundException(`WorkStation "${id}" not found`);
+    return station;
+  }
+
+  async create(tenantId: string, data: unknown) {
+    const validated = validate(CreateWorkStationSchema, data);
+    return this.workStationRepository.create(tenantId, validated);
+  }
+
+  async deactivate(id: string, tenantId: string) {
+    await this.findById(id, tenantId);
+    return this.workStationRepository.softDelete(id);
+  }
+}
+```
+
+## Repositories
+
+- Repositorio = capa de acceso a datos. Inyecta `PrismaService`.
+- Toda query lleva `tenantId` como primer parámetro en modelos multi-tenant.
+- Usar `Prisma.ModelWhereInput` para tipado fuerte en filtros.
+- Soft delete via `isActive: false` — nunca `prisma.model.delete()`.
+
+```typescript
+@Injectable()
+export class WorkStationRepository {
+  constructor(private readonly prisma: PrismaService) {}
+
+  async findAll(tenantId: string, opts: { limit?: number; offset?: number }) {
+    const take = Math.min(Math.max(1, opts.limit ?? DEFAULT_PAGE_SIZE), MAX_PAGE_SIZE);
+    const skip = Math.max(0, opts.offset ?? 0);
+
+    return this.prisma.workStation.findMany({
+      where: { tenantId, isActive: true },
+      take,
+      skip,
+      orderBy: { name: 'asc' },
+    });
+  }
+
+  async findById(id: string, tenantId: string) {
+    return this.prisma.workStation.findFirst({ where: { id, tenantId } });
+  }
+
+  async findByCode(tenantId: string, code: string) {
+    return this.prisma.workStation.findUnique({
+      where: { tenantId_code: { tenantId, code } },
+    });
+  }
+
+  async create(tenantId: string, data: CreateWorkStationInput) {
+    return this.prisma.workStation.create({ data: { ...data, tenantId } });
+  }
+
+  async softDelete(id: string) {
+    return this.prisma.workStation.update({ where: { id }, data: { isActive: false } });
+  }
+}
+```
+
+## InputTypes y validación
+
+- Usar `@InputType()` para mutations.
+- Validar con `class-validator`. Campos opcionales con `@IsOptional()` explícito.
+- Para paginación: `limit` y `offset` (patrón del proyecto, no cursor-based).
+
+```typescript
+@InputType('WorkStationFilter')
+export class WorkStationFilterDto {
   @Field(() => Int, { nullable: true })
   @IsOptional()
   @IsInt()
   @Min(1)
   @Max(100)
-  take?: number = 20;
+  limit?: number;
 
-  @Field(() => String, { nullable: true })
+  @Field(() => Int, { nullable: true })
   @IsOptional()
-  cursor?: string;
+  @IsInt()
+  @Min(0)
+  offset?: number;
 
-  @Field(() => OrderStatus, { nullable: true })
+  @Field(() => Boolean, { nullable: true })
   @IsOptional()
-  status?: OrderStatus;
+  @IsBoolean()
+  isActive?: boolean;
 }
 ```
 
-### Entities (ObjectTypes)
+## Módulos
 
-- Un entity = un `@ObjectType()` alineado 1:1 con el modelo Prisma.
-- Agregar `@HideField()` en campos sensibles (passwords, tokens internos).
-- Usar `@Field(() => [SubEntity], { nullable: 'itemsAndList' })` para relaciones opcionales.
+- Registrar Repository y Service en `providers`, exportar Service si otros módulos lo necesitan.
+- `PUB_SUB` inyectado desde `PubSubModule`.
+- `forwardRef()` solo cuando hay dependencia circular real.
 
 ```typescript
-@ObjectType()
-export class Order {
-  @Field(() => ID)
-  id: string;
-
-  @Field(() => OrderStatus)
-  status: OrderStatus;
-
-  @Field(() => [OrderItem], { nullable: 'itemsAndList' })
-  items?: OrderItem[];
-
-  @HideField()
-  restaurantId: string;
-
-  @Field()
-  createdAt: Date;
-}
+@Module({
+  providers: [WorkStationRepository, WorkStationService, WorkStationResolver],
+  exports: [WorkStationService],
+})
+export class WorkStationModule {}
 ```
-
-### Services
-
-- Inyectar `PrismaService` — nunca usar repositorios custom en esta app.
-- Manejar errores con excepciones tipadas de NestJS (`NotFoundException`, `ForbiddenException`).
-- Usar transacciones Prisma (`prisma.$transaction`) para operaciones multi-tabla.
-- Nunca hacer N+1: usar `include` o `select` con DataLoader cuando se cargan relaciones.
-
-```typescript
-@Injectable()
-export class OrderService {
-  constructor(private prisma: PrismaService) {}
-
-  async findAll(restaurantId: string, args: OrderArgs) {
-    return this.prisma.order.findMany({
-      where: { restaurantId, ...(args.status && { status: args.status }) },
-      take: args.take,
-      ...(args.cursor && { cursor: { id: args.cursor }, skip: 1 }),
-      include: { items: { include: { menuItem: true } } },
-      orderBy: { createdAt: 'desc' },
-    });
-  }
-
-  async create(restaurantId: string, input: CreateOrderInput) {
-    return this.prisma.$transaction(async (tx) => {
-      const order = await tx.order.create({
-        data: { restaurantId, ...input },
-        include: { items: true },
-      });
-      return order;
-    });
-  }
-}
-```
-
-### Módulos
-
-- Cada módulo exporta su service si otros módulos lo necesitan.
-- Registrar `forwardRef()` solo cuando exista dependencia circular real — evitar su abuso.
-- Usar `ConfigModule.forRoot({ isGlobal: true })` solo en `AppModule`.
 
 ## Anti-patrones prohibidos
 
-- ❌ Lógica de negocio en resolvers
-- ❌ `any` en TypeScript — usar tipos explícitos o `unknown`
-- ❌ `prisma.findFirst` sin `where` — siempre filtrar por `restaurantId`
-- ❌ Queries sin paginación en listas públicas
-- ❌ Campos sensibles expuestos en ObjectTypes sin `@HideField()`
-- ❌ `try/catch` silenciosos que swallean errores sin loggear
-
-## Subscriptions (Socket.IO real-time)
-
-Para eventos KDS usar el gateway de Socket.IO, NO GraphQL Subscriptions, por performance:
-
-```typescript
-// En el service, emitir via KdsGateway
-await this.kdsGateway.emitOrderUpdate(restaurantId, order);
-```
-
-## Testing
-
-- Un archivo `*.spec.ts` por cada service y resolver.
-- Mockear `PrismaService` con `jest.mock` o con un `PrismaServiceMock`.
-- Probar el happy path + al menos un caso de error por método público.
+- ❌ Lógica de negocio en resolvers — delegar al service
+- ❌ PrismaService inyectado en services — usar el repository del módulo
+- ❌ `any` en TypeScript — tipos explícitos o `unknown`
+- ❌ Queries sin `tenantId` en modelos multi-tenant
+- ❌ Exponer `passwordHash`, `pinHash`, `cedulaHash`, `refreshToken` en ObjectTypes
+- ❌ `try/catch` silenciosos sin loggear el error
+- ❌ `Float` en schema para campos monetarios o de cantidad — usar `Decimal` en Prisma, `Float` solo en el ObjectType de GraphQL

@@ -1,21 +1,35 @@
 ---
 description: Workflow para implementar una feature completa de extremo a extremo en Palos de Leños (schema → backend → frontend). Aplicar cuando se implemente una funcionalidad nueva, un módulo completo, o cuando el agente coordine cambios en backend y frontend a la vez.
 globs:
-  - "src/**"
-  - "prisma/**"
+  - "apps/api/src/**"
+  - "apps/api/prisma/**"
 alwaysApply: false
 ---
 
 # Fullstack Feature Workflow — Palos de Leños
 
-## Orden obligatorio de implementación
+## Stack actual
 
-Al implementar una feature completa, seguir SIEMPRE este orden:
+```
+Backend:  NestJS + GraphQL (code-first) + Prisma + PostgreSQL
+          └── apps/api/src/<feature>/
+                ├── resolver/     # GraphQL (ObjectTypes, InputTypes, Resolver)
+                ├── service/      # lógica de negocio
+                ├── repository/   # acceso a Prisma
+                └── interfaces/   # tipos TypeScript
+
+Frontend: Vite + React + Apollo Client + SCSS Modules
+          └── src/features/<feature>/
+                ├── hooks/
+                └── <Feature>Page.tsx
+```
+
+## Orden obligatorio de implementación
 
 ```
 1. Schema Prisma  →  2. Migration  →  3. Seed (si aplica)
    ↓
-4. NestJS Entity  →  5. DTOs/Inputs  →  6. Service  →  7. Resolver
+4. interfaces.ts  →  5. Repository  →  6. Service  →  7. Resolver (con ObjectTypes/InputTypes)
    ↓
 8. GraphQL query/mutation strings (frontend)
    ↓
@@ -29,18 +43,23 @@ Al implementar una feature completa, seguir SIEMPRE este orden:
 ## Checklist por capa
 
 ### 📦 Capa de datos (Prisma)
-- [ ] Modelo creado con `id`, `createdAt`, `updatedAt`, `deletedAt`
-- [ ] `restaurantId` en modelos de negocio con `@@index`
+- [ ] Modelo con `id`, `tenantId`, `createdAt`; `updatedAt` solo si es mutable; `isActive` si es togglable
+- [ ] `tenantId` en modelos de negocio con `@@index([tenantId, ...])`
 - [ ] Relaciones con `onDelete` explícito
+- [ ] `@db.Decimal(10, 3)` en campos de cantidad/precio — nunca `Float`
+- [ ] Enums en SCREAMING_SNAKE_CASE, **sin** `@@map`
 - [ ] Migración generada y revisada
-- [ ] Seed con `upsert` idempotente
+- [ ] Seed con `upsert` idempotente y IDs deterministas
 
 ### 🔧 Capa de negocio (NestJS)
-- [ ] Entity `@ObjectType()` con `@HideField()` en campos sensibles
-- [ ] Input DTOs con validaciones `class-validator`
-- [ ] Service con lógica encapsulada, sin `any`
-- [ ] Resolver delega al service, con `@UseGuards(JwtAuthGuard)`
-- [ ] Módulo registrado en `AppModule`
+- [ ] interfaces.ts con tipos TypeScript del dominio
+- [ ] Repository inyecta `PrismaService`, toda query lleva `tenantId`
+- [ ] Service inyecta Repository (no `PrismaService` directamente)
+- [ ] Soft delete vía `isActive: false` en el repository — nunca `.delete()`
+- [ ] Resolver extrae `tenantId` de `x-tenant-id` header con `getTenantIdFromContext()`
+- [ ] ObjectTypes y InputTypes en el archivo resolver (co-localizados)
+- [ ] Subscriptions con `PubSub.publish()` para eventos realtime
+- [ ] Módulo registra Repository, Service y Resolver en `providers`
 
 ### 🖥️ Capa de presentación (React)
 - [ ] Query/mutation GraphQL definida en `src/graphql/`
@@ -52,40 +71,62 @@ Al implementar una feature completa, seguir SIEMPRE este orden:
 ### ✅ Calidad
 - [ ] Tests del service (happy path + error)
 - [ ] Sin `console.log` ni `any`
-- [ ] Sin N+1 queries
+- [ ] Sin N+1 queries — usar `include`/`select` o `_count`
 - [ ] Tipos TypeScript en backend y frontend alineados
 
 ## Convenciones de naming cross-stack
 
 | Capa | Ejemplo |
-|------|---------|
-| Prisma model | `KdsStation` |
-| Prisma table | `kds_stations` |
-| NestJS módulo | `KdsStationsModule` |
-| GraphQL type | `KdsStation` |
-| GraphQL query | `kdsStations`, `kdsStation(id:)` |
-| GraphQL mutation | `createKdsStation`, `updateKdsStation` |
-| React hook | `useKdsStations`, `useKdsStation` |
-| React componente | `KdsStationCard`, `KdsStationBoard` |
-| SCSS module | `KdsStationCard.module.scss` |
+|---|---|
+| Prisma model | `WorkStation` |
+| Prisma table (`@@map`) | `work_stations` |
+| Prisma unique compuesto | `tenantId_code` |
+| NestJS módulo | `WorkStationsModule` |
+| GraphQL ObjectType | `WorkStation` |
+| GraphQL query | `workStations`, `workStation(id:)` |
+| GraphQL mutation | `createWorkStation`, `updateWorkStation` |
+| GraphQL subscription | `workStationCreated`, `workStationUpdated` |
+| React hook | `useWorkStations`, `useWorkStation` |
+| React componente | `WorkStationCard`, `WorkStationBoard` |
+| SCSS module | `WorkStationCard.module.scss` |
 
 ## Gestión de errores cross-stack
 
 ```
-Backend error          →   NestJS lanza NotFoundException/ForbiddenException
-GraphQL response       →   errors[] en la respuesta Apollo
-Frontend Apollo        →   error del useQuery/useMutation
-UI                     →   <ErrorBanner> o toast notification
+Repository         →   devuelve null / lanza en errores DB inesperados
+Service            →   NotFoundException / ConflictException / ForbiddenException
+GraphQL response   →   errors[] en respuesta Apollo
+Frontend Apollo    →   error del useQuery/useMutation
+UI                 →   <ErrorBanner> o toast notification
+```
+
+## Autenticación en el backend
+
+El proyecto tiene dos sistemas independientes:
+
+```
+Email auth (backoffice global users):
+  Header:  Authorization: Bearer <jwt>
+  Guard:   @UseGuards(GqlJwtAuthGuard)
+  Tenant:  @CurrentUser() → user.tenantId (del JWT payload)
+
+MES operational auth (cédula + PIN):
+  Header:  x-mes-token: <token>
+  Tenant:  x-tenant-id header
+  Guard:   validación en service (MesAuthService)
+
+Resolvers de negocio sin auth explícita:
+  Tenant:  getTenantIdFromContext(context)  →  x-tenant-id header
 ```
 
 ## Variables de entorno por capa
 
 ```
-# Backend (.env)
-DATABASE_URL=
-DIRECT_URL=          # Para migrations en conexiones pooled
+# Backend (apps/api/.env)
+DATABASE_URL=postgresql://...    # incluye pool si usa pooler (ej. pgBouncer)
 JWT_SECRET=
 ELEVENLABS_API_KEY=
+CEDULA_HMAC_SECRET=              # para hashing de cédulas MES
 
 # Frontend (.env)
 VITE_API_URL=
@@ -93,4 +134,18 @@ VITE_SOCKET_URL=
 VITE_GRAPHQL_URL=
 ```
 
-**Regla:** Nunca hardcodear URLs o keys. En frontend, todo via `import.meta.env.VITE_*`.
+**Regla:** Nunca hardcodear URLs o keys. En frontend, siempre `import.meta.env.VITE_*`.
+
+## Paginación
+
+El proyecto usa **offset-based** (`limit`/`offset`), no cursor-based:
+
+```typescript
+// Backend — repository
+const take = Math.min(Math.max(1, opts.limit ?? DEFAULT_PAGE_SIZE), MAX_PAGE_SIZE);
+const skip = Math.max(0, opts.offset ?? 0);
+
+// GraphQL args
+@Args('limit', { type: () => Int, nullable: true }) limit?: number,
+@Args('offset', { type: () => Int, nullable: true }) offset?: number,
+```
