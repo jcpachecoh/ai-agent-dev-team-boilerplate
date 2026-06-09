@@ -2,15 +2,21 @@ import {
   InventarioPageToolbar,
   InventarioPrimaryButton,
   InventarioTableHeader,
-  InventarioTableRow,
   toast,
 } from '@restopsiq/ui';
 import { Download } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { fetchInventoryMovements } from '@/api/inventory';
+import {
+  InventarioMovementCard,
+  InventarioMovementRow,
+} from '@/components/inventario/inventario-responsive';
+import { ResponsiveTable } from '@/components/responsive-table';
 import { InventoryMovementsFilterBar } from '@/components/inventory/InventoryMovementsFilterBar';
 import { InventoryScreenState } from '@/components/inventory/InventoryScreenState';
+import { INVENTARIO_MOVEMENT_RESPONSIVE_COLUMNS } from '@/features/inventario/responsive-columns';
+import { headerColumnsFromResponsive } from '@/lib/responsive-columns';
 import type { InventoryMovement } from '@/types/inventory';
 import { formatMovementQuantity, movementsToCsv } from '@/utils/inventory';
 
@@ -117,26 +123,43 @@ export function InventoryMovementsScreen(): React.JSX.Element {
       </section>
 
       <section className={shared.tableWrap}>
-        <div className={shared.tableHead}>
-          <InventarioTableHeader variant="movement" theme={theme} size="xl" />
-        </div>
-        <div className={shared.tableBody}>
-          {filtered.map((m) => (
-            <InventarioTableRow
-              key={m.id}
-              variant="movement"
+        <ResponsiveTable<InventoryMovement>
+          columns={INVENTARIO_MOVEMENT_RESPONSIVE_COLUMNS}
+          rows={filtered}
+          keyExtractor={(movement) => movement.id}
+          className={shared.responsiveTable}
+          renderTableHeader={({ visibleColumns }) => (
+            <div className={shared.tableHead}>
+              <InventarioTableHeader
+                variant="movement"
+                theme={theme}
+                size="xl"
+                columns={headerColumnsFromResponsive(visibleColumns, {
+                  type: 'center',
+                  quantity: 'center',
+                })}
+              />
+            </div>
+          )}
+          renderTableRow={(movement, { visibleColumns, columnsTemplate }) => (
+            <InventarioMovementRow
+              movement={movement}
               theme={theme}
-              size="xl"
-              className={shared.tableRowHost}
-              date={m.date}
-              product={m.product}
-              movementType={m.movementType}
-              quantity={formatMovementQuantity(m.quantity)}
-              user={`${m.user} · ${m.site}`}
-              reference={m.reason}
+              visibleColumns={visibleColumns}
+              columnsTemplate={columnsTemplate}
+              quantityLabel={formatMovementQuantity(movement.quantity)}
+              userLabel={`${movement.user} · ${movement.site}`}
             />
-          ))}
-        </div>
+          )}
+          renderCard={(movement) => (
+            <InventarioMovementCard
+              movement={movement}
+              theme={theme}
+              quantityLabel={formatMovementQuantity(movement.quantity)}
+              userLabel={`${movement.user} · ${movement.site}`}
+            />
+          )}
+        />
       </section>
     </div>
   );

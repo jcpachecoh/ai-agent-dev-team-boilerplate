@@ -1,7 +1,6 @@
 import {
   EmptyState,
   ProveedorActionButton,
-  ProveedorCatalogTable,
   ProveedorProductModal,
   ProveedorProductModalField,
   NumberInput,
@@ -12,6 +11,7 @@ import {
 } from '@restopsiq/ui';
 import { useEffect, useMemo, useState } from 'react';
 
+import { ProveedorCatalogResponsiveTable } from '@/components/proveedores/ProveedorCatalogResponsiveTable';
 import { useUiTheme } from '@/hooks/useUiTheme';
 import { getErrorMessage } from '@/lib/graphql-client';
 
@@ -58,8 +58,6 @@ const EMPTY_DRAFT: ProductDraft = {
   tiempoEntregaDias: 1,
   esProveedorPrincipal: false,
 };
-
-const RECETA_THEME = 'dark' as const;
 
 export default function EditableSupplierProductsTable({
   supplierId,
@@ -209,10 +207,8 @@ export default function EditableSupplierProductsTable({
         />
       </div>
 
-      <ProveedorCatalogTable
+      <ProveedorCatalogResponsiveTable
         rows={tableRows}
-        theme={theme}
-        size={PROVEEDOR_TABLE_SIZE}
         emptyState={
           isLoading ? (
             'Cargando catálogo…'
@@ -248,7 +244,7 @@ export default function EditableSupplierProductsTable({
           <ProveedorProductModalField fullWidth label="Buscar insumo" htmlFor="supply-search">
             <RecetaTextInput
               id="supply-search"
-              theme={RECETA_THEME}
+              theme={theme}
               placeholder="Nombre o código interno…"
               value={supplySearch}
               onChange={(event) => setSupplySearch(event.target.value)}
@@ -257,7 +253,7 @@ export default function EditableSupplierProductsTable({
           <ProveedorProductModalField fullWidth label="Insumo" htmlFor="supply-item" required>
             <RecetaFilterSelect
               id="supply-item"
-              theme={RECETA_THEME}
+              theme={theme}
               size="md"
               options={[{ value: '', label: 'Seleccionar insumo…' }, ...supplyOptions]}
               value={createDraft.supplyItemId}
@@ -275,7 +271,7 @@ export default function EditableSupplierProductsTable({
             <ProveedorProductModalField label="SKU" htmlFor="supply-sku">
               <RecetaTextInput
                 id="supply-sku"
-                theme={RECETA_THEME}
+                theme={theme}
                 value={selectedSupply.codigoInterno}
                 readOnly
               />
@@ -284,7 +280,7 @@ export default function EditableSupplierProductsTable({
           <ProveedorProductModalField label="Unidad" htmlFor="create-unit" required>
             <RecetaFilterSelect
               id="create-unit"
-              theme={RECETA_THEME}
+              theme={theme}
               size="md"
               options={STOCK_UNIT_OPTIONS}
               value={createDraft.unidadCompra}
@@ -302,7 +298,7 @@ export default function EditableSupplierProductsTable({
               className={styles.modalNumberInput}
               variant="grouped"
               showSteppers={false}
-              theme={RECETA_THEME}
+              theme={theme}
               size="md"
               min={1}
               value={createDraft.precioUnitario}
@@ -317,7 +313,7 @@ export default function EditableSupplierProductsTable({
               className={styles.modalNumberInput}
               variant="grouped"
               showSteppers={false}
-              theme={RECETA_THEME}
+              theme={theme}
               size="md"
               min={1}
               maxCurrencyDigits={8}
@@ -355,18 +351,18 @@ export default function EditableSupplierProductsTable({
             <ProveedorProductModalField fullWidth label="Producto" htmlFor="edit-product-name">
               <RecetaTextInput
                 id="edit-product-name"
-                theme={RECETA_THEME}
+                theme={theme}
                 value={editingRow.productName}
                 readOnly
               />
             </ProveedorProductModalField>
             <ProveedorProductModalField label="SKU" htmlFor="edit-sku">
-              <RecetaTextInput id="edit-sku" theme={RECETA_THEME} value={editingRow.sku} readOnly />
+              <RecetaTextInput id="edit-sku" theme={theme} value={editingRow.sku} readOnly />
             </ProveedorProductModalField>
             <ProveedorProductModalField label="Unidad" htmlFor="edit-unit" required>
               <RecetaFilterSelect
                 id="edit-unit"
-                theme={RECETA_THEME}
+                theme={theme}
                 size="md"
                 options={STOCK_UNIT_OPTIONS}
                 value={editDraft.unidadCompra}
@@ -383,7 +379,7 @@ export default function EditableSupplierProductsTable({
                 className={styles.modalNumberInput}
                 variant="grouped"
                 showSteppers={false}
-                theme={RECETA_THEME}
+                theme={theme}
                 size="md"
                 min={1}
                 value={editDraft.precioUnitario}
@@ -398,7 +394,7 @@ export default function EditableSupplierProductsTable({
                 className={styles.modalNumberInput}
                 variant="grouped"
                 showSteppers={false}
-                theme={RECETA_THEME}
+                theme={theme}
                 size="md"
                 min={1}
                 maxCurrencyDigits={8}

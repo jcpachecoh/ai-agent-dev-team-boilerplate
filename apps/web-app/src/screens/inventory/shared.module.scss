@@ -205,6 +205,20 @@ $inv-surface-hover: var(--color-bg-surface-hover);
   max-height: min(70vh, calc(54px * 14));
 }
 
+.responsiveTable {
+  min-width: 0;
+
+  :global([class*='tableMode']) {
+    .tableHead {
+      flex-shrink: 0;
+    }
+  }
+
+  :global([class*='cardList']) {
+    padding: 0.75rem;
+  }
+}
+
 .tableRowHost {
   width: 100%;
 

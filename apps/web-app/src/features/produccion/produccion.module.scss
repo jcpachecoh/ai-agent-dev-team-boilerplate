@@ -57,6 +57,20 @@
   background: var(--color-bg-secondary, var(--color-bg-primary));
 }
 
+.responsiveTable {
+  min-width: 0;
+}
+
+@media (max-width: 639px) {
+  .tableWrap {
+    overflow: visible;
+  }
+
+  .responsiveTable {
+    padding: 0.75rem;
+  }
+}
+
 .tableBody {
   display: flex;
   flex-direction: column;

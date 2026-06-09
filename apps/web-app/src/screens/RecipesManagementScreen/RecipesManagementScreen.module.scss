@@ -1,4 +1,5 @@
 @use '@/styles/tokens' as *;
+@use '../../styles/breakpoints' as bp;
 
 .screen {
   min-height: 100%;
@@ -87,26 +88,34 @@
 }
 
 .toolbarRowList {
-  display: grid;
-  grid-template-columns: minmax(0, 3.4fr) repeat(3, minmax(0, 1fr));
-  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: stretch;
 }
 
 .searchGrowList {
+  flex: 1 1 220px;
   min-width: 0;
-  width: 100%;
+  max-width: none;
+  width: auto;
   --control-width: 100%;
 }
 
 .filterSelectList {
+  flex: 1 1 160px;
   min-width: 0;
   max-width: none;
+  width: auto;
+  --control-width: 100%;
 }
 
 .toolbarActionList {
+  flex: 1 1 160px;
   min-width: 0;
   max-width: none;
-  width: 100%;
+  width: auto;
+  --control-width: 100%;
 }
 .tableWrap {
   display: flex;
@@ -150,6 +159,26 @@
   .listTableHead {
     --control-min-height: 44px;
     --control-padding-x: 1rem;
+  }
+}
+
+.recipeListTable {
+  min-width: 0;
+}
+
+@include bp.mobile {
+  .tableWrapList,
+  .tableWrapProcess {
+    overflow: visible;
+    margin: 1rem;
+  }
+
+  .recipeListTable {
+    padding: 0.75rem;
+  }
+
+  .historyWrap {
+    padding: 0.75rem 1rem 1rem;
   }
 }
 
@@ -519,9 +548,80 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .toolbarRowList {
-    grid-template-columns: 1fr;
+    gap: 0.65rem;
+  }
+
+  .searchGrowList,
+  .filterSelectList,
+  .toolbarActionList {
+    flex: 1 1 100%;
   }
   .editorLayout {
     grid-template-columns: 1fr;
+  }
+}
+
+@include bp.mobile {
+  .toolbarRow {
+    padding: 0.75rem 1rem;
+  }
+
+  .toolbarRowList {
+    gap: 0.5rem;
+  }
+
+  .pageHeaderEditor {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+    padding: 0.875rem 1rem;
+  }
+
+  .editorLeft {
+    align-items: flex-start;
+    gap: 0.5rem;
+    min-width: 0;
+    width: 100%;
+
+    > div {
+      flex: 1;
+      min-width: 0;
+    }
+
+    h1 {
+      font-size: 1.25rem;
+      line-height: 1.25;
+      word-break: break-word;
+    }
+
+    p {
+      font-size: 0.6875rem;
+    }
+  }
+
+  .editorActions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    width: 100%;
+
+    > * {
+      width: 100%;
+      min-width: 0;
+      --button-min-width: 0;
+    }
+  }
+
+  .editorMain {
+    padding: 0.875rem 1rem;
+  }
+
+  .editorFieldGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .panelHeaderRow {
+    flex-wrap: wrap;
+    align-items: flex-start;
   }
 }
