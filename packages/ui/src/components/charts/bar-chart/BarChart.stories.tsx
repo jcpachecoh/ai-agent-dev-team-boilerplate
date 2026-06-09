@@ -1,25 +1,19 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import React from 'react';
 
+import { createChartRender } from '../../../../.storybook/chart-canvas';
 import { BarChart } from './BarChart';
 
-const meta: Meta = {
+const meta: Meta<typeof BarChart> = {
   title: 'Charts/BarChart',
   component: BarChart,
   tags: ['autodocs'],
+  render: createChartRender(BarChart, 'BarChart'),
   args: { theme: 'light', size: 'md' },
   argTypes: {
     theme: { control: 'radio', options: ['light', 'dark'] },
     size: { control: 'select', options: ['sm', 'md', 'xl'] },
     variant: { control: 'select', options: ['simple', 'grouped', 'stacked', 'horizontal'] },
   },
-  decorators: [
-    (Story) => (
-      <div style={{ width: '100%', maxWidth: 480, height: 280 }}>
-        <Story />
-      </div>
-    ),
-  ],
 };
 
 export default meta;

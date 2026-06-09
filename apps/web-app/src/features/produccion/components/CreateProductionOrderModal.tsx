@@ -69,41 +69,6 @@ export function CreateProductionOrderModal({
     }
   }, [open, defaultCommitteeId]);
 
-  // #region agent log
-  useEffect(() => {
-    if (!open) return;
-    requestAnimationFrame(() => {
-      const overlay = document.querySelector('[role="presentation"]') as HTMLElement | null;
-      const dialog = document.querySelector('[role="dialog"]') as HTMLElement | null;
-      if (!overlay || !dialog) return;
-      const overlayRect = overlay.getBoundingClientRect();
-      const dialogRect = dialog.getBoundingClientRect();
-      fetch('http://127.0.0.1:7828/ingest/355d2ecf-3818-453c-8510-c7b3fe83712b', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'd2ab57' },
-        body: JSON.stringify({
-          sessionId: 'd2ab57',
-          runId: 'post-fix-modal-center',
-          hypothesisId: 'H3',
-          location: 'CreateProductionOrderModal.tsx:layout-probe',
-          message: 'Create OP modal layout probe',
-          data: {
-            viewportWidth: window.innerWidth,
-            overlayWidth: overlayRect.width,
-            overlayLeft: overlayRect.left,
-            dialogLeft: dialogRect.left,
-            dialogCenterX: dialogRect.left + dialogRect.width / 2,
-            viewportCenterX: window.innerWidth / 2,
-            centeredDelta:
-              Math.abs(dialogRect.left + dialogRect.width / 2 - window.innerWidth / 2) < 2,
-          },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-    });
-  }, [open]);
-  // #endregion
-
   const recipes = recipesQuery.data ?? [];
   const activeCommittees = committeesQuery.data ?? [];
   const selectedRecipe = recipes.find((r) => r.id === form.recipeId);

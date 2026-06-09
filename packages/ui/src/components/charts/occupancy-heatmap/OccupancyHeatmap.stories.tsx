@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import React from 'react';
 
+import { createChartRender } from '../../../../.storybook/chart-canvas';
 import type { HeatmapCell } from './OccupancyHeatmap';
 import { OccupancyHeatmap } from './OccupancyHeatmap';
 
@@ -17,22 +17,16 @@ function buildHeatmapData(): HeatmapCell[] {
   return cells;
 }
 
-const meta: Meta = {
+const meta: Meta<typeof OccupancyHeatmap> = {
   title: 'Charts/OccupancyHeatmap',
   component: OccupancyHeatmap,
   tags: ['autodocs'],
+  render: createChartRender(OccupancyHeatmap, 'OccupancyHeatmap', { maxWidth: 520 }),
   args: { theme: 'light', size: 'md' },
   argTypes: {
     theme: { control: 'radio', options: ['light', 'dark'] },
     size: { control: 'select', options: ['sm', 'md', 'xl'] },
   },
-  decorators: [
-    (Story) => (
-      <div style={{ width: '100%', maxWidth: 520 }}>
-        <Story />
-      </div>
-    ),
-  ],
 };
 
 export default meta;

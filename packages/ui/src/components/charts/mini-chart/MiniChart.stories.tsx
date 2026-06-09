@@ -1,5 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
+import React from 'react';
 
+import { mergeStoryArgs } from '../../../../.storybook/chart-canvas';
 import { MiniChart } from './MiniChart';
 import type { MiniChartProps } from './MiniChart';
 
@@ -13,12 +15,54 @@ const last7: MiniChartProps['data'] = [
   { value: 28 },
 ];
 
+const chartWidth = (size: MiniChartProps['size'] = 'sm') =>
+  size === 'xl' ? 480 : size === 'md' ? 320 : 220;
+
+const FRAME_PADDING = 24;
+
+const MiniChartFrame = ({
+  args,
+  children,
+}: {
+  args: MiniChartProps;
+  children: React.ReactNode;
+}) => {
+  const isDark = args.theme === 'dark';
+  const innerWidth = chartWidth(args.size);
+
+  return (
+    <div
+      style={{
+        boxSizing: 'border-box',
+        width: innerWidth + FRAME_PADDING * 2,
+        padding: FRAME_PADDING,
+        borderRadius: 16,
+        background: isDark ? '#111827' : '#ffffff',
+        border: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,0,0,0.08)',
+      }}
+    >
+      <div style={{ width: innerWidth, maxWidth: '100%' }}>{children}</div>
+    </div>
+  );
+};
+
 const meta: Meta<MiniChartProps> = {
   title: 'Charts/MiniChart',
 
   component: MiniChart as React.ComponentType<MiniChartProps>,
 
   tags: ['autodocs'],
+
+  render: (args, context) => {
+    const mergedArgs = mergeStoryArgs(args, context);
+    const resolvedData = mergedArgs.data?.length ? mergedArgs.data : last7;
+
+    return (
+      <MiniChartFrame args={mergedArgs}>
+        <MiniChart {...mergedArgs} data={resolvedData} />
+      </MiniChartFrame>
+    );
+  },
 
   args: {
     theme: 'light',
@@ -47,29 +91,20 @@ const meta: Meta<MiniChartProps> = {
     loading: {
       control: { type: 'boolean' },
     },
+
+    data: {
+      control: false,
+    },
   },
 
-  decorators: [
-    (Story, context) => {
-      const isDark = context.args.theme === 'dark';
-
-      const width = context.args.size === 'xl' ? 480 : context.args.size === 'md' ? 320 : 220;
-
-      return (
-        <div
-          style={{
-            width,
-            padding: 24,
-            borderRadius: 16,
-            background: isDark ? '#111827' : '#ffffff',
-            border: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,0,0,0.08)',
-          }}
-        >
-          <Story />
-        </div>
-      );
+  parameters: {
+    layout: 'centered',
+    docs: {
+      story: {
+        inline: true,
+      },
     },
-  ],
+  },
 };
 
 export default meta;

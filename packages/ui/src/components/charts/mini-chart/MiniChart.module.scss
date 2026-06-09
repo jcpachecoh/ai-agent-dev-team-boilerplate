@@ -1,32 +1,39 @@
 @use '../../../styles/abstracts/variables' as *;
-@use '../../../styles/abstracts/mixins' as *;
 
 .wrapper {
   --chart-width: 100%;
-  --chart-min-width: 220px;
   --chart-min-height: 40px;
-
-  width: var(--chart-width);
-  min-width: var(--chart-min-width);
-  min-height: var(--chart-min-height);
-
-  display: flex;
-  align-items: center;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 40px !important;
+  overflow: hidden;
 }
 
 .sm {
-  --chart-min-width: 220px;
   --chart-min-height: 40px;
+  min-height: 40px !important;
 }
 
 .md {
-  --chart-min-width: 320px;
   --chart-min-height: 56px;
+  min-height: 56px !important;
 }
 
 .xl {
-  --chart-min-width: 480px;
   --chart-min-height: 72px;
+  min-height: 72px !important;
+}
+
+.empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.emptyLabel {
+  font-size: $font-size-xs;
+  color: $color-text-secondary;
 }
 
 .light {
@@ -35,4 +42,8 @@
 
 .dark {
   background: transparent;
+
+  .emptyLabel {
+    color: rgba($color-white, 0.58);
+  }
 }

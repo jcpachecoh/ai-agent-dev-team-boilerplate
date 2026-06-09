@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import React from 'react';
 
+import { createChartRender } from '../../../../.storybook/chart-canvas';
 import { PieChart } from './PieChart';
 
 const costData = [
@@ -9,23 +9,17 @@ const costData = [
   { name: 'Overhead', value: 1800000 },
 ];
 
-const meta: Meta = {
+const meta: Meta<typeof PieChart> = {
   title: 'Charts/PieChart',
   component: PieChart,
   tags: ['autodocs'],
+  render: createChartRender(PieChart, 'PieChart', { maxWidth: 360 }),
   args: { theme: 'light', size: 'md' },
   argTypes: {
     theme: { control: 'radio', options: ['light', 'dark'] },
     size: { control: 'select', options: ['sm', 'md', 'xl'] },
     variant: { control: 'radio', options: ['pie', 'donut'] },
   },
-  decorators: [
-    (Story) => (
-      <div style={{ width: '100%', maxWidth: 360, height: 280 }}>
-        <Story />
-      </div>
-    ),
-  ],
 };
 
 export default meta;

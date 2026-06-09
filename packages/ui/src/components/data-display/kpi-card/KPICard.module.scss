@@ -162,6 +162,12 @@
   .value {
     color: $color-text-inverse;
   }
+  .deltaLabel {
+    color: rgba($color-white, 0.58);
+  }
+  .neutral {
+    color: rgba($color-white, 0.58);
+  }
 }
 
 .theme--light {
