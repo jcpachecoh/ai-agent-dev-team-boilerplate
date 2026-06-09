@@ -11,6 +11,7 @@ export interface RecetaStatusButtonProps extends Omit<
   label?: string;
   theme?: RecetaTheme;
   size?: RecetaSize;
+  compact?: boolean;
 }
 
 const statusLabels: Record<RecetaStatus, string> = {
@@ -23,6 +24,7 @@ export function RecetaStatusButton({
   label,
   theme = 'light',
   size = 'md',
+  compact = false,
   className,
   ...props
 }: RecetaStatusButtonProps): JSX.Element {
@@ -34,6 +36,7 @@ export function RecetaStatusButton({
         styles[`theme--${theme}`],
         styles[`size--${size}`],
         styles[`status--${status}`],
+        compact && styles.compact,
         className,
       ]
         .filter(Boolean)

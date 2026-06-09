@@ -8,9 +8,10 @@
   gap: 16px;
   width: min(100%, var(--panel-width));
   min-height: 100%;
+  height: 100%;
   padding: 16px;
-  border-left: $border-width solid var(--produccion-border);
-  background: var(--produccion-surface);
+  border-left: 0;
+  background: var(--produccion-row);
   color: var(--produccion-text);
 }
 .header {

@@ -13,6 +13,7 @@ export interface RecetaEditButtonProps extends Omit<
   iconOnly?: boolean;
   theme?: RecetaTheme;
   size?: RecetaSize;
+  compact?: boolean;
 }
 
 export function RecetaEditButton({
@@ -22,6 +23,7 @@ export function RecetaEditButton({
   disabled = false,
   theme = 'light',
   size = 'md',
+  compact = false,
   className,
   ...props
 }: RecetaEditButtonProps): JSX.Element {
@@ -33,6 +35,7 @@ export function RecetaEditButton({
         styles[`theme--${theme}`],
         styles[`size--${size}`],
         iconOnly && styles.iconOnly,
+        compact && styles.compact,
         className,
       ]
         .filter(Boolean)

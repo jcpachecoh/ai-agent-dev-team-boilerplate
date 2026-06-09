@@ -159,6 +159,7 @@ export * from './components/produccion/produccion-plant-map';
 export * from './components/produccion/produccion-plant-overview-preview';
 export * from './components/produccion/produccion-plant-shell';
 export * from './components/produccion/produccion-plant-station-card';
+export * from './components/produccion/produccion-plant-station-live-detail-panel';
 export * from './components/produccion/produccion-primary-action';
 export * from './components/produccion/produccion-recipe-detail-panel';
 export * from './components/produccion/produccion-recipe-table-header';

@@ -1372,7 +1372,8 @@ export function RecipesManagementScreen({
             )}
             renderTableRow={(recipe, { visibleColumns, columnsTemplate }) => (
               <div
-                className={styles.rowClickable}
+                key={recipe.id}
+                className={[styles.rowClickable, styles.recipeRowHost].join(' ')}
                 onClick={() => openEditRecipeEditor(recipe.id)}
                 role="button"
                 tabIndex={0}

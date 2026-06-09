@@ -1,0 +1,355 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/produccion-theme' as produccion;
+
+.panel {
+  @include produccion.produccion-theme-classes;
+  @include produccion.produccion-size-vars;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  height: 100%;
+  min-height: 100%;
+  padding: 16px;
+  background: var(--produccion-row);
+  color: var(--produccion-text);
+}
+
+.kicker {
+  margin: 0;
+  font-family: $font-family-mono;
+  font-size: 0.5625rem;
+  font-weight: $font-weight-bold;
+  color: var(--produccion-subtle);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.identity {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.codeBadge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 2px 7px;
+  background: rgba(produccion.$produccion-gold, 0.08);
+  border: $border-width solid rgba(produccion.$produccion-gold, 0.25);
+  border-radius: 2px;
+  font-family: $font-family-mono;
+  font-size: 0.6875rem;
+  font-weight: $font-weight-bold;
+  color: produccion.$produccion-gold;
+}
+
+h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.product {
+  margin: 2px 0 0;
+  font-size: 0.75rem;
+  color: var(--produccion-muted);
+}
+
+.close {
+  background: transparent;
+  border: 0;
+  color: var(--produccion-subtle);
+  cursor: pointer;
+}
+
+.close svg {
+  width: 16px;
+  height: 16px;
+}
+
+.timerBlock {
+  display: grid;
+  gap: 8px;
+  padding-bottom: 12px;
+  border-bottom: $border-width solid var(--produccion-border-muted);
+}
+
+.timerTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-family: $font-family-mono;
+  font-size: 0.5625rem;
+  color: var(--produccion-subtle);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.exceededBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  background: rgba(produccion.$produccion-danger, 0.12);
+  border: $border-width solid rgba(produccion.$produccion-danger, 0.35);
+  border-radius: 2px;
+  color: produccion.$produccion-danger;
+  font-size: 0.5rem;
+  font-weight: $font-weight-bold;
+}
+
+.timer {
+  margin: 0;
+  font-family: $font-family-mono;
+  font-size: 2.125rem;
+  font-weight: $font-weight-bold;
+  line-height: 1;
+  color: var(--efficiency-accent);
+}
+
+.standard {
+  margin: 0;
+  font-family: $font-family-mono;
+  font-size: 0.625rem;
+  color: var(--produccion-muted);
+}
+
+.track {
+  height: 4px;
+  background: var(--efficiency-track);
+  border-radius: 1px;
+  overflow: hidden;
+}
+
+.track span {
+  display: block;
+  height: 100%;
+  background: var(--efficiency-accent);
+}
+
+.efficiency--normal {
+  --efficiency-accent: #{produccion.$produccion-teal};
+  --efficiency-track: #{rgba(produccion.$produccion-teal, 0.09)};
+}
+
+.efficiency--warning {
+  --efficiency-accent: #{produccion.$produccion-warning};
+  --efficiency-track: #{rgba(produccion.$produccion-warning, 0.09)};
+}
+
+.efficiency--critical {
+  --efficiency-accent: #{produccion.$produccion-danger};
+  --efficiency-track: #{rgba(produccion.$produccion-danger, 0.09)};
+}
+
+.sectionTitle {
+  margin: 0 0 8px;
+  font-family: $font-family-mono;
+  font-size: 0.5625rem;
+  color: var(--produccion-subtle);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.phases {
+  padding-bottom: 12px;
+  border-bottom: $border-width solid var(--produccion-border-muted);
+}
+
+.phases ol {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.phaseItem {
+  display: grid;
+  grid-template-columns: 16px 1fr;
+  gap: 10px;
+  align-items: start;
+}
+
+.phaseMarker {
+  width: 14px;
+  height: 14px;
+  margin-top: 2px;
+  border: 2px solid var(--produccion-border);
+  border-radius: 999px;
+}
+
+.phase--completed .phaseMarker {
+  background: produccion.$produccion-teal;
+  border-color: produccion.$produccion-teal;
+}
+
+.phase--in_progress .phaseMarker {
+  border-color: produccion.$produccion-warning;
+  box-shadow: inset 0 0 0 2px rgba(produccion.$produccion-warning, 0.25);
+}
+
+.phase--pending .phaseMarker {
+  opacity: 0.45;
+}
+
+.phaseItem strong {
+  display: block;
+  font-size: 0.8125rem;
+}
+
+.phaseStatus {
+  display: inline-block;
+  margin-top: 2px;
+  font-family: $font-family-mono;
+  font-size: 0.5rem;
+  color: produccion.$produccion-warning;
+  letter-spacing: 0.08em;
+}
+
+.orderBlock {
+  padding-bottom: 12px;
+  border-bottom: $border-width solid var(--produccion-border-muted);
+}
+
+.orderRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--produccion-surface-raised);
+  border: $border-width solid var(--produccion-border-muted);
+  border-radius: $border-radius-sm;
+}
+
+.orderRow span {
+  font-family: $font-family-mono;
+  font-size: 0.6875rem;
+  color: produccion.$produccion-gold;
+}
+
+.orderRow strong {
+  font-size: 0.9375rem;
+}
+
+.operators {
+  display: grid;
+  gap: 10px;
+  flex: 1;
+}
+
+.operatorRow {
+  display: grid;
+  grid-template-columns: 32px 1fr auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1.5px solid transparent;
+  border-radius: 3px;
+  font-family: $font-family-mono;
+  font-size: 0.625rem;
+  font-weight: $font-weight-bold;
+}
+
+.avatar--gold {
+  background: rgba(produccion.$produccion-gold, 0.09);
+  border-color: rgba(produccion.$produccion-gold, 0.33);
+  color: produccion.$produccion-gold;
+}
+
+.avatar--teal {
+  background: rgba(produccion.$produccion-teal, 0.09);
+  border-color: rgba(produccion.$produccion-teal, 0.33);
+  color: produccion.$produccion-teal;
+}
+
+.avatar--info {
+  background: rgba(produccion.$produccion-info, 0.09);
+  border-color: rgba(produccion.$produccion-info, 0.33);
+  color: produccion.$produccion-info;
+}
+
+.avatar--warning {
+  background: rgba(produccion.$produccion-orange, 0.09);
+  border-color: rgba(produccion.$produccion-orange, 0.33);
+  color: #e8943a;
+}
+
+.avatar--danger {
+  background: rgba(produccion.$produccion-danger, 0.09);
+  border-color: rgba(produccion.$produccion-danger, 0.33);
+  color: produccion.$produccion-danger;
+}
+
+.operatorRow p {
+  margin: 2px 0 0;
+  font-size: 0.6875rem;
+  color: var(--produccion-muted);
+}
+
+.operatorTimer {
+  font-family: $font-family-mono;
+  font-size: 0.6875rem;
+  color: produccion.$produccion-teal;
+}
+
+.actions {
+  display: grid;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 8px;
+}
+
+.actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: $border-radius-sm;
+  font-family: $font-family-mono;
+  font-size: 0.625rem;
+  font-weight: $font-weight-bold;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.secondaryAction {
+  background: transparent;
+  border: $border-width solid var(--produccion-border);
+  color: var(--produccion-text);
+}
+
+.dangerAction {
+  background: transparent;
+  border: $border-width solid rgba(produccion.$produccion-danger, 0.45);
+  color: produccion.$produccion-danger;
+}
+
+.primaryAction {
+  background: var(--produccion-surface-raised);
+  border: $border-width solid var(--produccion-border);
+  color: var(--produccion-text);
+}
+
+.size--md {
+  --panel-width: 360px;
+}

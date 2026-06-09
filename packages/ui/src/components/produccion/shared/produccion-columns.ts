@@ -6,6 +6,7 @@ export const produccionStationColumns = [
   'Capac.',
   'Estado',
   'Recetas',
+  'Acciones',
 ];
 export const produccionRecipeColumns = [
   'Nombre',

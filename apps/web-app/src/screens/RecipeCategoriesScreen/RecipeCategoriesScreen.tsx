@@ -233,7 +233,8 @@ export function RecipeCategoriesScreen(): JSX.Element {
               )}
               renderTableRow={(category, { visibleColumns, columnsTemplate }) => (
                 <div
-                  className={listStyles.rowClickable}
+                  key={category.id}
+                  className={[listStyles.rowClickable, listStyles.categoryRowHost].join(' ')}
                   onClick={() => openEdit(category)}
                   role="button"
                   tabIndex={0}

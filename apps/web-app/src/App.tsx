@@ -21,6 +21,7 @@ import RecipesPage from '@/pages/RecipesPage';
 import ReportsPage from '@/pages/ReportsPage';
 import ResponsiveTableDemoPage from '@/pages/ResponsiveTableDemoPage';
 import SettingsPage from '@/pages/SettingsPage';
+import SupervisorPage from '@/pages/SupervisorPage/SupervisorPage';
 import UsersPage from '@/pages/UsersPage';
 import { RequireAuth } from '@/routes/RequireAuth';
 
@@ -49,6 +50,7 @@ export default function App(): React.JSX.Element {
           <Route path="/recetas/historial" element={<RecipesPage />} />
           <Route path="/produccion/ordenes/*" element={<ProduccionPage />} />
           <Route path="/produccion/comites/*" element={<ProduccionComitesPage />} />
+          <Route path="/supervisor/*" element={<SupervisorPage />} />
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/dispatch" element={<DispatchPage />} />
           <Route path="/users" element={<UsersPage />} />
