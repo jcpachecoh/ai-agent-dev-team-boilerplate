@@ -12,6 +12,7 @@ import { IncidentService } from '../service/incident.service';
 import { PhaseChainService } from '../service/phase-chain.service';
 import { PlantService } from '../service/plant.service';
 import { ProductionOrderPdfService } from '../service/production-order-pdf.service';
+import { SupervisorService } from '../service/supervisor.service';
 
 const tenantId = 'palos-de-lena';
 
@@ -71,6 +72,12 @@ const committeeServiceMock = {
   closeCommittee: jest.fn(),
 };
 
+const supervisorServiceMock = {
+  getOverview: jest.fn(),
+  getStations: jest.fn(),
+  getStationLiveDetail: jest.fn(),
+};
+
 describe('PlantController', () => {
   let controller: PlantController;
 
@@ -83,6 +90,7 @@ describe('PlantController', () => {
         { provide: PhaseChainService, useValue: phaseChainServiceMock },
         { provide: IncidentService, useValue: incidentServiceMock },
         { provide: ProductionOrderPdfService, useValue: productionOrderPdfServiceMock },
+        { provide: SupervisorService, useValue: supervisorServiceMock },
       ],
     })
       .overrideGuard(PlantAuthGuard)

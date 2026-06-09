@@ -66,6 +66,7 @@ import { PhaseChainService } from '../service/phase-chain.service';
 import { IncidentService } from '../service/incident.service';
 import { PlantService } from '../service/plant.service';
 import { ProductionOrderPdfService } from '../service/production-order-pdf.service';
+import { SupervisorService } from '../service/supervisor.service';
 import {
   CommitteeDetailResponseDto,
   CommitteeListItemResponseDto,
@@ -93,6 +94,10 @@ import { ResolveIncidentDto } from './dto/resolve-incident.dto';
 import { RecipeDetailResponseDto } from './dto/recipe-detail.response';
 import { UpdateRecipeDto } from './dto/update-recipe.dto';
 import { UpdateWorkstationDto } from './dto/update-workstation.dto';
+import {
+  SupervisorOverviewResponseDto,
+  SupervisorStationsResponseDto,
+} from './dto/supervisor.response';
 
 const SUPERVISOR_ROLES = [
   OperationalRole.SUPERVISOR,
@@ -114,6 +119,7 @@ export class PlantController {
     private readonly phaseChainService: PhaseChainService,
     private readonly incidentService: IncidentService,
     private readonly productionOrderPdfService: ProductionOrderPdfService,
+    private readonly supervisorService: SupervisorService,
   ) {}
 
   /** MES JWT carries tenantId; platform login uses x-tenant-id on existing plant routes. */
@@ -127,6 +133,36 @@ export class PlantController {
       return header.trim();
     }
     throw new UnauthorizedException('Tenant is required (JWT tenantId or x-tenant-id header)');
+  }
+
+  // ── Supervisor dashboard ─────────────────────────────────────────────────────
+
+  @ApiOperation({ summary: 'Supervisor plant map overview (KPIs, live stations, incidents)' })
+  @ApiOkResponse({ type: SupervisorOverviewResponseDto })
+  @Get('supervisor/overview')
+  @UseGuards(PlantAuthGuard, PlantRolesGuard)
+  @Roles(...SUPERVISOR_ROLES)
+  getSupervisorOverview(@Req() req: MesRequest) {
+    return this.supervisorService.getOverview(this.resolveTenantId(req));
+  }
+
+  @ApiOperation({ summary: 'Supervisor stations master list with assigned recipes/phases' })
+  @ApiOkResponse({ type: SupervisorStationsResponseDto })
+  @Get('supervisor/stations')
+  @UseGuards(PlantAuthGuard, PlantRolesGuard)
+  @Roles(...SUPERVISOR_ROLES)
+  getSupervisorStations(@Req() req: MesRequest) {
+    return this.supervisorService.getStations(this.resolveTenantId(req));
+  }
+
+  @ApiOperation({ summary: 'Supervisor live station detail for plant map side panel' })
+  @ApiParam({ name: 'id', description: 'Work station ID' })
+  @ApiOkResponse({ type: Object })
+  @Get('supervisor/stations/:id/live')
+  @UseGuards(PlantAuthGuard, PlantRolesGuard)
+  @Roles(...SUPERVISOR_ROLES)
+  getSupervisorStationLive(@Req() req: MesRequest, @Param('id') id: string) {
+    return this.supervisorService.getStationLiveDetail(this.resolveTenantId(req), id);
   }
 
   // ── Workstations ─────────────────────────────────────────────────────────────

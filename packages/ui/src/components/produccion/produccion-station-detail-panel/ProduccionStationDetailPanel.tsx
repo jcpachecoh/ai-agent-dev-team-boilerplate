@@ -83,6 +83,12 @@ export function ProduccionStationDetailPanel({
             <ProduccionStatusBadge status={station.status} theme={theme} size="sm" />
           </dd>
         </div>
+        {station.description ? (
+          <div>
+            <dt>Descripción</dt>
+            <dd>{station.description}</dd>
+          </div>
+        ) : null}
       </dl>
       <section>
         <p className={styles.sectionTitle}>Recetas / fases asignadas</p>

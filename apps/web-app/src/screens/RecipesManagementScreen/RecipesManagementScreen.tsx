@@ -1398,7 +1398,7 @@ export function RecipesManagementScreen({
             {filteredRecipes.map((recipe) => (
               <div
                 key={recipe.id}
-                className={styles.rowClickable}
+                className={[styles.rowClickable, styles.recipeRowHost].join(' ')}
                 onClick={() => openEditRecipeEditor(recipe.id)}
                 role="button"
                 tabIndex={0}
