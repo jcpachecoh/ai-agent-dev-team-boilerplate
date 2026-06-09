@@ -1,5 +1,5 @@
-import { ChevronRight, MapPin } from 'lucide-react';
-import React, { type JSX, type KeyboardEvent } from 'react';
+import { Eye, MapPin, SquarePen } from 'lucide-react';
+import React, { type JSX } from 'react';
 
 import styles from './ProduccionStationTableRow.module.scss';
 import { ProduccionStatusBadge } from '../produccion-status-badge/ProduccionStatusBadge';
@@ -11,11 +11,13 @@ import type {
 } from '../shared/produccion-types';
 
 export interface ProduccionStationTableRowProps extends ProduccionStationRowData {
-  onClick?: () => void;
+  onView?: () => void;
+  onEdit?: () => void;
   theme?: ProduccionTheme;
   size?: ProduccionSize;
   className?: string;
 }
+
 export function ProduccionStationTableRow({
   code = 'EST-01',
   name = 'Mise en place',
@@ -25,33 +27,17 @@ export function ProduccionStationTableRow({
   capacityLabel = '3 op.',
   status = 'active',
   recipeCountLabel = '2 recetas',
-  selected = false,
-  onClick,
+  onView,
+  onEdit,
   theme = 'dark',
   size = 'xl',
   className,
 }: ProduccionStationTableRowProps): JSX.Element {
-  const handleKeyDown = (event: KeyboardEvent<HTMLButtonElement>): void => {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      onClick?.();
-    }
-  };
   return (
-    <button
-      type="button"
-      className={[
-        styles.rowButton,
-        styles[`theme--${theme}`],
-        styles[`size--${size}`],
-        selected && styles.selected,
-        className,
-      ]
+    <div
+      className={[styles.row, styles[`theme--${theme}`], styles[`size--${size}`], className]
         .filter(Boolean)
         .join(' ')}
-      aria-selected={selected}
-      onClick={onClick}
-      onKeyDown={handleKeyDown}
       role="row"
     >
       <span className={styles.inner}>
@@ -77,11 +63,29 @@ export function ProduccionStationTableRow({
         <span className={styles.subtle} data-label="Recetas" role="cell">
           {recipeCountLabel ?? '—'}
         </span>
-        <span className={styles.chevron} role="cell">
-          <ChevronRight aria-hidden />
+        <span className={styles.actions} data-label="Acciones" role="cell">
+          <button
+            type="button"
+            className={styles.actionButton}
+            onClick={onView}
+            aria-label={`Ver estación ${code}`}
+          >
+            <Eye size={12} aria-hidden />
+            Ver
+          </button>
+          <button
+            type="button"
+            className={[styles.actionButton, styles.actionButtonPrimary].join(' ')}
+            onClick={onEdit}
+            aria-label={`Editar estación ${code}`}
+          >
+            <SquarePen size={12} aria-hidden />
+            Editar
+          </button>
         </span>
       </span>
-    </button>
+    </div>
   );
 }
+
 export default ProduccionStationTableRow;

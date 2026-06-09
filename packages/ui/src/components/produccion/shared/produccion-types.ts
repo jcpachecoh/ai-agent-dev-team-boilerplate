@@ -55,6 +55,7 @@ export interface ProduccionAssignedRecipe {
 }
 
 export interface ProduccionStationDetailData extends ProduccionStationRowData {
+  description?: string;
   assignedRecipes?: ProduccionAssignedRecipe[];
 }
 
@@ -89,13 +90,81 @@ export interface ProduccionRecipeDetailData extends ProduccionRecipeRowData {
   phases?: ProduccionPhaseData[];
 }
 
+export type ProduccionOrderPriority = 'normal' | 'alta' | 'urgente';
+export type ProduccionEfficiencyStatus = 'normal' | 'warning' | 'critical';
+export type ProduccionSeverityLevel = 'medio' | 'alto' | 'critico';
+
+export interface ProduccionPlantOperatorAvatar {
+  initials: string;
+  tone?: 'gold' | 'teal' | 'info' | 'warning' | 'danger';
+}
+
 export interface ProduccionPlantStationData {
+  id?: string;
   code: string;
   name: string;
-  status: ProduccionStationStatus;
-  tone?: ProduccionStationTone;
-  meta?: string;
+  subtitle?: string;
+  orderNumber?: string;
+  productName?: string;
+  priority?: ProduccionOrderPriority;
+  quantityLabel?: string;
+  phaseLabel?: string;
   progress?: number;
+  efficiencyStatus?: ProduccionEfficiencyStatus;
+  timerLabel?: string;
+  severity?: ProduccionSeverityLevel;
+  operators?: ProduccionPlantOperatorAvatar[];
+  operatorCountLabel?: string;
+  status?: ProduccionStationStatus;
+  selected?: boolean;
+}
+
+export interface ProduccionPlantAlarmItem {
+  code: string;
+  severity: ProduccionSeverityLevel;
+  title: string;
+  stationLabel: string;
+  timeLabel: string;
+}
+
+export interface ProduccionPlantNewsItem {
+  title: string;
+  detail: string;
+  timeLabel: string;
+  statusLabel?: string;
+  statusTone?: 'warning' | 'success' | 'muted';
+}
+
+export type ProduccionPlantLivePhaseStatus = 'completed' | 'in_progress' | 'pending';
+
+export interface ProduccionPlantLivePhase {
+  order: number;
+  name: string;
+  status: ProduccionPlantLivePhaseStatus;
+}
+
+export interface ProduccionPlantLiveOperator {
+  initials: string;
+  name: string;
+  roleLabel: string;
+  timerLabel: string;
+  tone?: 'gold' | 'teal' | 'info' | 'warning' | 'danger';
+}
+
+export interface ProduccionPlantStationLiveDetailData {
+  code: string;
+  name: string;
+  productName?: string;
+  timerLabel: string;
+  standardTimeLabel?: string;
+  progress?: number;
+  efficiencyStatus?: ProduccionEfficiencyStatus;
+  exceeded?: boolean;
+  phases?: ProduccionPlantLivePhase[];
+  orderNumber?: string;
+  orderId?: string;
+  goalLabel?: string;
+  operators?: ProduccionPlantLiveOperator[];
 }
 
 export interface ProduccionOrderQueueItem {

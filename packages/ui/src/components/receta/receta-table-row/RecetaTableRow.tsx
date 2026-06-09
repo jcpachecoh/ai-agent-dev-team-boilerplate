@@ -83,6 +83,7 @@ export function RecetaTableRow({
           status={status}
           theme={theme}
           size="sm"
+          compact={density === 'compact'}
           onClick={(event) => {
             event.stopPropagation();
             onStatusChange?.(nextStatus);
@@ -93,6 +94,7 @@ export function RecetaTableRow({
         <RecetaEditButton
           theme={theme}
           size="sm"
+          compact={density === 'compact'}
           onClick={(event) => {
             event.stopPropagation();
             onEdit?.();

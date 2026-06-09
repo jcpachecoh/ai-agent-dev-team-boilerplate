@@ -51,6 +51,7 @@ export function RecipeCategoryTableRow({
           status={status}
           theme={theme}
           size="sm"
+          compact
           onClick={(event) => {
             event.stopPropagation();
             onStatusChange?.(nextStatus);
@@ -61,6 +62,7 @@ export function RecipeCategoryTableRow({
         <RecetaEditButton
           theme={theme}
           size="sm"
+          compact
           onClick={(event) => {
             event.stopPropagation();
             onEdit?.();

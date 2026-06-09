@@ -1,0 +1,9 @@
+@use '@/styles/tokens' as t;
+
+.page {
+  display: flex;
+  flex-direction: column;
+  height: calc(100dvh - t.$header-height);
+  min-height: calc(100dvh - t.$header-height);
+  overflow: hidden;
+}

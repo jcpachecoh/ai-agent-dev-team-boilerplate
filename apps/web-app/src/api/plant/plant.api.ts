@@ -66,6 +66,40 @@ export async function getPlantWorkstations(): Promise<PlantWorkStation[]> {
   return plantFetch<PlantWorkStation[]>('/plant/workstations');
 }
 
+export type CreatePlantWorkstationInput = {
+  name: string;
+  code: string;
+  description?: string;
+  location?: string;
+};
+
+export async function createPlantWorkstation(
+  input: CreatePlantWorkstationInput,
+): Promise<PlantWorkStation> {
+  return plantFetch<PlantWorkStation>('/plant/workstations', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export type UpdatePlantWorkstationInput = {
+  name?: string;
+  code?: string;
+  description?: string;
+  location?: string;
+  isActive?: boolean;
+};
+
+export async function updatePlantWorkstation(
+  id: string,
+  input: UpdatePlantWorkstationInput,
+): Promise<PlantWorkStation> {
+  return plantFetch<PlantWorkStation>(`/plant/workstations/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  });
+}
+
 export async function createPlantRecipe(
   input: CreatePlantRecipeInput,
 ): Promise<PlantProductionRecipe> {

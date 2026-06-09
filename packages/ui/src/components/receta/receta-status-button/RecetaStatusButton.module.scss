@@ -29,6 +29,16 @@
   }
 }
 
+.compact {
+  --control-min-height: 28px;
+  --status-width: 58px;
+  min-height: 28px;
+  height: 28px;
+  padding: 0 8px;
+  font-size: 0.5625rem;
+  letter-spacing: 0.08em;
+}
+
 .size--sm {
   --status-width: 72px;
 }
