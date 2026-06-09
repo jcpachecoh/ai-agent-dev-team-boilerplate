@@ -30,10 +30,13 @@
  */
 
 import {
+  ArlRiskLevel,
   CondicionPago,
   DocumentType,
+  EmployeeContractType,
   OperationalRole,
   PrismaClient,
+  SalaryType,
   StockUnit,
   SupplierTipo,
 } from '@prisma/client';
@@ -366,12 +369,144 @@ async function seedRolePermissions() {
   return countsByRole;
 }
 
+async function seedLocations() {
+  const locations = [];
+  for (let i = 1; i <= 10; i++) {
+    const name = `Sede Palos de Leña ${i}`;
+    const code = `PL-${i.toString().padStart(2, '0')}`;
+    const location = await prisma.location.upsert({
+      where: {
+        tenantId_code: { tenantId: OPERATIONAL_TENANT_ID, code },
+      },
+      update: { name, isActive: true },
+      create: {
+        tenantId: OPERATIONAL_TENANT_ID,
+        name,
+        code,
+        isActive: true,
+      },
+    });
+    locations.push(location);
+    console.log('Location:', location.name, '—', location.id);
+  }
+  return locations;
+}
+
+async function seedEmployeeDetails(
+  ownerUserId: string,
+  operatorUserId: string,
+  locationId: string,
+) {
+  // Seed for owner
+  await prisma.employeeDetails.upsert({
+    where: { userId: ownerUserId },
+    update: { isActive: true },
+    create: {
+      userId: ownerUserId,
+      tenantId: OPERATIONAL_TENANT_ID,
+      locationId: locationId,
+      position: 'Gerente General',
+      area: 'Administración',
+      department: 'Gerencia',
+      contractType: EmployeeContractType.INDEFINIDO,
+      hireDate: new Date('2024-01-01'),
+      contractStart: new Date('2024-01-01'),
+      salaryType: SalaryType.INTEGRAL,
+      salaryAmount: 15000000.0,
+      hasTransportSubsidy: false,
+      isExemptFromTax: false,
+      epsName: 'Sura',
+      pensionFundName: 'Protección',
+      cesantiasFundName: 'Protección',
+      arlName: 'Sura',
+      arlRiskLevel: ArlRiskLevel.RIESGO_I,
+      cajaCompensacion: 'Comfama',
+      isActive: true,
+    },
+  });
+
+  // Seed for operator
+  await prisma.employeeDetails.upsert({
+    where: { userId: operatorUserId },
+    update: { isActive: true },
+    create: {
+      userId: operatorUserId,
+      tenantId: OPERATIONAL_TENANT_ID,
+      locationId: locationId,
+      position: 'Operario de Planta',
+      area: 'Producción',
+      department: 'Cocina',
+      contractType: EmployeeContractType.FIJO,
+      hireDate: new Date('2024-02-15'),
+      contractStart: new Date('2024-02-15'),
+      contractEnd: new Date('2025-02-14'),
+      salaryType: SalaryType.ORDINARIO,
+      salaryAmount: 1800000.0,
+      hasTransportSubsidy: true,
+      isExemptFromTax: false,
+      epsName: 'Sanitas',
+      pensionFundName: 'Porvenir',
+      cesantiasFundName: 'Porvenir',
+      arlName: 'Sura',
+      arlRiskLevel: ArlRiskLevel.RIESGO_II,
+      cajaCompensacion: 'Compensar',
+      isActive: true,
+    },
+  });
+
+  console.log('EmployeeDetails: Seeded for owner and operator');
+}
+
 async function main() {
   console.log('Seeding database…');
+
+  // ── Tenant (Global) ──────────────────────────────────────────────────────
+  const tenant = await prisma.tenant.upsert({
+    where: { id: OPERATIONAL_TENANT_ID },
+    update: {
+      name: 'Palos de Leña',
+      legalName: 'Palos de Leña S.A.S.',
+      tradeName: 'Palos de Leña',
+      nit: '900000000-1',
+      legalRepresentativeName: 'Representante Legal Palos de Leña',
+      legalRepresentativeDocumentType: DocumentType.CC,
+      legalRepresentativeDocumentNumber: '1000000000',
+      email: 'admin@palosdelena.test',
+      phone: '+57 300 000 0000',
+      address: 'Dirección de prueba',
+      city: 'Bogotá',
+      department: 'Cundinamarca',
+      country: 'CO',
+      taxRegime: 'RESPONSABLE_IVA',
+      isActive: true,
+    },
+    create: {
+      id: OPERATIONAL_TENANT_ID,
+      name: 'Palos de Leña',
+      legalName: 'Palos de Leña S.A.S.',
+      tradeName: 'Palos de Leña',
+      nit: '900000000-1',
+      legalRepresentativeName: 'Representante Legal Palos de Leña',
+      legalRepresentativeDocumentType: DocumentType.CC,
+      legalRepresentativeDocumentNumber: '1000000000',
+      email: 'admin@palosdelena.test',
+      phone: '+57 300 000 0000',
+      address: 'Dirección de prueba',
+      city: 'Bogotá',
+      department: 'Cundinamarca',
+      country: 'CO',
+      taxRegime: 'RESPONSABLE_IVA',
+      isActive: true,
+    },
+  });
+  console.log('Tenant:', tenant.name, '—', tenant.id);
 
   const roles = await seedRoles();
   await seedPermissions();
   const rolePermissionCounts = await seedRolePermissions();
+
+  const locations = await seedLocations();
+  const firstLocationId = locations[0].id;
 
   // ── Supply category (operational tenant) ─────────────────────────────────
   const category = await prisma.supplyCategory.upsert({
@@ -678,6 +813,9 @@ async function main() {
     await import('../../../scripts/backfill-operational-user-links');
   const backfillResult = await backfillOperationalUserLinks(prisma);
   console.log('\n✅ OperationalUser → User backfill:', backfillResult);
+
+  // ── NOM-01: Seed EmployeeDetails ─────────────────────────────────────────
+  await seedEmployeeDetails(ownerGlobalUser.id, operatorGlobalUser.id, firstLocationId);
 }
 
 main()

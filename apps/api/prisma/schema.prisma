@@ -281,6 +281,33 @@ enum DocumentType {
   PEP
 }
 
+model Tenant {
+  id                                String        @id @default(cuid())
+  name                              String
+  nit                               String?       @unique
+  legalName                         String?
+  tradeName                         String?
+  legalRepresentativeName           String?
+  legalRepresentativeDocumentType   DocumentType?
+  legalRepresentativeDocumentNumber String?
+  email                             String?
+  phone                             String?
+  address                           String?
+  city                              String?
+  department                        String?
+  country                           String        @default("CO")
+  taxRegime                         String?
+  isActive                          Boolean       @default(true)
+  createdAt                         DateTime      @default(now())
+  updatedAt                         DateTime      @updatedAt
+  deletedAt                         DateTime?
+
+  tenantLocations Location[]
+
+  @@index([isActive])
+  @@map("tenants")
+}
+
 model Role {
   id          String   @id @default(cuid())
   tenantId    String
@@ -321,6 +348,7 @@ model User {
 
   role Role @relation(fields: [roleId], references: [id])
 
+  employeeDetails        EmployeeDetails?
   operationalProfile     OperationalUser?
   userPermissions        UserPermission[]
   loginAudits            LoginAudit[]
@@ -333,6 +361,86 @@ model User {
   @@index([isActive])
   @@index([tenantId, isActive])
   @@map("users")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// NOMINA COLOMBIA (NOM-01)
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum EmployeeContractType {
+  FIJO
+  INDEFINIDO
+  OBRA
+  PRESTACION
+  APRENDIZAJE
+}
+
+enum SalaryType {
+  ORDINARIO
+  INTEGRAL
+}
+
+enum ArlRiskLevel {
+  RIESGO_I
+  RIESGO_II
+  RIESGO_III
+  RIESGO_IV
+  RIESGO_V
+}
+
+model Location {
+  id        String   @id @default(cuid())
+  tenantId  String
+  name      String
+  code      String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant          Tenant            @relation(fields: [tenantId], references: [id])
+  employeeDetails EmployeeDetails[]
+
+  @@unique([tenantId, name])
+  @@unique([tenantId, code])
+  @@index([tenantId])
+  @@map("locations")
+}
+
+model EmployeeDetails {
+  id                  String               @id @default(cuid())
+  userId              String               @unique
+  tenantId            String
+  locationId          String
+  position            String
+  area                String
+  department          String
+  contractType        EmployeeContractType
+  hireDate            DateTime
+  contractStart       DateTime
+  contractEnd         DateTime?
+  salaryType          SalaryType
+  salaryAmount        Decimal              @db.Decimal(12, 2)
+  hasTransportSubsidy Boolean              @default(false)
+  isExemptFromTax     Boolean              @default(false)
+  epsName             String
+  pensionFundName     String
+  cesantiasFundName   String
+  arlName             String
+  arlRiskLevel        ArlRiskLevel
+  cajaCompensacion    String
+  isActive            Boolean              @default(true)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  deletedAt           DateTime?
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  location Location @relation(fields: [locationId], references: [id])
+
+  @@index([tenantId])
+  @@index([locationId])
+  @@index([contractType])
+  @@index([isActive])
+  @@map("employee_details")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
