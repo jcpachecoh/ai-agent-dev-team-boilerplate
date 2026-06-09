@@ -1,0 +1,45 @@
+.card {
+  background: var(--color-bg-surface);
+}
+
+.titleGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.code {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #7c3aed;
+}
+
+.name {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  word-break: break-word;
+}
+
+.phases {
+  width: 100%;
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+
+  summary {
+    cursor: pointer;
+    color: var(--color-text-primary);
+    font-weight: 500;
+  }
+
+  ul {
+    margin: 0.5rem 0 0;
+    padding-left: 1.1rem;
+  }
+
+  li {
+    margin-bottom: 0.35rem;
+  }
+}

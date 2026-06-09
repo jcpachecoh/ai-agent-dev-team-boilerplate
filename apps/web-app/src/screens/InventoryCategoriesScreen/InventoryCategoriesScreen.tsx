@@ -4,13 +4,19 @@ import {
   InventarioSearch,
   InventarioSelect,
   InventarioTableHeader,
-  InventarioTableRow,
   toast,
 } from '@restopsiq/ui';
 import { useMemo, useState } from 'react';
 
+import {
+  InventarioCategoryCard,
+  InventarioCategoryRow,
+} from '@/components/inventario/inventario-responsive';
+import { ResponsiveTable } from '@/components/responsive-table';
 import { CategoryFormModal } from '@/components/inventory/CategoryFormModal';
 import { InventoryScreenState } from '@/components/inventory/InventoryScreenState';
+import { INVENTARIO_CATEGORY_RESPONSIVE_COLUMNS } from '@/features/inventario/responsive-columns';
+import { headerColumnsFromResponsive } from '@/lib/responsive-columns';
 import {
   useCreateSupplyCategory,
   useDeactivateSupplyCategory,
@@ -188,25 +194,43 @@ export function InventoryCategoriesScreen(): React.JSX.Element {
             </section>
           ) : (
             <section className={shared.tableWrap}>
-              <div className={shared.tableHead}>
-                <InventarioTableHeader variant="category" theme={theme} size="xl" />
-              </div>
-              <div className={shared.tableBody}>
-                {pageItems.map((category) => (
-                  <InventarioTableRow
-                    key={category.id}
-                    variant="category"
+              <ResponsiveTable<SupplyCategoryApi>
+                columns={INVENTARIO_CATEGORY_RESPONSIVE_COLUMNS}
+                rows={pageItems}
+                keyExtractor={(category) => category.id}
+                className={shared.responsiveTable}
+                renderTableHeader={({ visibleColumns }) => (
+                  <div className={shared.tableHead}>
+                    <InventarioTableHeader
+                      variant="category"
+                      theme={theme}
+                      size="xl"
+                      columns={headerColumnsFromResponsive(visibleColumns, {
+                        estado: 'center',
+                        actions: 'center',
+                      })}
+                    />
+                  </div>
+                )}
+                renderTableRow={(category, { visibleColumns, columnsTemplate }) => (
+                  <InventarioCategoryRow
+                    category={category}
                     theme={theme}
-                    size="xl"
-                    className={shared.tableRowHost}
-                    nombre={category.nombre}
-                    descripcion={category.descripcion ?? undefined}
-                    isActive={category.isActive}
+                    visibleColumns={visibleColumns}
+                    columnsTemplate={columnsTemplate}
                     onEdit={() => openEdit(category)}
                     onDelete={() => void handleDeactivate(category)}
                   />
-                ))}
-              </div>
+                )}
+                renderCard={(category) => (
+                  <InventarioCategoryCard
+                    category={category}
+                    theme={theme}
+                    onEdit={() => openEdit(category)}
+                    onDelete={() => void handleDeactivate(category)}
+                  />
+                )}
+              />
               <footer className={shared.tableFooter}>
                 <InventarioPagination
                   page={page}

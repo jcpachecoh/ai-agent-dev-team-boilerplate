@@ -90,9 +90,11 @@
 }
 
 .densityCompact {
-  --row-height: 56px;
+  --row-height: 44px;
   --row-padding-x: 1rem;
   width: 100%;
+  height: var(--row-height);
+  max-height: var(--row-height);
 
   .code {
     font-size: 0.6875rem;
@@ -106,6 +108,20 @@
   .duration,
   .portions {
     font-size: 0.75rem;
+  }
+
+  .status,
+  .actions {
+    display: flex;
+    align-items: center;
+  }
+
+  .status {
+    justify-content: center;
+  }
+
+  .actions {
+    justify-content: flex-end;
   }
 }
 

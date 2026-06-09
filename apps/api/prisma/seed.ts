@@ -27,6 +27,9 @@
  *   operator: cédula 87654321 / PIN 4321  (OPERATOR, sede sede-principal) — linked to global User
  *
  * Run:  cd apps/api && pnpm db:seed
+ *
+ * Plant supervisor demo (6 estaciones, recetas, OP activas, alarmas):
+ *   Re-run seed after migrations — creates EST-01…EST-06 fixtures for /supervisor/mapa
  */
 
 import {
@@ -74,6 +77,9 @@ const GLOBAL_MES_OPERATOR_USER_ID = '11111111-0000-0000-0000-000000000005';
 
 const MES_OWNER_ID = 'dddddddd-0000-0000-0000-000000000004';
 const MES_OPERATOR_ID = 'eeeeeeee-0000-0000-0000-000000000005';
+const MES_OPERATOR2_ID = 'eeeeeeee-0000-0000-0000-000000000006';
+
+const GLOBAL_MES_OPERATOR2_USER_ID = '11111111-0000-0000-0000-000000000006';
 
 const ROLE_SEEDS = [
   { id: ROLE_OWNER_ID, code: 'OWNER', name: 'Owner' },
@@ -786,6 +792,72 @@ async function main() {
     `(userId ${operator.userId})`,
   );
 
+  const operator2PinHash = await bcrypt.hash('4321', SALT_ROUNDS);
+  const operator2CedulaHash = hashCedula('11223344');
+
+  const operator2GlobalUser = await prisma.user.upsert({
+    where: {
+      tenantId_cedula: { tenantId: OPERATIONAL_TENANT_ID, cedula: '11223344' },
+    },
+    update: {
+      email: 'carlos.mendoza@palos-de-lena.dev',
+      passwordHash: mesUserPasswordHash,
+      documentType: DocumentType.CC,
+      roleId: roles.OPERATOR.id,
+      isActive: true,
+      emailVerified: true,
+    },
+    create: {
+      id: GLOBAL_MES_OPERATOR2_USER_ID,
+      tenantId: OPERATIONAL_TENANT_ID,
+      cedula: '11223344',
+      documentType: DocumentType.CC,
+      email: 'carlos.mendoza@palos-de-lena.dev',
+      passwordHash: mesUserPasswordHash,
+      roleId: roles.OPERATOR.id,
+      isActive: true,
+      emailVerified: true,
+    },
+  });
+  console.log(
+    'Global User (MES operator 2):',
+    operator2GlobalUser.email,
+    '—',
+    operator2GlobalUser.id,
+  );
+
+  const operator2 = await prisma.operationalUser.upsert({
+    where: {
+      tenantId_cedulaHash: { tenantId: OPERATIONAL_TENANT_ID, cedulaHash: operator2CedulaHash },
+    },
+    update: {
+      userId: operator2GlobalUser.id,
+      pinHash: operator2PinHash,
+      role: OperationalRole.OPERATOR,
+      sedeId: 'sede-principal',
+      isActive: true,
+      loginAttempts: 0,
+      lockedUntil: null,
+    },
+    create: {
+      id: MES_OPERATOR2_ID,
+      userId: operator2GlobalUser.id,
+      tenantId: OPERATIONAL_TENANT_ID,
+      cedulaHash: operator2CedulaHash,
+      pinHash: operator2PinHash,
+      role: OperationalRole.OPERATOR,
+      sedeId: 'sede-principal',
+      isActive: true,
+    },
+  });
+  console.log(
+    'MES operational user:',
+    operator2.role,
+    '—',
+    operator2.id,
+    `(userId ${operator2.userId})`,
+  );
+
   console.log('\n✅ Email auth (global User — x-tenant-id: palos-de-lena):');
   console.log('  mes-owner    = mes-owner@palos-de-lena.dev / TestPass123!');
   console.log('  mes-operator = mes-operator@palos-de-lena.dev / TestPass123!');
@@ -816,6 +888,8 @@ async function main() {
 
   // ── NOM-01: Seed EmployeeDetails ─────────────────────────────────────────
   await seedEmployeeDetails(ownerGlobalUser.id, operatorGlobalUser.id, firstLocationId);
+  const { seedPlantSupervisor } = await import('./seeds/plant-supervisor.seed');
+  await seedPlantSupervisor(prisma);
 }
 
 main()

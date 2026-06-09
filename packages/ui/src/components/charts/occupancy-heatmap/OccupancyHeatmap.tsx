@@ -67,7 +67,13 @@ export const OccupancyHeatmap: React.FC<OccupancyHeatmapProps> = ({
       emptyTitle={emptyTitle}
       emptyDescription={emptyDescription}
       ariaLabel={ariaLabel}
-      className={[styles.wrapper, styles[`theme--${theme}`], className].filter(Boolean).join(' ')}
+      className={[
+        styles.wrapper,
+        theme === 'light' ? styles['theme--light'] : styles['theme--dark'],
+        className,
+      ]
+        .filter(Boolean)
+        .join(' ')}
     >
       <div
         className={styles.grid}

@@ -26,7 +26,7 @@
 }
 
 .row {
-  @include produccion.row-grid(78px minmax(210px, 1.4fr) 172px 122px 60px 112px 70px 32px);
+  @include produccion.row-grid(78px minmax(210px, 1.4fr) 172px 122px 60px 112px 70px 128px);
 }
 
 @media (width <= 720px) {

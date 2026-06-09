@@ -19,8 +19,14 @@ export interface MiniChartProps extends Omit<
   dataKey?: string;
 }
 
+const chartHeights = {
+  sm: 40,
+  md: 56,
+  xl: 72,
+} as const;
+
 export const MiniChart: React.FC<MiniChartProps> = ({
-  data,
+  data = [],
   trend = 'neutral',
   dataKey = 'value',
   theme = 'light',
@@ -37,27 +43,51 @@ export const MiniChart: React.FC<MiniChartProps> = ({
         : getSeriesColor(0);
 
   const chartData = data.map((point, index) => ({ index, [dataKey]: point.value }));
+  const chartHeight = chartHeights[size];
+  const hasData = data.length > 0;
   const reduceMotion =
     typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const chartHeight = {
-    sm: 40,
-    md: 56,
-    xl: 72,
-  }[size];
+
+  if (loading) {
+    return (
+      <ChartContainer
+        theme={theme}
+        size={size}
+        loading
+        ariaLabel={ariaLabel}
+        className={[styles.wrapper, styles[size], styles[theme], className]
+          .filter(Boolean)
+          .join(' ')}
+        height={chartHeight}
+      />
+    );
+  }
+
+  if (!hasData) {
+    return (
+      <div
+        className={[styles.wrapper, styles.empty, styles[size], styles[theme], className]
+          .filter(Boolean)
+          .join(' ')}
+        role="img"
+        aria-label={ariaLabel}
+        style={{ height: chartHeight }}
+      >
+        <span className={styles.emptyLabel}>Sin tendencia</span>
+      </div>
+    );
+  }
+
   return (
     <ChartContainer
       theme={theme}
       size={size}
-      loading={loading}
-      empty={data.length === 0}
-      emptyTitle="Sin tendencia"
-      emptyDescription=""
       ariaLabel={ariaLabel}
       className={[styles.wrapper, styles[size], styles[theme], className].filter(Boolean).join(' ')}
       height={chartHeight}
     >
-      <ResponsiveContainer width="100%" height="100%">
-        <RechartsLineChart data={chartData} margin={{ top: 4, right: 0, left: 0, bottom: 4 }}>
+      <ResponsiveContainer width="100%" height={chartHeight}>
+        <RechartsLineChart data={chartData} margin={{ top: 4, right: 6, bottom: 4, left: 2 }}>
           <Line
             type="monotone"
             dataKey={dataKey}

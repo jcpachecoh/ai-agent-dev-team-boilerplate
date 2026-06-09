@@ -34,6 +34,17 @@
   }
 }
 
+.compact {
+  --control-min-height: 28px;
+  --control-min-width: 52px;
+  --control-icon-size: 12px;
+  --control-gap: 4px;
+  min-height: 28px;
+  height: 28px;
+  padding: 0 8px;
+  font-size: 0.625rem;
+}
+
 .size--sm {
   --control-min-width: 64px;
 }

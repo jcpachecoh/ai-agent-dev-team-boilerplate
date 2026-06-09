@@ -2,23 +2,32 @@ import {
   RecetaActionButton,
   RecetaFilterSelect,
   RecetaFormButton,
-  RecetaHistoryAccordion,
   RecetaMetricCard,
   RecetaPhaseAddButton,
   RecetaPhaseModal,
-  RecetaProgressIndicator,
   RecetaResultButton,
   RecetaSearch,
   RecetaStepCard,
   RecetaTableHeader,
   type RecetaTableColumn,
-  RecetaTableRow,
   RecetaTimelinePanel,
   RecetaUtilityButton,
 } from '@restopsiq/ui';
-import { type CSSProperties, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
+import { HistoryResponsiveList } from '@/components/recetas/HistoryResponsiveList';
+import { ProcessListCard } from '@/components/recetas/ProcessListCard';
+import { ProcessListRow } from '@/components/recetas/ProcessListRow';
+import { RecipeListCard } from '@/components/recetas/RecipeListCard';
+import { RecipeListResponsiveRow } from '@/components/recetas/RecipeListResponsiveRow';
+import { ResponsiveTable } from '@/components/responsive-table';
 import type { PlantRecipePhase } from '@/api/plant';
+import { PROCESS_RESPONSIVE_COLUMNS } from '@/features/recetas/process-columns';
+import {
+  RECIPE_LIST_RESPONSIVE_COLUMNS,
+  recetaTableColumnsForVisible,
+} from '@/features/recetas/recipe-list-columns';
+import type { ProcessRow, RecipeListItem } from '@/features/recetas/types';
 import {
   useEditorSupplyItems,
   usePlantProcess,
@@ -238,10 +247,6 @@ const recipeListTableColumns: RecetaTableColumn[] = [
   { key: 'acciones', label: 'Acciones', width: '130px', align: 'right' },
 ];
 
-const recipeListColumnsTemplate = recipeListTableColumns
-  .map((column) => column.width ?? '1fr')
-  .join(' ');
-
 const processTableColumns: RecetaTableColumn[] = [
   { key: 'id', label: 'ID Receta', width: '96px' },
   { key: 'nombre', label: 'Nombre', width: 'minmax(0, 1.15fr)' },
@@ -253,8 +258,6 @@ const processTableColumns: RecetaTableColumn[] = [
   { key: 'salud', label: 'Salud ejecucion', width: 'minmax(120px, 1fr)' },
   { key: 'acciones', label: 'Acciones', width: '128px', align: 'right' },
 ];
-
-const processColumnsTemplate = processTableColumns.map((column) => column.width ?? '1fr').join(' ');
 
 function parseEstimatedMinutes(value: string, fallback: number): number {
   const parsed = Number.parseInt(value.trim(), 10);
@@ -365,55 +368,6 @@ export function RecipesManagementScreen({
       recipeCategoriesQuery.isLoading ||
       workstationsQuery.isLoading ||
       (Boolean(editingRecipeId) && recipeDetailQuery.isLoading));
-
-  // #region agent log
-  useEffect(() => {
-    if (currentView !== 'editor' || editorLoading) return;
-    const labelEl = document.querySelector('[class*="editorField"] span');
-    const inputEl = document.querySelector('[class*="editorInput"]');
-    fetch('http://127.0.0.1:7828/ingest/355d2ecf-3818-453c-8510-c7b3fe83712b', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'd2ab57' },
-      body: JSON.stringify({
-        sessionId: 'd2ab57',
-        runId: 'post-fix-receta-editor',
-        hypothesisId: 'H1',
-        location: 'RecipesManagementScreen.tsx:editor-theme-probe',
-        message: 'Recipe editor light mode probe',
-        data: {
-          uiTheme: theme,
-          dataTheme: document.documentElement.dataset.theme ?? null,
-          labelColor: labelEl ? getComputedStyle(labelEl).color : null,
-          inputBackground: inputEl ? getComputedStyle(inputEl).backgroundColor : null,
-          inputColor: inputEl ? getComputedStyle(inputEl).color : null,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-  }, [currentView, theme, editorLoading]);
-
-  useEffect(() => {
-    if (currentView !== 'history') return;
-    const itemEl = document.querySelector('[class*="RecetaHistoryAccordion"] [data-state]');
-    fetch('http://127.0.0.1:7828/ingest/355d2ecf-3818-453c-8510-c7b3fe83712b', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'd2ab57' },
-      body: JSON.stringify({
-        sessionId: 'd2ab57',
-        runId: 'post-fix-history',
-        hypothesisId: 'H1',
-        location: 'RecipesManagementScreen.tsx:history-theme-probe',
-        message: 'History accordion light mode probe',
-        data: {
-          uiTheme: theme,
-          dataTheme: document.documentElement.dataset.theme ?? null,
-          itemBackground: itemEl ? getComputedStyle(itemEl).backgroundColor : null,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-  }, [currentView, theme]);
-  // #endregion
 
   const totalMinutes = useMemo(
     () => phases.reduce((sum, phase) => sum + phase.durationMin, 0),
@@ -973,63 +927,29 @@ export function RecipesManagementScreen({
             />
           </section>
           <section className={[styles.tableWrap, styles.tableWrapProcess].join(' ')}>
-            <RecetaTableHeader
-              theme={theme}
-              size="md"
-              className={[styles.tableHead, styles.processTableHead].join(' ')}
-              columns={processTableColumns}
+            <ResponsiveTable<ProcessRow>
+              columns={PROCESS_RESPONSIVE_COLUMNS}
+              rows={filteredProcessRows}
+              keyExtractor={(row) => row.recipeId}
+              className={styles.recipeListTable}
+              renderTableHeader={({ visibleColumns }) => (
+                <RecetaTableHeader
+                  theme={theme}
+                  size="md"
+                  className={[styles.tableHead, styles.processTableHead].join(' ')}
+                  columns={recetaTableColumnsForVisible(processTableColumns, visibleColumns)}
+                />
+              )}
+              renderTableRow={(row, { visibleColumns, columnsTemplate }) => (
+                <ProcessListRow
+                  row={row}
+                  theme={theme}
+                  visibleColumns={visibleColumns}
+                  columnsTemplate={columnsTemplate}
+                />
+              )}
+              renderCard={(row) => <ProcessListCard row={row} theme={theme} />}
             />
-            <div className={styles.tableBody}>
-              {filteredProcessRows.map((row) => (
-                <div
-                  key={row.recipeId}
-                  className={styles.processRow}
-                  style={{ '--receta-columns': processColumnsTemplate } as CSSProperties}
-                >
-                  <span className={[styles.processCell, styles.processCellCode].join(' ')}>
-                    {row.code}
-                  </span>
-                  <span className={[styles.processCell, styles.processCellName].join(' ')}>
-                    {row.name}
-                  </span>
-                  <span className={styles.processCell}>{row.category}</span>
-                  <span className={[styles.processCell, styles.processCellCenter].join(' ')}>
-                    {row.phases}
-                  </span>
-                  <span className={styles.processCell}>{row.duration}</span>
-                  <span className={styles.processCellStatus}>
-                    <RecetaResultButton
-                      variant={row.result}
-                      theme={theme}
-                      size="sm"
-                      label={row.status}
-                    />
-                  </span>
-                  <span className={[styles.processCell, styles.processCellMuted].join(' ')}>
-                    {row.lastValidation}
-                  </span>
-                  <span className={styles.processProgressCell}>
-                    <RecetaProgressIndicator
-                      theme={theme}
-                      size="sm"
-                      value={row.health}
-                      max={100}
-                      variant={
-                        row.result === 'failed'
-                          ? 'danger'
-                          : row.result === 'warning'
-                            ? 'warning'
-                            : 'success'
-                      }
-                    />
-                  </span>
-                  <span className={styles.processActionsCell}>
-                    <RecetaUtilityButton theme={theme} size="sm" variant="view" />
-                    <RecetaUtilityButton theme={theme} size="sm" variant="pdf" />
-                  </span>
-                </div>
-              ))}
-            </div>
           </section>
         </>
       );
@@ -1091,7 +1011,7 @@ export function RecipesManagementScreen({
             />
           </section>
           <section className={styles.historyWrap}>
-            <RecetaHistoryAccordion theme={theme} size="xl" items={filteredHistoryRows} />
+            <HistoryResponsiveList items={filteredHistoryRows} theme={theme} />
           </section>
         </>
       );
@@ -1129,7 +1049,7 @@ export function RecipesManagementScreen({
               <RecetaFormButton
                 variant="save"
                 theme={theme}
-                label={saving ? 'Guardando...' : 'Guardar Receta'}
+                label={saving ? 'Guardando...' : 'Guardar'}
                 disabled={saving || editorLoading}
                 onClick={() => void handleSaveRecipe()}
               />
@@ -1388,17 +1308,23 @@ export function RecipesManagementScreen({
           />
         </section>
         <section className={[styles.tableWrap, styles.tableWrapList].join(' ')}>
-          <RecetaTableHeader
-            theme={theme}
-            size="md"
-            className={[styles.tableHead, styles.listTableHead].join(' ')}
-            columns={recipeListTableColumns}
-          />
-          <div className={styles.tableBody}>
-            {filteredRecipes.map((recipe) => (
+          <ResponsiveTable<RecipeListItem>
+            columns={RECIPE_LIST_RESPONSIVE_COLUMNS}
+            rows={filteredRecipes}
+            keyExtractor={(recipe) => recipe.id}
+            className={styles.recipeListTable}
+            renderTableHeader={({ visibleColumns }) => (
+              <RecetaTableHeader
+                theme={theme}
+                size="md"
+                className={[styles.tableHead, styles.listTableHead].join(' ')}
+                columns={recetaTableColumnsForVisible(recipeListTableColumns, visibleColumns)}
+              />
+            )}
+            renderTableRow={(recipe, { visibleColumns, columnsTemplate }) => (
               <div
                 key={recipe.id}
-                className={styles.rowClickable}
+                className={[styles.rowClickable, styles.recipeRowHost].join(' ')}
                 onClick={() => openEditRecipeEditor(recipe.id)}
                 role="button"
                 tabIndex={0}
@@ -1409,23 +1335,24 @@ export function RecipesManagementScreen({
                   }
                 }}
               >
-                <RecetaTableRow
+                <RecipeListResponsiveRow
+                  recipe={recipe}
                   theme={theme}
-                  size="xl"
-                  density="compact"
-                  className={styles.tableRow}
-                  columnsTemplate={recipeListColumnsTemplate}
-                  code={recipe.code}
-                  recipeName={recipe.name}
-                  category={recipe.category}
-                  duration={`${recipe.durationMin} min`}
-                  portions={recipe.phases}
-                  status={recipe.status}
+                  visibleColumns={visibleColumns}
+                  columnsTemplate={columnsTemplate}
                   onEdit={() => openEditRecipeEditor(recipe.id)}
                 />
               </div>
-            ))}
-          </div>
+            )}
+            renderCard={(recipe) => (
+              <RecipeListCard
+                recipe={recipe}
+                theme={theme}
+                onEdit={() => openEditRecipeEditor(recipe.id)}
+                onOpen={() => openEditRecipeEditor(recipe.id)}
+              />
+            )}
+          />
         </section>
       </>
     );

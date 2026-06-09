@@ -3,7 +3,6 @@ import {
   InventarioPageToolbar,
   InventarioPagination,
   InventarioTableHeader,
-  InventarioTableRow,
   toast,
   type InventarioSelectOption,
 } from '@restopsiq/ui';
@@ -11,8 +10,15 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { checkSkuExists } from '@/api/inventory';
+import {
+  InventarioProductCard,
+  InventarioProductRow,
+} from '@/components/inventario/inventario-responsive';
+import { ResponsiveTable } from '@/components/responsive-table';
 import { ProductFormModal } from '@/components/inventory/ProductFormModal';
 import { InventoryScreenState } from '@/components/inventory/InventoryScreenState';
+import { INVENTARIO_PRODUCT_RESPONSIVE_COLUMNS } from '@/features/inventario/responsive-columns';
+import { headerColumnsFromResponsive } from '@/lib/responsive-columns';
 import { useSupplyCategories } from '@/features/inventario/hooks/useSupplyCategories';
 import {
   useCreateSupplyItem,
@@ -198,32 +204,52 @@ export function InventoryProductsScreen(): React.JSX.Element {
         </section>
       ) : (
         <section className={shared.tableWrap}>
-          <div className={shared.tableHead}>
-            <InventarioTableHeader variant="product" theme={theme} size="xl" />
-          </div>
-          <div className={shared.tableBody}>
-            {pageItems.map((product) => (
-              <InventarioTableRow
-                key={product.id}
-                variant="product"
+          <ResponsiveTable<InventoryProduct>
+            columns={INVENTARIO_PRODUCT_RESPONSIVE_COLUMNS}
+            rows={pageItems}
+            keyExtractor={(product) => product.id}
+            className={shared.responsiveTable}
+            renderTableHeader={({ visibleColumns }) => (
+              <div className={shared.tableHead}>
+                <InventarioTableHeader
+                  variant="product"
+                  theme={theme}
+                  size="xl"
+                  columns={headerColumnsFromResponsive(visibleColumns, {
+                    stock: 'center',
+                    price: 'right',
+                    actions: 'center',
+                  })}
+                />
+              </div>
+            )}
+            renderTableRow={(product, { visibleColumns, columnsTemplate }) => (
+              <InventarioProductRow
+                product={product}
                 theme={theme}
-                size="xl"
-                className={shared.tableRowHost}
-                sku={product.sku}
-                name={product.name}
-                category={product.category}
-                supplier={product.supplier}
-                stockTotal={product.currentStock}
-                unitPrice={formatCurrency(product.costPrice)}
-                lastMovement={product.lastMovement}
+                visibleColumns={visibleColumns}
+                columnsTemplate={columnsTemplate}
                 stockTone={stockToneForProduct(product)}
+                unitPrice={formatCurrency(product.costPrice)}
                 lowStockWarning={product.currentStock < product.minStock}
                 onSkuClick={() => navigate(`/inventory/products/${product.id}`)}
                 onEdit={() => openEdit(product)}
                 onDelete={() => void handleDelete(product)}
               />
-            ))}
-          </div>
+            )}
+            renderCard={(product) => (
+              <InventarioProductCard
+                product={product}
+                theme={theme}
+                stockTone={stockToneForProduct(product)}
+                unitPrice={formatCurrency(product.costPrice)}
+                lowStockWarning={product.currentStock < product.minStock}
+                onSkuClick={() => navigate(`/inventory/products/${product.id}`)}
+                onEdit={() => openEdit(product)}
+                onDelete={() => void handleDelete(product)}
+              />
+            )}
+          />
           <footer className={shared.tableFooter}>
             <InventarioPagination
               page={page}

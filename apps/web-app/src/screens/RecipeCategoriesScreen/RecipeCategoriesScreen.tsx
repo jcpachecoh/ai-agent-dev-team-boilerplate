@@ -7,11 +7,15 @@ import {
   type RecetaTableColumn,
   toast,
 } from '@restopsiq/ui';
-import { useEffect, useMemo, useState, type JSX } from 'react';
+import { useMemo, useState, type JSX } from 'react';
 
 import type { PlantRecipeCategory } from '@/api/plant';
 import { RecipeCategoryFormModal } from '@/components/recetas/RecipeCategoryFormModal';
-import { RecipeCategoryTableRow } from '@/components/recetas/RecipeCategoryTableRow';
+import { RecipeCategoryListCard } from '@/components/recetas/RecipeCategoryListCard';
+import { RecipeCategoryListRow } from '@/components/recetas/RecipeCategoryListRow';
+import { ResponsiveTable } from '@/components/responsive-table';
+import { RECIPE_CATEGORY_RESPONSIVE_COLUMNS } from '@/features/recetas/recipe-category-columns';
+import { recetaTableColumnsForVisible } from '@/features/recetas/recipe-list-columns';
 import {
   useCreateRecipeCategory,
   useDeleteRecipeCategory,
@@ -32,10 +36,6 @@ const categoryListTableColumns: RecetaTableColumn[] = [
   { key: 'estado', label: 'Estado', width: '150px', align: 'center' },
   { key: 'acciones', label: 'Acciones', width: '180px', align: 'right' },
 ];
-
-const categoryListColumnsTemplate = categoryListTableColumns
-  .map((column) => column.width ?? '1fr')
-  .join(' ');
 
 const statusFilterOptions = [
   { value: 'all', label: 'Todos los estados' },
@@ -91,29 +91,6 @@ export function RecipeCategoriesScreen(): JSX.Element {
     : null;
 
   const saving = createMutation.isPending || updateMutation.isPending || deleteMutation.isPending;
-
-  // #region agent log
-  useEffect(() => {
-    const rowEl = document.querySelector('[class*="RecipeCategoryTableRow"]');
-    fetch('http://127.0.0.1:7828/ingest/355d2ecf-3818-453c-8510-c7b3fe83712b', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'd2ab57' },
-      body: JSON.stringify({
-        sessionId: 'd2ab57',
-        runId: 'post-fix-categorias',
-        hypothesisId: 'H1',
-        location: 'RecipeCategoriesScreen.tsx:theme-probe',
-        message: 'Recipe categories theme probe',
-        data: {
-          uiTheme: theme,
-          dataTheme: document.documentElement.dataset.theme ?? null,
-          rowBackground: rowEl ? getComputedStyle(rowEl).backgroundColor : null,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-  }, [theme]);
-  // #endregion
 
   const openCreate = () => {
     setModalMode('create');
@@ -236,24 +213,28 @@ export function RecipeCategoriesScreen(): JSX.Element {
         </section>
 
         <section className={[listStyles.tableWrap, listStyles.tableWrapList].join(' ')}>
-          <RecetaTableHeader
-            theme={theme}
-            size="md"
-            className={[listStyles.tableHead, listStyles.listTableHead].join(' ')}
-            columns={categoryListTableColumns}
-          />
-          <div className={listStyles.tableBody}>
-            {categoriesQuery.isLoading ? (
-              <p className={listStyles.loadError}>Cargando categorías…</p>
-            ) : filtered.length === 0 ? (
-              <p className={listStyles.loadError}>
-                No hay categorías que coincidan con los filtros.
-              </p>
-            ) : (
-              filtered.map((category, index) => (
+          {categoriesQuery.isLoading ? (
+            <p className={listStyles.loadError}>Cargando categorías…</p>
+          ) : filtered.length === 0 ? (
+            <p className={listStyles.loadError}>No hay categorías que coincidan con los filtros.</p>
+          ) : (
+            <ResponsiveTable<PlantRecipeCategory>
+              columns={RECIPE_CATEGORY_RESPONSIVE_COLUMNS}
+              rows={filtered}
+              keyExtractor={(category) => category.id}
+              className={listStyles.recipeListTable}
+              renderTableHeader={({ visibleColumns }) => (
+                <RecetaTableHeader
+                  theme={theme}
+                  size="md"
+                  className={[listStyles.tableHead, listStyles.listTableHead].join(' ')}
+                  columns={recetaTableColumnsForVisible(categoryListTableColumns, visibleColumns)}
+                />
+              )}
+              renderTableRow={(category, { visibleColumns, columnsTemplate }) => (
                 <div
                   key={category.id}
-                  className={listStyles.rowClickable}
+                  className={[listStyles.rowClickable, listStyles.categoryRowHost].join(' ')}
                   onClick={() => openEdit(category)}
                   role="button"
                   tabIndex={0}
@@ -264,21 +245,35 @@ export function RecipeCategoriesScreen(): JSX.Element {
                     }
                   }}
                 >
-                  <RecipeCategoryTableRow
-                    theme={theme}
-                    code={formatCategoryCode(category, index)}
+                  <RecipeCategoryListRow
+                    code={formatCategoryCode(category, filtered.indexOf(category))}
                     nombre={category.nombre}
                     descripcion={category.descripcion ?? ''}
                     status={category.isActive ? 'active' : 'inactive'}
-                    columnsTemplate={categoryListColumnsTemplate}
+                    theme={theme}
+                    visibleColumns={visibleColumns}
+                    columnsTemplate={columnsTemplate}
                     onEdit={() => openEdit(category)}
                     onDelete={() => void handleDelete(category)}
                     onStatusChange={(next) => void handleStatusChange(category, next)}
                   />
                 </div>
-              ))
-            )}
-          </div>
+              )}
+              renderCard={(category) => (
+                <RecipeCategoryListCard
+                  code={formatCategoryCode(category, filtered.indexOf(category))}
+                  nombre={category.nombre}
+                  descripcion={category.descripcion ?? ''}
+                  status={category.isActive ? 'active' : 'inactive'}
+                  theme={theme}
+                  onEdit={() => openEdit(category)}
+                  onDelete={() => void handleDelete(category)}
+                  onStatusChange={(next) => void handleStatusChange(category, next)}
+                  onOpen={() => openEdit(category)}
+                />
+              )}
+            />
+          )}
         </section>
       </main>
 

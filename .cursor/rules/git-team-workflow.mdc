@@ -1,0 +1,30 @@
+---
+alwaysApply: true
+---
+
+# Git and Team Workflow
+
+This is a team repository.
+
+Before making changes:
+
+- Check current branch.
+- Check `git status --short`.
+- If the working tree is not clean, report it before editing.
+
+Never create or switch branches unless explicitly requested.
+
+Never make broad refactors without approval.
+
+Never run:
+
+- `npm run lint:fix`
+- formatting across the full repo
+- mass file moves
+  unless explicitly requested.
+
+After changes:
+
+- Report changed files.
+- Explain why each changed file belongs to the task.
+- Provide validation commands.

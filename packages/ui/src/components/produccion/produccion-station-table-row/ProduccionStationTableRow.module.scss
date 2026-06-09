@@ -1,45 +1,28 @@
 @use '../../../styles/abstracts/variables' as *;
 @use '../shared/produccion-theme' as produccion;
-.rowButton {
+
+.row {
   @include produccion.produccion-theme-classes;
   @include produccion.produccion-size-vars;
   width: min(100%, var(--control-width));
   background: var(--produccion-bg);
-  border: 0;
   color: var(--produccion-text);
-  text-align: left;
-  cursor: pointer;
   overflow-x: auto;
-  border-bottom: $border-width solid transparent;
-  border-left: 2px solid transparent;
+  border-bottom: $border-width solid var(--produccion-border-muted);
 }
+
 .inner {
   min-height: var(--row-height);
   padding: 0 18px;
 }
-.rowButton:hover,
-.selected {
-  background: var(--produccion-row-selected);
-}
-.selected {
-  border-bottom-color: rgba(produccion.$produccion-gold, 0.55);
-  border-left-color: produccion.$produccion-gold;
-}
-.rowButton:focus-visible {
-  @include produccion.produccion-focus-ring;
-}
+
 .code {
   font-family: $font-family-mono;
   font-weight: $font-weight-bold;
   color: produccion.$produccion-gold;
   letter-spacing: 0.04em;
 }
-.main {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
+
 .name {
   font-weight: $font-weight-semibold;
   color: var(--produccion-text);
@@ -47,45 +30,38 @@
   white-space: nowrap;
   text-overflow: ellipsis;
 }
-.subtle,
-.meta {
+
+.subtle {
   font-size: 0.6875rem;
   color: var(--produccion-muted);
   white-space: nowrap;
 }
+
 .mono {
   font-family: $font-family-mono;
   color: var(--produccion-muted);
 }
-.time {
-  font-family: $font-family-mono;
-  font-weight: $font-weight-bold;
-  color: produccion.$produccion-warning;
-}
-.chevron {
-  color: var(--produccion-subtle);
-  justify-self: center;
-}
-.chevron svg {
-  width: 14px;
-  height: 14px;
-}
+
 .size--sm {
   --row-height: 36px;
   --control-width: 100%;
 }
+
 .size--md {
   --row-height: 43px;
   --control-width: 100%;
 }
+
 .size--xl {
   --row-height: 48px;
   --control-width: 100%;
 }
 
 .inner {
-  @include produccion.row-grid(78px minmax(210px, 1.4fr) 172px 122px 60px 112px 70px 32px);
+  @include produccion.row-grid(78px minmax(210px, 1.4fr) 172px 122px 60px 112px 70px 128px);
+  align-items: center;
 }
+
 .location {
   display: inline-flex;
   align-items: center;
@@ -93,16 +69,55 @@
   font-size: 0.6875rem;
   color: var(--produccion-muted);
 }
+
 .location svg {
   width: 11px;
   height: 11px;
 }
 
+.actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.actionButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 26px;
+  padding: 0 8px;
+  background: transparent;
+  border: $border-width solid var(--produccion-border);
+  border-radius: $border-radius-sm;
+  color: var(--produccion-muted);
+  font-family: $font-family-mono;
+  font-size: 0.5625rem;
+  font-weight: $font-weight-bold;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.actionButton:hover {
+  color: var(--produccion-text);
+  background: var(--produccion-surface-raised);
+}
+
+.actionButton:focus-visible {
+  @include produccion.produccion-focus-ring;
+}
+
+.actionButtonPrimary {
+  border-color: rgba(produccion.$produccion-gold, 0.35);
+  color: produccion.$produccion-gold;
+}
+
 @media (width <= 720px) {
-  .rowButton {
+  .row {
     overflow-x: visible;
     padding: 10px;
-    border-bottom-color: var(--produccion-border-muted);
   }
 
   .inner {
@@ -145,7 +160,7 @@
     white-space: normal;
   }
 
-  .chevron {
-    display: none;
+  .actions {
+    justify-content: flex-start;
   }
 }

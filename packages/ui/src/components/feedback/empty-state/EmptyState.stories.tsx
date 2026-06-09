@@ -8,7 +8,9 @@ const meta: Meta<typeof EmptyState> = {
   title: 'Feedback/EmptyState',
   component: EmptyState,
   tags: ['autodocs'],
+  args: { theme: 'light' },
   argTypes: {
+    theme: { control: 'radio', options: ['light', 'dark'] },
     variant: {
       control: 'select',
       options: ['search', 'create', 'error'],

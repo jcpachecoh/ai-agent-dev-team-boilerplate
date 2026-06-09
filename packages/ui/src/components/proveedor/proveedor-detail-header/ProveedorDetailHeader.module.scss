@@ -98,3 +98,49 @@
   --control-padding-x: 1.25rem;
   min-height: 88px;
 }
+
+@media (max-width: 639px) {
+  .header {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    row-gap: 0.75rem;
+    min-height: 0;
+    padding: 0.875rem 1rem;
+  }
+
+  .identity {
+    flex: 1 1 calc(100% - var(--back-size) - var(--header-gap));
+    min-width: 0;
+  }
+
+  .titleRow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .name {
+    font-size: 1.125rem;
+    line-height: 1.25;
+    word-break: break-word;
+  }
+
+  .meta {
+    font-size: 0.6875rem;
+    line-height: 1.35;
+    word-break: break-word;
+  }
+
+  .actions {
+    flex: 1 1 100%;
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+
+    > * {
+      flex: 1 1 calc(50% - 0.25rem);
+      min-width: 0;
+      width: 100%;
+    }
+  }
+}
