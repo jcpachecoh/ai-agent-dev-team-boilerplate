@@ -92,29 +92,6 @@ export function RecipeCategoriesScreen(): JSX.Element {
 
   const saving = createMutation.isPending || updateMutation.isPending || deleteMutation.isPending;
 
-  // #region agent log
-  useEffect(() => {
-    const rowEl = document.querySelector('[class*="RecipeCategoryTableRow"]');
-    fetch('http://127.0.0.1:7828/ingest/355d2ecf-3818-453c-8510-c7b3fe83712b', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'd2ab57' },
-      body: JSON.stringify({
-        sessionId: 'd2ab57',
-        runId: 'post-fix-categorias',
-        hypothesisId: 'H1',
-        location: 'RecipeCategoriesScreen.tsx:theme-probe',
-        message: 'Recipe categories theme probe',
-        data: {
-          uiTheme: theme,
-          dataTheme: document.documentElement.dataset.theme ?? null,
-          rowBackground: rowEl ? getComputedStyle(rowEl).backgroundColor : null,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-  }, [theme]);
-  // #endregion
-
   const openCreate = () => {
     setModalMode('create');
     setEditing(undefined);

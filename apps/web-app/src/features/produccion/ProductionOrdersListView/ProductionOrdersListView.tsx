@@ -135,29 +135,6 @@ export default function ProductionOrdersListView(): React.JSX.Element {
     });
   }, [orders, recipeNameById, search]);
 
-  // #region agent log
-  useEffect(() => {
-    fetch('http://127.0.0.1:7828/ingest/355d2ecf-3818-453c-8510-c7b3fe83712b', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'd2ab57' },
-      body: JSON.stringify({
-        sessionId: 'd2ab57',
-        runId: 'post-fix-blank',
-        hypothesisId: 'B',
-        location: 'ProductionOrdersListView.tsx:mount',
-        message: 'List view loaded',
-        data: {
-          pathname: location.pathname,
-          isPending: ordersQuery.isPending,
-          isError: ordersQuery.isError,
-          ordersCount: orders.length,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-  }, [location.pathname, ordersQuery.isPending, ordersQuery.isError, orders.length]);
-  // #endregion
-
   useEffect(() => {
     const state = location.state as { highlightOrderId?: string; openCreate?: boolean } | null;
     if (state?.highlightOrderId) {

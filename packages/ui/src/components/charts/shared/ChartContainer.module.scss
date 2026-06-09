@@ -36,11 +36,11 @@
   --chart-legend-gap: #{$spacing-md};
 }
 
-.theme--light {
+.theme--light .chartBody {
   color: $color-text-primary;
 }
 
-.theme--dark {
+.theme--dark .chartBody {
   color: $color-text-inverse;
 }
 

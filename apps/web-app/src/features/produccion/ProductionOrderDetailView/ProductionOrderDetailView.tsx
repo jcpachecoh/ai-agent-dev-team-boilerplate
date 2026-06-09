@@ -112,30 +112,6 @@ export default function ProductionOrderDetailView(): React.JSX.Element {
 
   const order = orderQuery.data;
 
-  // #region agent log
-  useEffect(() => {
-    fetch('http://127.0.0.1:7828/ingest/355d2ecf-3818-453c-8510-c7b3fe83712b', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'd2ab57' },
-      body: JSON.stringify({
-        sessionId: 'd2ab57',
-        runId: 'pre-fix',
-        hypothesisId: 'A',
-        location: 'ProductionOrderDetailView.tsx:mount',
-        message: 'Detail view state',
-        data: {
-          orderId,
-          isPending: orderQuery.isPending,
-          isError: orderQuery.isError,
-          hasOrder: Boolean(order),
-          materialsCount: order?.materials?.length ?? 0,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-  }, [orderId, orderQuery.isPending, orderQuery.isError, order]);
-  // #endregion
-
   useEffect(() => {
     if (order && editing) {
       setForm(formFromOrder(order));
@@ -231,55 +207,11 @@ export default function ProductionOrderDetailView(): React.JSX.Element {
   };
 
   const handleDownloadPdf = async () => {
-    // #region agent log
-    fetch('http://127.0.0.1:7828/ingest/355d2ecf-3818-453c-8510-c7b3fe83712b', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'd2ab57' },
-      body: JSON.stringify({
-        sessionId: 'd2ab57',
-        runId: 'pre-fix',
-        hypothesisId: 'D',
-        location: 'ProductionOrderDetailView.tsx:handleDownloadPdf',
-        message: 'PDF download started',
-        data: { orderId: order.id, orderNumber: order.number },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
     try {
       await downloadPdfMutation.mutateAsync(order.id);
-      // #region agent log
-      fetch('http://127.0.0.1:7828/ingest/355d2ecf-3818-453c-8510-c7b3fe83712b', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'd2ab57' },
-        body: JSON.stringify({
-          sessionId: 'd2ab57',
-          runId: 'pre-fix',
-          hypothesisId: 'D',
-          location: 'ProductionOrderDetailView.tsx:handleDownloadPdf',
-          message: 'PDF download succeeded',
-          data: { orderId: order.id },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-      // #endregion
+
       toast.success(`PDF de OP ${order.number} descargado.`);
     } catch (err) {
-      // #region agent log
-      fetch('http://127.0.0.1:7828/ingest/355d2ecf-3818-453c-8510-c7b3fe83712b', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'd2ab57' },
-        body: JSON.stringify({
-          sessionId: 'd2ab57',
-          runId: 'pre-fix',
-          hypothesisId: 'D',
-          location: 'ProductionOrderDetailView.tsx:handleDownloadPdf',
-          message: 'PDF download failed',
-          data: { orderId: order.id, error: getErrorMessage(err) },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-      // #endregion
       toast.error(getErrorMessage(err));
     }
   };

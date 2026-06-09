@@ -47,37 +47,6 @@ export function CreateProductionCommitteeModal({
     }
   }, [open]);
 
-  // #region agent log
-  useEffect(() => {
-    if (!open) return;
-    const frame = requestAnimationFrame(() => {
-      const dialog = document.querySelector('[aria-labelledby="inventario-modal-title"]');
-      const footer = dialog?.querySelector('footer');
-      const saveBtn = footer?.querySelector('button:last-of-type');
-      if (!footer || !saveBtn) return;
-      const footerStyle = getComputedStyle(footer);
-      const saveStyle = getComputedStyle(saveBtn);
-      fetch('http://127.0.0.1:7828/ingest/355d2ecf-3818-453c-8510-c7b3fe83712b', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '459dc6' },
-        body: JSON.stringify({
-          sessionId: '459dc6',
-          runId: 'post-fix',
-          hypothesisId: 'H1-H2',
-          location: 'CreateProductionCommitteeModal.tsx:modal-styles',
-          message: 'committee modal footer and save button computed styles',
-          data: {
-            footerJustifyContent: footerStyle.justifyContent,
-            saveColor: saveStyle.color,
-          },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-    });
-    return () => cancelAnimationFrame(frame);
-  }, [open]);
-  // #endregion
-
   const users = usersQuery.data ?? [];
 
   const toggleUser = (userId: string) => {

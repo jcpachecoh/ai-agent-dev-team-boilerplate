@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import React from 'react';
 
+import { createChartRender } from '../../../../.storybook/chart-canvas';
 import { LineChart } from './LineChart';
 
 const salesByHour = [
@@ -12,22 +12,16 @@ const salesByHour = [
   { hour: '18:00', ventas: 890000, meta: 500000 },
 ];
 
-const meta: Meta = {
+const meta: Meta<typeof LineChart> = {
   title: 'Charts/LineChart',
   component: LineChart,
   tags: ['autodocs'],
+  render: createChartRender(LineChart, 'LineChart'),
   args: { theme: 'light', size: 'md' },
   argTypes: {
     theme: { control: 'radio', options: ['light', 'dark'] },
     size: { control: 'select', options: ['sm', 'md', 'xl'] },
   },
-  decorators: [
-    (Story) => (
-      <div style={{ width: '100%', maxWidth: 480, height: 280 }}>
-        <Story />
-      </div>
-    ),
-  ],
 };
 
 export default meta;

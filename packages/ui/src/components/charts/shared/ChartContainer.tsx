@@ -22,7 +22,7 @@ export const ChartContainer: React.FC<ChartContainerProps> = ({
   children,
   height = '100%',
 }) => {
-  const themeClass = styles[`theme--${theme}`];
+  const themeClass = theme === 'light' ? styles['theme--light'] : styles['theme--dark'];
   const sizeClass = styles[`size--${size}`];
 
   return (
@@ -40,7 +40,12 @@ export const ChartContainer: React.FC<ChartContainerProps> = ({
         </div>
       ) : empty ? (
         <div className={styles.stateWrapper}>
-          <EmptyState variant="search" title={emptyTitle} description={emptyDescription} />
+          <EmptyState
+            variant="search"
+            theme={theme}
+            title={emptyTitle}
+            description={emptyDescription}
+          />
         </div>
       ) : (
         <div className={styles.chartBody} style={{ height }}>

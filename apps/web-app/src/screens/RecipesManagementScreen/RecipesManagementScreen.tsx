@@ -366,55 +366,6 @@ export function RecipesManagementScreen({
       workstationsQuery.isLoading ||
       (Boolean(editingRecipeId) && recipeDetailQuery.isLoading));
 
-  // #region agent log
-  useEffect(() => {
-    if (currentView !== 'editor' || editorLoading) return;
-    const labelEl = document.querySelector('[class*="editorField"] span');
-    const inputEl = document.querySelector('[class*="editorInput"]');
-    fetch('http://127.0.0.1:7828/ingest/355d2ecf-3818-453c-8510-c7b3fe83712b', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'd2ab57' },
-      body: JSON.stringify({
-        sessionId: 'd2ab57',
-        runId: 'post-fix-receta-editor',
-        hypothesisId: 'H1',
-        location: 'RecipesManagementScreen.tsx:editor-theme-probe',
-        message: 'Recipe editor light mode probe',
-        data: {
-          uiTheme: theme,
-          dataTheme: document.documentElement.dataset.theme ?? null,
-          labelColor: labelEl ? getComputedStyle(labelEl).color : null,
-          inputBackground: inputEl ? getComputedStyle(inputEl).backgroundColor : null,
-          inputColor: inputEl ? getComputedStyle(inputEl).color : null,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-  }, [currentView, theme, editorLoading]);
-
-  useEffect(() => {
-    if (currentView !== 'history') return;
-    const itemEl = document.querySelector('[class*="RecetaHistoryAccordion"] [data-state]');
-    fetch('http://127.0.0.1:7828/ingest/355d2ecf-3818-453c-8510-c7b3fe83712b', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'd2ab57' },
-      body: JSON.stringify({
-        sessionId: 'd2ab57',
-        runId: 'post-fix-history',
-        hypothesisId: 'H1',
-        location: 'RecipesManagementScreen.tsx:history-theme-probe',
-        message: 'History accordion light mode probe',
-        data: {
-          uiTheme: theme,
-          dataTheme: document.documentElement.dataset.theme ?? null,
-          itemBackground: itemEl ? getComputedStyle(itemEl).backgroundColor : null,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-  }, [currentView, theme]);
-  // #endregion
-
   const totalMinutes = useMemo(
     () => phases.reduce((sum, phase) => sum + phase.durationMin, 0),
     [phases],
