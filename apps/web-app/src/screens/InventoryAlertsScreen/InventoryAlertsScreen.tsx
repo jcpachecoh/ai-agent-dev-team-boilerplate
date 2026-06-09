@@ -2,7 +2,6 @@ import {
   InventarioMetricCard,
   InventarioPageHeader,
   InventarioTableHeader,
-  InventarioTableRow,
   toast,
 } from '@restopsiq/ui';
 import { AlertTriangle, CheckCircle, ShieldAlert } from 'lucide-react';
@@ -13,7 +12,14 @@ import {
   fetchInventoryAlerts,
   resolveInventoryAlert,
 } from '@/api/inventory';
+import {
+  InventarioAlertCard,
+  InventarioAlertRow,
+} from '@/components/inventario/inventario-responsive';
+import { ResponsiveTable } from '@/components/responsive-table';
 import { InventoryScreenState } from '@/components/inventory/InventoryScreenState';
+import { INVENTARIO_ALERT_RESPONSIVE_COLUMNS } from '@/features/inventario/responsive-columns';
+import { headerColumnsFromResponsive } from '@/lib/responsive-columns';
 import type { InventoryAlert } from '@/types/inventory';
 
 import shared from '../inventory/shared.module.scss';
@@ -122,27 +128,44 @@ export function InventoryAlertsScreen(): React.JSX.Element {
         </section>
       ) : (
         <section className={shared.tableWrap}>
-          <div className={shared.tableHead}>
-            <InventarioTableHeader variant="alert" theme={theme} size="xl" />
-          </div>
-          <div className={shared.tableBody}>
-            {alerts.map((alert) => (
-              <InventarioTableRow
-                key={alert.id}
-                variant="alert"
+          <ResponsiveTable<InventoryAlert>
+            columns={INVENTARIO_ALERT_RESPONSIVE_COLUMNS}
+            rows={alerts}
+            keyExtractor={(alert) => alert.id}
+            className={shared.responsiveTable}
+            renderTableHeader={({ visibleColumns }) => (
+              <div className={shared.tableHead}>
+                <InventarioTableHeader
+                  variant="alert"
+                  theme={theme}
+                  size="xl"
+                  columns={headerColumnsFromResponsive(visibleColumns, {
+                    currentStock: 'center',
+                    minStock: 'center',
+                    actions: 'center',
+                  })}
+                />
+              </div>
+            )}
+            renderTableRow={(alert, { visibleColumns, columnsTemplate }) => (
+              <InventarioAlertRow
+                alert={alert}
                 theme={theme}
-                size="xl"
-                className={shared.tableRowHost}
-                severity={alert.severity}
-                product={alert.product}
-                currentStock={alert.currentStock}
-                minStock={alert.threshold}
-                supplier={alert.supplier}
+                visibleColumns={visibleColumns}
+                columnsTemplate={columnsTemplate}
                 onOrder={() => handleOrder(alert.product)}
                 onResolve={() => void handleResolve(alert.id)}
               />
-            ))}
-          </div>
+            )}
+            renderCard={(alert) => (
+              <InventarioAlertCard
+                alert={alert}
+                theme={theme}
+                onOrder={() => handleOrder(alert.product)}
+                onResolve={() => void handleResolve(alert.id)}
+              />
+            )}
+          />
         </section>
       )}
     </div>

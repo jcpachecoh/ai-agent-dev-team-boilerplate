@@ -2,7 +2,6 @@ import {
   ProveedorActionButton,
   ProveedorMetricCard,
   ProveedorPageHeader,
-  ProveedorSuppliersTable,
   RecetaFilterSelect,
   RecetaSearch,
   type ProveedorTableRowProps,
@@ -10,6 +9,7 @@ import {
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import { ProveedorSuppliersResponsiveTable } from '@/components/proveedores/ProveedorSuppliersResponsiveTable';
 import { useUiTheme } from '@/hooks/useUiTheme';
 import { getErrorMessage, isGraphqlConfigured } from '@/lib/graphql-client';
 
@@ -188,10 +188,8 @@ export default function ProveedoresListView(): React.JSX.Element {
             {getErrorMessage(error)}
           </p>
         ) : (
-          <ProveedorSuppliersTable
+          <ProveedorSuppliersResponsiveTable
             rows={tableRows}
-            theme={theme}
-            size={PROVEEDOR_TABLE_SIZE}
             onRowClick={(supplierId) => navigate(`/proveedores/${supplierId}`)}
             emptyState={isPending ? 'Cargando proveedores…' : 'No hay proveedores'}
           />

@@ -5,30 +5,28 @@ import {
   RecetaMetricCard,
   RecetaSearch,
   RecetaTableHeader,
-  StatusBadge,
   type RecetaTableColumn,
 } from '@restopsiq/ui';
 import { Plus } from 'lucide-react';
-import { useEffect, useMemo, useState, type CSSProperties } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import { CreateProductionCommitteeModal } from '../components/CreateProductionCommitteeModal';
 
+import {
+  ProductionCommitteeListCard,
+  ProductionCommitteeListRow,
+} from '@/components/produccion/produccion-responsive';
+import { ResponsiveTable } from '@/components/responsive-table';
 import { InventoryScreenState } from '@/components/inventory/InventoryScreenState';
+import { recetaTableColumnsForVisible } from '@/features/recetas/recipe-list-columns';
 import { useUiTheme } from '@/hooks/useUiTheme';
 
 import { PlantApiError } from '@/api/plant/client';
-import {
-  COMMITTEE_STATUS_FILTER_OPTIONS,
-  COMMITTEE_TABLE_COLUMNS,
-  RECETA_TABLE_SIZE,
-} from '../constants';
+import { COMMITTEE_STATUS_FILTER_OPTIONS, RECETA_TABLE_SIZE } from '../constants';
+import { PRODUCTION_COMMITTEE_RESPONSIVE_COLUMNS } from '../responsive-columns';
 import { useProductionCommittees } from '../hooks/useProductionCommittees';
-import {
-  committeeStatusToBadge,
-  formatCommitteeStatus,
-  formatPlannedDate,
-} from '../mappers/display';
+import { formatCommitteeStatus } from '../mappers/display';
 import type { ListProductionCommitteesFilters, ProductionCommitteeListItem } from '../types';
 import styles from '../produccion.module.scss';
 
@@ -119,8 +117,6 @@ export default function ProductionCommitteesListView(): React.JSX.Element {
     const totalOrders = filteredCommittees.reduce((sum, c) => sum + c.ordersCount, 0);
     return { total: filteredCommittees.length, active, closed, totalOrders };
   }, [filteredCommittees]);
-
-  const gridStyle = { '--receta-columns': COMMITTEE_TABLE_COLUMNS } as CSSProperties;
 
   return (
     <div className={styles.content}>
@@ -235,18 +231,47 @@ export default function ProductionCommitteesListView(): React.JSX.Element {
 
       {filteredCommittees.length > 0 && (
         <div className={styles.tableWrap}>
-          <RecetaTableHeader theme={theme} size={RECETA_TABLE_SIZE} columns={TABLE_COLUMNS} />
-          <div className={styles.tableBody} role="rowgroup">
-            {filteredCommittees.map((committee) => (
-              <CommitteeTableRow
-                key={committee.id}
+          <ResponsiveTable<ProductionCommitteeListItem>
+            columns={PRODUCTION_COMMITTEE_RESPONSIVE_COLUMNS}
+            rows={filteredCommittees}
+            keyExtractor={(committee) => committee.id}
+            className={styles.responsiveTable}
+            renderTableHeader={({ visibleColumns }) => (
+              <RecetaTableHeader
                 theme={theme}
-                committee={committee}
-                gridStyle={gridStyle}
-                onSelect={() => navigate(`/produccion/comites/${committee.id}`)}
+                size={RECETA_TABLE_SIZE}
+                columns={recetaTableColumnsForVisible(TABLE_COLUMNS, visibleColumns)}
               />
-            ))}
-          </div>
+            )}
+            renderTableRow={(committee, { visibleColumns, columnsTemplate }) => (
+              <div
+                className={styles.tableRow}
+                onClick={() => navigate(`/produccion/comites/${committee.id}`)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    navigate(`/produccion/comites/${committee.id}`);
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+              >
+                <ProductionCommitteeListRow
+                  committee={committee}
+                  theme={theme}
+                  visibleColumns={visibleColumns}
+                  columnsTemplate={columnsTemplate}
+                />
+              </div>
+            )}
+            renderCard={(committee) => (
+              <ProductionCommitteeListCard
+                committee={committee}
+                theme={theme}
+                onOpen={() => navigate(`/produccion/comites/${committee.id}`)}
+              />
+            )}
+          />
         </div>
       )}
 
@@ -255,49 +280,6 @@ export default function ProductionCommitteesListView(): React.JSX.Element {
         onClose={() => setCreateModalOpen(false)}
         onCreated={(committeeId) => navigate(`/produccion/comites/${committeeId}`)}
       />
-    </div>
-  );
-}
-
-interface CommitteeTableRowProps {
-  theme: 'light' | 'dark';
-  committee: ProductionCommitteeListItem;
-  gridStyle: CSSProperties;
-  onSelect: () => void;
-}
-
-function CommitteeTableRow({
-  theme,
-  committee,
-  gridStyle,
-  onSelect,
-}: CommitteeTableRowProps): React.JSX.Element {
-  return (
-    <div
-      role="row"
-      className={[styles.tableRow, styles.opTableRow].filter(Boolean).join(' ')}
-      style={gridStyle}
-      onClick={onSelect}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          onSelect();
-        }
-      }}
-      tabIndex={0}
-    >
-      <span>{committee.number}</span>
-      <span>
-        <StatusBadge
-          status={committeeStatusToBadge(committee.status)}
-          variant="pill"
-          size="sm"
-          theme={theme}
-        />
-      </span>
-      <span>{committee.memberCount}</span>
-      <span>{committee.ordersCount}</span>
-      <span>{formatPlannedDate(committee.createdAt)}</span>
     </div>
   );
 }

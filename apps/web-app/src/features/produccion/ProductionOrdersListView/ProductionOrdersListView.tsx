@@ -1,33 +1,37 @@
 import {
   InventarioPageToolbar,
   InventarioPrimaryButton,
-  RecetaActionButton,
   RecetaFilterSelect,
   RecetaMetricCard,
   RecetaSearch,
   RecetaTableHeader,
-  RecetaUtilityButton,
-  StatusBadge,
   toast,
   type RecetaTableColumn,
 } from '@restopsiq/ui';
 import { Plus } from 'lucide-react';
-import { useEffect, useMemo, useState, type CSSProperties } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import { CreateProductionOrderModal } from '../components/CreateProductionOrderModal';
 
+import {
+  ProductionOrderListCard,
+  ProductionOrderListRow,
+  type ProductionOrderRowView,
+} from '@/components/produccion/produccion-responsive';
+import { ResponsiveTable } from '@/components/responsive-table';
 import { InventoryScreenState } from '@/components/inventory/InventoryScreenState';
+import { recetaTableColumnsForVisible } from '@/features/recetas/recipe-list-columns';
 import { useUiTheme } from '@/hooks/useUiTheme';
 
 import { PlantApiError } from '@/api/plant/client';
 import {
-  OP_TABLE_COLUMNS,
   ORDER_STATUS_FILTER_OPTIONS,
   PRIORITY_FILTER_OPTIONS,
   RECETA_TABLE_SIZE,
   SHIFT_FILTER_OPTIONS,
 } from '../constants';
+import { PRODUCTION_ORDER_RESPONSIVE_COLUMNS } from '../responsive-columns';
 import {
   usePlanProductionOrder,
   useProductionOrders,
@@ -181,7 +185,14 @@ export default function ProductionOrdersListView(): React.JSX.Element {
     }
   };
 
-  const gridStyle = { '--receta-columns': OP_TABLE_COLUMNS } as CSSProperties;
+  const orderRows = useMemo(
+    (): ProductionOrderRowView[] =>
+      filteredOrders.map((order) => ({
+        order,
+        recipeName: recipeNameById.get(order.recipeId) ?? order.recipeId.slice(0, 8),
+      })),
+    [filteredOrders, recipeNameById],
+  );
 
   return (
     <div className={styles.content}>
@@ -316,28 +327,57 @@ export default function ProductionOrdersListView(): React.JSX.Element {
         />
       )}
 
-      {filteredOrders.length > 0 && (
+      {orderRows.length > 0 && (
         <div className={styles.tableWrap}>
-          <RecetaTableHeader theme={theme} size={RECETA_TABLE_SIZE} columns={TABLE_COLUMNS} />
-          <div className={styles.tableBody} role="rowgroup">
-            {filteredOrders.map((order) => {
-              const recipeName = recipeNameById.get(order.recipeId) ?? order.recipeId.slice(0, 8);
-              return (
-                <OrderTableRow
-                  key={order.id}
+          <ResponsiveTable<ProductionOrderRowView>
+            columns={PRODUCTION_ORDER_RESPONSIVE_COLUMNS}
+            rows={orderRows}
+            keyExtractor={(row) => row.order.id}
+            className={styles.responsiveTable}
+            renderTableHeader={({ visibleColumns }) => (
+              <RecetaTableHeader
+                theme={theme}
+                size={RECETA_TABLE_SIZE}
+                columns={recetaTableColumnsForVisible(TABLE_COLUMNS, visibleColumns)}
+              />
+            )}
+            renderTableRow={(row, { visibleColumns, columnsTemplate }) => (
+              <div
+                className={styles.tableRow}
+                onClick={() => navigate(`/produccion/ordenes/${row.order.id}`)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    navigate(`/produccion/ordenes/${row.order.id}`);
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+              >
+                <ProductionOrderListRow
+                  row={row}
                   theme={theme}
-                  order={order}
-                  recipeName={recipeName}
-                  gridStyle={gridStyle}
-                  onSelect={() => navigate(`/produccion/ordenes/${order.id}`)}
-                  onPlan={(e) => void handlePlan(order, e)}
-                  onDownloadPdf={(e) => void handleDownloadPdf(order, e)}
-                  isPlanning={planMutation.isPending && planMutation.variables === order.id}
-                  isDownloadingPdf={downloadingPdfId === order.id}
+                  visibleColumns={visibleColumns}
+                  columnsTemplate={columnsTemplate}
+                  onPlan={(event) => void handlePlan(row.order, event)}
+                  onDownloadPdf={(event) => void handleDownloadPdf(row.order, event)}
+                  isPlanning={planMutation.isPending && planMutation.variables === row.order.id}
+                  isDownloadingPdf={downloadingPdfId === row.order.id}
                 />
-              );
-            })}
-          </div>
+              </div>
+            )}
+            renderCard={(row) => (
+              <ProductionOrderListCard
+                row={row}
+                theme={theme}
+                onOpen={() => navigate(`/produccion/ordenes/${row.order.id}`)}
+                onPlan={(event) => void handlePlan(row.order, event)}
+                onDownloadPdf={(event) => void handleDownloadPdf(row.order, event)}
+                isPlanning={planMutation.isPending && planMutation.variables === row.order.id}
+                isDownloadingPdf={downloadingPdfId === row.order.id}
+              />
+            )}
+          />
         </div>
       )}
 
@@ -346,80 +386,6 @@ export default function ProductionOrdersListView(): React.JSX.Element {
         onClose={() => setCreateModalOpen(false)}
         onCreated={(orderId) => navigate(`/produccion/ordenes/${orderId}`)}
       />
-    </div>
-  );
-}
-
-interface OrderTableRowProps {
-  theme: 'light' | 'dark';
-  order: ProductionOrderListItem;
-  recipeName: string;
-  gridStyle: CSSProperties;
-  onSelect: () => void;
-  onPlan: (event: React.MouseEvent) => void;
-  onDownloadPdf: (event: React.MouseEvent) => void;
-  isPlanning: boolean;
-  isDownloadingPdf: boolean;
-}
-
-function OrderTableRow({
-  theme,
-  order,
-  recipeName,
-  gridStyle,
-  onSelect,
-  onPlan,
-  onDownloadPdf,
-  isPlanning,
-  isDownloadingPdf,
-}: OrderTableRowProps): React.JSX.Element {
-  return (
-    <div
-      role="row"
-      className={[styles.tableRow, styles.opTableRow].filter(Boolean).join(' ')}
-      style={gridStyle}
-      onClick={onSelect}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          onSelect();
-        }
-      }}
-      tabIndex={0}
-    >
-      <span>{order.number}</span>
-      <span>{recipeName}</span>
-      <span>
-        <StatusBadge
-          status={orderStatusToBadge(order.status)}
-          variant="pill"
-          size="sm"
-          theme={theme}
-        />
-      </span>
-      <span>{formatPriority(order.priority)}</span>
-      <span>{formatShift(order.shift)}</span>
-      <span>{formatPlannedDate(order.plannedStartAt)}</span>
-      <span className={styles.rowActions}>
-        <RecetaUtilityButton
-          theme={theme}
-          size="sm"
-          variant="pdf"
-          disabled={isDownloadingPdf}
-          onClick={onDownloadPdf}
-        />
-        {order.status === 'DRAFT' && (
-          <RecetaActionButton
-            theme={theme}
-            size="sm"
-            accent="orange"
-            variant="soft"
-            label="Planificar"
-            loading={isPlanning}
-            onClick={onPlan}
-          />
-        )}
-      </span>
     </div>
   );
 }
