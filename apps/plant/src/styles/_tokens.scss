@@ -1,0 +1,21 @@
+// Industrial preset — see scss.config.ts for JS mirror
+$font-size-base: 18px;
+$touch-target-min: 48px;
+$keypad-key-min-w: 88px;
+$keypad-key-min-h: 72px;
+$operator-button-min-h: 120px;
+
+$color-operator-bg: #0f1419;
+$color-operator-text: #f4f6f8;
+$color-accent: #3d9eff;
+$color-danger: #e85d4a;
+$color-success: #3ecf8e;
+@mixin touch-target {
+  min-width: $touch-target-min;
+  min-height: $touch-target-min;
+}
+
+@mixin keypad-key {
+  min-width: $keypad-key-min-w;
+  min-height: $keypad-key-min-h;
+}

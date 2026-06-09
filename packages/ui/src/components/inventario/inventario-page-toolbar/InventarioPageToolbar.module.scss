@@ -1,0 +1,42 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/inventario-theme' as inventario;
+
+.toolbar {
+  @include inventario.inventario-theme-classes;
+  @include inventario.inventario-size-vars;
+
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: $spacing-lg;
+  width: 100%;
+  color: var(--inventario-text);
+}
+
+.titles {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: $font-weight-bold;
+  line-height: 1.25;
+}
+
+.subtitle {
+  margin: 0;
+  font-size: $font-size-sm;
+  color: var(--inventario-muted);
+}
+
+.size--sm .title {
+  font-size: 1.125rem;
+}
+
+.size--xl .title {
+  font-size: 1.625rem;
+}

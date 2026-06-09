@@ -40,15 +40,15 @@ NEXT_TASK.md updated to next pending task
 
 The Orchestrator routes tasks to agents based on the **task type prefix** or **domain tag** in the task file header.
 
-| Task Domain | Assigned Agent |
-|---|---|
-| `[SPEC]` or `[PRODUCT]` | Product Agent |
-| `[ARCH]` or `[DESIGN]` | Architecture Agent |
-| `[BACKEND]` or `[API]` | Backend Agent |
-| `[FRONTEND]` or `[UI]` | Frontend Agent |
-| `[DATA]` or `[ETL]` | Data Agent |
-| `[TEST]` or `[QA]` | Testing Agent |
-| `[DEVOPS]` or `[INFRA]` | DevOps Agent |
+| Task Domain             | Assigned Agent     |
+| ----------------------- | ------------------ |
+| `[SPEC]` or `[PRODUCT]` | Product Agent      |
+| `[ARCH]` or `[DESIGN]`  | Architecture Agent |
+| `[BACKEND]` or `[API]`  | Backend Agent      |
+| `[FRONTEND]` or `[UI]`  | Frontend Agent     |
+| `[DATA]` or `[ETL]`     | Data Agent         |
+| `[TEST]` or `[QA]`      | Testing Agent      |
+| `[DEVOPS]` or `[INFRA]` | DevOps Agent       |
 
 If a task spans multiple domains, the Orchestrator splits it into sub-tasks and assigns each to the appropriate agent.
 
@@ -86,6 +86,7 @@ When an agent picks up a task, it must:
 Multiple agents may run in parallel when their tasks have no dependencies on each other. The Orchestrator tracks dependencies using the `Depends On` field in task files (see `templates/task-template.md`).
 
 Example of safe parallel execution:
+
 - `[BACKEND]` task for user API
 - `[FRONTEND]` task for login page UI (using mocked data)
 - `[DATA]` task for user seed dataset
@@ -98,13 +99,13 @@ These three can run simultaneously because their outputs do not depend on each o
 
 Task status is tracked in `memory/progress.md` using the following states:
 
-| Status | Meaning |
-|---|---|
-| `pending` | Task created, not yet assigned |
-| `in-progress` | Agent is actively working on the task |
-| `blocked` | Task is waiting on a dependency or decision |
-| `review` | Agent has completed work; awaiting validation |
-| `done` | Acceptance criteria met and verified |
+| Status        | Meaning                                       |
+| ------------- | --------------------------------------------- |
+| `pending`     | Task created, not yet assigned                |
+| `in-progress` | Agent is actively working on the task         |
+| `blocked`     | Task is waiting on a dependency or decision   |
+| `review`      | Agent has completed work; awaiting validation |
+| `done`        | Acceptance criteria met and verified          |
 
 ---
 
@@ -146,12 +147,12 @@ python ai-dev-team/graph/dev_graph.py
 
 Each agent must produce outputs in the following locations:
 
-| Agent | Output Location |
-|---|---|
-| Product Agent | `specs/`, `tasks/` |
-| Architecture Agent | `docs/ARCHITECTURE.md`, `docs/adr/` |
-| Backend Agent | `src/` (or equivalent source folder) |
-| Frontend Agent | `src/` (or equivalent source folder) |
-| Data Agent | `datasets/`, `scripts/` |
-| Testing Agent | `tests/` (or test files co-located with source) |
-| DevOps Agent | `.github/workflows/`, `Dockerfile`, `infra/` |
+| Agent              | Output Location                                 |
+| ------------------ | ----------------------------------------------- |
+| Product Agent      | `specs/`, `tasks/`                              |
+| Architecture Agent | `docs/ARCHITECTURE.md`, `docs/adr/`             |
+| Backend Agent      | `src/` (or equivalent source folder)            |
+| Frontend Agent     | `src/` (or equivalent source folder)            |
+| Data Agent         | `datasets/`, `scripts/`                         |
+| Testing Agent      | `tests/` (or test files co-located with source) |
+| DevOps Agent       | `.github/workflows/`, `Dockerfile`, `infra/`    |

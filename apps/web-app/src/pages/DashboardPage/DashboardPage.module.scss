@@ -1,0 +1,116 @@
+@use '@/styles/tokens' as t;
+
+.page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100%;
+  padding: t.$space-12 t.$space-8;
+}
+
+.heroIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 7.5rem;
+  height: 7.5rem;
+  margin-bottom: t.$space-8;
+  border: 2px solid var(--color-brand-gold-border);
+  border-radius: t.$border-radius-base;
+  background: var(--color-brand-gold-subtle);
+  color: t.$color-brand-gold;
+}
+
+.title {
+  margin: 0 0 t.$space-4;
+  font-size: t.$font-size-3xl;
+  font-weight: t.$font-weight-bold;
+  letter-spacing: -0.01em;
+  color: var(--color-text-primary);
+}
+
+.description {
+  max-width: 37.5rem;
+  margin: 0;
+  font-size: t.$font-size-lg;
+  line-height: 1.6;
+  text-align: center;
+  color: var(--color-text-secondary);
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: t.$space-6;
+  width: min(100%, 50rem);
+  margin-top: t.$space-12;
+}
+
+.card {
+  padding: t.$space-6;
+  border: 1px solid var(--color-border);
+  border-left-width: t.$nav-active-border;
+  border-radius: t.$border-radius-sm;
+  background: var(--color-bg-surface);
+}
+
+.cardLabel {
+  margin: 0;
+  font-family: t.$font-family-mono;
+  font-size: 0.625rem;
+  font-weight: t.$font-weight-bold;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+.cardValue {
+  margin: t.$space-3 0 0;
+  font-family: t.$font-family-mono;
+  font-size: 2.25rem;
+  font-weight: t.$font-weight-bold;
+  line-height: 1;
+}
+
+.cardTeal {
+  border-left-color: t.$color-success;
+
+  .cardValue {
+    color: t.$color-success;
+  }
+}
+
+.cardGold {
+  border-left-color: t.$color-warning;
+
+  .cardValue {
+    color: t.$color-warning;
+  }
+}
+
+.cardPurple {
+  border-left-color: t.$color-accent;
+
+  .cardValue {
+    color: t.$color-accent;
+  }
+}
+
+.cardOrange {
+  border-left-color: t.$color-orange;
+
+  .cardValue {
+    color: t.$color-orange;
+  }
+}
+
+@media (max-width: 767px) {
+  .page {
+    padding: t.$space-8 t.$space-4;
+  }
+
+  .cards {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,277 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/web-login-theme' as login;
+
+// ─── Panel ────────────────────────────────────────────────────────────────────
+
+.panel {
+  @include login.web-login-root;
+  @include login.web-login-theme-classes;
+
+  display: flex;
+  flex-direction: column;
+  gap: var(--web-login-gap);
+  padding: var(--web-login-padding-y) var(--web-login-padding-x);
+  background: var(--web-login-bg);
+  color: var(--web-login-text);
+  min-height: 100%;
+  position: relative;
+}
+
+.hasImage {
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      135deg,
+      rgb(0 0 0 / 0.82) 0%,
+      rgb(0 0 0 / 0.65) 60%,
+      rgb(0 0 0 / 0.55) 100%
+    );
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  > * {
+    position: relative;
+    z-index: 1;
+  }
+}
+
+// ─── Brand ────────────────────────────────────────────────────────────────────
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  animation:
+    heroFadeUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.1s 1 normal both,
+    heroFloat 4.2s ease-in-out 0.7s infinite alternate none;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: $border-radius-sm;
+  border: $border-width solid var(--web-login-border);
+  background: var(--web-login-surface-raised);
+  color: var(--web-login-accent);
+  flex-shrink: 0;
+}
+
+.logoInitial {
+  font-family: $font-family-mono;
+  font-size: 0.875rem;
+  font-weight: $font-weight-bold;
+  line-height: 1;
+}
+
+.brandText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.brandName {
+  margin: 0;
+  font-family: $font-family-mono;
+  font-size: 0.875rem;
+  font-weight: $font-weight-bold;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--web-login-accent);
+}
+
+.brandLocation {
+  margin: 0;
+  font-family: $font-family-mono;
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--web-login-muted);
+}
+
+.size--sm .logo {
+  width: 28px;
+  height: 28px;
+}
+.size--sm .logoInitial {
+  font-size: 0.75rem;
+}
+.size--sm .brandName {
+  font-size: 0.75rem;
+}
+.size--xl .logo {
+  width: 40px;
+  height: 40px;
+}
+.size--xl .brandName {
+  font-size: 1rem;
+}
+
+// ─── Copy ─────────────────────────────────────────────────────────────────────
+
+.copy {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+  max-width: 520px;
+  animation:
+    heroFadeUp 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.22s 1 normal both,
+    heroFloat 5s ease-in-out 1s infinite alternate none;
+}
+
+.headline {
+  margin: 0;
+  font-size: var(--web-login-headline-size);
+  font-weight: $font-weight-bold;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+}
+
+.description {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--web-login-muted);
+}
+
+// ─── Spotlight ────────────────────────────────────────────────────────────────
+
+.spotlight {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $spacing-xl;
+  margin-top: auto;
+  padding: $spacing-2xl 0 $spacing-lg;
+  animation: heroFadeUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.35s 1 normal both;
+}
+
+.spotlightCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $spacing-md;
+  text-align: center;
+  min-height: 148px;
+  justify-content: center;
+}
+
+.spotlightIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: 1px solid var(--web-login-accent);
+  background: rgb(255 255 255 / 0.06);
+  color: var(--web-login-accent);
+  animation: heroIconGlow 3s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+.spotlightLabel {
+  margin: 0;
+  font-size: 1.1875rem;
+  font-weight: $font-weight-bold;
+  letter-spacing: -0.01em;
+  color: var(--web-login-text);
+}
+
+.spotlightDetail {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  color: var(--web-login-muted);
+  max-width: 340px;
+}
+
+// ─── Progress track ───────────────────────────────────────────────────────────
+
+.spotlightTrack {
+  display: flex;
+  gap: $spacing-sm;
+  width: 100%;
+  max-width: 220px;
+}
+
+.spotlightDot {
+  flex: 1;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--web-login-border);
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: background 0.2s ease;
+
+  &:hover {
+    background: var(--web-login-muted);
+  }
+}
+
+.spotlightDotFill {
+  position: absolute;
+  inset-block: 0;
+  left: 0;
+  height: 100%;
+  background: var(--web-login-accent);
+  display: block;
+  border-radius: inherit;
+}
+
+// ─── Status ───────────────────────────────────────────────────────────────────
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  margin-top: auto;
+  font-size: 0.8125rem;
+  color: var(--web-login-subtle);
+  animation:
+    heroFadeIn 0.6s ease 0.7s 1 normal both,
+    heroPulse 3.6s ease-in-out 1.4s infinite normal none;
+}
+
+.statusDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--web-login-success);
+  flex-shrink: 0;
+  animation: heroPulse 2.4s ease-in-out 1.3s infinite;
+}
+
+// ─── Responsive ───────────────────────────────────────────────────────────────
+
+@media (max-width: 900px) {
+  .spotlight {
+    padding-top: $spacing-lg;
+  }
+}
+
+// ─── Reduced motion ───────────────────────────────────────────────────────────
+
+@media (prefers-reduced-motion: reduce) {
+  .brand,
+  .copy,
+  .spotlight,
+  .spotlightIcon,
+  .status,
+  .statusDot {
+    animation: none;
+  }
+}

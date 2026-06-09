@@ -1,0 +1,54 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/produccion-theme' as produccion;
+.row {
+  @include produccion.produccion-theme-classes;
+  @include produccion.produccion-size-vars;
+  display: grid;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+  padding: 8px 0;
+  color: var(--produccion-text);
+  grid-template-columns: 8px 1fr auto;
+}
+.dot {
+  width: 7px;
+  height: 7px;
+  background: produccion.$produccion-teal;
+  border-radius: 999px;
+}
+div {
+  min-width: 0;
+}
+strong {
+  display: block;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+p,
+time {
+  margin: 0;
+  font-size: 0.625rem;
+  color: var(--produccion-muted);
+}
+time {
+  font-family: $font-family-mono;
+  white-space: nowrap;
+}
+
+@media (width <= 560px) {
+  .row {
+    grid-template-columns: 8px 1fr;
+  }
+
+  time {
+    grid-column: 2;
+    white-space: normal;
+  }
+
+  strong {
+    white-space: normal;
+  }
+}

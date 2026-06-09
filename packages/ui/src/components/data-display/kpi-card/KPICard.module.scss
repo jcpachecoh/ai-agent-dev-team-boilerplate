@@ -1,0 +1,170 @@
+@use '../../../styles/abstracts/variables' as *;
+
+.card {
+  width: min(100%, var(--display-width));
+  min-height: var(--display-min-height);
+  padding: $spacing-lg;
+  border-radius: $border-radius-lg;
+  border: $border-width solid transparent;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  background-color: transparent;
+  font-family: $font-family-base;
+  box-sizing: border-box;
+}
+
+.size--sm {
+  --display-width: 220px;
+  --display-min-height: 88px;
+  padding: $spacing-sm $spacing-md;
+  gap: $spacing-sm;
+
+  .label {
+    font-size: $font-size-xs;
+  }
+
+  .value {
+    font-size: $font-size-lg;
+  }
+
+  &.compact {
+    --display-min-height: 64px;
+  }
+}
+
+.size--md {
+  --display-width: 320px;
+  --display-min-height: 120px;
+
+  &.compact {
+    --display-min-height: 72px;
+  }
+}
+
+.size--xl {
+  --display-width: 480px;
+  --display-min-height: 148px;
+  padding: $spacing-xl;
+  gap: $spacing-lg;
+
+  .label {
+    font-size: $font-size-base;
+  }
+
+  .value {
+    font-size: $font-size-3xl;
+  }
+
+  &.compact {
+    --display-min-height: 96px;
+
+    .value {
+      font-size: $font-size-2xl;
+    }
+  }
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.label {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+}
+
+.icon {
+  color: $color-text-secondary;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+.value {
+  font-size: $font-size-2xl;
+  font-weight: $font-weight-bold;
+  color: $color-text-primary;
+}
+
+.delta {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: $font-size-xs;
+  font-weight: $font-weight-medium;
+}
+
+.deltaValue {
+  font-weight: $font-weight-semibold;
+}
+.deltaLabel {
+  color: $color-text-secondary;
+}
+
+// Variants
+.compact {
+  padding: $spacing-sm $spacing-md;
+  .value {
+    font-size: $font-size-lg;
+  }
+}
+
+// Colors
+.success {
+  border-color: rgba($color-success, 0.2);
+  .value {
+    color: $color-success;
+  }
+}
+.warning {
+  border-color: rgba($color-warning, 0.2);
+  .value {
+    color: $color-warning;
+  }
+}
+.danger {
+  border-color: rgba($color-danger, 0.2);
+  .value {
+    color: $color-danger;
+  }
+}
+.gold {
+  border-color: rgba(#d4a017, 0.2);
+  .value {
+    color: #d4a017;
+  }
+}
+
+// Trend Colors
+.up {
+  color: $color-success;
+}
+.down {
+  color: $color-danger;
+}
+.neutral {
+  color: $color-text-secondary;
+}
+
+// Themes
+.theme--dark {
+  background-color: rgba($color-white, 0.03);
+  border-color: rgba($color-white, 0.1);
+  .label {
+    color: rgba($color-white, 0.6);
+  }
+  .value {
+    color: $color-text-inverse;
+  }
+}
+
+.theme--light {
+  background-color: $color-white;
+  border: $border-width solid $color-border;
+}

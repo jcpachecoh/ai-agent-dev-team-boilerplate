@@ -1,0 +1,132 @@
+---
+alwaysApply: true
+---
+
+# RestOpsIQ SDD Workflow Rule
+
+## Core rule
+
+Always follow Spec-Driven Development.
+
+When the user asks to implement a task, you must implement only that specific task.
+
+Never implement future tasks, adjacent tasks, or inferred follow-ups.
+
+## Before editing
+
+Before making changes, inspect the task file and identify:
+
+- Goal
+- Scope
+- Out of Scope
+- Files allowed
+- Files forbidden
+- Acceptance criteria
+- Validation commands
+
+If the task file is missing, ambiguous, or conflicts with the request, stop and ask for clarification.
+
+## Scope discipline
+
+Only modify files explicitly listed in "Files allowed".
+
+Never modify files listed in "Files forbidden".
+
+Never modify these unless the task explicitly allows it:
+
+- package.json
+- pnpm-lock.yaml
+- schema.prisma
+- Prisma migrations
+- apps/api/src/app.module.ts
+- scripts/validate-structure.js
+- files in packages/
+- existing auth implementation files
+- generated files such as dist/, coverage/, node_modules/
+
+## No hidden implementation
+
+Do not:
+
+- install dependencies
+- run lint:fix
+- create migrations
+- commit changes
+- change branches
+- run destructive commands
+- implement controller/service/repository logic unless the current task explicitly asks for it
+- add tests unless the task explicitly asks for tests
+- edit implementation when the task is analysis/spec-only
+
+## SDD flow
+
+For each ticket:
+
+1. Analysis only
+2. Create spec/task files
+3. Implement one task at a time
+4. Validate
+5. Report files changed
+6. Stop
+
+Do not continue automatically to the next task.
+
+## Reporting format
+
+After completing a task, always return:
+
+1. Files changed
+2. Why each file belongs to this task
+3. Confirm no unrelated files were touched
+4. Confirm forbidden files were not modified
+5. Validation results
+6. Known deviations, if any
+
+## Validation
+
+Always run the validation commands listed in the task file.
+
+If a validation fails, stop and report:
+
+- command
+- error
+- likely cause
+- recommended next step
+
+Do not fix beyond the task scope without approval.
+
+## Generated files
+
+Never stage or intentionally modify generated artifacts unless explicitly required:
+
+- dist/
+- coverage/
+- node_modules/
+- generated clients
+- build outputs
+
+If a command generates these files, report them and do not include them in the task unless explicitly allowed.
+
+## Prisma
+
+For Prisma tasks:
+
+- Schema changes and migrations must be separate unless the task says otherwise.
+- Do not run `prisma migrate dev` unless explicitly instructed.
+- Prefer:
+  - prisma format
+  - prisma validate
+  - prisma generate
+- If a migration is created, it must only include SQL related to the current task.
+
+## Existing behavior protection
+
+Do not break existing auth, users, routes, or tests.
+
+If the requested task conflicts with existing behavior, stop and report the conflict before editing.
+
+## No Linear assumption
+
+Do not assume Linear access.
+
+Use the task text and local task markdown files as the source of truth.

@@ -1,0 +1,122 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/inventario-theme' as inventario;
+
+.row {
+  @include inventario.inventario-theme-classes;
+
+  display: grid;
+  grid-template-columns: var(--inventario-columns);
+  align-items: center;
+  width: min(100%, var(--row-width));
+  min-height: var(--row-height);
+  padding: 0 var(--row-padding-x);
+  border-bottom: $border-width solid var(--inventario-border);
+  background: var(--inventario-surface);
+  color: var(--inventario-text);
+  box-sizing: border-box;
+}
+
+.size--sm {
+  --row-width: 720px;
+  --row-height: 48px;
+  --row-padding-x: #{$spacing-sm};
+}
+
+.size--md {
+  --row-width: 960px;
+  --row-height: 54px;
+  --row-padding-x: #{$spacing-md};
+}
+
+.size--xl {
+  --row-width: 100%;
+  --row-height: 54px;
+  --row-padding-x: 16px;
+}
+
+.sku {
+  font-family: $font-family-mono;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-bold;
+  color: inventario.$inventario-info;
+}
+
+.skuLink {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+
+  &:hover {
+    opacity: 0.85;
+  }
+}
+
+.name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+}
+
+.muted {
+  font-size: $font-size-sm;
+  color: var(--inventario-muted);
+}
+
+.stock {
+  justify-self: center;
+  font-family: $font-family-mono;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-bold;
+  font-variant-numeric: tabular-nums;
+}
+
+.stock--success {
+  color: inventario.$inventario-success;
+}
+
+.stock--warning {
+  color: inventario.$inventario-warning;
+}
+
+.stock--danger {
+  color: inventario.$inventario-danger;
+}
+
+.price {
+  justify-self: end;
+  font-family: $font-family-mono;
+  font-size: $font-size-sm;
+  color: var(--inventario-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.quantity {
+  justify-self: center;
+  font-family: $font-family-mono;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+}
+
+.badgeCell {
+  justify-self: center;
+}
+
+.actions {
+  display: inline-flex;
+  justify-self: center;
+  gap: 6px;
+}
+
+.warningIcon {
+  width: 14px;
+  height: 14px;
+  color: inventario.$inventario-warning;
+  flex-shrink: 0;
+}

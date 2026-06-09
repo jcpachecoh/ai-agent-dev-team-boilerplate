@@ -1,0 +1,57 @@
+@use '@/styles/tokens' as *;
+
+.dataSection {
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr);
+  gap: 0;
+  border-bottom: 1px solid $color-border;
+}
+
+.dataTableCell {
+  padding: 1rem 1.25rem;
+  border-right: 1px solid $color-border;
+  min-width: 0;
+}
+
+.visualCell {
+  padding: 1rem 1.25rem;
+  min-width: 0;
+}
+
+.visualPanel {
+  --control-width: 100%;
+  min-height: 320px;
+}
+
+.distributionList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.statsRow {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+@media (max-width: 1024px) {
+  .dataSection {
+    grid-template-columns: 1fr;
+  }
+
+  .dataTableCell {
+    border-right: none;
+    border-bottom: 1px solid $color-border;
+  }
+
+  .statsRow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .statsRow {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,70 @@
+@use '../../styles/abstracts/variables' as *;
+@use '../../styles/abstracts/mixins' as *;
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-sm;
+  border-radius: $border-radius-full;
+  box-sizing: border-box;
+  background: transparent;
+  border: $border-width solid transparent;
+  font-family: $font-family-base;
+  cursor: pointer;
+  color: $color-gray-900;
+
+  &:focus-visible {
+    @include focus-ring;
+  }
+}
+
+.theme-dark {
+  color: #ededf5;
+  border-color: rgba($color-white, 0.12);
+  background: rgba($color-white, 0.04);
+}
+
+.theme-light {
+  color: $color-gray-900;
+  border-color: rgba($color-black, 0.08);
+  background: rgba($color-black, 0.03);
+}
+
+.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.label {
+  display: inline-block;
+  font-weight: $font-weight-semibold;
+}
+
+/* Sizes */
+.sm {
+  padding: $spacing-xs $spacing-sm;
+  font-size: $font-size-xs;
+  border-radius: $border-radius-full;
+}
+.md {
+  padding: $spacing-sm calc($spacing-sm + 2px);
+  font-size: $font-size-sm;
+  border-radius: $border-radius-full;
+}
+.lg {
+  padding: $spacing-md $spacing-lg;
+  font-size: $font-size-base;
+  border-radius: $border-radius-full;
+}
+
+.icon img,
+.icon svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

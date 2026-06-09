@@ -1,0 +1,100 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/inventario-theme' as inventario;
+
+.row {
+  @include inventario.inventario-theme-classes;
+  @include inventario.inventario-size-vars;
+
+  --inventario-accent: #{inventario.$inventario-success};
+
+  display: flex;
+  flex-direction: column;
+  gap: var(--row-gap);
+  width: min(100%, var(--control-width));
+  color: var(--inventario-text);
+}
+
+.size--sm,
+.size--md,
+.size--xl {
+  --control-width: 100%;
+}
+
+.density--compact {
+  --row-gap: 6px;
+  --track-height: 6px;
+  --track-radius: 3px;
+  --label-size: 11px;
+  --value-size: 11px;
+}
+
+.density--comfortable {
+  --row-gap: 6px;
+  --track-height: 8px;
+  --track-radius: 4px;
+  --label-size: 11px;
+  --value-size: 11px;
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+}
+
+.label {
+  font-family: $font-family-base;
+  font-size: var(--label-size);
+  line-height: 1.5;
+  color: var(--inventario-muted);
+}
+
+.value {
+  font-family: $font-family-mono;
+  font-size: var(--value-size);
+  font-weight: $font-weight-bold;
+  line-height: 1.5;
+  color: var(--inventario-accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.track {
+  width: 100%;
+  height: var(--track-height);
+  border-radius: var(--track-radius);
+  background: var(--inventario-track);
+  overflow: hidden;
+}
+
+.fill {
+  display: block;
+  width: var(--inventario-bar-value);
+  height: 100%;
+  border-radius: inherit;
+  background: var(--inventario-accent);
+}
+
+.accent--success {
+  --inventario-accent: #{inventario.$inventario-success};
+}
+
+.accent--info {
+  --inventario-accent: #{inventario.$inventario-info};
+}
+
+.accent--warning {
+  --inventario-accent: #{inventario.$inventario-warning};
+}
+
+.accent--danger {
+  --inventario-accent: #{inventario.$inventario-danger};
+}
+
+.accent--purple {
+  --inventario-accent: #{inventario.$inventario-purple};
+}
+
+.accent--enterprise {
+  --inventario-accent: #{inventario.$inventario-enterprise};
+}

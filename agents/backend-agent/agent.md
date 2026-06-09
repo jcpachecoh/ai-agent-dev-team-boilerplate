@@ -21,9 +21,9 @@ The Backend Agent is responsible for APIs, services, and backend architecture.
 ## Outputs
 
 - API route implementations
-- Service and repository layer code
+- Service and repository layer code (following `docs/MODULE-STRUCTURE.md`)
 - Database schema files (e.g., Prisma schema, SQL migrations)
-- Backend tests
+- Backend tests (controller + service specs in `test/`)
 
 ## Collaboration
 

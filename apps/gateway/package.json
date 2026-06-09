@@ -1,0 +1,16 @@
+{
+  "name": "@restopsiq/gateway",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Deprecated — GraphQL lives in @restopsiq/api. See README.md.",
+  "scripts": {
+    "build": "node -e \"console.warn('@restopsiq/gateway removed — use @restopsiq/api')\"",
+    "dev": "node -e \"console.error('Start: pnpm --filter @restopsiq/api start:dev'); process.exit(1)\"",
+    "start": "node -e \"process.exit(1)\"",
+    "test": "node -e \"process.exit(0)\"",
+    "test:cov": "node -e \"process.exit(0)\"",
+    "typecheck": "node -e \"process.exit(0)\"",
+    "lint": "node -e \"process.exit(0)\"",
+    "clean": "node -e \"process.exit(0)\""
+  }
+}

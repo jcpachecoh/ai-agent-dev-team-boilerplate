@@ -1,0 +1,279 @@
+@use '@/styles/tokens' as *;
+
+.page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 1rem;
+  padding: 1rem 1.25rem 1.5rem;
+  overflow: auto;
+  background: var(--color-bg-primary);
+}
+
+.contentPadded {
+  padding: 1rem 1.25rem 1.5rem;
+  gap: 1rem;
+}
+
+.pageHeaderSection {
+  flex-shrink: 0;
+  padding: 1.1rem 1.25rem 1rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.topRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.homeLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.75rem;
+  border: 1px solid rgba(255, 159, 67, 0.35);
+  border-radius: 4px;
+  background: transparent;
+  color: rgba(255, 159, 67, 0.9);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-decoration: none;
+  cursor: pointer;
+
+  &:hover {
+    background: rgba(255, 159, 67, 0.08);
+  }
+}
+
+.metricsRow {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.65rem;
+  flex-shrink: 0;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--color-border);
+
+  @media (max-width: 1100px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  @media (max-width: 560px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.metricCard {
+  --control-min-height: 4.25rem;
+  --card-padding-y: 1.5rem;
+  --card-gap: 0.25rem;
+  --metric-value-size: 2rem;
+}
+
+.toolbarRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  flex-shrink: 0;
+  padding: 0.85rem 1.25rem;
+  border-bottom: 1px solid var(--color-border);
+  align-items: center;
+}
+
+@media (min-width: 768px) {
+  .toolbarRow {
+    display: grid;
+    grid-template-columns: minmax(0, 2.4fr) repeat(3, minmax(0, 1fr)) auto;
+    align-items: center;
+  }
+}
+
+.searchGrow {
+  flex: 999 1 56%;
+  min-width: min(100%, 280px);
+  width: 100%;
+  --control-width: 100%;
+}
+
+.filterSelect {
+  flex: 1 1 140px;
+  min-width: 120px;
+  max-width: 100%;
+  width: 100%;
+  --control-width: 100%;
+}
+
+.actionsStack {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.45rem;
+  width: 100%;
+  min-width: 160px;
+  max-width: 200px;
+  justify-self: end;
+}
+
+.exportAction {
+  align-self: center;
+  width: fit-content;
+}
+
+.tableSection {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  padding: 0.75rem 1.25rem 1.25rem;
+  overflow-x: auto;
+}
+
+.detailHeaderSection {
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--color-border);
+
+  // Header component is full-bleed inside the section
+  > header {
+    border-bottom: none;
+  }
+}
+
+.detailTabSection {
+  flex-shrink: 0;
+}
+
+.detailBody {
+  flex: 1;
+  padding: 1rem 1.25rem 1.5rem;
+  min-height: 0;
+}
+
+.tabPanel {
+  padding-top: 1rem;
+}
+
+.tabPanelFlush {
+  padding-top: 0;
+}
+
+.infoGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.catalogHeader {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.inlineActions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.formError {
+  margin: 0 0 0.75rem;
+  color: #f87171;
+  font-size: 0.85rem;
+}
+
+.modalNumberInput {
+  --control-width: 100%;
+  width: 100%;
+}
+
+.supplySearchRow {
+  margin-top: 0.75rem;
+  max-width: 420px;
+}
+
+.stateMessage {
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--color-text-secondary);
+}
+
+.stateMessageError {
+  color: #f87171;
+}
+
+.configBanner {
+  margin: 0 1.25rem 0;
+  padding: 0.75rem 1rem;
+  border: 1px solid rgba(255, 159, 67, 0.35);
+  border-radius: 4px;
+  background: rgba(255, 159, 67, 0.08);
+  color: var(--color-text-primary);
+  font-size: 0.8rem;
+}
+
+.formPage {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  max-width: 960px;
+}
+
+/* Span full width inside ProveedorFormSection’s 2-column grid (avoids nested half-width layout). */
+.formSectionFields {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+
+.formField {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.formFieldFull {
+  grid-column: 1 / -1;
+}
+
+.fieldLabel {
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 159, 67, 0.85);
+}
+
+.checkboxRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--color-text-primary);
+}
+
+.modalForm {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.notFound {
+  padding: 2rem;
+  text-align: center;
+  color: var(--color-text-muted);
+}
