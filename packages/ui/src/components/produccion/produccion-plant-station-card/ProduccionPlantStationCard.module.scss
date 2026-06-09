@@ -1,0 +1,71 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/produccion-theme' as produccion;
+.card {
+  @include produccion.produccion-theme-classes;
+  @include produccion.produccion-size-vars;
+  min-height: 112px;
+  padding: 14px;
+  background: var(--produccion-surface);
+  border: $border-width solid var(--produccion-border);
+  border-radius: $border-radius-sm;
+  color: var(--produccion-text);
+  border-left: 3px solid var(--station-accent);
+}
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.top > span {
+  font-family: $font-family-mono;
+  font-size: 0.6875rem;
+  font-weight: $font-weight-bold;
+  color: produccion.$produccion-gold;
+}
+h3 {
+  margin: 14px 0 4px;
+  font-size: 0.9375rem;
+}
+p {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--produccion-muted);
+}
+.track {
+  height: 4px;
+  margin-top: 14px;
+  background: var(--produccion-border-muted);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.track span {
+  display: block;
+  height: 100%;
+  background: var(--station-accent);
+  border-radius: inherit;
+}
+.tone--preparation {
+  --station-accent: #{produccion.$produccion-info};
+}
+.tone--processing {
+  --station-accent: #{produccion.$produccion-purple};
+}
+.tone--cooking {
+  --station-accent: #{produccion.$produccion-orange};
+}
+.tone--cooling {
+  --station-accent: #{produccion.$produccion-teal};
+}
+.tone--packing {
+  --station-accent: #{produccion.$produccion-gold};
+}
+.tone--maturation {
+  --station-accent: #{produccion.$produccion-red};
+}
+.tone--sanitation {
+  --station-accent: #{produccion.$produccion-green};
+}
+.tone--neutral {
+  --station-accent: var(--produccion-muted);
+}
