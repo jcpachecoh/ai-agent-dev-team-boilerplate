@@ -19,6 +19,7 @@ import type {
 } from '../interfaces/auth.interfaces';
 import { AuthRepository } from '../repository/auth.repository';
 import { AuthEmailRepository } from '../repository/auth-email.repository';
+import { AuthEmailService } from './auth-email.service';
 import { AuditService } from '../../audit/service/audit.service';
 import type { SignupDto } from '../controller/dto/signup.dto';
 import type { LoginDto } from '../controller/dto/login.dto';
@@ -39,6 +40,7 @@ export class AuthService implements IAuthService {
   constructor(
     private readonly authRepository: AuthRepository,
     private readonly authEmailRepository: AuthEmailRepository,
+    private readonly authEmailService: AuthEmailService,
     private readonly jwtService: JwtService,
     private readonly auditService: AuditService,
   ) {}
@@ -82,7 +84,25 @@ export class AuthService implements IAuthService {
     } catch (error) {
       this.rethrowUserUniqueViolation(error);
     }
-    return this.issueTokens(user.id, user.email);
+
+    try {
+      await this.authEmailService.sendVerifyEmail(
+        { id: user.id, email: user.email },
+        { tenantId: resolvedTenantId, tenantName: resolvedTenantId },
+      );
+    } catch (error) {
+      this.logger.warn(
+        `[signup] Verification email enqueue failed for userId="${user.id}" — ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+
+    return this.issueTokens({
+      sub: user.id,
+      email: user.email,
+      tenantId: user.tenantId,
+      roleId: user.roleId,
+      roleCode: role.code,
+    });
   }
 
   async login(
@@ -166,7 +186,7 @@ export class AuthService implements IAuthService {
       this.logger.log(
         `Login success (tenant=${resolvedTenantId}, userId=${user.id}, identifier=${maskedIdentifier}, ip=${ipAddress ?? 'n/a'})`,
       );
-      return this.issueTokens(user.id, user.email);
+      return this.issueTokens(await this.resolveJwtPayload(user.id));
     } catch (error) {
       if (error instanceof UnauthorizedException || error instanceof BadRequestException) {
         throw error;
@@ -227,7 +247,7 @@ export class AuthService implements IAuthService {
       userAgent,
     });
 
-    return this.issueTokens(user.id, user.email);
+    return this.issueTokens(await this.resolveJwtPayload(user.id));
   }
 
   async logout(userId: string, ipAddress?: string, userAgent?: string): Promise<void> {
@@ -341,8 +361,15 @@ export class AuthService implements IAuthService {
     return `${localMasked}@${domain}`;
   }
 
-  private async issueTokens(userId: string, email: string): Promise<AuthTokens> {
-    const payload: JwtPayload = { sub: userId, email };
+  private async resolveJwtPayload(userId: string): Promise<JwtPayload> {
+    const claims = await this.authRepository.findJwtClaimsByUserId(userId);
+    if (!claims) {
+      throw new UnauthorizedException('User not found or inactive');
+    }
+    return claims;
+  }
+
+  private async issueTokens(payload: JwtPayload): Promise<AuthTokens> {
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(payload, { expiresIn: ACCESS_TOKEN_TTL }),
       this.jwtService.signAsync(payload, {
@@ -351,7 +378,7 @@ export class AuthService implements IAuthService {
       }),
     ]);
     const hashedRefresh = await bcrypt.hash(refreshToken, SALT_ROUNDS);
-    await this.authRepository.saveRefreshToken(userId, hashedRefresh);
+    await this.authRepository.saveRefreshToken(payload.sub, hashedRefresh);
     return { accessToken, refreshToken };
   }
 }

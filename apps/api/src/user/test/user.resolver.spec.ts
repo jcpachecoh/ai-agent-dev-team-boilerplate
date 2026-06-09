@@ -38,7 +38,13 @@ describe('UserResolver', () => {
     serviceMock.getOperationalProfile.mockResolvedValue(mockProfile);
 
     const result = await resolver.operationalProfile(
-      { sub: globalUserId, email: 'owner@example.com' },
+      {
+        sub: globalUserId,
+        email: 'owner@example.com',
+        tenantId,
+        roleId: 'role-owner',
+        roleCode: 'OWNER',
+      },
       gqlContext,
     );
 

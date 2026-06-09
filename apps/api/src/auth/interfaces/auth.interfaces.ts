@@ -44,6 +44,7 @@ export interface IAuthRepository {
   findByIdForRefresh(id: string): Promise<AuthUserWithRefresh | null>;
   findByIdForAuth(id: string): Promise<AuthUserWithPassword | null>;
   findByIdWithRoleCode(id: string): Promise<AuthUserProfile | null>;
+  findJwtClaimsByUserId(id: string): Promise<JwtPayload | null>;
   findRoleByTenantAndCode(tenantId: string, code: string): Promise<AuthRoleRef | null>;
   createUser(data: CreateUserData): Promise<AuthUserSafe>;
   incrementLoginAttempts(userId: string): Promise<void>;
@@ -63,9 +64,13 @@ export interface AuthTokens {
   refreshToken: string;
 }
 
+/** Global access/refresh JWT claims (no secrets, no permissions array). */
 export interface JwtPayload {
   sub: string;
   email: string;
+  tenantId: string;
+  roleId: string;
+  roleCode: string;
 }
 
 export interface IAuthService {

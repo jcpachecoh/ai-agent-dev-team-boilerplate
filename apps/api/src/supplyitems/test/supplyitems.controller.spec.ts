@@ -1,6 +1,8 @@
+import { CanActivate } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { StockUnit } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
+import { PermissionsGuard } from '../../common/guards/permissions.guard';
 import { SupplyItemsController } from '../controller/supplyitems.controller';
 import { SupplyItemsService } from '../service/supplyitems.service';
 
@@ -37,6 +39,8 @@ const serviceMock = {
   findPriceHistory: jest.fn(),
 };
 
+const allowGuard: CanActivate = { canActivate: () => true };
+
 describe('SupplyItemsController', () => {
   let controller: SupplyItemsController;
 
@@ -44,7 +48,10 @@ describe('SupplyItemsController', () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [SupplyItemsController],
       providers: [{ provide: SupplyItemsService, useValue: serviceMock }],
-    }).compile();
+    })
+      .overrideGuard(PermissionsGuard)
+      .useValue(allowGuard)
+      .compile();
 
     controller = module.get<SupplyItemsController>(SupplyItemsController);
     jest.clearAllMocks();

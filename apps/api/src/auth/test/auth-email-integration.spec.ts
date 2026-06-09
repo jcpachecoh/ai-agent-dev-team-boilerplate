@@ -272,7 +272,22 @@ describe('Auth Email Integration — G4 wiring (AuthController → AuthEmailServ
   });
 
   it('login uses tenant-scoped lookup and does not expose passwordHash in response', async () => {
-    prismaMock.user.findUnique.mockResolvedValue(mockUserWithPassword);
+    prismaMock.user.findUnique.mockImplementation(
+      ({ select }: { select?: { role?: unknown; passwordHash?: boolean } }) => {
+        if (select && 'role' in select) {
+          return Promise.resolve({
+            id: mockUserSafe.id,
+            email: mockUserSafe.email,
+            tenantId: TENANT_ID,
+            roleId: mockUserSafe.roleId,
+            isActive: true,
+            deletedAt: null,
+            role: { code: 'OPERATOR' },
+          });
+        }
+        return Promise.resolve(mockUserWithPassword);
+      },
+    );
     (bcrypt.compare as jest.Mock).mockResolvedValue(true);
     (bcrypt.hash as jest.Mock).mockResolvedValue('hashed-refresh');
     jwtServiceMock.signAsync.mockResolvedValueOnce('access').mockResolvedValueOnce('refresh');
@@ -290,8 +305,60 @@ describe('Auth Email Integration — G4 wiring (AuthController → AuthEmailServ
         select: expect.objectContaining({ passwordHash: true }),
       }),
     );
+    expect(jwtServiceMock.signAsync).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sub: mockUserSafe.id,
+        email: mockUserSafe.email,
+        tenantId: TENANT_ID,
+        roleId: mockUserSafe.roleId,
+        roleCode: 'OPERATOR',
+      }),
+      { expiresIn: '60m' },
+    );
     expect(result).toEqual({ accessToken: 'access', refreshToken: 'refresh' });
     expect(result).not.toHaveProperty('passwordHash');
     expect(auditServiceMock.logLogin).toHaveBeenCalled();
+  });
+
+  it('signup enqueues verify-email with OTP payload containing userId, email, tenantId', async () => {
+    prismaMock.user.findUnique.mockResolvedValue(null);
+    prismaMock.user.create.mockResolvedValue({
+      ...mockUserSafe,
+      id: 'user-signup-001',
+      email: 'newuser@example.com',
+      emailVerified: false,
+    });
+
+    let capturedRedisValue: string | undefined;
+    redisMock.set.mockImplementation(async (_key: string, value: string) => {
+      capturedRedisValue = value;
+      return 'OK';
+    });
+
+    const result = await controller.signup(
+      {
+        email: 'newuser@example.com',
+        cedula: '99887766',
+        documentType: DocumentType.CC,
+        password: 'password123',
+      },
+      TENANT_ID,
+    );
+
+    expect(result).toEqual({ accessToken: 'mock-token', refreshToken: 'mock-token' });
+    expect(emailServiceMock.send).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: 'newuser@example.com',
+        template: expect.objectContaining({ type: 'verify-email' }),
+        priority: 'urgent',
+      }),
+    );
+    expect(capturedRedisValue).toBeDefined();
+    expect(JSON.parse(capturedRedisValue!)).toMatchObject({
+      userId: 'user-signup-001',
+      email: 'newuser@example.com',
+      tenantId: TENANT_ID,
+    });
+    expect(prismaMock.user.updateMany).not.toHaveBeenCalled();
   });
 });

@@ -9,6 +9,7 @@ import type {
   AuthRoleRef,
   CreateUserData,
   IAuthRepository,
+  JwtPayload,
 } from '../interfaces/auth.interfaces';
 
 const AUTH_USER_SAFE_SELECT = {
@@ -70,6 +71,33 @@ export class AuthRepository implements IAuthRepository {
       where: { id },
       select: { ...AUTH_USER_SAFE_SELECT, passwordHash: true },
     });
+  }
+
+  async findJwtClaimsByUserId(id: string): Promise<JwtPayload | null> {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        email: true,
+        tenantId: true,
+        roleId: true,
+        isActive: true,
+        deletedAt: true,
+        role: { select: { code: true } },
+      },
+    });
+
+    if (!user || !user.isActive || user.deletedAt || !user.role?.code) {
+      return null;
+    }
+
+    return {
+      sub: user.id,
+      email: user.email,
+      tenantId: user.tenantId,
+      roleId: user.roleId,
+      roleCode: user.role.code,
+    };
   }
 
   async findByIdWithRoleCode(id: string): Promise<AuthUserProfile | null> {

@@ -6,6 +6,7 @@ import * as bcrypt from 'bcrypt';
 import { AuthService } from '../service/auth.service';
 import { AuthRepository } from '../repository/auth.repository';
 import { AuthEmailRepository } from '../repository/auth-email.repository';
+import { AuthEmailService } from '../service/auth-email.service';
 import { AuditService } from '../../audit/service/audit.service';
 
 jest.mock('bcrypt');
@@ -39,6 +40,7 @@ const repoMock = {
   findByTenantAndEmailForAuth: jest.fn(),
   findByTenantAndCedula: jest.fn(),
   findByIdForRefresh: jest.fn(),
+  findJwtClaimsByUserId: jest.fn(),
   findRoleByTenantAndCode: jest.fn(),
   createUser: jest.fn(),
   incrementLoginAttempts: jest.fn(),
@@ -63,6 +65,10 @@ const jwtMock = {
   signAsync: jest.fn(),
 };
 
+const authEmailServiceMock = {
+  sendVerifyEmail: jest.fn(),
+};
+
 describe('AuthService — global User email login regression (USR-01 Task 09)', () => {
   let service: AuthService;
 
@@ -72,6 +78,7 @@ describe('AuthService — global User email login regression (USR-01 Task 09)', 
         AuthService,
         { provide: AuthRepository, useValue: repoMock },
         { provide: AuthEmailRepository, useValue: authEmailRepoMock },
+        { provide: AuthEmailService, useValue: authEmailServiceMock },
         { provide: JwtService, useValue: jwtMock },
         { provide: AuditService, useValue: auditServiceMock },
       ],
@@ -84,6 +91,13 @@ describe('AuthService — global User email login regression (USR-01 Task 09)', 
 
   it('logs in seeded mes-owner@palos-de-lena.dev with x-tenant-id palos-de-lena', async () => {
     repoMock.findByTenantAndEmailForAuth.mockResolvedValue(seededGlobalUser);
+    repoMock.findJwtClaimsByUserId.mockResolvedValue({
+      sub: seededGlobalUser.id,
+      email: seededGlobalUser.email,
+      tenantId: TENANT_ID,
+      roleId: seededGlobalUser.roleId,
+      roleCode: 'OWNER',
+    });
     (bcryptMock.compare as jest.Mock).mockResolvedValue(true);
     jwtMock.signAsync.mockResolvedValueOnce('access').mockResolvedValueOnce('refresh');
     (bcryptMock.hash as jest.Mock).mockResolvedValue('hashed-refresh');
@@ -99,8 +113,17 @@ describe('AuthService — global User email login regression (USR-01 Task 09)', 
       TENANT_ID,
       'mes-owner@palos-de-lena.dev',
     );
+    expect(repoMock.findJwtClaimsByUserId).toHaveBeenCalledWith(seededGlobalUser.id);
     expect(result).toEqual({ accessToken: 'access', refreshToken: 'refresh' });
     expect(result).not.toHaveProperty('passwordHash');
+    expect(jwtMock.signAsync).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sub: seededGlobalUser.id,
+        tenantId: TENANT_ID,
+        roleCode: 'OWNER',
+      }),
+      { expiresIn: '60m' },
+    );
   });
 
   it('rejects login when global User is inactive', async () => {

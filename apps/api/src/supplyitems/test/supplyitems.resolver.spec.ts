@@ -1,6 +1,7 @@
 import { BadRequestException } from '@nestjs/common';
 import { StockUnit } from '@prisma/client';
 import { Test, TestingModule } from '@nestjs/testing';
+import { PermissionsGuard } from '../../common/guards/permissions.guard';
 import { SupplyItemsResolver } from '../resolver/supplyitems.resolver';
 import { SupplyItemsService } from '../service/supplyitems.service';
 
@@ -46,7 +47,10 @@ describe('SupplyItemsResolver', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [SupplyItemsResolver, { provide: SupplyItemsService, useValue: serviceMock }],
-    }).compile();
+    })
+      .overrideGuard(PermissionsGuard)
+      .useValue({ canActivate: jest.fn().mockResolvedValue(true) })
+      .compile();
 
     resolver = module.get<SupplyItemsResolver>(SupplyItemsResolver);
     jest.clearAllMocks();

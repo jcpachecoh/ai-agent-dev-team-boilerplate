@@ -1,4 +1,4 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, UseGuards } from '@nestjs/common';
 import {
   Args,
   Context,
@@ -23,6 +23,8 @@ import {
   IsOptional,
   IsString,
 } from 'class-validator';
+import { RequirePermission } from '../../common/decorators/require-permission.decorator';
+import { PermissionsGuard } from '../../common/guards/permissions.guard';
 import { decimalToNumber } from '../../common/utils/decimal.util';
 import { SupplyCategoryType } from '../../supply-categories/resolver/supply-categories.resolver';
 import type {
@@ -324,10 +326,12 @@ function toSupplyItemType(item: SupplyItemWithRelations): SupplyItemType {
   };
 }
 
+@UseGuards(PermissionsGuard)
 @Resolver(() => SupplyItemType)
 export class SupplyItemsResolver {
   constructor(private readonly supplyItemsService: SupplyItemsService) {}
 
+  @RequirePermission('supply.items.read')
   @Query(() => [SupplyItemType])
   async supplyItems(
     @Context() context: { req: Request },

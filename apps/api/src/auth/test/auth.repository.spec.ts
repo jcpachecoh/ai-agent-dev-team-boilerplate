@@ -127,6 +127,42 @@ describe('AuthRepository', () => {
     });
   });
 
+  describe('findJwtClaimsByUserId', () => {
+    it('returns JWT claims when user is active', async () => {
+      prismaMock.user.findUnique.mockResolvedValue({
+        id: 'user-1',
+        email: 'test@example.com',
+        tenantId: 'palos-de-lena',
+        roleId: 'role-1',
+        isActive: true,
+        deletedAt: null,
+        role: { code: 'OPERATOR' },
+      });
+
+      await expect(repository.findJwtClaimsByUserId('user-1')).resolves.toEqual({
+        sub: 'user-1',
+        email: 'test@example.com',
+        tenantId: 'palos-de-lena',
+        roleId: 'role-1',
+        roleCode: 'OPERATOR',
+      });
+    });
+
+    it('returns null when user is inactive', async () => {
+      prismaMock.user.findUnique.mockResolvedValue({
+        id: 'user-1',
+        email: 'test@example.com',
+        tenantId: 'palos-de-lena',
+        roleId: 'role-1',
+        isActive: false,
+        deletedAt: null,
+        role: { code: 'OPERATOR' },
+      });
+
+      await expect(repository.findJwtClaimsByUserId('user-1')).resolves.toBeNull();
+    });
+  });
+
   describe('findByIdWithRoleCode', () => {
     it('returns profile when user is active', async () => {
       prismaMock.user.findUnique.mockResolvedValue({

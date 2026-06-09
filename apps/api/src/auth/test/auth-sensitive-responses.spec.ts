@@ -6,6 +6,7 @@ import { DocumentType } from '@prisma/client';
 import { AuthService } from '../service/auth.service';
 import { AuthRepository } from '../repository/auth.repository';
 import { AuthEmailRepository } from '../repository/auth-email.repository';
+import { AuthEmailService } from '../service/auth-email.service';
 import { AuditService } from '../../audit/service/audit.service';
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -30,6 +31,14 @@ function expectNoStoredSecrets(value: Record<string, unknown>): void {
 }
 
 const TENANT_ID = 'palos-de-lena';
+
+const expectedJwtPayload = {
+  sub: 'user-1',
+  email: 'test@example.com',
+  tenantId: TENANT_ID,
+  roleId: 'role-1',
+  roleCode: 'OPERATOR',
+};
 
 const mockUserSafe = {
   id: 'user-1',
@@ -59,6 +68,7 @@ const repoMock = {
   findByIdForRefresh: jest.fn(),
   findByIdForAuth: jest.fn(),
   findByIdWithRoleCode: jest.fn(),
+  findJwtClaimsByUserId: jest.fn(),
   findRoleByTenantAndCode: jest.fn(),
   createUser: jest.fn(),
   incrementLoginAttempts: jest.fn(),
@@ -75,6 +85,7 @@ const authEmailRepoMock = {
 
 const auditServiceMock = { logLogin: jest.fn() };
 const jwtMock = { signAsync: jest.fn() };
+const authEmailServiceMock = { sendVerifyEmail: jest.fn() };
 
 describe('AuthService sensitive response shapes (AUTH-03)', () => {
   let service: AuthService;
@@ -85,6 +96,7 @@ describe('AuthService sensitive response shapes (AUTH-03)', () => {
         AuthService,
         { provide: AuthRepository, useValue: repoMock },
         { provide: AuthEmailRepository, useValue: authEmailRepoMock },
+        { provide: AuthEmailService, useValue: authEmailServiceMock },
         { provide: JwtService, useValue: jwtMock },
         { provide: AuditService, useValue: auditServiceMock },
       ],
@@ -96,6 +108,8 @@ describe('AuthService sensitive response shapes (AUTH-03)', () => {
     jwtMock.signAsync.mockResolvedValue('jwt-token');
     repoMock.saveRefreshToken.mockResolvedValue(undefined);
     repoMock.resetLoginAttempts.mockResolvedValue(undefined);
+    repoMock.findJwtClaimsByUserId.mockResolvedValue(expectedJwtPayload);
+    authEmailServiceMock.sendVerifyEmail.mockResolvedValue({ otpCode: '123456' });
   });
 
   it('signup returns only JWT tokens, no stored secrets', async () => {

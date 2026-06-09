@@ -1,9 +1,21 @@
-import { Body, Controller, Delete, Get, Headers, Param, Patch, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Headers,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiHeader,
   ApiOperation,
   ApiParam,
+  ApiQuery,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
@@ -15,15 +27,19 @@ import { SupplyItemResponseDto } from '../dto/supply-item-response.dto';
 import { SupplyItemSupplierDto } from '../dto/supply-item-supplier.dto';
 import { UpdateSupplyItemDto } from '../dto/update-supply-item.dto';
 import { toSupplyItemResponse } from '../mapper/supply-item.mapper';
+import { RequirePermission } from '../../common/decorators/require-permission.decorator';
+import { PermissionsGuard } from '../../common/guards/permissions.guard';
 import { SupplyItemsService } from '../service/supplyitems.service';
 
 @ApiTags('supplyitems')
 @ApiBearerAuth()
 @ApiHeader({ name: 'x-tenant-id', required: true, description: 'Tenant identifier' })
+@UseGuards(PermissionsGuard)
 @Controller('supply-items')
 export class SupplyItemsController {
   constructor(private readonly supplyItemsService: SupplyItemsService) {}
 
+  @RequirePermission('supply.items.read')
   @ApiOperation({ summary: 'List supply items' })
   @ApiResponse({ status: 200, type: [SupplyItemResponseDto] })
   @Get()
@@ -89,6 +105,7 @@ export class SupplyItemsController {
     }));
   }
 
+  @RequirePermission('supply.items.read')
   @ApiOperation({ summary: 'Get a supply item by ID' })
   @ApiParam({ name: 'id', description: 'Supply item ID' })
   @ApiResponse({ status: 200, type: SupplyItemResponseDto })
