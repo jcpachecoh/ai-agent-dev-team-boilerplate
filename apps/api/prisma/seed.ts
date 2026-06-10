@@ -875,10 +875,21 @@ async function main() {
   console.log('  See file header for synthetic cédula + PIN test credentials');
 
   // ── USR-01 Task 09: link any orphan OperationalUser rows when cédula mapping exists ──
-  const { backfillOperationalUserLinks } =
-    await import('../../../scripts/backfill-operational-user-links');
-  const backfillResult = await backfillOperationalUserLinks(prisma);
-  console.log('\n✅ OperationalUser → User backfill:', backfillResult);
+  try {
+    const { backfillOperationalUserLinks } =
+      await import('../../../scripts/backfill-operational-user-links');
+    const backfillResult = await backfillOperationalUserLinks(prisma);
+    console.log('\n✅ OperationalUser → User backfill:', backfillResult);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (message.includes('Cannot find module')) {
+      console.warn(
+        '\n⚠️  Skipping OperationalUser backfill (helper script/dependencies unavailable in runtime image).',
+      );
+    } else {
+      throw error;
+    }
+  }
 
   // ── NOM-01: Seed EmployeeDetails ─────────────────────────────────────────
   await seedEmployeeDetails(ownerGlobalUser.id, operatorGlobalUser.id, firstLocationId);
