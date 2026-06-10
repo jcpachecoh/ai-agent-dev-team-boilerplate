@@ -707,9 +707,7 @@ async function main() {
   console.log('Global User (MES owner):', ownerGlobalUser.email, '—', ownerGlobalUser.id);
 
   const owner = await prisma.operationalUser.upsert({
-    where: {
-      tenantId_cedulaHash: { tenantId: OPERATIONAL_TENANT_ID, cedulaHash: ownerCedulaHash },
-    },
+    where: { id: MES_OWNER_ID },
     update: {
       userId: ownerGlobalUser.id,
       pinHash: ownerPinHash,
@@ -761,9 +759,7 @@ async function main() {
   console.log('Global User (MES operator):', operatorGlobalUser.email, '—', operatorGlobalUser.id);
 
   const operator = await prisma.operationalUser.upsert({
-    where: {
-      tenantId_cedulaHash: { tenantId: OPERATIONAL_TENANT_ID, cedulaHash: operatorCedulaHash },
-    },
+    where: { id: MES_OPERATOR_ID },
     update: {
       userId: operatorGlobalUser.id,
       pinHash: operatorPinHash,
@@ -827,9 +823,7 @@ async function main() {
   );
 
   const operator2 = await prisma.operationalUser.upsert({
-    where: {
-      tenantId_cedulaHash: { tenantId: OPERATIONAL_TENANT_ID, cedulaHash: operator2CedulaHash },
-    },
+    where: { id: MES_OPERATOR2_ID },
     update: {
       userId: operator2GlobalUser.id,
       pinHash: operator2PinHash,
