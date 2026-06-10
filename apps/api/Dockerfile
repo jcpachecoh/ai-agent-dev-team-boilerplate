@@ -22,6 +22,8 @@ RUN pnpm install --frozen-lockfile
 
 # Copy pruned source
 COPY --from=pruner /app/out/full/ .
+# Root scripts (used by prisma/seed.ts)
+COPY --from=pruner /app/scripts ./scripts
 
 # Generate Prisma client before build
 RUN cd apps/api && npx prisma@5 generate
@@ -46,6 +48,8 @@ COPY --from=installer /app/apps/api/node_modules ./apps/api/node_modules
 COPY --from=installer /app/packages/email ./packages/email
 COPY --from=installer /app/packages/types ./packages/types
 COPY --from=installer /app/packages/utils ./packages/utils
+# Root scripts (seed.ts resolves '../../../scripts/' → '/scripts/' at runtime)
+COPY --from=installer /app/scripts /scripts
 
 EXPOSE 3000
 
