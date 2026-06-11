@@ -2488,16 +2488,28 @@
             }
           ],
           "request": {
-            "auth": { "type": "noauth" },
+            "auth": {
+              "type": "noauth"
+            },
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"email\": \"mes-owner@palos-de-lena.dev\",\n  \"password\": \"{{password}}\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{baseUrl}}/api/auth/login"
           },
@@ -2525,16 +2537,28 @@
             }
           ],
           "request": {
-            "auth": { "type": "noauth" },
+            "auth": {
+              "type": "noauth"
+            },
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"email\": \"mes-operator@palos-de-lena.dev\",\n  \"password\": \"{{password}}\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{baseUrl}}/api/auth/login"
           },
@@ -2558,10 +2582,21 @@
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [{ "key": "token", "value": "{{accessTokenOwner}}", "type": "string" }]
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessTokenOwner}}",
+                  "type": "string"
+                }
+              ]
             },
             "method": "GET",
-            "header": [{ "key": "x-tenant-id", "value": "{{tenantId}}" }],
+            "header": [
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
             "url": "{{baseUrl}}/api/supply-items/{{supplyItemId}}"
           },
           "response": []
@@ -2584,10 +2619,21 @@
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [{ "key": "token", "value": "{{accessTokenOperator}}", "type": "string" }]
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessTokenOperator}}",
+                  "type": "string"
+                }
+              ]
             },
             "method": "GET",
-            "header": [{ "key": "x-tenant-id", "value": "{{tenantId}}" }],
+            "header": [
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
             "url": "{{baseUrl}}/api/supply-items"
           },
           "response": []
@@ -2605,9 +2651,16 @@
             }
           ],
           "request": {
-            "auth": { "type": "noauth" },
+            "auth": {
+              "type": "noauth"
+            },
             "method": "GET",
-            "header": [{ "key": "x-tenant-id", "value": "{{tenantId}}" }],
+            "header": [
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
             "url": "{{baseUrl}}/api/supply-items/{{supplyItemId}}"
           },
           "response": []
@@ -2653,11 +2706,19 @@
             }
           ],
           "request": {
-            "auth": { "type": "noauth" },
+            "auth": {
+              "type": "noauth"
+            },
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{mesAccessToken}}" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{mesAccessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "url": "{{baseUrl}}/api/supply-items/{{supplyItemId}}"
           },
@@ -2684,10 +2745,21 @@
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [{ "key": "token", "value": "{{accessTokenOwner}}", "type": "string" }]
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessTokenOwner}}",
+                  "type": "string"
+                }
+              ]
             },
             "method": "GET",
-            "header": [{ "key": "x-tenant-id", "value": "wrong-tenant-id" }],
+            "header": [
+              {
+                "key": "x-tenant-id",
+                "value": "wrong-tenant-id"
+              }
+            ],
             "url": "{{baseUrl}}/api/supply-items/{{supplyItemId}}"
           },
           "response": []
@@ -6038,6 +6110,193 @@
               ]
             }
           ]
+        }
+      ]
+    },
+    {
+      "name": "NOM-02 Employees",
+      "description": "Payroll/Employees CRUD API (NOM-02). Requires Bearer {{accessToken}} (Global JWT). Requires x-tenant-id: {{tenantId}}.",
+      "item": [
+        {
+          "name": "POST /api/employees",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cedula\": \"123456789\",\n  \"documentType\": \"CC\",\n  \"email\": \"emp@test.com\",\n  \"password\": \"Password123!\",\n  \"roleId\": \"{{roleId}}\",\n  \"locationId\": \"{{locationId}}\",\n  \"position\": \"Operario\",\n  \"area\": \"Producción\",\n  \"department\": \"Cocina\",\n  \"contractType\": \"FIJO\",\n  \"hireDate\": \"2025-01-01\",\n  \"contractStart\": \"2025-01-01\",\n  \"contractEnd\": \"2025-12-31\",\n  \"salaryType\": \"ORDINARIO\",\n  \"salaryAmount\": 2000000,\n  \"epsName\": \"EPS\",\n  \"pensionFundName\": \"Pension\",\n  \"cesantiasFundName\": \"Cesantias\",\n  \"arlName\": \"ARL\",\n  \"arlRiskLevel\": \"RIESGO_II\",\n  \"cajaCompensacion\": \"Caja\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/employees",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "employees"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const body = pm.response.json();",
+                  "    pm.environment.set('employeeUserId', body.userId);",
+                  "    pm.test('Employee created, employeeUserId captured', () => {",
+                  "        pm.expect(body.userId).to.be.a('string');",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/employees",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/employees",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "employees"]
+            }
+          }
+        },
+        {
+          "name": "GET /api/employees/:userId",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/employees/{{employeeUserId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "employees", "{{employeeUserId}}"]
+            }
+          }
+        },
+        {
+          "name": "PATCH /api/employees/:userId",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"position\": \"Senior Operario\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/employees/{{employeeUserId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "employees", "{{employeeUserId}}"]
+            }
+          }
+        },
+        {
+          "name": "DELETE /api/employees/:userId",
+          "description": "Sets isActive=false and deletedAt=now() (Soft delete).",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/employees/{{employeeUserId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "employees", "{{employeeUserId}}"]
+            }
+          }
+        },
+        {
+          "name": "GET /api/employees/location/:locationId",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/employees/location/{{locationId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "employees", "location", "{{locationId}}"]
+            }
+          }
+        },
+        {
+          "name": "GET /api/employees/contract-type/:type",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/employees/contract-type/FIJO",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "employees", "contract-type", "FIJO"]
+            }
+          }
         }
       ]
     }

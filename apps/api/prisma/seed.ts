@@ -895,6 +895,9 @@ async function main() {
   await seedEmployeeDetails(ownerGlobalUser.id, operatorGlobalUser.id, firstLocationId);
   const { seedPlantSupervisor } = await import('./seeds/plant-supervisor.seed');
   await seedPlantSupervisor(prisma);
+
+  // ── NOM-01: Seed EmployeeDetails ─────────────────────────────────────────
+  await seedEmployeeDetails(ownerGlobalUser.id, operatorGlobalUser.id, firstLocationId);
 }
 
 main()

@@ -126,7 +126,7 @@
       "value": "10",
       "type": "default",
       "enabled": true,
-      "description": "Example current stock for 04 — Supply Items create/update bodies (stockActualBodega). Seeded aceite uses 25; arroz uses 50."
+      "description": "Example current stock for 04 \u2014 Supply Items create/update bodies (stockActualBodega). Seeded aceite uses 25; arroz uses 50."
     },
     {
       "key": "testLabUserId",
@@ -168,14 +168,14 @@
       "value": "",
       "type": "default",
       "enabled": true,
-      "description": "AUTH-04 / RES-226 — Raw reset token from Forgot Password email URL. Set manually before Reset Password."
+      "description": "AUTH-04 / RES-226 \u2014 Raw reset token from Forgot Password email URL. Set manually before Reset Password."
     },
     {
       "key": "otpCode",
       "value": "",
       "type": "default",
       "enabled": true,
-      "description": "AUTH-04 — 6-digit OTP from Resend Verification email or worker/dev logs. Set manually, then run Verify Email. Not sent by Signup."
+      "description": "AUTH-04 \u2014 6-digit OTP from Resend Verification email or worker/dev logs. Set manually, then run Verify Email. Not sent by Signup."
     },
     {
       "key": "newPassword",
@@ -512,6 +512,27 @@
       "type": "default",
       "enabled": true,
       "description": "MES JWT for supervisor+ (OWNER in seed) \u2014 set by 02 \u2014 Operational Auth / Login Owner"
+    },
+    {
+      "key": "employeeUserId",
+      "value": "",
+      "type": "default",
+      "enabled": true,
+      "description": "NOM-02 Employees \u2014 Captured from POST employees response"
+    },
+    {
+      "key": "locationId",
+      "value": "cmq752ls1002jm752w9v5oy17",
+      "type": "default",
+      "enabled": true,
+      "description": "NOM-02 Employees \u2014 Seeded location id (Sede Palos de Le\u00f1a 1)"
+    },
+    {
+      "key": "roleId",
+      "value": "aaaaaaaa-0000-0000-0000-000000000004",
+      "type": "default",
+      "enabled": true,
+      "description": "NOM-02 Employees \u2014 Seeded role id (OPERATOR)"
     }
   ],
   "_postman_variable_scope": "environment",
