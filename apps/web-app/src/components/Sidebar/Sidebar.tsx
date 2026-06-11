@@ -16,7 +16,11 @@ import {
   navigationItems,
   type NavItem,
 } from '@/constants/navigation';
+import { useMe } from '@/features/auth/hooks/useMe';
 import { useUiTheme } from '@/hooks/useUiTheme';
+
+const ADMIN_ONLY_NAV_IDS = new Set(['usuarios']);
+const ADMIN_ROLE_CODES = new Set(['OWNER', 'SUPERVISOR']);
 
 interface AppSidebarProps {
   collapsed?: boolean;
@@ -61,9 +65,24 @@ export default function AppSidebar({
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const theme = useUiTheme();
+  const { data: me } = useMe();
+
+  const visibleItems = useMemo(
+    () =>
+      navigationItems.filter((item) => {
+        if (ADMIN_ONLY_NAV_IDS.has(item.id)) {
+          return (
+            me?.roleCode !== null && me?.roleCode !== undefined && ADMIN_ROLE_CODES.has(me.roleCode)
+          );
+        }
+        return true;
+      }),
+    [me?.roleCode],
+  );
+
   const items = useMemo(
-    () => navigationItems.map((item) => mapNavItem(item, pathname)),
-    [pathname],
+    () => visibleItems.map((item) => mapNavItem(item, pathname)),
+    [visibleItems, pathname],
   );
 
   return (
@@ -78,7 +97,7 @@ export default function AppSidebar({
       overlay={overlay}
       onToggleCollapse={onToggleCollapse}
       onNavigate={(href) => {
-        navigate(href);
+        void navigate(href);
         onNavigate?.();
       }}
     />

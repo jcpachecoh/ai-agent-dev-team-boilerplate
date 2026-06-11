@@ -36,4 +36,5 @@ export interface AuthUserViewModel {
   email: string;
   displayName: string;
   displayRole: string;
+  roleCode: string;
 }

@@ -14,13 +14,14 @@
  * Global User + Role (USR-01):
  *   Roles: OWNER, SUPERVISOR, MANAGER, OPERATOR, OPERATIONS_ADMIN (tenant-scoped)
  *
- * Global Permission catalog (USR-02):
- *   13 permission codes — see PERMISSION_SEEDS (ids cccccccc-0000-0000-0000-000000000001…013)
+ * Global Permission catalog (USR-02 + USR-03):
+ *   22 permission codes — see PERMISSION_SEEDS (ids cccccccc-0000-0000-0000-000000000001…022)
  *
- * Role-permission matrix (USR-02, tenant palos-de-lena):
- *   OWNER — all 13 permissions
- *   MANAGER / SUPERVISOR — 11 permissions (no mes.users.*)
- *   OPERATOR — plant.orders.read, supply.items.read
+ * Role-permission matrix (USR-02 + USR-03, tenant palos-de-lena):
+ *   OWNER      — all 22 permissions
+ *   SUPERVISOR — 17 permissions (base 13 + 4 admin.users/roles.read)
+ *   MANAGER    — 14 permissions (base 13 + admin.users.read)
+ *   OPERATOR   — plant.orders.read, supply.items.read
  *
  * MES operational users (local/dev only — synthetic cédulas, never use in production):
  *   owner:    cédula 12345678 / PIN 1234  (OWNER) — linked to global User
@@ -230,6 +231,69 @@ const PERMISSION_SEEDS = [
     resource: 'committees',
     action: 'manage',
   },
+  {
+    id: 'cccccccc-0000-0000-0000-000000000016',
+    code: 'admin.users.read',
+    name: 'Read admin users',
+    description: 'List and view global users in the tenant',
+    module: 'admin',
+    resource: 'users',
+    action: 'read',
+  },
+  {
+    id: 'cccccccc-0000-0000-0000-000000000017',
+    code: 'admin.users.create',
+    name: 'Create admin user',
+    description: 'Create a new global user in the tenant',
+    module: 'admin',
+    resource: 'users',
+    action: 'create',
+  },
+  {
+    id: 'cccccccc-0000-0000-0000-000000000018',
+    code: 'admin.users.update',
+    name: 'Update admin user',
+    description: 'Update profile, role, or status of a global user',
+    module: 'admin',
+    resource: 'users',
+    action: 'update',
+  },
+  {
+    id: 'cccccccc-0000-0000-0000-000000000019',
+    code: 'admin.users.deactivate',
+    name: 'Deactivate admin user',
+    description: 'Soft-delete (deactivate) a global user in the tenant',
+    module: 'admin',
+    resource: 'users',
+    action: 'deactivate',
+  },
+  {
+    id: 'cccccccc-0000-0000-0000-000000000020',
+    code: 'admin.roles.read',
+    name: 'Read roles',
+    description: 'List and view roles in the tenant',
+    module: 'admin',
+    resource: 'roles',
+    action: 'read',
+  },
+  {
+    id: 'cccccccc-0000-0000-0000-000000000021',
+    code: 'admin.roles.manage',
+    name: 'Manage roles',
+    description: 'Create, update, and deactivate roles in the tenant',
+    module: 'admin',
+    resource: 'roles',
+    action: 'manage',
+  },
+  {
+    id: 'cccccccc-0000-0000-0000-000000000022',
+    code: 'admin.roles.permissions.assign',
+    name: 'Assign role permissions',
+    description: 'Assign or revoke permissions on a role',
+    module: 'admin',
+    resource: 'roles.permissions',
+    action: 'assign',
+  },
 ] as const;
 
 const MANAGER_SUPERVISOR_PERMISSION_CODES = [
@@ -248,14 +312,27 @@ const MANAGER_SUPERVISOR_PERMISSION_CODES = [
   'plant.committees.manage',
 ] as const;
 
+const SUPERVISOR_PERMISSION_CODES = [
+  ...MANAGER_SUPERVISOR_PERMISSION_CODES,
+  'admin.users.read',
+  'admin.users.create',
+  'admin.users.update',
+  'admin.roles.read',
+] as const;
+
+const MANAGER_PERMISSION_CODES = [
+  ...MANAGER_SUPERVISOR_PERMISSION_CODES,
+  'admin.users.read',
+] as const;
+
 const OPERATOR_PERMISSION_CODES = ['plant.orders.read', 'supply.items.read'] as const;
 
 const OPERATIONS_ADMIN_PERMISSION_CODES = ['plant.orders.read', 'plant.committees.read'] as const;
 
 const ROLE_PERMISSION_MATRIX: Record<string, readonly string[]> = {
   OWNER: PERMISSION_SEEDS.map((permissionSeed) => permissionSeed.code),
-  MANAGER: MANAGER_SUPERVISOR_PERMISSION_CODES,
-  SUPERVISOR: MANAGER_SUPERVISOR_PERMISSION_CODES,
+  SUPERVISOR: SUPERVISOR_PERMISSION_CODES,
+  MANAGER: MANAGER_PERMISSION_CODES,
   OPERATOR: OPERATOR_PERMISSION_CODES,
   OPERATIONS_ADMIN: OPERATIONS_ADMIN_PERMISSION_CODES,
 };
@@ -411,6 +488,7 @@ async function seedEmployeeDetails(
     create: {
       userId: ownerUserId,
       tenantId: OPERATIONAL_TENANT_ID,
+      name: 'Propietario Principal',
       locationId: locationId,
       position: 'Gerente General',
       area: 'Administración',
@@ -439,6 +517,7 @@ async function seedEmployeeDetails(
     create: {
       userId: operatorUserId,
       tenantId: OPERATIONAL_TENANT_ID,
+      name: 'Operario de Planta',
       locationId: locationId,
       position: 'Operario de Planta',
       area: 'Producción',

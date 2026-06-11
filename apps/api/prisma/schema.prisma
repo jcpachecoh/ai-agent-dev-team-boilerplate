@@ -410,6 +410,7 @@ model EmployeeDetails {
   id                  String               @id @default(cuid())
   userId              String               @unique
   tenantId            String
+  name                String
   locationId          String
   position            String
   area                String

@@ -1,7 +1,8 @@
 import { isGraphqlConfigured } from '@/lib/graphql-client';
 
 function resolveApiBaseUrl(): string {
-  const configured = import.meta.env.VITE_API_BASE_URL ?? import.meta.env.VITE_API_URL ?? '';
+  const configured =
+    import.meta.env.VITE_API_BASE_URL ?? import.meta.env.VITE_API_URL ?? 'http://localhost:4000';
   // Dev: use Vite proxy (/api → apps/api) unless an explicit base URL is set.
   if (import.meta.env.DEV && !import.meta.env.VITE_API_BASE_URL) {
     return '';

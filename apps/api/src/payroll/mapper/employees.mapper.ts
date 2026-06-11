@@ -5,6 +5,7 @@ export class EmployeeResponseDto {
   @ApiProperty() id!: string;
   @ApiProperty() userId!: string;
   @ApiProperty() tenantId!: string;
+  @ApiProperty() name!: string;
   @ApiProperty() locationId!: string;
   @ApiProperty() position!: string;
   @ApiProperty() area!: string;
@@ -41,6 +42,7 @@ export function toEmployeeResponse(
     id: employee.id,
     userId: employee.userId,
     tenantId: employee.tenantId,
+    name: employee.name,
     locationId: employee.locationId,
     position: employee.position,
     area: employee.area,
