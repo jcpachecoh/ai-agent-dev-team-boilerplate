@@ -360,35 +360,21 @@ See also folder **09 — RBAC Foundation** (seed matrix reference).
 
 ---
 
-## 04 — Supply Items (Insumo / materia prima)
+## AUTH-10 — LoginAudit verification (SQL only)
 
-`SupplyItem` is the backend name for **insumo** (raw material). Categories are **flexible** (`SupplyCategory` per tenant), not a fixed enum.
-
-| Concept               | API field / enum                                                                    |
-| --------------------- | ----------------------------------------------------------------------------------- |
-| Base unit             | `unidadBase` → `StockUnit`: `UNIT`, `GRAMS`, `KILOGRAMS`, `ML`, `LITERS`, **`BOX`** |
-| Min / max thresholds  | `stockMinimoBodega`, `stockMaximoBodega`                                            |
-| Current stock (MVP)   | `stockActualBodega` (optional on create/update; default `0`)                        |
-| Legacy response alias | `stockDisponible` (= `stockActualBodega`)                                           |
-
-**Postman folder 04:** **Create Supply Item** sends `stockActualBodega` from `{{stockActualBodega}}`. **Create Supply Item — BOX** uses `unidadBase: BOX` and category `bbbbbbbb-0000-0000-0000-000000000008` (Empaque seed). **Update Supply Item** patches `stockActualBodega` and asserts it in the response.
-
-**Inventory API** (`/api/inventory/*`, when used) derives low-stock alerts from `stockActualBodega` vs `stockMinimoBodega`. Warehouse **movements**, **MenuProduct**, and **recipe BOM** are out of scope. **Frontend** was not updated in this backend closure.
-
----
-
-## USR-05 — Audit Verification (SQL only)
-
-There is no audit read API. After running auth and supply-items requests, verify rows in PostgreSQL using SQL in folder **08 — Audit Verification**.
+There is no audit read API. After running auth flows, verify rows in PostgreSQL using SQL in folder **08 — Audit Verification**.
 
 Key points:
 
-- **login_audits** — password login (Global Auth) and PIN login (Operational Auth).
-- **MES LoginAudit FK caveat:** `login_audits.userId` references `users.id`. MES auth may pass `OperationalUser.id`; if not linked to a global User, persistence may be skipped (P2003). Check API logs.
-- **Double audit on Supply Items writes:** interceptor row (`entityType: supply-items`) plus service snapshot row (`entityType: SupplyItem` with `oldValue`/`newValue`).
-- **Redaction:** `passwordHash`, `pinHash`, tokens must appear as `[REDACTED]` or null in audit JSON.
+- **login_audits** — `PASSWORD`, `REFRESH_TOKEN`, `PIN` methods; statuses `SUCCESS`, `FAILED`, `LOCKED`, `LOGOUT`.
+- **Global lockout:** 5 failed password logins → `LOCKED` on 5th attempt (~15 min). Run **04 Login Audit Triggers** invalid password repeatedly (manual).
+- **MES userId:** linked owner → global `users.id`; pure operator → `userId` null (no FK skip after AUTH-10 Task 01).
+- **Logout chains (manual):** global **Logout** then **Refresh** → 403; MES **Logout** then **Me** → 401.
+- **Cross-token (manual):** `{{accessToken}}` on `/api/plant/*` → 401; `{{mesAccessToken}}` on `/api/auth/me` or supply-items → 401.
+- **Double audit on Supply Items writes:** interceptor + `SupplyItem` snapshot rows.
+- **Redaction:** secrets must be `[REDACTED]` or null in audit JSON.
 
-Run **01 — Global Auth → 04 Login Audit Triggers** and **02 — Operational Auth / Plant Floor Login** login/negative cases before running SQL.
+Run **01 → 04 Login Audit Triggers**, **02 Operational Auth** logins, then **08 — Audit Verification** SQL.
 
 ---
 
@@ -497,17 +483,18 @@ TestLab variables are marked **LEGACY (99 TestLab — DO NOT RUN)** in environme
 
 ## Troubleshooting
 
-| Symptom                                              | Likely cause                                 | Fix                                                                              |
-| ---------------------------------------------------- | -------------------------------------------- | -------------------------------------------------------------------------------- |
-| `400 x-tenant-id header is required` on Login/Forgot | Header not injected or empty `tenantId`      | Set `tenantId=palos-de-lena`; re-import collection                               |
-| Supply Items 403/404                                 | Wrong token or tenant                        | Use `{{accessToken}}` + `x-tenant-id: {{tenantId}}`                              |
-| Plant 401                                            | Missing MES login                            | Run **Login Owner** first                                                        |
-| GraphQL `ECONNREFUSED` / fetch failed                | API not running on `:3001`                   | Start `pnpm --filter=@restopsiq/api start:dev`                                   |
-| GraphQL auth 401 with valid REST token               | Stale token or wrong variable                | Re-run folder 10 **Login** / **Login Operational** (no auto-login on `/graphql`) |
-| Login 401 with `test@restopsiq.dev`                  | TestLab user, not global User                | Use `mes-owner@palos-de-lena.dev`                                                |
-| Newman fails on TestLab                              | Legacy routes removed                        | Exclude folder `99 — Legacy / Deprecated`                                        |
-| No login_audits rows after MES login                 | FK mismatch (OperationalUser.id vs users.id) | See **08 — Audit Verification** SQL docs                                         |
-| Two audit_logs per supply update                     | Expected USR-05 behavior                     | Query `entityType = 'SupplyItem'` for snapshot                                   |
+| Symptom                                              | Likely cause                            | Fix                                                                              |
+| ---------------------------------------------------- | --------------------------------------- | -------------------------------------------------------------------------------- |
+| `400 x-tenant-id header is required` on Login/Forgot | Header not injected or empty `tenantId` | Set `tenantId=palos-de-lena`; re-import collection                               |
+| Supply Items 403/404                                 | Wrong token or tenant                   | Use `{{accessToken}}` + `x-tenant-id: {{tenantId}}`                              |
+| Plant 401                                            | Missing MES login                       | Run **Login Owner** first                                                        |
+| GraphQL `ECONNREFUSED` / fetch failed                | API not running on `:3001`              | Start `pnpm --filter=@restopsiq/api start:dev`                                   |
+| GraphQL auth 401 with valid REST token               | Stale token or wrong variable           | Re-run folder 10 **Login** / **Login Operational** (no auto-login on `/graphql`) |
+| Login 401 with `test@restopsiq.dev`                  | TestLab user, not global User           | Use `mes-owner@palos-de-lena.dev`                                                |
+| Newman fails on TestLab                              | Legacy routes removed                   | Exclude folder `99 — Legacy / Deprecated`                                        |
+| No login_audits rows after MES login                 | API not running or wrong tenant         | Re-run **Login Owner**; check `authMethod` = PIN in **08** SQL                   |
+| Global account locked after testing                  | 5 failed password attempts (AUTH-10)    | Wait 15 min or reset `loginAttempts`/`lockedUntil` in DB for test user           |
+| Two audit_logs per supply update                     | Expected USR-05 behavior                | Query `entityType = 'SupplyItem'` for snapshot                                   |
 
 ---
 

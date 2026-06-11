@@ -1,4 +1,5 @@
 import { OperationalRole, ProductionOrderStatus, ProductionShift, StockUnit } from '@prisma/client';
+import { GUARDS_METADATA } from '@nestjs/common/constants';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Decimal } from '@prisma/client/runtime/library';
 import { MES_ROLES_KEY } from '../../auth/decorators/roles.decorator';
@@ -105,6 +106,11 @@ describe('PlantController', () => {
 
   it('is defined', () => {
     expect(controller).toBeDefined();
+  });
+
+  it('requires PlantAuthGuard at controller level (MES or platform JWT)', () => {
+    const guards = Reflect.getMetadata(GUARDS_METADATA, PlantController) as unknown[];
+    expect(guards).toContain(PlantAuthGuard);
   });
 
   describe('workstations', () => {

@@ -8,6 +8,7 @@ const gqlContext = {
   req: {
     headers: {
       'x-tenant-id': tenantId,
+      'x-forwarded-for': '203.0.113.20',
       'user-agent': 'jest',
     },
   },
@@ -44,10 +45,25 @@ describe('MesAuthResolver', () => {
     expect(result).toEqual(tokens);
     expect(mesAuthServiceMock.login).toHaveBeenCalledWith(
       { cedula: '12345678', pin: '1234' },
-      'unknown',
+      '203.0.113.20',
       tenantId,
       'jest',
     );
+  });
+
+  it('delegates logoutOperational with IP and user-agent from context', async () => {
+    mesAuthServiceMock.logout.mockResolvedValue(undefined);
+
+    await resolver.logoutOperational(gqlContext, {
+      sub: 'op-1',
+      cedulaHash: 'hash',
+      role: 'OPERATOR',
+      sedeId: null,
+      tenantId,
+      jti: 'jti-1',
+    });
+
+    expect(mesAuthServiceMock.logout).toHaveBeenCalledWith('op-1', 'jti-1', '203.0.113.20', 'jest');
   });
 
   it('delegates meOperational to MesAuthService', async () => {

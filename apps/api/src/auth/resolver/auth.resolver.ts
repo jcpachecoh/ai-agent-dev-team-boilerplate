@@ -15,7 +15,9 @@ import { DocumentType } from '@prisma/client';
 import { IsEmail, IsEnum, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 import type { Request } from 'express';
 import {
+  getClientIpFromContext,
   getTenantIdFromContext,
+  getUserAgentFromContext,
   type GqlRequestContext,
 } from '../../common/graphql/tenant-from-context';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -193,22 +195,40 @@ export class AuthResolver {
     @Context() context: GqlRequestContext,
     @Args('input') input: GlobalLoginInput,
   ): Promise<AuthTokens> {
-    return this.authService.login(getTenantIdFromContext(context), input);
+    return this.authService.login(
+      getTenantIdFromContext(context),
+      input,
+      getClientIpFromContext(context),
+      getUserAgentFromContext(context),
+    );
   }
 
   @Public()
   @UseGuards(GqlJwtRefreshGuard)
   @Mutation(() => AuthTokensType)
   refreshToken(
+    @Context() context: GqlRequestContext,
     @CurrentUser() currentUser: JwtPayload & { refreshToken: string },
   ): Promise<AuthTokens> {
-    return this.authService.refresh(currentUser.sub, currentUser.refreshToken);
+    return this.authService.refresh(
+      currentUser.sub,
+      currentUser.refreshToken,
+      getClientIpFromContext(context),
+      getUserAgentFromContext(context),
+    );
   }
 
   @Mutation(() => Boolean)
-  async logout(@CurrentUser() currentUser: JwtPayload): Promise<boolean> {
+  async logout(
+    @Context() context: GqlRequestContext,
+    @CurrentUser() currentUser: JwtPayload,
+  ): Promise<boolean> {
     try {
-      await this.authService.logout(currentUser.sub);
+      await this.authService.logout(
+        currentUser.sub,
+        getClientIpFromContext(context),
+        getUserAgentFromContext(context),
+      );
     } catch {
       // Idempotent — client clears tokens locally even if session already ended.
     }

@@ -224,44 +224,6 @@ describe('AuthRepository', () => {
     });
   });
 
-  describe('incrementLoginAttempts', () => {
-    it('calls update with increment 1 on loginAttempts', async () => {
-      prismaMock.user.update.mockResolvedValue(mockUserSafe);
-      await repository.incrementLoginAttempts('user-1');
-      expect(prismaMock.user.update).toHaveBeenCalledWith({
-        where: { id: 'user-1' },
-        data: { loginAttempts: { increment: 1 } },
-      });
-    });
-  });
-
-  describe('lockUser', () => {
-    it('calls update with the provided lockedUntil date', async () => {
-      const lockDate = new Date('2026-06-02T12:00:00Z');
-      prismaMock.user.update.mockResolvedValue(mockUserSafe);
-      await repository.lockUser('user-1', lockDate);
-      expect(prismaMock.user.update).toHaveBeenCalledWith({
-        where: { id: 'user-1' },
-        data: { lockedUntil: lockDate },
-      });
-    });
-  });
-
-  describe('resetLoginAttempts', () => {
-    it('calls update with loginAttempts 0, lockedUntil null, and lastLoginAt', async () => {
-      prismaMock.user.update.mockResolvedValue(mockUserSafe);
-      await repository.resetLoginAttempts('user-1');
-      expect(prismaMock.user.update).toHaveBeenCalledWith({
-        where: { id: 'user-1' },
-        data: {
-          loginAttempts: 0,
-          lockedUntil: null,
-          lastLoginAt: expect.any(Date),
-        },
-      });
-    });
-  });
-
   describe('createUser', () => {
     it('creates and returns safe user without secrets', async () => {
       prismaMock.user.create.mockResolvedValue(mockUserSafe);
@@ -283,6 +245,51 @@ describe('AuthRepository', () => {
           emailVerified: false,
         },
         select: expect.any(Object),
+      });
+    });
+  });
+
+  describe('incrementLoginAttempts', () => {
+    it('increments loginAttempts and returns the new count', async () => {
+      prismaMock.user.update.mockResolvedValue({ loginAttempts: 3 });
+
+      await expect(repository.incrementLoginAttempts('user-1')).resolves.toBe(3);
+
+      expect(prismaMock.user.update).toHaveBeenCalledWith({
+        where: { id: 'user-1' },
+        data: { loginAttempts: { increment: 1 } },
+        select: { loginAttempts: true },
+      });
+    });
+  });
+
+  describe('lockUser', () => {
+    it('sets lockedUntil without exposing secrets', async () => {
+      const lockedUntil = new Date(Date.now() + 15 * 60 * 1000);
+      prismaMock.user.update.mockResolvedValue(mockUserSafe);
+
+      await repository.lockUser('user-1', lockedUntil);
+
+      expect(prismaMock.user.update).toHaveBeenCalledWith({
+        where: { id: 'user-1' },
+        data: { lockedUntil },
+      });
+    });
+  });
+
+  describe('resetLoginAttempts', () => {
+    it('clears lock state and sets lastLoginAt', async () => {
+      prismaMock.user.update.mockResolvedValue(mockUserSafe);
+
+      await repository.resetLoginAttempts('user-1');
+
+      expect(prismaMock.user.update).toHaveBeenCalledWith({
+        where: { id: 'user-1' },
+        data: {
+          loginAttempts: 0,
+          lockedUntil: null,
+          lastLoginAt: expect.any(Date),
+        },
       });
     });
   });

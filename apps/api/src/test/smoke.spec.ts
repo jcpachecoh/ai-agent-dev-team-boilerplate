@@ -63,15 +63,18 @@ describe('Smoke — unified apps/api', () => {
     });
 
     it('login(input) resolves with tenant from x-tenant-id header', async () => {
-      const result = await authResolver.login(
-        { req: { headers: { 'x-tenant-id': tenantId } } },
-        { email: 'a@b.com', password: 'secret' },
-      );
-      expect(result.accessToken).toBe('at');
-      expect(authServiceMock.login).toHaveBeenCalledWith(tenantId, {
+      const context = { req: { headers: { 'x-tenant-id': tenantId } } };
+      const result = await authResolver.login(context, {
         email: 'a@b.com',
         password: 'secret',
       });
+      expect(result.accessToken).toBe('at');
+      expect(authServiceMock.login).toHaveBeenCalledWith(
+        tenantId,
+        { email: 'a@b.com', password: 'secret' },
+        'unknown',
+        undefined,
+      );
     });
   });
 

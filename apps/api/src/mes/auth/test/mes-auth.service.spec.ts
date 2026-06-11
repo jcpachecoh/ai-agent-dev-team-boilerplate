@@ -24,6 +24,7 @@ const GENERIC_AUTH_MESSAGE = 'Cédula o PIN incorrecto';
 const VALID_CEDULA = '12345678';
 const VALID_PIN = '1234';
 const TENANT_ID = 'tenant-abc';
+const LINKED_GLOBAL_USER_ID = '11111111-0000-0000-0000-000000000004';
 
 /** Mirrors MesAuthService.hashCedula (HMAC when CEDULA_HMAC_SECRET is set). */
 const hashCedula = (cedula: string): string => {
@@ -36,6 +37,7 @@ const hashCedula = (cedula: string): string => {
 
 const baseUser = {
   id: 'op-user-1',
+  userId: null as string | null,
   cedulaHash: hashCedula(VALID_CEDULA),
   pinHash: 'hashed-pin',
   role: OperationalRole.OPERATOR,
@@ -142,13 +144,69 @@ describe('MesAuthService', () => {
 
       expect(auditServiceMock.logLogin).toHaveBeenCalledWith({
         tenantId: TENANT_ID,
-        userId: baseUser.id,
+        userId: null,
         identifier: '****5678',
         authMethod: 'PIN',
         status: 'SUCCESS',
         ipAddress: '192.168.1.1',
         userAgent: 'Mozilla',
       });
+    });
+
+    it('logs SUCCESS with global User.id when operational user is linked', async () => {
+      repoMock.findByCedulaHash.mockResolvedValue({
+        ...baseUser,
+        userId: LINKED_GLOBAL_USER_ID,
+      });
+
+      await service.login({ cedula: VALID_CEDULA, pin: VALID_PIN }, '192.168.1.1', TENANT_ID);
+
+      expect(auditServiceMock.logLogin).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: 'SUCCESS',
+          userId: LINKED_GLOBAL_USER_ID,
+          identifier: '****5678',
+        }),
+      );
+    });
+
+    it('logs FAILED for wrong PIN with global User.id when linked', async () => {
+      repoMock.findByCedulaHash.mockResolvedValue({
+        ...baseUser,
+        userId: LINKED_GLOBAL_USER_ID,
+      });
+      (bcryptMock.compare as jest.Mock).mockResolvedValue(false);
+
+      await expect(
+        service.login({ cedula: VALID_CEDULA, pin: '9999' }, '192.168.1.1', TENANT_ID),
+      ).rejects.toThrow(UnauthorizedException);
+
+      expect(auditServiceMock.logLogin).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: 'FAILED',
+          userId: LINKED_GLOBAL_USER_ID,
+          failureReason: 'Invalid PIN',
+        }),
+      );
+    });
+
+    it('logs LOCKED with global User.id when linked operational user is locked', async () => {
+      repoMock.findByCedulaHash.mockResolvedValue({
+        ...baseUser,
+        userId: LINKED_GLOBAL_USER_ID,
+        lockedUntil: new Date(Date.now() + 10 * 60 * 1000),
+      });
+
+      await expect(
+        service.login({ cedula: VALID_CEDULA, pin: VALID_PIN }, '192.168.1.1', TENANT_ID),
+      ).rejects.toThrow(UnauthorizedException);
+
+      expect(auditServiceMock.logLogin).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: 'LOCKED',
+          userId: LINKED_GLOBAL_USER_ID,
+        }),
+      );
     });
 
     it('signs access JWT with required claims and 8h expiry', async () => {
@@ -258,6 +316,7 @@ describe('MesAuthService', () => {
         expect.objectContaining({
           status: 'FAILED',
           failureReason: 'User not found',
+          userId: null,
         }),
       );
     });
@@ -508,13 +567,40 @@ describe('MesAuthService', () => {
       expect(repoMock.saveRefreshToken).toHaveBeenCalledWith(baseUser.id, null);
       expect(auditServiceMock.logLogin).toHaveBeenCalledWith({
         tenantId: baseUser.tenantId,
-        userId: baseUser.id,
-        identifier: baseUser.cedulaHash,
+        userId: null,
+        identifier: `operational-user:${baseUser.id}`,
         authMethod: 'PIN',
         status: 'LOGOUT',
         ipAddress: '1.2.3.4',
         userAgent: 'Mozilla',
       });
+    });
+
+    it('logs LOGOUT with global User.id and safe identifier when operational user is linked', async () => {
+      repoMock.findById.mockResolvedValue({
+        ...baseUser,
+        userId: LINKED_GLOBAL_USER_ID,
+      });
+
+      await service.logout(baseUser.id, undefined, '1.2.3.4', 'Mozilla');
+
+      expect(auditServiceMock.logLogin).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: LINKED_GLOBAL_USER_ID,
+          identifier: `operational-user:${baseUser.id}`,
+          status: 'LOGOUT',
+        }),
+      );
+    });
+
+    it('never passes OperationalUser.id as LoginAudit userId on success', async () => {
+      await service.login({ cedula: VALID_CEDULA, pin: VALID_PIN }, '192.168.1.1', TENANT_ID);
+
+      const successCall = auditServiceMock.logLogin.mock.calls.find(
+        (call) => call[0]?.status === 'SUCCESS',
+      );
+      expect(successCall?.[0]?.userId).not.toBe(baseUser.id);
+      expect(successCall?.[0]?.userId).toBeNull();
     });
 
     it('blacklists jti in Redis when provided', async () => {

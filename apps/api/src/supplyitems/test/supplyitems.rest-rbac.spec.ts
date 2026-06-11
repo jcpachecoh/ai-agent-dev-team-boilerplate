@@ -1,4 +1,5 @@
 import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
+import { GUARDS_METADATA } from '@nestjs/common/constants';
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -57,20 +58,30 @@ function mockHttpContext(
 }
 
 describe('SupplyItemsController REST RBAC metadata', () => {
-  it('findAll requires supply.items.read', () => {
-    const permissions = Reflect.getMetadata(
-      REQUIRED_PERMISSIONS_KEY,
-      SupplyItemsController.prototype.findAll,
-    );
-    expect(permissions).toEqual([READ_PERMISSION]);
+  it('applies PermissionsGuard at controller level', () => {
+    const guards = Reflect.getMetadata(GUARDS_METADATA, SupplyItemsController) as unknown[];
+    expect(guards).toContain(PermissionsGuard);
   });
 
-  it('findOne requires supply.items.read', () => {
-    const permissions = Reflect.getMetadata(
-      REQUIRED_PERMISSIONS_KEY,
-      SupplyItemsController.prototype.findOne,
-    );
-    expect(permissions).toEqual([READ_PERMISSION]);
+  it('findAll and findOne require supply.items.read', () => {
+    expect(
+      Reflect.getMetadata(REQUIRED_PERMISSIONS_KEY, SupplyItemsController.prototype.findAll),
+    ).toEqual([READ_PERMISSION]);
+    expect(
+      Reflect.getMetadata(REQUIRED_PERMISSIONS_KEY, SupplyItemsController.prototype.findOne),
+    ).toEqual([READ_PERMISSION]);
+  });
+
+  it('write REST routes do not declare @RequirePermission yet', () => {
+    expect(
+      Reflect.getMetadata(REQUIRED_PERMISSIONS_KEY, SupplyItemsController.prototype.create),
+    ).toBeUndefined();
+    expect(
+      Reflect.getMetadata(REQUIRED_PERMISSIONS_KEY, SupplyItemsController.prototype.update),
+    ).toBeUndefined();
+    expect(
+      Reflect.getMetadata(REQUIRED_PERMISSIONS_KEY, SupplyItemsController.prototype.remove),
+    ).toBeUndefined();
   });
 
   it('RequirePermission documents manage code for future write routes', () => {
@@ -212,8 +223,8 @@ describe('SupplyItems REST PermissionsGuard', () => {
 
 describe('SupplyItems REST global JWT vs MES token', () => {
   it('rejects MES-signed token when verified with global JWT secret', async () => {
-    const mesSecret = process.env.MES_JWT_SECRET ?? 'mes-dev-secret-change-in-production';
-    const globalSecret = process.env.JWT_SECRET ?? 'dev-secret-change-in-production';
+    const mesSecret = 'auth10-mes-secret-isolated';
+    const globalSecret = 'auth10-global-secret-isolated';
 
     const mesJwt = new JwtService({ secret: mesSecret });
     const globalJwt = new JwtService({ secret: globalSecret });

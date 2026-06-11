@@ -47,8 +47,8 @@ export interface IAuthRepository {
   findJwtClaimsByUserId(id: string): Promise<JwtPayload | null>;
   findRoleByTenantAndCode(tenantId: string, code: string): Promise<AuthRoleRef | null>;
   createUser(data: CreateUserData): Promise<AuthUserSafe>;
-  incrementLoginAttempts(userId: string): Promise<void>;
-  lockUser(userId: string, until: Date): Promise<void>;
+  incrementLoginAttempts(userId: string): Promise<number>;
+  lockUser(userId: string, lockedUntil: Date): Promise<void>;
   resetLoginAttempts(userId: string): Promise<void>;
   saveRefreshToken(userId: string, hashedToken: string | null): Promise<void>;
   updatePassword(

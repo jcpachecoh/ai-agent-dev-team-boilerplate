@@ -139,31 +139,6 @@ export class AuthRepository implements IAuthRepository {
     });
   }
 
-  async incrementLoginAttempts(userId: string): Promise<void> {
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: { loginAttempts: { increment: 1 } },
-    });
-  }
-
-  async lockUser(userId: string, until: Date): Promise<void> {
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: { lockedUntil: until },
-    });
-  }
-
-  async resetLoginAttempts(userId: string): Promise<void> {
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: {
-        loginAttempts: 0,
-        lockedUntil: null,
-        lastLoginAt: new Date(),
-      },
-    });
-  }
-
   createUser(data: CreateUserData): Promise<AuthUserSafe> {
     return this.prisma.user.create({
       data: {
@@ -184,6 +159,33 @@ export class AuthRepository implements IAuthRepository {
     await this.prisma.user.update({
       where: { id: userId },
       data: { refreshToken: hashedToken },
+    });
+  }
+
+  async incrementLoginAttempts(userId: string): Promise<number> {
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: { loginAttempts: { increment: 1 } },
+      select: { loginAttempts: true },
+    });
+    return user.loginAttempts;
+  }
+
+  async lockUser(userId: string, lockedUntil: Date): Promise<void> {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { lockedUntil },
+    });
+  }
+
+  async resetLoginAttempts(userId: string): Promise<void> {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        loginAttempts: 0,
+        lockedUntil: null,
+        lastLoginAt: new Date(),
+      },
     });
   }
 

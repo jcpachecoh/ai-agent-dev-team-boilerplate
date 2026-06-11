@@ -114,6 +114,7 @@ describe('AuthService — global User email login regression (USR-01 Task 09)', 
       'mes-owner@palos-de-lena.dev',
     );
     expect(repoMock.findJwtClaimsByUserId).toHaveBeenCalledWith(seededGlobalUser.id);
+    expect(repoMock.resetLoginAttempts).toHaveBeenCalledWith(seededGlobalUser.id);
     expect(result).toEqual({ accessToken: 'access', refreshToken: 'refresh' });
     expect(result).not.toHaveProperty('passwordHash');
     expect(jwtMock.signAsync).toHaveBeenCalledWith(

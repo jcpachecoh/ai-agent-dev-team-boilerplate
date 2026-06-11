@@ -189,8 +189,8 @@ describe('SupplyItems GraphQL PermissionsGuard', () => {
 
 describe('SupplyItems global JWT vs MES token', () => {
   it('rejects MES-signed token when verified with global JWT secret', async () => {
-    const mesSecret = process.env.MES_JWT_SECRET ?? 'mes-dev-secret-change-in-production';
-    const globalSecret = process.env.JWT_SECRET ?? 'dev-secret-change-in-production';
+    const mesSecret = 'auth10-mes-secret-isolated';
+    const globalSecret = 'auth10-global-secret-isolated';
 
     const mesJwt = new JwtService({ secret: mesSecret });
     const globalJwt = new JwtService({ secret: globalSecret });

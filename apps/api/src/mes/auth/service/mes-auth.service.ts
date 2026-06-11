@@ -98,7 +98,7 @@ export class MesAuthService implements IMesAuthService {
     if (!user || !user.isActive) {
       await this.auditService.logLogin({
         tenantId: tenantId.trim(),
-        userId: user?.id,
+        userId: this.resolveLoginAuditUserId(user),
         identifier: maskedCedula,
         authMethod: AuthMethod.PIN,
         status: LoginAuditStatus.FAILED,
@@ -112,7 +112,7 @@ export class MesAuthService implements IMesAuthService {
     if (user.lockedUntil && user.lockedUntil > new Date()) {
       await this.auditService.logLogin({
         tenantId: tenantId.trim(),
-        userId: user.id,
+        userId: this.resolveLoginAuditUserId(user),
         identifier: maskedCedula,
         authMethod: AuthMethod.PIN,
         status: LoginAuditStatus.LOCKED,
@@ -128,7 +128,7 @@ export class MesAuthService implements IMesAuthService {
       await this.handleFailedLogin(user);
       await this.auditService.logLogin({
         tenantId: tenantId.trim(),
-        userId: user.id,
+        userId: this.resolveLoginAuditUserId(user),
         identifier: maskedCedula,
         authMethod: AuthMethod.PIN,
         status: LoginAuditStatus.FAILED,
@@ -142,7 +142,7 @@ export class MesAuthService implements IMesAuthService {
     await this.mesAuthRepository.resetLoginAttempts(user.id);
     await this.auditService.logLogin({
       tenantId: tenantId.trim(),
-      userId: user.id,
+      userId: this.resolveLoginAuditUserId(user),
       identifier: maskedCedula,
       authMethod: AuthMethod.PIN,
       status: LoginAuditStatus.SUCCESS,
@@ -168,8 +168,8 @@ export class MesAuthService implements IMesAuthService {
     if (user) {
       await this.auditService.logLogin({
         tenantId: user.tenantId,
-        userId: user.id,
-        identifier: user.cedulaHash, // We use cedulaHash since we don't have the raw cédula here
+        userId: this.resolveLoginAuditUserId(user),
+        identifier: this.resolveLogoutIdentifier(user),
         authMethod: AuthMethod.PIN,
         status: LoginAuditStatus.LOGOUT,
         ipAddress,
@@ -265,6 +265,16 @@ export class MesAuthService implements IMesAuthService {
     if (role === OperationalRole.OPERATOR && !sedeId?.trim()) {
       throw new BadRequestException('sedeId is required for OPERATOR role');
     }
+  }
+
+  /** Maps to global User.id for LoginAudit FK; never OperationalUser.id. */
+  private resolveLoginAuditUserId(user: OperationalUser | null | undefined): string | null {
+    return user?.userId ?? null;
+  }
+
+  /** Safe identifier when raw cédula is unavailable (e.g. logout). */
+  private resolveLogoutIdentifier(user: OperationalUser): string {
+    return `operational-user:${user.id}`;
   }
 
   private maskCedula(cedula: string): string {

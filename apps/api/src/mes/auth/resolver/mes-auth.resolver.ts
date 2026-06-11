@@ -94,8 +94,16 @@ export class MesAuthResolver {
   @Public()
   @UseGuards(MesJwtGuard)
   @Mutation(() => MessagePayloadType)
-  async logoutOperational(@CurrentUser() user: MesJwtPayload): Promise<{ message: string }> {
-    await this.mesAuthService.logout(user.sub, user.jti);
+  async logoutOperational(
+    @Context() context: GqlRequestContext,
+    @CurrentUser() user: MesJwtPayload,
+  ): Promise<{ message: string }> {
+    await this.mesAuthService.logout(
+      user.sub,
+      user.jti,
+      getClientIpFromContext(context),
+      getUserAgentFromContext(context),
+    );
     return { message: 'Logged out successfully.' };
   }
 

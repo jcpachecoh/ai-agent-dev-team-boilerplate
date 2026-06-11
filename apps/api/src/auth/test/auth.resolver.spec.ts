@@ -6,7 +6,13 @@ import { AuthEmailService } from '../service/auth-email.service';
 const tenantId = 'palos-de-lena';
 
 const gqlContext = {
-  req: { headers: { 'x-tenant-id': tenantId } },
+  req: {
+    headers: {
+      'x-tenant-id': tenantId,
+      'x-forwarded-for': '203.0.113.10',
+      'user-agent': 'jest-graphql',
+    },
+  },
 };
 
 const authServiceMock = {
@@ -51,10 +57,49 @@ describe('AuthResolver', () => {
     });
 
     expect(result).toEqual({ accessToken: 'a', refreshToken: 'r' });
-    expect(authServiceMock.login).toHaveBeenCalledWith(tenantId, {
+    expect(authServiceMock.login).toHaveBeenCalledWith(
+      tenantId,
+      {
+        email: 'test@example.com',
+        password: 'secret',
+      },
+      '203.0.113.10',
+      'jest-graphql',
+    );
+  });
+
+  it('delegates refreshToken with IP and user-agent from context', async () => {
+    authServiceMock.refresh.mockResolvedValue({ accessToken: 'a', refreshToken: 'r' });
+
+    await resolver.refreshToken(gqlContext, {
+      sub: 'user-1',
       email: 'test@example.com',
-      password: 'secret',
+      tenantId,
+      roleId: 'role-1',
+      roleCode: 'OPERATOR',
+      refreshToken: 'raw-refresh',
     });
+
+    expect(authServiceMock.refresh).toHaveBeenCalledWith(
+      'user-1',
+      'raw-refresh',
+      '203.0.113.10',
+      'jest-graphql',
+    );
+  });
+
+  it('delegates logout with IP and user-agent from context', async () => {
+    authServiceMock.logout.mockResolvedValue(undefined);
+
+    await resolver.logout(gqlContext, {
+      sub: 'user-1',
+      email: 'test@example.com',
+      tenantId,
+      roleId: 'role-1',
+      roleCode: 'OPERATOR',
+    });
+
+    expect(authServiceMock.logout).toHaveBeenCalledWith('user-1', '203.0.113.10', 'jest-graphql');
   });
 
   it('returns the authenticated user profile for me', async () => {
@@ -88,7 +133,7 @@ describe('AuthResolver', () => {
     authServiceMock.logout.mockRejectedValue(new Error('already logged out'));
 
     await expect(
-      resolver.logout({
+      resolver.logout(gqlContext, {
         sub: 'user-1',
         email: 'test@example.com',
         tenantId,

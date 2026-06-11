@@ -158,14 +158,14 @@ export class AuthService implements IAuthService {
         this.logger.warn(
           `Login denied: password mismatch (tenant=${resolvedTenantId}, userId=${user.id}, identifier=${maskedIdentifier}, ip=${ipAddress ?? 'n/a'})`,
         );
-        await this.handleFailedLogin(user);
+        const lockedNow = await this.handleFailedPasswordLogin(user.id);
         await this.auditService.logLogin({
           tenantId: resolvedTenantId,
           userId: user.id,
           identifier: dto.email,
           authMethod: AuthMethod.PASSWORD,
-          status: LoginAuditStatus.FAILED,
-          failureReason: FAILURE_PASSWORD_INVALID,
+          status: lockedNow ? LoginAuditStatus.LOCKED : LoginAuditStatus.FAILED,
+          failureReason: lockedNow ? FAILURE_ACCOUNT_LOCKED : FAILURE_PASSWORD_INVALID,
           ipAddress,
           userAgent,
         });
@@ -312,19 +312,25 @@ export class AuthService implements IAuthService {
     await this.authRepository.updatePassword(record.userId, passwordHash);
   }
 
+  /**
+   * Increments failed login attempts; locks the account when attempts reach MAX_LOGIN_ATTEMPTS.
+   * @returns true when this failure triggered a lock (5th attempt).
+   */
+  private async handleFailedPasswordLogin(userId: string): Promise<boolean> {
+    const attempts = await this.authRepository.incrementLoginAttempts(userId);
+    if (attempts >= MAX_LOGIN_ATTEMPTS) {
+      await this.authRepository.lockUser(userId, new Date(Date.now() + LOCK_DURATION_MS));
+      return true;
+    }
+    return false;
+  }
+
   private requireTenantId(tenantId: string): string {
     const trimmed = tenantId?.trim();
     if (!trimmed) {
       throw new BadRequestException('x-tenant-id header is required');
     }
     return trimmed;
-  }
-
-  private async handleFailedLogin(user: { id: string; loginAttempts: number }): Promise<void> {
-    await this.authRepository.incrementLoginAttempts(user.id);
-    if (user.loginAttempts + 1 >= MAX_LOGIN_ATTEMPTS) {
-      await this.authRepository.lockUser(user.id, new Date(Date.now() + LOCK_DURATION_MS));
-    }
   }
 
   /**
@@ -350,6 +356,14 @@ export class AuthService implements IAuthService {
     throw error;
   }
 
+  private async resolveJwtPayload(userId: string): Promise<JwtPayload> {
+    const claims = await this.authRepository.findJwtClaimsByUserId(userId);
+    if (!claims) {
+      throw new UnauthorizedException('User not found or inactive');
+    }
+    return claims;
+  }
+
   private maskIdentifier(identifier: string): string {
     const value = identifier.trim();
     const [local, domain] = value.split('@');
@@ -359,14 +373,6 @@ export class AuthService implements IAuthService {
 
     const localMasked = local.length <= 2 ? `${local[0]}*` : `${local.slice(0, 2)}***`;
     return `${localMasked}@${domain}`;
-  }
-
-  private async resolveJwtPayload(userId: string): Promise<JwtPayload> {
-    const claims = await this.authRepository.findJwtClaimsByUserId(userId);
-    if (!claims) {
-      throw new UnauthorizedException('User not found or inactive');
-    }
-    return claims;
   }
 
   private async issueTokens(payload: JwtPayload): Promise<AuthTokens> {

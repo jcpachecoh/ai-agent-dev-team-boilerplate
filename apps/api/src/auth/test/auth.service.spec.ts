@@ -110,6 +110,10 @@ describe('AuthService', () => {
 
     service = module.get<AuthService>(AuthService);
     jest.clearAllMocks();
+    auditServiceMock.logLogin.mockResolvedValue(undefined);
+    repoMock.incrementLoginAttempts.mockResolvedValue(1);
+    repoMock.lockUser.mockResolvedValue(undefined);
+    repoMock.resetLoginAttempts.mockResolvedValue(undefined);
     authEmailServiceMock.sendVerifyEmail.mockResolvedValue({ otpCode: '123456' });
   });
 
@@ -376,6 +380,7 @@ describe('AuthService', () => {
       jwtMock.signAsync.mockResolvedValueOnce('access').mockResolvedValueOnce('refresh');
       (bcryptMock.hash as jest.Mock).mockResolvedValue('hashed-refresh');
       repoMock.saveRefreshToken.mockResolvedValue(undefined);
+      repoMock.resetLoginAttempts.mockResolvedValue(undefined);
 
       const result = await service.login(TENANT_ID, dto, '1.2.3.4', 'Mozilla');
       expect(result).toHaveProperty('accessToken');
@@ -388,6 +393,7 @@ describe('AuthService', () => {
         expectedJwtPayload,
         expect.objectContaining({ expiresIn: '7d' }),
       );
+      expect(repoMock.incrementLoginAttempts).not.toHaveBeenCalled();
       expect(auditServiceMock.logLogin).toHaveBeenCalledWith({
         tenantId: TENANT_ID,
         userId: mockUserWithPassword.id,
@@ -402,6 +408,7 @@ describe('AuthService', () => {
     it('throws UnauthorizedException and logs FAILED when user does not exist', async () => {
       repoMock.findByTenantAndEmailForAuth.mockResolvedValue(null);
       await expect(service.login(TENANT_ID, dto, '1.2.3.4')).rejects.toThrow(UnauthorizedException);
+      expect(repoMock.incrementLoginAttempts).not.toHaveBeenCalled();
       expect(auditServiceMock.logLogin).toHaveBeenCalledWith(
         expect.objectContaining({
           status: LoginAuditStatus.FAILED,
@@ -417,6 +424,8 @@ describe('AuthService', () => {
         lockedUntil: new Date(Date.now() + 10000),
       });
       await expect(service.login(TENANT_ID, dto)).rejects.toThrow(UnauthorizedException);
+      expect(repoMock.incrementLoginAttempts).not.toHaveBeenCalled();
+      expect(bcryptMock.compare).not.toHaveBeenCalled();
       expect(auditServiceMock.logLogin).toHaveBeenCalledWith(
         expect.objectContaining({
           status: LoginAuditStatus.LOCKED,
@@ -429,7 +438,7 @@ describe('AuthService', () => {
     it('throws UnauthorizedException and logs FAILED when password does not match', async () => {
       repoMock.findByTenantAndEmailForAuth.mockResolvedValue(mockUserWithPassword);
       (bcryptMock.compare as jest.Mock).mockResolvedValue(false);
-      repoMock.incrementLoginAttempts.mockResolvedValue(undefined);
+      repoMock.incrementLoginAttempts.mockResolvedValue(1);
       await expect(service.login(TENANT_ID, dto)).rejects.toThrow(UnauthorizedException);
       expect(repoMock.incrementLoginAttempts).toHaveBeenCalledWith(mockUserWithPassword.id);
       expect(repoMock.lockUser).not.toHaveBeenCalled();
@@ -438,6 +447,22 @@ describe('AuthService', () => {
           status: LoginAuditStatus.FAILED,
           failureReason: 'password_invalido',
         }),
+      );
+    });
+
+    it('increments loginAttempts on each wrong password without locking before 5th attempt', async () => {
+      repoMock.findByTenantAndEmailForAuth.mockResolvedValue({
+        ...mockUserWithPassword,
+        loginAttempts: 3,
+      });
+      (bcryptMock.compare as jest.Mock).mockResolvedValue(false);
+      repoMock.incrementLoginAttempts.mockResolvedValue(4);
+
+      await expect(service.login(TENANT_ID, dto)).rejects.toThrow(UnauthorizedException);
+
+      expect(repoMock.lockUser).not.toHaveBeenCalled();
+      expect(auditServiceMock.logLogin).toHaveBeenCalledWith(
+        expect.objectContaining({ status: LoginAuditStatus.FAILED }),
       );
     });
 
@@ -453,8 +478,7 @@ describe('AuthService', () => {
         loginAttempts: 4,
       });
       (bcryptMock.compare as jest.Mock).mockResolvedValue(false);
-      repoMock.incrementLoginAttempts.mockResolvedValue(undefined);
-      repoMock.lockUser.mockResolvedValue(undefined);
+      repoMock.incrementLoginAttempts.mockResolvedValue(5);
 
       const before = Date.now();
       await expect(service.login(TENANT_ID, dto)).rejects.toThrow(UnauthorizedException);
@@ -465,6 +489,24 @@ describe('AuthService', () => {
       const lockMs = lockUntil.getTime() - before;
       expect(lockMs).toBeGreaterThanOrEqual(14 * 60 * 1000);
       expect(lockMs).toBeLessThanOrEqual(16 * 60 * 1000);
+      expect(auditServiceMock.logLogin).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: LoginAuditStatus.LOCKED,
+          failureReason: 'cuenta_bloqueada',
+        }),
+      );
+    });
+
+    it('does not increment loginAttempts when logging in while already locked', async () => {
+      repoMock.findByTenantAndEmailForAuth.mockResolvedValue({
+        ...mockUserWithPassword,
+        loginAttempts: 5,
+        lockedUntil: new Date(Date.now() + 60_000),
+      });
+
+      await expect(service.login(TENANT_ID, dto)).rejects.toThrow(UnauthorizedException);
+
+      expect(repoMock.incrementLoginAttempts).not.toHaveBeenCalled();
     });
   });
 
