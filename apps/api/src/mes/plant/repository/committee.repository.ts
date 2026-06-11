@@ -132,6 +132,13 @@ export class CommitteeRepository {
     });
   }
 
+  async decrementOrdersCount(committeeId: string): Promise<void> {
+    await this.prisma.productionCommittee.updateMany({
+      where: { id: committeeId, ordersCount: { gt: 0 } },
+      data: { ordersCount: { decrement: 1 } },
+    });
+  }
+
   countMembers(committeeId: string): Promise<number> {
     return this.prisma.productionCommitteeMember.count({
       where: { committeeId },

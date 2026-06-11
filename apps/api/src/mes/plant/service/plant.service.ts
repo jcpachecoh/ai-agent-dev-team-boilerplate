@@ -580,6 +580,10 @@ export class PlantService implements IPlantService {
       notes,
     });
 
+    if (detail.committeeId) {
+      await this.committeeService.decrementOrdersCount(detail.committeeId);
+    }
+
     const updated = await this.requireOrderDetail(tenantId, id);
     return this.mapOrderDetail(updated);
   }

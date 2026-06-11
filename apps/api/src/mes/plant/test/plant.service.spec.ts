@@ -113,6 +113,7 @@ const recipeCategoriesServiceMock = {
 
 const committeeServiceMock = {
   assertCommitteeActiveForOrder: jest.fn(),
+  decrementOrdersCount: jest.fn(),
 };
 
 describe('PlantService', () => {
@@ -1605,6 +1606,44 @@ describe('PlantService', () => {
           notes: expect.stringContaining('"userNotes":"Notas del supervisor"'),
         }),
       );
+    });
+
+    it('cancelOrder decrements committee ordersCount when order has committeeId', async () => {
+      const orderWithCommittee = {
+        ...buildOrderDetail(ProductionOrderStatus.DRAFT, [PhaseExecutionStatus.PENDING]),
+        committeeId,
+      };
+      const cancelledDetail = {
+        ...orderWithCommittee,
+        status: ProductionOrderStatus.CANCELLED,
+      };
+
+      repoMock.findOrderDetailById
+        .mockResolvedValueOnce(orderWithCommittee)
+        .mockResolvedValueOnce(cancelledDetail);
+      committeeServiceMock.decrementOrdersCount.mockResolvedValue(undefined);
+
+      await service.cancelOrder(tenantId, 'order-1', { reason: 'Prueba' }, 'supervisor-1');
+
+      expect(committeeServiceMock.decrementOrdersCount).toHaveBeenCalledWith(committeeId);
+    });
+
+    it('cancelOrder does not call decrementOrdersCount when order has no committeeId', async () => {
+      const orderWithoutCommittee = buildOrderDetail(ProductionOrderStatus.DRAFT, [
+        PhaseExecutionStatus.PENDING,
+      ]);
+      const cancelledDetail = {
+        ...orderWithoutCommittee,
+        status: ProductionOrderStatus.CANCELLED,
+      };
+
+      repoMock.findOrderDetailById
+        .mockResolvedValueOnce(orderWithoutCommittee)
+        .mockResolvedValueOnce(cancelledDetail);
+
+      await service.cancelOrder(tenantId, 'order-1', { reason: 'Prueba' }, 'supervisor-1');
+
+      expect(committeeServiceMock.decrementOrdersCount).not.toHaveBeenCalled();
     });
   });
 });

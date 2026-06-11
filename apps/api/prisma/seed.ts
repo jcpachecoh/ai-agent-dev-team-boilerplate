@@ -3,8 +3,9 @@
  * the Postman collection.
  *
  * Email auth (global User — x-tenant-id: palos-de-lena):
- *   mes-owner@palos-de-lena.dev    / TestPass123!
- *   mes-operator@palos-de-lena.dev / TestPass123!
+ *   mes-owner@palos-de-lena.dev           / TestPass123!
+ *   mes-operator@palos-de-lena.dev        / TestPass123!
+ *   operations.admin@palos-de-lena.dev    / TestPass123!  (OPERATIONS_ADMIN — committee modal)
  *
  * Operational tenant palos-de-lena (supply catalog + MES + plant):
  *   tenantId / mesTenantId = palos-de-lena  (x-tenant-id on supply-items & MES login)
@@ -81,6 +82,7 @@ const MES_OPERATOR_ID = 'eeeeeeee-0000-0000-0000-000000000005';
 const MES_OPERATOR2_ID = 'eeeeeeee-0000-0000-0000-000000000006';
 
 const GLOBAL_MES_OPERATOR2_USER_ID = '11111111-0000-0000-0000-000000000006';
+const GLOBAL_MES_OPERATIONS_ADMIN_USER_ID = '11111111-0000-0000-0000-000000000007';
 
 const ROLE_SEEDS = [
   { id: ROLE_OWNER_ID, code: 'OWNER', name: 'Owner' },
@@ -869,12 +871,43 @@ async function main() {
     `(userId ${operator2.userId})`,
   );
 
+  const operationsAdminGlobalUser = await prisma.user.upsert({
+    where: {
+      tenantId_cedula: { tenantId: OPERATIONAL_TENANT_ID, cedula: '55556666' },
+    },
+    update: {
+      email: 'operations.admin@palos-de-lena.dev',
+      passwordHash: mesUserPasswordHash,
+      documentType: DocumentType.CC,
+      roleId: roles.OPERATIONS_ADMIN.id,
+      isActive: true,
+      emailVerified: true,
+    },
+    create: {
+      id: GLOBAL_MES_OPERATIONS_ADMIN_USER_ID,
+      tenantId: OPERATIONAL_TENANT_ID,
+      cedula: '55556666',
+      documentType: DocumentType.CC,
+      email: 'operations.admin@palos-de-lena.dev',
+      passwordHash: mesUserPasswordHash,
+      roleId: roles.OPERATIONS_ADMIN.id,
+      isActive: true,
+      emailVerified: true,
+    },
+  });
+  console.log(
+    'Global User (MES operations admin):',
+    operationsAdminGlobalUser.email,
+    '—',
+    operationsAdminGlobalUser.id,
+  );
+
   console.log('\n✅ Email auth (global User — x-tenant-id: palos-de-lena):');
-  console.log('  mes-owner    = mes-owner@palos-de-lena.dev / TestPass123!');
-  console.log('  mes-operator = mes-operator@palos-de-lena.dev / TestPass123!');
-  console.log('\n✅ Email auth (global User — x-tenant-id: palos-de-lena):');
-  console.log('  mes-owner    = mes-owner@palos-de-lena.dev / TestPass123!');
-  console.log('  mes-operator = mes-operator@palos-de-lena.dev / TestPass123!');
+  console.log('  mes-owner          = mes-owner@palos-de-lena.dev / TestPass123!');
+  console.log('  mes-operator       = mes-operator@palos-de-lena.dev / TestPass123!');
+  console.log(
+    '  operations-admin   = operations.admin@palos-de-lena.dev / TestPass123!  ← committee modal',
+  );
   console.log('\n✅ Operational tenant (supply-items, MES, plant):');
   console.log('  tenantId / mesTenantId =', OPERATIONAL_TENANT_ID);
   console.log('  categoryId             =', SEED_CATEGORY_ID);

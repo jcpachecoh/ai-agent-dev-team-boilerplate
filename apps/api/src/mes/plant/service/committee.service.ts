@@ -146,6 +146,10 @@ export class CommitteeService {
     }));
   }
 
+  async decrementOrdersCount(committeeId: string): Promise<void> {
+    await this.committeeRepository.decrementOrdersCount(committeeId);
+  }
+
   async assertCommitteeActiveForOrder(tenantId: string, committeeId: string) {
     const committee = await this.committeeRepository.findById(tenantId, committeeId);
     if (!committee) {

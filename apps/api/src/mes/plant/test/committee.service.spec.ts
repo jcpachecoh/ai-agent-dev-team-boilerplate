@@ -43,6 +43,7 @@ const committeeRepositoryMock = {
   findById: jest.fn(),
   updateCommitteeTx: jest.fn(),
   countMembers: jest.fn(),
+  decrementOrdersCount: jest.fn(),
 };
 
 const prismaMock = {
@@ -364,6 +365,16 @@ describe('CommitteeService', () => {
       await expect(service.assertCommitteeActiveForOrder(tenantId, 'missing')).rejects.toThrow(
         NotFoundException,
       );
+    });
+  });
+
+  describe('decrementOrdersCount', () => {
+    it('delegates to repository', async () => {
+      committeeRepositoryMock.decrementOrdersCount.mockResolvedValue(undefined);
+
+      await service.decrementOrdersCount(committeeDetail.id);
+
+      expect(committeeRepositoryMock.decrementOrdersCount).toHaveBeenCalledWith(committeeDetail.id);
     });
   });
 
