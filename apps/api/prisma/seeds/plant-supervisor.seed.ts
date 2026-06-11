@@ -21,7 +21,6 @@ const WS_EST02 = 'wwwwwwww-0000-0000-0000-000000000002';
 const WS_EST03 = 'wwwwwwww-0000-0000-0000-000000000003';
 const WS_EST04 = 'wwwwwwww-0000-0000-0000-000000000004';
 const WS_EST05 = 'wwwwwwww-0000-0000-0000-000000000005';
-const WS_EST06 = 'wwwwwwww-0000-0000-0000-000000000006';
 
 const RECIPE_POLLO = 'rrrrrrrr-0000-0000-0000-000000000002';
 const RECIPE_COSTILLAS = 'rrrrrrrr-0000-0000-0000-000000000003';
@@ -89,44 +88,37 @@ export async function seedPlantSupervisor(prisma: PrismaClient): Promise<void> {
     {
       id: WS_EST01,
       code: 'EST-01',
-      name: 'Mise en place',
-      description: 'Preparación de insumos',
+      name: 'Dosificación y alistamiento',
+      description: 'Dosificación y preparación de insumos',
       location: 'Zona A',
     },
     {
       id: WS_EST02,
       code: 'EST-02',
-      name: 'Corte y Deshuese',
-      description: 'Fileteado y porcionado',
+      name: 'Cocción',
+      description: 'Procesos de cocción',
       location: 'Zona B',
     },
     {
       id: WS_EST03,
       code: 'EST-03',
-      name: 'Parrilla Central',
-      description: 'Sellado a fuego alto',
+      name: 'Abatimiento',
+      description: 'Enfriamiento rápido y abatimiento',
       location: 'Zona C',
     },
     {
       id: WS_EST04,
       code: 'EST-04',
-      name: 'Línea Fría',
-      description: 'Enfriamiento rápido',
+      name: 'Empaque',
+      description: 'Sellado y empaque',
       location: 'Zona D',
     },
     {
       id: WS_EST05,
       code: 'EST-05',
-      name: 'Frituras',
-      description: 'Freído en aceite',
+      name: 'Almacén (Cuartos Fríos)',
+      description: 'Almacenamiento en cuartos fríos',
       location: 'Zona E',
-    },
-    {
-      id: WS_EST06,
-      code: 'EST-06',
-      name: 'Empaque y Despacho',
-      description: 'Sellado y etiquetado',
-      location: 'Zona F',
     },
   ] as const;
 
@@ -301,7 +293,7 @@ export async function seedPlantSupervisor(prisma: PrismaClient): Promise<void> {
     {
       id: PHASE_ENS_3,
       recipeId: RECIPE_ENSALADA,
-      workStationId: WS_EST06,
+      workStationId: WS_EST04,
       order: 3,
       name: 'Porcionado',
       standardMinutes: 10,
@@ -333,7 +325,7 @@ export async function seedPlantSupervisor(prisma: PrismaClient): Promise<void> {
     {
       id: PHASE_SALSAS_2,
       recipeId: RECIPE_SALSAS,
-      workStationId: WS_EST06,
+      workStationId: WS_EST04,
       order: 2,
       name: 'Mezclado',
       standardMinutes: 15,
@@ -341,7 +333,7 @@ export async function seedPlantSupervisor(prisma: PrismaClient): Promise<void> {
     {
       id: PHASE_SALSAS_3,
       recipeId: RECIPE_SALSAS,
-      workStationId: WS_EST06,
+      workStationId: WS_EST04,
       order: 3,
       name: 'Etiquetado',
       standardMinutes: 10,
@@ -501,7 +493,7 @@ export async function seedPlantSupervisor(prisma: PrismaClient): Promise<void> {
       id: EXEC_016_3,
       orderId: ORDER_016,
       phaseId: PHASE_SALSAS_3,
-      workStationId: WS_EST06,
+      workStationId: WS_EST04,
       plannedMinutes: 10,
       startedAt: minutesAgo(10),
       efficiencyPct: 67,
@@ -650,7 +642,7 @@ export async function seedPlantSupervisor(prisma: PrismaClient): Promise<void> {
     },
     {
       id: SESSION_06,
-      workStationId: WS_EST06,
+      workStationId: WS_EST04,
       operatorUserId: PLANT_SEED_OPERATOR2_ID,
       phaseExecutionId: EXEC_016_3,
       startedAt: minutesAgo(31),
@@ -764,5 +756,5 @@ export async function seedPlantSupervisor(prisma: PrismaClient): Promise<void> {
     });
   }
 
-  console.log('✅ Plant supervisor seed: 6 estaciones, 5 recetas, 6 OP activas, 4 incidentes');
+  console.log('✅ Plant supervisor seed: 5 estaciones, 5 recetas, 6 OP activas, 4 incidentes');
 }

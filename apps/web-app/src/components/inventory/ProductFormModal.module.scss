@@ -41,6 +41,12 @@
   border-radius: t.$border-radius-sm;
 }
 
+.inputReadonly {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 .errorText {
   display: block;
   margin-top: 4px;

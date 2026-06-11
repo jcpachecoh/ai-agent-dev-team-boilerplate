@@ -87,11 +87,10 @@ export function ProductFormModal({
       Number.isNaN(cost) ||
       Number.isNaN(min) ||
       Number.isNaN(max) ||
-      Number.isNaN(current) ||
-      current < 0 ||
+      (mode === 'create' && (Number.isNaN(current) || current < 0)) ||
       min > max
     ) {
-      setFormError('Revise costo y stock (actual ≥ 0, mínimo ≤ máximo).');
+      setFormError('Revise costo y stock (mínimo ≤ máximo).');
       return;
     }
     setFormError(null);
@@ -183,11 +182,12 @@ export function ProductFormModal({
         </InventarioFormField>
         <InventarioFormField label="Stock actual" theme={theme} size="md">
           <input
-            className={styles.input}
+            className={mode === 'edit' ? `${styles.input} ${styles.inputReadonly}` : styles.input}
             type="number"
             min="0"
             value={values.currentStock}
-            onChange={(e) => update({ currentStock: e.target.value })}
+            readOnly={mode === 'edit'}
+            onChange={mode === 'edit' ? undefined : (e) => update({ currentStock: e.target.value })}
           />
         </InventarioFormField>
         <div className={styles.togglePair}>

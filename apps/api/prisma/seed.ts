@@ -37,6 +37,7 @@ import {
   CondicionPago,
   DocumentType,
   EmployeeContractType,
+  Location,
   OperationalRole,
   PrismaClient,
   SalaryType,
@@ -376,7 +377,7 @@ async function seedRolePermissions() {
 }
 
 async function seedLocations() {
-  const locations = [];
+  const locations: Location[] = [];
   for (let i = 1; i <= 10; i++) {
     const name = `Sede Palos de Leña ${i}`;
     const code = `PL-${i.toString().padStart(2, '0')}`;
@@ -564,22 +565,38 @@ async function main() {
 
   const categoryGranos = await prisma.supplyCategory.upsert({
     where: { id: SEED_CATEGORY_GRANOS_ID },
-    update: { tenantId: OPERATIONAL_TENANT_ID, nombre: 'Granos' },
+    update: { tenantId: OPERATIONAL_TENANT_ID, nombre: 'Fruver' },
     create: {
       id: SEED_CATEGORY_GRANOS_ID,
       tenantId: OPERATIONAL_TENANT_ID,
-      nombre: 'Granos',
-      descripcion: 'Cereales y legumbres',
+      nombre: 'Fruver',
+      descripcion: 'Frutas y verduras',
     },
   });
   console.log('SupplyCategory:', categoryGranos.nombre, '—', categoryGranos.id);
 
   const canonicalCategories = [
-    { id: SEED_CATEGORY_CARNICOS_ID, nombre: 'Cárnicos' },
-    { id: SEED_CATEGORY_LACTEOS_ID, nombre: 'Lácteos' },
+    { id: SEED_CATEGORY_CARNICOS_ID, nombre: 'Cocina' },
+    { id: SEED_CATEGORY_LACTEOS_ID, nombre: 'Parrilla' },
     { id: SEED_CATEGORY_BEBIDAS_ID, nombre: 'Bebidas' },
     { id: SEED_CATEGORY_ASEO_ID, nombre: 'Aseo' },
-    { id: SEED_CATEGORY_EMPAQUE_ID, nombre: 'Empaque' },
+    { id: SEED_CATEGORY_EMPAQUE_ID, nombre: 'Desechables' },
+    { id: 'bbbbbbbb-0000-0000-0000-000000000009', nombre: 'Bar' },
+    { id: 'bbbbbbbb-0000-0000-0000-000000000010', nombre: 'Otros' },
+    { id: 'bbbbbbbb-0000-0000-0000-000000000011', nombre: 'Producción' },
+    { id: 'bbbbbbbb-0000-0000-0000-000000000012', nombre: 'Cumpleaños' },
+    { id: 'bbbbbbbb-0000-0000-0000-000000000013', nombre: 'Desechable Domicilio' },
+    { id: 'bbbbbbbb-0000-0000-0000-000000000014', nombre: 'Desechable Operación' },
+    { id: 'bbbbbbbb-0000-0000-0000-000000000015', nombre: 'Licores' },
+    { id: 'bbbbbbbb-0000-0000-0000-000000000016', nombre: 'Entrada Cocina' },
+    { id: 'bbbbbbbb-0000-0000-0000-000000000017', nombre: 'Entrada Parrilla' },
+    { id: 'bbbbbbbb-0000-0000-0000-000000000018', nombre: 'Plato Fuerte Cocina' },
+    { id: 'bbbbbbbb-0000-0000-0000-000000000019', nombre: 'Plato Fuerte Parrilla' },
+    { id: 'bbbbbbbb-0000-0000-0000-000000000020', nombre: 'Postres' },
+    { id: 'bbbbbbbb-0000-0000-0000-000000000021', nombre: 'Cafés' },
+    { id: 'bbbbbbbb-0000-0000-0000-000000000022', nombre: 'Adición Cocina' },
+    { id: 'bbbbbbbb-0000-0000-0000-000000000023', nombre: 'Adición Parrilla' },
+    { id: 'bbbbbbbb-0000-0000-0000-000000000024', nombre: 'Decoraciones Venta' },
   ] as const;
   for (const cat of canonicalCategories) {
     const row = await prisma.supplyCategory.upsert({
