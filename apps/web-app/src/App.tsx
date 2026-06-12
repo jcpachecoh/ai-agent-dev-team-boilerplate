@@ -54,9 +54,7 @@ export default function App(): React.JSX.Element {
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/dispatch" element={<DispatchPage />} />
           <Route path="/users/*" element={<UsersPage />} />
-          <Route path="/payroll" element={<PayrollPage />} />
-          <Route path="/payroll/employees" element={<PayrollPage />} />
-          <Route path="/payroll/salaries" element={<PayrollPage />} />
+          <Route path="/payroll/*" element={<PayrollPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/dev/responsive-table" element={<ResponsiveTableDemoPage />} />
         </Route>
