@@ -3,7 +3,7 @@ import { GraphQLClient } from 'graphql-request';
 import { clearGraphqlAuthToken, getGraphqlAuthToken, isAuthenticated } from './auth-token';
 import { getTenantId } from './tenant';
 
-const DEFAULT_URL = '/graphql';
+const DEFAULT_URL = 'http://localhost:4000/graphql';
 const REMOVED_GATEWAY_PORT = ':4000';
 
 function resolveGraphqlEndpoint(configured: string): string {
@@ -19,7 +19,7 @@ function resolveGraphqlEndpoint(configured: string): string {
 }
 
 export function getGraphqlEndpoint(): string {
-  const raw = import.meta.env.VITE_GRAPHQL_URL;
+  const raw = import.meta.env.VITE_GRAPHQL_URL || DEFAULT_URL;
   let configured = typeof raw === 'string' && raw.trim() !== '' ? raw.trim() : DEFAULT_URL;
   if (import.meta.env.DEV && configured.includes(REMOVED_GATEWAY_PORT)) {
     console.warn(

@@ -11,7 +11,6 @@ import InventoryProductDetailPage from '@/pages/InventoryProductDetailPage';
 import InventoryProductsPage from '@/pages/InventoryProductsPage';
 import InventoryReportsPage from '@/pages/InventoryReportsPage';
 import LoginPage from '@/pages/LoginPage';
-import SignupPage from '@/pages/SignupPage';
 import NotFoundPage from '@/pages/NotFoundPage';
 import PayrollPage from '@/pages/PayrollPage';
 import ProduccionComitesPage from '@/pages/ProduccionComitesPage/ProduccionComitesPage';
@@ -21,6 +20,7 @@ import RecipesPage from '@/pages/RecipesPage';
 import ReportsPage from '@/pages/ReportsPage';
 import ResponsiveTableDemoPage from '@/pages/ResponsiveTableDemoPage';
 import SettingsPage from '@/pages/SettingsPage';
+import SignupPage from '@/pages/SignupPage';
 import SupervisorPage from '@/pages/SupervisorPage/SupervisorPage';
 import UsersPage from '@/pages/UsersPage';
 import { RequireAuth } from '@/routes/RequireAuth';
@@ -53,9 +53,7 @@ export default function App(): React.JSX.Element {
           <Route path="/supervisor/*" element={<SupervisorPage />} />
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/dispatch" element={<DispatchPage />} />
-          <Route path="/users" element={<UsersPage />} />
-          <Route path="/users/roles" element={<UsersPage />} />
-          <Route path="/users/permissions" element={<UsersPage />} />
+          <Route path="/users/*" element={<UsersPage />} />
           <Route path="/payroll" element={<PayrollPage />} />
           <Route path="/payroll/employees" element={<PayrollPage />} />
           <Route path="/payroll/salaries" element={<PayrollPage />} />

@@ -13,7 +13,7 @@ export class PayrollRepository implements IPayrollRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(
-    data: CreateEmployeeData & { hasTransportSubsidy: boolean; locationId: string },
+    data: CreateEmployeeData & { hasTransportSubsidy: boolean },
   ): Promise<EmployeeDetails & { user: User }> {
     return this.prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
@@ -32,6 +32,7 @@ export class PayrollRepository implements IPayrollRepository {
         data: {
           userId: user.id,
           tenantId: data.tenantId,
+          name: data.name,
           locationId: data.locationId,
           position: data.position,
           area: data.area,
@@ -54,7 +55,7 @@ export class PayrollRepository implements IPayrollRepository {
         include: { user: true },
       });
 
-      return employeeDetails;
+      return employeeDetails as EmployeeDetails & { user: User };
     });
   }
 

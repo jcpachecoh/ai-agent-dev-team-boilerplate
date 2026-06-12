@@ -48,6 +48,7 @@ export class EmployeeDetailsType {
   @Field(() => ID) id!: string;
   @Field(() => ID) userId!: string;
   @Field() tenantId!: string;
+  @Field() name!: string;
   @Field() locationId!: string;
   @Field() position!: string;
   @Field() area!: string;
@@ -113,6 +114,11 @@ export class CreateEmployeeInput {
   @IsString()
   @IsNotEmpty()
   locationId!: string;
+
+  @Field()
+  @IsString()
+  @IsNotEmpty()
+  name!: string;
 
   @Field()
   @IsString()

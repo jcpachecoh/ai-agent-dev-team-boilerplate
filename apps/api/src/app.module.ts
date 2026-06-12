@@ -23,6 +23,7 @@ import { RecipeModule } from './recipe/recipe.module';
 import { PurchaseOrderModule } from './purchase-order/purchase-order.module';
 import { TenantModule } from './tenant/tenant.module';
 import { PayrollModule } from './payroll/payroll.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { PayrollModule } from './payroll/payroll.module';
     PurchaseOrderModule,
     TenantModule,
     PayrollModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [

@@ -29,5 +29,6 @@ export function mapAuthUserToViewModel(profile: AuthUserProfile): AuthUserViewMo
     email: profile.email,
     displayName: formatUserDisplayName(profile.email),
     displayRole: formatRoleCode(profile.roleCode),
+    roleCode: profile.roleCode,
   };
 }

@@ -192,6 +192,34 @@ describe('PayrollService', () => {
         BadRequestException,
       );
     });
+
+    it('should throw BadRequestException if location is invalid for tenant', async () => {
+      (repository.findExistingUser as jest.Mock).mockResolvedValue(null);
+      (repository.findLocationById as jest.Mock).mockResolvedValue({
+        id: mockLocationId,
+        tenantId: 'other-tenant',
+      });
+
+      await expect(service.create(mockTenantId, mockEmployeeData)).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(repository.findRoleById).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('findAll', () => {
+    it('should forward tenant-scoped filters to repository', async () => {
+      (repository.findAll as jest.Mock).mockResolvedValue([{ id: 'emp-1' }]);
+
+      const result = await service.findAll(mockTenantId, { locationId: mockLocationId, limit: 5 });
+
+      expect(result).toEqual([{ id: 'emp-1' }]);
+      expect(repository.findAll).toHaveBeenCalledWith({
+        tenantId: mockTenantId,
+        locationId: mockLocationId,
+        limit: 5,
+      });
+    });
   });
 
   describe('findOne', () => {
@@ -212,6 +240,54 @@ describe('PayrollService', () => {
       (repository.findByUserId as jest.Mock).mockResolvedValue({ tenantId: mockTenantId });
       await service.remove(mockTenantId, 'user-1');
       expect(repository.softDelete).toHaveBeenCalledWith('user-1');
+    });
+  });
+
+  describe('update', () => {
+    it('updates employee and recalculates transport subsidy when salary changes', async () => {
+      (repository.findByUserId as jest.Mock).mockResolvedValue({
+        tenantId: mockTenantId,
+        contractType: EmployeeContractType.INDEFINIDO,
+        salaryType: SalaryType.ORDINARIO,
+        salaryAmount: SMLV_2025,
+        contractStart: new Date('2025-01-01'),
+        contractEnd: null,
+      });
+      (repository.update as jest.Mock).mockResolvedValue({ id: 'emp-1' });
+
+      await service.update(mockTenantId, 'user-1', { salaryAmount: SMLV_2025 * 2 + 5 });
+
+      expect(repository.update).toHaveBeenCalledWith(
+        'user-1',
+        expect.objectContaining({
+          salaryAmount: SMLV_2025 * 2 + 5,
+          hasTransportSubsidy: false,
+        }),
+      );
+    });
+  });
+
+  describe('query helpers', () => {
+    it('findByLocation delegates to repository', async () => {
+      (repository.findAll as jest.Mock).mockResolvedValue([]);
+
+      await service.findByLocation(mockTenantId, mockLocationId);
+
+      expect(repository.findAll).toHaveBeenCalledWith({
+        tenantId: mockTenantId,
+        locationId: mockLocationId,
+      });
+    });
+
+    it('findByContractType delegates to repository', async () => {
+      (repository.findAll as jest.Mock).mockResolvedValue([]);
+
+      await service.findByContractType(mockTenantId, EmployeeContractType.OBRA);
+
+      expect(repository.findAll).toHaveBeenCalledWith({
+        tenantId: mockTenantId,
+        contractType: EmployeeContractType.OBRA,
+      });
     });
   });
 });

@@ -45,6 +45,11 @@ export class CreateEmployeeDto {
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
+  name!: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
   position!: string;
 
   @ApiProperty()

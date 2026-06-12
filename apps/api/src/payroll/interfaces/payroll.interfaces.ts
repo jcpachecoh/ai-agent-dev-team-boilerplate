@@ -15,6 +15,8 @@ export interface CreateEmployeeData {
   email: string;
   passwordHash: string;
   roleId: string;
+  locationId: string;
+  name: string;
   position: string;
   area: string;
   department: string;
@@ -61,7 +63,7 @@ export interface ListEmployeesFilters {
 
 export interface IPayrollRepository {
   create(
-    data: CreateEmployeeData & { hasTransportSubsidy: boolean; locationId: string },
+    data: CreateEmployeeData & { hasTransportSubsidy: boolean },
   ): Promise<EmployeeDetails & { user: User }>;
   findAll(filters: ListEmployeesFilters): Promise<(EmployeeDetails & { user: User })[]>;
   findById(id: string): Promise<(EmployeeDetails & { user: User }) | null>;
