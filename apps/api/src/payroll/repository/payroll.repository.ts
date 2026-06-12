@@ -59,7 +59,9 @@ export class PayrollRepository implements IPayrollRepository {
     });
   }
 
-  async findAll(filters: ListEmployeesFilters): Promise<(EmployeeDetails & { user: User })[]> {
+  async findAll(
+    filters: ListEmployeesFilters,
+  ): Promise<(EmployeeDetails & { user: User; location?: { id: string; name: string } })[]> {
     const where: any = {
       tenantId: filters.tenantId,
     };
@@ -81,17 +83,19 @@ export class PayrollRepository implements IPayrollRepository {
 
     return this.prisma.employeeDetails.findMany({
       where,
-      include: { user: true },
+      include: { user: true, location: { select: { id: true, name: true } } },
       take: filters.limit || 50,
       skip: filters.offset || 0,
       orderBy: { createdAt: 'desc' },
     });
   }
 
-  async findById(id: string): Promise<(EmployeeDetails & { user: User }) | null> {
+  async findById(
+    id: string,
+  ): Promise<(EmployeeDetails & { user: User; location?: { id: string; name: string } }) | null> {
     return this.prisma.employeeDetails.findUnique({
       where: { id },
-      include: { user: true },
+      include: { user: true, location: { select: { id: true, name: true } } },
     });
   }
 

@@ -40,6 +40,10 @@ export interface PayrollEmployee {
   updatedAt: string;
   deletedAt?: string | null;
   user?: EmployeeUserSummary;
+  location?: {
+    id: string;
+    name: string;
+  };
 }
 
 export interface PayrollEmployeesFilters {

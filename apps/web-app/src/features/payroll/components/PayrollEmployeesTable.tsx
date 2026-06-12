@@ -1,3 +1,5 @@
+import { StatusBadge } from '@restopsiq/ui';
+
 import type { PayrollEmployee } from '../types/payroll.types';
 import styles from '../payroll.module.scss';
 
@@ -41,14 +43,14 @@ export function PayrollEmployeesTable({
               <td>{employee.user?.email ?? '-'}</td>
               <td>{employee.position}</td>
               <td>{employee.contractType}</td>
-              <td>{employee.locationId}</td>
+              <td>{employee.location?.name ?? employee.locationId ?? '-'}</td>
               <td>{formatDate(employee.hireDate)}</td>
               <td>
-                <span
-                  className={`${styles.statusBadge} ${employee.isActive ? styles.statusActive : styles.statusInactive}`}
-                >
-                  {employee.isActive ? 'Activo' : 'Inactivo'}
-                </span>
+                <StatusBadge
+                  status={employee.isActive ? 'ACTIVE' : 'INACTIVE'}
+                  variant="pill"
+                  size="sm"
+                />
               </td>
               <td>
                 <div className={styles.actions}>

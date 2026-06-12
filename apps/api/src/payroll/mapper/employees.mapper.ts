@@ -7,23 +7,23 @@ export class EmployeeResponseDto {
   @ApiProperty() tenantId!: string;
   @ApiProperty() name!: string;
   @ApiProperty() locationId!: string;
-  @ApiProperty() position!: string;
-  @ApiProperty() area!: string;
-  @ApiProperty() department!: string;
-  @ApiProperty() contractType!: string;
-  @ApiProperty() hireDate!: Date;
-  @ApiProperty() contractStart!: Date;
+  @ApiPropertyOptional() position?: string | null;
+  @ApiPropertyOptional() area?: string | null;
+  @ApiPropertyOptional() department?: string | null;
+  @ApiPropertyOptional() contractType?: string | null;
+  @ApiPropertyOptional() hireDate?: Date | null;
+  @ApiPropertyOptional() contractStart?: Date | null;
   @ApiPropertyOptional() contractEnd?: Date | null;
-  @ApiProperty() salaryType!: string;
+  @ApiPropertyOptional() salaryType?: string | null;
   @ApiProperty() salaryAmount!: string;
   @ApiProperty() hasTransportSubsidy!: boolean;
   @ApiProperty() isExemptFromTax!: boolean;
-  @ApiProperty() epsName!: string;
-  @ApiProperty() pensionFundName!: string;
-  @ApiProperty() cesantiasFundName!: string;
-  @ApiProperty() arlName!: string;
-  @ApiProperty() arlRiskLevel!: string;
-  @ApiProperty() cajaCompensacion!: string;
+  @ApiPropertyOptional() epsName?: string | null;
+  @ApiPropertyOptional() pensionFundName?: string | null;
+  @ApiPropertyOptional() cesantiasFundName?: string | null;
+  @ApiPropertyOptional() arlName?: string | null;
+  @ApiPropertyOptional() arlRiskLevel?: string | null;
+  @ApiPropertyOptional() cajaCompensacion?: string | null;
   @ApiProperty() isActive!: boolean;
   @ApiProperty() createdAt!: Date;
   @ApiProperty() updatedAt!: Date;
@@ -33,10 +33,17 @@ export class EmployeeResponseDto {
     cedula: string;
     documentType: string;
   };
+  @ApiPropertyOptional() location?: {
+    id: string;
+    name: string;
+  };
 }
 
 export function toEmployeeResponse(
-  employee: EmployeeDetails & { user?: User | null },
+  employee: EmployeeDetails & {
+    user?: User | null;
+    location?: { id: string; name: string } | null;
+  },
 ): EmployeeResponseDto {
   return {
     id: employee.id,
@@ -44,23 +51,23 @@ export function toEmployeeResponse(
     tenantId: employee.tenantId,
     name: employee.name,
     locationId: employee.locationId,
-    position: employee.position,
-    area: employee.area,
-    department: employee.department,
-    contractType: employee.contractType,
-    hireDate: employee.hireDate,
-    contractStart: employee.contractStart,
-    contractEnd: employee.contractEnd,
-    salaryType: employee.salaryType,
-    salaryAmount: employee.salaryAmount.toString(),
+    position: employee.position ?? undefined,
+    area: employee.area ?? undefined,
+    department: employee.department ?? undefined,
+    contractType: employee.contractType ?? undefined,
+    hireDate: employee.hireDate ?? undefined,
+    contractStart: employee.contractStart ?? undefined,
+    contractEnd: employee.contractEnd ?? undefined,
+    salaryType: employee.salaryType ?? undefined,
+    salaryAmount: (employee.salaryAmount ?? 0).toString(),
     hasTransportSubsidy: employee.hasTransportSubsidy,
     isExemptFromTax: employee.isExemptFromTax,
-    epsName: employee.epsName,
-    pensionFundName: employee.pensionFundName,
-    cesantiasFundName: employee.cesantiasFundName,
-    arlName: employee.arlName,
-    arlRiskLevel: employee.arlRiskLevel,
-    cajaCompensacion: employee.cajaCompensacion,
+    epsName: employee.epsName ?? undefined,
+    pensionFundName: employee.pensionFundName ?? undefined,
+    cesantiasFundName: employee.cesantiasFundName ?? undefined,
+    arlName: employee.arlName ?? undefined,
+    arlRiskLevel: employee.arlRiskLevel ?? undefined,
+    cajaCompensacion: employee.cajaCompensacion ?? undefined,
     isActive: employee.isActive,
     createdAt: employee.createdAt,
     updatedAt: employee.updatedAt,
@@ -70,6 +77,12 @@ export function toEmployeeResponse(
           email: employee.user.email,
           cedula: employee.user.cedula,
           documentType: employee.user.documentType,
+        }
+      : undefined,
+    location: employee.location
+      ? {
+          id: employee.location.id,
+          name: employee.location.name,
         }
       : undefined,
   };
