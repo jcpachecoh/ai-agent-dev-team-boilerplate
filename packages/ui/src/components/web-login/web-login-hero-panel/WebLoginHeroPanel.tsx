@@ -80,7 +80,11 @@ export function WebLoginHeroPanel({
       className={webLoginSurfaceClass(
         `${styles.panel}${heroImageUrl ? ` ${styles.hasImage}` : ''}`,
         styles,
-        { theme, size, className },
+        {
+          theme,
+          size,
+          className,
+        },
       )}
       style={heroImageUrl ? { backgroundImage: `url(${heroImageUrl})` } : undefined}
       aria-label="Presentación"
