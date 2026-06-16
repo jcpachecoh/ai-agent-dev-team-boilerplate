@@ -407,6 +407,7 @@ model Location {
   tenant          Tenant            @relation(fields: [tenantId], references: [id])
   users           UserLocation[]
   employeeDetails EmployeeDetails[]
+  attendanceLogs  AttendanceLog[]
 
   @@unique([tenantId, name])
   @@unique([tenantId, code])
@@ -454,13 +455,15 @@ model EmployeeDetails {
   arlName             String
   arlRiskLevel        ArlRiskLevel
   cajaCompensacion    String
+  pinHash             String?
   isActive            Boolean              @default(true)
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
   deletedAt           DateTime?
 
-  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  location Location @relation(fields: [locationId], references: [id])
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  location       Location       @relation(fields: [locationId], references: [id])
+  attendanceLogs AttendanceLog[]
 
   @@index([tenantId])
   @@index([locationId])
@@ -973,4 +976,58 @@ model ProductionIncident {
   @@index([tenantId, orderId])
   @@index([tenantId, resolvedAt])
   @@map("production_incidents")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// NÓMINA — CONTROL DE ASISTENCIA (NOM-03)
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum AttendanceEventType {
+  ENTRY
+  EXIT
+}
+
+// Definido independientemente de ProductionShift (dominio MES) para evitar
+// acoplamiento entre módulos de planta y nómina.
+enum AttendanceShift {
+  MORNING   // 06:00–14:00
+  AFTERNOON // 14:00–22:00
+  NIGHT     // 22:00–06:00
+}
+
+// Clasificación de horas extra según CST colombiano.
+// Usado en Task 02 (service) para cálculo de recargos.
+// FESTIVO_DIURNO / FESTIVO_NOCTURNO requieren calendario de festivos (NOM-04).
+enum AttendanceOvertimeType {
+  REGULAR          // Jornada ordinaria (≤ 8h/día)
+  DIURNO           // Extra diurna 06:00–21:00 — recargo 25% CST art. 168
+  NOCTURNO         // Extra nocturna 21:00–06:00 — recargo 75% CST art. 168
+  FESTIVO_DIURNO   // Trabajo en festivo diurno — recargo 75% CST art. 179
+  FESTIVO_NOCTURNO // Trabajo en festivo nocturno — recargo 150% CST art. 179
+}
+
+model AttendanceLog {
+  id          String               @id @default(cuid())
+  tenantId    String
+  employeeId  String
+  locationId  String
+  eventType   AttendanceEventType
+  shift       AttendanceShift?
+  timestamp   DateTime             @default(now())
+  // workDate: fecha de jornada (sin hora), normalizada a America/Bogota.
+  // Se asigna por ENTRY; el EXIT hereda la workDate del ENTRY abierto
+  // para soportar turnos nocturnos que cruzan medianoche.
+  workDate    DateTime
+  notes       String?
+  isActive    Boolean              @default(true)
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  employee EmployeeDetails @relation(fields: [employeeId], references: [id])
+  location Location        @relation(fields: [locationId], references: [id])
+
+  @@index([tenantId, employeeId, workDate])
+  @@index([tenantId, locationId, workDate])
+  @@index([tenantId, workDate])
+  @@map("attendance_logs")
 }

@@ -522,7 +522,7 @@
     },
     {
       "key": "locationId",
-      "value": "cmq752ls1002jm752w9v5oy17",
+      "value": "cmq8ock4r002j147apx4q6npl",
       "type": "default",
       "enabled": true,
       "description": "NOM-02 Employees \u2014 Seeded location id (Sede Palos de Le\u00f1a 1)"
@@ -533,6 +533,34 @@
       "type": "default",
       "enabled": true,
       "description": "NOM-02 Employees \u2014 Seeded role id (OPERATOR)"
+    },
+    {
+      "key": "attendanceUserId",
+      "value": "",
+      "type": "default",
+      "enabled": true,
+      "description": "NOM-03 Attendance \u2014 Captured from POST kiosk-auth response (operator userId)"
+    },
+    {
+      "key": "attendanceLocationId",
+      "value": "cmq8ock4r002j147apx4q6npl",
+      "type": "default",
+      "enabled": true,
+      "description": "NOM-03 Attendance \u2014 Captured from POST kiosk-auth response (locationId of the kiosk)"
+    },
+    {
+      "key": "attendanceEmployeeId",
+      "value": "",
+      "type": "default",
+      "enabled": true,
+      "description": "NOM-03 Attendance \u2014 Captured from POST kiosk-auth response (EmployeeDetails.id)"
+    },
+    {
+      "key": "attendanceWorkDate",
+      "value": "2026-06-10",
+      "type": "default",
+      "enabled": true,
+      "description": "NOM-03 Attendance \u2014 Work date for overtime query (YYYY-MM-DD, Bogot\u00e1 calendar)"
     }
   ],
   "_postman_variable_scope": "environment",

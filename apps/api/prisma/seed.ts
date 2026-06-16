@@ -536,9 +536,11 @@ async function seedEmployeeDetails(
   });
 
   // Seed for operator
+  // NOM-03: pinHash = bcrypt('4321') — mismo PIN que OperationalUser del seed, para e2e de kiosko
+  const operatorPinHashEmployee = await bcrypt.hash('4321', SALT_ROUNDS);
   await prisma.employeeDetails.upsert({
     where: { userId: operatorUserId },
-    update: { isActive: true },
+    update: { isActive: true, pinHash: operatorPinHashEmployee },
     create: {
       userId: operatorUserId,
       tenantId: OPERATIONAL_TENANT_ID,
@@ -561,6 +563,7 @@ async function seedEmployeeDetails(
       arlName: 'Sura',
       arlRiskLevel: ArlRiskLevel.RIESGO_II,
       cajaCompensacion: 'Compensar',
+      pinHash: operatorPinHashEmployee,
       isActive: true,
     },
   });

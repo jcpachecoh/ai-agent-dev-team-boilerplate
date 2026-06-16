@@ -26,6 +26,7 @@ import { TenantModule } from './tenant/tenant.module';
 import { PayrollModule } from './payroll/payroll.module';
 import { AdminModule } from './admin/admin.module';
 import { LocationsModule } from './locations/locations.module';
+import { AttendanceModule } from './attendance/attendance.module';
 
 const conditionalModules = process.env.NODE_ENV !== 'production' ? [DevModule] : [];
 
@@ -53,6 +54,7 @@ const conditionalModules = process.env.NODE_ENV !== 'production' ? [DevModule] :
     PayrollModule,
     AdminModule,
     LocationsModule,
+    AttendanceModule,
   ],
   controllers: [AppController],
   providers: [

@@ -4297,7 +4297,7 @@
             "method": "GET",
             "header": [],
             "url": "{{baseUrl}}/api/",
-            "description": "Documentation-only — verify audit rows in PostgreSQL after running auth/supply-items requests (AUTH-10).\n\nNo read API exists (`AuditController` is empty). Use psql or Prisma Studio.\n\n## Manual flows (run before SQL)\n1. **Global lockout (manual):** Run **Login — Invalid Password** five times with `{{email}}` → 6th attempt should 401; account locked ~15 min.\n2. **Logout → refresh (manual):** **Login** → **Logout** → **Refresh** → expect 403; **Me** with old access → 401.\n3. **MES logout → me (manual):** **Login Owner** → **Logout** → **Me** with same `{{mesAccessToken}}` → 401.\n4. **Cross-token (manual):** Use `{{accessToken}}` on **GET** `/api/plant/workstations` → 401. Use `{{mesAccessToken}}` on **GET** `/api/auth/me` → 401.\n\n## login_audits — PASSWORD (global)\n```sql\nSELECT id, \"tenantId\", \"userId\", identifier, \"authMethod\", status, \"failureReason\", \"ipAddress\", \"createdAt\"\nFROM login_audits\nWHERE \"tenantId\" = 'palos-de-lena' AND \"authMethod\" = 'PASSWORD'\nORDER BY \"createdAt\" DESC LIMIT 15;\n```\nExpect: SUCCESS (login), FAILED (wrong password / unknown email), LOCKED (5th fail or while locked), LOGOUT.\n\n## login_audits — REFRESH_TOKEN (global)\n```sql\nSELECT id, \"tenantId\", \"userId\", identifier, \"authMethod\", status, \"failureReason\", \"createdAt\"\nFROM login_audits\nWHERE \"tenantId\" = 'palos-de-lena' AND \"authMethod\" = 'REFRESH_TOKEN'\nORDER BY \"createdAt\" DESC LIMIT 10;\n```\nRun **Login** then **Refresh** (SUCCESS). After **Logout**, **Refresh** should FAIL.\n\n## login_audits — PIN (MES)\n```sql\nSELECT id, \"tenantId\", \"userId\", identifier, \"authMethod\", status, \"failureReason\", \"ipAddress\", \"createdAt\"\nFROM login_audits\nWHERE \"tenantId\" = 'palos-de-lena' AND \"authMethod\" = 'PIN'\nORDER BY \"createdAt\" DESC LIMIT 15;\n```\nRun **Login Owner**, **Login Operator**, **Login — Wrong PIN**, **Logout**.\n\n### MES userId mapping (AUTH-10)\n- **Linked** operational user (owner seed): `userId` = global `users.id` (e.g. `11111111-0000-0000-0000-000000000004`).\n- **Pure** operational user (operator seed, no link): `userId` IS NULL.\n- Login `identifier` = masked cédula (`****5678`). Logout `identifier` = `operational-user:{operationalUserId}`.\n\n```sql\n-- Linked vs pure\nSELECT status, \"userId\", identifier FROM login_audits\nWHERE \"tenantId\" = 'palos-de-lena' AND \"authMethod\" = 'PIN' AND status = 'SUCCESS'\nORDER BY \"createdAt\" DESC LIMIT 5;\n```\n\n## audit_logs — Supply Items snapshot pilot\nAfter **04 — Supply Items → Update Supply Item**:\n```sql\nSELECT id, \"tenantId\", \"entityType\", action, \"entityId\", \"oldValue\", \"newValue\", \"createdAt\"\nFROM audit_logs\nWHERE \"entityType\" = 'SupplyItem' AND action = 'UPDATE'\nORDER BY \"createdAt\" DESC LIMIT 5;\n```\n\n### Double audit rows on supply-items writes\nEach write may produce **two** rows:\n1. Interceptor: `entityType` = `supply-items`, `newValue` = request body only\n2. Service snapshot: `entityType` = `SupplyItem`, full `oldValue`/`newValue`\n\nQuery `SupplyItem` for the snapshot pilot.\n\n## Redaction check\n```sql\nSELECT \"newValue\"->>'passwordHash' AS leaked_hash,\n       \"newValue\"->>'pinHash' AS leaked_pin,\n       \"newValue\"->>'refreshToken' AS leaked_token\nFROM audit_logs\nWHERE \"entityType\" = 'SupplyItem'\nORDER BY \"createdAt\" DESC LIMIT 3;\n```\nExpected: null or `[REDACTED]` — never raw secrets.\n"
+            "description": "Documentation-only — verify audit rows in PostgreSQL after running auth/supply-items requests.\n\nNo read API exists (`AuditController` is empty). Use psql or Prisma Studio.\n\n## login_audits — global password login\n```sql\nSELECT id, \"tenantId\", \"userId\", identifier, \"authMethod\", status, \"failureReason\", \"createdAt\"\nFROM login_audits\nWHERE \"tenantId\" = 'palos-de-lena' AND \"authMethod\" = 'PASSWORD'\nORDER BY \"createdAt\" DESC LIMIT 10;\n```\nRun **Login** (SUCCESS), **Login — Invalid Password**, **Login — Unknown Email** first.\n\n## login_audits — MES PIN\n```sql\nSELECT id, \"tenantId\", \"userId\", identifier, \"authMethod\", status, \"failureReason\", \"createdAt\"\nFROM login_audits\nWHERE \"tenantId\" = 'palos-de-lena' AND \"authMethod\" = 'PIN'\nORDER BY \"createdAt\" DESC LIMIT 10;\n```\nRun **Login Owner**, **Login Operator**, **Login — Wrong PIN** first.\n\n### MES LoginAudit FK caveat\n`login_audits.userId` FK references `users.id` (global User).\nMES auth currently passes **OperationalUser.id** as userId. If that id is not in `users`, the repository catches P2003 and **skips persistence** (check API logs).\nWhen linked global User exists, expect userId = global User id (e.g. owner `11111111-...`).\n\n## audit_logs — Supply Items snapshot pilot\nAfter **04 — Supply Items → Update Supply Item**:\n```sql\nSELECT id, \"tenantId\", \"entityType\", action, \"entityId\", \"oldValue\", \"newValue\", \"createdAt\"\nFROM audit_logs\nWHERE \"entityType\" = 'SupplyItem' AND action = 'UPDATE'\nORDER BY \"createdAt\" DESC LIMIT 5;\n```\n\n### Double audit rows on supply-items writes\nEach write may produce **two** rows:\n1. Interceptor: `entityType` = `supply-items`, `newValue` = request body only\n2. Service snapshot: `entityType` = `SupplyItem`, full `oldValue`/`newValue`\n\nQuery `SupplyItem` for the snapshot pilot.\n\n## Redaction check\n```sql\nSELECT \"newValue\"->>'passwordHash' AS leaked_hash,\n       \"newValue\"->>'pinHash' AS leaked_pin,\n       \"newValue\"->>'refreshToken' AS leaked_token\nFROM audit_logs\nWHERE \"entityType\" = 'SupplyItem'\nORDER BY \"createdAt\" DESC LIMIT 3;\n```\nExpected: null or `[REDACTED]` — never raw secrets.\n"
           },
           "response": [],
           "event": [
@@ -6349,6 +6349,186 @@
               "path": ["api", "employees", "contract-type", "FIJO"]
             }
           }
+        }
+      ]
+    },
+    {
+      "name": "NOM-03 Attendance",
+      "description": "Attendance Kiosk API (NOM-03). Public endpoints (kiosk-auth, entry, exit) requieren x-tenant-id header. Protected endpoints (history, active, overtime) requieren Bearer {{accessToken}} + x-tenant-id.",
+      "item": [
+        {
+          "name": "POST /api/attendance/kiosk-auth",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cedula\": \"87654321\",\n  \"pin\": \"4321\",\n  \"locationId\": \"{{attendanceLocationId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/kiosk-auth",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "kiosk-auth"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const body = pm.response.json();",
+                  "    pm.environment.set('attendanceUserId', body.userId);",
+                  "    pm.environment.set('attendanceLocationId', body.locationId);",
+                  "    pm.environment.set('attendanceEmployeeId', body.employeeId);",
+                  "    pm.test('kiosk-auth: userId capturado', () => {",
+                  "        pm.expect(body.userId).to.be.a('string');",
+                  "        pm.expect(body.locationId).to.be.a('string');",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/attendance/entry",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{attendanceUserId}}\",\n  \"locationId\": \"{{attendanceLocationId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/entry",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "entry"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('entry: logId presente', () => {",
+                  "    if (pm.response.code === 201) {",
+                  "        pm.expect(pm.response.json().logId).to.be.a('string');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/attendance/exit",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{attendanceUserId}}\",\n  \"locationId\": \"{{attendanceLocationId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/exit",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "exit"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('exit: totalMinutes es número', () => {",
+                  "    if (pm.response.code === 200) {",
+                  "        const body = pm.response.json();",
+                  "        pm.expect(body.totalMinutes).to.be.a('number');",
+                  "        pm.expect(body.overtimeMinutes).to.be.a('number');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/attendance (history)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance?userId={{attendanceUserId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance"],
+              "query": [{ "key": "userId", "value": "{{attendanceUserId}}" }]
+            }
+          }
+        },
+        {
+          "name": "GET /api/attendance/active",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/active?locationId={{attendanceLocationId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "active"],
+              "query": [{ "key": "locationId", "value": "{{attendanceLocationId}}" }]
+            }
+          }
+        },
+        {
+          "name": "GET /api/attendance/employees/:userId/overtime",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/employees/{{attendanceUserId}}/overtime",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "employees", "{{attendanceUserId}}", "overtime"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('overtime: shape correcta', () => {",
+                  "    if (pm.response.code === 200) {",
+                  "        const body = pm.response.json();",
+                  "        pm.expect(body.totalMinutes).to.be.a('number');",
+                  "        pm.expect(body.overtimeMinutes).to.be.a('number');",
+                  "        pm.expect(body.pairs).to.be.an('array');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ]
         }
       ]
     }
