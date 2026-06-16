@@ -354,7 +354,7 @@ describe('MesAuthService', () => {
 
       try {
         await service.login({ cedula: VALID_CEDULA, pin: VALID_PIN }, '192.168.1.1', TENANT_ID);
-        fail('expected UnauthorizedException');
+        throw new Error('expected UnauthorizedException');
       } catch (error) {
         const message = (error as UnauthorizedException).message;
         expect(message).toBe(GENERIC_AUTH_MESSAGE);

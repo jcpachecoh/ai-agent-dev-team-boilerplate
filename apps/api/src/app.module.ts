@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { DevModule } from './dev/dev.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { EmailModule } from './email/email.module';
 import { AuthModule } from './auth/auth.module';
@@ -26,8 +27,11 @@ import { PayrollModule } from './payroll/payroll.module';
 import { AdminModule } from './admin/admin.module';
 import { LocationsModule } from './locations/locations.module';
 
+const conditionalModules = process.env.NODE_ENV !== 'production' ? [DevModule] : [];
+
 @Module({
   imports: [
+    ...conditionalModules,
     PrismaModule,
     EmailModule,
     AuthModule,

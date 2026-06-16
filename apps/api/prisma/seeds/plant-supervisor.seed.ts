@@ -1,11 +1,15 @@
 import {
   AlarmSeverity,
+  ArlRiskLevel,
+  EmployeeContractType,
   IncidentType,
   PhaseExecutionStatus,
   PrismaClient,
+  ProductionCommitteeStatus,
   ProductionOrderStatus,
   ProductionPriority,
   ProductionShift,
+  SalaryType,
   StockUnit,
 } from '@prisma/client';
 
@@ -13,6 +17,12 @@ const TENANT_ID = 'palos-de-lena';
 
 export const PLANT_SEED_OPERATOR_ID = 'eeeeeeee-0000-0000-0000-000000000005';
 export const PLANT_SEED_OPERATOR2_ID = 'eeeeeeee-0000-0000-0000-000000000006';
+
+// Global user IDs (must match seed.ts constants)
+const GLOBAL_MES_OWNER_USER_ID = '11111111-0000-0000-0000-000000000004';
+const GLOBAL_MES_OPERATOR_USER_ID = '11111111-0000-0000-0000-000000000005';
+const GLOBAL_MES_OPERATOR2_USER_ID = '11111111-0000-0000-0000-000000000006';
+const GLOBAL_MES_OPERATIONS_ADMIN_USER_ID = '11111111-0000-0000-0000-000000000007';
 
 const RECIPE_CATEGORY_ID = 'rrrrrrrr-0000-0000-0000-000000000001';
 
@@ -53,6 +63,9 @@ const ORDER_013 = 'oooooooo-0000-0000-0000-000000000013';
 const ORDER_014 = 'oooooooo-0000-0000-0000-000000000014';
 const ORDER_015 = 'oooooooo-0000-0000-0000-000000000015';
 const ORDER_016 = 'oooooooo-0000-0000-0000-000000000016';
+// Demo orders for lifecycle flow
+const ORDER_017 = 'oooooooo-0000-0000-0000-000000000017';
+const ORDER_018 = 'oooooooo-0000-0000-0000-000000000018';
 
 const EXEC_012_1 = 'eeeeeeee-0000-0000-0000-000000000012';
 const EXEC_013_2 = 'eeeeeeee-0000-0000-0000-000000000013';
@@ -73,12 +86,20 @@ const INCIDENT_2 = 'iiiiiiii-0000-0000-0000-000000000002';
 const INCIDENT_3 = 'iiiiiiii-0000-0000-0000-000000000003';
 const INCIDENT_4 = 'iiiiiiii-0000-0000-0000-000000000004';
 
+// Committee IDs
+const COMMITTEE_ACTIVE = 'c0000001-0000-0000-0000-000000000001';
+const COMMITTEE_DRAFT = 'c0000002-0000-0000-0000-000000000001';
+
 function minutesAgo(minutes: number): Date {
   return new Date(Date.now() - minutes * 60_000);
 }
 
 function hoursFromNow(hours: number): Date {
   return new Date(Date.now() + hours * 3_600_000);
+}
+
+function daysFromNow(days: number): Date {
+  return new Date(Date.now() + days * 86_400_000);
 }
 
 export async function seedPlantSupervisor(prisma: PrismaClient): Promise<void> {
@@ -371,6 +392,7 @@ export async function seedPlantSupervisor(prisma: PrismaClient): Promise<void> {
   const plannedStart = minutesAgo(30);
   const plannedEnd = hoursFromNow(4);
 
+  // ── IN_PROCESS orders (supervisor view) ──────────────────────────────────────
   const orders = [
     {
       id: ORDER_012,
@@ -449,8 +471,77 @@ export async function seedPlantSupervisor(prisma: PrismaClient): Promise<void> {
         actualStartAt: minutesAgo(25),
       },
     });
-    console.log('ProductionOrder: OP-' + order.number);
+    console.log('ProductionOrder (IN_PROCESS): OP-' + order.number);
   }
+
+  // ── Demo orders for lifecycle flow (section 06 Postman) ─────────────────────
+  await prisma.productionOrder.upsert({
+    where: { id: ORDER_017 },
+    update: {
+      tenantId: TENANT_ID,
+      number: '000017',
+      recipeId: RECIPE_POLLO,
+      recipeVersion: 1,
+      status: ProductionOrderStatus.DRAFT,
+      priority: ProductionPriority.NORMAL,
+      shift: ProductionShift.MORNING,
+      batchCount: 1,
+      plannedQuantity: 20,
+      unit: StockUnit.KILOGRAMS,
+      plannedStartAt: daysFromNow(1),
+      plannedEndAt: daysFromNow(1),
+    },
+    create: {
+      id: ORDER_017,
+      tenantId: TENANT_ID,
+      number: '000017',
+      recipeId: RECIPE_POLLO,
+      recipeVersion: 1,
+      status: ProductionOrderStatus.DRAFT,
+      priority: ProductionPriority.NORMAL,
+      shift: ProductionShift.MORNING,
+      batchCount: 1,
+      plannedQuantity: 20,
+      unit: StockUnit.KILOGRAMS,
+      plannedStartAt: daysFromNow(1),
+      plannedEndAt: daysFromNow(1),
+    },
+  });
+  console.log('ProductionOrder (DRAFT): OP-000017');
+
+  await prisma.productionOrder.upsert({
+    where: { id: ORDER_018 },
+    update: {
+      tenantId: TENANT_ID,
+      number: '000018',
+      recipeId: RECIPE_COSTILLAS,
+      recipeVersion: 1,
+      status: ProductionOrderStatus.PLANNED,
+      priority: ProductionPriority.HIGH,
+      shift: ProductionShift.AFTERNOON,
+      batchCount: 2,
+      plannedQuantity: 60,
+      unit: StockUnit.KILOGRAMS,
+      plannedStartAt: daysFromNow(1),
+      plannedEndAt: daysFromNow(1),
+    },
+    create: {
+      id: ORDER_018,
+      tenantId: TENANT_ID,
+      number: '000018',
+      recipeId: RECIPE_COSTILLAS,
+      recipeVersion: 1,
+      status: ProductionOrderStatus.PLANNED,
+      priority: ProductionPriority.HIGH,
+      shift: ProductionShift.AFTERNOON,
+      batchCount: 2,
+      plannedQuantity: 60,
+      unit: StockUnit.KILOGRAMS,
+      plannedStartAt: daysFromNow(1),
+      plannedEndAt: daysFromNow(1),
+    },
+  });
+  console.log('ProductionOrder (PLANNED): OP-000018');
 
   const executions = [
     {
@@ -756,5 +847,133 @@ export async function seedPlantSupervisor(prisma: PrismaClient): Promise<void> {
     });
   }
 
-  console.log('✅ Plant supervisor seed: 5 estaciones, 5 recetas, 6 OP activas, 4 incidentes');
+  // ── Committees (plan.committees.manage / OPERATIONS_ADMIN flow) ──────────────
+  await prisma.productionCommittee.upsert({
+    where: { id: COMMITTEE_ACTIVE },
+    update: {
+      tenantId: TENANT_ID,
+      number: 'COM-001',
+      status: ProductionCommitteeStatus.ACTIVE,
+      ordersCount: 3,
+    },
+    create: {
+      id: COMMITTEE_ACTIVE,
+      tenantId: TENANT_ID,
+      number: 'COM-001',
+      status: ProductionCommitteeStatus.ACTIVE,
+      ordersCount: 3,
+    },
+  });
+  console.log('Committee ACTIVE: COM-001');
+
+  await prisma.productionCommittee.upsert({
+    where: { id: COMMITTEE_DRAFT },
+    update: {
+      tenantId: TENANT_ID,
+      number: 'COM-002',
+      status: ProductionCommitteeStatus.DRAFT,
+      ordersCount: 0,
+    },
+    create: {
+      id: COMMITTEE_DRAFT,
+      tenantId: TENANT_ID,
+      number: 'COM-002',
+      status: ProductionCommitteeStatus.DRAFT,
+      ordersCount: 0,
+    },
+  });
+  console.log('Committee DRAFT: COM-002');
+
+  // Committee members
+  const committeeMembers = [
+    { committeeId: COMMITTEE_ACTIVE, userId: GLOBAL_MES_OWNER_USER_ID },
+    { committeeId: COMMITTEE_ACTIVE, userId: GLOBAL_MES_OPERATIONS_ADMIN_USER_ID },
+    { committeeId: COMMITTEE_ACTIVE, userId: GLOBAL_MES_OPERATOR2_USER_ID },
+    { committeeId: COMMITTEE_DRAFT, userId: GLOBAL_MES_OWNER_USER_ID },
+    { committeeId: COMMITTEE_DRAFT, userId: GLOBAL_MES_OPERATOR_USER_ID },
+  ];
+
+  for (const member of committeeMembers) {
+    await prisma.productionCommitteeMember.upsert({
+      where: {
+        committeeId_userId: {
+          committeeId: member.committeeId,
+          userId: member.userId,
+        },
+      },
+      update: {},
+      create: {
+        committeeId: member.committeeId,
+        userId: member.userId,
+      },
+    });
+  }
+  console.log('CommitteeMembers: seeded', committeeMembers.length, 'memberships');
+
+  // ── Employee details for operator2 and operations_admin ──────────────────────
+  const firstLocation = await prisma.location.findFirst({
+    where: { tenantId: TENANT_ID, isActive: true },
+    orderBy: { createdAt: 'asc' },
+    select: { id: true },
+  });
+  const locationId = firstLocation!.id;
+
+  await prisma.employeeDetails.upsert({
+    where: { userId: GLOBAL_MES_OPERATOR2_USER_ID },
+    update: { isActive: true },
+    create: {
+      userId: GLOBAL_MES_OPERATOR2_USER_ID,
+      tenantId: TENANT_ID,
+      locationId,
+      position: 'Operario Senior',
+      area: 'Producción',
+      department: 'Parrilla',
+      contractType: EmployeeContractType.INDEFINIDO,
+      hireDate: new Date('2023-06-01'),
+      contractStart: new Date('2023-06-01'),
+      salaryType: SalaryType.ORDINARIO,
+      salaryAmount: 2200000.0,
+      hasTransportSubsidy: true,
+      isExemptFromTax: false,
+      epsName: 'Nueva EPS',
+      pensionFundName: 'Colfondos',
+      cesantiasFundName: 'Colfondos',
+      arlName: 'Sura',
+      arlRiskLevel: ArlRiskLevel.RIESGO_II,
+      cajaCompensacion: 'Comfama',
+      isActive: true,
+    },
+  });
+
+  await prisma.employeeDetails.upsert({
+    where: { userId: GLOBAL_MES_OPERATIONS_ADMIN_USER_ID },
+    update: { isActive: true },
+    create: {
+      userId: GLOBAL_MES_OPERATIONS_ADMIN_USER_ID,
+      tenantId: TENANT_ID,
+      locationId,
+      position: 'Administrador de Operaciones',
+      area: 'Operaciones',
+      department: 'Planeación',
+      contractType: EmployeeContractType.INDEFINIDO,
+      hireDate: new Date('2022-03-15'),
+      contractStart: new Date('2022-03-15'),
+      salaryType: SalaryType.INTEGRAL,
+      salaryAmount: 8000000.0,
+      hasTransportSubsidy: false,
+      isExemptFromTax: false,
+      epsName: 'Sura',
+      pensionFundName: 'Protección',
+      cesantiasFundName: 'Protección',
+      arlName: 'Sura',
+      arlRiskLevel: ArlRiskLevel.RIESGO_I,
+      cajaCompensacion: 'Comfama',
+      isActive: true,
+    },
+  });
+  console.log('EmployeeDetails: seeded for operator2 and operations_admin');
+
+  console.log(
+    '✅ Plant supervisor seed: 5 estaciones, 5 recetas, 7 órdenes (5 IN_PROCESS + 1 DRAFT + 1 PLANNED), 2 comités, 4 incidentes',
+  );
 }

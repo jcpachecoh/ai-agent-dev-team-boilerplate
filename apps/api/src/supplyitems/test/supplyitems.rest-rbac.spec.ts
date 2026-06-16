@@ -213,7 +213,7 @@ describe('SupplyItems REST PermissionsGuard', () => {
 
     try {
       await guard.canActivate(context);
-      fail('expected permission denial');
+      throw new Error('expected permission denial');
     } catch (error) {
       expect(error).toBeInstanceOf(PermissionDeniedException);
       expect((error as PermissionDeniedException).message).not.toContain(READ_PERMISSION);

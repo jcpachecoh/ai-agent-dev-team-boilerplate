@@ -1049,8 +1049,9 @@ async function main() {
   const { seedPlantSupervisor } = await import('./seeds/plant-supervisor.seed');
   await seedPlantSupervisor(prisma);
 
-  // ── NOM-01: Seed EmployeeDetails ─────────────────────────────────────────
-  await seedEmployeeDetails(ownerGlobalUser.id, operatorGlobalUser.id, firstLocationId);
+  // ── Palos supply items (281 items from Excel) ─────────────────────────────
+  const { seedPalosSupplyItems } = await import('./seed-data/palos-seed-helper');
+  await seedPalosSupplyItems(prisma);
 }
 
 main()

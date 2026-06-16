@@ -289,7 +289,7 @@ function validate() {
   ]);
 
   // Wiring-only modules (no domain layers)
-  const INFRASTRUCTURE = new Set(['graphql', 'pubsub']);
+  const INFRASTRUCTURE = new Set(['graphql', 'pubsub', 'dev']);
 
   // Parent aggregator modules whose children should be validated individually
   const AGGREGATORS = new Set(['mes']);

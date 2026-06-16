@@ -159,7 +159,7 @@ describe('PermissionsGuard', () => {
 
     try {
       await guard.canActivate(context);
-      fail('expected permission denial');
+      throw new Error('expected permission denial');
     } catch (error) {
       expect(error).toBeInstanceOf(GraphQLError);
       const gqlError = error as GraphQLError;

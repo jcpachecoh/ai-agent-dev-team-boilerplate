@@ -538,6 +538,58 @@
             "url": "{{baseUrl}}/api/"
           },
           "response": []
+        },
+        {
+          "name": "POST Run Seed — Reset demo DB (dev only)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('success flag is true', () => pm.expect(json.success).to.be.true);",
+                  "if (json.output) {",
+                  "  console.log('[seed output]', json.output.slice(-500));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": ""
+            },
+            "url": "{{baseUrl}}/api/dev/seed",
+            "description": "Runs `prisma db seed` server-side and repopulates the database with demo fixtures.\n\n⚠️  Dev / local only — disabled in production (NODE_ENV=production returns 403).\nNo auth required (@Public). Timeout: 120 s.\n\nAfter running this, all seeded IDs (users, categories, supply items, orders, committees…) are reset to their canonical seed values."
+          },
+          "response": [
+            {
+              "name": "200 OK — seed completed",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": "{{baseUrl}}/api/dev/seed"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"output\": \"Seeding database…\\n🌱  The seed command has been executed.\",\n  \"warnings\": null\n}"
+            }
+          ]
         }
       ]
     },

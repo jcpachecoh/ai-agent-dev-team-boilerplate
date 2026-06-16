@@ -193,7 +193,16 @@ describe('PayrollService', () => {
       );
     });
 
-    it('should throw BadRequestException if location is invalid for tenant', async () => {
+    it('should throw BadRequestException if location is null', async () => {
+      (repository.findExistingUser as jest.Mock).mockResolvedValue(null);
+      (repository.findLocationById as jest.Mock).mockResolvedValue(null);
+
+      await expect(service.create(mockTenantId, mockEmployeeData)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should throw BadRequestException if location belongs to a different tenant', async () => {
       (repository.findExistingUser as jest.Mock).mockResolvedValue(null);
       (repository.findLocationById as jest.Mock).mockResolvedValue({
         id: mockLocationId,
@@ -203,21 +212,136 @@ describe('PayrollService', () => {
       await expect(service.create(mockTenantId, mockEmployeeData)).rejects.toThrow(
         BadRequestException,
       );
-      expect(repository.findRoleById).not.toHaveBeenCalled();
+    });
+
+    it('should throw BadRequestException if role belongs to a different tenant', async () => {
+      (repository.findExistingUser as jest.Mock).mockResolvedValue(null);
+      (repository.findLocationById as jest.Mock).mockResolvedValue({
+        id: mockLocationId,
+        tenantId: mockTenantId,
+      });
+      (repository.findRoleById as jest.Mock).mockResolvedValue({
+        id: mockRoleId,
+        tenantId: 'other-tenant',
+      });
+
+      await expect(service.create(mockTenantId, mockEmployeeData)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should pass valid APRENDIZAJE salary', async () => {
+      const validData = {
+        ...mockEmployeeData,
+        contractType: EmployeeContractType.APRENDIZAJE,
+        salaryAmount: SMLV_2025 * 0.75,
+      };
+      (repository.findExistingUser as jest.Mock).mockResolvedValue(null);
+      (repository.findLocationById as jest.Mock).mockResolvedValue({
+        id: mockLocationId,
+        tenantId: mockTenantId,
+      });
+      (repository.findRoleById as jest.Mock).mockResolvedValue({
+        id: mockRoleId,
+        tenantId: mockTenantId,
+      });
+      (repository.create as jest.Mock).mockResolvedValue({ id: 'emp-1' });
+
+      await expect(service.create(mockTenantId, validData)).resolves.toBeDefined();
     });
   });
 
   describe('findAll', () => {
-    it('should forward tenant-scoped filters to repository', async () => {
-      (repository.findAll as jest.Mock).mockResolvedValue([{ id: 'emp-1' }]);
+    it('should return all employees for a tenant', async () => {
+      (repository.findAll as jest.Mock).mockResolvedValue([{ tenantId: mockTenantId }]);
 
-      const result = await service.findAll(mockTenantId, { locationId: mockLocationId, limit: 5 });
+      const result = await service.findAll(mockTenantId, {});
+      expect(result).toHaveLength(1);
+      expect(repository.findAll).toHaveBeenCalledWith({ tenantId: mockTenantId });
+    });
 
-      expect(result).toEqual([{ id: 'emp-1' }]);
+    it('should pass extra filters through to the repository', async () => {
+      (repository.findAll as jest.Mock).mockResolvedValue([]);
+
+      await service.findAll(mockTenantId, { isActive: true });
+      expect(repository.findAll).toHaveBeenCalledWith({ isActive: true, tenantId: mockTenantId });
+    });
+  });
+
+  describe('update', () => {
+    beforeEach(() => {
+      (repository.findByUserId as jest.Mock).mockResolvedValue({
+        tenantId: mockTenantId,
+        contractType: EmployeeContractType.INDEFINIDO,
+        salaryAmount: 2000000,
+        salaryType: SalaryType.ORDINARIO,
+      });
+      (repository.update as jest.Mock).mockResolvedValue({ id: 'emp-1' });
+    });
+
+    it('should update without salary or contract changes', async () => {
+      const result = await service.update(mockTenantId, 'user-1', { position: 'Senior Dev' });
+      expect(result).toBeDefined();
+      expect(repository.update).toHaveBeenCalledWith('user-1', { position: 'Senior Dev' });
+    });
+
+    it('should recalculate transport subsidy when salary changes', async () => {
+      await service.update(mockTenantId, 'user-1', { salaryAmount: 5000000 });
+      expect(repository.update).toHaveBeenCalledWith(
+        'user-1',
+        expect.objectContaining({ hasTransportSubsidy: expect.any(Boolean) }),
+      );
+    });
+
+    it('should validate contract dates when contractType changes', async () => {
+      await service.update(mockTenantId, 'user-1', {
+        contractType: EmployeeContractType.FIJO,
+        contractEnd: new Date('2026-12-31'),
+      });
+      expect(repository.update).toHaveBeenCalled();
+    });
+
+    it('should validate contract dates when contractEnd changes alone', async () => {
+      await service.update(mockTenantId, 'user-1', {
+        contractEnd: new Date('2026-12-31'),
+      });
+      expect(repository.update).toHaveBeenCalled();
+    });
+
+    it('should throw NotFoundException when employee does not exist', async () => {
+      (repository.findByUserId as jest.Mock).mockResolvedValue(null);
+
+      await expect(service.update(mockTenantId, 'ghost', { position: 'X' })).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
+
+  describe('findByLocation', () => {
+    it('should return employees at a given location', async () => {
+      (repository.findAll as jest.Mock).mockResolvedValue([{ tenantId: mockTenantId }]);
+
+      const result = await service.findByLocation(mockTenantId, mockLocationId);
+      expect(result).toHaveLength(1);
       expect(repository.findAll).toHaveBeenCalledWith({
         tenantId: mockTenantId,
         locationId: mockLocationId,
-        limit: 5,
+      });
+    });
+  });
+
+  describe('findByContractType', () => {
+    it('should return employees with a given contract type', async () => {
+      (repository.findAll as jest.Mock).mockResolvedValue([{ tenantId: mockTenantId }]);
+
+      const result = await service.findByContractType(
+        mockTenantId,
+        EmployeeContractType.INDEFINIDO,
+      );
+      expect(result).toHaveLength(1);
+      expect(repository.findAll).toHaveBeenCalledWith({
+        tenantId: mockTenantId,
+        contractType: EmployeeContractType.INDEFINIDO,
       });
     });
   });

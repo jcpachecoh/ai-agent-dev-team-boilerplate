@@ -4,7 +4,7 @@
 > Contiene TODO lo que el agente necesita para generar código correcto sin supervisión.
 > **No borrar. No mover de la raíz del repositorio.**
 
------
+---
 
 ## 1. Proyecto
 
@@ -16,26 +16,26 @@ Multi-tenant: cada restaurante (tenant) opera de forma completamente aislada.
 - Jira: <https://opssynk.atlassian.net> — proyecto **OS**
 - Rama base: `develop` (no pushear directo a `main`)
 
------
+---
 
 ## 2. Stack
 
-|Capa           |Tecnología                            |
-|---------------|--------------------------------------|
-|Backend        |NestJS (Node 20), TypeScript estricto |
-|API            |GraphQL code-first con Apollo Server 5|
-|ORM            |Prisma + PostgreSQL                   |
-|Frontend       |Vite + React 18 + TypeScript          |
-|GraphQL client |Apollo Client 3                       |
-|Estilos        |CSS Modules + SCSS tokens             |
-|Auth           |JWT (access + refresh tokens)         |
-|Queues         |BullMQ + Redis                        |
-|Package manager|pnpm (workspace)                      |
-|Testing        |Jest + Supertest                      |
-|CI             |GitHub Actions                        |
-|Deploy         |Railway (staging) / OCI (prod)        |
+| Capa            | Tecnología                             |
+| --------------- | -------------------------------------- |
+| Backend         | NestJS (Node 20), TypeScript estricto  |
+| API             | GraphQL code-first con Apollo Server 5 |
+| ORM             | Prisma + PostgreSQL                    |
+| Frontend        | Vite + React 18 + TypeScript           |
+| GraphQL client  | Apollo Client 3                        |
+| Estilos         | CSS Modules + SCSS tokens              |
+| Auth            | JWT (access + refresh tokens)          |
+| Queues          | BullMQ + Redis                         |
+| Package manager | pnpm (workspace)                       |
+| Testing         | Jest + Supertest                       |
+| CI              | GitHub Actions                         |
+| Deploy          | Railway (staging) / OCI (prod)         |
 
------
+---
 
 ## 3. Estructura del monorepo
 
@@ -67,7 +67,7 @@ Multi-tenant: cada restaurante (tenant) opera de forma completamente aislada.
 └── pnpm-workspace.yaml
 ```
 
------
+---
 
 ## 4. Reglas de arquitectura — CRÍTICAS
 
@@ -149,7 +149,7 @@ async findAll(page: number, limit: number) {
 }
 ```
 
------
+---
 
 ## 5. Convenciones NestJS / GraphQL
 
@@ -269,7 +269,7 @@ throw new ConflictException('Ya existe un producto con ese nombre');
 **NUNCA** retornar `null` cuando el recurso no existe — siempre `NotFoundException`.
 **NUNCA** usar `any` en TypeScript — tipos explícitos obligatorios.
 
------
+---
 
 ## 6. Convenciones Prisma
 
@@ -316,7 +316,7 @@ pnpm prisma migrate dev --name descripcion-corta
 pnpm prisma migrate deploy
 ```
 
------
+---
 
 ## 7. Convenciones Frontend (Vite + React)
 
@@ -362,7 +362,11 @@ const schema = z.object({
 
 type FormData = z.infer<typeof schema>;
 
-const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
+const {
+  register,
+  handleSubmit,
+  formState: { errors },
+} = useForm<FormData>({
   resolver: zodResolver(schema),
 });
 ```
@@ -376,7 +380,7 @@ if (error) return <ErrorState message={error.message} onRetry={refetch} />;
 if (!data?.products.edges.length) return <EmptyState message="No hay productos" />;
 ```
 
------
+---
 
 ## 8. Testing
 
@@ -437,8 +441,9 @@ describe('ProductsService', () => {
       prisma.product.findFirst.mockResolvedValue(null);
 
       // Act & Assert
-      await expect(service.findOne('id-inexistente', 'rest-001'))
-        .rejects.toThrow(NotFoundException);
+      await expect(service.findOne('id-inexistente', 'rest-001')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 });
@@ -468,7 +473,7 @@ pnpm test --watch
 pnpm test:e2e
 ```
 
------
+---
 
 ## 9. Flujo de trabajo del agente
 
@@ -511,7 +516,7 @@ Paso 6 — Commit y PR
       Body: Closes OS-XXX + checklist de acceptance criteria
 ```
 
------
+---
 
 ## 10. Comandos útiles
 
@@ -550,26 +555,26 @@ pnpm prisma db seed           # ejecutar seed
 pnpm lint && pnpm typecheck && pnpm test --coverage
 ```
 
------
+---
 
 ## 11. Anti-patrones — NUNCA hacer esto
 
-|❌ Prohibido                             |✅ Correcto                                   |
-|----------------------------------------|---------------------------------------------|
-|`prisma.model.findMany()` sin `tenantId`|Siempre `where: { tenantId }`                |
-|`prisma.model.delete()`                 |`update({ data: { deletedAt: new Date() } })`|
-|`prisma.model.findMany({ skip, take })` |Cursor-based pagination                      |
-|Resolver sin `@UseGuards(JwtAuthGuard)` |Siempre guard en resolvers de negocio        |
-|Lógica de negocio en el resolver        |Delegar todo al service                      |
-|`return null` cuando no existe          |`throw new NotFoundException()`              |
-|`any` en TypeScript                     |Tipos explícitos siempre                     |
-|`fetch('/graphql', ...)` en FE          |`useQuery` / `useMutation` de Apollo         |
-|`style={{ color: '#333' }}` en JSX      |CSS Modules                                  |
-|`prisma.create()` en seed               |`prisma.upsert()` siempre                    |
-|PR sin tests                            |Cobertura > 80% obligatoria                  |
-|Push a `main` directo                   |PR hacia `develop` siempre                   |
+| ❌ Prohibido                             | ✅ Correcto                                   |
+| ---------------------------------------- | --------------------------------------------- |
+| `prisma.model.findMany()` sin `tenantId` | Siempre `where: { tenantId }`                 |
+| `prisma.model.delete()`                  | `update({ data: { deletedAt: new Date() } })` |
+| `prisma.model.findMany({ skip, take })`  | Cursor-based pagination                       |
+| Resolver sin `@UseGuards(JwtAuthGuard)`  | Siempre guard en resolvers de negocio         |
+| Lógica de negocio en el resolver         | Delegar todo al service                       |
+| `return null` cuando no existe           | `throw new NotFoundException()`               |
+| `any` en TypeScript                      | Tipos explícitos siempre                      |
+| `fetch('/graphql', ...)` en FE           | `useQuery` / `useMutation` de Apollo          |
+| `style={{ color: '#333' }}` en JSX       | CSS Modules                                   |
+| `prisma.create()` en seed                | `prisma.upsert()` siempre                     |
+| PR sin tests                             | Cobertura > 80% obligatoria                   |
+| Push a `main` directo                    | PR hacia `develop` siempre                    |
 
------
+---
 
 ## 12. Contexto del equipo
 
@@ -579,6 +584,6 @@ pnpm lint && pnpm typecheck && pnpm test --coverage
 
 El agente opera como un miembro más del equipo. Sus PRs son revisados por Juan Carlos antes de mergear.
 
------
+---
 
-*Última actualización: 2026-06-14 | RestOpsIQ v1 — Fase 1 MVP POS activa*
+_Última actualización: 2026-06-14 | RestOpsIQ v1 — Fase 1 MVP POS activa_
