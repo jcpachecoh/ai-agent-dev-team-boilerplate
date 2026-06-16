@@ -1,0 +1,108 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/field-ops-theme' as fo;
+
+.panel {
+  width: min(100%, var(--display-width));
+  min-height: var(--display-min-height);
+  display: flex;
+  flex-direction: column;
+  border-radius: $border-radius-lg;
+  border: $border-width solid var(--fo-border);
+  background-color: var(--fo-surface-elevated);
+  overflow: hidden;
+  font-family: $font-family-base;
+  box-sizing: border-box;
+}
+
+.size--sm {
+  --display-width: 220px;
+  --display-min-height: 160px;
+}
+
+.size--md {
+  --display-width: 320px;
+  --display-min-height: 240px;
+}
+
+.size--xl {
+  --display-width: 100%;
+  --display-min-height: 320px;
+}
+
+.header {
+  padding: $spacing-md $spacing-md $spacing-sm;
+  border-bottom: $border-width solid var(--fo-border);
+}
+
+.title {
+  margin: 0;
+  font-size: $font-size-xs;
+  font-weight: $font-weight-bold;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--fo-text-secondary);
+}
+
+.body {
+  flex: 1;
+  padding: $spacing-md;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.item {
+  display: flex;
+  align-items: flex-start;
+  gap: $spacing-sm;
+}
+
+.index {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: $border-radius-sm;
+  background-color: var(--fo-key-bg);
+  color: var(--fo-text-secondary);
+  font-size: $font-size-xs;
+  font-weight: $font-weight-bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.itemIcon {
+  flex-shrink: 0;
+  color: fo.$field-ops-gold;
+  display: inline-flex;
+  margin-top: 2px;
+}
+
+.itemText {
+  flex: 1;
+  font-size: $font-size-sm;
+  line-height: $line-height-relaxed;
+  color: var(--fo-text-primary);
+}
+
+.footer {
+  padding: $spacing-md;
+  border-top: $border-width solid var(--fo-border);
+}
+
+.theme--dark {
+  @include fo.field-ops-theme-dark;
+}
+
+.theme--light {
+  @include fo.field-ops-theme-light;
+}

@@ -1,0 +1,13 @@
+@use '@/styles/tokens' as t;
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: t.$space-4;
+}
+
+.heading {
+  font-size: t.$font-size-2xl;
+  font-weight: t.$font-weight-bold;
+  color: t.$color-text-primary;
+}

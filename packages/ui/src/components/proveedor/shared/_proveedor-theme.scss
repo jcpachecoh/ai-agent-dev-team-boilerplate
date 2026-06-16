@@ -1,0 +1,117 @@
+@use '../../../styles/abstracts/variables' as *;
+
+$proveedor-enterprise: #e8943a;
+$proveedor-teal: #2ec4a0;
+$proveedor-warning: #f0c040;
+$proveedor-danger: #e85d4a;
+$proveedor-info: #5b9fd4;
+$proveedor-dark-surface: #141414;
+$proveedor-dark-surface-raised: #1c1c1c;
+$proveedor-dark-border: #2e2e2e;
+$proveedor-dark-text: #f5f5f0;
+$proveedor-dark-muted: #888888;
+
+@mixin proveedor-theme-dark {
+  --proveedor-surface: #{$proveedor-dark-surface};
+  --proveedor-surface-raised: #{$proveedor-dark-surface-raised};
+  --proveedor-border: #{$proveedor-dark-border};
+  --proveedor-border-strong: #{rgba($color-white, 0.14)};
+  --proveedor-text: #{$proveedor-dark-text};
+  --proveedor-text-secondary: #cccccc;
+  --proveedor-muted: #{$proveedor-dark-muted};
+  --proveedor-subtle: #666666;
+  --proveedor-input: #1a1a1a;
+  --proveedor-hover: #{rgba($color-white, 0.04)};
+  --proveedor-overlay: #{rgba($color-black, 0.72)};
+}
+
+@mixin proveedor-theme-light {
+  --proveedor-surface: #f6f4ef;
+  --proveedor-surface-raised: #fbfaf6;
+  --proveedor-border: #{rgba($color-black, 0.12)};
+  --proveedor-border-strong: #{rgba($color-black, 0.18)};
+  --proveedor-text: #{$color-gray-900};
+  --proveedor-text-secondary: #{$color-gray-700};
+  --proveedor-muted: #{$color-gray-600};
+  --proveedor-subtle: #{$color-gray-500};
+  --proveedor-input: #fbfaf6;
+  --proveedor-hover: #{rgba($color-black, 0.04)};
+  --proveedor-overlay: #{rgba($color-black, 0.45)};
+}
+
+@mixin proveedor-focus-ring {
+  outline: 2px solid rgba($proveedor-enterprise, 0.65);
+  outline-offset: 2px;
+}
+
+@mixin proveedor-control-base {
+  width: min(100%, var(--control-width));
+  min-height: var(--control-min-height);
+  border-radius: var(--control-radius);
+  border: $border-width solid var(--proveedor-border);
+  background: var(--proveedor-surface);
+  color: var(--proveedor-text);
+  box-sizing: border-box;
+  font-family: $font-family-base;
+}
+
+@mixin proveedor-size-vars {
+  &.size--sm {
+    --control-width: 220px;
+    --control-min-height: 34px;
+    --control-padding-x: #{$spacing-sm};
+    --control-padding-y: 0.375rem;
+    --control-gap: #{$spacing-xs};
+    --control-radius: #{$border-radius-sm};
+    --control-font-size: #{$font-size-xs};
+    --control-icon-size: 14px;
+  }
+
+  &.size--md {
+    --control-width: 320px;
+    --control-min-height: 44px;
+    --control-padding-x: #{$spacing-md};
+    --control-padding-y: #{$spacing-sm};
+    --control-gap: #{$spacing-sm};
+    --control-radius: #{$border-radius-sm};
+    --control-font-size: #{$font-size-sm};
+    --control-icon-size: 16px;
+  }
+
+  &.size--xl {
+    --control-width: 100%;
+    --control-min-height: 52px;
+    --control-padding-x: #{$spacing-lg};
+    --control-padding-y: #{$spacing-md};
+    --control-gap: #{$spacing-md};
+    --control-radius: #{$border-radius-md};
+    --control-font-size: #{$font-size-base};
+    --control-icon-size: 18px;
+  }
+}
+
+@mixin proveedor-theme-classes {
+  &.theme--dark {
+    @include proveedor-theme-dark;
+  }
+
+  &.theme--light {
+    @include proveedor-theme-light;
+  }
+}
+
+@mixin proveedor-value-color($color) {
+  @if $color == 'success' {
+    --metric-value-color: #{$proveedor-teal};
+  } @else if $color == 'warning' {
+    --metric-value-color: #{$proveedor-warning};
+  } @else if $color == 'danger' {
+    --metric-value-color: #{$proveedor-danger};
+  } @else if $color == 'info' {
+    --metric-value-color: #{$proveedor-info};
+  } @else if $color == 'enterprise' {
+    --metric-value-color: #{$proveedor-enterprise};
+  } @else {
+    --metric-value-color: var(--proveedor-text);
+  }
+}

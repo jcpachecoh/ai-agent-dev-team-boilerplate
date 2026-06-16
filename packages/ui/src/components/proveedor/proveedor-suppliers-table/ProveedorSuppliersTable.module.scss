@@ -1,0 +1,29 @@
+@use '../shared/proveedor-theme' as proveedor;
+
+.table {
+  @include proveedor.proveedor-theme-classes;
+  @include proveedor.proveedor-size-vars;
+
+  display: flex;
+  flex-direction: column;
+  width: min(100%, var(--control-width));
+  border: 1px solid var(--proveedor-border);
+  border-radius: var(--control-radius);
+  overflow: hidden;
+  background: var(--proveedor-surface);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+}
+
+.empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 120px;
+  padding: var(--control-padding-y) var(--control-padding-x);
+  color: var(--proveedor-muted);
+  font-size: var(--control-font-size);
+}

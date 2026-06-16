@@ -1,0 +1,115 @@
+{
+  "extends": ["../../.eslintrc.json"],
+  "plugins": ["@typescript-eslint", "boundaries"],
+  "parserOptions": {
+    "project": "./tsconfig.json"
+  },
+
+  "settings": {
+    "boundaries/elements": [
+      { "type": "controller", "pattern": "src/**/api/*.controller.ts" },
+      { "type": "service", "pattern": "src/**/application/*.service.ts" },
+      { "type": "repository", "pattern": "src/**/infrastructure/*.repository.ts" },
+      { "type": "entity", "pattern": "src/**/entities/*.entity.ts" },
+      { "type": "dto", "pattern": "src/**/api/dto/*.dto.ts" },
+      { "type": "interface", "pattern": "src/**/interfaces/*.interface.ts" },
+      { "type": "module", "pattern": "src/**/*.module.ts" },
+      { "type": "guard", "pattern": "src/**/*.guard.ts" },
+      { "type": "decorator", "pattern": "src/**/*.decorator.ts" },
+      { "type": "shared", "pattern": "src/shared/**/*" }
+    ],
+    "boundaries/ignore": ["**/*.spec.ts", "**/*.e2e-spec.ts", "src/main.ts"]
+  },
+
+  "rules": {
+    // ── NestJS Facade Pattern enforcement ──────────────────────────────────
+    // Rule: Controllers may only import from services, DTOs, decorators, guards, interfaces.
+    //       They must NEVER import from repositories or entities directly.
+    "boundaries/element-types": [
+      "error",
+      {
+        "default": "disallow",
+        "rules": [
+          {
+            "from": "controller",
+            "allow": ["service", "dto", "interface", "decorator", "guard", "shared"]
+          },
+          {
+            "from": "service",
+            "allow": ["repository", "entity", "interface", "dto", "shared", "service"]
+          },
+          {
+            "from": "repository",
+            "allow": ["entity", "interface", "shared"]
+          },
+          {
+            "from": "entity",
+            "allow": ["shared"]
+          },
+          {
+            "from": "dto",
+            "allow": ["interface", "shared"]
+          },
+          {
+            "from": "module",
+            "allow": ["controller", "service", "repository", "entity", "guard", "shared", "module"]
+          },
+          {
+            "from": ["guard", "decorator", "shared", "interface"],
+            "allow": ["shared", "interface", "entity", "dto"]
+          }
+        ]
+      }
+    ],
+
+    // ── NestJS-specific rules ──────────────────────────────────────────────
+    // Services must have explicit return types (they ARE the public API)
+    "@typescript-eslint/explicit-function-return-type": [
+      "error",
+      { "allowExpressions": false, "allowTypedFunctionExpressions": false }
+    ],
+
+    // Async methods should return Promises, not void
+    "@typescript-eslint/no-floating-promises": "error",
+
+    // Class naming conventions
+    "@typescript-eslint/naming-convention": [
+      "error",
+      {
+        "selector": "class",
+        "suffix": [
+          "Controller",
+          "Service",
+          "Repository",
+          "Module",
+          "Guard",
+          "Interceptor",
+          "Pipe",
+          "Filter",
+          "Decorator"
+        ],
+        "format": ["PascalCase"]
+      },
+      { "selector": "interface", "prefix": ["I"], "format": ["PascalCase"] },
+      { "selector": "typeAlias", "format": ["PascalCase"] },
+      { "selector": "enum", "format": ["PascalCase"] },
+      { "selector": "enumMember", "format": ["UPPER_CASE"] }
+    ],
+
+    // No direct console in production code — use NestJS Logger
+    "no-console": "error"
+  },
+
+  "overrides": [
+    {
+      // Test files: relax some rules
+      "files": ["**/*.spec.ts", "**/*.e2e-spec.ts"],
+      "rules": {
+        "@typescript-eslint/no-explicit-any": "off",
+        "@typescript-eslint/no-unsafe-assignment": "off",
+        "@typescript-eslint/naming-convention": "off",
+        "no-console": "off"
+      }
+    }
+  ]
+}

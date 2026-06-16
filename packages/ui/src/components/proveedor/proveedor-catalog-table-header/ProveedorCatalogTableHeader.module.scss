@@ -1,0 +1,56 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/proveedor-theme' as proveedor;
+
+.header {
+  @include proveedor.proveedor-theme-classes;
+
+  display: grid;
+  grid-template-columns: var(--proveedor-columns);
+  align-items: center;
+  width: min(100%, var(--header-width));
+  min-height: var(--header-height);
+  padding: 0 var(--header-padding-x);
+  border-bottom: $border-width solid var(--proveedor-border);
+  background: var(--proveedor-surface-raised);
+  box-sizing: border-box;
+}
+
+.size--sm {
+  --header-width: 680px;
+  --header-height: 36px;
+  --header-padding-x: #{$spacing-sm};
+  --header-font-size: 0.625rem;
+}
+
+.size--md {
+  --header-width: 900px;
+  --header-height: 40px;
+  --header-padding-x: #{$spacing-md};
+  --header-font-size: 0.6875rem;
+}
+
+.size--xl {
+  --header-width: 100%;
+  --header-height: 40px;
+  --header-padding-x: 16px;
+  --header-font-size: 0.6875rem;
+}
+
+.cell {
+  font-family: $font-family-mono;
+  font-size: var(--header-font-size);
+  font-weight: $font-weight-bold;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--proveedor-muted);
+}
+
+.alignCenter {
+  justify-self: center;
+  text-align: center;
+}
+
+.alignRight {
+  justify-self: end;
+  text-align: right;
+}

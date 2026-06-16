@@ -1,0 +1,82 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/proveedor-theme' as proveedor;
+
+.header {
+  @include proveedor.proveedor-theme-classes;
+  @include proveedor.proveedor-size-vars;
+
+  display: flex;
+  align-items: center;
+  gap: var(--header-gap);
+  width: min(100%, var(--control-width));
+  min-height: var(--control-min-height);
+  padding: var(--control-padding-y) var(--control-padding-x);
+  border-bottom: $border-width solid var(--proveedor-border);
+  background: var(--proveedor-surface);
+}
+
+.back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--back-size);
+  height: var(--back-size);
+  border: $border-width solid var(--proveedor-border);
+  border-radius: $border-radius-sm;
+  background: var(--proveedor-surface-raised);
+  color: var(--proveedor-text);
+  cursor: pointer;
+  flex-shrink: 0;
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  &:focus-visible {
+    @include proveedor.proveedor-focus-ring;
+  }
+}
+
+.info {
+  flex: 1;
+  min-width: 0;
+}
+
+.name {
+  margin: 0;
+  font-size: var(--name-size);
+  font-weight: $font-weight-semibold;
+  color: var(--proveedor-text);
+}
+
+.meta {
+  margin: 2px 0 0;
+  font-family: $font-family-mono;
+  font-size: var(--meta-size);
+  color: var(--proveedor-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.size--sm {
+  --back-size: 28px;
+  --name-size: #{$font-size-sm};
+  --meta-size: 0.625rem;
+  --header-gap: 10px;
+}
+
+.size--md {
+  --back-size: 32px;
+  --name-size: 1rem;
+  --meta-size: 0.6875rem;
+  --header-gap: 16px;
+}
+
+.size--xl {
+  --control-width: 100%;
+  --back-size: 32px;
+  --name-size: 1.125rem;
+  --meta-size: 0.6875rem;
+  --header-gap: 16px;
+}

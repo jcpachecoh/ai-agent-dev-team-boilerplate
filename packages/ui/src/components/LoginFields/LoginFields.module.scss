@@ -1,0 +1,73 @@
+@use '../../styles/abstracts/variables' as *;
+
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.size--sm {
+  gap: $spacing-sm;
+  max-width: 320px;
+
+  .label {
+    font-size: 11px;
+  }
+  .remember {
+    font-size: 11px;
+  }
+}
+
+.size--md {
+  gap: $spacing-md;
+  max-width: 420px;
+
+  .label {
+    font-size: 13px;
+  }
+  .remember {
+    font-size: $font-size-sm;
+  }
+}
+
+.size--lg {
+  gap: $spacing-lg;
+  max-width: 520px;
+
+  .label {
+    font-size: $font-size-base;
+  }
+  .remember {
+    font-size: $font-size-base;
+  }
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label {
+  font-weight: $font-weight-medium;
+}
+
+.remember {
+  display: flex;
+  gap: $spacing-sm;
+  align-items: center;
+}
+
+.dark .label {
+  color: rgba($color-white, 0.7);
+}
+.dark .remember {
+  color: rgba($color-white, 0.7);
+}
+
+.light .label {
+  color: $color-gray-700;
+}
+.light .remember {
+  color: $color-gray-700;
+}
