@@ -1,0 +1,36 @@
+@use '../shared/sede-theme' as sede;
+
+$mobile-breakpoint: 768px;
+
+.page {
+  @include sede.sede-theme-classes;
+
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  width: 100%;
+  min-width: 0;
+  min-height: 100%;
+  box-sizing: border-box;
+  background: var(--sede-page);
+  color: var(--sede-text);
+}
+
+.layout--padded {
+  padding: 20px 28px 28px;
+}
+
+.layout--sections {
+  padding: 0;
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .layout--padded {
+    padding: 16px;
+    overflow-x: hidden;
+  }
+
+  .layout--sections {
+    overflow-x: hidden;
+  }
+}

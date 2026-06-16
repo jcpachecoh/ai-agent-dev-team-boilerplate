@@ -1,0 +1,81 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/sede-theme' as sede;
+
+.row {
+  @include sede.sede-theme-classes;
+
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 13px;
+  border: $border-width solid var(--sede-border-subtle);
+  border-radius: 4px;
+  background: var(--sede-surface-raised);
+  min-width: 0;
+}
+
+.info {
+  flex: 1;
+  min-width: 0;
+}
+
+.name {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: $font-weight-medium;
+  color: var(--sede-text);
+  overflow-wrap: anywhere;
+}
+
+.email {
+  margin: 0;
+  font-size: 0.6875rem;
+  color: var(--sede-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.roleBadge {
+  flex-shrink: 0;
+  min-height: 19.5px;
+  padding: 2px 7px;
+  border-radius: 2px;
+  border: $border-width solid transparent;
+  font-family: $font-family-mono;
+  font-size: 0.5625rem;
+}
+
+.roleTone--teal {
+  background: rgba(sede.$sede-teal, 0.08);
+  border-color: rgba(sede.$sede-teal, 0.19);
+  color: var(--sede-teal);
+}
+
+.roleTone--coral {
+  background: rgba(sede.$sede-coral, 0.08);
+  border-color: rgba(sede.$sede-coral, 0.19);
+  color: var(--sede-coral);
+}
+
+.removeButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: $border-width solid var(--sede-coral-border);
+  border-radius: 4px;
+  background: var(--sede-coral-soft);
+  color: var(--sede-coral);
+  cursor: pointer;
+
+  svg {
+    width: 12px;
+    height: 12px;
+  }
+
+  &:focus-visible {
+    @include sede.sede-focus-ring;
+  }
+}

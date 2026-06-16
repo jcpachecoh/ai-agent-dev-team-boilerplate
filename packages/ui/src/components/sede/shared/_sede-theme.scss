@@ -1,0 +1,104 @@
+@use '../../../styles/abstracts/variables' as *;
+
+$sede-primary: #818cf8;
+$sede-teal: #2ec4a0;
+$sede-coral: #e05a44;
+$sede-amber: #f0c040;
+$sede-purple: #a78bfa;
+
+$sede-dark-page: #0a0a0a;
+$sede-dark-surface: #111111;
+$sede-dark-surface-raised: #141414;
+$sede-dark-input: #0d0d0d;
+$sede-dark-border: #2e2e2e;
+$sede-dark-border-subtle: #1c1c1c;
+$sede-dark-text: #f5f5f0;
+$sede-dark-muted: #888888;
+
+@mixin sede-theme-dark {
+  --sede-page: #{$sede-dark-page};
+  --sede-surface: #{$sede-dark-surface};
+  --sede-surface-raised: #{$sede-dark-surface-raised};
+  --sede-input: #{$sede-dark-input};
+  --sede-border: #{$sede-dark-border};
+  --sede-border-subtle: #{$sede-dark-border-subtle};
+  --sede-text: #{$sede-dark-text};
+  --sede-text-secondary: #cccccc;
+  --sede-muted: #{$sede-dark-muted};
+  --sede-subtle: #666666;
+  --sede-faint: #555555;
+  --sede-placeholder: #{rgba($sede-dark-text, 0.5)};
+  --sede-hover: #{rgba($color-white, 0.06)};
+  --sede-overlay: #{rgba($color-black, 0.72)};
+  --sede-primary: #{$sede-primary};
+  --sede-primary-soft: #{rgba($sede-primary, 0.12)};
+  --sede-primary-border: #{rgba($sede-primary, 0.4)};
+  --sede-teal: #{$sede-teal};
+  --sede-teal-soft: #{rgba($sede-teal, 0.1)};
+  --sede-teal-border: #{rgba($sede-teal, 0.35)};
+  --sede-coral: #{$sede-coral};
+  --sede-coral-soft: #{rgba($sede-coral, 0.08)};
+  --sede-coral-border: #{rgba($sede-coral, 0.25)};
+}
+
+@mixin sede-theme-light {
+  --sede-page: #f6f4ef;
+  --sede-surface: #fbfaf6;
+  --sede-surface-raised: #ffffff;
+  --sede-input: #fbfaf6;
+  --sede-border: #{rgba($color-black, 0.12)};
+  --sede-border-subtle: #{rgba($color-black, 0.08)};
+  --sede-text: #000000;
+  --sede-text-secondary: #000000;
+  --sede-muted: #000000;
+  --sede-subtle: #000000;
+  --sede-faint: #000000;
+  --sede-placeholder: #{rgba($color-black, 0.45)};
+  --sede-hover: #{rgba($color-black, 0.04)};
+  --sede-overlay: #{rgba($color-black, 0.45)};
+  --sede-primary: #{$sede-primary};
+  --sede-primary-soft: #{rgba($sede-primary, 0.1)};
+  --sede-primary-border: #{rgba($sede-primary, 0.35)};
+  --sede-teal: #{$sede-teal};
+  --sede-teal-soft: #{rgba($sede-teal, 0.1)};
+  --sede-teal-border: #{rgba($sede-teal, 0.35)};
+  --sede-coral: #{$sede-coral};
+  --sede-coral-soft: #{rgba($sede-coral, 0.08)};
+  --sede-coral-border: #{rgba($sede-coral, 0.25)};
+}
+
+@mixin sede-focus-ring {
+  outline: 2px solid rgba($sede-primary, 0.65);
+  outline-offset: 2px;
+}
+
+@mixin sede-theme-classes {
+  &.theme--dark {
+    @include sede-theme-dark;
+  }
+
+  &.theme--light {
+    @include sede-theme-light;
+  }
+}
+
+@mixin sede-mono-label {
+  font-family: $font-family-mono;
+  font-size: 0.5625rem;
+  font-weight: $font-weight-bold;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--sede-text);
+}
+
+@mixin sede-value-color($color) {
+  @if $color == 'success' {
+    --metric-value-color: var(--sede-teal);
+  } @else if $color == 'muted' {
+    --metric-value-color: var(--sede-muted);
+  } @else if $color == 'primary' {
+    --metric-value-color: var(--sede-primary);
+  } @else {
+    --metric-value-color: var(--sede-text);
+  }
+}

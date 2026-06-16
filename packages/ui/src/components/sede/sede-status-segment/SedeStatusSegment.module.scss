@@ -1,0 +1,59 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/sede-theme' as sede;
+
+.field {
+  @include sede.sede-theme-classes;
+
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label {
+  @include sede.sede-mono-label;
+}
+
+.segment {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 41px;
+  padding: 10px;
+  border: $border-width solid var(--sede-border);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--sede-faint);
+  font-family: $font-family-mono;
+  font-size: 0.625rem;
+  font-weight: $font-weight-bold;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+
+  svg {
+    width: 13px;
+    height: 13px;
+  }
+
+  &:focus-visible {
+    @include sede.sede-focus-ring;
+  }
+}
+
+.active {
+  background: rgba(sede.$sede-teal, 0.07);
+  border-color: var(--sede-teal);
+  color: var(--sede-teal);
+}
+
+.inactiveSelected {
+  background: var(--sede-hover);
+  border-color: var(--sede-border);
+  color: var(--sede-subtle);
+}

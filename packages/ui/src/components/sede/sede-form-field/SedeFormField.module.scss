@@ -1,0 +1,50 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/sede-theme' as sede;
+
+.field {
+  @include sede.sede-theme-classes;
+
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.label {
+  @include sede.sede-mono-label;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 0.5625rem;
+}
+
+.required {
+  color: var(--sede-coral);
+}
+
+.input {
+  width: 100%;
+  min-height: 39.5px;
+  padding: 10px 13px;
+  border: $border-width solid var(--sede-border);
+  border-radius: 4px;
+  background: var(--sede-input);
+  color: var(--sede-text);
+  font-family: $font-family-base;
+  font-size: 0.8125rem;
+  box-sizing: border-box;
+
+  &::placeholder {
+    color: var(--sede-placeholder);
+  }
+
+  &:focus {
+    outline: none;
+    border-color: var(--sede-primary-border);
+  }
+
+  &:focus-visible {
+    @include sede.sede-focus-ring;
+  }
+}

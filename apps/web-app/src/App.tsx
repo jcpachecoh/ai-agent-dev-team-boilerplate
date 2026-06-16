@@ -20,6 +20,7 @@ import RecipesPage from '@/pages/RecipesPage';
 import ReportsPage from '@/pages/ReportsPage';
 import ResponsiveTableDemoPage from '@/pages/ResponsiveTableDemoPage';
 import SettingsPage from '@/pages/SettingsPage';
+import SedesPage from '@/pages/SedesPage';
 import SignupPage from '@/pages/SignupPage';
 import SupervisorPage from '@/pages/SupervisorPage/SupervisorPage';
 import UsersPage from '@/pages/UsersPage';
@@ -55,6 +56,7 @@ export default function App(): React.JSX.Element {
           <Route path="/dispatch" element={<DispatchPage />} />
           <Route path="/users/*" element={<UsersPage />} />
           <Route path="/payroll/*" element={<PayrollPage />} />
+          <Route path="/empresa/sedes/*" element={<SedesPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/dev/responsive-table" element={<ResponsiveTableDemoPage />} />
         </Route>

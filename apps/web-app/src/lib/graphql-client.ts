@@ -3,7 +3,7 @@ import { GraphQLClient } from 'graphql-request';
 import { clearGraphqlAuthToken, getGraphqlAuthToken, isAuthenticated } from './auth-token';
 import { getTenantId } from './tenant';
 
-const DEFAULT_URL = 'http://localhost:4000/graphql';
+const DEFAULT_URL = '/graphql';
 const REMOVED_GATEWAY_PORT = ':4000';
 
 function resolveGraphqlEndpoint(configured: string): string {

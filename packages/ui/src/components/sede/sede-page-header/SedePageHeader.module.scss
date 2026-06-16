@@ -1,0 +1,96 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/sede-theme' as sede;
+
+$mobile-breakpoint: 768px;
+
+.header {
+  @include sede.sede-theme-classes;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-lg;
+  width: 100%;
+  min-width: 0;
+}
+
+.leading {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-width: 0;
+}
+
+.iconWrap {
+  display: none;
+}
+
+.titles {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font-family: $font-family-base;
+  font-size: 1.9rem;
+  font-weight: $font-weight-bold;
+  line-height: 1.15;
+  color: var(--sede-text);
+}
+
+.subtitle {
+  margin: 0.25rem 0 0;
+  font-family: $font-family-base;
+  font-size: 0.85rem;
+  font-weight: $font-weight-regular;
+  line-height: 1.45;
+  color: var(--sede-text-secondary);
+}
+
+.theme--dark .subtitle {
+  color: var(--sede-subtle);
+}
+
+.theme--light .subtitle {
+  color: var(--sede-text);
+  opacity: 0.72;
+}
+
+.action {
+  flex-shrink: 0;
+}
+
+.size--sm {
+  .title {
+    font-size: 1.6rem;
+  }
+
+  .subtitle {
+    font-size: 0.8rem;
+  }
+}
+
+.size--xl {
+  .title {
+    font-size: 2rem;
+  }
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .header {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .title {
+    font-size: 1.6rem;
+  }
+
+  .action {
+    width: 100%;
+  }
+}

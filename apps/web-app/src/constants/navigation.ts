@@ -4,6 +4,7 @@ import {
   ArrowLeftRight,
   BarChart3,
   Box,
+  Building2,
   ChefHat,
   ClipboardList,
   Factory,
@@ -13,6 +14,7 @@ import {
   LayoutGrid,
   List,
   Map,
+  MapPin,
   Monitor,
   Package,
   Settings,
@@ -187,6 +189,13 @@ export const navigationItems: NavItem[] = [
     ],
   },
   {
+    id: 'empresa',
+    label: 'Empresa',
+    icon: Building2,
+    accent: 'teal',
+    children: [{ id: 'empresa-sedes', label: 'Sedes', path: '/empresa/sedes', icon: MapPin }],
+  },
+  {
     id: 'settings',
     label: 'Configuración',
     path: '/settings',
@@ -222,6 +231,8 @@ const routeLabels: Record<string, string> = {
   '/payroll': 'Nómina',
   '/payroll/employees': 'Empleados',
   '/payroll/salaries': 'Salarios',
+  '/empresa/sedes': 'Sedes',
+  '/empresa/sedes/nueva': 'Nueva sede',
   '/settings': 'Configuración',
 };
 

@@ -1,0 +1,57 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/sede-theme' as sede;
+
+.button {
+  @include sede.sede-theme-classes;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: 4px;
+  border: $border-width solid transparent;
+  background: transparent;
+  cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  &:focus-visible {
+    @include sede.sede-focus-ring;
+  }
+}
+
+.icon {
+  display: inline-flex;
+
+  svg {
+    width: 13px;
+    height: 13px;
+  }
+}
+
+.variant--edit {
+  background: rgba(sede.$sede-primary, 0.06);
+  border-color: rgba(sede.$sede-primary, 0.19);
+  color: var(--sede-primary);
+}
+
+.variant--toggle {
+  background: var(--sede-hover);
+  border-color: var(--sede-border);
+  color: var(--sede-faint);
+}
+
+.toggleActive {
+  background: rgba(sede.$sede-teal, 0.06);
+  border-color: rgba(sede.$sede-teal, 0.19);
+  color: var(--sede-teal);
+}

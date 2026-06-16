@@ -1,0 +1,60 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/sede-theme' as sede;
+
+.pagination {
+  @include sede.sede-theme-classes;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-md;
+  width: 100%;
+  padding: 14px 16px;
+  border-top: $border-width solid var(--sede-border);
+}
+
+@media (max-width: 768px) {
+  .pagination {
+    padding: 14px 0 0;
+    border-top: $border-width solid var(--sede-border);
+  }
+}
+
+.summary,
+.pageLabel {
+  font-size: 0.6875rem;
+  color: var(--sede-faint);
+}
+
+.controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.navButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: $border-width solid var(--sede-border);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--sede-subtle);
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  &:focus-visible {
+    @include sede.sede-focus-ring;
+  }
+
+  svg {
+    width: 14px;
+    height: 14px;
+  }
+}

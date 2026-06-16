@@ -1,0 +1,86 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/sede-theme' as sede;
+
+.button {
+  @include sede.sede-theme-classes;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: var(--action-height);
+  padding: 0 var(--action-padding-x);
+  border-radius: 4px;
+  border: $border-width solid transparent;
+  font-family: $font-family-base;
+  font-size: var(--action-font-size);
+  font-weight: $font-weight-semibold;
+  cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease;
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  &:focus-visible {
+    @include sede.sede-focus-ring;
+  }
+}
+
+.size--sm {
+  --action-height: 32px;
+  --action-padding-x: 14px;
+  --action-font-size: 0.75rem;
+}
+
+.size--md {
+  --action-height: 40px;
+  --action-padding-x: 19px;
+  --action-font-size: 0.8125rem;
+}
+
+.size--xl {
+  --action-height: 44px;
+  --action-padding-x: 23px;
+  --action-font-size: 0.8125rem;
+}
+
+.icon {
+  display: inline-flex;
+
+  svg {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+.variant--primary,
+.variant--save,
+.variant--create {
+  background: var(--sede-primary-soft);
+  color: var(--sede-primary);
+  border-color: var(--sede-primary-border);
+
+  &:hover:not(:disabled) {
+    background: rgba(sede.$sede-primary, 0.18);
+  }
+}
+
+.variant--secondary {
+  background: transparent;
+  color: var(--sede-subtle);
+  border-color: var(--sede-border);
+
+  &:hover:not(:disabled) {
+    color: var(--sede-text);
+    border-color: var(--sede-border);
+  }
+}
+
+.loading {
+  opacity: 0.8;
+}
