@@ -1,0 +1,722 @@
+@use '../../../../styles/abstracts/variables' as *;
+@use '../shared/plant-dashboard-theme' as pd;
+
+.screen {
+  position: fixed;
+  inset: 0;
+  z-index: 25;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100dvh;
+  max-height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--pd-recipe-root-bg);
+  font-family: 'IBM Plex Sans', $font-family-base, sans-serif;
+  box-sizing: border-box;
+}
+
+.theme--dark {
+  @include pd.plant-dashboard-theme-dark;
+}
+
+.theme--light {
+  @include pd.plant-dashboard-theme-light;
+}
+
+.header {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+  padding: 0.65rem clamp(0.75rem, 2vw, 1.25rem);
+  background: var(--pd-header-bg);
+  border-bottom: 1px solid var(--pd-border);
+}
+
+.backBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.8rem;
+  border: 1px solid var(--pd-border-strong);
+  border-radius: 3px;
+  background: transparent;
+  color: var(--pd-recipe-back-text);
+  font-family: 'IBM Plex Mono', $font-family-mono, monospace;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+}
+
+.headerCenter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.flameIcon {
+  color: var(--pd-recipe-gold);
+  flex-shrink: 0;
+}
+
+.orderId {
+  font-family: 'IBM Plex Mono', $font-family-mono, monospace;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--pd-recipe-gold);
+  letter-spacing: 0.05em;
+}
+
+.headerDot {
+  color: var(--pd-recipe-header-dot);
+  font-size: 1rem;
+}
+
+.productName {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--pd-title);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.operatorName {
+  font-family: 'IBM Plex Mono', $font-family-mono, monospace;
+  font-size: 0.68rem;
+  color: var(--pd-muted);
+  white-space: nowrap;
+}
+
+.body {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.sidebar {
+  width: clamp(16rem, 30vw, 31rem);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-right: 1px solid var(--pd-border);
+  overflow: hidden;
+  background: var(--pd-recipe-root-bg);
+}
+
+.sidebarHeader {
+  padding: 0.75rem 1rem 0.65rem;
+  border-bottom: 1px solid var(--pd-border);
+}
+
+.sidebarEyebrow {
+  margin: 0;
+  font-family: 'IBM Plex Mono', $font-family-mono, monospace;
+  font-size: 0.55rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--pd-faint);
+}
+
+.recipeTitle {
+  margin: 0.2rem 0 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--pd-recipe-gold);
+}
+
+.recipeMeta {
+  margin: 0.15rem 0 0;
+  font-size: 0.74rem;
+  color: var(--pd-recipe-dim-text);
+}
+
+.phaseList {
+  flex: 1;
+  overflow: auto;
+}
+
+.phaseItem {
+  border-bottom: 1px solid var(--pd-border);
+  border-left: 3px solid var(--pd-recipe-phase-pending-border);
+}
+
+.phaseItem--completed {
+  border-left-color: #2ec4a0;
+}
+
+.phaseItem--current {
+  border-left-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.05);
+}
+
+.phaseItem--pending {
+  border-left-color: var(--pd-recipe-phase-pending-border);
+}
+
+.phaseRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  padding: 0.7rem 0.85rem;
+}
+
+.phaseBadge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+  font-family: 'IBM Plex Mono', $font-family-mono, monospace;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.phaseItem--completed .phaseBadge {
+  border: 1.5px solid #2ec4a0;
+  background: rgba(46, 196, 160, 0.15);
+  color: #2ec4a0;
+}
+
+.phaseItem--current .phaseBadge {
+  border: 1.5px solid #3b82f6;
+  background: rgba(59, 130, 246, 0.15);
+  color: #3b82f6;
+}
+
+.phaseItem--pending .phaseBadge {
+  border: 1.5px solid var(--pd-recipe-pending-badge-border);
+  background: var(--pd-recipe-pending-badge-bg);
+  color: var(--pd-recipe-faint-text);
+}
+
+.phaseCopy {
+  flex: 1;
+  min-width: 0;
+}
+
+.phaseTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.phaseName {
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.phaseItem--completed .phaseName {
+  color: var(--pd-recipe-dim-text);
+}
+
+.phaseItem--current .phaseName {
+  color: var(--pd-title);
+  font-weight: 700;
+}
+
+.phaseItem--pending .phaseName {
+  color: var(--pd-recipe-ghost-text);
+}
+
+.phaseCurrentTag {
+  font-family: 'IBM Plex Mono', $font-family-mono, monospace;
+  font-size: 0.5rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: #3b82f6;
+}
+
+.phaseMeta {
+  margin: 0.15rem 0 0;
+  font-size: 0.68rem;
+  color: var(--pd-recipe-faint-text);
+}
+
+.phaseStockHint {
+  color: #e05a44;
+}
+
+.phaseChevron {
+  color: #3b82f6;
+  margin-top: 0.15rem;
+  flex-shrink: 0;
+}
+
+.phaseExpanded {
+  padding: 0 0.85rem 0.75rem 3.1rem;
+}
+
+.sidebarIngredient {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  width: 100%;
+  padding: 0.35rem 0;
+  border: none;
+  border-bottom: 1px solid var(--pd-row-border);
+  background: transparent;
+  color: var(--pd-recipe-ingredient-text);
+  font-size: 0.8rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sidebarIngredientWarning {
+  color: #e05a44;
+}
+
+.sidebarIngredientName {
+  flex: 1;
+  min-width: 0;
+}
+
+.sidebarIngredientQty {
+  font-family: 'IBM Plex Mono', $font-family-mono, monospace;
+  font-size: 0.68rem;
+  color: var(--pd-recipe-dim-text);
+}
+
+.sidebarIngredientWarning .sidebarIngredientQty {
+  color: #e05a44;
+}
+
+.sidebarStockBadge {
+  font-family: 'IBM Plex Mono', $font-family-mono, monospace;
+  font-size: 0.48rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #f0c040;
+}
+
+.phaseHint {
+  margin: 0.35rem 0 0;
+  font-family: 'IBM Plex Mono', $font-family-mono, monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  color: var(--pd-recipe-hint-text);
+}
+
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--pd-recipe-root-bg);
+}
+
+.mainScroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: clamp(0.85rem, 2vw, 1.45rem) clamp(1rem, 2.5vw, 1.75rem) 0.75rem;
+}
+
+.mainFooter {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding: 0.65rem clamp(1rem, 2.5vw, 1.75rem) clamp(0.85rem, 2vw, 1.25rem);
+  border-top: 1px solid var(--pd-row-border);
+  background: var(--pd-recipe-footer-bg);
+}
+
+.stepHeader {
+  margin-bottom: 0.85rem;
+}
+
+.stepLabelRow {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.stepLabel {
+  font-family: 'IBM Plex Mono', $font-family-mono, monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #3b82f6;
+}
+
+.stockBadge {
+  padding: 0.15rem 0.45rem;
+  border: 1px solid rgba(224, 90, 68, 0.45);
+  border-radius: 2px;
+  background: rgba(224, 90, 68, 0.1);
+  font-family: 'IBM Plex Mono', $font-family-mono, monospace;
+  font-size: 0.5rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #e05a44;
+}
+
+.stepTitle {
+  margin: 0.35rem 0 0;
+  font-size: clamp(1.35rem, 3.5vw, 1.7rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--pd-title);
+}
+
+.instruction {
+  margin: 0.5rem 0 0;
+  padding-left: 0.85rem;
+  border-left: 2px solid var(--pd-border-strong);
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: var(--pd-recipe-subtle-text);
+}
+
+.suppliesCard {
+  border: 1px solid var(--pd-border);
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--pd-recipe-surface);
+}
+
+.suppliesHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 0.85rem;
+  background: var(--pd-recipe-surface-alt);
+  border-bottom: 1px solid var(--pd-border);
+  font-family: 'IBM Plex Mono', $font-family-mono, monospace;
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: var(--pd-recipe-dim-text);
+}
+
+.suppliesList {
+  list-style: none;
+  margin: 0;
+  padding: 0.25rem 0.85rem;
+}
+
+.supplyRow {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    'bullet name qty'
+    'bullet stock stock'
+    'bullet supplier supplier';
+  align-items: center;
+  gap: 0.35rem 0.65rem;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid var(--pd-row-border);
+  font-size: clamp(0.82rem, 2vw, 0.88rem);
+  color: var(--pd-recipe-supply-text);
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.supplyBullet {
+  grid-area: bullet;
+  width: 0.3rem;
+  height: 0.3rem;
+  border-radius: 1px;
+  background: var(--pd-recipe-bullet);
+}
+
+.supplyName {
+  grid-area: name;
+  min-width: 0;
+}
+
+.supplyQty {
+  grid-area: qty;
+  justify-self: end;
+  font-family: 'IBM Plex Mono', $font-family-mono, monospace;
+  font-size: 0.8rem;
+  color: var(--pd-recipe-dim-text);
+  white-space: nowrap;
+}
+
+.supplyRowWarning {
+  color: #e05a44;
+}
+
+.supplyRowWarning .supplyQty {
+  color: #e05a44;
+}
+
+.supplyStockTag {
+  grid-area: stock;
+  justify-self: end;
+  font-family: 'IBM Plex Mono', $font-family-mono, monospace;
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #e05a44;
+}
+
+.supplySupplier {
+  grid-area: supplier;
+  justify-self: end;
+  font-family: 'IBM Plex Mono', $font-family-mono, monospace;
+  font-size: 0.55rem;
+  letter-spacing: 0.05em;
+  color: var(--pd-recipe-supplier-text);
+  text-align: right;
+}
+
+.spacer {
+  display: none;
+}
+
+.timerCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  width: 100%;
+  min-height: clamp(7rem, 18vh, 10rem);
+  padding: clamp(0.75rem, 2vw, 1rem) clamp(1rem, 2.5vw, 1.35rem);
+  border: 2px solid var(--pd-border);
+  border-radius: 4px;
+  background: var(--pd-recipe-surface);
+  box-sizing: border-box;
+}
+
+.timerCardActive {
+  border-color: rgba(46, 196, 160, 0.35);
+}
+
+.timerCardMuted {
+  border-color: var(--pd-border);
+}
+
+.timerEyebrow {
+  margin: 0;
+  font-family: 'IBM Plex Mono', $font-family-mono, monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.2em;
+  color: #2ec4a0;
+}
+
+.timerValue {
+  margin: 0;
+  font-family: 'IBM Plex Mono', $font-family-mono, monospace;
+  font-size: clamp(2.5rem, 10vw, 4.85rem);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: #2ec4a0;
+}
+
+.timerStats {
+  display: flex;
+  gap: 1.25rem;
+  font-family: 'IBM Plex Mono', $font-family-mono, monospace;
+  font-size: 0.68rem;
+  color: var(--pd-recipe-dim-text);
+}
+
+.progressTrack {
+  width: 100%;
+  height: 3px;
+  margin-top: 0.35rem;
+  border-radius: 2px;
+  background: var(--pd-recipe-progress-track);
+  overflow: hidden;
+}
+
+.progressFill {
+  display: block;
+  height: 100%;
+  background: #2ec4a0;
+  border-radius: inherit;
+}
+
+.timerStatusMuted {
+  margin: 0;
+  font-family: 'IBM Plex Mono', $font-family-mono, monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.2em;
+  color: var(--pd-recipe-hint-text);
+}
+
+.timerValueMuted {
+  margin: 0;
+  font-family: 'IBM Plex Mono', $font-family-mono, monospace;
+  font-size: clamp(2.2rem, 9vw, 4.85rem);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--pd-recipe-timer-muted);
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.actionRow {
+  display: flex;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.actionStart,
+.actionPause,
+.actionResume,
+.actionNext,
+.actionAlert,
+.actionFinish {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-height: clamp(2.85rem, 8vh, 3.35rem);
+  border-radius: 4px;
+  font-size: clamp(0.82rem, 2.2vw, 0.98rem);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+}
+
+.actionStart {
+  width: 100%;
+  border: 2px solid rgba(46, 196, 160, 0.5);
+  background: rgba(46, 196, 160, 0.14);
+  color: #2ec4a0;
+}
+
+.actionPause {
+  flex: 1;
+  border: 2px solid rgba(240, 192, 64, 0.5);
+  background: rgba(240, 192, 64, 0.12);
+  color: #f0c040;
+}
+
+.actionResume {
+  flex: 1;
+  border: 2px solid rgba(59, 130, 246, 0.5);
+  background: rgba(59, 130, 246, 0.14);
+  color: #3b82f6;
+}
+
+.actionNext {
+  flex: 1;
+  border: 2px solid var(--pd-border-strong);
+  background: var(--pd-recipe-action-next-bg);
+  color: var(--pd-recipe-action-next-text);
+}
+
+.actionAlert {
+  width: clamp(3.2rem, 10vw, 3.65rem);
+  flex-shrink: 0;
+  border: 2px solid rgba(232, 148, 58, 0.5);
+  background: rgba(232, 148, 58, 0.12);
+  color: #e8943a;
+}
+
+.actionFinish {
+  width: 100%;
+  border: 2px solid var(--pd-recipe-action-finish-border);
+  background: transparent;
+  color: var(--pd-recipe-action-finish-text);
+}
+
+@media (max-width: 1024px) and (orientation: portrait) {
+  .body {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    max-height: 38dvh;
+    border-right: none;
+    border-bottom: 1px solid var(--pd-border);
+  }
+
+  .mainFooter {
+    padding-bottom: max(0.85rem, env(safe-area-inset-bottom));
+  }
+}
+
+@media (max-width: 720px) {
+  .header {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      'back'
+      'center'
+      'operator';
+    justify-items: start;
+    gap: 0.45rem;
+  }
+
+  .backBtn {
+    grid-area: back;
+  }
+
+  .headerCenter {
+    grid-area: center;
+    justify-content: flex-start;
+    width: 100%;
+  }
+
+  .operatorName {
+    grid-area: operator;
+  }
+
+  .sidebar {
+    max-height: 34dvh;
+  }
+
+  .actionRow {
+    flex-wrap: wrap;
+  }
+
+  .actionPause,
+  .actionResume,
+  .actionNext {
+    flex: 1 1 calc(50% - 0.25rem);
+    min-width: 9rem;
+  }
+
+  .actionAlert {
+    margin-left: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .actionPause,
+  .actionResume,
+  .actionNext {
+    flex: 1 1 100%;
+  }
+
+  .actionAlert {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .timerStats {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+  }
+}

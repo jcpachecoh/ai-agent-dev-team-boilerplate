@@ -2,6 +2,11 @@ import { EmployeeContractType, SalaryType, ArlRiskLevel, DocumentType } from '@p
 import { PayrollRepository } from '../repository/payroll.repository';
 import { PrismaService } from '../../prisma/prisma.service';
 
+const employeeInclude = {
+  user: true,
+  location: { select: { id: true, name: true } },
+} as const;
+
 describe('PayrollRepository', () => {
   const userCreate = jest.fn();
   const employeeDetailsCreate = jest.fn();
@@ -137,7 +142,7 @@ describe('PayrollRepository', () => {
         isActive: true,
         deletedAt: null,
       },
-      include: { user: true },
+      include: employeeInclude,
       take: 50,
       skip: 0,
       orderBy: { createdAt: 'desc' },
@@ -164,7 +169,7 @@ describe('PayrollRepository', () => {
         contractType: EmployeeContractType.FIJO,
         isActive: false,
       },
-      include: { user: true },
+      include: employeeInclude,
       take: 20,
       skip: 10,
       orderBy: { createdAt: 'desc' },
@@ -180,7 +185,7 @@ describe('PayrollRepository', () => {
       where: {
         tenantId: 'tenant-1',
       },
-      include: { user: true },
+      include: employeeInclude,
       take: 50,
       skip: 0,
       orderBy: { createdAt: 'desc' },
@@ -195,7 +200,7 @@ describe('PayrollRepository', () => {
 
     expect(prisma.employeeDetails.findUnique).toHaveBeenNthCalledWith(1, {
       where: { id: 'emp-1' },
-      include: { user: true },
+      include: employeeInclude,
     });
     expect(prisma.employeeDetails.findUnique).toHaveBeenNthCalledWith(2, {
       where: { userId: 'user-1' },

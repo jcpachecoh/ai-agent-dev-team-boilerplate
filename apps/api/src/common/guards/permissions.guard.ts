@@ -50,9 +50,9 @@ export class PermissionsGuard implements CanActivate {
     }
     //TODO Update permission guard to check tenantId in header against tenantId in token, if header is present
     const headerTenantId = this.getOptionalHeaderTenantId(context);
-    // if (headerTenantId && headerTenantId !== user.tenantId) {
-    //   this.throwPermissionDenied(context);
-    // }
+    if (headerTenantId && headerTenantId !== user.tenantId) {
+      this.throwPermissionDenied(context);
+    }
 
     for (const permissionCode of requiredPermissions) {
       let allowed = false;
@@ -68,10 +68,9 @@ export class PermissionsGuard implements CanActivate {
         }
         throw error;
       }
-      // TODO: Depending on the use case, you might want to fail fast (throw on first denied permission) or check all permissions and then throw. Here we fail fast.
-      // if (!allowed) {
-      //   this.throwPermissionDenied(context);
-      // }
+      if (!allowed) {
+        this.throwPermissionDenied(context);
+      }
     }
 
     return true;

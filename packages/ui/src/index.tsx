@@ -53,6 +53,7 @@ export * from './components/field-ops/operations-entry-card';
 export * from './components/field-ops/operations-hub-header';
 export * from './components/field-ops/operations-stat-card';
 export * from './components/field-ops/operations-stats-bar';
+export * from './components/field-ops/plant-dashboard';
 
 export * from './components/receta/receta-metric-card';
 export * from './components/receta/receta-search';

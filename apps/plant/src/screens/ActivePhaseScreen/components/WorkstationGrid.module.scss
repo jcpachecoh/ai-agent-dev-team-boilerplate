@@ -1,0 +1,46 @@
+.grid {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  width: 100%;
+  background: #0a0a0a;
+}
+
+.mode--1x1 {
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr;
+}
+
+.mode--1x2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: 1fr;
+}
+
+.mode--2x2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+}
+
+.cell {
+  min-width: 0;
+  min-height: 0;
+  padding: 2px;
+  box-sizing: border-box;
+}
+
+.mode--1x2 .cell + .cell,
+.mode--2x2 .cell:nth-child(odd) {
+  border-left: none;
+}
+
+.mode--2x2 .cell:nth-child(n + 3) {
+  border-top: 1.5px dashed #2a2a2a;
+}
+
+.mode--1x2 .cell:nth-child(2) {
+  border-left: 1.5px dashed #2a2a2a;
+}
+
+.mode--2x2 .cell:nth-child(even) {
+  border-left: 1.5px dashed #2a2a2a;
+}
