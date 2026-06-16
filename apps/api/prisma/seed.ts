@@ -460,15 +460,21 @@ async function seedLocations() {
   for (let i = 1; i <= 10; i++) {
     const name = `Sede Palos de Leña ${i}`;
     const code = `PL-${i.toString().padStart(2, '0')}`;
+    const address = `Calle ${i} # 10-20, Bogotá`;
+    const city = 'Bogotá';
+    const phone = `+57 300 000 00${i.toString().padStart(2, '0')}`;
     const location = await prisma.location.upsert({
       where: {
         tenantId_code: { tenantId: OPERATIONAL_TENANT_ID, code },
       },
-      update: { name, isActive: true },
+      update: { name, address, city, phone, isActive: true },
       create: {
         tenantId: OPERATIONAL_TENANT_ID,
         name,
         code,
+        address,
+        city,
+        phone,
         isActive: true,
       },
     });
@@ -476,6 +482,23 @@ async function seedLocations() {
     console.log('Location:', location.name, '—', location.id);
   }
   return locations;
+}
+
+async function seedUserLocations(ownerUserId: string, operatorUserId: string, locationId: string) {
+  for (const userId of [ownerUserId, operatorUserId]) {
+    await prisma.userLocation.upsert({
+      where: {
+        userId_locationId: { userId, locationId },
+      },
+      update: { tenantId: OPERATIONAL_TENANT_ID },
+      create: {
+        userId,
+        locationId,
+        tenantId: OPERATIONAL_TENANT_ID,
+      },
+    });
+  }
+  console.log('UserLocation: linked owner + operator to', locationId);
 }
 
 async function seedEmployeeDetails(
@@ -1022,6 +1045,7 @@ async function main() {
 
   // ── NOM-01: Seed EmployeeDetails ─────────────────────────────────────────
   await seedEmployeeDetails(ownerGlobalUser.id, operatorGlobalUser.id, firstLocationId);
+  await seedUserLocations(ownerGlobalUser.id, operatorGlobalUser.id, firstLocationId);
   const { seedPlantSupervisor } = await import('./seeds/plant-supervisor.seed');
   await seedPlantSupervisor(prisma);
 

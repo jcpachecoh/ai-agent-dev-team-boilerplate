@@ -189,7 +189,7 @@ model SupplyItem {
   createdAt              DateTime  @default(now())
   updatedAt              DateTime  @updatedAt
 
-  categoria        SupplyCategory           @relation(fields: [categoriaId], references: [id])
+  categoria        SupplyCategory            @relation(fields: [categoriaId], references: [id])
   supplierProducts SupplierProduct[]
   priceHistory     SupplyItemPriceHistory[]
   orderMaterials   ProductionOrderMaterial[]
@@ -348,12 +348,13 @@ model User {
 
   role Role @relation(fields: [roleId], references: [id])
 
-  employeeDetails        EmployeeDetails?
-  operationalProfile     OperationalUser?
-  userPermissions        UserPermission[]
-  loginAudits            LoginAudit[]
-  auditLogs              AuditLog[]
-  committeeMemberships   ProductionCommitteeMember[]
+  employeeDetails      EmployeeDetails?
+  operationalProfile   OperationalUser?
+  userPermissions      UserPermission[]
+  userLocations        UserLocation[]
+  loginAudits          LoginAudit[]
+  auditLogs            AuditLog[]
+  committeeMemberships ProductionCommitteeMember[]
 
   @@unique([tenantId, email])
   @@unique([tenantId, cedula])
@@ -389,21 +390,45 @@ enum ArlRiskLevel {
 }
 
 model Location {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   tenantId  String
   name      String
+  address   String
+  city      String?
+  phone     String?
   code      String?
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  latitude  String?
+  longitude String?
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
   tenant          Tenant            @relation(fields: [tenantId], references: [id])
+  users           UserLocation[]
   employeeDetails EmployeeDetails[]
 
   @@unique([tenantId, name])
   @@unique([tenantId, code])
   @@index([tenantId])
+  @@index([deletedAt])
   @@map("locations")
+}
+
+model UserLocation {
+  id         String   @id @default(cuid())
+  userId     String
+  locationId String
+  tenantId   String
+  createdAt  DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  location Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, locationId])
+  @@index([tenantId])
+  @@index([locationId])
+  @@map("user_locations")
 }
 
 model EmployeeDetails {
@@ -534,11 +559,11 @@ model OperationalUser {
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
 
-  user              User?                @relation(fields: [userId], references: [id])
-  operatorSessions       OperatorSession[]
-  reportedIncidents      ProductionIncident[] @relation("IncidentReporter")
-  resolvedIncidents      ProductionIncident[] @relation("IncidentResolver")
-  responsibleExecutions  PhaseExecution[]     @relation("ExecutionResponsible")
+  user                  User?                @relation(fields: [userId], references: [id])
+  operatorSessions      OperatorSession[]
+  reportedIncidents     ProductionIncident[] @relation("IncidentReporter")
+  resolvedIncidents     ProductionIncident[] @relation("IncidentResolver")
+  responsibleExecutions PhaseExecution[]     @relation("ExecutionResponsible")
 
   @@unique([tenantId, cedulaHash])
   @@index([tenantId])
@@ -793,8 +818,8 @@ model ProductionOrder {
   createdAt        DateTime              @default(now())
   updatedAt        DateTime              @updatedAt
 
-  recipe          ProductionRecipe           @relation(fields: [recipeId], references: [id])
-  committee       ProductionCommittee?       @relation(fields: [committeeId], references: [id])
+  recipe          ProductionRecipe          @relation(fields: [recipeId], references: [id])
+  committee       ProductionCommittee?      @relation(fields: [committeeId], references: [id])
   executions      PhaseExecution[]
   alarmDispatches PlantAlarmDispatch[]
   incidents       ProductionIncident[]
@@ -809,25 +834,25 @@ model ProductionOrder {
 }
 
 model PhaseExecution {
-  id               String               @id @default(cuid())
-  tenantId         String
-  orderId          String
-  phaseId          String
-  workStationId    String
-  status           PhaseExecutionStatus @default(PENDING)
-  plannedMinutes   Int
-  actualMinutes    Int?
-  efficiencyPct    Decimal?             @db.Decimal(5, 2)
-  producedQuantity Decimal?             @db.Decimal(10, 3)
-  qaApprovedAt     DateTime?
-  qaApprovedBy     String?
-  startedAt           DateTime?
-  completedAt         DateTime?
-  notes               String?
-  operatorCount       Int?
-  deliveredQuantity   Decimal?             @db.Decimal(10, 3)
-  responsibleUserId   String?
-  createdAt           DateTime             @default(now())
+  id                String               @id @default(cuid())
+  tenantId          String
+  orderId           String
+  phaseId           String
+  workStationId     String
+  status            PhaseExecutionStatus @default(PENDING)
+  plannedMinutes    Int
+  actualMinutes     Int?
+  efficiencyPct     Decimal?             @db.Decimal(5, 2)
+  producedQuantity  Decimal?             @db.Decimal(10, 3)
+  qaApprovedAt      DateTime?
+  qaApprovedBy      String?
+  startedAt         DateTime?
+  completedAt       DateTime?
+  notes             String?
+  operatorCount     Int?
+  deliveredQuantity Decimal?             @db.Decimal(10, 3)
+  responsibleUserId String?
+  createdAt         DateTime             @default(now())
 
   order           ProductionOrder      @relation(fields: [orderId], references: [id])
   phase           ProductionPhase      @relation(fields: [phaseId], references: [id])
