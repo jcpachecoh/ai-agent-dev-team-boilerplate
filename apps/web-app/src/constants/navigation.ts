@@ -107,12 +107,6 @@ export const navigationItems: NavItem[] = [
         icon: Tags,
       },
       {
-        id: 'rec-process',
-        label: 'Control de Procesos',
-        path: '/recetas/procesos',
-        icon: Monitor,
-      },
-      {
         id: 'rec-history',
         label: 'Historial de Ejecuciones',
         path: '/recetas/historial',
@@ -157,6 +151,12 @@ export const navigationItems: NavItem[] = [
         label: 'Estaciones',
         path: '/supervisor/estaciones',
         icon: LayoutGrid,
+      },
+      {
+        id: 'supervisor-process',
+        label: 'Control de Procesos',
+        path: '/recetas/procesos',
+        icon: Monitor,
       },
     ],
   },
