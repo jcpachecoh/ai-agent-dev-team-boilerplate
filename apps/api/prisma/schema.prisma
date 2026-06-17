@@ -297,6 +297,7 @@ model Tenant {
   department                        String?
   country                           String        @default("CO")
   taxRegime                         String?
+  logoUrl                           String?
   isActive                          Boolean       @default(true)
   createdAt                         DateTime      @default(now())
   updatedAt                         DateTime      @updatedAt

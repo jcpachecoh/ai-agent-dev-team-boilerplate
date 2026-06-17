@@ -178,6 +178,8 @@ export * from './components/produccion/shared/produccion-types';
 
 export * from './components/sede';
 
+export * from './components/empresa';
+
 export * from './components/ProfileHeader';
 export * from './components/InitialBadge';
 export * from './components/Sidebar';

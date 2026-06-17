@@ -5,6 +5,38 @@ import { TenantService } from '../service/tenant.service';
 const serviceMock = {
   findById: jest.fn(),
   findAll: jest.fn(),
+  update: jest.fn(),
+  assertTenantAccess: jest.fn(),
+};
+
+const tenant = {
+  id: 'palos-de-lena',
+  name: 'Palos de Leña',
+  nit: '900000000-1',
+  legalName: 'Palos de Leña S.A.S.',
+  tradeName: 'Palos de Leña',
+  legalRepresentativeName: null,
+  legalRepresentativeDocumentType: null,
+  legalRepresentativeDocumentNumber: null,
+  email: 'admin@palosdelena.test',
+  phone: '+57 300 000 0000',
+  address: 'Dirección de prueba',
+  city: 'Bogotá',
+  department: 'Cundinamarca',
+  country: 'CO',
+  taxRegime: 'RESPONSABLE_IVA',
+  logoUrl: null,
+  isActive: true,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+};
+
+const user = {
+  tenantId: 'palos-de-lena',
+  sub: 'user-1',
+  email: 'owner@test.com',
+  roleCode: 'OWNER',
+  roleId: 'role-owner',
 };
 
 describe('TenantResolver', () => {
@@ -19,21 +51,36 @@ describe('TenantResolver', () => {
     jest.clearAllMocks();
   });
 
-  it('delegates tenant lookup to service', async () => {
-    serviceMock.findById.mockResolvedValue({ id: 't-1', name: 'Tenant t-1' });
+  it('myTenant delegates to service with jwt tenantId', async () => {
+    serviceMock.findById.mockResolvedValue(tenant);
 
-    const result = await resolver.tenant('t-1');
+    const result = await resolver.myTenant(user);
 
-    expect(result).toEqual({ id: 't-1', name: 'Tenant t-1' });
-    expect(serviceMock.findById).toHaveBeenCalledWith('t-1');
+    expect(result.id).toBe('palos-de-lena');
+    expect(serviceMock.findById).toHaveBeenCalledWith('palos-de-lena');
   });
 
-  it('returns empty list when no tenants exist', async () => {
-    serviceMock.findAll.mockResolvedValue([]);
+  it('tenant asserts tenant access before lookup', async () => {
+    serviceMock.findById.mockResolvedValue(tenant);
 
-    const result = await resolver.tenants();
+    const result = await resolver.tenant(user, 'palos-de-lena');
 
-    expect(result).toEqual([]);
-    expect(serviceMock.findAll).toHaveBeenCalledTimes(1);
+    expect(serviceMock.assertTenantAccess).toHaveBeenCalledWith('palos-de-lena', 'palos-de-lena');
+    expect(result.legalName).toBe('Palos de Leña S.A.S.');
+  });
+
+  it('updateTenant delegates to service', async () => {
+    serviceMock.update.mockResolvedValue({ ...tenant, tradeName: 'Nuevo nombre' });
+
+    const result = await resolver.updateTenant(user, { tradeName: 'Nuevo nombre' });
+
+    expect(serviceMock.update).toHaveBeenCalledWith('palos-de-lena', {
+      tradeName: 'Nuevo nombre',
+      nit: undefined,
+      address: undefined,
+      phone: undefined,
+      email: undefined,
+    });
+    expect(result.tradeName).toBe('Nuevo nombre');
   });
 });

@@ -10,6 +10,7 @@ import {
   Factory,
   FileText,
   History,
+  Info,
   Key,
   LayoutGrid,
   List,
@@ -193,7 +194,15 @@ export const navigationItems: NavItem[] = [
     label: 'Empresa',
     icon: Building2,
     accent: 'teal',
-    children: [{ id: 'empresa-sedes', label: 'Sedes', path: '/empresa/sedes', icon: MapPin }],
+    children: [
+      {
+        id: 'empresa-informacion',
+        label: 'Información',
+        path: '/empresa/informacion',
+        icon: Info,
+      },
+      { id: 'empresa-sedes', label: 'Sedes', path: '/empresa/sedes', icon: MapPin },
+    ],
   },
   {
     id: 'settings',
@@ -231,6 +240,7 @@ const routeLabels: Record<string, string> = {
   '/payroll': 'Nómina',
   '/payroll/employees': 'Empleados',
   '/payroll/salaries': 'Salarios',
+  '/empresa/informacion': 'Información del restaurante',
   '/empresa/sedes': 'Sedes',
   '/empresa/sedes/nueva': 'Nueva sede',
   '/settings': 'Configuración',

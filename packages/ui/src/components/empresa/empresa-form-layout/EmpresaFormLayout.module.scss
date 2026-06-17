@@ -1,0 +1,27 @@
+@use '../../sede/shared/sede-theme' as sede;
+
+$mobile-breakpoint: 768px;
+
+.layout {
+  @include sede.sede-theme-classes;
+
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+  min-width: 0;
+}
+
+.main,
+.side {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}
