@@ -438,17 +438,20 @@ export interface ChainResult {
 
 export interface CreateIncidentInput {
   workStationId: string;
+  locationId?: string | null;
   executionId?: string | null;
   orderId?: string | null;
   type: IncidentType;
   severity: AlarmSeverity;
   description: string;
   photoUrl?: string | null;
+  requiresPause?: boolean;
 }
 
 export interface ListIncidentsFilters {
   orderId?: string;
   workStationId?: string;
+  locationId?: string;
   type?: IncidentType;
   severity?: AlarmSeverity;
   /** When true, only resolved incidents; when false, only open incidents. */
@@ -465,6 +468,7 @@ export interface IncidentResponse {
   orderId: string | null;
   executionId: string | null;
   workStationId: string;
+  locationId: string | null;
   operatorUserId: string;
   type: IncidentType;
   severity: AlarmSeverity;
@@ -494,6 +498,7 @@ export interface IIncidentRepository {
     resolvedBy: string,
     input: ResolveIncidentInput,
   ): Promise<ProductionIncident>;
+  findLocationById(tenantId: string, locationId: string): Promise<{ id: string } | null>;
 }
 
 export interface IIncidentService {

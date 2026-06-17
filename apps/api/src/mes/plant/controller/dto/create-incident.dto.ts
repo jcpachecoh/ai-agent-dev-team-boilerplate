@@ -32,6 +32,11 @@ export class CreateIncidentDto {
   @MinLength(1)
   description!: string;
 
+  @ApiPropertyOptional({ example: 'location-uuid' })
+  @IsString()
+  @IsOptional()
+  locationId?: string;
+
   @ApiPropertyOptional({
     example: 'https://cdn.example.com/incidents/photo.jpg',
     description: 'Optional URL string only — no upload in MES-08',

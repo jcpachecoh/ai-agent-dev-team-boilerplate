@@ -264,6 +264,7 @@ describe('PlantEventsService', () => {
       orderId: 'order-1',
       executionId: null,
       workStationId: 'ws-1',
+      locationId: null,
       operatorUserId: 'op-1',
       type: IncidentType.SAFETY,
       severity: AlarmSeverity.WARNING,

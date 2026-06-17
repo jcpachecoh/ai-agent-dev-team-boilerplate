@@ -27,6 +27,11 @@ export class ListIncidentsQueryDto {
   @IsOptional()
   workStationId?: string;
 
+  @ApiPropertyOptional({ example: 'location-uuid' })
+  @IsString()
+  @IsOptional()
+  locationId?: string;
+
   @ApiPropertyOptional({ enum: IncidentType })
   @IsEnum(IncidentType)
   @IsOptional()
