@@ -1,5 +1,6 @@
 export const STORAGE_KEYS = {
   stationId: 'plant.stationId',
+  activeLocationId: 'plant.activeLocationId',
   timer: 'plant.timer',
   offlineQueue: 'plant.offlineQueue',
 } as const;

@@ -17,7 +17,7 @@ import { useSessionStore } from '@/stores/session.store';
 import styles from './LoginScreen.module.scss';
 
 const PIN_LENGTH = 4;
-const CEDULA_MIN_LENGTH = 6;
+const CEDULA_MIN_LENGTH = 8;
 const CEDULA_MAX_LENGTH = 12;
 const SUCCESS_DISPLAY_MS = 1800;
 
@@ -69,7 +69,9 @@ export function LoginScreen({
         refreshToken: result.refreshToken,
         role: result.operator.role,
         tenantId: result.operator.tenantId,
-        sedeId: result.operator.sedeId,
+        locationId: result.operator.locationId,
+        assignedLocations: result.locations,
+        requiresLocationSelection: result.requiresLocationSelection,
       });
       setSuccessName(operatorName);
       setPin('');
@@ -124,7 +126,7 @@ export function LoginScreen({
 
   const submitCedula = useCallback(() => {
     if (cedula.length < CEDULA_MIN_LENGTH) {
-      setError('Ingrese un número de cédula válido (mín. 6 dígitos)');
+      setError('Ingrese un número de cédula válido (mín. 8 dígitos)');
       vibratePinError();
       setShakeKeypad(true);
       return;

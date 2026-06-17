@@ -25,13 +25,13 @@ export class MesCreateUserDto {
 
   @ApiPropertyOptional({
     description: 'Sede asignada (obligatoria para rol OPERATOR)',
-    example: 'sede-principal',
+    example: 'clxyz123location',
   })
   @ValidateIf((dto: MesCreateUserDto) => dto.role === OperationalRole.OPERATOR)
-  @IsNotEmpty({ message: 'sedeId is required for OPERATOR role' })
+  @IsNotEmpty({ message: 'locationId is required for OPERATOR role' })
   @IsString()
   @ValidateIf((dto: MesCreateUserDto) => dto.role !== OperationalRole.OPERATOR)
   @IsOptional()
   @IsString()
-  sedeId?: string;
+  locationId?: string;
 }

@@ -23,7 +23,7 @@ describe('Cross-token JWT verification (AUTH-10)', () => {
       sub: 'op-1',
       cedulaHash: 'hash',
       role: OperationalRole.OPERATOR,
-      sedeId: null,
+      locationId: null,
       tenantId: TENANT_ID,
     });
 

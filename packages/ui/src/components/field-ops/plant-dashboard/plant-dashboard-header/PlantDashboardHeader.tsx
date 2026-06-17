@@ -12,6 +12,8 @@ import styles from './PlantDashboardHeader.module.scss';
 export interface PlantDashboardHeaderProps extends PlantDashboardThemeProps {
   statusCounts: PlantStatusCounts;
   operatorName?: string;
+  locationName?: string;
+  onChangeLocation?: () => void;
   clockTime?: string;
   clockSeconds?: string;
   isOnline?: boolean;
@@ -23,6 +25,8 @@ export interface PlantDashboardHeaderProps extends PlantDashboardThemeProps {
 export function PlantDashboardHeader({
   statusCounts,
   operatorName = 'Operador',
+  locationName,
+  onChangeLocation,
   clockTime,
   clockSeconds,
   isOnline = true,
@@ -87,6 +91,18 @@ export function PlantDashboardHeader({
           aria-hidden
         />
         <span className={styles.metaDivider} aria-hidden />
+        <span className={styles.metaDivider} aria-hidden />
+        {locationName ? (
+          <button
+            type="button"
+            className={styles.locationButton}
+            onClick={onChangeLocation}
+            disabled={!onChangeLocation}
+            data-testid="active-location-button"
+          >
+            {locationName}
+          </button>
+        ) : null}
         <span className={styles.operatorName}>{operatorName}</span>
         <time className={styles.clockLong}>{displaySeconds}</time>
         {logoutSlot ??

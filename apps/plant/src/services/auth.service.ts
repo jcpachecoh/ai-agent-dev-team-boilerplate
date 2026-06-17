@@ -1,4 +1,5 @@
 import { PlantApiError, plantFetch } from '@/services/plant-api.service';
+import type { AssignedLocation } from '@/stores/session.store';
 
 export type OperationalRole = 'OWNER' | 'SUPERVISOR' | 'MANAGER' | 'OPERATOR';
 
@@ -16,8 +17,10 @@ export interface OperatorLoginResponse {
     name?: string;
     role: OperationalRole;
     tenantId: string;
-    sedeId?: string | null;
+    locationId?: string | null;
   };
+  locations: AssignedLocation[];
+  requiresLocationSelection: boolean;
 }
 
 export interface OperatorAuthResult {
@@ -27,7 +30,9 @@ export interface OperatorAuthResult {
   refreshToken?: string;
   role: OperationalRole;
   tenantId: string;
-  sedeId?: string | null;
+  locationId?: string | null;
+  assignedLocations: AssignedLocation[];
+  requiresLocationSelection: boolean;
 }
 
 export class OperatorAuthError extends Error {
@@ -100,7 +105,9 @@ export async function authenticateOperatorPin(
       accessToken: 'demo-access-token',
       role: 'OPERATOR',
       tenantId: DEFAULT_TENANT_ID,
-      sedeId: stationId,
+      locationId: stationId,
+      assignedLocations: [],
+      requiresLocationSelection: false,
     };
   }
 
@@ -123,7 +130,9 @@ function mapLoginResponse(response: OperatorLoginResponse, cedula: string): Oper
     refreshToken: response.refreshToken,
     role: response.operator.role,
     tenantId: response.operator.tenantId,
-    sedeId: response.operator.sedeId,
+    locationId: response.operator.locationId,
+    assignedLocations: response.locations,
+    requiresLocationSelection: response.requiresLocationSelection,
   };
 }
 

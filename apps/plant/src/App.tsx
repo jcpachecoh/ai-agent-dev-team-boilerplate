@@ -6,13 +6,19 @@ import { useWakeLock } from '@/hooks/useWakeLock';
 import { logoutOperator } from '@/services/auth.service';
 import { ActivePhaseScreen } from '@/screens/ActivePhaseScreen';
 import { CompletePhaseScreen } from '@/screens/CompletePhaseScreen';
+import { LocationSelectScreen } from '@/screens/LocationSelectScreen';
 import { LoginScreen } from '@/screens/LoginScreen';
+import { NoLocationScreen } from '@/screens/NoLocationScreen';
 import { useSessionStore } from '@/stores/session.store';
 
 export function App() {
   const [boot, setBoot] = useState<BootstrapResult | null>(null);
   const [view, setView] = useState<'active' | 'complete'>('active');
+  const [showLocationPicker, setShowLocationPicker] = useState(false);
   const isAuthenticated = useSessionStore((s) => s.isAuthenticated);
+  const operator = useSessionStore((s) => s.operator);
+  const canOperate = useSessionStore((s) => s.canOperate);
+  const getActiveLocation = useSessionStore((s) => s.getActiveLocation);
   const logout = useSessionStore((s) => s.logout);
   const queryClient = useQueryClient();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -28,6 +34,7 @@ export function App() {
       void queryClient.invalidateQueries({ queryKey: ['mes-auth', 'me'] });
       void queryClient.invalidateQueries({ queryKey: ['plant-session'] });
       setView('active');
+      setShowLocationPicker(false);
       logout();
       setIsLoggingOut(false);
     }
@@ -49,6 +56,33 @@ export function App() {
     return <LoginScreen />;
   }
 
+  if (!operator || operator.assignedLocations.length === 0) {
+    return <NoLocationScreen onLogout={() => void handleLogout()} isLoggingOut={isLoggingOut} />;
+  }
+
+  const needsLocationSelection =
+    operator.requiresLocationSelection ||
+    (!operator.locationId && operator.assignedLocations.length > 1);
+
+  if (needsLocationSelection || showLocationPicker) {
+    return (
+      <LocationSelectScreen
+        locations={operator.assignedLocations}
+        mode={showLocationPicker ? 'change' : 'initial'}
+        onSelected={() => setShowLocationPicker(false)}
+        onCancel={
+          showLocationPicker ? () => setShowLocationPicker(false) : () => void handleLogout()
+        }
+      />
+    );
+  }
+
+  if (!canOperate()) {
+    return <NoLocationScreen onLogout={() => void handleLogout()} isLoggingOut={isLoggingOut} />;
+  }
+
+  const activeLocation = getActiveLocation();
+
   if (view === 'complete') {
     return (
       <CompletePhaseScreen
@@ -65,6 +99,8 @@ export function App() {
       onLogout={() => void handleLogout()}
       isLoggingOut={isLoggingOut}
       onCompletePhase={() => setView('complete')}
+      onChangeLocation={() => setShowLocationPicker(true)}
+      activeLocationName={activeLocation?.name}
     />
   );
 }

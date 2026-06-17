@@ -4,6 +4,7 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import type {
   CreateOperationalUserData,
   IMesAuthRepository,
+  MesLocationSummary,
 } from '../interfaces/mes-auth.interfaces';
 
 @Injectable()
@@ -18,6 +19,45 @@ export class MesAuthRepository implements IMesAuthRepository {
 
   findById(id: string): Promise<OperationalUser | null> {
     return this.prisma.operationalUser.findUnique({ where: { id } });
+  }
+
+  async findLocationIdByUserId(tenantId: string, userId: string): Promise<string | null> {
+    const assignment = await this.prisma.userLocation.findFirst({
+      where: { tenantId, userId },
+      select: { locationId: true },
+      orderBy: { createdAt: 'asc' },
+    });
+    return assignment?.locationId ?? null;
+  }
+
+  async findActiveLocationsByUserId(
+    tenantId: string,
+    userId: string,
+  ): Promise<MesLocationSummary[]> {
+    return this.prisma.location.findMany({
+      where: {
+        tenantId,
+        deletedAt: null,
+        isActive: true,
+        users: { some: { userId, tenantId } },
+      },
+      select: { id: true, name: true, code: true, city: true, address: true },
+      orderBy: { name: 'asc' },
+    });
+  }
+
+  async findLocationById(tenantId: string, locationId: string): Promise<MesLocationSummary | null> {
+    return this.prisma.location.findFirst({
+      where: { id: locationId, tenantId, deletedAt: null, isActive: true },
+      select: { id: true, name: true, code: true, city: true, address: true },
+    });
+  }
+
+  updateCedulaHash(id: string, cedulaHash: string): Promise<OperationalUser> {
+    return this.prisma.operationalUser.update({
+      where: { id },
+      data: { cedulaHash },
+    });
   }
 
   createUser(data: CreateOperationalUserData): Promise<OperationalUser> {

@@ -34,8 +34,10 @@ describe('auth.service', () => {
         name: 'Juan Pérez',
         role: 'OPERATOR',
         tenantId: 'palos-de-lena',
-        sedeId: 'EST-02',
+        locationId: 'EST-02',
       },
+      locations: [{ id: 'EST-02', name: 'Sede 1', code: 'PL-01', city: 'Bogotá' }],
+      requiresLocationSelection: false,
     });
     const result = await authenticateOperatorPin('EST-02', '12345678', '5678');
     expect(plantApi.plantFetch).toHaveBeenCalledTimes(1);
@@ -50,8 +52,10 @@ describe('auth.service', () => {
         id: 'OP-001',
         role: 'OPERATOR',
         tenantId: 'palos-de-lena',
-        sedeId: 'EST-02',
+        locationId: 'EST-02',
       },
+      locations: [],
+      requiresLocationSelection: false,
     });
 
     await loginOperator({ stationId: 'EST-02', cedula: '12345678', pin: '5678' });

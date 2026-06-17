@@ -17,6 +17,8 @@ export interface ActivePhaseScreenProps {
   onReportIssue?: () => void;
   onLogout?: () => void;
   isLoggingOut?: boolean;
+  onChangeLocation?: () => void;
+  activeLocationName?: string;
 }
 
 function formatClockTime(date: Date): string {
@@ -50,6 +52,8 @@ export function ActivePhaseScreen({
   onReportIssue,
   onLogout,
   isLoggingOut = false,
+  onChangeLocation,
+  activeLocationName,
 }: ActivePhaseScreenProps): React.JSX.Element {
   const operatorName = useSessionStore((s) => s.operator?.operatorName);
   const layoutMode = useDashboardLayoutStore((s) => s.layoutMode);
@@ -119,6 +123,8 @@ export function ActivePhaseScreen({
       <PlantDashboardHeader
         statusCounts={statusCounts}
         operatorName={operatorName ?? 'Operador'}
+        locationName={activeLocationName}
+        onChangeLocation={onChangeLocation}
         clockTime={formatClockTime(clock)}
         clockSeconds={formatClockSeconds(clock)}
         isOnline

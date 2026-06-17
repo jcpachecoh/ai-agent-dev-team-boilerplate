@@ -142,3 +142,24 @@
 .logout {
   flex-shrink: 0;
 }
+
+.locationButton {
+  border: 1px solid var(--pd-border-strong);
+  border-radius: 999px;
+  background: transparent;
+  color: #c8a96e;
+  font: inherit;
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  padding: 0.2rem 0.65rem;
+  cursor: pointer;
+  max-width: 9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.locationButton:disabled {
+  cursor: default;
+  opacity: 0.7;
+}

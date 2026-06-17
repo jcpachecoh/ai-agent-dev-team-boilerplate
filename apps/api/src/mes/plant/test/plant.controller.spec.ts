@@ -22,7 +22,7 @@ const mesUser: MesJwtPayload = {
   cedulaHash: 'cedula-hash',
   role: OperationalRole.OWNER,
   tenantId,
-  sedeId: null,
+  locationId: null,
 };
 
 const buildReq = (user: MesJwtPayload = mesUser) => ({ user }) as never;

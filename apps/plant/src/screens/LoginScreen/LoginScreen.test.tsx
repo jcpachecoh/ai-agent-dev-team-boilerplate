@@ -112,6 +112,22 @@ describe('LoginScreen', () => {
     expect(screen.getByRole('group', { name: /teclado pin/i })).toBeInTheDocument();
   });
 
+  it('does not submit when cédula is shorter than 8 digits', async () => {
+    const user = userEvent.setup();
+    renderLoginScreen(<LoginScreen />);
+
+    for (const digit of '123456') {
+      await user.click(screen.getByRole('button', { name: `Tecla ${digit}` }));
+    }
+    await user.click(screen.getByRole('button', { name: 'OK' }));
+
+    expect(
+      await screen.findByText('Ingrese un número de cédula válido (mín. 8 dígitos)'),
+    ).toBeInTheDocument();
+    expect(authService.loginOperator).not.toHaveBeenCalled();
+    expect(screen.getByText(/ingrese su número de cédula/i)).toBeInTheDocument();
+  });
+
   it('does not submit when PIN is incomplete', async () => {
     const user = userEvent.setup();
     vi.mocked(authService.loginOperator).mockResolvedValue({
@@ -121,8 +137,10 @@ describe('LoginScreen', () => {
         name: 'Ana',
         role: 'OPERATOR',
         tenantId: 'tenant-abc',
-        sedeId: 'EST-02',
+        locationId: 'EST-02',
       },
+      locations: [{ id: 'EST-02', name: 'Sede Test', code: 'EST-02', city: null }],
+      requiresLocationSelection: false,
     });
 
     renderLoginScreen(<LoginScreen />);
@@ -188,8 +206,10 @@ describe('LoginScreen', () => {
         name: 'Carlos Mendoza',
         role: 'OPERATOR',
         tenantId: 'tenant-abc',
-        sedeId: 'EST-02',
+        locationId: 'EST-02',
       },
+      locations: [{ id: 'EST-02', name: 'Sede Test', code: 'EST-02', city: null }],
+      requiresLocationSelection: false,
     });
 
     const queryClient = renderLoginScreen(<LoginScreen onLoginSuccess={onLoginSuccess} />);

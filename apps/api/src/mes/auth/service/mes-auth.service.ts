@@ -21,6 +21,7 @@ import type {
   MesCreateUserInput,
   MesCreatedUserResponse,
   MesJwtPayload,
+  MesLocationSummary,
   MesLoginInput,
   MesMeResponse,
 } from '../interfaces/mes-auth.interfaces';
@@ -93,7 +94,7 @@ export class MesAuthService implements IMesAuthService {
     }
 
     const cedulaHash = this.hashCedula(dto.cedula);
-    const user = await this.mesAuthRepository.findByCedulaHash(tenantId.trim(), cedulaHash);
+    const user = await this.resolveOperationalUserByCedula(tenantId.trim(), dto.cedula, cedulaHash);
 
     if (!user || !user.isActive) {
       await this.auditService.logLogin({
@@ -178,17 +179,39 @@ export class MesAuthService implements IMesAuthService {
     }
   }
 
-  async me(userId: string): Promise<MesMeResponse> {
+  async me(userId: string, activeLocationId?: string | null): Promise<MesMeResponse> {
     const user = await this.mesAuthRepository.findById(userId);
     if (!user) {
       throw new NotFoundException('User not found');
     }
-    return {
-      id: user.id,
-      role: user.role,
-      tenantId: user.tenantId,
-      sedeId: user.sedeId,
-    };
+    return this.toOperatorResponse(user, activeLocationId);
+  }
+
+  async myLocations(userId: string): Promise<MesLocationSummary[]> {
+    const user = await this.mesAuthRepository.findById(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    return this.resolveAssignedLocations(user);
+  }
+
+  async selectLocation(userId: string, locationId: string): Promise<MesAuthTokens> {
+    const user = await this.mesAuthRepository.findById(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    if (!user.isActive) {
+      throw new ForbiddenException('Access denied');
+    }
+
+    const trimmedLocationId = locationId.trim();
+    const locations = await this.resolveAssignedLocations(user);
+    const isAssigned = locations.some((location) => location.id === trimmedLocationId);
+    if (!isAssigned) {
+      throw new ForbiddenException('La sede no está asignada a este operador');
+    }
+
+    return this.issueTokens(user, trimmedLocationId, locations);
   }
 
   async getRole(
@@ -225,7 +248,7 @@ export class MesAuthService implements IMesAuthService {
       throw new ForbiddenException('Access denied');
     }
 
-    this.assertOperatorSede(dto.role, dto.sedeId);
+    this.assertOperatorLocation(dto.role, dto.locationId);
 
     const cedulaHash = this.hashCedula(dto.cedula);
     const existing = await this.mesAuthRepository.findByCedulaHash(requester.tenantId, cedulaHash);
@@ -234,7 +257,7 @@ export class MesAuthService implements IMesAuthService {
     }
 
     const pinHash = await bcrypt.hash(dto.pin, SALT_ROUNDS);
-    const sedeId = dto.sedeId?.trim() ?? null;
+    const locationId = dto.locationId?.trim() ?? null;
 
     let user: OperationalUser;
     try {
@@ -243,7 +266,7 @@ export class MesAuthService implements IMesAuthService {
         cedulaHash,
         pinHash,
         role: dto.role,
-        sedeId,
+        sedeId: locationId,
       });
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError && error.code === 'P2002') {
@@ -257,13 +280,13 @@ export class MesAuthService implements IMesAuthService {
       cedula: this.maskCedula(dto.cedula),
       role: user.role,
       tenantId: user.tenantId,
-      sedeId: user.sedeId,
+      locationId: await this.resolveActiveLocationId(user),
     };
   }
 
-  private assertOperatorSede(role: OperationalRole, sedeId?: string): void {
-    if (role === OperationalRole.OPERATOR && !sedeId?.trim()) {
-      throw new BadRequestException('sedeId is required for OPERATOR role');
+  private assertOperatorLocation(role: OperationalRole, locationId?: string): void {
+    if (role === OperationalRole.OPERATOR && !locationId?.trim()) {
+      throw new BadRequestException('locationId is required for OPERATOR role');
     }
   }
 
@@ -298,6 +321,33 @@ export class MesAuthService implements IMesAuthService {
     return crypto.createHash('sha256').update(cedula).digest('hex');
   }
 
+  private async resolveOperationalUserByCedula(
+    tenantId: string,
+    cedula: string,
+    primaryHash: string,
+  ): Promise<OperationalUser | null> {
+    const currentUser = await this.mesAuthRepository.findByCedulaHash(tenantId, primaryHash);
+    if (currentUser) {
+      return currentUser;
+    }
+
+    if (!process.env.CEDULA_HMAC_SECRET) {
+      return null;
+    }
+
+    const legacyHash = crypto.createHash('sha256').update(cedula).digest('hex');
+    if (legacyHash === primaryHash) {
+      return null;
+    }
+
+    const legacyUser = await this.mesAuthRepository.findByCedulaHash(tenantId, legacyHash);
+    if (!legacyUser) {
+      return null;
+    }
+
+    return this.mesAuthRepository.updateCedulaHash(legacyUser.id, primaryHash);
+  }
+
   private async handleFailedLogin(user: OperationalUser): Promise<void> {
     await this.mesAuthRepository.incrementLoginAttempts(user.id);
     if (user.loginAttempts + 1 >= MAX_ATTEMPTS) {
@@ -305,13 +355,87 @@ export class MesAuthService implements IMesAuthService {
     }
   }
 
-  private async issueTokens(user: OperationalUser): Promise<MesAuthTokens> {
+  private async resolveAssignedLocations(user: OperationalUser): Promise<MesLocationSummary[]> {
+    if (user.userId) {
+      return this.mesAuthRepository.findActiveLocationsByUserId(user.tenantId, user.userId);
+    }
+
+    if (!user.sedeId) {
+      return [];
+    }
+
+    const location = await this.mesAuthRepository.findLocationById(user.tenantId, user.sedeId);
+    if (location) {
+      return [location];
+    }
+
+    return [
+      {
+        id: user.sedeId,
+        name: 'Sede asignada',
+        code: null,
+        city: null,
+        address: null,
+      },
+    ];
+  }
+
+  private resolveLoginLocation(
+    locations: MesLocationSummary[],
+    selectedLocationId?: string | null,
+  ): { locationId: string | null; requiresLocationSelection: boolean } {
+    if (selectedLocationId) {
+      return { locationId: selectedLocationId, requiresLocationSelection: false };
+    }
+    if (locations.length === 0) {
+      return { locationId: null, requiresLocationSelection: false };
+    }
+    if (locations.length === 1) {
+      return { locationId: locations[0].id, requiresLocationSelection: false };
+    }
+    return { locationId: null, requiresLocationSelection: true };
+  }
+
+  private async resolveActiveLocationId(
+    user: OperationalUser,
+    activeLocationId?: string | null,
+  ): Promise<string | null> {
+    if (activeLocationId) {
+      return activeLocationId;
+    }
+
+    const locations = await this.resolveAssignedLocations(user);
+    return this.resolveLoginLocation(locations).locationId;
+  }
+
+  private async toOperatorResponse(
+    user: OperationalUser,
+    activeLocationId?: string | null,
+  ): Promise<MesMeResponse> {
+    return {
+      id: user.id,
+      role: user.role,
+      tenantId: user.tenantId,
+      locationId: await this.resolveActiveLocationId(user, activeLocationId),
+    };
+  }
+
+  private async issueTokens(
+    user: OperationalUser,
+    selectedLocationId?: string | null,
+    preloadedLocations?: MesLocationSummary[],
+  ): Promise<MesAuthTokens> {
+    const locations = preloadedLocations ?? (await this.resolveAssignedLocations(user));
+    const { locationId, requiresLocationSelection } = this.resolveLoginLocation(
+      locations,
+      selectedLocationId,
+    );
     const jti = randomUUID();
     const payload: MesJwtPayload = {
       sub: user.id,
       cedulaHash: user.cedulaHash,
       role: user.role,
-      sedeId: user.sedeId,
+      locationId,
       tenantId: user.tenantId,
       jti,
     };
@@ -345,8 +469,10 @@ export class MesAuthService implements IMesAuthService {
         id: user.id,
         role: user.role,
         tenantId: user.tenantId,
-        sedeId: user.sedeId,
+        locationId,
       },
+      locations,
+      requiresLocationSelection,
     };
   }
 }

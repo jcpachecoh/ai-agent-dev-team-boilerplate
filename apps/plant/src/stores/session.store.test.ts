@@ -24,9 +24,12 @@ describe('session.store', () => {
       refreshToken: 'refresh-token',
       role: 'OPERATOR',
       tenantId: 'tenant-abc',
-      sedeId: 'EST-02',
+      locationId: 'loc-1',
+      assignedLocations: [{ id: 'loc-1', name: 'Sede 1', code: 'PL-01', city: 'Bogotá' }],
+      requiresLocationSelection: false,
     });
     expect(useSessionStore.getState().isAuthenticated).toBe(true);
+    expect(useSessionStore.getState().canOperate()).toBe(true);
     expect(useSessionStore.getState().operator?.accessToken).toBe('access-token');
     useSessionStore.getState().logout();
     expect(useSessionStore.getState().isAuthenticated).toBe(false);

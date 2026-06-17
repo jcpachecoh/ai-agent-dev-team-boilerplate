@@ -10,13 +10,15 @@ const meResponse = {
   id: 'op-user-1',
   role: OperationalRole.OPERATOR,
   tenantId: 'tenant-abc',
-  sedeId: null,
+  locationId: null,
 };
 
 const serviceMock = {
   login: jest.fn(),
   logout: jest.fn(),
   me: jest.fn(),
+  myLocations: jest.fn(),
+  selectLocation: jest.fn(),
   getRole: jest.fn(),
   createUser: jest.fn(),
 };
@@ -91,7 +93,7 @@ describe('MesAuthController', () => {
           cedulaHash: 'hash',
           role: OperationalRole.OPERATOR,
           tenantId: 'tenant-abc',
-          sedeId: null,
+          locationId: null,
         },
         ip: '10.0.0.5',
         socket: { remoteAddress: '10.0.0.1' },
@@ -108,14 +110,14 @@ describe('MesAuthController', () => {
   describe('me', () => {
     it('calls service.me with req.user.sub', async () => {
       serviceMock.me.mockResolvedValue(meResponse);
-      const req = { user: { sub: 'op-user-1' } } as never;
+      const req = { user: { sub: 'op-user-1', locationId: 'location-1' } } as never;
 
       const result = await controller.me(req);
 
       expect(result).toEqual(meResponse);
       expect(result).not.toHaveProperty('pinHash');
       expect(result).not.toHaveProperty('cedulaHash');
-      expect(serviceMock.me).toHaveBeenCalledWith('op-user-1');
+      expect(serviceMock.me).toHaveBeenCalledWith('op-user-1', 'location-1');
     });
   });
 
@@ -126,14 +128,14 @@ describe('MesAuthController', () => {
         cedula: '****4321',
         role: OperationalRole.OPERATOR,
         tenantId: 'tenant-abc',
-        sedeId: 'sede-principal',
+        locationId: 'location-principal',
       };
       serviceMock.createUser.mockResolvedValue(created);
       const dto = {
         cedula: '87654321',
         pin: '4321',
         role: OperationalRole.OPERATOR,
-        sedeId: 'sede-principal',
+        locationId: 'location-principal',
       };
       const req = { user: { sub: 'owner-1' } } as never;
 

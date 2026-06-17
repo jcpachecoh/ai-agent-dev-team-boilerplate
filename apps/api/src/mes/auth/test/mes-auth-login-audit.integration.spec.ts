@@ -64,6 +64,10 @@ describe('MesAuthService LoginAudit integration (AUTH-10)', () => {
   const repoMock = {
     findByCedulaHash: jest.fn(),
     findById: jest.fn(),
+    findLocationIdByUserId: jest.fn(),
+    findActiveLocationsByUserId: jest.fn(),
+    findLocationById: jest.fn(),
+    updateCedulaHash: jest.fn(),
     createUser: jest.fn(),
     incrementLoginAttempts: jest.fn(),
     lockUser: jest.fn(),
@@ -88,6 +92,7 @@ describe('MesAuthService LoginAudit integration (AUTH-10)', () => {
       resetAt: new Date(),
     });
     repoMock.findByCedulaHash.mockResolvedValue(baseOperationalUser());
+    repoMock.findActiveLocationsByUserId.mockResolvedValue([]);
     (bcryptMock.compare as jest.Mock).mockResolvedValue(true);
     jwtMock.signAsync.mockResolvedValueOnce('access').mockResolvedValueOnce('refresh');
     (bcryptMock.hash as jest.Mock).mockResolvedValue('hashed-refresh');

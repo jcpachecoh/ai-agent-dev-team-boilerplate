@@ -25,6 +25,13 @@ const prismaMock = {
     create: jest.fn(),
     update: jest.fn(),
   },
+  userLocation: {
+    findFirst: jest.fn(),
+  },
+  location: {
+    findMany: jest.fn(),
+    findFirst: jest.fn(),
+  },
 };
 
 describe('MesAuthRepository', () => {
@@ -70,6 +77,104 @@ describe('MesAuthRepository', () => {
       prismaMock.operationalUser.findUnique.mockResolvedValue(null);
       const result = await repository.findById('unknown');
       expect(result).toBeNull();
+    });
+  });
+
+  describe('findLocationIdByUserId', () => {
+    it('returns the first assigned location for the user in tenant', async () => {
+      prismaMock.userLocation.findFirst.mockResolvedValue({ locationId: 'location-1' });
+
+      const result = await repository.findLocationIdByUserId('tenant-1', 'user-1');
+
+      expect(result).toBe('location-1');
+      expect(prismaMock.userLocation.findFirst).toHaveBeenCalledWith({
+        where: { tenantId: 'tenant-1', userId: 'user-1' },
+        select: { locationId: true },
+        orderBy: { createdAt: 'asc' },
+      });
+    });
+
+    it('returns null when user has no location assignment', async () => {
+      prismaMock.userLocation.findFirst.mockResolvedValue(null);
+
+      const result = await repository.findLocationIdByUserId('tenant-1', 'user-1');
+
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('findActiveLocationsByUserId', () => {
+    it('returns active locations assigned to the global user', async () => {
+      const locations = [
+        {
+          id: 'location-1',
+          name: 'Sede 1',
+          code: 'PL-01',
+          city: 'Bogotá',
+          address: 'Calle 1',
+        },
+      ];
+      prismaMock.location.findMany.mockResolvedValue(locations);
+
+      const result = await repository.findActiveLocationsByUserId('tenant-1', 'user-1');
+
+      expect(result).toEqual(locations);
+      expect(prismaMock.location.findMany).toHaveBeenCalledWith({
+        where: {
+          tenantId: 'tenant-1',
+          deletedAt: null,
+          isActive: true,
+          users: { some: { userId: 'user-1', tenantId: 'tenant-1' } },
+        },
+        select: { id: true, name: true, code: true, city: true, address: true },
+        orderBy: { name: 'asc' },
+      });
+    });
+  });
+
+  describe('findLocationById', () => {
+    it('returns location summary when active location exists', async () => {
+      const location = {
+        id: 'location-1',
+        name: 'Sede 1',
+        code: 'PL-01',
+        city: 'Bogotá',
+        address: 'Calle 1',
+      };
+      prismaMock.location.findFirst.mockResolvedValue(location);
+
+      const result = await repository.findLocationById('tenant-1', 'location-1');
+
+      expect(result).toEqual(location);
+      expect(prismaMock.location.findFirst).toHaveBeenCalledWith({
+        where: { id: 'location-1', tenantId: 'tenant-1', deletedAt: null, isActive: true },
+        select: { id: true, name: true, code: true, city: true, address: true },
+      });
+    });
+
+    it('returns null when location is missing', async () => {
+      prismaMock.location.findFirst.mockResolvedValue(null);
+
+      const result = await repository.findLocationById('tenant-1', 'missing');
+
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('updateCedulaHash', () => {
+    it('updates cedula hash for the operational user', async () => {
+      prismaMock.operationalUser.update.mockResolvedValue({
+        ...mockOperationalUser,
+        cedulaHash: 'new-hash',
+      });
+
+      const result = await repository.updateCedulaHash('op-user-1', 'new-hash');
+
+      expect(result.cedulaHash).toBe('new-hash');
+      expect(prismaMock.operationalUser.update).toHaveBeenCalledWith({
+        where: { id: 'op-user-1' },
+        data: { cedulaHash: 'new-hash' },
+      });
     });
   });
 

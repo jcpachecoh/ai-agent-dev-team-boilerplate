@@ -126,7 +126,7 @@ describe('PlantGateway', () => {
       tenantId: 'palos-de-lena',
       role: 'OWNER',
       cedulaHash: 'hash',
-      sedeId: null,
+      locationId: null,
     });
 
     const join = jest.fn();
@@ -168,7 +168,7 @@ describe('PlantGateway', () => {
       tenantId: 'palos-de-lena',
       role: 'OWNER',
       cedulaHash: 'hash',
-      sedeId: null,
+      locationId: null,
     });
 
     const join = jest.fn();
@@ -195,7 +195,7 @@ describe('PlantGateway', () => {
       tenantId: 'palos-de-lena',
       role: 'OWNER',
       cedulaHash: 'hash',
-      sedeId: null,
+      locationId: null,
     });
 
     const join = jest.fn();

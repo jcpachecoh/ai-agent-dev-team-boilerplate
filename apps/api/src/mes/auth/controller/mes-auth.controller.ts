@@ -37,6 +37,8 @@ import {
 } from './dto/mes-auth-response.dto';
 import { MesCreateUserDto } from './dto/mes-create-user.dto';
 import { MesLoginDto } from './dto/mes-login.dto';
+import { MesSelectLocationDto } from './dto/mes-select-location.dto';
+import { MesLocationSummaryDto } from './dto/mes-location-summary.dto';
 
 type MesRequestUser = MesJwtPayload & { jti?: string };
 
@@ -75,11 +77,35 @@ export class MesAuthController {
   @Public()
   @UseGuards(MesJwtGuard)
   @ApiBearerAuth()
+  @ApiOperation({ summary: 'List active locations assigned to the current operator' })
+  @ApiOkResponse({ type: [MesLocationSummaryDto] })
+  @Get('mes/auth/my-locations')
+  myLocations(@Req() req: Request & { user: MesRequestUser }) {
+    return this.mesAuthService.myLocations(req.user.sub);
+  }
+
+  @Public()
+  @UseGuards(MesJwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Select active location and refresh session tokens' })
+  @ApiOkResponse({ type: MesAuthResponseDto })
+  @Post('mes/auth/select-location')
+  @HttpCode(HttpStatus.OK)
+  selectLocation(
+    @Body() dto: MesSelectLocationDto,
+    @Req() req: Request & { user: MesRequestUser },
+  ) {
+    return this.mesAuthService.selectLocation(req.user.sub, dto.locationId);
+  }
+
+  @Public()
+  @UseGuards(MesJwtGuard)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Get current operational user profile' })
   @ApiOkResponse({ type: MesMeResponseDto })
   @Get('mes/auth/me')
   me(@Req() req: Request & { user: MesRequestUser }) {
-    return this.mesAuthService.me(req.user.sub);
+    return this.mesAuthService.me(req.user.sub, req.user.locationId);
   }
 
   @Public()

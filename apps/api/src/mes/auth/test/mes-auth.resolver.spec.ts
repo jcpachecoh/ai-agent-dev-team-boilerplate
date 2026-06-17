@@ -18,6 +18,8 @@ const mesAuthServiceMock = {
   login: jest.fn(),
   logout: jest.fn(),
   me: jest.fn(),
+  myLocations: jest.fn(),
+  selectLocation: jest.fn(),
 };
 
 describe('MesAuthResolver', () => {
@@ -36,7 +38,9 @@ describe('MesAuthResolver', () => {
     const tokens = {
       accessToken: 'mes-a',
       refreshToken: 'mes-r',
-      operator: { id: 'op-1', role: 'OPERATOR', tenantId, sedeId: null },
+      operator: { id: 'op-1', role: 'OPERATOR', tenantId, locationId: null },
+      locations: [],
+      requiresLocationSelection: false,
     };
     mesAuthServiceMock.login.mockResolvedValue(tokens);
 
@@ -58,7 +62,7 @@ describe('MesAuthResolver', () => {
       sub: 'op-1',
       cedulaHash: 'hash',
       role: 'OPERATOR',
-      sedeId: null,
+      locationId: null,
       tenantId,
       jti: 'jti-1',
     });
@@ -67,18 +71,28 @@ describe('MesAuthResolver', () => {
   });
 
   it('delegates meOperational to MesAuthService', async () => {
-    const profile = { id: 'op-1', role: 'OPERATOR', tenantId, sedeId: null };
+    const profile = { id: 'op-1', role: 'OPERATOR', tenantId, locationId: null };
     mesAuthServiceMock.me.mockResolvedValue(profile);
 
     const result = await resolver.meOperational({
       sub: 'op-1',
       cedulaHash: 'hash',
       role: 'OPERATOR',
-      sedeId: null,
+      locationId: null,
       tenantId,
     });
 
     expect(result).toEqual(profile);
-    expect(mesAuthServiceMock.me).toHaveBeenCalledWith('op-1');
+    expect(mesAuthServiceMock.me).toHaveBeenCalledWith('op-1', null);
+  });
+
+  it('delegates myLocations to MesAuthService', async () => {
+    const locations = [{ id: 'loc-1', name: 'Sede 1', code: 'PL-01', city: 'Bogotá' }];
+    mesAuthServiceMock.myLocations.mockResolvedValue(locations);
+
+    const result = await resolver.myLocations({ sub: 'op-1', locationId: null, tenantId } as never);
+
+    expect(result).toEqual(locations);
+    expect(mesAuthServiceMock.myLocations).toHaveBeenCalledWith('op-1');
   });
 });

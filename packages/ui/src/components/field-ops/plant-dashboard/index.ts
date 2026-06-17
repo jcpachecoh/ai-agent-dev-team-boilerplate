@@ -5,5 +5,8 @@ export * from './plant-workstation-card';
 export * from './plant-workstation-empty-slot';
 export * from './plant-layout-mode-fab';
 export * from './plant-order-assign-modal';
+export * from './plant-location-card';
+export * from './plant-location-select-header';
+export * from './plant-location-select-footer';
 export * from './plant-recipe-detail-screen';
 export * from './shared/plant-recipe-detail-demo';

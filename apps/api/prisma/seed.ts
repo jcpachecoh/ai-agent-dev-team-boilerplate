@@ -26,7 +26,7 @@
  *
  * MES operational users (local/dev only — synthetic cédulas, never use in production):
  *   owner:    cédula 12345678 / PIN 1234  (OWNER) — linked to global User
- *   operator: cédula 87654321 / PIN 4321  (OPERATOR, sede sede-principal) — linked to global User
+ *   operator: cédula 87654321 / PIN 4321  (OPERATOR, 3 sedes asignadas) — linked to global User
  *
  * Run:  cd apps/api && pnpm db:seed
  *
@@ -484,21 +484,25 @@ async function seedLocations() {
   return locations;
 }
 
-async function seedUserLocations(ownerUserId: string, operatorUserId: string, locationId: string) {
-  for (const userId of [ownerUserId, operatorUserId]) {
-    await prisma.userLocation.upsert({
-      where: {
-        userId_locationId: { userId, locationId },
-      },
-      update: { tenantId: OPERATIONAL_TENANT_ID },
-      create: {
-        userId,
-        locationId,
-        tenantId: OPERATIONAL_TENANT_ID,
-      },
-    });
+async function seedUserLocationAssignments(
+  assignments: Array<{ userId: string; locationIds: string[] }>,
+) {
+  for (const { userId, locationIds } of assignments) {
+    for (const locationId of locationIds) {
+      await prisma.userLocation.upsert({
+        where: {
+          userId_locationId: { userId, locationId },
+        },
+        update: { tenantId: OPERATIONAL_TENANT_ID },
+        create: {
+          userId,
+          locationId,
+          tenantId: OPERATIONAL_TENANT_ID,
+        },
+      });
+    }
+    console.log(`UserLocation: linked ${userId} -> ${locationIds.join(', ')}`);
   }
-  console.log('UserLocation: linked owner + operator to', locationId);
 }
 
 async function seedEmployeeDetails(
@@ -834,6 +838,7 @@ async function main() {
     where: { id: MES_OWNER_ID },
     update: {
       userId: ownerGlobalUser.id,
+      cedulaHash: ownerCedulaHash,
       pinHash: ownerPinHash,
       role: OperationalRole.OWNER,
       isActive: true,
@@ -886,9 +891,10 @@ async function main() {
     where: { id: MES_OPERATOR_ID },
     update: {
       userId: operatorGlobalUser.id,
+      cedulaHash: operatorCedulaHash,
       pinHash: operatorPinHash,
       role: OperationalRole.OPERATOR,
-      sedeId: 'sede-principal',
+      sedeId: firstLocationId,
       isActive: true,
       loginAttempts: 0,
       lockedUntil: null,
@@ -900,7 +906,7 @@ async function main() {
       cedulaHash: operatorCedulaHash,
       pinHash: operatorPinHash,
       role: OperationalRole.OPERATOR,
-      sedeId: 'sede-principal',
+      sedeId: firstLocationId,
       isActive: true,
     },
   });
@@ -950,9 +956,10 @@ async function main() {
     where: { id: MES_OPERATOR2_ID },
     update: {
       userId: operator2GlobalUser.id,
+      cedulaHash: operator2CedulaHash,
       pinHash: operator2PinHash,
       role: OperationalRole.OPERATOR,
-      sedeId: 'sede-principal',
+      sedeId: firstLocationId,
       isActive: true,
       loginAttempts: 0,
       lockedUntil: null,
@@ -964,7 +971,7 @@ async function main() {
       cedulaHash: operator2CedulaHash,
       pinHash: operator2PinHash,
       role: OperationalRole.OPERATOR,
-      sedeId: 'sede-principal',
+      sedeId: firstLocationId,
       isActive: true,
     },
   });
@@ -1048,13 +1055,15 @@ async function main() {
 
   // ── NOM-01: Seed EmployeeDetails ─────────────────────────────────────────
   await seedEmployeeDetails(ownerGlobalUser.id, operatorGlobalUser.id, firstLocationId);
-  await seedUserLocations(ownerGlobalUser.id, operatorGlobalUser.id, firstLocationId);
+  await seedUserLocationAssignments([
+    { userId: ownerGlobalUser.id, locationIds: [firstLocationId] },
+    {
+      userId: operatorGlobalUser.id,
+      locationIds: locations.slice(0, 3).map((location) => location.id),
+    },
+  ]);
   const { seedPlantSupervisor } = await import('./seeds/plant-supervisor.seed');
   await seedPlantSupervisor(prisma);
-
-  // ── Palos supply items (281 items from Excel) ─────────────────────────────
-  const { seedPalosSupplyItems } = await import('./seed-data/palos-seed-helper');
-  await seedPalosSupplyItems(prisma);
 }
 
 main()

@@ -110,7 +110,9 @@ describe('Smoke — unified apps/api', () => {
       login: jest.fn().mockResolvedValue({
         accessToken: 'mes-at',
         refreshToken: 'mes-rt',
-        operator: { id: 'op-1', role: 'OPERATOR', tenantId: 'palos-de-lena', sedeId: null },
+        operator: { id: 'op-1', role: 'OPERATOR', tenantId: 'palos-de-lena', locationId: null },
+        locations: [],
+        requiresLocationSelection: false,
       }),
       logout: jest.fn(),
       me: jest.fn(),

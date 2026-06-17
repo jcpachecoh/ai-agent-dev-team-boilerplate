@@ -78,6 +78,14 @@ export interface PlantStatusCounts {
   pending: number;
 }
 
+export interface PlantLocationOption {
+  id: string;
+  name: string;
+  code?: string | null;
+  city?: string | null;
+  address?: string | null;
+}
+
 export interface PlantDashboardThemeProps {
   theme?: FieldOpsTheme;
   size?: FieldOpsSize;

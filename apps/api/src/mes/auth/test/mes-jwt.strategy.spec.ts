@@ -11,7 +11,7 @@ const basePayload = {
   sub: 'op-user-1',
   cedulaHash: 'sha256-cedula-hash',
   role: OperationalRole.OPERATOR,
-  sedeId: null,
+  locationId: null,
   tenantId: 'tenant-abc',
 };
 
@@ -50,14 +50,14 @@ describe('MesJwtStrategy', () => {
     await expect(strategy.validate(payload)).rejects.toThrow(UnauthorizedException);
   });
 
-  it('passes sub, cedulaHash, role, tenantId, sedeId through in the returned user', async () => {
+  it('passes sub, cedulaHash, role, tenantId, locationId through in the returned user', async () => {
     const result = await strategy.validate(basePayload);
 
     expect(result.sub).toBe('op-user-1');
     expect(result.cedulaHash).toBe('sha256-cedula-hash');
     expect(result.role).toBe(OperationalRole.OPERATOR);
     expect(result.tenantId).toBe('tenant-abc');
-    expect(result.sedeId).toBeNull();
+    expect(result.locationId).toBeNull();
   });
 
   it('includes jti in the returned payload when present and not blacklisted', async () => {

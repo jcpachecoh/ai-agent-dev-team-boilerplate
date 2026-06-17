@@ -1,0 +1,22 @@
+.screen {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  background: #0a0a0a;
+}
+
+.panel {
+  width: min(100%, 36rem);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.help {
+  margin: 0;
+  color: rgba(246, 244, 239, 0.8);
+  font-size: 1.05rem;
+  line-height: 1.5;
+}

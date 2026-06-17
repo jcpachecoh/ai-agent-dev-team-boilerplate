@@ -54,6 +54,10 @@ const baseUser = {
 const repoMock = {
   findByCedulaHash: jest.fn(),
   findById: jest.fn(),
+  findLocationIdByUserId: jest.fn(),
+  findActiveLocationsByUserId: jest.fn(),
+  findLocationById: jest.fn(),
+  updateCedulaHash: jest.fn(),
   createUser: jest.fn(),
   incrementLoginAttempts: jest.fn(),
   lockUser: jest.fn(),
@@ -101,6 +105,9 @@ describe('MesAuthService', () => {
       resetAt: new Date(),
     });
     repoMock.findByCedulaHash.mockResolvedValue(baseUser);
+    repoMock.findLocationIdByUserId.mockResolvedValue(null);
+    repoMock.findActiveLocationsByUserId.mockResolvedValue([]);
+    repoMock.findLocationById.mockResolvedValue(null);
     (bcryptMock.compare as jest.Mock).mockResolvedValue(true);
     jwtMock.signAsync.mockResolvedValueOnce('access-token').mockResolvedValueOnce('refresh-token');
     (bcryptMock.hash as jest.Mock).mockResolvedValue('hashed-refresh-token');
@@ -123,6 +130,20 @@ describe('MesAuthService', () => {
       expect(repoMock.findByCedulaHash).toHaveBeenCalledWith(TENANT_ID, hashCedula(VALID_CEDULA));
     });
 
+    it('migrates legacy SHA-256 cedula hash when HMAC secret is configured', async () => {
+      process.env.CEDULA_HMAC_SECRET = 'hmac-test-secret';
+      const hmacHash = hashCedula(VALID_CEDULA);
+      const legacyHash = crypto.createHash('sha256').update(VALID_CEDULA).digest('hex');
+      const legacyUser = { ...baseUser, cedulaHash: legacyHash };
+
+      repoMock.findByCedulaHash.mockResolvedValueOnce(null).mockResolvedValueOnce(legacyUser);
+      repoMock.updateCedulaHash.mockResolvedValue({ ...legacyUser, cedulaHash: hmacHash });
+
+      await service.login({ cedula: VALID_CEDULA, pin: VALID_PIN }, '192.168.1.1', TENANT_ID);
+
+      expect(repoMock.updateCedulaHash).toHaveBeenCalledWith(legacyUser.id, hmacHash);
+    });
+
     it('returns tokens and logs SUCCESS on valid cédula and PIN', async () => {
       const result = await service.login(
         { cedula: VALID_CEDULA, pin: VALID_PIN },
@@ -138,8 +159,10 @@ describe('MesAuthService', () => {
           id: baseUser.id,
           role: baseUser.role,
           tenantId: baseUser.tenantId,
-          sedeId: baseUser.sedeId,
+          locationId: null,
         },
+        locations: [],
+        requiresLocationSelection: false,
       });
 
       expect(auditServiceMock.logLogin).toHaveBeenCalledWith({
@@ -151,6 +174,52 @@ describe('MesAuthService', () => {
         ipAddress: '192.168.1.1',
         userAgent: 'Mozilla',
       });
+    });
+
+    it('auto-selects location when operator has exactly one assigned sede', async () => {
+      const assignedLocation = {
+        id: 'location-1',
+        name: 'Sede Norte',
+        code: 'PL-01',
+        city: 'Bogotá',
+      };
+      repoMock.findByCedulaHash.mockResolvedValue({
+        ...baseUser,
+        userId: LINKED_GLOBAL_USER_ID,
+      });
+      repoMock.findActiveLocationsByUserId.mockResolvedValue([assignedLocation]);
+
+      const result = await service.login(
+        { cedula: VALID_CEDULA, pin: VALID_PIN },
+        '192.168.1.1',
+        TENANT_ID,
+      );
+
+      expect(result.operator.locationId).toBe('location-1');
+      expect(result.locations).toEqual([assignedLocation]);
+      expect(result.requiresLocationSelection).toBe(false);
+    });
+
+    it('requires location selection when operator has multiple assigned sedes', async () => {
+      const locations = [
+        { id: 'location-1', name: 'Sede 1', code: 'PL-01', city: 'Bogotá' },
+        { id: 'location-2', name: 'Sede 2', code: 'PL-02', city: 'Bogotá' },
+      ];
+      repoMock.findByCedulaHash.mockResolvedValue({
+        ...baseUser,
+        userId: LINKED_GLOBAL_USER_ID,
+      });
+      repoMock.findActiveLocationsByUserId.mockResolvedValue(locations);
+
+      const result = await service.login(
+        { cedula: VALID_CEDULA, pin: VALID_PIN },
+        '192.168.1.1',
+        TENANT_ID,
+      );
+
+      expect(result.operator.locationId).toBeNull();
+      expect(result.locations).toEqual(locations);
+      expect(result.requiresLocationSelection).toBe(true);
     });
 
     it('logs SUCCESS with global User.id when operational user is linked', async () => {
@@ -218,7 +287,7 @@ describe('MesAuthService', () => {
           sub: baseUser.id,
           cedulaHash: baseUser.cedulaHash,
           role: baseUser.role,
-          sedeId: baseUser.sedeId,
+          locationId: baseUser.sedeId,
           tenantId: baseUser.tenantId,
           jti: expect.any(String),
         }),
@@ -387,7 +456,7 @@ describe('MesAuthService', () => {
         id: baseUser.id,
         role: baseUser.role,
         tenantId: baseUser.tenantId,
-        sedeId: baseUser.sedeId,
+        locationId: baseUser.sedeId,
       });
       expect(result).not.toHaveProperty('pinHash');
       expect(result).not.toHaveProperty('cedulaHash');
@@ -413,7 +482,7 @@ describe('MesAuthService', () => {
       cedula: '87654321',
       pin: '4321',
       role: OperationalRole.OPERATOR,
-      sedeId: 'sede-principal',
+      locationId: 'location-principal',
     };
 
     beforeEach(() => {
@@ -426,7 +495,7 @@ describe('MesAuthService', () => {
         id: 'new-op-1',
         cedulaHash: hashCedula(createDto.cedula),
         role: OperationalRole.OPERATOR,
-        sedeId: 'sede-principal',
+        sedeId: 'location-principal',
       };
       repoMock.findById.mockResolvedValue(owner);
       repoMock.findByCedulaHash.mockResolvedValue(null);
@@ -439,14 +508,14 @@ describe('MesAuthService', () => {
         cedulaHash: hashCedula(createDto.cedula),
         pinHash: 'hashed-new-pin',
         role: OperationalRole.OPERATOR,
-        sedeId: 'sede-principal',
+        sedeId: 'location-principal',
       });
       expect(result).toEqual({
         id: 'new-op-1',
         cedula: '****4321',
         role: OperationalRole.OPERATOR,
         tenantId: TENANT_ID,
-        sedeId: 'sede-principal',
+        locationId: 'location-principal',
       });
       expect(result).not.toHaveProperty('pinHash');
       expect(result).not.toHaveProperty('cedulaHash');
@@ -491,7 +560,7 @@ describe('MesAuthService', () => {
       await expect(service.createUser('unknown', createDto)).rejects.toThrow(NotFoundException);
     });
 
-    it('throws BadRequestException when OPERATOR has no sedeId', async () => {
+    it('throws BadRequestException when OPERATOR has no locationId', async () => {
       repoMock.findById.mockResolvedValue(owner);
 
       await expect(
@@ -503,7 +572,7 @@ describe('MesAuthService', () => {
       ).rejects.toThrow(BadRequestException);
     });
 
-    it('allows MANAGER without sedeId', async () => {
+    it('allows MANAGER without locationId', async () => {
       const created = {
         ...baseUser,
         id: 'mgr-1',
@@ -520,10 +589,152 @@ describe('MesAuthService', () => {
         role: OperationalRole.MANAGER,
       });
 
-      expect(result.sedeId).toBeNull();
+      expect(result.locationId).toBeNull();
       expect(repoMock.createUser).toHaveBeenCalledWith(
         expect.objectContaining({ role: OperationalRole.MANAGER, sedeId: null }),
       );
+    });
+
+    it('resolves assigned locations from linked global User', async () => {
+      const linkedUser = {
+        ...baseUser,
+        userId: LINKED_GLOBAL_USER_ID,
+        sedeId: null,
+      };
+      const assignedLocations = [
+        { id: 'location-assigned', name: 'Sede Centro', code: 'PL-03', city: 'Bogotá' },
+      ];
+      repoMock.findById.mockResolvedValue(linkedUser);
+      repoMock.findActiveLocationsByUserId.mockResolvedValue(assignedLocations);
+
+      const result = await service.myLocations(linkedUser.id);
+
+      expect(repoMock.findActiveLocationsByUserId).toHaveBeenCalledWith(
+        linkedUser.tenantId,
+        LINKED_GLOBAL_USER_ID,
+      );
+      expect(result).toEqual(assignedLocations);
+    });
+
+    it('selectLocation re-issues tokens with chosen sede', async () => {
+      const linkedUser = {
+        ...baseUser,
+        userId: LINKED_GLOBAL_USER_ID,
+        sedeId: null,
+      };
+      const locations = [
+        { id: 'location-1', name: 'Sede 1', code: 'PL-01', city: 'Bogotá' },
+        { id: 'location-2', name: 'Sede 2', code: 'PL-02', city: 'Bogotá' },
+      ];
+      repoMock.findById.mockResolvedValue(linkedUser);
+      repoMock.findActiveLocationsByUserId.mockResolvedValue(locations);
+      jwtMock.signAsync.mockResolvedValueOnce('new-access').mockResolvedValueOnce('new-refresh');
+
+      const result = await service.selectLocation(linkedUser.id, 'location-2');
+
+      expect(result.operator.locationId).toBe('location-2');
+      expect(result.requiresLocationSelection).toBe(false);
+      expect(jwtMock.signAsync).toHaveBeenCalledWith(
+        expect.objectContaining({ locationId: 'location-2' }),
+        expect.any(Object),
+      );
+    });
+
+    it('myLocations resolves legacy sedeId from location table', async () => {
+      const userWithSede = { ...baseUser, sedeId: 'sede-legacy' };
+      const location = {
+        id: 'sede-legacy',
+        name: 'Planta',
+        code: 'PL-01',
+        city: 'Bogotá',
+        address: 'Calle 1',
+      };
+      repoMock.findById.mockResolvedValue(userWithSede);
+      repoMock.findLocationById.mockResolvedValue(location);
+
+      const result = await service.myLocations(userWithSede.id);
+
+      expect(repoMock.findLocationById).toHaveBeenCalledWith(userWithSede.tenantId, 'sede-legacy');
+      expect(result).toEqual([location]);
+    });
+
+    it('myLocations falls back when legacy sede row is missing', async () => {
+      const userWithSede = { ...baseUser, sedeId: 'orphan-sede' };
+      repoMock.findById.mockResolvedValue(userWithSede);
+      repoMock.findLocationById.mockResolvedValue(null);
+
+      const result = await service.myLocations(userWithSede.id);
+
+      expect(result).toEqual([
+        {
+          id: 'orphan-sede',
+          name: 'Sede asignada',
+          code: null,
+          city: null,
+          address: null,
+        },
+      ]);
+    });
+
+    it('myLocations throws NotFoundException when user does not exist', async () => {
+      repoMock.findById.mockResolvedValue(null);
+
+      await expect(service.myLocations('missing-user')).rejects.toThrow(NotFoundException);
+    });
+
+    it('selectLocation throws ForbiddenException when sede is not assigned', async () => {
+      const linkedUser = {
+        ...baseUser,
+        userId: LINKED_GLOBAL_USER_ID,
+        sedeId: null,
+      };
+      repoMock.findById.mockResolvedValue(linkedUser);
+      repoMock.findActiveLocationsByUserId.mockResolvedValue([
+        { id: 'location-1', name: 'Sede 1', code: 'PL-01', city: 'Bogotá' },
+      ]);
+
+      await expect(service.selectLocation(linkedUser.id, 'other-location')).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('selectLocation throws NotFoundException when user does not exist', async () => {
+      repoMock.findById.mockResolvedValue(null);
+
+      await expect(service.selectLocation('missing-user', 'location-1')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('selectLocation throws ForbiddenException when user is inactive', async () => {
+      repoMock.findById.mockResolvedValue({ ...baseUser, isActive: false });
+
+      await expect(service.selectLocation(baseUser.id, 'location-1')).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('auto-selects legacy sedeId on login when location row exists', async () => {
+      const userWithSede = { ...baseUser, sedeId: 'sede-legacy' };
+      const location = {
+        id: 'sede-legacy',
+        name: 'Planta',
+        code: 'PL-01',
+        city: 'Bogotá',
+        address: null,
+      };
+      repoMock.findByCedulaHash.mockResolvedValue(userWithSede);
+      repoMock.findLocationById.mockResolvedValue(location);
+
+      const result = await service.login(
+        { cedula: VALID_CEDULA, pin: VALID_PIN },
+        '192.168.1.1',
+        TENANT_ID,
+      );
+
+      expect(result.operator.locationId).toBe('sede-legacy');
+      expect(result.locations).toEqual([location]);
+      expect(result.requiresLocationSelection).toBe(false);
     });
   });
 

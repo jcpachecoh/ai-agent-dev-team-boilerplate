@@ -159,7 +159,7 @@ describe('MES auth logout chain (AUTH-10)', () => {
         sub: opUser.id,
         cedulaHash: opUser.cedulaHash,
         role: opUser.role,
-        sedeId: opUser.sedeId,
+        locationId: opUser.sedeId,
         tenantId: TENANT_ID,
         jti: 'jti-revoked-99',
       }),
