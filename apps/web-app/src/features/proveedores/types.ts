@@ -111,6 +111,7 @@ export type SupplierFormValues = Omit<
   | 'leadTimeLabel'
   | 'balanceCxp'
   | 'lastPurchaseOrderDate'
+  | 'calificacion'
 >;
 
 /** @deprecated Use SupplierCatalogRow */

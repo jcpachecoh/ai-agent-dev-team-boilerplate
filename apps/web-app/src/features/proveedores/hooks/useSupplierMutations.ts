@@ -17,7 +17,6 @@ function formToCreateInput(values: SupplierFormValues): CreateSupplierInput {
     contactoNombre: values.contactoNombre?.trim() || undefined,
     condicionPago: values.condicionPago,
     cupoCredito: values.cupoCredito,
-    calificacion: values.calificacion,
   };
 }
 

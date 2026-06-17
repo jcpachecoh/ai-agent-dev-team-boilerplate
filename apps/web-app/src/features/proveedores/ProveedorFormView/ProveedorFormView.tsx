@@ -32,7 +32,6 @@ const EMPTY_FORM: SupplierFormValues = {
   contactoNombre: '',
   condicionPago: 'DIAS_30',
   cupoCredito: 0,
-  calificacion: 3,
   isActive: true,
 };
 
@@ -66,7 +65,6 @@ export default function ProveedorFormView({ mode }: ProveedorFormViewProps): Rea
       contactoNombre: existing.contactoNombre ?? '',
       condicionPago: existing.condicionPago,
       cupoCredito: existing.cupoCredito,
-      calificacion: existing.calificacion,
       isActive: existing.isActive,
     });
   }, [existing]);
@@ -184,6 +182,14 @@ export default function ProveedorFormView({ mode }: ProveedorFormViewProps): Rea
                   size={PROVEEDOR_TABLE_SIZE}
                 />
               </ProveedorProductModalField>
+              <ProveedorProductModalField fullWidth label="Dirección" htmlFor="direccion">
+                <RecetaTextInput
+                  id="direccion"
+                  theme={theme}
+                  value={form.direccion}
+                  onChange={(event) => updateField('direccion', event.target.value)}
+                />
+              </ProveedorProductModalField>
             </ProveedorProductModalFields>
           </div>
         </ProveedorFormSection>
@@ -206,14 +212,6 @@ export default function ProveedorFormView({ mode }: ProveedorFormViewProps): Rea
                   theme={theme}
                   value={form.telefono}
                   onChange={(event) => updateField('telefono', event.target.value)}
-                />
-              </ProveedorProductModalField>
-              <ProveedorProductModalField fullWidth label="Dirección" htmlFor="direccion">
-                <RecetaTextInput
-                  id="direccion"
-                  theme={theme}
-                  value={form.direccion}
-                  onChange={(event) => updateField('direccion', event.target.value)}
                 />
               </ProveedorProductModalField>
               <ProveedorProductModalField label="Ciudad" htmlFor="ciudad">
@@ -262,19 +260,6 @@ export default function ProveedorFormView({ mode }: ProveedorFormViewProps): Rea
                   theme={theme}
                   size={PROVEEDOR_TABLE_SIZE}
                   min={0}
-                />
-              </ProveedorProductModalField>
-              <ProveedorProductModalField label="Calificación (0–5)" htmlFor="calificacion">
-                <NumberInput
-                  id="calificacion"
-                  value={form.calificacion}
-                  onChange={(value) => updateField('calificacion', value)}
-                  theme={theme}
-                  size={PROVEEDOR_TABLE_SIZE}
-                  min={0}
-                  max={5}
-                  step={0.1}
-                  decimalPlaces={1}
                 />
               </ProveedorProductModalField>
               {mode === 'edit' && (
