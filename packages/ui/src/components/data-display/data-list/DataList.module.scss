@@ -1,0 +1,96 @@
+@use '../../../styles/abstracts/variables' as *;
+
+.list {
+  display: grid;
+  gap: $spacing-md;
+  width: min(100%, var(--display-width));
+  min-height: var(--display-min-height);
+  box-sizing: border-box;
+}
+
+.size--sm {
+  --display-width: 220px;
+  --display-min-height: 120px;
+  gap: $spacing-sm;
+
+  .label {
+    font-size: 10px;
+  }
+
+  .value {
+    font-size: $font-size-xs;
+  }
+}
+
+.size--md {
+  --display-width: 320px;
+  --display-min-height: 160px;
+}
+
+.size--xl {
+  --display-width: 480px;
+  --display-min-height: 200px;
+  gap: $spacing-lg;
+
+  .label {
+    font-size: $font-size-sm;
+  }
+
+  .value {
+    font-size: $font-size-base;
+  }
+}
+
+.cols2 {
+  grid-template-columns: repeat(2, 1fr);
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.cols1 {
+  grid-template-columns: 1fr;
+}
+
+.item {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+.span2 {
+  grid-column: span 2;
+  @media (max-width: 640px) {
+    grid-column: span 1;
+  }
+}
+
+.label {
+  font-size: $font-size-xs;
+  color: $color-text-secondary;
+}
+
+.value {
+  margin: 0;
+  font-size: $font-size-sm;
+  color: $color-text-primary;
+}
+
+// Themes
+.theme--dark {
+  .value {
+    color: $color-text-inverse;
+  }
+  .label {
+    color: rgba($color-white, 0.6);
+  }
+}
+
+.theme--light {
+  .value {
+    color: $color-text-primary;
+  }
+  .label {
+    color: $color-text-secondary;
+  }
+}

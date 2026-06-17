@@ -1,0 +1,65 @@
+{
+  "name": "restopsiq-platform",
+  "private": true,
+  "scripts": {
+    "build": "turbo run build --filter=!@restopsiq/email",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "lint:fix": "turbo run lint -- --fix",
+    "format": "prettier --write \"**/*.{ts,tsx,js,json,md,scss}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,json,md,scss}\"",
+    "stylelint": "turbo run stylelint",
+    "test": "turbo run test",
+    "test:cov": "turbo run test:cov",
+    "test:e2e": "turbo run test:e2e",
+    "clean": "turbo run clean",
+    "typecheck": "turbo run typecheck",
+    "validate": "turbo run typecheck lint stylelint test",
+    "prepare": "husky",
+    "postinstall": "node_modules/.bin/prisma generate --schema=./apps/api/prisma/schema.prisma || true",
+    "commit": "cz",
+    "commitlint": "commitlint --edit"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^21.0.0",
+    "@commitlint/config-conventional": "^21.0.0",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "commitizen": "^4.3.1",
+    "cz-conventional-changelog": "^3.3.0",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-import-resolver-typescript": "^3.6.0",
+    "eslint-plugin-boundaries": "^4.1.0",
+    "eslint-plugin-import": "^2.29.0",
+    "eslint-plugin-jsx-a11y": "^6.8.0",
+    "eslint-plugin-react": "^7.34.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-unused-imports": "^3.1.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.5.2",
+    "prettier": "^3.3.0",
+    "stylelint": "^16.6.0",
+    "stylelint-config-standard-scss": "^13.1.0",
+    "stylelint-order": "^6.0.4",
+    "turbo": "^2.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "lint-staged": {
+    "**/*.{ts,tsx,js,cjs,json,md,scss}": "prettier --write"
+  },
+  "config": {
+    "commitizen": {
+      "path": "cz-conventional-changelog"
+    }
+  },
+  "packageManager": "pnpm@9.15.9",
+  "pnpm": {
+    "overrides": {
+      "@types/react": "^19.0.0",
+      "@types/react-dom": "^19.0.0"
+    }
+  }
+}

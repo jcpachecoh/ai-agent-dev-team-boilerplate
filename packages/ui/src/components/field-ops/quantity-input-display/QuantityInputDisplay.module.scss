@@ -1,0 +1,105 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../../../styles/abstracts/mixins' as *;
+@use '../shared/field-ops-theme' as fo;
+
+.wrapper {
+  width: min(100%, var(--display-width));
+  min-height: var(--display-min-height);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--wrapper-gap);
+  font-family: $font-family-base;
+  text-align: center;
+}
+
+.label {
+  font-size: var(--label-size);
+  font-weight: $font-weight-semibold;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--fo-text-secondary);
+}
+
+.display {
+  @include flex-center;
+  gap: var(--value-gap);
+  width: 100%;
+  min-height: var(--display-box-height);
+  padding: var(--display-padding);
+  border-radius: $border-radius-lg;
+  border: 2px solid rgba(fo.$field-ops-gold, 0.55);
+  background-color: var(--fo-surface-elevated);
+  box-sizing: border-box;
+}
+
+.value {
+  font-size: var(--value-size);
+  font-weight: $font-weight-bold;
+  line-height: 1;
+  color: fo.$field-ops-gold;
+  font-variant-numeric: tabular-nums;
+}
+
+.unit {
+  font-size: var(--unit-size);
+  font-weight: $font-weight-semibold;
+  color: fo.$field-ops-gold;
+  opacity: 0.85;
+  align-self: flex-end;
+  margin-bottom: 0.15em;
+}
+
+.hint {
+  margin: 0;
+  font-size: var(--hint-size);
+  font-weight: $font-weight-medium;
+  color: fo.$field-ops-teal;
+}
+
+.size--sm {
+  --display-width: 220px;
+  --display-min-height: 120px;
+  --wrapper-gap: #{$spacing-xs};
+  --label-size: 10px;
+  --display-box-height: 72px;
+  --display-padding: #{$spacing-sm};
+  --value-size: 2rem;
+  --unit-size: #{$font-size-sm};
+  --value-gap: #{$spacing-xs};
+  --hint-size: #{$font-size-xs};
+}
+
+.size--md {
+  --display-width: 320px;
+  --display-min-height: 160px;
+  --wrapper-gap: #{$spacing-sm};
+  --label-size: #{$font-size-xs};
+  --display-box-height: 96px;
+  --display-padding: #{$spacing-md};
+  --value-size: 3rem;
+  --unit-size: #{$font-size-lg};
+  --value-gap: #{$spacing-sm};
+  --hint-size: #{$font-size-sm};
+}
+
+.size--xl {
+  --display-width: 100%;
+  --display-min-height: 200px;
+  --wrapper-gap: #{$spacing-md};
+  --label-size: #{$font-size-sm};
+  --display-box-height: 120px;
+  --display-padding: #{$spacing-lg};
+  --value-size: 3.5rem;
+  --unit-size: #{$font-size-xl};
+  --value-gap: #{$spacing-md};
+  --hint-size: #{$font-size-base};
+}
+
+.theme--dark {
+  @include fo.field-ops-theme-dark;
+}
+
+.theme--light {
+  @include fo.field-ops-theme-light;
+}

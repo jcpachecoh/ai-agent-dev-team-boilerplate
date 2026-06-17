@@ -1,0 +1,18 @@
+@use '@/styles/tokens' as t;
+
+.page {
+  padding: t.$space-8 t.$space-6;
+}
+
+.title {
+  margin: 0 0 t.$space-2;
+  font-size: t.$font-size-2xl;
+  font-weight: t.$font-weight-bold;
+  color: t.$color-text-primary;
+}
+
+.subtitle {
+  margin: 0;
+  font-size: t.$font-size-lg;
+  color: t.$color-text-secondary;
+}

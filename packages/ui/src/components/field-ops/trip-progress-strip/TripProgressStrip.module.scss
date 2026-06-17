@@ -1,0 +1,88 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../../../styles/abstracts/mixins' as *;
+@use '../shared/field-ops-theme' as fo;
+
+.card {
+  width: min(100%, var(--display-width));
+  min-height: var(--display-min-height);
+  padding: var(--card-padding);
+  border-radius: $border-radius-lg;
+  border: $border-width solid var(--fo-border);
+  background-color: var(--fo-surface-elevated);
+  display: flex;
+  flex-direction: column;
+  gap: var(--card-gap);
+  box-sizing: border-box;
+  font-family: $font-family-base;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+}
+
+.label {
+  font-size: var(--card-label-size);
+  font-weight: $font-weight-semibold;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--fo-text-secondary);
+}
+
+.body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-md;
+}
+
+.value {
+  font-size: var(--card-value-size);
+  font-weight: $font-weight-bold;
+  line-height: $line-height-tight;
+  color: fo.$field-ops-gold;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.icon {
+  flex-shrink: 0;
+  display: inline-flex;
+  color: var(--fo-text-muted);
+  opacity: 0.85;
+}
+
+.size--sm {
+  --display-width: 220px;
+  --display-min-height: 88px;
+  --card-padding: #{$spacing-sm} #{$spacing-md};
+  --card-gap: #{$spacing-xs};
+  --card-label-size: 10px;
+  --card-value-size: #{$font-size-2xl};
+}
+
+.size--md {
+  --display-width: 320px;
+  --display-min-height: 108px;
+  --card-padding: #{$spacing-md};
+  --card-gap: #{$spacing-sm};
+  --card-label-size: #{$font-size-xs};
+  --card-value-size: 2.25rem;
+}
+
+.size--xl {
+  --display-width: 100%;
+  --display-min-height: 128px;
+  --card-padding: #{$spacing-lg};
+  --card-gap: #{$spacing-md};
+  --card-label-size: #{$font-size-sm};
+  --card-value-size: 2.75rem;
+}
+
+.theme--dark {
+  @include fo.field-ops-theme-dark;
+}
+
+.theme--light {
+  @include fo.field-ops-theme-light;
+}

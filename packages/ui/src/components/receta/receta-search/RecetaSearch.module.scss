@@ -1,0 +1,72 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/receta-theme' as receta;
+
+.search {
+  @include receta.receta-control-base;
+  @include receta.receta-theme-classes;
+  @include receta.receta-size-vars;
+
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: var(--receta-input);
+  overflow: hidden;
+}
+
+.input {
+  width: 100%;
+  min-height: calc(var(--control-min-height) - 2px);
+  padding: var(--control-padding-y)
+    calc(var(--control-padding-x) + var(--control-icon-size) + var(--control-gap));
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--receta-text);
+  font-size: var(--control-font-size);
+
+  &::placeholder {
+    color: color-mix(in srgb, var(--receta-muted) 75%, transparent);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+}
+
+.searchIcon,
+.clearButton svg {
+  width: var(--control-icon-size);
+  height: var(--control-icon-size);
+}
+
+.searchIcon {
+  position: absolute;
+  left: var(--control-padding-x);
+  color: var(--receta-muted);
+  pointer-events: none;
+}
+
+.clearButton {
+  position: absolute;
+  right: calc(var(--control-padding-x) - 0.25rem);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: $border-radius-sm;
+  background: transparent;
+  color: var(--receta-muted);
+  cursor: pointer;
+
+  &:hover {
+    color: var(--receta-text);
+    background: var(--receta-hover);
+  }
+
+  &:focus-visible {
+    @include receta.receta-focus-ring;
+  }
+}

@@ -1,0 +1,110 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../../../styles/abstracts/mixins' as *;
+@use '../shared/field-ops-theme' as fo;
+
+.key {
+  @include fo.field-ops-control-sizes;
+  @include flex-center;
+  box-sizing: border-box;
+  width: var(--pin-cell-width);
+  height: var(--pin-cell-height);
+  min-width: var(--pin-cell-width);
+  min-height: var(--pin-cell-height);
+  padding: 0;
+  border: $border-width solid var(--fo-border);
+  border-radius: $border-radius-md;
+  background-color: var(--fo-key-bg);
+  color: var(--fo-text-primary);
+  font-family: $font-family-base;
+  font-size: var(--pin-font-size);
+  font-weight: $font-weight-bold;
+  cursor: pointer;
+  transition:
+    background-color $transition-fast,
+    border-color $transition-fast,
+    color $transition-fast;
+
+  &:focus-visible {
+    outline: 2px solid var(--fo-focus-ring);
+    outline-offset: 2px;
+  }
+
+  &:hover:not(:disabled) {
+    border-color: var(--fo-border-strong);
+    background-color: var(--fo-surface-elevated);
+  }
+
+  &:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+}
+
+.content {
+  @include flex-center;
+  line-height: 1;
+}
+
+.size--sm {
+  --pin-cell-width: 64px;
+  --pin-cell-height: 48px;
+  --pin-font-size: #{$font-size-xl};
+}
+
+.size--md {
+  --pin-cell-width: 88px;
+  --pin-cell-height: 64px;
+  --pin-font-size: 1.75rem;
+}
+
+.size--xl {
+  --pin-cell-width: 104px;
+  --pin-cell-height: 72px;
+  --pin-font-size: 2rem;
+}
+
+.theme--dark {
+  @include fo.field-ops-theme-dark;
+}
+
+.theme--light {
+  @include fo.field-ops-theme-light;
+}
+
+.variant--semantic {
+  border-width: 2px;
+}
+
+.accent--success {
+  border-color: fo.$field-ops-teal;
+  color: fo.$field-ops-teal;
+  background-color: rgba(fo.$field-ops-teal, 0.14);
+}
+
+.accent--warning {
+  border-color: $color-warning;
+  color: $color-warning;
+  background-color: rgba($color-warning, 0.14);
+}
+
+.accent--danger {
+  border-color: $color-danger;
+  color: $color-danger;
+  background-color: rgba($color-danger, 0.14);
+}
+
+.accent--info {
+  border-color: $color-info;
+  color: $color-info;
+  background-color: rgba($color-info, 0.14);
+}
+
+.accent--gold {
+  border-color: fo.$field-ops-gold;
+  color: fo.$field-ops-gold;
+  background-color: rgba(fo.$field-ops-gold, 0.14);
+}
+
+.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

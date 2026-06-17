@@ -1,0 +1,74 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/receta-theme' as receta;
+
+.button {
+  @include receta.receta-control-base;
+  @include receta.receta-theme-classes;
+  @include receta.receta-size-vars;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--control-gap) * 0.75);
+  width: auto;
+  min-width: var(--utility-width);
+  min-height: var(--utility-height);
+  padding: var(--utility-padding-y) var(--utility-padding-x);
+  background: transparent;
+  color: var(--receta-muted);
+  font-size: var(--utility-label-size);
+  font-weight: $font-weight-semibold;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  &:hover:not(:disabled) {
+    background: var(--receta-hover);
+    color: var(--receta-text);
+  }
+
+  &:focus-visible {
+    @include receta.receta-focus-ring;
+  }
+}
+
+.size--sm {
+  --utility-width: 48px;
+  --utility-height: 28px;
+  --utility-padding-x: #{$spacing-sm};
+  --utility-padding-y: 0.25rem;
+  --utility-label-size: 0.6875rem;
+  --control-icon-size: 12px;
+}
+
+.size--md {
+  --utility-width: 56px;
+  --utility-height: 31px;
+  --utility-padding-x: 0.625rem;
+  --utility-padding-y: 0.375rem;
+  --utility-label-size: 0.6875rem;
+  --control-icon-size: 12px;
+}
+
+.size--xl {
+  --utility-width: 72px;
+  --utility-height: 40px;
+  --utility-padding-x: #{$spacing-md};
+  --utility-padding-y: #{$spacing-sm};
+  --utility-label-size: #{$font-size-xs};
+  --control-icon-size: 14px;
+}
+
+.icon,
+.icon svg {
+  width: var(--control-icon-size);
+  height: var(--control-icon-size);
+}
+
+.label {
+  line-height: 1.5;
+  white-space: nowrap;
+}

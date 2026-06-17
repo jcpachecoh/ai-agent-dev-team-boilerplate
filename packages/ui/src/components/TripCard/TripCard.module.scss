@@ -1,0 +1,171 @@
+@use '../../styles/abstracts/variables' as *;
+
+.tripCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: $border-radius-md;
+  box-sizing: border-box;
+}
+
+.size--sm {
+  padding: $spacing-sm $spacing-md;
+  gap: $spacing-sm;
+
+  .title {
+    font-size: $font-size-xs;
+    line-height: $line-height-tight;
+  }
+  .subtitle {
+    font-size: 0.65rem;
+    line-height: $line-height-tight;
+  }
+  .leftIcon {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+  }
+  .iconBtn {
+    width: 24px;
+    height: 24px;
+  }
+}
+
+.size--md {
+  padding: $spacing-md $spacing-lg;
+
+  .title {
+    font-size: 0.85rem;
+    line-height: 1.35;
+  }
+  .subtitle {
+    font-size: 0.65rem;
+    line-height: 1.4;
+  }
+}
+
+.size--lg {
+  padding: $spacing-lg $spacing-xl;
+
+  .title {
+    font-size: $font-size-base;
+    line-height: $line-height-base;
+  }
+  .subtitle {
+    font-size: $font-size-sm;
+    line-height: $line-height-base;
+  }
+  .leftIcon {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+  }
+  .iconBtn {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+.light {
+  background: rgba($color-black, 0.02);
+  color: $color-gray-900;
+  border: $border-width solid rgba($color-black, 0.06);
+}
+
+.dark {
+  background: rgba($color-white, 0.02);
+  color: $color-gray-100;
+  border: $border-width solid rgba($color-white, 0.06);
+}
+
+.left {
+  display: flex;
+  gap: $spacing-md;
+  align-items: center;
+  min-width: 0;
+}
+
+.leftIcon {
+  width: $spacing-xl;
+  height: $spacing-xl;
+  min-width: $spacing-xl;
+  border-radius: 10px;
+  background: rgba($color-warning, 0.1);
+  border: $border-width solid rgba($color-warning, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: $color-warning;
+
+  svg {
+    flex-shrink: 0;
+  }
+}
+
+.texts {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.title {
+  font-weight: $font-weight-semibold;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.subtitle {
+  font-weight: $font-weight-regular;
+  color: $color-text-secondary;
+  white-space: nowrap;
+}
+
+.dark .subtitle {
+  color: $color-gray-500;
+}
+
+.right {
+  display: flex;
+  gap: $spacing-sm;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.cap {
+  background: rgba($color-success, 0.1);
+  border: $border-width solid rgba($color-success, 0.3);
+  color: $color-success;
+  font-weight: $font-weight-bold;
+  font-size: $font-size-xs;
+  padding: 2px $spacing-sm;
+  border-radius: $border-radius-full;
+  display: inline-flex;
+  align-items: center;
+}
+
+.iconBtn {
+  width: 28px;
+  height: 28px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: inherit;
+
+  &:hover {
+    background: rgba($color-black, 0.06);
+  }
+  &:focus-visible {
+    outline: 2px solid $color-primary;
+    outline-offset: 2px;
+  }
+}
+
+.dark .iconBtn:hover {
+  background: rgba($color-white, 0.08);
+}

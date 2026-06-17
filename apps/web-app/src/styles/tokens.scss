@@ -1,0 +1,88 @@
+// Color palette — layout shell (Figma Opssynk)
+$color-bg-primary: #0a0a0a;
+$color-bg-secondary: #0d0d0d;
+$color-bg-surface: #1c1c1c;
+$color-bg-header: #111111;
+$color-text-primary: #f5f5f0;
+$color-text-secondary: #888888;
+$color-text-muted: #555555;
+$color-accent: #8b5cf6;
+$color-accent-hover: #7c4fe0;
+$color-accent-subtle: rgba(139, 92, 246, 0.07);
+$color-border: #2e2e2e;
+$color-danger: #e05a44;
+$color-success: #2ec4a0;
+$color-warning: #f0c040;
+$color-brand-gold: #c8a96e;
+$color-brand-gold-subtle: rgba(200, 169, 110, 0.12);
+$color-brand-gold-border: rgba(200, 169, 110, 0.3);
+$color-nav-hover: rgba(255, 255, 255, 0.03);
+$color-orange: #e8943a;
+$color-overlay: rgba(0, 0, 0, 0.55);
+
+// Spacing scale (4px grid)
+$space-1: 0.25rem;
+$space-2: 0.5rem;
+$space-3: 0.75rem;
+$space-4: 1rem;
+$space-5: 1.25rem;
+$space-6: 1.5rem;
+$space-8: 2rem;
+$space-10: 2.5rem;
+$space-12: 3rem;
+
+// Typography
+$font-family-display: 'Cabinet Grotesk', 'Cabinet Grotesk Fallback', Georgia, serif;
+$font-family-base:
+  'Satoshi',
+  'Satoshi Fallback',
+  system-ui,
+  -apple-system,
+  sans-serif;
+$font-family-mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
+
+// Fluid type scale — clamp(min, preferred, max)
+$font-size-xs: clamp(0.6875rem, 0.66rem + 0.14vw, 0.75rem);
+$font-size-sm: clamp(0.8125rem, 0.78rem + 0.16vw, 0.875rem);
+$font-size-base: clamp(0.9375rem, 0.9rem + 0.19vw, 1rem);
+$font-size-md: clamp(1rem, 0.96rem + 0.2vw, 1.0625rem);
+$font-size-lg: clamp(1.0625rem, 1rem + 0.31vw, 1.1875rem);
+$font-size-xl: clamp(1.25rem, 1.15rem + 0.5vw, 1.5rem);
+$font-size-2xl: clamp(1.5rem, 1.3rem + 1vw, 2rem);
+$font-size-3xl: clamp(2rem, 1.6rem + 2vw, 2.75rem);
+$font-weight-normal: 400;
+$font-weight-medium: 500;
+$font-weight-semibold: 600;
+$font-weight-bold: 700;
+$line-height-tight: 1.1;
+$line-height-base: 1.55;
+
+// Layout shell
+$sidebar-width: 280px;
+$sidebar-width-collapsed: 72px;
+$header-height: 56px;
+$nav-item-height: 2.75rem;
+$nav-icon-size: 1.125rem;
+$nav-sub-icon-size: 0.875rem;
+$nav-active-border: 3px;
+$layout-transition: 300ms ease;
+$border-radius-sm: 4px;
+$border-radius-base: 8px;
+
+// Legacy aliases (recetas module)
+$color-operator-bg: $color-bg-primary;
+$color-operator-text: $color-text-primary;
+$color-recipes-bg: $color-bg-primary;
+$color-recipes-sidebar-bg: $color-bg-secondary;
+$color-recipes-divider: $color-border;
+$color-recipes-accent: $color-accent;
+$color-recipes-surface: $color-bg-surface;
+$color-recipes-surface-raised: #202020;
+$color-recipes-surface-hover: #262626;
+$color-recipes-panel: #1a1a1a;
+$color-recipes-editor-sidebar: #141414;
+
+// Deprecated layout tokens
+$nav-height: $header-height;
+$footer-height: 2.5rem;
+$border-radius-lg: 0.75rem;

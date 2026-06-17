@@ -1,0 +1,79 @@
+@use '../../../styles/abstracts/variables' as *;
+
+.wrapper {
+  width: min(100%, var(--display-width));
+  min-height: var(--display-min-height);
+  overflow-x: auto;
+  border: $border-width solid $color-border;
+  border-radius: $border-radius-md;
+  box-sizing: border-box;
+}
+
+.size--sm {
+  --display-width: 220px;
+  --display-min-height: 160px;
+
+  .table {
+    font-size: $font-size-xs;
+  }
+
+  th,
+  td {
+    padding: $spacing-xs $spacing-sm;
+  }
+}
+
+.size--md {
+  --display-width: 320px;
+  --display-min-height: 200px;
+}
+
+.size--xl {
+  --display-width: 480px;
+  --display-min-height: 260px;
+
+  .table {
+    font-size: $font-size-base;
+  }
+
+  th,
+  td {
+    padding: $spacing-md $spacing-lg;
+  }
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: $font-family-base;
+  font-size: $font-size-sm;
+}
+
+th {
+  padding: $spacing-sm $spacing-md;
+  text-align: left;
+  font-weight: $font-weight-semibold;
+  color: $color-text-secondary;
+  border-bottom: $border-width solid $color-border;
+  background-color: $color-bg-secondary;
+}
+
+td {
+  padding: $spacing-sm $spacing-md;
+  border-bottom: $border-width solid $color-border;
+  color: $color-text-primary;
+}
+
+// Themes
+.theme--dark {
+  border-color: rgba($color-white, 0.1);
+  th {
+    color: rgba($color-white, 0.6);
+    background-color: rgba($color-white, 0.05);
+    border-color: rgba($color-white, 0.1);
+  }
+  td {
+    color: $color-text-inverse;
+    border-color: rgba($color-white, 0.1);
+  }
+}

@@ -1,0 +1,109 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/inventario-theme' as inventario;
+
+.card {
+  @include inventario.inventario-theme-classes;
+  @include inventario.inventario-size-vars;
+
+  --inventario-accent: #{inventario.$inventario-success};
+
+  display: flex;
+  flex-direction: column;
+  gap: var(--card-gap);
+  width: min(100%, var(--control-width));
+  min-height: var(--card-min-height);
+  padding: var(--card-padding-y) var(--card-padding-x);
+  border: $border-width solid var(--inventario-accent);
+  border-left-width: 3px;
+  border-radius: var(--control-radius);
+  background: var(--inventario-surface);
+  box-sizing: border-box;
+}
+
+.size--sm {
+  --control-width: 220px;
+  --card-min-height: 90px;
+  --card-padding-x: 16px;
+  --card-padding-y: 16px;
+  --card-gap: 8px;
+  --metric-value-size: 1.375rem;
+}
+
+.size--md {
+  --control-width: 282px;
+  --card-min-height: 114px;
+  --card-padding-x: 23px;
+  --card-padding-y: 21px;
+  --card-gap: 12px;
+  --metric-value-size: 1.75rem;
+}
+
+.size--xl {
+  --control-width: 100%;
+  --card-min-height: 114px;
+  --card-padding-x: 23px;
+  --card-padding-y: 21px;
+  --card-gap: 12px;
+  --metric-value-size: 1.75rem;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+  width: 100%;
+}
+
+.label {
+  margin: 0;
+  font-family: $font-family-mono;
+  font-size: 0.625rem;
+  font-weight: $font-weight-bold;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--inventario-muted);
+}
+
+.icon {
+  display: inline-flex;
+  color: var(--inventario-accent);
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+.value {
+  margin: 0;
+  font-family: $font-family-mono;
+  font-size: var(--metric-value-size);
+  font-weight: $font-weight-bold;
+  line-height: 1.5;
+  color: var(--inventario-accent);
+}
+
+.accent--success {
+  --inventario-accent: #{inventario.$inventario-success};
+}
+
+.accent--info {
+  --inventario-accent: #{inventario.$inventario-info};
+}
+
+.accent--warning {
+  --inventario-accent: #{inventario.$inventario-enterprise};
+}
+
+.accent--danger {
+  --inventario-accent: #{inventario.$inventario-danger};
+}
+
+.accent--purple {
+  --inventario-accent: #{inventario.$inventario-purple};
+}
+
+.accent--enterprise {
+  --inventario-accent: #{inventario.$inventario-enterprise};
+}

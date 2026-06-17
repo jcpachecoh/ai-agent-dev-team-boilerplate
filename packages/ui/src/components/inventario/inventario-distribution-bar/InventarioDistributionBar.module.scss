@@ -1,0 +1,54 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/inventario-theme' as inventario;
+
+.bar {
+  @include inventario.inventario-theme-classes;
+  @include inventario.inventario-size-vars;
+  @include inventario.inventario-accent-color('success');
+
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.label {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  color: var(--inventario-text);
+}
+
+.value {
+  font-family: $font-family-mono;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-bold;
+  color: var(--inventario-accent);
+}
+
+.track {
+  height: 8px;
+  border-radius: $border-radius-sm;
+  background: var(--inventario-track);
+  overflow: hidden;
+}
+
+.fill {
+  display: block;
+  height: 100%;
+  width: var(--inventario-bar-value);
+  border-radius: inherit;
+  background: var(--inventario-bar-fill);
+}
+
+@each $accent in ('success', 'info', 'warning', 'danger', 'purple', 'enterprise') {
+  .accent--#{$accent} {
+    @include inventario.inventario-accent-color($accent);
+  }
+}

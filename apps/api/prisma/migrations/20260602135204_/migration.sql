@@ -1,0 +1,5 @@
+-- RenameIndex
+ALTER INDEX "plant_alarm_dispatches_tenantId_alarmType_executionId_dispatche" RENAME TO "plant_alarm_dispatches_tenantId_alarmType_executionId_dispa_idx";
+
+-- RenameIndex
+ALTER INDEX "plant_alarm_dispatches_tenantId_alarmType_orderId_dispatchedAt_" RENAME TO "plant_alarm_dispatches_tenantId_alarmType_orderId_dispatche_idx";
