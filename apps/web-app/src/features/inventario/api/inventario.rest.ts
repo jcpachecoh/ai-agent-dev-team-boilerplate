@@ -31,6 +31,7 @@ export function fetchSupplyCategories(isActive?: boolean): Promise<SupplyCategor
 
 export function createSupplyCategory(input: {
   nombre: string;
+  prefijo: string;
   descripcion?: string;
 }): Promise<SupplyCategoryApi> {
   return inventoryFetch<SupplyCategoryApi>('/supply-categories', {
@@ -41,12 +42,18 @@ export function createSupplyCategory(input: {
 
 export function updateSupplyCategory(
   id: string,
-  input: { nombre?: string; descripcion?: string; isActive?: boolean },
+  input: { nombre?: string; prefijo?: string; descripcion?: string; isActive?: boolean },
 ): Promise<SupplyCategoryApi> {
   return inventoryFetch<SupplyCategoryApi>(`/supply-categories/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(input),
   });
+}
+
+export function fetchNextSupplyItemCodigo(categoriaId: string): Promise<string> {
+  return inventoryFetch<{ codigoInterno: string }>(
+    `/supply-categories/${categoriaId}/next-codigo`,
+  ).then((res) => res.codigoInterno);
 }
 
 export function fetchSupplyItems(filters: SupplyItemsListFilters = {}): Promise<SupplyItemApi[]> {

@@ -20,6 +20,9 @@ export interface InventarioFilterToolbarProps {
   onSupplierChange?: (value: string) => void;
   categoryFilter?: ReactNode;
   supplierFilter?: ReactNode;
+  statusOptions?: InventarioSelectOption[];
+  statusValue?: string;
+  onStatusChange?: (value: string) => void;
   lowStockOnly?: boolean;
   onLowStockChange?: (checked: boolean) => void;
   lowStockLabel?: string;
@@ -51,6 +54,9 @@ export function InventarioFilterToolbar({
   onSupplierChange,
   categoryFilter,
   supplierFilter,
+  statusOptions,
+  statusValue = 'all',
+  onStatusChange,
   lowStockOnly = false,
   onLowStockChange,
   lowStockLabel = 'Stock Bajo',
@@ -100,6 +106,18 @@ export function InventarioFilterToolbar({
           />
         )}
       </div>
+      {statusOptions && onStatusChange ? (
+        <div className={styles.filterSlot}>
+          <InventarioSelect
+            options={statusOptions}
+            value={statusValue}
+            onChange={onStatusChange}
+            theme={theme}
+            size={size === 'xl' ? 'md' : size}
+            aria-label="Filtrar por estado"
+          />
+        </div>
+      ) : null}
       <label className={styles.checkbox}>
         <input type="checkbox" checked={lowStockOnly} onChange={handleLowStock} />
         <span>{lowStockLabel}</span>

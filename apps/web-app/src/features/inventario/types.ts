@@ -3,12 +3,14 @@ export type StockUnit = 'UNIT' | 'GRAMS' | 'KILOGRAMS' | 'ML' | 'LITERS';
 export interface SupplyCategoryApi {
   id: string;
   nombre: string;
+  prefijo: string;
   descripcion?: string | null;
   isActive: boolean;
 }
 
 export interface SupplyCategoryFormValues {
   nombre: string;
+  prefijo: string;
   descripcion: string;
   isActive: boolean;
 }
@@ -58,7 +60,7 @@ export interface PriceHistoryEntryApi {
 
 export interface CreateSupplyItemInput {
   nombre: string;
-  codigoInterno: string;
+  codigoInterno?: string;
   categoriaId: string;
   descripcion?: string;
   unidadBase: StockUnit;

@@ -5,11 +5,12 @@ import { isGraphqlConfigured } from '@/lib/graphql-client';
 
 import { fetchSupplyCategories } from '../api/inventario.api';
 import { inventarioKeys } from '../api/inventario.keys';
+import type { SupplyCategoryApi } from '../types';
 
-const MOCK_CATEGORIES = [
-  { id: 'carnes', nombre: 'Carnes', isActive: true },
-  { id: 'granos', nombre: 'Granos', isActive: true },
-  { id: 'aceites', nombre: 'Aceites', isActive: true },
+const MOCK_CATEGORIES: SupplyCategoryApi[] = [
+  { id: 'carnes', nombre: 'Carnes', prefijo: 'CAR', isActive: true },
+  { id: 'granos', nombre: 'Granos', prefijo: 'GRA', isActive: true },
+  { id: 'aceites', nombre: 'Aceites', prefijo: 'ACE', isActive: true },
 ];
 
 export type SupplyCategoriesScope = 'active' | 'all';

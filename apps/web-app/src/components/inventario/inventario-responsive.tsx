@@ -1,6 +1,7 @@
 import {
   InventarioIconButton,
   InventarioStatusBadge,
+  SedeRowActionButton,
   type InventarioMovementType,
   type InventarioSeverity,
   type InventarioStockTone,
@@ -54,7 +55,8 @@ export interface InventarioProductRowProps extends RowBaseProps {
   lowStockWarning: boolean;
   onSkuClick: () => void;
   onEdit: () => void;
-  onDelete: () => void;
+  onToggleStatus?: () => void;
+  toggleLoading?: boolean;
 }
 
 export function InventarioProductRow({
@@ -67,7 +69,8 @@ export function InventarioProductRow({
   theme,
   onSkuClick,
   onEdit,
-  onDelete,
+  onToggleStatus,
+  toggleLoading = false,
 }: InventarioProductRowProps): React.JSX.Element {
   return (
     <ResponsiveGridRow visibleColumns={visibleColumns} columnsTemplate={columnsTemplate}>
@@ -119,13 +122,37 @@ export function InventarioProductRow({
                 <span className={styles.price}>{unitPrice}</span>
               </span>
             );
+          case 'estado':
+            return (
+              <InventarioStatusBadge
+                domain="severity"
+                status={product.isActive ? 'resolved' : 'warning'}
+                label={product.isActive ? 'ACTIVO' : 'INACTIVO'}
+                theme={theme}
+                size="sm"
+              />
+            );
           case 'lastMovement':
             return <span className={styles.muted}>{product.lastMovement}</span>;
           case 'actions':
             return (
               <span className={styles.actions}>
                 <InventarioIconButton variant="edit" theme={theme} onClick={onEdit} />
-                <InventarioIconButton variant="delete" theme={theme} onClick={onDelete} />
+                {onToggleStatus ? (
+                  <SedeRowActionButton
+                    variant="toggle"
+                    active={product.isActive}
+                    theme={theme}
+                    size="sm"
+                    onClick={onToggleStatus}
+                    disabled={toggleLoading}
+                    aria-label={
+                      product.isActive
+                        ? `Descontinuar ${product.name}`
+                        : `Reactivar ${product.name}`
+                    }
+                  />
+                ) : null}
               </span>
             );
           default:
@@ -144,7 +171,8 @@ export function InventarioProductCard({
   theme,
   onSkuClick,
   onEdit,
-  onDelete,
+  onToggleStatus,
+  toggleLoading = false,
 }: Omit<InventarioProductRowProps, 'visibleColumns' | 'columnsTemplate'>): React.JSX.Element {
   const unitLabel = STOCK_UNIT_OPTIONS.find((o) => o.value === product.unidadBase)?.label ?? '—';
 
@@ -165,11 +193,23 @@ export function InventarioProductCard({
         </span>
       }
       badge={
-        <span className={[styles.stock, styles[`stock--${stockTone}`]].join(' ')}>
-          {product.currentStock ?? '0'}
-        </span>
+        <InventarioStatusBadge
+          domain="severity"
+          status={product.isActive ? 'resolved' : 'warning'}
+          label={product.isActive ? 'ACTIVO' : 'INACTIVO'}
+          theme={theme}
+          size="sm"
+        />
       }
       fields={[
+        {
+          label: 'Stock actual',
+          value: (
+            <span className={[styles.stock, styles[`stock--${stockTone}`]].join(' ')}>
+              {product.currentStock ?? '0'}
+            </span>
+          ),
+        },
         { label: 'Categoría', value: product.category },
         { label: 'Proveedor', value: product.supplier },
         {
@@ -186,7 +226,19 @@ export function InventarioProductCard({
       footer={
         <>
           <InventarioIconButton variant="edit" theme={theme} onClick={onEdit} />
-          <InventarioIconButton variant="delete" theme={theme} onClick={onDelete} />
+          {onToggleStatus ? (
+            <SedeRowActionButton
+              variant="toggle"
+              active={product.isActive}
+              theme={theme}
+              size="sm"
+              onClick={onToggleStatus}
+              disabled={toggleLoading}
+              aria-label={
+                product.isActive ? `Descontinuar ${product.name}` : `Reactivar ${product.name}`
+              }
+            />
+          ) : null}
         </>
       }
     />
@@ -214,6 +266,8 @@ export function InventarioCategoryRow({
         switch (columnId) {
           case 'nombre':
             return <span className={styles.name}>{category.nombre}</span>;
+          case 'prefijo':
+            return <span className={styles.muted}>{category.prefijo}</span>;
           case 'descripcion':
             return <span className={styles.muted}>{category.descripcion?.trim() || '—'}</span>;
           case 'estado':
@@ -260,7 +314,10 @@ export function InventarioCategoryCard({
           size="sm"
         />
       }
-      fields={[{ label: 'Descripción', value: category.descripcion?.trim() || '—' }]}
+      fields={[
+        { label: 'Prefijo', value: category.prefijo },
+        { label: 'Descripción', value: category.descripcion?.trim() || '—' },
+      ]}
       footer={
         <>
           <InventarioIconButton variant="edit" theme={theme} onClick={onEdit} />

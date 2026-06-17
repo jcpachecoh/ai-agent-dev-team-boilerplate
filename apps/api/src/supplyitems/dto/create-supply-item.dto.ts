@@ -15,10 +15,12 @@ export class CreateSupplyItemDto {
   @IsNotEmpty()
   nombre!: string;
 
-  @ApiProperty()
+  @ApiPropertyOptional({
+    description: 'Internal code; auto-generated from category prefix when omitted',
+  })
   @IsString()
-  @IsNotEmpty()
-  codigoInterno!: string;
+  @IsOptional()
+  codigoInterno?: string;
 
   @ApiProperty()
   @IsString()

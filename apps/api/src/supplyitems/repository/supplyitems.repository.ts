@@ -3,6 +3,7 @@ import type { SupplyItem, SupplyItemPriceHistory } from '@prisma/client';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { decimalToNumber } from '../../common/utils/decimal.util';
+import { resolveCategoryPrefijo } from '../../supply-categories/utils/derive-category-prefijo';
 import type {
   CreateSupplyItemData,
   FindSupplyItemsOptions,
@@ -76,7 +77,10 @@ export class SupplyItemsRepository implements ISupplyitemsRepository {
     });
   }
 
-  async create(tenantId: string, data: CreateSupplyItemData): Promise<SupplyItemWithRelations> {
+  async create(
+    tenantId: string,
+    data: CreateSupplyItemData & { codigoInterno: string },
+  ): Promise<SupplyItemWithRelations> {
     return this.prisma.supplyItem.create({
       data: {
         tenantId,
@@ -176,5 +180,23 @@ export class SupplyItemsRepository implements ISupplyitemsRepository {
     return this.prisma.supplyCategory
       .findFirst({ where: { id: categoriaId, tenantId } })
       .then((row) => !!row);
+  }
+
+  async findCategoryPrefijo(tenantId: string, categoriaId: string): Promise<string | null> {
+    const category = await this.prisma.supplyCategory.findFirst({
+      where: { id: categoriaId, tenantId },
+      select: { prefijo: true, nombre: true },
+    });
+    if (!category) return null;
+    return resolveCategoryPrefijo(category.nombre, category.prefijo);
+  }
+
+  findCodigosInternosByCategory(tenantId: string, categoriaId: string): Promise<string[]> {
+    return this.prisma.supplyItem
+      .findMany({
+        where: { tenantId, categoriaId },
+        select: { codigoInterno: true },
+      })
+      .then((rows) => rows.map((row) => row.codigoInterno));
   }
 }

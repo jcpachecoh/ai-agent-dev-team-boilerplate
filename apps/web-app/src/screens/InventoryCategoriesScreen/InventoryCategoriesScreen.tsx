@@ -48,7 +48,11 @@ function filterCategories(
     if (status === 'inactive' && item.isActive) return false;
     if (!q) return true;
     const desc = (item.descripcion ?? '').toLowerCase();
-    return item.nombre.toLowerCase().includes(q) || desc.includes(q);
+    return (
+      item.nombre.toLowerCase().includes(q) ||
+      item.prefijo.toLowerCase().includes(q) ||
+      desc.includes(q)
+    );
   });
 }
 
@@ -94,7 +98,7 @@ export function InventoryCategoriesScreen(): React.JSX.Element {
         await createMutation.mutateAsync(values);
         toast.success('Categoría creada correctamente');
       } else if (editing) {
-        await updateMutation.mutateAsync({ id: editing.id, values });
+        await updateMutation.mutateAsync({ id: editing.id, values, original: editing });
         toast.success('Categoría actualizada');
       }
       setModalOpen(false);

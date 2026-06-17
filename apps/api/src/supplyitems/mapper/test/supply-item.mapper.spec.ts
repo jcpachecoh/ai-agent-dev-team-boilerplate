@@ -44,6 +44,7 @@ const baseItem = {
     id: 'cat-1',
     tenantId: 'tenant-1',
     nombre: 'Secos',
+    prefijo: 'SEC',
     descripcion: null,
     isActive: true,
     createdAt: new Date(),

@@ -22,7 +22,7 @@ import { headerColumnsFromResponsive } from '@/lib/responsive-columns';
 import { useSupplyCategories } from '@/features/inventario/hooks/useSupplyCategories';
 import {
   useCreateSupplyItem,
-  useDeactivateSupplyItem,
+  useToggleSupplyItemStatus,
   useUpdateSupplyItem,
 } from '@/features/inventario/hooks/useSupplyItemMutations';
 import { getErrorMessage } from '@/lib/graphql-client';
@@ -34,23 +34,31 @@ import { filterProducts, formatCurrency, stockToneForProduct } from '@/utils/inv
 import shared from '../inventory/shared.module.scss';
 import { useUiTheme } from '@/hooks/useUiTheme';
 
+const STATUS_FILTER_OPTIONS = [
+  { value: 'all', label: 'Todos' },
+  { value: 'active', label: 'Activos' },
+  { value: 'inactive', label: 'Inactivos' },
+] as const;
+
 export function InventoryProductsScreen(): React.JSX.Element {
   const theme = useUiTheme();
   const navigate = useNavigate();
-  const itemsQuery = useSupplyItems();
+  const itemsQuery = useSupplyItems('all');
   const categoriesQuery = useSupplyCategories();
   const createMutation = useCreateSupplyItem();
   const updateMutation = useUpdateSupplyItem();
-  const deactivateMutation = useDeactivateSupplyItem();
+  const toggleStatusMutation = useToggleSupplyItemStatus();
 
   const [search, setSearch] = useState('');
   const [categoryId, setCategoryId] = useState('all');
   const [supplierId, setSupplierId] = useState('all');
   const [lowStockOnly, setLowStockOnly] = useState(false);
+  const [status, setStatus] = useState<'all' | 'active' | 'inactive'>('all');
   const [page, setPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
   const [editing, setEditing] = useState<InventoryProduct | undefined>();
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   const products = itemsQuery.data ?? [];
 
@@ -76,8 +84,8 @@ export function InventoryProductsScreen(): React.JSX.Element {
   }, [products]);
 
   const filtered = useMemo(
-    () => filterProducts(products, { search, categoryId, supplierId, lowStockOnly }),
-    [products, search, categoryId, supplierId, lowStockOnly],
+    () => filterProducts(products, { search, categoryId, supplierId, lowStockOnly, status }),
+    [products, search, categoryId, supplierId, lowStockOnly, status],
   );
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / INVENTORY_PAGE_SIZE));
@@ -116,20 +124,29 @@ export function InventoryProductsScreen(): React.JSX.Element {
     }
   };
 
-  const handleDelete = async (product: InventoryProduct) => {
-    const confirmed = window.confirm(`¿Desactivar ${product.name}?`);
-    if (!confirmed) return;
-
-    try {
-      await deactivateMutation.mutateAsync(product.id);
-      toast.success('Insumo desactivado');
-    } catch {
-      toast.error('Error al desactivar el insumo');
-    }
+  const handleToggleStatus = (product: InventoryProduct) => {
+    setTogglingId(product.id);
+    toggleStatusMutation.mutate(
+      { id: product.id, isActive: !product.isActive },
+      {
+        onSuccess: () => {
+          toast.success(
+            product.isActive
+              ? `${product.name} fue descontinuado`
+              : `${product.name} fue reactivado`,
+          );
+          setTogglingId(null);
+        },
+        onError: (err) => {
+          toast.error(getErrorMessage(err));
+          setTogglingId(null);
+        },
+      },
+    );
   };
 
   const saving =
-    createMutation.isPending || updateMutation.isPending || deactivateMutation.isPending;
+    createMutation.isPending || updateMutation.isPending || toggleStatusMutation.isPending;
 
   if (itemsQuery.isLoading) {
     return (
@@ -189,6 +206,12 @@ export function InventoryProductsScreen(): React.JSX.Element {
             setLowStockOnly(v);
             setPage(1);
           }}
+          statusOptions={[...STATUS_FILTER_OPTIONS]}
+          statusValue={status}
+          onStatusChange={(v) => {
+            setStatus(v as 'all' | 'active' | 'inactive');
+            setPage(1);
+          }}
           theme={theme}
           size="xl"
           className={shared.embedToolbar}
@@ -218,6 +241,7 @@ export function InventoryProductsScreen(): React.JSX.Element {
                   columns={headerColumnsFromResponsive(visibleColumns, {
                     stock: 'center',
                     price: 'right',
+                    estado: 'center',
                     actions: 'center',
                   })}
                 />
@@ -234,7 +258,8 @@ export function InventoryProductsScreen(): React.JSX.Element {
                 lowStockWarning={product.currentStock < product.minStock}
                 onSkuClick={() => navigate(`/inventory/products/${product.id}`)}
                 onEdit={() => openEdit(product)}
-                onDelete={() => void handleDelete(product)}
+                onToggleStatus={() => handleToggleStatus(product)}
+                toggleLoading={togglingId === product.id}
               />
             )}
             renderCard={(product) => (
@@ -246,7 +271,8 @@ export function InventoryProductsScreen(): React.JSX.Element {
                 lowStockWarning={product.currentStock < product.minStock}
                 onSkuClick={() => navigate(`/inventory/products/${product.id}`)}
                 onEdit={() => openEdit(product)}
-                onDelete={() => void handleDelete(product)}
+                onToggleStatus={() => handleToggleStatus(product)}
+                toggleLoading={togglingId === product.id}
               />
             )}
           />

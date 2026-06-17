@@ -7,13 +7,16 @@ import {
   InputType,
   Mutation,
   ObjectType,
+  Parent,
   Query,
+  ResolveField,
   Resolver,
 } from '@nestjs/graphql';
 import type { Request } from 'express';
 import type { SupplyCategory } from '@prisma/client';
 import { IsBoolean, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { SupplyCategoriesService } from '../service/supply-categories.service';
+import { resolveCategoryPrefijo } from '../utils/derive-category-prefijo';
 
 @ObjectType('SupplyCategory')
 export class SupplyCategoryType {
@@ -25,6 +28,9 @@ export class SupplyCategoryType {
 
   @Field()
   nombre!: string;
+
+  @Field()
+  prefijo!: string;
 
   @Field(() => String, { nullable: true })
   descripcion?: string | null;
@@ -39,6 +45,11 @@ export class CreateSupplyCategoryInputDto {
   @IsString()
   @IsNotEmpty()
   nombre!: string;
+
+  @Field()
+  @IsString()
+  @IsNotEmpty()
+  prefijo!: string;
 
   @Field(() => String, { nullable: true })
   @IsString()
@@ -57,6 +68,12 @@ export class UpdateSupplyCategoryInputDto {
   @Field(() => String, { nullable: true })
   @IsString()
   @IsOptional()
+  @IsNotEmpty()
+  prefijo?: string;
+
+  @Field(() => String, { nullable: true })
+  @IsString()
+  @IsOptional()
   descripcion?: string;
 
   @Field(() => Boolean, { nullable: true })
@@ -68,6 +85,11 @@ export class UpdateSupplyCategoryInputDto {
 @Resolver(() => SupplyCategoryType)
 export class SupplyCategoriesResolver {
   constructor(private readonly service: SupplyCategoriesService) {}
+
+  @ResolveField(() => String)
+  prefijo(@Parent() category: SupplyCategory): string {
+    return resolveCategoryPrefijo(category.nombre, category.prefijo);
+  }
 
   @Query(() => [SupplyCategoryType], { name: 'supplyCategories' })
   supplyCategories(

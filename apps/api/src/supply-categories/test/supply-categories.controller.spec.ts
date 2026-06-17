@@ -1,12 +1,14 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { SupplyCategoriesController } from '../controller/supply-categories.controller';
 import { SupplyCategoriesService } from '../service/supply-categories.service';
+import { SupplyItemsService } from '../../supplyitems/service/supplyitems.service';
 
 const tenantId = 'palos-de-lena';
 const category = {
   id: 'cat-1',
   tenantId,
   nombre: 'Abarrotes',
+  prefijo: 'ABR',
   descripcion: null,
   isActive: true,
   createdAt: new Date(),
@@ -19,13 +21,20 @@ const serviceMock = {
   update: jest.fn(),
 };
 
+const supplyItemsServiceMock = {
+  getNextCodigoInterno: jest.fn(),
+};
+
 describe('SupplyCategoriesController', () => {
   let controller: SupplyCategoriesController;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [SupplyCategoriesController],
-      providers: [{ provide: SupplyCategoriesService, useValue: serviceMock }],
+      providers: [
+        { provide: SupplyCategoriesService, useValue: serviceMock },
+        { provide: SupplyItemsService, useValue: supplyItemsServiceMock },
+      ],
     }).compile();
 
     controller = module.get<SupplyCategoriesController>(SupplyCategoriesController);
@@ -42,7 +51,17 @@ describe('SupplyCategoriesController', () => {
   it('create delegates to service', async () => {
     serviceMock.create.mockResolvedValue(category);
 
-    await expect(controller.create(tenantId, { nombre: 'Abarrotes' })).resolves.toEqual(category);
+    await expect(
+      controller.create(tenantId, { nombre: 'Abarrotes', prefijo: 'ABR' }),
+    ).resolves.toEqual(category);
+  });
+
+  it('getNextCodigo delegates to supply items service', async () => {
+    supplyItemsServiceMock.getNextCodigoInterno.mockResolvedValue('ABR-000001');
+
+    await expect(controller.getNextCodigo('cat-1', tenantId)).resolves.toEqual({
+      codigoInterno: 'ABR-000001',
+    });
   });
 
   it('update delegates to service', async () => {

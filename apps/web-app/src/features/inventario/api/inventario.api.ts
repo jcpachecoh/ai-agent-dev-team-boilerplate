@@ -16,6 +16,7 @@ import {
   fetchSupplyItemPriceHistoryGql,
   fetchSupplyItemSuppliersGql,
   fetchSupplyItemsGql,
+  fetchNextSupplyItemCodigoGql,
 } from './inventario.queries';
 import {
   createSupplyCategoryGql,
@@ -35,6 +36,7 @@ import {
   fetchSupplyItemPriceHistory as fetchSupplyItemPriceHistoryRest,
   fetchSupplyItemSuppliers as fetchSupplyItemSuppliersRest,
   fetchSupplyItems as fetchSupplyItemsRest,
+  fetchNextSupplyItemCodigo as fetchNextSupplyItemCodigoRest,
   updateSupplyItem as updateSupplyItemRest,
 } from './inventario.rest';
 
@@ -49,6 +51,7 @@ export function fetchSupplyCategories(isActive?: boolean): Promise<SupplyCategor
 
 export function createSupplyCategory(input: {
   nombre: string;
+  prefijo: string;
   descripcion?: string;
 }): Promise<SupplyCategoryApi> {
   if (isGraphqlConfigured()) return createSupplyCategoryGql(input);
@@ -57,10 +60,15 @@ export function createSupplyCategory(input: {
 
 export function updateSupplyCategory(
   id: string,
-  input: { nombre?: string; descripcion?: string; isActive?: boolean },
+  input: { nombre?: string; prefijo?: string; descripcion?: string; isActive?: boolean },
 ): Promise<SupplyCategoryApi> {
   if (isGraphqlConfigured()) return updateSupplyCategoryGql(id, input);
   return updateSupplyCategoryRest(id, input);
+}
+
+export function fetchNextSupplyItemCodigo(categoriaId: string): Promise<string> {
+  if (isGraphqlConfigured()) return fetchNextSupplyItemCodigoGql(categoriaId);
+  return fetchNextSupplyItemCodigoRest(categoriaId);
 }
 
 export function fetchSupplyItems(filters: SupplyItemsListFilters = {}): Promise<SupplyItemApi[]> {

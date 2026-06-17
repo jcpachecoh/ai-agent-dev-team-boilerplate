@@ -145,6 +145,7 @@ model SupplyCategory {
   id          String   @id @default(cuid())
   tenantId    String
   nombre      String
+  prefijo     String
   descripcion String?
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
@@ -153,6 +154,7 @@ model SupplyCategory {
   items SupplyItem[]
 
   @@unique([tenantId, nombre])
+  @@unique([tenantId, prefijo])
   @@index([tenantId, isActive])
   @@map("supply_categories")
 }

@@ -32,22 +32,21 @@ export class SupplyItemsService implements ISupplyitemsService {
     tenantId: string,
     options: FindSupplyItemsOptions = {},
   ): Promise<SupplyItemWithRelations[]> {
-    return this.supplyItemsRepository.findAll(tenantId, {
-      ...options,
-      isActive: options.isActive ?? true,
-    });
+    return this.supplyItemsRepository.findAll(tenantId, options);
   }
 
   async create(tenantId: string, data: CreateSupplyItemData): Promise<SupplyItemWithRelations> {
     await this.assertCategory(tenantId, data.categoriaId);
-    await this.assertCodigoUnique(tenantId, data.codigoInterno);
+    const codigoInterno =
+      data.codigoInterno?.trim() || (await this.getNextCodigoInterno(tenantId, data.categoriaId));
+    await this.assertCodigoUnique(tenantId, codigoInterno);
     this.assertStockRange(data.stockMinimoBodega, data.stockMaximoBodega);
     if (data.stockActualBodega !== undefined) {
       this.assertNonNegativeStockActual(data.stockActualBodega);
     }
 
     try {
-      return await this.supplyItemsRepository.create(tenantId, data);
+      return await this.supplyItemsRepository.create(tenantId, { ...data, codigoInterno });
     } catch (error) {
       this.rethrowUniqueConflict(error);
       throw error;
@@ -100,6 +99,36 @@ export class SupplyItemsService implements ISupplyitemsService {
   ): Promise<SupplyItemPriceHistory[]> {
     await this.findOne(tenantId, id);
     return this.supplyItemsRepository.findPriceHistory(tenantId, id, options);
+  }
+
+  async getNextCodigoInterno(tenantId: string, categoriaId: string): Promise<string> {
+    const prefijo = await this.supplyItemsRepository.findCategoryPrefijo(tenantId, categoriaId);
+    if (!prefijo) {
+      throw new NotFoundException(`SupplyCategory ${categoriaId} not found`);
+    }
+
+    const codigos = await this.supplyItemsRepository.findCodigosInternosByCategory(
+      tenantId,
+      categoriaId,
+    );
+    const pattern = new RegExp(`^${prefijo}-(\\d{6})$`);
+    let maxSequence = 0;
+
+    for (const codigo of codigos) {
+      const match = codigo.match(pattern);
+      if (match) {
+        maxSequence = Math.max(maxSequence, Number.parseInt(match[1], 10));
+      }
+    }
+
+    const nextSequence = maxSequence + 1;
+    if (nextSequence > 999999) {
+      throw new BadRequestException(
+        `No more sequential codes available for category prefix ${prefijo}`,
+      );
+    }
+
+    return `${prefijo}-${String(nextSequence).padStart(6, '0')}`;
   }
 
   private async assertCategory(tenantId: string, categoriaId: string): Promise<void> {

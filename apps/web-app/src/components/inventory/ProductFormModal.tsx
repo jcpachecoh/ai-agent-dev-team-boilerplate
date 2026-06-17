@@ -7,6 +7,7 @@ import {
 import { useEffect, useMemo, useState } from 'react';
 
 import { useSupplyCategories } from '@/features/inventario/hooks/useSupplyCategories';
+import { fetchNextSupplyItemCodigo } from '@/features/inventario/api/inventario.api';
 import { productToFormValues } from '@/features/inventario/mappers/formValues';
 import type { InventoryProduct, InventoryProductFormValues } from '@/types/inventory';
 import { STOCK_UNIT_OPTIONS } from '@/types/inventory';
@@ -43,6 +44,7 @@ const emptyForm: InventoryProductFormValues = {
   factorConversion: '1',
   aplicaVencimiento: false,
   aplicaLote: false,
+  isActive: true,
 };
 
 export function ProductFormModal({
@@ -57,6 +59,7 @@ export function ProductFormModal({
   const categoriesQuery = useSupplyCategories();
   const [values, setValues] = useState<InventoryProductFormValues>(emptyForm);
   const [formError, setFormError] = useState<string | null>(null);
+  const [skuLoading, setSkuLoading] = useState(false);
 
   const categoryOptions: InventarioSelectOption[] = useMemo(() => {
     const items = categoriesQuery.data ?? [];
@@ -74,13 +77,42 @@ export function ProductFormModal({
     setFormError(null);
   }, [open, product, categoriesQuery.data]);
 
+  useEffect(() => {
+    if (!open || mode !== 'create' || !values.categoryId) return;
+
+    let cancelled = false;
+    setSkuLoading(true);
+    void fetchNextSupplyItemCodigo(values.categoryId)
+      .then((codigo) => {
+        if (!cancelled) {
+          setValues((prev) => ({ ...prev, sku: codigo }));
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setFormError('No se pudo generar el código del insumo para esta categoría.');
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setSkuLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open, mode, values.categoryId]);
+
   const handleSave = () => {
     const cost = Number(values.costPrice);
     const min = Number(values.minStock);
     const max = Number(values.maxStock);
     const current = Number(values.currentStock);
-    if (!values.sku.trim() || !values.name.trim() || !values.categoryId) {
-      setFormError('Complete SKU, nombre y categoría.');
+    if (!values.name.trim() || !values.categoryId) {
+      setFormError('Complete nombre y categoría.');
+      return;
+    }
+    if (mode === 'create' && !values.sku.trim()) {
+      setFormError('Espere a que se genere el código o seleccione otra categoría.');
       return;
     }
     if (
@@ -104,7 +136,11 @@ export function ProductFormModal({
     <InventarioModal
       open={open}
       title={mode === 'create' ? 'Crear Insumo' : 'Editar Insumo'}
-      subtitle="Maestro de insumos — categoría, unidad y límites de bodega"
+      subtitle={
+        mode === 'create'
+          ? 'El código interno se asigna por categoría (ej. ACF-000001, ACF-000002…)'
+          : 'Maestro de insumos — categoría, unidad y límites de bodega'
+      }
       onClose={onClose}
       onSave={handleSave}
       saveLoading={saving}
@@ -112,12 +148,13 @@ export function ProductFormModal({
       size="xl"
     >
       <div className={styles.formGrid}>
-        <InventarioFormField label="SKU *" theme={theme} size="md">
+        <InventarioFormField label="SKU (código interno)" theme={theme} size="md">
           <input
             id="insumo-sku"
-            className={styles.input}
-            value={values.sku}
-            onChange={(e) => update({ sku: e.target.value })}
+            className={mode === 'create' ? `${styles.input} ${styles.inputReadonly}` : styles.input}
+            value={skuLoading && mode === 'create' ? 'Generando…' : values.sku}
+            readOnly={mode === 'create'}
+            onChange={mode === 'create' ? undefined : (e) => update({ sku: e.target.value })}
           />
         </InventarioFormField>
         <InventarioFormField label="Nombre *" theme={theme} size="md">
@@ -202,6 +239,28 @@ export function ProductFormModal({
             onChange={(checked) => update({ aplicaLote: checked })}
           />
         </div>
+        {mode === 'edit' ? (
+          <div className={styles.toggleField}>
+            <div className={styles.toggleCopy}>
+              <span className={styles.toggleLabel}>Estado</span>
+              <span className={styles.toggleHint}>
+                {values.isActive
+                  ? 'Activo — visible en catálogo y selección de insumos'
+                  : 'Inactivo — descontinuado, no aparece al crear nuevos vínculos'}
+              </span>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={values.isActive}
+              aria-label="Insumo activo"
+              className={[styles.toggle, values.isActive ? styles.toggleOn : ''].join(' ')}
+              onClick={() => update({ isActive: !values.isActive })}
+            >
+              <span className={styles.toggleThumb} aria-hidden />
+            </button>
+          </div>
+        ) : null}
         {formError ? <span className={styles.errorText}>{formError}</span> : null}
       </div>
     </InventarioModal>

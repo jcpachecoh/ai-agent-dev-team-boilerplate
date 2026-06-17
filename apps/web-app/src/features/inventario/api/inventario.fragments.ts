@@ -1,6 +1,7 @@
 export const SUPPLY_CATEGORY_FIELDS = `
   id
   nombre
+  prefijo
   descripcion
   isActive
 `;

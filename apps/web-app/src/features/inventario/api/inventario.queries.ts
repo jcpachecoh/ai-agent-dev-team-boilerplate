@@ -66,6 +66,12 @@ export const SUPPLY_ITEM_PRICE_HISTORY_QUERY = `
   }
 `;
 
+export const NEXT_SUPPLY_ITEM_CODIGO_QUERY = `
+  query NextSupplyItemCodigo($categoriaId: ID!) {
+    nextSupplyItemCodigo(categoriaId: $categoriaId)
+  }
+`;
+
 export async function fetchSupplyCategoriesGql(isActive?: boolean): Promise<SupplyCategoryApi[]> {
   const data = await graphqlRequest<{ supplyCategories: SupplyCategoryApi[] }>(
     SUPPLY_CATEGORIES_QUERY,
@@ -80,7 +86,7 @@ export async function fetchSupplyItemsGql(
   const data = await graphqlRequest<{ supplyItems: SupplyItemApi[] }>(SUPPLY_ITEMS_QUERY, {
     search: filters.search?.trim() || undefined,
     categoriaId: filters.categoriaId || undefined,
-    isActive: filters.isActive ?? true,
+    isActive: filters.isActive,
     limit: 200,
     offset: 0,
   });
@@ -123,4 +129,12 @@ export async function checkCodigoInternoExistsGql(
     (item) =>
       item.codigoInterno.toLowerCase() === codigoInterno.toLowerCase() && item.id !== excludeId,
   );
+}
+
+export async function fetchNextSupplyItemCodigoGql(categoriaId: string): Promise<string> {
+  const data = await graphqlRequest<{ nextSupplyItemCodigo: string }>(
+    NEXT_SUPPLY_ITEM_CODIGO_QUERY,
+    { categoriaId },
+  );
+  return data.nextSupplyItemCodigo;
 }

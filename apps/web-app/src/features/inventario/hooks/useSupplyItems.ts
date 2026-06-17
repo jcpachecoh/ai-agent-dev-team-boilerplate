@@ -8,7 +8,11 @@ import { inventarioKeys } from '../api/inventario.keys';
 import { toInventoryProduct } from '../mappers/toInventoryProduct';
 import type { SupplyItemsListFilters } from '../types';
 
-export function useSupplyItems(filters: SupplyItemsListFilters = {}) {
+export type SupplyItemsScope = 'active' | 'all';
+
+export function useSupplyItems(scope: SupplyItemsScope = 'active') {
+  const filters: SupplyItemsListFilters = scope === 'active' ? { isActive: true } : {};
+
   return useQuery({
     queryKey: inventarioKeys.items(filters),
     queryFn: async () => {

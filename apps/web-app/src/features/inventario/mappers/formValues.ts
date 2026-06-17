@@ -21,7 +21,10 @@ export function formValuesToCreateInput(values: InventoryProductFormValues): Cre
 }
 
 export function formValuesToUpdateInput(values: InventoryProductFormValues): UpdateSupplyItemInput {
-  return formValuesToCreateInput(values);
+  return {
+    ...formValuesToCreateInput(values),
+    isActive: values.isActive,
+  };
 }
 
 export function productToFormValues(product: InventoryProduct): InventoryProductFormValues {
@@ -38,5 +41,6 @@ export function productToFormValues(product: InventoryProduct): InventoryProduct
     factorConversion: '1',
     aplicaVencimiento: product.aplicaVencimiento ?? false,
     aplicaLote: product.aplicaLote ?? false,
+    isActive: product.isActive,
   };
 }

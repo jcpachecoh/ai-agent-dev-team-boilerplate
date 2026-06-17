@@ -9,12 +9,20 @@ export const INVENTARIO_PRODUCT_RESPONSIVE_COLUMNS: ResponsiveColumnDef[] = [
   { id: 'stock', label: 'Stock actual', priority: 2, gridTrack: 'minmax(72px, 88px)' },
   { id: 'unit', label: 'Unidad', priority: 3, gridTrack: 'minmax(100px, 120px)' },
   { id: 'price', label: 'Precio Unit.', priority: 3, gridTrack: 'minmax(88px, 96px)' },
+  { id: 'estado', label: 'Estado', priority: 2, gridTrack: 'minmax(96px, 120px)' },
   { id: 'lastMovement', label: 'Último Mov.', priority: 4, gridTrack: 'minmax(96px, 108px)' },
   { id: 'actions', label: 'Acciones', priority: 1, gridTrack: 'minmax(88px, 100px)' },
 ];
 
 export const INVENTARIO_CATEGORY_RESPONSIVE_COLUMNS: ResponsiveColumnDef[] = [
   { id: 'nombre', label: 'Nombre', priority: 1, gridTrack: 'minmax(140px, 1.6fr)' },
+  {
+    id: 'prefijo',
+    label: 'Prefijo',
+    priority: 2,
+    gridTrack: 'minmax(72px, 88px)',
+    cardLabel: 'Prefijo',
+  },
   { id: 'descripcion', label: 'Descripción', priority: 2, gridTrack: 'minmax(160px, 2fr)' },
   { id: 'estado', label: 'Estado', priority: 2, gridTrack: 'minmax(96px, 120px)' },
   { id: 'actions', label: 'Acciones', priority: 1, gridTrack: 'minmax(88px, 100px)' },

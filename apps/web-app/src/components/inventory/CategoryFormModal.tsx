@@ -18,6 +18,7 @@ export interface CategoryFormModalProps {
 
 const emptyForm: SupplyCategoryFormValues = {
   nombre: '',
+  prefijo: '',
   descripcion: '',
   isActive: true,
 };
@@ -25,6 +26,7 @@ const emptyForm: SupplyCategoryFormValues = {
 function categoryToFormValues(category: SupplyCategoryApi): SupplyCategoryFormValues {
   return {
     nombre: category.nombre,
+    prefijo: category.prefijo,
     descripcion: category.descripcion ?? '',
     isActive: category.isActive,
   };
@@ -49,12 +51,17 @@ export function CategoryFormModal({
   }, [open, category]);
 
   const handleSave = () => {
+    const prefijo = values.prefijo.trim().toUpperCase();
     if (!values.nombre.trim()) {
       setFormError('El nombre de la categoría es obligatorio.');
       return;
     }
+    if (!/^[A-Z0-9]{2,6}$/.test(prefijo)) {
+      setFormError('El prefijo debe tener entre 2 y 6 caracteres alfanuméricos (ej. ACF).');
+      return;
+    }
     setFormError(null);
-    onSave(values);
+    onSave({ ...values, prefijo });
   };
 
   const update = (patch: Partial<SupplyCategoryFormValues>) =>
@@ -64,7 +71,7 @@ export function CategoryFormModal({
     <InventarioModal
       open={open}
       title={mode === 'create' ? 'Crear categoría' : 'Editar categoría'}
-      subtitle="Clasificación de insumos en inventario"
+      subtitle="Defina el prefijo del código interno de insumos (ej. Activo fijo → ACF → ACF-000001)"
       onClose={onClose}
       onSave={handleSave}
       saveLoading={saving}
@@ -77,6 +84,16 @@ export function CategoryFormModal({
             className={styles.input}
             value={values.nombre}
             onChange={(e) => update({ nombre: e.target.value })}
+            placeholder="Activo fijo"
+          />
+        </InventarioFormField>
+        <InventarioFormField label="Prefijo *" theme={theme} size="md">
+          <input
+            className={styles.input}
+            value={values.prefijo}
+            maxLength={6}
+            onChange={(e) => update({ prefijo: e.target.value.toUpperCase() })}
+            placeholder="ACF"
           />
         </InventarioFormField>
         <InventarioFormField label="Descripción" theme={theme} size="md">

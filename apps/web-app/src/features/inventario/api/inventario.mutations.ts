@@ -74,6 +74,7 @@ export async function deleteSupplyItemGql(id: string): Promise<boolean> {
 
 export async function createSupplyCategoryGql(input: {
   nombre: string;
+  prefijo: string;
   descripcion?: string;
 }): Promise<SupplyCategoryApi> {
   const data = await graphqlRequest<{ createSupplyCategory: SupplyCategoryApi }>(
@@ -85,7 +86,7 @@ export async function createSupplyCategoryGql(input: {
 
 export async function updateSupplyCategoryGql(
   id: string,
-  input: { nombre?: string; descripcion?: string; isActive?: boolean },
+  input: { nombre?: string; prefijo?: string; descripcion?: string; isActive?: boolean },
 ): Promise<SupplyCategoryApi> {
   const data = await graphqlRequest<{ updateSupplyCategory: SupplyCategoryApi }>(
     UPDATE_SUPPLY_CATEGORY_MUTATION,

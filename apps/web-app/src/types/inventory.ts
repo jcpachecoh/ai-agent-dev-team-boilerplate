@@ -43,6 +43,7 @@ export interface InventoryProductFormValues {
   factorConversion: string;
   aplicaVencimiento: boolean;
   aplicaLote: boolean;
+  isActive: boolean;
 }
 
 export interface InventoryMovement {

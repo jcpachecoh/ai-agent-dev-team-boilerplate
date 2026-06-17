@@ -33,6 +33,19 @@ export function useUpdateSupplyItem() {
   });
 }
 
+export function useToggleSupplyItemStatus() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) =>
+      updateSupplyItem(id, { isActive }),
+    onSuccess: (_data, variables) => {
+      void queryClient.invalidateQueries({ queryKey: inventarioKeys.all });
+      void queryClient.invalidateQueries({ queryKey: inventarioKeys.item(variables.id) });
+    },
+  });
+}
+
 export function useDeactivateSupplyItem() {
   const queryClient = useQueryClient();
 

@@ -27,6 +27,7 @@ import { RequirePermission } from '../../common/decorators/require-permission.de
 import { PermissionsGuard } from '../../common/guards/permissions.guard';
 import { decimalToNumber } from '../../common/utils/decimal.util';
 import { SupplyCategoryType } from '../../supply-categories/resolver/supply-categories.resolver';
+import { resolveCategoryPrefijo } from '../../supply-categories/utils/derive-category-prefijo';
 import type {
   CreateSupplyItemData,
   UpdateSupplyItemData,
@@ -160,10 +161,10 @@ export class CreateSupplyItemInputDto {
   @IsNotEmpty()
   nombre!: string;
 
-  @Field()
+  @Field(() => String, { nullable: true })
   @IsString()
-  @IsNotEmpty()
-  codigoInterno!: string;
+  @IsOptional()
+  codigoInterno?: string;
 
   @Field(() => ID)
   @IsString()
@@ -302,6 +303,7 @@ function toSupplyItemType(item: SupplyItemWithRelations): SupplyItemType {
           id: item.categoria.id,
           tenantId: item.categoria.tenantId,
           nombre: item.categoria.nombre,
+          prefijo: resolveCategoryPrefijo(item.categoria.nombre, item.categoria.prefijo),
           descripcion: item.categoria.descripcion,
           isActive: item.categoria.isActive,
         }
@@ -360,6 +362,14 @@ export class SupplyItemsResolver {
     const tenantId = this.getTenantId(context.req);
     const item = await this.supplyItemsService.findOne(tenantId, id);
     return toSupplyItemType(item);
+  }
+
+  @Query(() => String, { name: 'nextSupplyItemCodigo' })
+  nextSupplyItemCodigo(
+    @Context() context: { req: Request },
+    @Args('categoriaId', { type: () => ID }) categoriaId: string,
+  ): Promise<string> {
+    return this.supplyItemsService.getNextCodigoInterno(this.getTenantId(context.req), categoriaId);
   }
 
   @Query(() => [SupplyItemSupplierType])

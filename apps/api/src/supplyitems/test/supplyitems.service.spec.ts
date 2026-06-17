@@ -28,6 +28,7 @@ const mockSupplyItem = {
     id: 'cat-1',
     tenantId,
     nombre: 'Test',
+    prefijo: 'TST',
     descripcion: null,
     isActive: true,
     createdAt: new Date(),
@@ -46,6 +47,8 @@ const repoMock = {
   findSuppliersForItem: jest.fn(),
   findPriceHistory: jest.fn(),
   categoryExists: jest.fn(),
+  findCategoryPrefijo: jest.fn(),
+  findCodigosInternosByCategory: jest.fn(),
 };
 
 describe('SupplyItemsService', () => {
@@ -87,7 +90,6 @@ describe('SupplyItemsService', () => {
       expect(repoMock.findAll).toHaveBeenCalledWith(tenantId, {
         search: 'insumo',
         limit: 10,
-        isActive: true,
       });
     });
   });
@@ -173,6 +175,55 @@ describe('SupplyItemsService', () => {
       );
 
       await expect(service.create(tenantId, createInput)).rejects.toThrow(ConflictException);
+    });
+
+    it('auto-generates codigoInterno when omitted', async () => {
+      repoMock.categoryExists.mockResolvedValue(true);
+      repoMock.findCategoryPrefijo.mockResolvedValue('TST');
+      repoMock.findCodigosInternosByCategory.mockResolvedValue(['TST-000001', 'TST-000003']);
+      repoMock.findByCodigoInterno.mockResolvedValue(null);
+      repoMock.create.mockResolvedValue(mockSupplyItem);
+
+      const { codigoInterno: _codigo, ...withoutCodigo } = createInput;
+      await service.create(tenantId, withoutCodigo);
+
+      expect(repoMock.create).toHaveBeenCalledWith(
+        tenantId,
+        expect.objectContaining({ codigoInterno: 'TST-000004' }),
+      );
+    });
+  });
+
+  describe('getNextCodigoInterno', () => {
+    it('returns first sequential code when category has no matching items', async () => {
+      repoMock.findCategoryPrefijo.mockResolvedValue('ACF');
+      repoMock.findCodigosInternosByCategory.mockResolvedValue(['LEGACY-001']);
+
+      await expect(service.getNextCodigoInterno(tenantId, 'cat-1')).resolves.toBe('ACF-000001');
+    });
+
+    it('throws NotFoundException when category is missing', async () => {
+      repoMock.findCategoryPrefijo.mockResolvedValue(null);
+
+      await expect(service.getNextCodigoInterno(tenantId, 'missing')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('returns next code after highest sequential match', async () => {
+      repoMock.findCategoryPrefijo.mockResolvedValue('ACF');
+      repoMock.findCodigosInternosByCategory.mockResolvedValue(['ACF-000010', 'ACF-000042']);
+
+      await expect(service.getNextCodigoInterno(tenantId, 'cat-1')).resolves.toBe('ACF-000043');
+    });
+
+    it('throws BadRequestException when sequence is exhausted', async () => {
+      repoMock.findCategoryPrefijo.mockResolvedValue('ACF');
+      repoMock.findCodigosInternosByCategory.mockResolvedValue(['ACF-999999']);
+
+      await expect(service.getNextCodigoInterno(tenantId, 'cat-1')).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 

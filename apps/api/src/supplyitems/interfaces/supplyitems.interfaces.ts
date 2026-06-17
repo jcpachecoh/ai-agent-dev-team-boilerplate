@@ -6,7 +6,10 @@ export interface ISupplyitemsRepository {
   findOneDetailed(tenantId: string, id: string): Promise<SupplyItemWithRelations | null>;
   findAll(tenantId: string, options?: FindSupplyItemsOptions): Promise<SupplyItemWithRelations[]>;
   findByCodigoInterno(tenantId: string, codigoInterno: string): Promise<SupplyItem | null>;
-  create(tenantId: string, data: CreateSupplyItemData): Promise<SupplyItemWithRelations>;
+  create(
+    tenantId: string,
+    data: CreateSupplyItemData & { codigoInterno: string },
+  ): Promise<SupplyItemWithRelations>;
   update(
     tenantId: string,
     id: string,
@@ -19,6 +22,8 @@ export interface ISupplyitemsRepository {
     options?: { limit?: number; offset?: number },
   ): Promise<SupplyItemPriceHistory[]>;
   categoryExists(tenantId: string, categoriaId: string): Promise<boolean>;
+  findCategoryPrefijo(tenantId: string, categoriaId: string): Promise<string | null>;
+  findCodigosInternosByCategory(tenantId: string, categoriaId: string): Promise<string[]>;
 }
 
 export interface ISupplyitemsService {
@@ -37,6 +42,7 @@ export interface ISupplyitemsService {
     id: string,
     options?: { limit?: number; offset?: number },
   ): Promise<SupplyItemPriceHistory[]>;
+  getNextCodigoInterno(tenantId: string, categoriaId: string): Promise<string>;
 }
 
 export interface FindSupplyItemsOptions {
@@ -50,7 +56,7 @@ export interface FindSupplyItemsOptions {
 
 export interface CreateSupplyItemData {
   nombre: string;
-  codigoInterno: string;
+  codigoInterno?: string;
   categoriaId: string;
   descripcion?: string;
   unidadBase: StockUnit;

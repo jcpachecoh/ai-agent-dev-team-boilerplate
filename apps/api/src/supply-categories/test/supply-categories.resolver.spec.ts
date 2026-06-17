@@ -12,6 +12,7 @@ const category = {
   id: 'cat-1',
   tenantId,
   nombre: 'Abarrotes',
+  prefijo: 'ABR',
   descripcion: null,
   isActive: true,
   createdAt: new Date(),
@@ -58,7 +59,7 @@ describe('SupplyCategoriesResolver', () => {
 
   it('createSupplyCategory delegates to service', async () => {
     serviceMock.create.mockResolvedValue(category);
-    const input = { nombre: 'Abarrotes' } as CreateSupplyCategoryInputDto;
+    const input = { nombre: 'Abarrotes', prefijo: 'ABR' } as CreateSupplyCategoryInputDto;
 
     await expect(
       resolver.createSupplyCategory(contextWithTenant(tenantId), input),

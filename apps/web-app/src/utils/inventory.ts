@@ -66,11 +66,14 @@ export function filterProducts(
     categoryId?: string;
     supplierId?: string;
     lowStockOnly?: boolean;
+    status?: 'all' | 'active' | 'inactive';
   },
 ): InventoryProduct[] {
   const search = query.search?.trim().toLowerCase() ?? '';
 
   return products.filter((p) => {
+    if (query.status === 'active' && !p.isActive) return false;
+    if (query.status === 'inactive' && p.isActive) return false;
     if (search && !p.name.toLowerCase().includes(search) && !p.sku.toLowerCase().includes(search)) {
       return false;
     }

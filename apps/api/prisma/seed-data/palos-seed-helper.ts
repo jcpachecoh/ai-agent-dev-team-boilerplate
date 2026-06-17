@@ -23,19 +23,33 @@ export async function seedPalosSupplyItems(prisma: PrismaClient) {
   const suppliersMap = new Map<string, string>();
   const seenCodigoInterno = new Set<string>();
 
+  const prefijoByCategory = new Map<string, string>();
+  for (const item of PALOS_SUPPLY_ITEMS) {
+    const catName = item.categoria.trim().toUpperCase();
+    if (!prefijoByCategory.has(catName)) {
+      const match = item.codigoInterno.match(/^([A-Z0-9]{2,6})-/);
+      if (match) {
+        prefijoByCategory.set(catName, match[1]);
+      }
+    }
+  }
+
   // 1. Process Categories
   const uniqueCategories = Array.from(
     new Set(PALOS_SUPPLY_ITEMS.map((i) => i.categoria.trim().toUpperCase())),
   );
   for (const catName of uniqueCategories) {
+    const prefijo =
+      (prefijoByCategory.get(catName) ?? catName.replace(/[^A-Z0-9]/g, '').slice(0, 3)) || 'CAT';
     const cat = await prisma.supplyCategory.upsert({
       where: {
         tenantId_nombre: { tenantId: TENANT_ID, nombre: catName },
       },
-      update: { isActive: true },
+      update: { isActive: true, prefijo },
       create: {
         tenantId: TENANT_ID,
         nombre: catName,
+        prefijo,
         isActive: true,
       },
     });

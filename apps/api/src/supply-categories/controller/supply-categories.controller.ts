@@ -5,6 +5,7 @@ import { IsBoolean, IsOptional } from 'class-validator';
 import { CreateSupplyCategoryDto } from './dto/create-supply-category.dto';
 import { UpdateSupplyCategoryDto } from './dto/update-supply-category.dto';
 import { SupplyCategoriesService } from '../service/supply-categories.service';
+import { SupplyItemsService } from '../../supplyitems/service/supplyitems.service';
 
 class ListCategoriesQueryDto {
   @Transform(({ value }) => value === 'true' || value === true)
@@ -18,7 +19,10 @@ class ListCategoriesQueryDto {
 @ApiHeader({ name: 'x-tenant-id', required: true })
 @Controller('supply-categories')
 export class SupplyCategoriesController {
-  constructor(private readonly service: SupplyCategoriesService) {}
+  constructor(
+    private readonly service: SupplyCategoriesService,
+    private readonly supplyItemsService: SupplyItemsService,
+  ) {}
 
   @ApiOperation({ summary: 'List supply categories' })
   @Get()
@@ -31,6 +35,14 @@ export class SupplyCategoriesController {
   @Post()
   create(@Headers('x-tenant-id') tenantId: string, @Body() body: CreateSupplyCategoryDto) {
     return this.service.create(tenantId, body);
+  }
+
+  @ApiOperation({ summary: 'Next internal code for a supply category' })
+  @Get(':id/next-codigo')
+  getNextCodigo(@Param('id') id: string, @Headers('x-tenant-id') tenantId: string) {
+    return this.supplyItemsService.getNextCodigoInterno(tenantId, id).then((codigoInterno) => ({
+      codigoInterno,
+    }));
   }
 
   @ApiOperation({ summary: 'Update supply category' })

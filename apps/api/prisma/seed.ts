@@ -629,11 +629,12 @@ async function main() {
   // ── Supply category (operational tenant) ─────────────────────────────────
   const category = await prisma.supplyCategory.upsert({
     where: { id: SEED_CATEGORY_ID },
-    update: { tenantId: OPERATIONAL_TENANT_ID, nombre: 'Abarrotes' },
+    update: { tenantId: OPERATIONAL_TENANT_ID, nombre: 'Abarrotes', prefijo: 'ABR' },
     create: {
       id: SEED_CATEGORY_ID,
       tenantId: OPERATIONAL_TENANT_ID,
       nombre: 'Abarrotes',
+      prefijo: 'ABR',
     },
   });
   console.log(
@@ -676,47 +677,54 @@ async function main() {
 
   const categoryGranos = await prisma.supplyCategory.upsert({
     where: { id: SEED_CATEGORY_GRANOS_ID },
-    update: { tenantId: OPERATIONAL_TENANT_ID, nombre: 'Fruver' },
+    update: { tenantId: OPERATIONAL_TENANT_ID, nombre: 'Fruver', prefijo: 'FRU' },
     create: {
       id: SEED_CATEGORY_GRANOS_ID,
       tenantId: OPERATIONAL_TENANT_ID,
       nombre: 'Fruver',
       descripcion: 'Frutas y verduras',
+      prefijo: 'FRU',
     },
   });
   console.log('SupplyCategory:', categoryGranos.nombre, '—', categoryGranos.id);
 
   const canonicalCategories = [
-    { id: SEED_CATEGORY_CARNICOS_ID, nombre: 'Cocina' },
-    { id: SEED_CATEGORY_LACTEOS_ID, nombre: 'Parrilla' },
-    { id: SEED_CATEGORY_BEBIDAS_ID, nombre: 'Bebidas' },
-    { id: SEED_CATEGORY_ASEO_ID, nombre: 'Aseo' },
-    { id: SEED_CATEGORY_EMPAQUE_ID, nombre: 'Desechables' },
-    { id: 'bbbbbbbb-0000-0000-0000-000000000009', nombre: 'Bar' },
-    { id: 'bbbbbbbb-0000-0000-0000-000000000010', nombre: 'Otros' },
-    { id: 'bbbbbbbb-0000-0000-0000-000000000011', nombre: 'Producción' },
-    { id: 'bbbbbbbb-0000-0000-0000-000000000012', nombre: 'Cumpleaños' },
-    { id: 'bbbbbbbb-0000-0000-0000-000000000013', nombre: 'Desechable Domicilio' },
-    { id: 'bbbbbbbb-0000-0000-0000-000000000014', nombre: 'Desechable Operación' },
-    { id: 'bbbbbbbb-0000-0000-0000-000000000015', nombre: 'Licores' },
-    { id: 'bbbbbbbb-0000-0000-0000-000000000016', nombre: 'Entrada Cocina' },
-    { id: 'bbbbbbbb-0000-0000-0000-000000000017', nombre: 'Entrada Parrilla' },
-    { id: 'bbbbbbbb-0000-0000-0000-000000000018', nombre: 'Plato Fuerte Cocina' },
-    { id: 'bbbbbbbb-0000-0000-0000-000000000019', nombre: 'Plato Fuerte Parrilla' },
-    { id: 'bbbbbbbb-0000-0000-0000-000000000020', nombre: 'Postres' },
-    { id: 'bbbbbbbb-0000-0000-0000-000000000021', nombre: 'Cafés' },
-    { id: 'bbbbbbbb-0000-0000-0000-000000000022', nombre: 'Adición Cocina' },
-    { id: 'bbbbbbbb-0000-0000-0000-000000000023', nombre: 'Adición Parrilla' },
-    { id: 'bbbbbbbb-0000-0000-0000-000000000024', nombre: 'Decoraciones Venta' },
+    { id: SEED_CATEGORY_CARNICOS_ID, nombre: 'Cocina', prefijo: 'COC' },
+    { id: SEED_CATEGORY_LACTEOS_ID, nombre: 'Parrilla', prefijo: 'PAR' },
+    { id: SEED_CATEGORY_BEBIDAS_ID, nombre: 'Bebidas', prefijo: 'BEB' },
+    { id: SEED_CATEGORY_ASEO_ID, nombre: 'Aseo', prefijo: 'ASE' },
+    { id: SEED_CATEGORY_EMPAQUE_ID, nombre: 'Desechables', prefijo: 'DES' },
+    { id: 'bbbbbbbb-0000-0000-0000-000000000009', nombre: 'Bar', prefijo: 'BAR' },
+    { id: 'bbbbbbbb-0000-0000-0000-000000000010', nombre: 'Otros', prefijo: 'OTR' },
+    { id: 'bbbbbbbb-0000-0000-0000-000000000011', nombre: 'Producción', prefijo: 'PRO' },
+    { id: 'bbbbbbbb-0000-0000-0000-000000000012', nombre: 'Cumpleaños', prefijo: 'CUM' },
+    { id: 'bbbbbbbb-0000-0000-0000-000000000013', nombre: 'Desechable Domicilio', prefijo: 'DDM' },
+    { id: 'bbbbbbbb-0000-0000-0000-000000000014', nombre: 'Desechable Operación', prefijo: 'DOP' },
+    { id: 'bbbbbbbb-0000-0000-0000-000000000015', nombre: 'Licores', prefijo: 'LIC' },
+    { id: 'bbbbbbbb-0000-0000-0000-000000000016', nombre: 'Entrada Cocina', prefijo: 'ECO' },
+    { id: 'bbbbbbbb-0000-0000-0000-000000000017', nombre: 'Entrada Parrilla', prefijo: 'EPA' },
+    { id: 'bbbbbbbb-0000-0000-0000-000000000018', nombre: 'Plato Fuerte Cocina', prefijo: 'PFC' },
+    { id: 'bbbbbbbb-0000-0000-0000-000000000019', nombre: 'Plato Fuerte Parrilla', prefijo: 'PFP' },
+    { id: 'bbbbbbbb-0000-0000-0000-000000000020', nombre: 'Postres', prefijo: 'POS' },
+    { id: 'bbbbbbbb-0000-0000-0000-000000000021', nombre: 'Cafés', prefijo: 'CAF' },
+    { id: 'bbbbbbbb-0000-0000-0000-000000000022', nombre: 'Adición Cocina', prefijo: 'ADC' },
+    { id: 'bbbbbbbb-0000-0000-0000-000000000023', nombre: 'Adición Parrilla', prefijo: 'ADP' },
+    { id: 'bbbbbbbb-0000-0000-0000-000000000024', nombre: 'Decoraciones Venta', prefijo: 'DCV' },
   ] as const;
   for (const cat of canonicalCategories) {
     const row = await prisma.supplyCategory.upsert({
       where: { id: cat.id },
-      update: { tenantId: OPERATIONAL_TENANT_ID, nombre: cat.nombre, isActive: true },
+      update: {
+        tenantId: OPERATIONAL_TENANT_ID,
+        nombre: cat.nombre,
+        prefijo: cat.prefijo,
+        isActive: true,
+      },
       create: {
         id: cat.id,
         tenantId: OPERATIONAL_TENANT_ID,
         nombre: cat.nombre,
+        prefijo: cat.prefijo,
       },
     });
     console.log('SupplyCategory:', row.nombre, '—', row.id);
