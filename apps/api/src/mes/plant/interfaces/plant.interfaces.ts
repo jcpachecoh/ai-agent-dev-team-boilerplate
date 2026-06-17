@@ -444,6 +444,7 @@ export interface CreateIncidentInput {
   severity: AlarmSeverity;
   description: string;
   photoUrl?: string | null;
+  requiresPause?: boolean;
 }
 
 export interface ListIncidentsFilters {

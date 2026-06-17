@@ -2,8 +2,10 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { AlarmSeverity } from '@prisma/client';
 import type { ProductionIncident } from '@prisma/client';
 import type {
   CreateIncidentInput,
@@ -15,13 +17,17 @@ import type {
 import { IncidentRepository } from '../repository/incident.repository';
 import { PlantRepository } from '../repository/plant.repository';
 import { PlantEventsService } from './plant-events.service';
+import { PlantService } from './plant.service';
 
 @Injectable()
 export class IncidentService implements IIncidentService {
+  private readonly logger = new Logger(IncidentService.name);
+
   constructor(
     private readonly incidentRepository: IncidentRepository,
     private readonly plantRepository: PlantRepository,
     private readonly plantEventsService: PlantEventsService,
+    private readonly plantService: PlantService,
   ) {}
 
   async createIncident(
@@ -35,6 +41,10 @@ export class IncidentService implements IIncidentService {
     const response = toIncidentResponse(incident);
 
     this.plantEventsService.emitIncidentCreated(tenantId, response);
+
+    if ((input.severity === AlarmSeverity.CRITICAL || input.requiresPause === true) && input.orderId) {
+      await this.tryAutoPauseOrder(tenantId, input.orderId, incident);
+    }
 
     return response;
   }
@@ -98,6 +108,22 @@ export class IncidentService implements IIncidentService {
       if (!order) {
         throw new BadRequestException('orderId does not belong to tenant');
       }
+    }
+  }
+
+  private async tryAutoPauseOrder(
+    tenantId: string,
+    orderId: string,
+    incident: ProductionIncident,
+  ): Promise<void> {
+    try {
+      await this.plantService.pauseOrder(tenantId, orderId, {
+        reason: `Incidente crítico: ${incident.type} — ${incident.description.slice(0, 80)}`,
+      });
+    } catch (err) {
+      this.logger.warn(
+        `Auto-pause skipped for order ${orderId}: ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
   }
 }

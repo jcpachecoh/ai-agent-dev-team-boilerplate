@@ -91,6 +91,11 @@ import { ReorderPhaseItemDto } from './dto/reorder-phases.dto';
 import { UpdatePhaseDto } from './dto/update-phase.dto';
 import { CreatePhaseDto } from './dto/create-recipe.dto';
 import { ResolveIncidentDto } from './dto/resolve-incident.dto';
+import {
+  CreateNoveltyDto,
+  mapNoveltyType,
+  mapNoveltySeverity,
+} from './dto/create-novelty.dto';
 import { RecipeDetailResponseDto } from './dto/recipe-detail.response';
 import { UpdateRecipeDto } from './dto/update-recipe.dto';
 import { UpdateWorkstationDto } from './dto/update-workstation.dto';
@@ -453,6 +458,22 @@ export class PlantController {
     return this.plantService.findOrders(this.resolveTenantId(req), this.toListOrdersFilters(query));
   }
 
+  @ApiOperation({ summary: 'List novelties (incidents) for a specific production order (PLT-05 alias)' })
+  @ApiOkResponse({ type: [IncidentResponseDto] })
+  @Get('orders/:id/incidents')
+  @UseGuards(PlantAuthGuard, PlantRolesGuard)
+  @Roles(...SUPERVISOR_ROLES)
+  listOrderNovelties(
+    @Req() req: MesRequest,
+    @Param('id') orderId: string,
+    @Query('resolved') resolved?: string,
+  ): Promise<IncidentResponse[]> {
+    return this.incidentService.listIncidents(this.resolveTenantId(req), {
+      orderId,
+      resolved: resolved === 'true' ? true : resolved === 'false' ? false : undefined,
+    });
+  }
+
   @ApiOperation({ summary: 'Get production order detail' })
   @ApiParam({ name: 'id', description: 'Production order ID' })
   @ApiOkResponse({ type: OrderDetailResponseDto })
@@ -599,6 +620,47 @@ export class PlantController {
     @Body() dto: ResolveIncidentDto,
   ): Promise<IncidentResponse> {
     return this.incidentService.resolveIncident(this.resolveTenantId(req), id, req.user.sub, dto);
+  }
+
+  // ── Alias endpoints PLT-05 (novelties) ──────────────────────────────────────
+
+  @ApiOperation({ summary: 'Report a novelty for a specific production order (PLT-05 alias)' })
+  @ApiCreatedResponse({ type: IncidentResponseDto })
+  @Post('orders/:id/incidents')
+  @HttpCode(HttpStatus.CREATED)
+  createOrderNovelty(
+    @Req() req: MesRequest,
+    @Param('id') orderId: string,
+    @Body() dto: CreateNoveltyDto,
+  ): Promise<IncidentResponse> {
+    return this.incidentService.createIncident(this.resolveTenantId(req), req.user.sub, {
+      workStationId: dto.workStationId,
+      executionId: dto.stepId ?? null,
+      orderId,
+      type: mapNoveltyType(dto.noveltyType),
+      severity: mapNoveltySeverity(dto.severity),
+      description: dto.description,
+      photoUrl: dto.photoUrl ?? null,
+      requiresPause: dto.requiresPause,
+    });
+  }
+
+  @ApiOperation({
+    summary: 'List open novelties by workstation (PLT-05 alias). Note: :id is workStationId — the schema has no locationId FK.',
+  })
+  @ApiOkResponse({ type: [IncidentResponseDto] })
+  @Get('locations/:id/incidents')
+  @UseGuards(PlantAuthGuard, PlantRolesGuard)
+  @Roles(...SUPERVISOR_ROLES)
+  listLocationNovelties(
+    @Req() req: MesRequest,
+    @Param('id') workStationId: string,
+    @Query('status') status?: string,
+  ): Promise<IncidentResponse[]> {
+    return this.incidentService.listIncidents(this.resolveTenantId(req), {
+      workStationId,
+      resolved: status === 'OPEN' ? false : undefined,
+    });
   }
 
   // ── DTO mappers (decimal strings → Prisma Decimal) ───────────────────────────
