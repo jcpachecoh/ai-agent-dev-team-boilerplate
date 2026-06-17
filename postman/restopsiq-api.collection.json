@@ -6361,8 +6361,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -6400,8 +6406,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -6434,8 +6446,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -6470,14 +6488,25 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/attendance?userId={{attendanceUserId}}",
               "host": ["{{baseUrl}}"],
               "path": ["api", "attendance"],
-              "query": [{ "key": "userId", "value": "{{attendanceUserId}}" }]
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "{{attendanceUserId}}"
+                }
+              ]
             }
           }
         },
@@ -6486,14 +6515,25 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/attendance/active?locationId={{attendanceLocationId}}",
               "host": ["{{baseUrl}}"],
               "path": ["api", "attendance", "active"],
-              "query": [{ "key": "locationId", "value": "{{attendanceLocationId}}" }]
+              "query": [
+                {
+                  "key": "locationId",
+                  "value": "{{attendanceLocationId}}"
+                }
+              ]
             }
           }
         },
@@ -6502,8 +6542,14 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/attendance/employees/{{attendanceUserId}}/overtime",
@@ -6525,6 +6571,388 @@
                   "        pm.expect(body.pairs).to.be.an('array');",
                   "    }",
                   "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "NOM-04 Reports",
+      "description": "NOM-04 Reports API. Todos los endpoints requieren Bearer {{accessToken}}.\nVariables: {{reportPeriod}} (YYYY-MM), {{reportFrom}} / {{reportTo}} (YYYY-MM-DD).\nLos exports PDF/XLSX se descargan como binario — en Postman haz clic en 'Save to file' en la preview.",
+      "item": [
+        {
+          "name": "GET /api/reports/payroll",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/payroll?period={{reportPeriod}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "payroll"],
+              "query": [
+                {
+                  "key": "period",
+                  "value": "{{reportPeriod}}",
+                  "description": "YYYY-MM (e.g. 2025-06)"
+                }
+              ]
+            },
+            "description": "Devuelve el resumen de nómina del período para el tenant. Filtros opcionales: locationId, employeeId, contractType."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('payroll: status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('payroll: tiene tenantId y period', () => {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.tenantId).to.be.a('string');",
+                  "    pm.expect(body.period.year).to.be.a('number');",
+                  "    pm.expect(body.period.month).to.be.a('number');",
+                  "    pm.expect(body.employees).to.be.an('array');",
+                  "    pm.expect(body.tenantTotals).to.be.an('object');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/reports/payroll (filtros opcionales)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/payroll?period={{reportPeriod}}&locationId={{locationId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "payroll"],
+              "query": [
+                {
+                  "key": "period",
+                  "value": "{{reportPeriod}}"
+                },
+                {
+                  "key": "locationId",
+                  "value": "{{locationId}}",
+                  "description": "Filtrar por sede (optional)"
+                },
+                {
+                  "key": "employeeId",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Filtrar por empleado (optional)"
+                },
+                {
+                  "key": "contractType",
+                  "value": "",
+                  "disabled": true,
+                  "description": "INDEFINIDO | OBRA_LABOR | PRESTACION (optional)"
+                }
+              ]
+            },
+            "description": "Nómina filtrada por sede. Deshabilita / habilita queryParams según necesidad."
+          }
+        },
+        {
+          "name": "GET /api/reports/attendance",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/attendance?from={{reportFrom}}&to={{reportTo}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "attendance"],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "{{reportFrom}}",
+                  "description": "YYYY-MM-DD inicio del rango"
+                },
+                {
+                  "key": "to",
+                  "value": "{{reportTo}}",
+                  "description": "YYYY-MM-DD fin del rango"
+                },
+                {
+                  "key": "locationId",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Filtrar por sede (optional)"
+                }
+              ]
+            },
+            "description": "Resumen de asistencia por empleado para el rango de fechas. Incluye activeDays, absentDays, overtimeMinutes, exceededLegalOvertimeLimit."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('attendance: status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('attendance: tiene from/to y employees', () => {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.tenantId).to.be.a('string');",
+                  "    pm.expect(body.from).to.be.a('string');",
+                  "    pm.expect(body.to).to.be.a('string');",
+                  "    pm.expect(body.employees).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/reports/social-security",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/social-security?period={{reportPeriod}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "social-security"],
+              "query": [
+                {
+                  "key": "period",
+                  "value": "{{reportPeriod}}",
+                  "description": "YYYY-MM"
+                }
+              ]
+            },
+            "description": "Aportes PILA del período. Incluye salud, pensión, ARL, SENA, ICBF, Caja por empleado y total PILA del tenant."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('social-security: status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('social-security: tiene totalPILAContribution', () => {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.tenantId).to.be.a('string');",
+                  "    pm.expect(body.totalPILAContribution).to.be.a('number');",
+                  "    pm.expect(body.employees).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/reports/payroll/export — PDF",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"period\": \"{{reportPeriod}}\",\n  \"format\": \"PDF\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/payroll/export",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "payroll", "export"]
+            },
+            "description": "Descarga el reporte de nómina como PDF (A4 landscape).\nEn Postman: la respuesta se muestra como binario — haz clic en 'Save to file' para guardar payroll-report-{{reportPeriod}}.pdf.\nContent-Type esperado: application/pdf\nContent-Disposition: attachment; filename=\"payroll-report-{{reportPeriod}}.pdf\""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('export PDF: status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('export PDF: Content-Type es application/pdf', () => {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/pdf');",
+                  "});",
+                  "pm.test('export PDF: Content-Disposition contiene .pdf', () => {",
+                  "    const disp = pm.response.headers.get('Content-Disposition') || '';",
+                  "    pm.expect(disp).to.include('.pdf');",
+                  "});",
+                  "pm.test('export PDF: respuesta no está vacía', () => {",
+                  "    pm.expect(pm.response.responseSize).to.be.greaterThan(0);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/reports/payroll/export — XLSX",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"period\": \"{{reportPeriod}}\",\n  \"format\": \"XLSX\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/payroll/export",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "payroll", "export"]
+            },
+            "description": "Descarga el reporte de nómina como Excel (.xlsx) con hoja 'Nómina'.\nColumnas: Empleado, Cédula, Sede, Sal. Base, Aux. Transp., HH. Extra, Deducciones, Neto, Aportes Emp., Costo Total.\nEn Postman: haz clic en 'Save to file' para guardar payroll-report-{{reportPeriod}}.xlsx.\nContent-Type esperado: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('export XLSX: status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('export XLSX: Content-Type es OOXML', () => {",
+                  "    const ct = pm.response.headers.get('Content-Type') || '';",
+                  "    pm.expect(ct).to.include('spreadsheetml');",
+                  "});",
+                  "pm.test('export XLSX: Content-Disposition contiene .xlsx', () => {",
+                  "    const disp = pm.response.headers.get('Content-Disposition') || '';",
+                  "    pm.expect(disp).to.include('.xlsx');",
+                  "});",
+                  "pm.test('export XLSX: respuesta no está vacía', () => {",
+                  "    pm.expect(pm.response.responseSize).to.be.greaterThan(0);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/reports/payroll — sin token (401)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/payroll?period={{reportPeriod}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "payroll"],
+              "query": [
+                {
+                  "key": "period",
+                  "value": "{{reportPeriod}}"
+                }
+              ]
+            },
+            "description": "Negativo: sin Authorization header → debe devolver 401."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('sin token: 401 Unauthorized', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/reports/payroll/export — formato inválido (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"period\": \"{{reportPeriod}}\",\n  \"format\": \"CSV\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/payroll/export",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "payroll", "export"]
+            },
+            "description": "Negativo: format=CSV no es válido → 400 Bad Request. Solo PDF y XLSX aceptados."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('formato inválido: 400 Bad Request', () => pm.response.to.have.status(400));"
                 ]
               }
             }

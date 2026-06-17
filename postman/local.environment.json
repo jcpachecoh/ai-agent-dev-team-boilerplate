@@ -1,27 +1,27 @@
 {
   "id": "e1f2a3b4-c5d6-7890-efab-cd1234567890",
-  "name": "RestOpsIQ \u2014 Local",
+  "name": "RestOpsIQ — Local",
   "values": [
     {
       "key": "baseUrl",
       "value": "http://localhost:3001",
       "type": "default",
       "enabled": true,
-      "description": "API host \u2014 no trailing slash. PORT is set by apps/api process.env.PORT (default 3001)."
+      "description": "API host — no trailing slash. PORT is set by apps/api process.env.PORT (default 3001)."
     },
     {
       "key": "graphqlUrl",
       "value": "http://localhost:3001/graphql",
       "type": "default",
       "enabled": true,
-      "description": "GraphQL endpoint on apps/api (folder 10 \u2014 GraphQL Auth). Requires apps/api on :3001 only."
+      "description": "GraphQL endpoint on apps/api (folder 10 — GraphQL Auth). Requires apps/api on :3001 only."
     },
     {
       "key": "email",
       "value": "mes-owner@palos-de-lena.dev",
       "type": "default",
       "enabled": true,
-      "description": "Global User email for 01 \u2014 Global Auth \u2192 Login. Requires x-tenant-id. NOT test@restopsiq.dev"
+      "description": "Global User email for 01 — Global Auth → Login. Requires x-tenant-id. NOT test@restopsiq.dev"
     },
     {
       "key": "password",
@@ -35,35 +35,35 @@
       "value": "",
       "type": "default",
       "enabled": true,
-      "description": "Global User JWT from POST /api/auth/login. Set by 01 \u2014 Global Auth \u2192 Login or collection pre-request. Not valid on /api/plant/* or /api/mes/*."
+      "description": "Global User JWT from POST /api/auth/login. Set by 01 — Global Auth → Login or collection pre-request. Not valid on /api/plant/* or /api/mes/*."
     },
     {
       "key": "accessTokenOwner",
       "value": "",
       "type": "default",
       "enabled": true,
-      "description": "Global OWNER JWT from 11 \u2014 GraphQL RBAC \u2192 Login Global Owner (mes-owner@palos-de-lena.dev). Has supply.items.read and supply.items.manage."
+      "description": "Global OWNER JWT from 11 — GraphQL RBAC → Login Global Owner (mes-owner@palos-de-lena.dev). Has supply.items.read and supply.items.manage."
     },
     {
       "key": "accessTokenOperator",
       "value": "",
       "type": "default",
       "enabled": true,
-      "description": "Global OPERATOR JWT from 11 \u2014 GraphQL RBAC \u2192 Login Global Operator (mes-operator@palos-de-lena.dev). Has supply.items.read only."
+      "description": "Global OPERATOR JWT from 11 — GraphQL RBAC → Login Global Operator (mes-operator@palos-de-lena.dev). Has supply.items.read only."
     },
     {
       "key": "refreshToken",
       "value": "",
       "type": "default",
       "enabled": true,
-      "description": "Global User refresh token \u2014 set by 01 Auth / Login."
+      "description": "Global User refresh token — set by 01 Auth / Login."
     },
     {
       "key": "accessTokenExpiresAt",
       "value": "",
       "type": "default",
       "enabled": true,
-      "description": "Unix ms expiry for global accessToken \u2014 pre-request auto-login"
+      "description": "Unix ms expiry for global accessToken — pre-request auto-login"
     },
     {
       "key": "tenantId",
@@ -77,28 +77,28 @@
       "value": "",
       "type": "default",
       "enabled": true,
-      "description": "DEBUG \u2014 filled by Create Supply Item pre-request (active Postman environment name)"
+      "description": "DEBUG — filled by Create Supply Item pre-request (active Postman environment name)"
     },
     {
       "key": "debugResolvedTenantId",
       "value": "",
       "type": "default",
       "enabled": true,
-      "description": "DEBUG \u2014 tenantId actually sent as x-tenant-id on last Create Supply Item"
+      "description": "DEBUG — tenantId actually sent as x-tenant-id on last Create Supply Item"
     },
     {
       "key": "debugResolvedCategoryId",
       "value": "",
       "type": "default",
       "enabled": true,
-      "description": "DEBUG \u2014 categoryId sent in body on last Create Supply Item"
+      "description": "DEBUG — categoryId sent in body on last Create Supply Item"
     },
     {
       "key": "debugExpectedTenantId",
       "value": "palos-de-lena",
       "type": "default",
       "enabled": true,
-      "description": "DEBUG \u2014 category bbbbbbbb-... exists only under this tenant in DB"
+      "description": "DEBUG — category bbbbbbbb-... exists only under this tenant in DB"
     },
     {
       "key": "categoryId",
@@ -112,7 +112,7 @@
       "value": "ffffffff-0000-0000-0000-000000000006",
       "type": "default",
       "enabled": true,
-      "description": "Supply item id \u2014 seed or 04 \u2014 Supply Items / Create; used by Plant phase inputs"
+      "description": "Supply item id — seed or 04 — Supply Items / Create; used by Plant phase inputs"
     },
     {
       "key": "supplyItemCode",
@@ -126,35 +126,35 @@
       "value": "10",
       "type": "default",
       "enabled": true,
-      "description": "Example current stock for 04 \u2014 Supply Items create/update bodies (stockActualBodega). Seeded aceite uses 25; arroz uses 50."
+      "description": "Example current stock for 04 — Supply Items create/update bodies (stockActualBodega). Seeded aceite uses 25; arroz uses 50."
     },
     {
       "key": "testLabUserId",
       "value": "cccccccc-0000-0000-0000-000000000003",
       "type": "default",
       "enabled": true,
-      "description": "LEGACY \u2014 TestLab removed (folder 99 \u2014 DO NOT RUN). Seeded UserTestLab id only."
+      "description": "LEGACY — TestLab removed (folder 99 — DO NOT RUN). Seeded UserTestLab id only."
     },
     {
       "key": "testLabEmail",
       "value": "test@restopsiq.dev",
       "type": "default",
       "enabled": true,
-      "description": "LEGACY \u2014 TestLab removed (folder 99 \u2014 DO NOT RUN). NOT valid for /api/auth/login."
+      "description": "LEGACY — TestLab removed (folder 99 — DO NOT RUN). NOT valid for /api/auth/login."
     },
     {
       "key": "globalOwnerUserId",
       "value": "11111111-0000-0000-0000-000000000004",
       "type": "default",
       "enabled": true,
-      "description": "Seeded global User id (OWNER) \u2014 linked to operationalUserId mesOwnerId. Reference before Login; JWT sub stored in globalUserId after login."
+      "description": "Seeded global User id (OWNER) — linked to operationalUserId mesOwnerId. Reference before Login; JWT sub stored in globalUserId after login."
     },
     {
       "key": "globalOperatorUserId",
       "value": "11111111-0000-0000-0000-000000000005",
       "type": "default",
       "enabled": true,
-      "description": "Seeded global User id (OPERATOR) \u2014 linked to mesOperatorId. Use operatorEmail + password for global login."
+      "description": "Seeded global User id (OPERATOR) — linked to mesOperatorId. Use operatorEmail + password for global login."
     },
     {
       "key": "authEmail",
@@ -168,35 +168,35 @@
       "value": "",
       "type": "default",
       "enabled": true,
-      "description": "AUTH-04 / RES-226 \u2014 Raw reset token from Forgot Password email URL. Set manually before Reset Password."
+      "description": "AUTH-04 / RES-226 — Raw reset token from Forgot Password email URL. Set manually before Reset Password."
     },
     {
       "key": "otpCode",
       "value": "",
       "type": "default",
       "enabled": true,
-      "description": "AUTH-04 \u2014 6-digit OTP from Resend Verification email or worker/dev logs. Set manually, then run Verify Email. Not sent by Signup."
+      "description": "AUTH-04 — 6-digit OTP from Resend Verification email or worker/dev logs. Set manually, then run Verify Email. Not sent by Signup."
     },
     {
       "key": "newPassword",
       "value": "TestPass123!",
       "type": "default",
       "enabled": true,
-      "description": "RES-226 \u2014 New password for Reset Password body (local/dev). Must differ from current password when testing reset flow."
+      "description": "RES-226 — New password for Reset Password body (local/dev). Must differ from current password when testing reset flow."
     },
     {
       "key": "mesTenantId",
       "value": "palos-de-lena",
       "type": "default",
       "enabled": true,
-      "description": "Legacy alias of {{tenantId}} \u2014 prefer tenantId"
+      "description": "Legacy alias of {{tenantId}} — prefer tenantId"
     },
     {
       "key": "mesOwnerCedula",
       "value": "12345678",
       "type": "default",
       "enabled": true,
-      "description": "Synthetic c\u00e9dula for seeded MES OWNER (local/dev only \u2014 never use in production)"
+      "description": "Synthetic cédula for seeded MES OWNER (local/dev only — never use in production)"
     },
     {
       "key": "mesOwnerPin",
@@ -210,7 +210,7 @@
       "value": "87654321",
       "type": "default",
       "enabled": true,
-      "description": "Synthetic c\u00e9dula for seeded MES OPERATOR (local/dev only)"
+      "description": "Synthetic cédula for seeded MES OPERATOR (local/dev only)"
     },
     {
       "key": "mesOperatorPin",
@@ -224,7 +224,7 @@
       "value": "99123456",
       "type": "default",
       "enabled": true,
-      "description": "Synthetic c\u00e9dula for POST /api/mes/users \u2014 overwritten per run by Create User pre-request script"
+      "description": "Synthetic cédula for POST /api/mes/users — overwritten per run by Create User pre-request script"
     },
     {
       "key": "mesNewUserPin",
@@ -238,182 +238,182 @@
       "value": "",
       "type": "default",
       "enabled": true,
-      "description": "Operational user id returned by Create User \u2014 set by test script"
+      "description": "Operational user id returned by Create User — set by test script"
     },
     {
       "key": "mesAccessToken",
       "value": "",
       "type": "default",
       "enabled": true,
-      "description": "OperationalUser JWT from Login Owner (alias of mesTokenSupervisor). Use on /api/plant/* and /api/mes/* only \u2014 not on supply-items."
+      "description": "OperationalUser JWT from Login Owner (alias of mesTokenSupervisor). Use on /api/plant/* and /api/mes/* only — not on supply-items."
     },
     {
       "key": "mesRefreshToken",
       "value": "",
       "type": "default",
       "enabled": true,
-      "description": "OperationalUser refresh token \u2014 set by 02 \u2014 Operational Auth / Login Owner"
+      "description": "OperationalUser refresh token — set by 02 — Operational Auth / Login Owner"
     },
     {
       "key": "mesUserId",
       "value": "dddddddd-0000-0000-0000-000000000004",
       "type": "default",
       "enabled": true,
-      "description": "Legacy alias of {{operationalUserId}} \u2014 MES JWT sub after Login Owner"
+      "description": "Legacy alias of {{operationalUserId}} — MES JWT sub after Login Owner"
     },
     {
       "key": "mesOwnerId",
       "value": "dddddddd-0000-0000-0000-000000000004",
       "type": "default",
       "enabled": true,
-      "description": "Seeded OperationalUser id (OWNER, c\u00e9dula 12345678). Default operationalUserId before Login Owner."
+      "description": "Seeded OperationalUser id (OWNER, cédula 12345678). Default operationalUserId before Login Owner."
     },
     {
       "key": "mesOperatorId",
       "value": "eeeeeeee-0000-0000-0000-000000000005",
       "type": "default",
       "enabled": true,
-      "description": "Seeded OperationalUser id (OPERATOR, c\u00e9dula 87654321). Use with Login Operator."
+      "description": "Seeded OperationalUser id (OPERATOR, cédula 87654321). Use with Login Operator."
     },
     {
       "key": "workstationId",
       "value": "",
       "type": "default",
       "enabled": true,
-      "description": "Plant work station id \u2014 captured from POST /api/plant/workstations (legacy alias of workStationId)"
+      "description": "Plant work station id — captured from POST /api/plant/workstations (legacy alias of workStationId)"
     },
     {
       "key": "recipeId",
       "value": "",
       "type": "default",
       "enabled": true,
-      "description": "MES plant \u2014 captured from POST /api/plant/recipes"
+      "description": "MES plant — captured from POST /api/plant/recipes"
     },
     {
       "key": "clonedRecipeId",
       "value": "",
       "type": "default",
       "enabled": true,
-      "description": "MES plant \u2014 captured from POST /api/plant/recipes/:id/clone"
+      "description": "MES plant — captured from POST /api/plant/recipes/:id/clone"
     },
     {
       "key": "phaseId1",
       "value": "",
       "type": "default",
       "enabled": true,
-      "description": "MES plant \u2014 first phase id from GET recipe detail"
+      "description": "MES plant — first phase id from GET recipe detail"
     },
     {
       "key": "phaseId2",
       "value": "",
       "type": "default",
       "enabled": true,
-      "description": "MES plant \u2014 second phase id from GET recipe detail"
+      "description": "MES plant — second phase id from GET recipe detail"
     },
     {
       "key": "phaseInputId",
       "value": "",
       "type": "default",
       "enabled": true,
-      "description": "MES plant \u2014 captured from POST phase input"
+      "description": "MES plant — captured from POST phase input"
     },
     {
       "key": "plantWorkStationCode",
       "value": "",
       "type": "default",
       "enabled": true,
-      "description": "MES plant \u2014 unique workstation code generated per run"
+      "description": "MES plant — unique workstation code generated per run"
     },
     {
       "key": "plantRecipeName",
       "value": "",
       "type": "default",
       "enabled": true,
-      "description": "MES plant \u2014 unique recipe name generated per run"
+      "description": "MES plant — unique recipe name generated per run"
     },
     {
       "key": "orderId",
       "value": "",
       "type": "default",
       "enabled": true,
-      "description": "MES production order id \u2014 captured from POST /api/plant/orders"
+      "description": "MES production order id — captured from POST /api/plant/orders"
     },
     {
       "key": "executionId",
       "value": "",
       "type": "default",
       "enabled": true,
-      "description": "Phase execution id \u2014 also copied to phaseExecutionId"
+      "description": "Phase execution id — also copied to phaseExecutionId"
     },
     {
       "key": "ordersRecipeId",
       "value": "",
       "type": "default",
       "enabled": true,
-      "description": "5-phase recipe id for Plant \u2014 Production Orders setup"
+      "description": "5-phase recipe id for Plant — Production Orders setup"
     },
     {
       "key": "orderPlannedStartAt",
       "value": "2026-05-28T08:00:00.000Z",
       "type": "default",
       "enabled": true,
-      "description": "plannedStartAt ISO UTC \u2014 turno MORNING; inicio 08:00 UTC (03:00 Colombia)"
+      "description": "plannedStartAt ISO UTC — turno MORNING; inicio 08:00 UTC (03:00 Colombia)"
     },
     {
       "key": "orderPlannedEndAt",
       "value": "2026-05-28T16:00:00.000Z",
       "type": "default",
       "enabled": true,
-      "description": "plannedEndAt ISO UTC \u2014 debe ser posterior a orderPlannedStartAt (8h ventana)"
+      "description": "plannedEndAt ISO UTC — debe ser posterior a orderPlannedStartAt (8h ventana)"
     },
     {
       "key": "projectId",
       "value": "",
       "type": "default",
       "enabled": true,
-      "description": "LEGACY \u2014 TestLab removed (folder 99 \u2014 DO NOT RUN). Routes /api/testlab/* no longer exist."
+      "description": "LEGACY — TestLab removed (folder 99 — DO NOT RUN). Routes /api/testlab/* no longer exist."
     },
     {
       "key": "projectSlug",
       "value": "",
       "type": "default",
       "enabled": true,
-      "description": "LEGACY \u2014 TestLab removed (folder 99 \u2014 DO NOT RUN). Routes /api/testlab/* no longer exist."
+      "description": "LEGACY — TestLab removed (folder 99 — DO NOT RUN). Routes /api/testlab/* no longer exist."
     },
     {
       "key": "milestoneId",
       "value": "",
       "type": "default",
       "enabled": true,
-      "description": "LEGACY \u2014 TestLab removed (folder 99 \u2014 DO NOT RUN). Routes /api/testlab/* no longer exist."
+      "description": "LEGACY — TestLab removed (folder 99 — DO NOT RUN). Routes /api/testlab/* no longer exist."
     },
     {
       "key": "requirementId",
       "value": "",
       "type": "default",
       "enabled": true,
-      "description": "LEGACY \u2014 TestLab removed (folder 99 \u2014 DO NOT RUN). Routes /api/testlab/* no longer exist."
+      "description": "LEGACY — TestLab removed (folder 99 — DO NOT RUN). Routes /api/testlab/* no longer exist."
     },
     {
       "key": "suiteId",
       "value": "",
       "type": "default",
       "enabled": true,
-      "description": "LEGACY \u2014 TestLab removed (folder 99 \u2014 DO NOT RUN). Routes /api/testlab/* no longer exist."
+      "description": "LEGACY — TestLab removed (folder 99 — DO NOT RUN). Routes /api/testlab/* no longer exist."
     },
     {
       "key": "caseId",
       "value": "",
       "type": "default",
       "enabled": true,
-      "description": "LEGACY \u2014 TestLab removed (folder 99 \u2014 DO NOT RUN). Routes /api/testlab/* no longer exist."
+      "description": "LEGACY — TestLab removed (folder 99 — DO NOT RUN). Routes /api/testlab/* no longer exist."
     },
     {
       "key": "runId",
       "value": "",
       "type": "default",
       "enabled": true,
-      "description": "LEGACY \u2014 TestLab removed (folder 99 \u2014 DO NOT RUN). Routes /api/testlab/* no longer exist."
+      "description": "LEGACY — TestLab removed (folder 99 — DO NOT RUN). Routes /api/testlab/* no longer exist."
     },
     {
       "key": "operatorEmail",
@@ -441,28 +441,28 @@
       "value": "",
       "type": "default",
       "enabled": true,
-      "description": "MES owner session token \u2014 alias of mesAccessToken after Login Owner"
+      "description": "MES owner session token — alias of mesAccessToken after Login Owner"
     },
     {
       "key": "mesTokenOperator",
       "value": "",
       "type": "default",
       "enabled": true,
-      "description": "MES JWT for OPERATOR \u2014 set by 02 \u2014 Operational Auth / Login Operator"
+      "description": "MES JWT for OPERATOR — set by 02 — Operational Auth / Login Operator"
     },
     {
       "key": "signupEmail",
       "value": "",
       "type": "default",
       "enabled": true,
-      "description": "Leave blank \u2014 01 \u2014 Global Auth \u2192 Signup pre-request generates signup-<timestamp>@palos-de-lena.dev per run."
+      "description": "Leave blank — 01 — Global Auth → Signup pre-request generates signup-<timestamp>@palos-de-lena.dev per run."
     },
     {
       "key": "signupCedula",
       "value": "",
       "type": "default",
       "enabled": true,
-      "description": "Leave blank \u2014 Signup pre-request generates unique c\u00e9dula (99<timestamp>) per run."
+      "description": "Leave blank — Signup pre-request generates unique cédula (99<timestamp>) per run."
     },
     {
       "key": "documentType",
@@ -483,87 +483,108 @@
       "value": "",
       "type": "default",
       "enabled": true,
-      "description": "Alias of executionId \u2014 QA approve target"
+      "description": "Alias of executionId — QA approve target"
     },
     {
       "key": "incidentId",
       "value": "",
       "type": "default",
       "enabled": true,
-      "description": "MES-08 \u2014 captured from POST /api/plant/incidents"
+      "description": "MES-08 — captured from POST /api/plant/incidents"
     },
     {
       "key": "permissionCode",
       "value": "supply.items.manage",
       "type": "default",
       "enabled": true,
-      "description": "Reference for 09 \u2014 RBAC Foundation docs"
+      "description": "Reference for 09 — RBAC Foundation docs"
     },
     {
       "key": "workStationId",
       "value": "",
       "type": "default",
       "enabled": true,
-      "description": "MES plant work station id \u2014 synced from workstationId captures; used by MES-08 incidents"
+      "description": "MES plant work station id — synced from workstationId captures; used by MES-08 incidents"
     },
     {
       "key": "mesTokenSupervisor",
       "value": "",
       "type": "default",
       "enabled": true,
-      "description": "MES JWT for supervisor+ (OWNER in seed) \u2014 set by 02 \u2014 Operational Auth / Login Owner"
+      "description": "MES JWT for supervisor+ (OWNER in seed) — set by 02 — Operational Auth / Login Owner"
     },
     {
       "key": "employeeUserId",
       "value": "",
       "type": "default",
       "enabled": true,
-      "description": "NOM-02 Employees \u2014 Captured from POST employees response"
+      "description": "NOM-02 Employees — Captured from POST employees response"
     },
     {
       "key": "locationId",
       "value": "cmq8ock4r002j147apx4q6npl",
       "type": "default",
       "enabled": true,
-      "description": "NOM-02 Employees \u2014 Seeded location id (Sede Palos de Le\u00f1a 1)"
+      "description": "NOM-02 Employees — Seeded location id (Sede Palos de Leña 1)"
     },
     {
       "key": "roleId",
       "value": "aaaaaaaa-0000-0000-0000-000000000004",
       "type": "default",
       "enabled": true,
-      "description": "NOM-02 Employees \u2014 Seeded role id (OPERATOR)"
+      "description": "NOM-02 Employees — Seeded role id (OPERATOR)"
     },
     {
       "key": "attendanceUserId",
       "value": "",
       "type": "default",
       "enabled": true,
-      "description": "NOM-03 Attendance \u2014 Captured from POST kiosk-auth response (operator userId)"
+      "description": "NOM-03 Attendance — Captured from POST kiosk-auth response (operator userId)"
     },
     {
       "key": "attendanceLocationId",
       "value": "cmq8ock4r002j147apx4q6npl",
       "type": "default",
       "enabled": true,
-      "description": "NOM-03 Attendance \u2014 Captured from POST kiosk-auth response (locationId of the kiosk)"
+      "description": "NOM-03 Attendance — Captured from POST kiosk-auth response (locationId of the kiosk)"
     },
     {
       "key": "attendanceEmployeeId",
       "value": "",
       "type": "default",
       "enabled": true,
-      "description": "NOM-03 Attendance \u2014 Captured from POST kiosk-auth response (EmployeeDetails.id)"
+      "description": "NOM-03 Attendance — Captured from POST kiosk-auth response (EmployeeDetails.id)"
     },
     {
       "key": "attendanceWorkDate",
       "value": "2026-06-10",
       "type": "default",
       "enabled": true,
-      "description": "NOM-03 Attendance \u2014 Work date for overtime query (YYYY-MM-DD, Bogot\u00e1 calendar)"
+      "description": "NOM-03 Attendance — Work date for overtime query (YYYY-MM-DD, Bogotá calendar)"
+    },
+    {
+      "key": "reportPeriod",
+      "value": "2025-06",
+      "type": "default",
+      "enabled": true,
+      "description": "NOM-04 Reports — Período de nómina/seguridad social (YYYY-MM). Usado en GET payroll, GET social-security y POST payroll/export."
+    },
+    {
+      "key": "reportFrom",
+      "value": "2025-06-01",
+      "type": "default",
+      "enabled": true,
+      "description": "NOM-04 Reports — Fecha inicio del rango de asistencia (YYYY-MM-DD). Usado en GET attendance?from=."
+    },
+    {
+      "key": "reportTo",
+      "value": "2025-06-30",
+      "type": "default",
+      "enabled": true,
+      "description": "NOM-04 Reports — Fecha fin del rango de asistencia (YYYY-MM-DD). Usado en GET attendance?to=."
     }
   ],
   "_postman_variable_scope": "environment",
-  "_postman_exported_at": "2026-05-19T00:00:00.000Z",
+  "_postman_exported_at": "2026-06-16T00:00:00.000Z",
   "_postman_exported_using": "restopsiq-platform/postman"
 }
