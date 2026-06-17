@@ -208,18 +208,70 @@ describe('PayrollRepository', () => {
     });
   });
 
-  it('update and softDelete call employeeDetails.update with expected data', async () => {
-    (prisma.employeeDetails.update as jest.Mock).mockResolvedValue({});
-
-    await repository.update('user-1', { position: 'Lead' });
-    await repository.softDelete('user-1');
-
-    expect(prisma.employeeDetails.update).toHaveBeenNthCalledWith(1, {
-      where: { userId: 'user-1' },
-      data: { position: 'Lead' },
+  it('update applies user changes only when employee patch is empty', async () => {
+    const userUpdate = jest.fn();
+    const findUniqueOrThrow = jest.fn().mockResolvedValue({
+      userId: 'user-1',
+      user: { id: 'user-1' },
+      location: { id: 'loc-1', name: 'Sede 1' },
     });
 
-    expect(prisma.employeeDetails.update).toHaveBeenNthCalledWith(2, {
+    (prisma.$transaction as jest.Mock).mockImplementation(async (callback: unknown) => {
+      const tx = {
+        user: { update: userUpdate },
+        employeeDetails: {
+          update: jest.fn(),
+          findUniqueOrThrow,
+        },
+      };
+
+      return (callback as (arg: typeof tx) => Promise<unknown>)(tx);
+    });
+
+    await repository.update('user-1', {
+      employee: {},
+      user: { roleId: 'role-1' },
+    });
+
+    expect(userUpdate).toHaveBeenCalledWith({
+      where: { id: 'user-1' },
+      data: { roleId: 'role-1' },
+    });
+    expect(findUniqueOrThrow).toHaveBeenCalledWith({
+      where: { userId: 'user-1' },
+      include: { user: true, location: { select: { id: true, name: true } } },
+    });
+  });
+
+  it('update and softDelete call employeeDetails.update with expected data', async () => {
+    const employeeDetailsUpdate = jest.fn().mockResolvedValue({
+      userId: 'user-1',
+      user: { id: 'user-1' },
+      location: { id: 'loc-1', name: 'Sede 1' },
+    });
+
+    (prisma.$transaction as jest.Mock).mockImplementation(async (callback: unknown) => {
+      const tx = {
+        user: { update: jest.fn() },
+        employeeDetails: {
+          update: employeeDetailsUpdate,
+          findUniqueOrThrow: jest.fn(),
+        },
+      };
+
+      return (callback as (arg: typeof tx) => Promise<unknown>)(tx);
+    });
+
+    await repository.update('user-1', { employee: { position: 'Lead' } });
+    await repository.softDelete('user-1');
+
+    expect(employeeDetailsUpdate).toHaveBeenCalledWith({
+      where: { userId: 'user-1' },
+      data: { position: 'Lead' },
+      include: { user: true, location: { select: { id: true, name: true } } },
+    });
+
+    expect(prisma.employeeDetails.update).toHaveBeenCalledWith({
       where: { userId: 'user-1' },
       data: {
         isActive: false,

@@ -35,11 +35,15 @@ export interface CreateEmployeeData {
 }
 
 export interface UpdateEmployeeData {
+  locationId?: string;
+  name?: string;
   position?: string;
   area?: string;
   department?: string;
   contractType?: EmployeeContractType;
-  contractEnd?: Date | null;
+  hireDate?: Date | string;
+  contractStart?: Date | string;
+  contractEnd?: Date | string | null;
   salaryType?: SalaryType;
   salaryAmount?: number | Decimal;
   epsName?: string;
@@ -49,6 +53,19 @@ export interface UpdateEmployeeData {
   arlRiskLevel?: ArlRiskLevel;
   cajaCompensacion?: string;
   isActive?: boolean;
+}
+
+export interface UpdateEmployeeUserData {
+  cedula?: string;
+  documentType?: DocumentType;
+  email?: string;
+  roleId?: string;
+  passwordHash?: string;
+}
+
+export interface UpdateEmployeePayload {
+  employee: UpdateEmployeeData & { hasTransportSubsidy?: boolean };
+  user?: UpdateEmployeeUserData;
 }
 
 export interface ListEmployeesFilters {
@@ -70,8 +87,8 @@ export interface IPayrollRepository {
   findByUserId(userId: string): Promise<(EmployeeDetails & { user: User }) | null>;
   update(
     userId: string,
-    data: UpdateEmployeeData & { hasTransportSubsidy?: boolean },
-  ): Promise<EmployeeDetails>;
+    payload: UpdateEmployeePayload,
+  ): Promise<EmployeeDetails & { user: User; location?: { id: string; name: string } }>;
   softDelete(userId: string): Promise<void>;
   count(filters: ListEmployeesFilters): Promise<number>;
   findExistingUser(tenantId: string, email: string, cedula: string): Promise<{ id: string } | null>;
@@ -83,7 +100,11 @@ export interface IPayrollService {
   create(tenantId: string, data: any): Promise<EmployeeDetails & { user: User }>;
   findAll(tenantId: string, filters: any): Promise<(EmployeeDetails & { user: User })[]>;
   findOne(tenantId: string, userId: string): Promise<EmployeeDetails & { user: User }>;
-  update(tenantId: string, userId: string, data: any): Promise<EmployeeDetails>;
+  update(
+    tenantId: string,
+    userId: string,
+    data: any,
+  ): Promise<EmployeeDetails & { user: User; location?: { id: string; name: string } }>;
   remove(tenantId: string, userId: string): Promise<void>;
   findByLocation(
     tenantId: string,

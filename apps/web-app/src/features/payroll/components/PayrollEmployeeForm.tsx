@@ -1,4 +1,10 @@
-import { useEffect, useState } from 'react';
+import { RecetaFilterSelect } from '@restopsiq/ui';
+import { useEffect, useMemo, useState } from 'react';
+
+import { useUiTheme } from '@/hooks/useUiTheme';
+import { useLocations } from '@/features/sedes/hooks/useLocations';
+import { useAdminRolesForSelect } from '@/features/usuarios/hooks/useAdminUsers';
+import type { AdminRoleOptionApi } from '@/features/usuarios/types';
 
 import {
   type ArlRiskLevel,
@@ -13,6 +19,8 @@ import styles from '../payroll.module.scss';
 export interface PayrollEmployeeFormProps {
   mode: 'create' | 'edit';
   initialValues?: PayrollEmployee;
+  locations?: Array<{ id: string; name: string; isActive?: boolean }>;
+  roles?: AdminRoleOptionApi[];
   onCancel: () => void;
   onSubmit: (values: PayrollEmployeeFormValues) => void;
   submitting?: boolean;
@@ -56,7 +64,7 @@ function employeeToFormValues(employee: PayrollEmployee): PayrollEmployeeFormVal
     documentType: (employee.user?.documentType as DocumentType) ?? 'CC',
     email: employee.user?.email ?? '',
     password: '',
-    roleId: '',
+    roleId: employee.user?.roleId ?? '',
     locationId: employee.locationId,
     name: employee.name,
     position: employee.position,
@@ -92,22 +100,153 @@ const DOCUMENT_TYPES: DocumentType[] = ['CC', 'CE', 'NIT', 'PASSPORT'];
 const SALARY_TYPES: SalaryType[] = ['ORDINARIO', 'INTEGRAL'];
 const ARL_LEVELS: ArlRiskLevel[] = ['RIESGO_I', 'RIESGO_II', 'RIESGO_III', 'RIESGO_IV', 'RIESGO_V'];
 
+function toSelectOptions(values: readonly string[]): Array<{ value: string; label: string }> {
+  return values.map((value) => ({ value, label: value }));
+}
+
+const DOCUMENT_TYPE_OPTIONS = toSelectOptions(DOCUMENT_TYPES);
+const CONTRACT_TYPE_OPTIONS = toSelectOptions(CONTRACT_TYPES);
+const SALARY_TYPE_OPTIONS = toSelectOptions(SALARY_TYPES);
+const ARL_LEVEL_OPTIONS = toSelectOptions(ARL_LEVELS);
+
 export function PayrollEmployeeForm({
   mode,
   initialValues,
+  locations,
+  roles,
   onCancel,
   onSubmit,
   submitting = false,
 }: PayrollEmployeeFormProps): React.JSX.Element {
+  const theme = useUiTheme();
+  const locationsQuery = useLocations();
+  const rolesQuery = useAdminRolesForSelect();
+  const locationRows = locations ?? locationsQuery.data ?? [];
+  const roleRows = roles ?? rolesQuery.data ?? [];
   const [values, setValues] = useState<PayrollEmployeeFormValues>(
     initialValues ? employeeToFormValues(initialValues) : EMPTY_VALUES,
   );
   const [error, setError] = useState<string | null>(null);
 
+  const locationOptions = useMemo(() => {
+    const options = locationRows
+      .filter((location) => location.isActive !== false)
+      .map((location) => ({ id: location.id, name: location.name }));
+
+    if (
+      values.locationId &&
+      initialValues?.location?.name &&
+      !options.some((option) => option.id === values.locationId)
+    ) {
+      options.unshift({
+        id: values.locationId,
+        name: initialValues.location.name,
+      });
+    }
+
+    return options;
+  }, [initialValues?.location?.name, locationRows, values.locationId]);
+
+  const selectedLocationName =
+    locationOptions.find((option) => option.id === values.locationId)?.name ?? null;
+
+  const roleOptions = useMemo(() => {
+    const options = roleRows
+      .filter((role) => role.isActive)
+      .map((role) => ({ id: role.id, name: role.name, code: role.code }));
+
+    if (values.roleId && !options.some((option) => option.id === values.roleId)) {
+      const currentRole = roleRows.find((role) => role.id === values.roleId);
+      if (currentRole) {
+        options.unshift({
+          id: currentRole.id,
+          name: currentRole.name,
+          code: currentRole.code,
+        });
+      }
+    }
+
+    return options;
+  }, [roleRows, values.roleId]);
+
+  const locationSelectOptions = useMemo(
+    () => locationOptions.map((location) => ({ value: location.id, label: location.name })),
+    [locationOptions],
+  );
+
+  const roleSelectOptions = useMemo(
+    () => roleOptions.map((role) => ({ value: role.id, label: role.name })),
+    [roleOptions],
+  );
+
+  const selectedRoleName = roleOptions.find((option) => option.id === values.roleId)?.name ?? null;
+
   useEffect(() => {
     setValues(initialValues ? employeeToFormValues(initialValues) : EMPTY_VALUES);
     setError(null);
-  }, [initialValues]);
+    // #region agent log
+    if (initialValues) {
+      const mapped = employeeToFormValues(initialValues);
+      fetch('http://127.0.0.1:7828/ingest/355d2ecf-3818-453c-8510-c7b3fe83712b', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '0046ac' },
+        body: JSON.stringify({
+          sessionId: '0046ac',
+          runId: 'post-fix',
+          hypothesisId: 'A-B',
+          location: 'PayrollEmployeeForm.tsx:useEffect',
+          message: 'Form initialValues mapped',
+          data: {
+            mode,
+            apiLocationId: initialValues.locationId,
+            apiLocationName: initialValues.location?.name ?? null,
+            formLocationId: mapped.locationId,
+            selectedLocationName,
+            apiRoleId: initialValues.user?.roleId ?? null,
+            formRoleId: mapped.roleId,
+            selectedRoleName,
+            roleOptionsCount: roleOptions.length,
+            locationOptionsCount: locationOptions.length,
+          },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+    }
+    // #endregion
+  }, [initialValues, mode]);
+
+  useEffect(() => {
+    // #region agent log
+    fetch('http://127.0.0.1:7828/ingest/355d2ecf-3818-453c-8510-c7b3fe83712b', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '0046ac' },
+      body: JSON.stringify({
+        sessionId: '0046ac',
+        runId: 'post-fix-role',
+        hypothesisId: 'role-select',
+        location: 'PayrollEmployeeForm.tsx:selects',
+        message: 'Role and location select state',
+        data: {
+          roleId: values.roleId,
+          selectedRoleName,
+          roleOptionsCount: roleOptions.length,
+          rolesLoading: rolesQuery.isLoading && !roles,
+          locationId: values.locationId,
+          selectedLocationName,
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
+  }, [
+    roleOptions.length,
+    rolesQuery.isLoading,
+    roles,
+    selectedLocationName,
+    selectedRoleName,
+    values.locationId,
+    values.roleId,
+  ]);
 
   const update = (patch: Partial<PayrollEmployeeFormValues>) =>
     setValues((prev) => ({ ...prev, ...patch }));
@@ -121,7 +260,7 @@ export function PayrollEmployeeForm({
     }
 
     if (!values.locationId.trim() || !values.roleId.trim()) {
-      setError('Location ID y Role ID son obligatorios.');
+      setError('Sede y rol son obligatorios.');
       return;
     }
 
@@ -183,38 +322,45 @@ export function PayrollEmployeeForm({
               placeholder={mode === 'edit' ? 'Opcional al editar' : ''}
             />
           </label>
-          <label className={styles.field}>
+          <div className={styles.field}>
             <span className={styles.fieldLabel}>Document Type</span>
-            <select
-              className={styles.select}
+            <RecetaFilterSelect
+              aria-label="Document Type"
+              options={DOCUMENT_TYPE_OPTIONS}
               value={values.documentType}
-              onChange={(event) => update({ documentType: event.target.value as DocumentType })}
-            >
-              {DOCUMENT_TYPES.map((documentType) => (
-                <option key={documentType} value={documentType}>
-                  {documentType}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className={styles.field}>
-            <span className={styles.fieldLabel}>Role ID *</span>
-            <input
-              aria-label="Role ID"
-              className={styles.input}
+              onChange={(value) => update({ documentType: value as DocumentType })}
+              theme={theme}
+              size="md"
+            />
+          </div>
+          <div className={styles.field}>
+            <span className={styles.fieldLabel}>Rol *</span>
+            <RecetaFilterSelect
+              aria-label="Rol"
+              options={roleSelectOptions}
               value={values.roleId}
-              onChange={(event) => update({ roleId: event.target.value })}
+              disabled={rolesQuery.isLoading && !roles}
+              placeholder={rolesQuery.isLoading && !roles ? 'Cargando roles...' : 'Seleccionar rol'}
+              onChange={(value) => update({ roleId: value })}
+              theme={theme}
+              size="md"
             />
-          </label>
-          <label className={styles.field}>
-            <span className={styles.fieldLabel}>Location ID *</span>
-            <input
-              aria-label="Location ID"
-              className={styles.input}
+          </div>
+          <div className={styles.field}>
+            <span className={styles.fieldLabel}>Sede *</span>
+            <RecetaFilterSelect
+              aria-label="Sede"
+              options={locationSelectOptions}
               value={values.locationId}
-              onChange={(event) => update({ locationId: event.target.value })}
+              disabled={locationsQuery.isLoading && !locations}
+              placeholder={
+                locationsQuery.isLoading && !locations ? 'Cargando sedes...' : 'Seleccionar sede'
+              }
+              onChange={(value) => update({ locationId: value })}
+              theme={theme}
+              size="md"
             />
-          </label>
+          </div>
           <label className={styles.field}>
             <span className={styles.fieldLabel}>Cargo</span>
             <input
@@ -239,22 +385,17 @@ export function PayrollEmployeeForm({
               onChange={(event) => update({ department: event.target.value })}
             />
           </label>
-          <label className={styles.field}>
+          <div className={styles.field}>
             <span className={styles.fieldLabel}>Tipo de contrato</span>
-            <select
-              className={styles.select}
+            <RecetaFilterSelect
+              aria-label="Tipo de contrato"
+              options={CONTRACT_TYPE_OPTIONS}
               value={values.contractType}
-              onChange={(event) =>
-                update({ contractType: event.target.value as EmployeeContractType })
-              }
-            >
-              {CONTRACT_TYPES.map((contractType) => (
-                <option key={contractType} value={contractType}>
-                  {contractType}
-                </option>
-              ))}
-            </select>
-          </label>
+              onChange={(value) => update({ contractType: value as EmployeeContractType })}
+              theme={theme}
+              size="md"
+            />
+          </div>
           <label className={styles.field}>
             <span className={styles.fieldLabel}>Fecha ingreso</span>
             <input
@@ -282,20 +423,17 @@ export function PayrollEmployeeForm({
               onChange={(event) => update({ contractEnd: event.target.value })}
             />
           </label>
-          <label className={styles.field}>
+          <div className={styles.field}>
             <span className={styles.fieldLabel}>Tipo de salario</span>
-            <select
-              className={styles.select}
+            <RecetaFilterSelect
+              aria-label="Tipo de salario"
+              options={SALARY_TYPE_OPTIONS}
               value={values.salaryType}
-              onChange={(event) => update({ salaryType: event.target.value as SalaryType })}
-            >
-              {SALARY_TYPES.map((salaryType) => (
-                <option key={salaryType} value={salaryType}>
-                  {salaryType}
-                </option>
-              ))}
-            </select>
-          </label>
+              onChange={(value) => update({ salaryType: value as SalaryType })}
+              theme={theme}
+              size="md"
+            />
+          </div>
           <label className={styles.field}>
             <span className={styles.fieldLabel}>Salario</span>
             <input
@@ -339,20 +477,17 @@ export function PayrollEmployeeForm({
               onChange={(event) => update({ arlName: event.target.value })}
             />
           </label>
-          <label className={styles.field}>
+          <div className={styles.field}>
             <span className={styles.fieldLabel}>Nivel ARL</span>
-            <select
-              className={styles.select}
+            <RecetaFilterSelect
+              aria-label="Nivel ARL"
+              options={ARL_LEVEL_OPTIONS}
               value={values.arlRiskLevel}
-              onChange={(event) => update({ arlRiskLevel: event.target.value as ArlRiskLevel })}
-            >
-              {ARL_LEVELS.map((arlRiskLevel) => (
-                <option key={arlRiskLevel} value={arlRiskLevel}>
-                  {arlRiskLevel}
-                </option>
-              ))}
-            </select>
-          </label>
+              onChange={(value) => update({ arlRiskLevel: value as ArlRiskLevel })}
+              theme={theme}
+              size="md"
+            />
+          </div>
           <label className={styles.field}>
             <span className={styles.fieldLabel}>Caja compensacion</span>
             <input

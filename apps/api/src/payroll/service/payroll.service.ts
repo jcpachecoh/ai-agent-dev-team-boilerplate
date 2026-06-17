@@ -6,11 +6,12 @@ import {
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
-import { EmployeeContractType, SalaryType, EmployeeDetails, User } from '@prisma/client';
+import { EmployeeContractType, SalaryType, EmployeeDetails, User, Prisma } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { SMLV_2025, TRANSPORT_SUBSIDY_THRESHOLD } from '../payroll.constants';
 import { PayrollRepository } from '../repository/payroll.repository';
 import { IPayrollService } from '../interfaces/payroll.interfaces';
+import type { UpdateEmployeePayload } from '../interfaces/payroll.interfaces';
 import { decimalToNumber } from '../../common/utils/decimal.util';
 
 const SALT_ROUNDS = 12;
@@ -49,12 +50,20 @@ export class PayrollService implements IPayrollService {
     const passwordHash = await bcrypt.hash(data.password, SALT_ROUNDS);
     const hasTransportSubsidy = this.calculateTransportSubsidy(data.salaryAmount);
 
-    return this.payrollRepository.create({
-      ...data,
-      tenantId,
-      passwordHash,
-      hasTransportSubsidy,
-    });
+    try {
+      return await this.payrollRepository.create({
+        ...data,
+        tenantId,
+        passwordHash,
+        hasTransportSubsidy,
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new ConflictException('Email or Cédula already registered');
+      }
+
+      throw error;
+    }
   }
 
   async findAll(tenantId: string, filters: any): Promise<(EmployeeDetails & { user: User })[]> {
@@ -72,19 +81,65 @@ export class PayrollService implements IPayrollService {
     return employee;
   }
 
-  async update(tenantId: string, userId: string, data: any): Promise<EmployeeDetails> {
+  async update(
+    tenantId: string,
+    userId: string,
+    data: any,
+  ): Promise<EmployeeDetails & { user: User; location?: { id: string; name: string } }> {
     const employee = await this.findOne(tenantId, userId);
 
     if (data.salaryAmount !== undefined) {
       this.validateSalary(tenantId, { ...employee, ...data }, userId);
-      data.hasTransportSubsidy = this.calculateTransportSubsidy(data.salaryAmount);
+      data.hasTransportSubsidy = this.calculateTransportSubsidy(Number(data.salaryAmount));
     }
 
     if (data.contractType !== undefined || data.contractEnd !== undefined) {
       this.validateContractDates(tenantId, { ...employee, ...data }, userId);
     }
 
-    return this.payrollRepository.update(userId, data);
+    if (data.locationId) {
+      const location = await this.payrollRepository.findLocationById(data.locationId);
+      if (!location || location.tenantId !== tenantId) {
+        throw new BadRequestException('Invalid location for this tenant');
+      }
+    }
+
+    if (data.roleId) {
+      const role = await this.payrollRepository.findRoleById(data.roleId);
+      if (!role || role.tenantId !== tenantId) {
+        throw new BadRequestException('Invalid role for this tenant');
+      }
+    }
+
+    if (data.email || data.cedula) {
+      const existingUser = await this.payrollRepository.findExistingUser(
+        tenantId,
+        data.email ?? employee.user.email,
+        data.cedula ?? employee.user.cedula,
+      );
+      if (existingUser && existingUser.id !== userId) {
+        throw new ConflictException('Email or Cédula already registered');
+      }
+    }
+
+    const payload = this.buildUpdatePayload(data);
+
+    if (data.password) {
+      payload.user = {
+        ...payload.user,
+        passwordHash: await bcrypt.hash(data.password, SALT_ROUNDS),
+      };
+    }
+
+    try {
+      return await this.payrollRepository.update(userId, payload);
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new ConflictException('Email or Cédula already registered');
+      }
+
+      throw error;
+    }
   }
 
   async remove(tenantId: string, userId: string): Promise<void> {
@@ -179,5 +234,60 @@ export class PayrollService implements IPayrollService {
     const context = `tenantId=${tenantId}${userId ? `, userId=${userId}` : ''}`;
     this.logger.warn(`Validation error: ${message} (${context})`);
     throw new UnprocessableEntityException(message);
+  }
+
+  private buildUpdatePayload(data: Record<string, unknown>): UpdateEmployeePayload {
+    const employee: UpdateEmployeePayload['employee'] = {};
+    const user: NonNullable<UpdateEmployeePayload['user']> = {};
+
+    const employeeScalars = [
+      'locationId',
+      'name',
+      'position',
+      'area',
+      'department',
+      'contractType',
+      'salaryType',
+      'salaryAmount',
+      'hasTransportSubsidy',
+      'epsName',
+      'pensionFundName',
+      'cesantiasFundName',
+      'arlName',
+      'arlRiskLevel',
+      'cajaCompensacion',
+      'isActive',
+    ] as const;
+
+    for (const field of employeeScalars) {
+      if (data[field] !== undefined) {
+        (employee as Record<string, unknown>)[field] = data[field];
+      }
+    }
+
+    if (data.hireDate !== undefined) {
+      employee.hireDate = data.hireDate as string;
+    }
+
+    if (data.contractStart !== undefined) {
+      employee.contractStart = data.contractStart as string;
+    }
+
+    if (data.contractEnd !== undefined) {
+      employee.contractEnd = (data.contractEnd as string | null) || null;
+    }
+
+    if (data.cedula !== undefined) user.cedula = data.cedula as string;
+    if (data.documentType !== undefined)
+      user.documentType = data.documentType as User['documentType'];
+    if (data.email !== undefined) user.email = data.email as string;
+    if (data.roleId !== undefined) user.roleId = data.roleId as string;
+
+    const payload: UpdateEmployeePayload = { employee };
+    if (Object.keys(user).length > 0) {
+      payload.user = user;
+    }
+
+    return payload;
   }
 }

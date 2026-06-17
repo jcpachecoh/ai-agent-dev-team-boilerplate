@@ -5,7 +5,13 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
-import { EmployeeContractType, SalaryType, ArlRiskLevel, DocumentType } from '@prisma/client';
+import {
+  EmployeeContractType,
+  SalaryType,
+  ArlRiskLevel,
+  DocumentType,
+  Prisma,
+} from '@prisma/client';
 import { PayrollService } from '../service/payroll.service';
 import { PayrollRepository } from '../repository/payroll.repository';
 import { SMLV_2025 } from '../payroll.constants';
@@ -230,6 +236,28 @@ describe('PayrollService', () => {
       );
     });
 
+    it('should throw ConflictException when prisma reports duplicate on create', async () => {
+      (repository.findExistingUser as jest.Mock).mockResolvedValue(null);
+      (repository.findLocationById as jest.Mock).mockResolvedValue({
+        id: mockLocationId,
+        tenantId: mockTenantId,
+      });
+      (repository.findRoleById as jest.Mock).mockResolvedValue({
+        id: mockRoleId,
+        tenantId: mockTenantId,
+      });
+      (repository.create as jest.Mock).mockRejectedValue(
+        new Prisma.PrismaClientKnownRequestError('duplicate', {
+          code: 'P2002',
+          clientVersion: '5.22.0',
+        }),
+      );
+
+      await expect(service.create(mockTenantId, mockEmployeeData)).rejects.toThrow(
+        ConflictException,
+      );
+    });
+
     it('should pass valid APRENDIZAJE salary', async () => {
       const validData = {
         ...mockEmployeeData,
@@ -275,6 +303,7 @@ describe('PayrollService', () => {
         contractType: EmployeeContractType.INDEFINIDO,
         salaryAmount: 2000000,
         salaryType: SalaryType.ORDINARIO,
+        user: { id: 'user-1', email: 'test@example.com', cedula: '123456' },
       });
       (repository.update as jest.Mock).mockResolvedValue({ id: 'emp-1' });
     });
@@ -282,14 +311,18 @@ describe('PayrollService', () => {
     it('should update without salary or contract changes', async () => {
       const result = await service.update(mockTenantId, 'user-1', { position: 'Senior Dev' });
       expect(result).toBeDefined();
-      expect(repository.update).toHaveBeenCalledWith('user-1', { position: 'Senior Dev' });
+      expect(repository.update).toHaveBeenCalledWith('user-1', {
+        employee: { position: 'Senior Dev' },
+      });
     });
 
     it('should recalculate transport subsidy when salary changes', async () => {
       await service.update(mockTenantId, 'user-1', { salaryAmount: 5000000 });
       expect(repository.update).toHaveBeenCalledWith(
         'user-1',
-        expect.objectContaining({ hasTransportSubsidy: expect.any(Boolean) }),
+        expect.objectContaining({
+          employee: expect.objectContaining({ hasTransportSubsidy: expect.any(Boolean) }),
+        }),
       );
     });
 
@@ -313,6 +346,155 @@ describe('PayrollService', () => {
 
       await expect(service.update(mockTenantId, 'ghost', { position: 'X' })).rejects.toThrow(
         NotFoundException,
+      );
+    });
+
+    it('should throw BadRequestException when update location is invalid', async () => {
+      (repository.findLocationById as jest.Mock).mockResolvedValue(null);
+
+      await expect(
+        service.update(mockTenantId, 'user-1', { locationId: 'bad-loc' }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw BadRequestException when update role is invalid', async () => {
+      (repository.findLocationById as jest.Mock).mockResolvedValue({
+        id: mockLocationId,
+        tenantId: mockTenantId,
+      });
+      (repository.findRoleById as jest.Mock).mockResolvedValue({
+        id: mockRoleId,
+        tenantId: 'other-tenant',
+      });
+
+      await expect(
+        service.update(mockTenantId, 'user-1', { roleId: mockRoleId, locationId: mockLocationId }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw ConflictException when email or cedula already exists on update', async () => {
+      (repository.findExistingUser as jest.Mock).mockResolvedValue({ id: 'other-user' });
+
+      await expect(
+        service.update(mockTenantId, 'user-1', { email: 'taken@example.com' }),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('should hash password when provided on update', async () => {
+      await service.update(mockTenantId, 'user-1', { password: 'NewPass123!' });
+
+      expect(repository.update).toHaveBeenCalledWith(
+        'user-1',
+        expect.objectContaining({
+          user: expect.objectContaining({
+            passwordHash: expect.any(String),
+          }),
+        }),
+      );
+    });
+
+    it('should throw ConflictException when prisma reports duplicate on update', async () => {
+      (repository.update as jest.Mock).mockRejectedValue(
+        new Prisma.PrismaClientKnownRequestError('duplicate', {
+          code: 'P2002',
+          clientVersion: '5.22.0',
+        }),
+      );
+
+      await expect(service.update(mockTenantId, 'user-1', { position: 'Lead' })).rejects.toThrow(
+        ConflictException,
+      );
+    });
+
+    it('should split user fields from employee fields on full update payload', async () => {
+      (repository.findByUserId as jest.Mock).mockResolvedValue({
+        tenantId: mockTenantId,
+        contractType: EmployeeContractType.FIJO,
+        salaryAmount: 2000000,
+        salaryType: SalaryType.ORDINARIO,
+        contractStart: new Date('2026-06-17'),
+        contractEnd: new Date('2026-08-17'),
+        user: {
+          id: 'cmqh8dntr005chm8m2ws33rt9',
+          email: 'rociogaravito@gmail.com',
+          cedula: '1234588954',
+        },
+      });
+      (repository.findLocationById as jest.Mock).mockResolvedValue({
+        id: 'cmq9xc3ut002t5zos8tkf2s95',
+        tenantId: mockTenantId,
+      });
+      (repository.findRoleById as jest.Mock).mockResolvedValue({
+        id: 'aaaaaaaa-0000-0000-0000-000000000002',
+        tenantId: mockTenantId,
+      });
+      (repository.findExistingUser as jest.Mock).mockResolvedValue(null);
+
+      await service.update(mockTenantId, 'cmqh8dntr005chm8m2ws33rt9', {
+        cedula: '1234588954',
+        documentType: DocumentType.CC,
+        email: 'rociogaravito@gmail.com',
+        roleId: 'aaaaaaaa-0000-0000-0000-000000000002',
+        locationId: 'cmq9xc3ut002t5zos8tkf2s95',
+        name: 'Rocío Garavito',
+        position: 'Por definir',
+        area: 'Por definir',
+        department: 'Por definir',
+        contractType: EmployeeContractType.FIJO,
+        hireDate: '2026-06-16',
+        contractStart: '2026-06-17',
+        contractEnd: '2026-08-17',
+        salaryType: SalaryType.ORDINARIO,
+        salaryAmount: 2589995,
+        epsName: 'Por definir',
+        pensionFundName: 'Por definir',
+        cesantiasFundName: 'Por definir',
+        arlName: 'Por definir',
+        arlRiskLevel: ArlRiskLevel.RIESGO_I,
+        cajaCompensacion: 'Por definir',
+      });
+
+      expect(repository.update).toHaveBeenCalledWith(
+        'cmqh8dntr005chm8m2ws33rt9',
+        expect.objectContaining({
+          user: {
+            cedula: '1234588954',
+            documentType: DocumentType.CC,
+            email: 'rociogaravito@gmail.com',
+            roleId: 'aaaaaaaa-0000-0000-0000-000000000002',
+          },
+          employee: expect.not.objectContaining({
+            cedula: expect.anything(),
+            email: expect.anything(),
+            roleId: expect.anything(),
+            documentType: expect.anything(),
+          }),
+        }),
+      );
+    });
+
+    it('updates employee and recalculates transport subsidy when salary changes', async () => {
+      (repository.findByUserId as jest.Mock).mockResolvedValue({
+        tenantId: mockTenantId,
+        contractType: EmployeeContractType.INDEFINIDO,
+        salaryType: SalaryType.ORDINARIO,
+        salaryAmount: SMLV_2025,
+        contractStart: new Date('2025-01-01'),
+        contractEnd: null,
+        user: { id: 'user-1', email: 'test@example.com', cedula: '123456' },
+      });
+      (repository.update as jest.Mock).mockResolvedValue({ id: 'emp-1' });
+
+      await service.update(mockTenantId, 'user-1', { salaryAmount: SMLV_2025 * 2 + 5 });
+
+      expect(repository.update).toHaveBeenCalledWith(
+        'user-1',
+        expect.objectContaining({
+          employee: expect.objectContaining({
+            salaryAmount: SMLV_2025 * 2 + 5,
+            hasTransportSubsidy: false,
+          }),
+        }),
       );
     });
   });
@@ -364,30 +546,6 @@ describe('PayrollService', () => {
       (repository.findByUserId as jest.Mock).mockResolvedValue({ tenantId: mockTenantId });
       await service.remove(mockTenantId, 'user-1');
       expect(repository.softDelete).toHaveBeenCalledWith('user-1');
-    });
-  });
-
-  describe('update', () => {
-    it('updates employee and recalculates transport subsidy when salary changes', async () => {
-      (repository.findByUserId as jest.Mock).mockResolvedValue({
-        tenantId: mockTenantId,
-        contractType: EmployeeContractType.INDEFINIDO,
-        salaryType: SalaryType.ORDINARIO,
-        salaryAmount: SMLV_2025,
-        contractStart: new Date('2025-01-01'),
-        contractEnd: null,
-      });
-      (repository.update as jest.Mock).mockResolvedValue({ id: 'emp-1' });
-
-      await service.update(mockTenantId, 'user-1', { salaryAmount: SMLV_2025 * 2 + 5 });
-
-      expect(repository.update).toHaveBeenCalledWith(
-        'user-1',
-        expect.objectContaining({
-          salaryAmount: SMLV_2025 * 2 + 5,
-          hasTransportSubsidy: false,
-        }),
-      );
     });
   });
 

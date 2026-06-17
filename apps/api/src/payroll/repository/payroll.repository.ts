@@ -5,6 +5,7 @@ import {
   IPayrollRepository,
   ListEmployeesFilters,
   UpdateEmployeeData,
+  UpdateEmployeePayload,
 } from '../interfaces/payroll.interfaces';
 import { EmployeeDetails, User } from '@prisma/client';
 
@@ -108,12 +109,76 @@ export class PayrollRepository implements IPayrollRepository {
 
   async update(
     userId: string,
-    data: UpdateEmployeeData & { hasTransportSubsidy?: boolean },
-  ): Promise<EmployeeDetails> {
-    return this.prisma.employeeDetails.update({
-      where: { userId },
-      data,
+    payload: UpdateEmployeePayload,
+  ): Promise<EmployeeDetails & { user: User; location?: { id: string; name: string } }> {
+    const employeeData = this.normalizeEmployeeUpdate(payload.employee);
+
+    return this.prisma.$transaction(async (tx) => {
+      if (payload.user && Object.keys(payload.user).length > 0) {
+        await tx.user.update({
+          where: { id: userId },
+          data: payload.user,
+        });
+      }
+
+      if (Object.keys(employeeData).length === 0) {
+        return tx.employeeDetails.findUniqueOrThrow({
+          where: { userId },
+          include: { user: true, location: { select: { id: true, name: true } } },
+        });
+      }
+
+      return tx.employeeDetails.update({
+        where: { userId },
+        data: employeeData,
+        include: { user: true, location: { select: { id: true, name: true } } },
+      });
     });
+  }
+
+  private normalizeEmployeeUpdate(
+    data: UpdateEmployeeData & { hasTransportSubsidy?: boolean },
+  ): Record<string, unknown> {
+    const patch: Record<string, unknown> = {};
+
+    const scalarFields = [
+      'locationId',
+      'name',
+      'position',
+      'area',
+      'department',
+      'contractType',
+      'salaryType',
+      'salaryAmount',
+      'hasTransportSubsidy',
+      'epsName',
+      'pensionFundName',
+      'cesantiasFundName',
+      'arlName',
+      'arlRiskLevel',
+      'cajaCompensacion',
+      'isActive',
+    ] as const;
+
+    for (const field of scalarFields) {
+      if (data[field] !== undefined) {
+        patch[field] = data[field];
+      }
+    }
+
+    if (data.hireDate !== undefined) {
+      patch.hireDate = new Date(data.hireDate);
+    }
+
+    if (data.contractStart !== undefined) {
+      patch.contractStart = new Date(data.contractStart);
+    }
+
+    if (data.contractEnd !== undefined) {
+      patch.contractEnd = data.contractEnd ? new Date(data.contractEnd) : null;
+    }
+
+    return patch;
   }
 
   async softDelete(userId: string): Promise<void> {

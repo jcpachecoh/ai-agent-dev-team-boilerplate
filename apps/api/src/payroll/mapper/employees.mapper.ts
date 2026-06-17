@@ -32,6 +32,7 @@ export class EmployeeResponseDto {
     email: string;
     cedula: string;
     documentType: string;
+    roleId: string;
   };
   @ApiPropertyOptional() location?: {
     id: string;
@@ -77,6 +78,7 @@ export function toEmployeeResponse(
           email: employee.user.email,
           cedula: employee.user.cedula,
           documentType: employee.user.documentType,
+          roleId: employee.user.roleId,
         }
       : undefined,
     location: employee.location

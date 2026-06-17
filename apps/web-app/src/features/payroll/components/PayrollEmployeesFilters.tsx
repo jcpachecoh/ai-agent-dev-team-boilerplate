@@ -1,3 +1,7 @@
+import { RecetaFilterSelect } from '@restopsiq/ui';
+
+import { useUiTheme } from '@/hooks/useUiTheme';
+
 import type { EmployeeContractType } from '../types/payroll.types';
 import styles from '../payroll.module.scss';
 
@@ -31,6 +35,8 @@ export function PayrollEmployeesFilters({
   onContractTypeChange,
   onIncludeInactiveChange,
 }: PayrollEmployeesFiltersProps): React.JSX.Element {
+  const theme = useUiTheme();
+
   return (
     <section className={styles.toolbar} aria-label="Filtros de empleados">
       <input
@@ -48,20 +54,14 @@ export function PayrollEmployeesFilters({
         placeholder="Filtrar por locationId"
         aria-label="Filtrar por locationId"
       />
-      <select
-        className={styles.select}
-        value={contractType}
-        onChange={(event) =>
-          onContractTypeChange(event.target.value as EmployeeContractType | 'all')
-        }
+      <RecetaFilterSelect
         aria-label="Filtrar por tipo de contrato"
-      >
-        {CONTRACT_TYPE_OPTIONS.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
+        options={CONTRACT_TYPE_OPTIONS}
+        value={contractType}
+        onChange={(value) => onContractTypeChange(value as EmployeeContractType | 'all')}
+        theme={theme}
+        size="md"
+      />
       <label className={styles.checkboxRow}>
         <input
           type="checkbox"

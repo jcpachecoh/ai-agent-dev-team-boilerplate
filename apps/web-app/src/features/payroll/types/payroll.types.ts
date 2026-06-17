@@ -10,6 +10,7 @@ export interface EmployeeUserSummary {
   email: string;
   cedula: string;
   documentType: string;
+  roleId?: string;
 }
 
 export interface PayrollEmployee {
