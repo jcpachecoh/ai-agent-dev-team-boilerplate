@@ -1,0 +1,70 @@
+import { Route, Routes } from 'react-router-dom';
+
+import AppLayout from '@/layouts/AppLayout';
+import DashboardPage from '@/pages/DashboardPage';
+import DispatchPage from '@/pages/DispatchPage';
+import InventoryAlertsPage from '@/pages/InventoryAlertsPage';
+import InventoryCategoriesPage from '@/pages/InventoryCategoriesPage';
+import InventoryDashboardPage from '@/pages/InventoryDashboardPage';
+import InventoryMovementsPage from '@/pages/InventoryMovementsPage';
+import InventoryProductDetailPage from '@/pages/InventoryProductDetailPage';
+import InventoryProductsPage from '@/pages/InventoryProductsPage';
+import InventoryReportsPage from '@/pages/InventoryReportsPage';
+import LoginPage from '@/pages/LoginPage';
+import NotFoundPage from '@/pages/NotFoundPage';
+import PayrollPage from '@/pages/PayrollPage';
+import ProduccionComitesPage from '@/pages/ProduccionComitesPage/ProduccionComitesPage';
+import ProduccionPage from '@/pages/ProduccionPage';
+import ProveedoresPage from '@/pages/ProveedoresPage';
+import RecipesPage from '@/pages/RecipesPage';
+import ReportsPage from '@/pages/ReportsPage';
+import ResponsiveTableDemoPage from '@/pages/ResponsiveTableDemoPage';
+import SettingsPage from '@/pages/SettingsPage';
+import EmpresaInformacionPage from '@/pages/EmpresaInformacionPage/EmpresaInformacionPage';
+import SedesPage from '@/pages/SedesPage';
+import SignupPage from '@/pages/SignupPage';
+import SupervisorPage from '@/pages/SupervisorPage/SupervisorPage';
+import UsersPage from '@/pages/UsersPage';
+import { RequireAuth } from '@/routes/RequireAuth';
+
+export default function App(): React.JSX.Element {
+  return (
+    <Routes>
+      {/* Public */}
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/signup" element={<SignupPage />} />
+
+      {/* Protected — all routes require authentication */}
+      <Route element={<RequireAuth />}>
+        <Route element={<AppLayout />}>
+          <Route path="/" element={<DashboardPage />} />
+          <Route path="/proveedores/*" element={<ProveedoresPage />} />
+          <Route path="/inventory" element={<InventoryDashboardPage />} />
+          <Route path="/inventory/products" element={<InventoryProductsPage />} />
+          <Route path="/inventory/categories" element={<InventoryCategoriesPage />} />
+          <Route path="/inventory/products/:id" element={<InventoryProductDetailPage />} />
+          <Route path="/inventory/movements" element={<InventoryMovementsPage />} />
+          <Route path="/inventory/alerts" element={<InventoryAlertsPage />} />
+          <Route path="/inventory/reports" element={<InventoryReportsPage />} />
+          <Route path="/recetas" element={<RecipesPage />} />
+          <Route path="/recetas/categorias" element={<RecipesPage />} />
+          <Route path="/recetas/procesos" element={<RecipesPage />} />
+          <Route path="/recetas/historial" element={<RecipesPage />} />
+          <Route path="/produccion/ordenes/*" element={<ProduccionPage />} />
+          <Route path="/produccion/comites/*" element={<ProduccionComitesPage />} />
+          <Route path="/supervisor/*" element={<SupervisorPage />} />
+          <Route path="/reports" element={<ReportsPage />} />
+          <Route path="/dispatch" element={<DispatchPage />} />
+          <Route path="/users/*" element={<UsersPage />} />
+          <Route path="/payroll/*" element={<PayrollPage />} />
+          <Route path="/empresa/informacion" element={<EmpresaInformacionPage />} />
+          <Route path="/empresa/sedes/*" element={<SedesPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/dev/responsive-table" element={<ResponsiveTableDemoPage />} />
+        </Route>
+      </Route>
+
+      <Route path="*" element={<NotFoundPage />} />
+    </Routes>
+  );
+}

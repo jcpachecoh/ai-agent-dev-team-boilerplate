@@ -1,0 +1,43 @@
+@use '../shared/proveedor-theme' as proveedor;
+
+.bar {
+  @include proveedor.proveedor-theme-classes;
+
+  display: grid;
+  grid-template-columns: repeat(var(--metric-count, 4), minmax(0, 1fr));
+  gap: 0;
+  width: min(100%, var(--control-width));
+  border: 1px solid var(--proveedor-border);
+  border-radius: var(--control-radius, 8px);
+  overflow: hidden;
+  background: var(--proveedor-surface-raised);
+
+  > * {
+    border-right: 1px solid var(--proveedor-border);
+    border-radius: 0;
+    border: none;
+    border-right: 1px solid var(--proveedor-border);
+
+    &:last-child {
+      border-right: none;
+    }
+  }
+}
+
+.size--xl {
+  --control-width: 100%;
+}
+
+@media (max-width: 900px) {
+  .bar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    > *:nth-child(2) {
+      border-right: none;
+    }
+
+    > *:nth-child(odd) {
+      border-right: 1px solid var(--proveedor-border);
+    }
+  }
+}

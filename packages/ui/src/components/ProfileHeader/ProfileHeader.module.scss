@@ -1,0 +1,52 @@
+@use '../../styles/abstracts/variables' as *;
+
+.container {
+  display: flex;
+  gap: $spacing-md;
+  align-items: center;
+}
+
+.left {
+  flex: 0 0 auto;
+}
+.right {
+  flex: 1 1 auto;
+}
+
+.titleOverride .title {
+  margin: 0;
+}
+.titleOverride .subtitle {
+  margin: 0;
+  opacity: 0.9;
+}
+
+/* Title size variants */
+.title-sm .title {
+  font-size: $font-size-xs;
+  line-height: $spacing-md;
+}
+.title-md .title {
+  font-size: $font-size-sm;
+  line-height: $font-size-lg;
+}
+.title-lg .title {
+  font-size: $font-size-base;
+  line-height: $font-size-xl;
+}
+.title-sm .subtitle {
+  font-size: 10px;
+}
+.title-md .subtitle {
+  font-size: $font-size-xs;
+}
+.title-lg .subtitle {
+  font-size: 13px;
+}
+
+.light {
+  color: #111827;
+}
+.dark {
+  color: #e6eef8;
+}

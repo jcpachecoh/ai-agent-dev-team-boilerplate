@@ -1,0 +1,47 @@
+@use '../../styles/abstracts/variables' as *;
+
+.spinner {
+  display: inline-block;
+  box-sizing: border-box;
+  border-radius: $border-radius-full;
+  border: 3px solid transparent;
+  border-top-color: var(--spinner-color, currentColor);
+  animation: spinner-rotate 1s linear infinite;
+}
+
+.light {
+  color: $color-gray-900;
+  border-color: rgba($color-black, 0.1);
+  border-top-color: var(--spinner-color, currentColor);
+}
+
+.dark {
+  color: #ededf5;
+  border-color: rgba($color-white, 0.14);
+  border-top-color: var(--spinner-color, currentColor);
+}
+
+.sm {
+  width: $spacing-md;
+  height: $spacing-md;
+  border-width: 2px;
+}
+.md {
+  width: 18px;
+  height: 18px;
+  border-width: 3px;
+}
+.lg {
+  width: 28px;
+  height: 28px;
+  border-width: 3px;
+}
+
+@keyframes spinner-rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}

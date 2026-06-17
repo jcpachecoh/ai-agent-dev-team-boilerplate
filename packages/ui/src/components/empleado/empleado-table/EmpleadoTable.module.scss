@@ -1,0 +1,37 @@
+@use '../shared/empleado-theme' as emp;
+
+$mobile-breakpoint: 768px;
+
+.table {
+  @include emp.empleado-theme-classes;
+
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  border: 1px solid var(--empleado-border);
+  border-radius: 4px;
+  background: var(--empleado-surface);
+  overflow: hidden;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .table {
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    gap: 10px;
+  }
+
+  .body {
+    gap: 10px;
+  }
+
+  .desktopHeader {
+    display: none;
+  }
+}

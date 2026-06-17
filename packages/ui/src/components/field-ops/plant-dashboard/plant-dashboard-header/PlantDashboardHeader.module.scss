@@ -1,0 +1,165 @@
+@use '../../../../styles/abstracts/variables' as *;
+@use '../shared/plant-dashboard-theme' as pd;
+
+.header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr);
+  align-items: center;
+  gap: $spacing-md;
+  min-height: var(--header-height);
+  padding: 0 var(--header-padding-x);
+  border-bottom: 1px solid var(--pd-border);
+  box-sizing: border-box;
+  font-family: 'IBM Plex Mono', $font-family-mono, monospace;
+  background: var(--pd-header-bg);
+  color: var(--fo-text-secondary);
+}
+
+.theme--dark {
+  @include pd.plant-dashboard-theme-dark;
+}
+
+.theme--light {
+  @include pd.plant-dashboard-theme-light;
+}
+
+.size--sm {
+  --header-height: 2.5rem;
+  --header-padding-x: #{$spacing-md};
+}
+
+.size--md {
+  --header-height: 2.9rem;
+  --header-padding-x: 1.2rem;
+}
+
+.size--xl {
+  --header-height: 3.25rem;
+  --header-padding-x: 1.5rem;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.brandMark {
+  color: #c8a96e;
+  font-size: 0.7rem;
+}
+
+.brandPrimary {
+  color: #c8a96e;
+  font-weight: 700;
+  font-size: 0.73rem;
+  letter-spacing: 0.12em;
+}
+
+.brandSecondary {
+  color: var(--pd-dim);
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+}
+
+.brandDivider {
+  width: 1px;
+  height: 1.1rem;
+  background: var(--pd-border-strong);
+  margin: 0 0.15rem;
+}
+
+.brandContext {
+  color: var(--pd-muted);
+  font-size: 0.67rem;
+  letter-spacing: 0.1em;
+}
+
+.counters {
+  justify-self: center;
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.7rem;
+  min-width: 0;
+}
+
+.metaGroup {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.syncIcon {
+  color: var(--pd-dim);
+  font-size: 0.65rem;
+}
+
+.clockShort {
+  color: var(--pd-dim);
+  font-size: 0.55rem;
+  white-space: nowrap;
+}
+
+.wifi {
+  flex-shrink: 0;
+}
+
+.wifiOnline {
+  color: #2ec4a0;
+}
+
+.wifiOffline {
+  color: #e05a44;
+}
+
+.metaDivider {
+  width: 1px;
+  height: 1.1rem;
+  background: var(--pd-border-strong);
+}
+
+.operatorName {
+  color: var(--pd-muted);
+  font-size: 0.67rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 7rem;
+}
+
+.clockLong {
+  color: var(--fo-text-secondary);
+  font-weight: 700;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.logout {
+  flex-shrink: 0;
+}
+
+.locationButton {
+  border: 1px solid var(--pd-border-strong);
+  border-radius: 999px;
+  background: transparent;
+  color: #c8a96e;
+  font: inherit;
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  padding: 0.2rem 0.65rem;
+  cursor: pointer;
+  max-width: 9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.locationButton:disabled {
+  cursor: default;
+  opacity: 0.7;
+}

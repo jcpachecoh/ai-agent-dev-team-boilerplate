@@ -1,0 +1,27 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/asistencia-theme' as asis;
+
+.badge {
+  @include asis.asistencia-theme-classes;
+
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid rgba(asis.$asistencia-amber, 0.3);
+  border-radius: 2px;
+  background: var(--asistencia-amber-soft);
+  color: var(--asistencia-amber);
+  font-family: $font-family-mono;
+  font-weight: $font-weight-bold;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+.size--sm {
+  padding: 2px 6px;
+  font-size: 0.5625rem;
+}
+
+.size--md {
+  padding: 3px 8px;
+  font-size: 0.625rem;
+}

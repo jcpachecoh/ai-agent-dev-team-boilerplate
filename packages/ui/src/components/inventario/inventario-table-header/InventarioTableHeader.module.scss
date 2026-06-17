@@ -1,0 +1,57 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/inventario-theme' as inventario;
+
+.header {
+  @include inventario.inventario-theme-classes;
+
+  display: grid;
+  grid-template-columns: var(--inventario-columns);
+  align-items: center;
+  width: min(100%, var(--header-width));
+  min-height: var(--header-height);
+  padding: 0 var(--header-padding-x);
+  border-bottom: $border-width solid var(--inventario-border);
+  background: var(--inventario-surface);
+  box-sizing: border-box;
+}
+
+.size--sm {
+  --header-width: 720px;
+  --header-height: 36px;
+  --header-padding-x: #{$spacing-sm};
+  --header-font-size: 0.625rem;
+}
+
+.size--md {
+  --header-width: 960px;
+  --header-height: 40px;
+  --header-padding-x: #{$spacing-md};
+  --header-font-size: 0.6875rem;
+}
+
+.size--xl {
+  --header-width: 100%;
+  --header-height: 40px;
+  --header-padding-x: 16px;
+  --header-font-size: 0.6875rem;
+  border-radius: $border-radius-sm $border-radius-sm 0 0;
+}
+
+.cell {
+  font-family: $font-family-mono;
+  font-size: var(--header-font-size);
+  font-weight: $font-weight-bold;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--inventario-muted);
+}
+
+.alignCenter {
+  justify-self: center;
+  text-align: center;
+}
+
+.alignRight {
+  justify-self: end;
+  text-align: right;
+}

@@ -1,0 +1,36 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/produccion-theme' as produccion;
+.header {
+  @include produccion.produccion-theme-classes;
+  @include produccion.produccion-size-vars;
+  overflow-x: auto;
+  width: min(100%, var(--control-width));
+  background: var(--produccion-row);
+  border-bottom: $border-width solid var(--produccion-border-muted);
+}
+.row {
+  min-height: 32px;
+  padding: 0 18px;
+  font-family: $font-family-mono;
+  font-size: 0.5625rem;
+  font-weight: $font-weight-bold;
+  color: var(--produccion-faint);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.cell {
+  white-space: nowrap;
+}
+.size--xl {
+  --control-width: 100%;
+}
+
+.row {
+  @include produccion.row-grid(minmax(260px, 1.5fr) 156px 78px 52px 96px 65px 96px 32px);
+}
+
+@media (width <= 720px) {
+  .header {
+    display: none;
+  }
+}

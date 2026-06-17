@@ -1,0 +1,31 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/asistencia-theme' as asis;
+
+.dot {
+  @include asis.asistencia-theme-classes;
+
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.status--on-shift {
+  background: var(--asistencia-teal);
+}
+
+.status--absent {
+  background: var(--asistencia-coral);
+}
+
+.status--off-schedule {
+  background: var(--asistencia-amber);
+}
+
+.size--sm {
+  width: 8px;
+  height: 8px;
+}
+
+.size--md {
+  width: 10px;
+  height: 10px;
+}

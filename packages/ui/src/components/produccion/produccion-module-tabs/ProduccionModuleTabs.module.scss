@@ -1,0 +1,62 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/produccion-theme' as produccion;
+.tabs {
+  @include produccion.produccion-theme-classes;
+  @include produccion.produccion-size-vars;
+  display: flex;
+  width: 100%;
+  min-height: 36px;
+  padding-left: 18px;
+  border-bottom: $border-width solid var(--produccion-border-muted);
+  background: var(--produccion-row);
+}
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 18px;
+  background: transparent;
+  border: 0;
+  font-family: $font-family-mono;
+  font-size: var(--tabs-font-size);
+  font-weight: $font-weight-bold;
+  color: var(--produccion-subtle);
+  cursor: pointer;
+  border-right: $border-width solid var(--produccion-border-muted);
+  letter-spacing: 0.14em;
+}
+.tab svg {
+  width: var(--control-icon-size);
+  height: var(--control-icon-size);
+}
+.tab:focus-visible {
+  @include produccion.produccion-focus-ring;
+}
+.active {
+  background: rgba(produccion.$produccion-gold, 0.06);
+  color: produccion.$produccion-gold;
+}
+.size--sm {
+  --tabs-font-size: 0.5rem;
+}
+.size--md {
+  --tabs-font-size: 0.5625rem;
+}
+.size--xl {
+  --tabs-font-size: 0.625rem;
+}
+
+@media (width <= 640px) {
+  .tabs {
+    padding-left: 0;
+    overflow-x: auto;
+  }
+
+  .tab {
+    flex: 1 0 auto;
+    justify-content: center;
+    min-width: 150px;
+    padding: 0 14px;
+  }
+}

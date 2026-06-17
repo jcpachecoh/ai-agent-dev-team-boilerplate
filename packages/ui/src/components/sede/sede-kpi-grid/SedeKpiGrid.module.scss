@@ -1,0 +1,18 @@
+@use '../shared/sede-theme' as sede;
+
+$kpi-breakpoint: 768px;
+
+.grid {
+  @include sede.sede-theme-classes;
+
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  width: 100%;
+}
+
+@media (max-width: $kpi-breakpoint) {
+  .grid {
+    flex-direction: column;
+  }
+}

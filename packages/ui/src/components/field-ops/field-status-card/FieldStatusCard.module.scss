@@ -1,0 +1,231 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/field-ops-theme' as fo;
+
+$timer-surface: #1a1610;
+$timer-gold: #c7a86d;
+$timer-gold-muted: #8a7f6e;
+$timer-gold-dim: rgba($timer-gold, 0.55);
+
+.card {
+  width: min(100%, var(--display-width));
+  min-height: var(--display-min-height);
+  padding: var(--card-padding);
+  border-radius: $border-radius-md;
+  border: 1px solid transparent;
+  display: flex;
+  flex-direction: column;
+  gap: var(--card-gap);
+  box-sizing: border-box;
+  font-family: $font-family-base;
+}
+
+.size--sm {
+  --display-width: 220px;
+  --display-min-height: 140px;
+  --card-padding: #{$spacing-md};
+  --card-gap: #{$spacing-sm};
+  --value-size: #{$font-size-2xl};
+}
+
+.size--md {
+  --display-width: 360px;
+  --display-min-height: 180px;
+  --card-padding: #{$spacing-md} #{$spacing-lg};
+  --card-gap: #{$spacing-sm};
+  --value-size: 3.25rem;
+}
+
+.size--xl {
+  --display-width: 100%;
+  --display-min-height: 200px;
+  --card-padding: #{$spacing-lg};
+  --card-gap: #{$spacing-md};
+  --value-size: 3.5rem;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+}
+
+.title {
+  font-size: 0.65rem;
+  font-weight: $font-weight-semibold;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--fo-text-secondary);
+}
+
+.tag {
+  flex-shrink: 0;
+  font-size: 0.65rem;
+  font-weight: $font-weight-bold;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.2rem 0.5rem;
+  border-radius: 2px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--fo-tag-color, $timer-gold);
+}
+
+.body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  min-height: 4.5rem;
+}
+
+.value {
+  width: 100%;
+  font-size: var(--value-size);
+  font-weight: $font-weight-bold;
+  line-height: $line-height-tight;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  letter-spacing: 0.02em;
+}
+
+.subtitle {
+  align-self: flex-start;
+  width: 100%;
+  margin: 0;
+  padding-left: 0.15rem;
+  font-size: $font-size-sm;
+  color: var(--fo-text-muted);
+}
+
+.progressSection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-top: auto;
+}
+
+.progressTrack {
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--fo-progress-track, rgba($color-black, 0.35));
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  width: var(--progress-fill, 0%);
+  border-radius: inherit;
+  background: var(--fo-progress-fill, linear-gradient(90deg, #c9972e 0%, $timer-gold 100%));
+  box-shadow: 0 0 10px var(--fo-progress-glow, rgba($timer-gold, 0.45));
+  transition: width 0.35s ease;
+}
+
+.progressLabel {
+  font-size: 0.7rem;
+  font-weight: $font-weight-semibold;
+  color: var(--fo-progress-label, $timer-gold-dim);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.accent--gold.theme--dark {
+  --fo-tag-color: #{$timer-gold};
+  --fo-progress-track: rgba(0, 0, 0, 0.4);
+  --fo-progress-fill: linear-gradient(90deg, #c9972e 0%, #{$timer-gold} 100%);
+  --fo-progress-glow: rgba(230, 180, 80, 0.5);
+  --fo-progress-label: #{$timer-gold};
+
+  background-color: $timer-surface;
+  border-color: rgba($timer-gold, 0.5);
+
+  .title {
+    color: $timer-gold-muted;
+  }
+
+  .tag {
+    border-color: rgba($timer-gold, 0.65);
+    color: $timer-gold;
+  }
+
+  .value {
+    color: $timer-gold;
+  }
+
+  .subtitle {
+    color: $timer-gold-dim;
+  }
+}
+
+.accent--warning.theme--dark {
+  --fo-tag-color: #{$color-warning};
+  --fo-progress-fill: linear-gradient(90deg, #b8860b 0%, #{$color-warning} 100%);
+  --fo-progress-glow: rgba($color-warning, 0.45);
+  --fo-progress-label: #{$color-warning};
+
+  background-color: $timer-surface;
+  border-color: rgba($color-warning, 0.45);
+
+  .title {
+    color: $timer-gold-muted;
+  }
+
+  .tag {
+    border-color: rgba($color-warning, 0.65);
+    color: $color-warning;
+  }
+
+  .value {
+    color: $color-warning;
+  }
+
+  .subtitle {
+    color: $timer-gold-dim;
+  }
+}
+
+.accent--default .value {
+  color: var(--fo-text-primary);
+}
+
+.theme--dark {
+  @include fo.field-ops-theme-dark;
+
+  &:not(.accent--gold):not(.accent--warning) {
+    background-color: var(--fo-surface-elevated);
+  }
+}
+
+.theme--light {
+  @include fo.field-ops-theme-light;
+  background-color: var(--fo-surface-elevated);
+  border-color: var(--fo-border);
+
+  &.accent--gold {
+    border-color: rgba(fo.$field-ops-gold, 0.45);
+
+    .value {
+      color: fo.$field-ops-gold;
+    }
+
+    .tag {
+      border-color: rgba(fo.$field-ops-gold, 0.5);
+      color: fo.$field-ops-gold;
+    }
+
+    .progressFill {
+      --fo-progress-fill: linear-gradient(90deg, #c9972e 0%, #{fo.$field-ops-gold} 100%);
+    }
+
+    .progressLabel {
+      --fo-progress-label: #{fo.$field-ops-gold};
+    }
+  }
+}
+
+.accent--warning.theme--light .value {
+  color: $color-warning;
+}

@@ -1,0 +1,68 @@
+@use '../../../styles/abstracts/variables' as *;
+
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.grid {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  font-size: var(--chart-font-size, #{$font-size-xs});
+}
+
+.corner {
+  min-width: 36px;
+}
+
+.hourLabel,
+.dayLabel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: $color-text-secondary;
+  font-weight: $font-weight-medium;
+}
+
+.theme--dark .hourLabel,
+.theme--dark .dayLabel {
+  color: rgba($color-white, 0.55);
+}
+
+.cell {
+  aspect-ratio: 1;
+  min-height: 24px;
+  border: none;
+  border-radius: $border-radius-sm;
+  cursor: default;
+  padding: 0;
+  transition:
+    transform $transition-fast,
+    box-shadow $transition-fast;
+
+  &:hover,
+  &:focus-visible {
+    transform: scale(1.05);
+    box-shadow: $shadow-sm;
+    outline: 2px solid #d4a017;
+    outline-offset: 1px;
+  }
+}
+
+.tooltip {
+  align-self: flex-start;
+  padding: $spacing-xs $spacing-sm;
+  border-radius: $border-radius-md;
+  border: $border-width solid $color-border;
+  background: $color-white;
+  font-size: var(--chart-font-size, #{$font-size-sm});
+  box-shadow: $shadow-md;
+}
+
+.theme--dark .tooltip {
+  background: $color-gray-800;
+  border-color: rgba($color-white, 0.14);
+  color: $color-text-inverse;
+}

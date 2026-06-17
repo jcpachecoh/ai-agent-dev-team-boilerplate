@@ -1,0 +1,324 @@
+---
+description: Mejores prácticas de Prisma ORM para Palos de Leños. Aplicar cuando se modifique el schema, se creen migraciones, se escriban seeds, o se construyan queries complejas.
+globs:
+  - "prisma/schema.prisma"
+  - "apps/api/prisma/schema.prisma"
+  - "prisma/migrations/**"
+  - "prisma/seed.ts"
+  - "apps/api/prisma/seed.ts"
+  - "src/**/*.service.ts"
+  - "src/**/*.repository.ts"
+alwaysApply: false
+---
+
+# Prisma ORM — Palos de Leños
+
+## Configuración del generator
+
+```prisma
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]  // requerido para OCI/Docker
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+```
+
+## Convenciones de schema
+
+### Nomenclatura
+- Modelos en **PascalCase** singular: `ProductionOrder`, `SupplyItem`, `WorkStation`
+- Campos en **camelCase**: `tenantId`, `createdAt`, `isActive`
+- Campos de dominio en español cuando el concepto es colombiano: `razonSocial`, `nit`, `condicionPago`, `nombre`
+- Enums en **PascalCase** con valores en **SCREAMING_SNAKE_CASE**: `ProductionOrderStatus`, `StockUnit`
+- Tablas mapeadas en **snake_case** via `@@map`: `@@map("production_orders")`
+- **Enums NO llevan `@@map`** — a diferencia de los modelos
+
+### Campos según tipo de modelo
+
+| Tipo de modelo | Campos obligatorios |
+|---|---|
+| Entidades de negocio mutables | `id`, `tenantId`, `isActive`, `createdAt`, `updatedAt` |
+| Entidades de negocio inmutables (histórico) | `id`, `tenantId`, `createdAt` |
+| Tablas de join / relación | `id`, `tenantId` (sin timestamps) |
+| Logs y auditorías | `id`, `tenantId`, `createdAt` (nunca `updatedAt`) |
+
+```prisma
+// ✅ Entidad mutable de negocio
+model SupplyItem {
+  id        String   @id @default(cuid())
+  tenantId  String
+  nombre    String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("supply_items")
+}
+
+// ✅ Registro histórico (inmutable)
+model SupplyItemPriceHistory {
+  id        String   @id @default(cuid())
+  tenantId  String
+  createdAt DateTime @default(now())
+  // sin updatedAt — el historial no se modifica
+
+  @@map("supply_item_price_history")
+}
+
+// ✅ Tabla de join
+model RolePermission {
+  id           String @id @default(cuid())
+  roleId       String
+  permissionId String
+  createdAt    DateTime @default(now())
+  // sin updatedAt ni isActive — se crea o se elimina
+
+  @@map("role_permissions")
+}
+```
+
+### Multi-tenancy
+
+Todos los modelos de negocio deben incluir `tenantId` con índice:
+
+```prisma
+model SupplyItem {
+  id       String @id @default(cuid())
+  tenantId String
+  nombre   String
+  isActive Boolean @default(true)
+
+  @@unique([tenantId, codigoInterno])
+  @@index([tenantId, isActive])
+  @@map("supply_items")
+}
+```
+
+Modelos globales (catálogos sin tenant) como `Permission` no llevan `tenantId`:
+
+```prisma
+model Permission {
+  id   String @id @default(cuid())
+  code String @unique
+  // sin tenantId — catálogo global
+
+  @@map("permissions")
+}
+```
+
+### Soft delete
+
+El proyecto usa **`isActive: false`** como mecanismo de soft delete en la mayoría de entidades. Solo `User` usa `deletedAt DateTime?` por requerimientos de auditoría.
+
+```prisma
+// ✅ Patrón estándar — desactivar, no eliminar
+model Supplier {
+  isActive Boolean @default(true)
+}
+
+// ✅ Solo para User — requiere trazabilidad de borrado
+model User {
+  isActive  Boolean   @default(true)
+  deletedAt DateTime?
+}
+```
+
+En servicios/repositorios, soft delete es:
+
+```typescript
+// ✅ Estándar: isActive: false
+await this.prisma.supplier.update({ where: { id }, data: { isActive: false } });
+
+// ✅ Solo User: deletedAt
+await this.prisma.user.update({ where: { id }, data: { deletedAt: new Date(), isActive: false } });
+
+// ❌ NUNCA usar delete() en entidades de negocio
+await this.prisma.supplier.delete({ where: { id } }); // PROHIBIDO
+```
+
+En queries, filtrar siempre:
+
+```typescript
+where: { tenantId, isActive: true }
+```
+
+### Relaciones
+
+- Usar `onDelete: Cascade` cuando el child no tiene sentido sin el parent.
+- Usar `onDelete: SetNull` en relaciones de auditoría/log donde el registro debe persistir aunque el actor sea borrado.
+- Sin `onDelete` explícito = `Restrict` (default) para datos históricos.
+- Usar nombres en relaciones (`@relation("IncidentReporter", ...)`) cuando hay múltiples relaciones hacia el mismo modelo.
+
+```prisma
+model OrderItem {
+  order   Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId String
+
+  @@index([orderId])
+  @@map("order_items")
+}
+
+model AuditLog {
+  actor       User?   @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+  actorUserId String?
+
+  @@map("audit_logs")
+}
+
+model ProductionIncident {
+  reporter    OperationalUser @relation("IncidentReporter", fields: [operatorUserId], references: [id])
+  resolver    OperationalUser? @relation("IncidentResolver", fields: [resolvedBy], references: [id])
+
+  @@map("production_incidents")
+}
+```
+
+### Tipos decimales
+
+Usar `@db.Decimal(10, 3)` para cantidades y precios — nunca `Float`:
+
+```prisma
+model ProductionRecipe {
+  batchSize    Decimal  @db.Decimal(10, 3)
+  packageWeight Decimal? @db.Decimal(10, 3)
+}
+
+model SupplierProduct {
+  precioUnitario   Decimal @db.Decimal(10, 2)  // moneda colombiana
+  factorConversion Decimal @db.Decimal(10, 4)
+}
+```
+
+### Enums
+
+```prisma
+enum ProductionOrderStatus {
+  DRAFT
+  PLANNED
+  IN_PROCESS
+  PAUSED
+  COMPLETED
+  CANCELLED
+  // sin @@map — los enums no usan @@map en este proyecto
+}
+
+enum StockUnit {
+  UNIT
+  GRAMS
+  KILOGRAMS
+  ML
+  LITERS
+  BOX
+}
+```
+
+## Migraciones
+
+- Nunca editar archivos de migración ya aplicados en producción.
+- Para cambios destructivos, crear migración en dos fases: añadir columna nullable → backfill → añadir NOT NULL.
+- Revisar el SQL generado antes de aplicar.
+
+```bash
+npx prisma migrate dev --name add_work_station_capacity
+npx prisma migrate deploy  # solo en producción/CI
+```
+
+## Seeds
+
+- Usar upserts idempotentes — el seed debe poder ejecutarse N veces sin errores.
+- Organizar por entidad con funciones `seedRoles()`, `seedPermissions()`, etc.
+- Usar IDs deterministas (UUIDs fijos) para fixtures que el Postman collection referencia.
+
+```typescript
+// prisma/seed.ts
+const OPERATIONAL_TENANT_ID = 'palos-de-lena';
+
+async function seedWorkStations() {
+  const stations = [
+    { code: 'WS-COCINA-CALIENTE', name: 'Cocina Caliente' },
+    { code: 'WS-COCINA-FRIA', name: 'Cocina Fría' },
+    { code: 'WS-BARRA', name: 'Barra' },
+  ];
+
+  for (const station of stations) {
+    await prisma.workStation.upsert({
+      where: { tenantId_code: { tenantId: OPERATIONAL_TENANT_ID, code: station.code } },
+      update: { name: station.name, isActive: true },
+      create: { tenantId: OPERATIONAL_TENANT_ID, ...station },
+    });
+  }
+}
+```
+
+## Queries en repositorios
+
+### Paginación offset-based (patrón del proyecto)
+
+```typescript
+const take = Math.min(Math.max(1, opts.limit ?? DEFAULT_PAGE_SIZE), MAX_PAGE_SIZE);
+const skip = Math.max(0, opts.offset ?? 0);
+
+return this.prisma.supplyItem.findMany({
+  where: { tenantId, isActive: true },
+  take,
+  skip,
+  orderBy: { nombre: 'asc' },
+});
+```
+
+### Usar `Prisma.ModelWhereInput` para tipado fuerte
+
+```typescript
+const where: Prisma.SupplierWhereInput = {
+  tenantId,
+  isActive: opts.isActive ?? true,
+  ...(opts.filter ? {
+    OR: [
+      { razonSocial: { contains: opts.filter, mode: 'insensitive' } },
+      { nit: { contains: opts.filter, mode: 'insensitive' } },
+    ],
+  } : {}),
+};
+```
+
+### Búsqueda por unique compuesto
+
+```typescript
+// Usar el nombre generado por Prisma para unique compuesto: modelo_campo1_campo2
+await prisma.role.findUnique({
+  where: { tenantId_code: { tenantId, code: roleCode } },
+});
+
+await prisma.supplier.findUnique({
+  where: { tenantId_nit: { tenantId, nit } },
+});
+```
+
+### Evitar N+1
+
+- Usar `include` / `select` anidado en lugar de múltiples queries.
+- Usar `_count: { select: { relation: true } }` para contar relaciones sin cargarlas.
+
+```typescript
+const productCountInclude = { _count: { select: { products: true } } } as const;
+
+return this.prisma.supplier.findMany({
+  where: { tenantId },
+  include: productCountInclude,
+});
+```
+
+## Anti-patrones prohibidos
+
+- ❌ `prisma.model.delete()` en entidades de negocio — usar `isActive: false`
+- ❌ Queries sin `tenantId` en modelos multi-tenant
+- ❌ `findFirst` sin `orderBy` — resultados no deterministas
+- ❌ `Float` para dinero o cantidades — usar `Decimal` con `@db.Decimal`
+- ❌ `@@map` en enums — no se usa en este proyecto
+- ❌ Migraciones con `DROP COLUMN` sin verificar datos existentes
+- ❌ `include` ilimitado en relaciones anidadas (máx 2 niveles)
+- ❌ Selectores sin `tenantId` en tablas que tienen el campo

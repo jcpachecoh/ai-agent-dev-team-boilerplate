@@ -1,0 +1,79 @@
+@use '../../../../styles/abstracts/variables' as *;
+@use '../shared/plant-dashboard-theme' as pd;
+
+.counters {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--counter-gap);
+  font-family: 'IBM Plex Mono', $font-family-mono, monospace;
+}
+
+.theme--dark {
+  @include pd.plant-dashboard-theme-dark;
+
+  .label {
+    color: var(--pd-dim);
+  }
+}
+
+.theme--light {
+  @include pd.plant-dashboard-theme-light;
+
+  .label {
+    color: var(--pd-muted);
+  }
+}
+
+.size--sm {
+  --counter-gap: #{$spacing-md};
+  --value-size: #{$font-size-lg};
+  --label-size: 0.55rem;
+}
+
+.size--md {
+  --counter-gap: 1.25rem;
+  --value-size: 1.1rem;
+  --label-size: 0.55rem;
+}
+
+.size--xl {
+  --counter-gap: 1.5rem;
+  --value-size: 1.25rem;
+  --label-size: 0.65rem;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.value {
+  font-weight: 700;
+  font-size: var(--value-size);
+  line-height: 1;
+}
+
+.label {
+  font-size: var(--label-size);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.tone--teal {
+  color: #2ec4a0;
+}
+
+.tone--amber {
+  color: #f0c040;
+}
+
+.tone--red {
+  color: #e05a44;
+}
+
+.tone--blue {
+  color: #3b82f6;
+}

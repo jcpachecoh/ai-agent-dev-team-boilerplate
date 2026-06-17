@@ -1,0 +1,133 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/inventario-theme' as inventario;
+
+.chart {
+  @include inventario.inventario-theme-classes;
+  @include inventario.inventario-size-vars;
+
+  --inventario-accent: #{inventario.$inventario-success};
+
+  display: flex;
+  align-items: flex-end;
+  gap: var(--chart-gap);
+  width: min(100%, var(--control-width));
+  min-height: var(--chart-height);
+  color: var(--inventario-text);
+}
+
+.size--sm {
+  --control-width: 100%;
+  --chart-height: 160px;
+  --chart-gap: 12px;
+  --bar-max-height: 120px;
+  --bar-label-size: 9px;
+  --bar-value-size: 9px;
+}
+
+.size--md {
+  --control-width: 100%;
+  --chart-height: 200px;
+  --chart-gap: 16px;
+  --bar-max-height: 180px;
+  --bar-label-size: 10px;
+  --bar-value-size: 10px;
+}
+
+.size--xl {
+  --control-width: 100%;
+  --chart-height: 200px;
+  --chart-gap: 16px;
+  --bar-max-height: 180px;
+  --bar-label-size: 10px;
+  --bar-value-size: 10px;
+}
+
+.column {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.barWrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  width: 100%;
+  height: var(--bar-max-height);
+}
+
+.barValue {
+  position: absolute;
+  top: calc(100% - var(--inventario-bar-height) - 20px);
+  font-family: $font-family-mono;
+  font-size: var(--bar-value-size);
+  font-weight: $font-weight-bold;
+  line-height: 1.5;
+  color: var(--inventario-chart-value, var(--inventario-accent));
+  white-space: nowrap;
+}
+
+.bar {
+  display: block;
+  width: 100%;
+  height: var(--inventario-bar-height);
+  min-height: 4px;
+  border-radius: $border-radius-sm $border-radius-sm 0 0;
+  background: var(--inventario-bar-fill, var(--inventario-accent));
+}
+
+.barLabel {
+  font-family: $font-family-mono;
+  font-size: var(--bar-label-size);
+  line-height: 1.5;
+  color: var(--inventario-chart-label, var(--inventario-subtle));
+  white-space: nowrap;
+}
+
+.theme--light {
+  --inventario-chart-value: var(--inventario-text);
+  --inventario-chart-label: var(--inventario-text);
+  --inventario-bar-fill: var(--inventario-accent);
+}
+
+.theme--dark {
+  --inventario-chart-value: var(--inventario-accent);
+  --inventario-chart-label: var(--inventario-text);
+}
+
+.accent--success {
+  --inventario-accent: #{inventario.$inventario-success};
+}
+
+.accent--info {
+  --inventario-accent: #{inventario.$inventario-info};
+}
+
+.theme--dark.accent--info {
+  --inventario-bar-fill: linear-gradient(
+    180deg,
+    var(--inventario-accent) 0%,
+    rgba(59, 130, 246, 0.4) 100%
+  );
+}
+
+.accent--warning {
+  --inventario-accent: #{inventario.$inventario-warning};
+}
+
+.accent--danger {
+  --inventario-accent: #{inventario.$inventario-danger};
+}
+
+.accent--purple {
+  --inventario-accent: #{inventario.$inventario-purple};
+}
+
+.accent--enterprise {
+  --inventario-accent: #{inventario.$inventario-enterprise};
+}

@@ -1,0 +1,82 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/proveedor-theme' as proveedor;
+
+.header {
+  @include proveedor.proveedor-theme-classes;
+  @include proveedor.proveedor-size-vars;
+
+  display: flex;
+  align-items: center;
+  gap: var(--header-gap);
+  width: min(100%, var(--control-width));
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--brand-size);
+  height: var(--brand-size);
+  border-radius: $border-radius-sm;
+  border: $border-width solid var(--proveedor-border);
+  background: var(--proveedor-surface-raised);
+  color: proveedor.$proveedor-enterprise;
+  flex-shrink: 0;
+}
+
+.initial {
+  font-family: $font-family-mono;
+  font-size: var(--brand-font-size);
+  font-weight: $font-weight-bold;
+}
+
+.titles {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font-family: $font-family-mono;
+  font-size: var(--title-size);
+  font-weight: $font-weight-bold;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: proveedor.$proveedor-enterprise;
+}
+
+.subtitle {
+  margin: 0;
+  font-family: $font-family-mono;
+  font-size: var(--subtitle-size);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--proveedor-muted);
+}
+
+.size--sm {
+  --brand-size: 28px;
+  --brand-font-size: 0.75rem;
+  --title-size: 0.75rem;
+  --subtitle-size: 0.625rem;
+  --header-gap: #{$spacing-sm};
+}
+
+.size--md {
+  --brand-size: 36px;
+  --brand-font-size: 0.875rem;
+  --title-size: 0.875rem;
+  --subtitle-size: 0.6875rem;
+  --header-gap: 16px;
+}
+
+.size--xl {
+  --control-width: 100%;
+  --brand-size: 36px;
+  --brand-font-size: 0.875rem;
+  --title-size: 1rem;
+  --subtitle-size: 0.6875rem;
+  --header-gap: 16px;
+}

@@ -1,0 +1,43 @@
+@use '../../sede/shared/sede-theme' as sede;
+
+.selector {
+  @include sede.sede-theme-classes;
+
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.day {
+  min-width: 42px;
+  min-height: 34px;
+  padding: 0 8px;
+  border-radius: 8px;
+  border: 1px solid var(--sede-border);
+  background: var(--sede-input);
+  color: var(--sede-muted);
+  font-family: var(--sede-font-mono, ui-monospace, monospace);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.day:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.day--selected {
+  color: #818cf8;
+  background: rgba(129, 140, 248, 0.12);
+  border-color: rgba(129, 140, 248, 0.45);
+}
+
+.day:not(:disabled):hover {
+  border-color: rgba(129, 140, 248, 0.35);
+}

@@ -1,0 +1,140 @@
+@use '@/styles/tokens' as t;
+
+.screen {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+}
+
+.pageHeader {
+  flex-shrink: 0;
+  padding: 1.1rem 1.25rem 1rem;
+  border-bottom: 1px solid var(--color-border);
+
+  h1 {
+    margin: 0;
+    font-size: 1.9rem;
+  }
+
+  p {
+    margin: 0.25rem 0 0;
+    color: var(--color-text-secondary);
+    font-size: 0.85rem;
+  }
+}
+
+.body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 1.25rem;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.moduleSection {
+  border: 1px solid var(--color-border);
+  border-radius: t.$border-radius-base;
+  overflow: hidden;
+  background: var(--color-bg-surface);
+}
+
+.moduleHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg-surface-raised, var(--color-bg-surface));
+}
+
+.moduleTitle {
+  font-family: t.$font-family-mono;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+.moduleCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 18px;
+  padding: 0 0.35rem;
+  border-radius: 9999px;
+  background: var(--color-bg-surface-raised, var(--color-bg-primary));
+  border: 1px solid var(--color-border);
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.permissionList {
+  display: flex;
+  flex-direction: column;
+}
+
+.permissionRow {
+  display: grid;
+  grid-template-columns: 240px 1fr auto;
+  align-items: baseline;
+  gap: 1rem;
+  padding: 0.6rem 1rem;
+  border-bottom: 1px solid var(--color-border);
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &:nth-child(even) {
+    background: color-mix(
+      in srgb,
+      var(--color-bg-surface-raised, var(--color-bg-primary)) 50%,
+      transparent
+    );
+  }
+}
+
+.permCode {
+  font-family: t.$font-family-mono;
+  font-size: 0.78rem;
+  color: var(--color-text-secondary);
+}
+
+.permName {
+  font-size: 0.85rem;
+  color: var(--color-text-primary);
+}
+
+.permDesc {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  font-style: italic;
+  text-align: right;
+}
+
+@media (width <= 640px) {
+  .permissionRow {
+    grid-template-columns: 1fr;
+    gap: 0.25rem;
+  }
+
+  .permDesc {
+    text-align: left;
+  }
+}

@@ -1,0 +1,67 @@
+@use '../../../../styles/abstracts/variables' as *;
+@use '../shared/plant-dashboard-theme' as pd;
+
+.footer {
+  @include pd.plant-dashboard-theme-dark;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-md;
+  padding: 1.5rem 2.9rem 1.45rem;
+  border-top: 1px solid var(--pd-bg-muted);
+}
+
+.theme--dark {
+  @include pd.plant-dashboard-theme-dark;
+}
+
+.theme--light {
+  @include pd.plant-dashboard-theme-light;
+}
+
+.cancelButton,
+.continueButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  min-height: 3.15rem;
+  border-radius: 4px;
+  font-family: 'IBM Plex Sans', $font-family-base, sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease,
+    background 0.15s ease;
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.65;
+  }
+}
+
+.cancelButton {
+  padding: 0 1.25rem;
+  border: 1px solid var(--pd-border-strong);
+  background: transparent;
+  color: var(--pd-muted);
+}
+
+.continueButton {
+  padding: 0 2.3rem;
+  border: 2px solid var(--pd-border-strong);
+  background: var(--pd-bg-muted);
+  color: var(--pd-recipe-hint-text);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.continueEnabled {
+  color: var(--pd-title);
+  border-color: var(--pd-border-strong);
+  background: var(--pd-bg-muted);
+}

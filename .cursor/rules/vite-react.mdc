@@ -1,0 +1,181 @@
+---
+description: Mejores prácticas de Vite + React para el frontend KDS de Palos de Leños. Aplicar cuando se creen componentes, hooks, páginas, contextos, o cualquier código del frontend.
+globs:
+  - "src/**/*.tsx"
+  - "src/**/*.ts"
+  - "src/hooks/**"
+  - "src/features/**"
+  - "src/components/**"
+  - "src/graphql/**"
+alwaysApply: false
+---
+
+# Vite + React — Frontend KDS Palos de Leños
+
+## Estructura del proyecto
+
+```
+src/
+├── components/          # Componentes reutilizables (puros, sin efectos de negocio)
+│   ├── ui/              # Primitivos: Button, Badge, Card, Modal
+│   └── kds/             # Componentes KDS: OrderCard, StationBoard, TimerBadge
+├── features/            # Lógica de negocio por dominio
+│   ├── orders/
+│   │   ├── hooks/       # useOrders, useOrderActions
+│   │   ├── OrdersPage.tsx
+│   │   └── index.ts
+│   └── stations/
+├── hooks/               # Hooks genéricos reutilizables
+├── lib/
+│   ├── apollo.ts        # Apollo Client config
+│   └── socket.ts        # Socket.IO client
+├── graphql/
+│   ├── queries/         # *.graphql o gql`` strings
+│   └── mutations/
+└── styles/
+    ├── _variables.scss
+    ├── _mixins.scss
+    └── global.scss
+```
+
+## Componentes
+
+### Convenciones
+- **Functional components** siempre — cero class components.
+- **Named exports** — no default exports en componentes (facilita refactoring).
+- Props tipadas con `interface`, nunca con `type` para consistencia.
+- Componentes de UI puros: sin llamadas a APIs, sin Apollo, sin side effects.
+
+```tsx
+// ✅ Correcto
+interface OrderCardProps {
+  orderId: string;
+  tableNumber: number;
+  status: OrderStatus;
+  elapsedMinutes: number;
+  onComplete: (id: string) => void;
+}
+
+export function OrderCard({ orderId, tableNumber, status, elapsedMinutes, onComplete }: OrderCardProps) {
+  const isUrgent = elapsedMinutes > 15;
+
+  return (
+    <div className={`${styles.card} ${isUrgent ? styles.urgent : ''}`}>
+      <span className={styles.table}>Mesa {tableNumber}</span>
+      <TimerBadge minutes={elapsedMinutes} />
+      <button onClick={() => onComplete(orderId)}>Completar</button>
+    </div>
+  );
+}
+```
+
+### Estructura interna de un componente
+
+1. Hooks de estado (`useState`, `useReducer`)
+2. Hooks de contexto / custom hooks
+3. Efectos (`useEffect`) — al final, antes del return
+4. Handlers (funciones `handle*`)
+5. Derived state (variables calculadas)
+6. Return JSX
+
+## Hooks
+
+### Custom hooks — reglas
+
+- Un hook = una responsabilidad.
+- Nombre siempre `use<Feature>`.
+- Retornar objeto con keys nombradas, no array (excepto hooks tipo `useState`).
+- Manejar loading, error y data siempre.
+
+```typescript
+// hooks/useOrdersByStation.ts
+export function useOrdersByStation(stationId: string) {
+  const { data, loading, error, refetch } = useQuery(GET_ORDERS_BY_STATION, {
+    variables: { stationId },
+    pollInterval: 0, // Usar Socket.IO, no polling
+  });
+
+  const orders = data?.ordersByStation ?? [];
+
+  return { orders, loading, error, refetch };
+}
+```
+
+### Apollo Client
+
+- Queries con `useQuery` — nunca `useLazyQuery` para datos que se cargan al montar.
+- Mutations con `useCallback` wrapeando `useMutation`.
+- Actualizar cache después de mutations: usar `update` o `refetchQueries` (preferir `update` para UX instantáneo).
+
+```typescript
+export function useCompleteOrder() {
+  const [completeOrderMutation, { loading }] = useMutation(COMPLETE_ORDER);
+
+  const completeOrder = useCallback(async (orderId: string) => {
+    await completeOrderMutation({
+      variables: { orderId },
+      update(cache, { data }) {
+        cache.modify({
+          id: cache.identify({ __typename: 'Order', id: orderId }),
+          fields: { status: () => 'COMPLETED' },
+        });
+      },
+    });
+  }, [completeOrderMutation]);
+
+  return { completeOrder, loading };
+}
+```
+
+## Estado global
+
+- **Apollo cache** para estado de servidor (orders, stations, menu).
+- **Context + useReducer** para estado de UI global (tema, estación activa, notificaciones).
+- **useState** local para estado de formularios y toggles de componente.
+- **NO usar Redux** — overkill para esta app.
+
+```typescript
+// contexts/KdsContext.tsx
+interface KdsState {
+  activeStationId: string | null;
+  soundEnabled: boolean;
+  view: 'grid' | 'list';
+}
+
+type KdsAction =
+  | { type: 'SET_STATION'; payload: string }
+  | { type: 'TOGGLE_SOUND' }
+  | { type: 'SET_VIEW'; payload: 'grid' | 'list' };
+
+export const KdsContext = createContext<{
+  state: KdsState;
+  dispatch: Dispatch<KdsAction>;
+} | null>(null);
+```
+
+## Performance
+
+- `React.memo` en componentes de lista que reciben props estables.
+- `useCallback` en handlers pasados como props.
+- `useMemo` para computaciones costosas (filtros de órdenes, ordenamiento).
+- Lazy loading de páginas con `React.lazy` + `Suspense`.
+- Virtualización con `@tanstack/react-virtual` para listas > 50 items.
+
+```tsx
+// Lazy load pages
+const StationsPage = React.lazy(() => import('./features/stations/StationsPage'));
+
+// En el router:
+<Suspense fallback={<PageSkeleton />}>
+  <StationsPage />
+</Suspense>
+```
+
+## Anti-patrones prohibidos
+
+- ❌ `useEffect` para transformar datos — usar `useMemo`
+- ❌ Lógica de negocio en componentes de UI (`components/ui/`)
+- ❌ `any` en TypeScript
+- ❌ `console.log` en código de producción
+- ❌ Mutación directa de estado: siempre inmutabilidad
+- ❌ Default exports en componentes (usar named exports)

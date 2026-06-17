@@ -1,0 +1,24 @@
+.screen {
+  min-height: 100%;
+}
+
+.metrics {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 8px;
+  overflow-x: auto;
+}
+
+.metrics > * {
+  flex: 1 1 0;
+  min-width: 120px;
+  max-width: none;
+}
+
+.state {
+  border: 1px solid var(--empleado-border, #2e2e2e);
+  border-radius: 4px;
+  background: var(--empleado-surface, #111);
+  color: var(--empleado-subtle, #666);
+  padding: 1rem;
+}

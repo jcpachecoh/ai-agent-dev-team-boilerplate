@@ -1,0 +1,54 @@
+@use '../../../styles/abstracts/variables' as *;
+
+.container {
+  width: min(100%, var(--chart-width));
+  min-height: var(--chart-min-height);
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  font-family: $font-family-base;
+}
+
+.chartBody {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+}
+
+.size--sm {
+  --chart-width: 220px;
+  --chart-min-height: 160px;
+  --chart-font-size: #{$font-size-xs};
+  --chart-legend-gap: #{$spacing-xs};
+}
+
+.size--md {
+  --chart-width: 320px;
+  --chart-min-height: 200px;
+  --chart-font-size: #{$font-size-sm};
+  --chart-legend-gap: #{$spacing-sm};
+}
+
+.size--xl {
+  --chart-width: 480px;
+  --chart-min-height: 260px;
+  --chart-font-size: #{$font-size-base};
+  --chart-legend-gap: #{$spacing-md};
+}
+
+.theme--light .chartBody {
+  color: $color-text-primary;
+}
+
+.theme--dark .chartBody {
+  color: $color-text-inverse;
+}
+
+.stateWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: inherit;
+  flex: 1;
+}

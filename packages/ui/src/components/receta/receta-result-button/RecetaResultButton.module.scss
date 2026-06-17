@@ -1,0 +1,65 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/receta-theme' as receta;
+
+.button {
+  @include receta.receta-control-base;
+  @include receta.receta-theme-classes;
+  @include receta.receta-size-vars;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--control-gap) * 0.75);
+  width: auto;
+  min-width: var(--result-width);
+  padding: calc(var(--control-padding-y) * 0.65) var(--control-padding-x);
+  font-family: $font-family-mono;
+  font-size: 0.625rem;
+  font-weight: $font-weight-bold;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+
+  &:focus-visible {
+    @include receta.receta-focus-ring;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+}
+
+.size--sm {
+  --result-width: 76px;
+}
+.size--md {
+  --result-width: 140px;
+}
+.size--xl {
+  --result-width: 180px;
+}
+
+.icon,
+.icon svg {
+  width: 12px;
+  height: 12px;
+}
+
+.variant--ok {
+  border-color: receta.$receta-teal;
+  background: rgba(receta.$receta-teal, 0.12);
+  color: receta.$receta-teal;
+}
+
+.variant--warning {
+  border-color: receta.$receta-warning;
+  background: rgba(receta.$receta-warning, 0.12);
+  color: receta.$receta-warning;
+}
+
+.variant--failed {
+  border-color: receta.$receta-failed;
+  background: rgba(receta.$receta-failed, 0.12);
+  color: receta.$receta-failed;
+}

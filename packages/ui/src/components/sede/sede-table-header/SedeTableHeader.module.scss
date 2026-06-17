@@ -1,0 +1,37 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/sede-theme' as sede;
+
+.header {
+  @include sede.sede-theme-classes;
+
+  display: grid;
+  grid-template-columns: var(--sede-columns);
+  align-items: center;
+  min-height: 34px;
+  padding: 0 14px;
+  border-bottom: $border-width solid var(--sede-border);
+  background: var(--sede-input);
+}
+
+.cell {
+  @include sede.sede-mono-label;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+
+  svg {
+    width: 10px;
+    height: 10px;
+    color: var(--sede-faint);
+  }
+}
+
+.sortable {
+  color: var(--sede-primary);
+
+  svg {
+    color: var(--sede-primary);
+  }
+}

@@ -33,12 +33,13 @@ datasets/
 # Schema: <Dataset Name>
 
 ## Source
+
 Where does this data come from?
 
 ## Fields
 
-| Field | Type | Description |
-|-------|------|-------------|
+| Field | Type | Description       |
+| ----- | ---- | ----------------- |
 | id    | int  | Unique identifier |
-| ...   | ...  | ...         |
+| ...   | ...  | ...               |
 ```

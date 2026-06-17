@@ -1,0 +1,39 @@
+@use '../shared/web-login-theme' as login;
+
+.page {
+  @include login.web-login-root;
+  @include login.web-login-theme-classes;
+
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(320px, 0.9fr);
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--web-login-bg);
+  color: var(--web-login-text);
+}
+
+.hero {
+  border-right: 1px solid var(--web-login-border);
+}
+
+.form {
+  justify-self: center;
+  max-width: var(--web-login-panel-max-width);
+}
+
+@media (max-width: 900px) {
+  .page {
+    grid-template-columns: 1fr;
+  }
+
+  .hero {
+    display: none;
+  }
+
+  .form {
+    max-width: none;
+    width: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+}

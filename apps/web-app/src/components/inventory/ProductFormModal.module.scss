@@ -1,0 +1,161 @@
+@use '@/styles/tokens' as t;
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px 28px;
+}
+
+.input {
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 14px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font-size: t.$font-size-md;
+  font-family: var(--font-body, inherit);
+  color: inherit;
+}
+
+.textarea {
+  width: 100%;
+  min-height: 88px;
+  padding: 10px 14px;
+  border: 0;
+  outline: 0;
+  resize: vertical;
+  background: transparent;
+  font-size: t.$font-size-md;
+  font-family: var(--font-body, inherit);
+  color: inherit;
+  line-height: 1.45;
+}
+
+.fullWidthField {
+  grid-column: 1 / -1;
+}
+
+.fieldError {
+  outline: 1px solid t.$color-danger;
+  border-radius: t.$border-radius-sm;
+}
+
+.inputReadonly {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.errorText {
+  display: block;
+  margin-top: 4px;
+  font-size: t.$font-size-xs;
+  color: t.$color-danger;
+}
+
+.toggleField {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 14px 16px;
+  border: 1px solid var(--inventario-border);
+  border-radius: t.$border-radius-sm;
+  background: var(--inventario-hover);
+}
+
+.toggleCopy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.toggleLabel {
+  font-size: t.$font-size-xs;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--inventario-muted);
+}
+
+.toggleHint {
+  font-size: t.$font-size-sm;
+  color: var(--inventario-text);
+}
+
+.toggle {
+  position: relative;
+  flex-shrink: 0;
+  width: 48px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: var(--inventario-track);
+  cursor: pointer;
+  transition: background 0.2s ease;
+
+  &:focus-visible {
+    outline: 2px solid rgba(t.$color-success, 0.65);
+    outline-offset: 2px;
+  }
+}
+
+.toggleOn {
+  background: t.$color-success;
+}
+
+.toggleThumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 35%);
+  transition: transform 0.2s ease;
+}
+
+.toggleOn .toggleThumb {
+  transform: translateX(20px);
+}
+
+.togglePair {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px 28px;
+}
+
+.toggleFieldCompact {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--inventario-border);
+  border-radius: t.$border-radius-sm;
+  background: var(--inventario-hover);
+}
+
+.toggleFieldLabel {
+  font-size: t.$font-size-xs;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--inventario-muted);
+}
+
+@media (max-width: 640px) {
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .togglePair {
+    grid-template-columns: 1fr;
+  }
+}

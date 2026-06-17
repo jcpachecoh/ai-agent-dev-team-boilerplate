@@ -1,0 +1,120 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/receta-theme' as receta;
+
+.card {
+  @include receta.receta-control-base;
+  @include receta.receta-theme-classes;
+  @include receta.receta-size-vars;
+
+  --metric-accent: var(--receta-muted);
+
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--card-gap);
+  padding: var(--card-padding-y) var(--card-padding-x);
+  background: var(--receta-surface);
+  box-shadow: inset 3px 0 0 var(--metric-accent);
+}
+
+.size--sm {
+  --control-width: 180px;
+  --control-min-height: 78px;
+  --card-padding-x: #{$spacing-sm};
+  --card-padding-y: #{$spacing-sm};
+  --card-gap: #{$spacing-xs};
+  --metric-value-size: #{$font-size-xl};
+}
+
+.size--md {
+  --control-width: 260px;
+  --control-min-height: 100px;
+  --card-padding-x: #{$spacing-md};
+  --card-padding-y: #{$spacing-md};
+  --card-gap: #{$spacing-sm};
+  --metric-value-size: 1.75rem;
+}
+
+.size--xl {
+  --control-width: 100%;
+  --control-min-height: 118px;
+  --card-padding-x: #{$spacing-lg};
+  --card-padding-y: #{$spacing-lg};
+  --card-gap: #{$spacing-sm};
+  --metric-value-size: #{$font-size-4xl};
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+  width: 100%;
+}
+
+.title {
+  margin: 0;
+  font-family: $font-family-mono;
+  font-size: 0.625rem;
+  font-weight: $font-weight-bold;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--receta-muted);
+}
+
+.icon {
+  display: inline-flex;
+  color: var(--metric-accent);
+
+  svg {
+    width: var(--control-icon-size);
+    height: var(--control-icon-size);
+  }
+}
+
+.value {
+  margin: 0;
+  font-family: $font-family-mono;
+  font-size: var(--metric-value-size);
+  font-weight: $font-weight-bold;
+  line-height: 1.15;
+  color: var(--receta-text);
+}
+
+.description {
+  margin: 0;
+  font-size: $font-size-xs;
+  color: var(--receta-muted);
+}
+
+.variant--type-1 {
+  --metric-accent: #{receta.$receta-purple};
+
+  .value {
+    color: var(--receta-text);
+  }
+}
+
+.variant--type-2 {
+  --metric-accent: #{receta.$receta-teal};
+
+  .value {
+    color: var(--metric-accent);
+  }
+}
+
+.variant--type-3 {
+  --metric-accent: #{receta.$receta-gold};
+
+  .value {
+    color: var(--metric-accent);
+  }
+}
+
+.variant--type-4 {
+  --metric-accent: #{receta.$receta-orange};
+
+  .value {
+    color: var(--metric-accent);
+  }
+}

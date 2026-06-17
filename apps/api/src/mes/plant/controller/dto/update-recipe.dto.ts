@@ -1,0 +1,66 @@
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { StockUnit } from '@prisma/client';
+import {
+  IsBoolean,
+  IsEnum,
+  IsInt,
+  IsNumberString,
+  IsOptional,
+  IsString,
+  Min,
+} from 'class-validator';
+
+export class UpdateRecipeDto {
+  @ApiPropertyOptional({ example: 'Pan integral 500g' })
+  @IsString()
+  @IsOptional()
+  name?: string;
+
+  @ApiPropertyOptional({ example: 'recipe-category-uuid', nullable: true })
+  @IsString()
+  @IsOptional()
+  categoryId?: string | null;
+
+  @ApiPropertyOptional({ example: 'finished-product-uuid' })
+  @IsString()
+  @IsOptional()
+  finishedProductId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Batch size (decimal string)',
+    example: '10.000',
+  })
+  @IsNumberString()
+  @IsOptional()
+  batchSize?: string;
+
+  @ApiPropertyOptional({ enum: StockUnit })
+  @IsEnum(StockUnit)
+  @IsOptional()
+  batchUnit?: StockUnit;
+
+  @ApiPropertyOptional({
+    description: 'Approximate weight per package in kg (decimal string)',
+    example: '440.000',
+    nullable: true,
+  })
+  @IsNumberString()
+  @IsOptional()
+  packageWeight?: string | null;
+
+  @ApiPropertyOptional({ example: 120 })
+  @IsInt()
+  @Min(1)
+  @IsOptional()
+  estimatedMinutes?: number;
+
+  @ApiPropertyOptional({ example: 'Notas de la receta' })
+  @IsString()
+  @IsOptional()
+  notes?: string;
+
+  @ApiPropertyOptional({ example: true })
+  @IsBoolean()
+  @IsOptional()
+  isActive?: boolean;
+}

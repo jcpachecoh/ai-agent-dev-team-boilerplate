@@ -1,0 +1,85 @@
+name: Issue → Task
+
+on:
+  issues:
+    types: [opened, edited]
+
+jobs:
+  create-task:
+    name: Create task file from issue
+    runs-on: ubuntu-latest
+    # Only run for issues labeled 'task' or with no label filter
+    permissions:
+      contents: write
+      issues: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Determine task number
+        id: task_num
+        run: |
+          COUNT=$(ls tasks/ | grep -E '^[0-9]' | wc -l | tr -d ' ')
+          NEXT=$(printf '%02d' $((COUNT + 1)))
+          echo "number=$NEXT" >> $GITHUB_OUTPUT
+
+      - name: Create task file
+        env:
+          ISSUE_NUM: ${{ github.event.issue.number }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_URL: ${{ github.event.issue.html_url }}
+          TASK_NUM: ${{ steps.task_num.outputs.number }}
+        run: |
+          SLUG=$(echo "$ISSUE_TITLE" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/-\+/-/g' | sed 's/^-//;s/-$//' | cut -c1-40)
+          TASK_FILE="tasks/${TASK_NUM}-${SLUG}.md"
+
+          cat > "$TASK_FILE" << TASKEOF
+          # Task: ${ISSUE_TITLE}
+
+          **Issue:** [#${ISSUE_NUM}](${ISSUE_URL})
+          **Status:** pending
+          **Created:** $(date -u +%Y-%m-%d)
+
+          ## Goal
+
+          ${ISSUE_BODY}
+
+          ## Acceptance Criteria
+
+          - [ ] All requirements from the issue are implemented
+          - [ ] Tests are written and passing
+          - [ ] Code has been reviewed and approved
+          - [ ] Changes are merged to the appropriate branch
+
+          ## Files to Create / Modify
+
+          > _List key files here as implementation progresses._
+
+          ## Notes
+
+          > _Add implementation notes, blockers, or decisions here._
+          TASKEOF
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add "$TASK_FILE"
+          git commit -m "task: create task ${TASK_NUM} from issue #${ISSUE_NUM}"
+          git push
+          echo "task_file=$TASK_FILE" >> $GITHUB_OUTPUT
+        id: create_file
+
+      - name: Comment on issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const taskFile = '${{ steps.create_file.outputs.task_file }}';
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `📋 Task file created: [\`${taskFile}\`](https://github.com/${context.repo.owner}/${context.repo.repo}/blob/main/${taskFile})\n\nUpdate \`NEXT_TASK.md\` to point to this file when ready to implement.`
+            });

@@ -1,4 +1,3 @@
-
 # Development Roadmap
 
 Phase 1 – Project Setup

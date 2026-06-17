@@ -1,0 +1,82 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/empleado-theme' as emp;
+
+.row {
+  @include emp.empleado-theme-classes;
+
+  display: grid;
+  grid-template-columns: var(--empleado-columns);
+  align-items: center;
+  min-height: 58px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--empleado-border-subtle);
+}
+
+.employeeCell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.employeeText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.name {
+  font-size: 0.8125rem;
+  font-weight: $font-weight-semibold;
+  color: var(--empleado-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.email {
+  font-size: 0.625rem;
+  color: var(--empleado-faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cedulaCell {
+  font-family: 'IBM Plex Mono', $font-family-mono, monospace;
+  font-size: 0.6875rem;
+  color: var(--empleado-muted);
+}
+
+.roleCell,
+.locationCell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.position,
+.locationName {
+  font-size: 0.75rem;
+  font-weight: $font-weight-medium;
+  color: var(--empleado-text-secondary);
+}
+
+.area,
+.locationCity {
+  font-size: 0.625rem;
+  color: var(--empleado-faint);
+}
+
+.hireDateCell {
+  font-family: 'IBM Plex Mono', $font-family-mono, monospace;
+  font-size: 0.625rem;
+  color: var(--empleado-subtle);
+}
+
+.actionsCell {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}

@@ -1,0 +1,109 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/receta-theme' as receta;
+
+.button {
+  --button-height: 36px;
+  --button-padding-x: #{$spacing-md};
+  --button-gap: #{$spacing-sm};
+  --button-font-size: 0.8125rem;
+  --button-icon-size: 14px;
+
+  @include receta.receta-control-base;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--button-gap);
+  width: auto;
+  min-width: var(--button-min-width);
+  min-height: var(--button-height);
+  padding: 0 var(--button-padding-x);
+  border-radius: $border-radius-sm;
+  font-size: var(--button-font-size);
+  line-height: 1.5;
+  cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    transform 120ms ease;
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  &:hover:not(:disabled) {
+    border-color: receta.$receta-purple;
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+
+  &:focus-visible {
+    @include receta.receta-focus-ring;
+  }
+}
+
+.themeLight {
+  @include receta.receta-theme-light;
+}
+
+.themeDark {
+  @include receta.receta-theme-dark;
+}
+
+.variantSave {
+  --button-min-width: 150px;
+
+  background: receta.$receta-purple;
+  font-weight: $font-weight-semibold;
+  color: $color-white;
+  border-color: receta.$receta-purple;
+}
+
+.variantDiscard {
+  --button-min-width: 113px;
+
+  background: transparent;
+  font-weight: $font-weight-medium;
+  color: var(--receta-muted);
+}
+
+.variantAdd {
+  --button-height: 30px;
+  --button-min-width: 101px;
+  --button-padding-x: 12px;
+  --button-font-size: 0.6875rem;
+  --button-icon-size: 12px;
+
+  background: rgba(receta.$receta-purple, 0.12);
+  font-weight: $font-weight-semibold;
+  color: receta.$receta-purple;
+  border-color: receta.$receta-purple;
+}
+
+.variantCancel {
+  --button-min-width: 85px;
+
+  background: transparent;
+  font-weight: $font-weight-medium;
+  color: var(--receta-muted);
+}
+
+.icon,
+.icon svg {
+  width: var(--button-icon-size);
+  height: var(--button-icon-size);
+}
+
+.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.label {
+  white-space: nowrap;
+}

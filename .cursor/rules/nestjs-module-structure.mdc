@@ -1,0 +1,46 @@
+---
+alwaysApply: true
+---
+
+# NestJS Module Structure
+
+Every NestJS module must follow the required structure:
+
+- interfaces/
+- repository/
+- service/
+- controller/
+- controller/dto/
+- test/
+- {module}.module.ts
+
+Repositories:
+
+- Implement `I{Module}Repository`.
+- Contain Prisma/data access only.
+- Must not throw HTTP exceptions.
+- Return `null` or result objects when data is missing.
+
+Services:
+
+- Implement `I{Module}Service`.
+- Own business rules and exceptions.
+- Throw `NotFoundException`, `BadRequestException`, `ConflictException`, etc. when appropriate.
+- Must enforce tenant safety.
+
+Controllers:
+
+- Inject services only.
+- Do not inject repositories.
+- Do not contain business logic.
+- Do not accept `tenantId` from request body.
+
+Tests:
+
+- Controller tests mock the service.
+- Service tests mock the repository.
+- Keep tests under `test/`.
+
+After module changes, run:
+
+- `node scripts/validate-structure.js`

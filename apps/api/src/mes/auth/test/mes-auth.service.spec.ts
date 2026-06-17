@@ -1,0 +1,866 @@
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  HttpException,
+  HttpStatus,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import { OperationalRole } from '@prisma/client';
+import { Test, TestingModule } from '@nestjs/testing';
+import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
+import { MesAuthService } from '../service/mes-auth.service';
+import { MesAuthRepository } from '../repository/mes-auth.repository';
+import { MesAuthRedisService } from '../service/mes-auth-redis.service';
+import { AuditService } from '../../../audit/service/audit.service';
+
+jest.mock('bcrypt');
+const bcryptMock = bcrypt as jest.Mocked<typeof bcrypt>;
+
+const GENERIC_AUTH_MESSAGE = 'Cédula o PIN incorrecto';
+const VALID_CEDULA = '12345678';
+const VALID_PIN = '1234';
+const TENANT_ID = 'tenant-abc';
+const LINKED_GLOBAL_USER_ID = '11111111-0000-0000-0000-000000000004';
+
+/** Mirrors MesAuthService.hashCedula (HMAC when CEDULA_HMAC_SECRET is set). */
+const hashCedula = (cedula: string): string => {
+  const hmacSecret = process.env.CEDULA_HMAC_SECRET;
+  if (hmacSecret) {
+    return crypto.createHmac('sha256', hmacSecret).update(cedula).digest('hex');
+  }
+  return crypto.createHash('sha256').update(cedula).digest('hex');
+};
+
+const baseUser = {
+  id: 'op-user-1',
+  userId: null as string | null,
+  cedulaHash: hashCedula(VALID_CEDULA),
+  pinHash: 'hashed-pin',
+  role: OperationalRole.OPERATOR,
+  tenantId: 'tenant-abc',
+  sedeId: null as string | null,
+  isActive: true,
+  loginAttempts: 0,
+  lockedUntil: null as Date | null,
+  refreshToken: null,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+};
+
+const repoMock = {
+  findByCedulaHash: jest.fn(),
+  findById: jest.fn(),
+  findLocationIdByUserId: jest.fn(),
+  findActiveLocationsByUserId: jest.fn(),
+  findLocationById: jest.fn(),
+  updateCedulaHash: jest.fn(),
+  createUser: jest.fn(),
+  incrementLoginAttempts: jest.fn(),
+  lockUser: jest.fn(),
+  resetLoginAttempts: jest.fn(),
+  saveRefreshToken: jest.fn(),
+};
+
+const ACCESS_TOKEN_BLACKLIST_TTL_SECONDS = 8 * 60 * 60;
+
+const redisMock = {
+  checkRateLimit: jest.fn(),
+  blacklistToken: jest.fn(),
+};
+
+const jwtMock = {
+  signAsync: jest.fn(),
+};
+
+const auditServiceMock = {
+  logLogin: jest.fn(),
+};
+
+describe('MesAuthService', () => {
+  let service: MesAuthService;
+
+  beforeEach(async () => {
+    delete process.env.CEDULA_HMAC_SECRET;
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        MesAuthService,
+        { provide: MesAuthRepository, useValue: repoMock },
+        { provide: MesAuthRedisService, useValue: redisMock },
+        { provide: JwtService, useValue: jwtMock },
+        { provide: AuditService, useValue: auditServiceMock },
+      ],
+    }).compile();
+
+    service = module.get<MesAuthService>(MesAuthService);
+    jest.clearAllMocks();
+
+    redisMock.checkRateLimit.mockResolvedValue({
+      allowed: true,
+      remaining: 5,
+      resetAt: new Date(),
+    });
+    repoMock.findByCedulaHash.mockResolvedValue(baseUser);
+    repoMock.findLocationIdByUserId.mockResolvedValue(null);
+    repoMock.findActiveLocationsByUserId.mockResolvedValue([]);
+    repoMock.findLocationById.mockResolvedValue(null);
+    (bcryptMock.compare as jest.Mock).mockResolvedValue(true);
+    jwtMock.signAsync.mockResolvedValueOnce('access-token').mockResolvedValueOnce('refresh-token');
+    (bcryptMock.hash as jest.Mock).mockResolvedValue('hashed-refresh-token');
+    repoMock.resetLoginAttempts.mockResolvedValue(undefined);
+    repoMock.saveRefreshToken.mockResolvedValue(undefined);
+    redisMock.blacklistToken.mockResolvedValue(undefined);
+    auditServiceMock.logLogin.mockResolvedValue(undefined);
+  });
+
+  describe('login', () => {
+    it('throws BadRequestException when tenantId is missing', async () => {
+      await expect(
+        service.login({ cedula: VALID_CEDULA, pin: VALID_PIN }, '192.168.1.1', ''),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('looks up user by tenantId and cedulaHash', async () => {
+      await service.login({ cedula: VALID_CEDULA, pin: VALID_PIN }, '192.168.1.1', TENANT_ID);
+
+      expect(repoMock.findByCedulaHash).toHaveBeenCalledWith(TENANT_ID, hashCedula(VALID_CEDULA));
+    });
+
+    it('migrates legacy SHA-256 cedula hash when HMAC secret is configured', async () => {
+      process.env.CEDULA_HMAC_SECRET = 'hmac-test-secret';
+      const hmacHash = hashCedula(VALID_CEDULA);
+      const legacyHash = crypto.createHash('sha256').update(VALID_CEDULA).digest('hex');
+      const legacyUser = { ...baseUser, cedulaHash: legacyHash };
+
+      repoMock.findByCedulaHash.mockResolvedValueOnce(null).mockResolvedValueOnce(legacyUser);
+      repoMock.updateCedulaHash.mockResolvedValue({ ...legacyUser, cedulaHash: hmacHash });
+
+      await service.login({ cedula: VALID_CEDULA, pin: VALID_PIN }, '192.168.1.1', TENANT_ID);
+
+      expect(repoMock.updateCedulaHash).toHaveBeenCalledWith(legacyUser.id, hmacHash);
+    });
+
+    it('returns tokens and logs SUCCESS on valid cédula and PIN', async () => {
+      const result = await service.login(
+        { cedula: VALID_CEDULA, pin: VALID_PIN },
+        '192.168.1.1',
+        TENANT_ID,
+        'Mozilla',
+      );
+
+      expect(result).toEqual({
+        accessToken: 'access-token',
+        refreshToken: 'refresh-token',
+        operator: {
+          id: baseUser.id,
+          role: baseUser.role,
+          tenantId: baseUser.tenantId,
+          locationId: null,
+        },
+        locations: [],
+        requiresLocationSelection: false,
+      });
+
+      expect(auditServiceMock.logLogin).toHaveBeenCalledWith({
+        tenantId: TENANT_ID,
+        userId: null,
+        identifier: '****5678',
+        authMethod: 'PIN',
+        status: 'SUCCESS',
+        ipAddress: '192.168.1.1',
+        userAgent: 'Mozilla',
+      });
+    });
+
+    it('auto-selects location when operator has exactly one assigned sede', async () => {
+      const assignedLocation = {
+        id: 'location-1',
+        name: 'Sede Norte',
+        code: 'PL-01',
+        city: 'Bogotá',
+      };
+      repoMock.findByCedulaHash.mockResolvedValue({
+        ...baseUser,
+        userId: LINKED_GLOBAL_USER_ID,
+      });
+      repoMock.findActiveLocationsByUserId.mockResolvedValue([assignedLocation]);
+
+      const result = await service.login(
+        { cedula: VALID_CEDULA, pin: VALID_PIN },
+        '192.168.1.1',
+        TENANT_ID,
+      );
+
+      expect(result.operator.locationId).toBe('location-1');
+      expect(result.locations).toEqual([assignedLocation]);
+      expect(result.requiresLocationSelection).toBe(false);
+    });
+
+    it('requires location selection when operator has multiple assigned sedes', async () => {
+      const locations = [
+        { id: 'location-1', name: 'Sede 1', code: 'PL-01', city: 'Bogotá' },
+        { id: 'location-2', name: 'Sede 2', code: 'PL-02', city: 'Bogotá' },
+      ];
+      repoMock.findByCedulaHash.mockResolvedValue({
+        ...baseUser,
+        userId: LINKED_GLOBAL_USER_ID,
+      });
+      repoMock.findActiveLocationsByUserId.mockResolvedValue(locations);
+
+      const result = await service.login(
+        { cedula: VALID_CEDULA, pin: VALID_PIN },
+        '192.168.1.1',
+        TENANT_ID,
+      );
+
+      expect(result.operator.locationId).toBeNull();
+      expect(result.locations).toEqual(locations);
+      expect(result.requiresLocationSelection).toBe(true);
+    });
+
+    it('logs SUCCESS with global User.id when operational user is linked', async () => {
+      repoMock.findByCedulaHash.mockResolvedValue({
+        ...baseUser,
+        userId: LINKED_GLOBAL_USER_ID,
+      });
+
+      await service.login({ cedula: VALID_CEDULA, pin: VALID_PIN }, '192.168.1.1', TENANT_ID);
+
+      expect(auditServiceMock.logLogin).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: 'SUCCESS',
+          userId: LINKED_GLOBAL_USER_ID,
+          identifier: '****5678',
+        }),
+      );
+    });
+
+    it('logs FAILED for wrong PIN with global User.id when linked', async () => {
+      repoMock.findByCedulaHash.mockResolvedValue({
+        ...baseUser,
+        userId: LINKED_GLOBAL_USER_ID,
+      });
+      (bcryptMock.compare as jest.Mock).mockResolvedValue(false);
+
+      await expect(
+        service.login({ cedula: VALID_CEDULA, pin: '9999' }, '192.168.1.1', TENANT_ID),
+      ).rejects.toThrow(UnauthorizedException);
+
+      expect(auditServiceMock.logLogin).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: 'FAILED',
+          userId: LINKED_GLOBAL_USER_ID,
+          failureReason: 'Invalid PIN',
+        }),
+      );
+    });
+
+    it('logs LOCKED with global User.id when linked operational user is locked', async () => {
+      repoMock.findByCedulaHash.mockResolvedValue({
+        ...baseUser,
+        userId: LINKED_GLOBAL_USER_ID,
+        lockedUntil: new Date(Date.now() + 10 * 60 * 1000),
+      });
+
+      await expect(
+        service.login({ cedula: VALID_CEDULA, pin: VALID_PIN }, '192.168.1.1', TENANT_ID),
+      ).rejects.toThrow(UnauthorizedException);
+
+      expect(auditServiceMock.logLogin).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: 'LOCKED',
+          userId: LINKED_GLOBAL_USER_ID,
+        }),
+      );
+    });
+
+    it('signs access JWT with required claims and 8h expiry', async () => {
+      await service.login({ cedula: VALID_CEDULA, pin: VALID_PIN }, '192.168.1.1', TENANT_ID);
+
+      expect(jwtMock.signAsync).toHaveBeenNthCalledWith(
+        1,
+        expect.objectContaining({
+          sub: baseUser.id,
+          cedulaHash: baseUser.cedulaHash,
+          role: baseUser.role,
+          locationId: baseUser.sedeId,
+          tenantId: baseUser.tenantId,
+          jti: expect.any(String),
+        }),
+        expect.objectContaining({ expiresIn: '8h' }),
+      );
+    });
+
+    it('throws generic 401 and logs FAILED for wrong PIN', async () => {
+      (bcryptMock.compare as jest.Mock).mockResolvedValue(false);
+
+      await expect(
+        service.login({ cedula: VALID_CEDULA, pin: '9999' }, '192.168.1.1', TENANT_ID),
+      ).rejects.toThrow(new UnauthorizedException(GENERIC_AUTH_MESSAGE));
+
+      expect(auditServiceMock.logLogin).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: 'FAILED',
+          failureReason: 'Invalid PIN',
+        }),
+      );
+    });
+
+    it('increments login attempts on wrong PIN', async () => {
+      (bcryptMock.compare as jest.Mock).mockResolvedValue(false);
+
+      await expect(
+        service.login({ cedula: VALID_CEDULA, pin: '9999' }, '192.168.1.1', TENANT_ID),
+      ).rejects.toThrow(UnauthorizedException);
+
+      expect(repoMock.incrementLoginAttempts).toHaveBeenCalledWith(baseUser.id);
+    });
+
+    it('locks user for 15 minutes on third failed attempt', async () => {
+      repoMock.findByCedulaHash.mockResolvedValue({ ...baseUser, loginAttempts: 2 });
+      (bcryptMock.compare as jest.Mock).mockResolvedValue(false);
+
+      const before = Date.now();
+      await expect(
+        service.login({ cedula: VALID_CEDULA, pin: '9999' }, '192.168.1.1', TENANT_ID),
+      ).rejects.toThrow(UnauthorizedException);
+
+      expect(repoMock.lockUser).toHaveBeenCalledWith(baseUser.id, expect.any(Date));
+      const lockUntil = repoMock.lockUser.mock.calls[0][1] as Date;
+      const lockMs = lockUntil.getTime() - before;
+      expect(lockMs).toBeGreaterThanOrEqual(14 * 60 * 1000);
+      expect(lockMs).toBeLessThanOrEqual(16 * 60 * 1000);
+    });
+
+    it('rejects login and logs LOCKED when user is already locked', async () => {
+      const lockedUntil = new Date(Date.now() + 10 * 60 * 1000);
+      repoMock.findByCedulaHash.mockResolvedValue({ ...baseUser, lockedUntil });
+
+      await expect(
+        service.login({ cedula: VALID_CEDULA, pin: VALID_PIN }, '192.168.1.1', TENANT_ID),
+      ).rejects.toThrow(new UnauthorizedException(GENERIC_AUTH_MESSAGE));
+
+      expect(bcryptMock.compare).not.toHaveBeenCalled();
+      expect(repoMock.incrementLoginAttempts).not.toHaveBeenCalled();
+
+      expect(auditServiceMock.logLogin).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: 'LOCKED',
+          failureReason: 'Account locked',
+        }),
+      );
+    });
+
+    it('rejects login and logs FAILED for inactive user', async () => {
+      repoMock.findByCedulaHash.mockResolvedValue({
+        ...baseUser,
+        isActive: false,
+      });
+
+      await expect(
+        service.login({ cedula: VALID_CEDULA, pin: VALID_PIN }, '192.168.1.1', TENANT_ID),
+      ).rejects.toThrow(new UnauthorizedException(GENERIC_AUTH_MESSAGE));
+
+      expect(bcryptMock.compare).not.toHaveBeenCalled();
+      expect(auditServiceMock.logLogin).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: 'FAILED',
+          failureReason: 'User inactive',
+        }),
+      );
+    });
+
+    it('throws generic 401 and logs FAILED for unknown cédula', async () => {
+      repoMock.findByCedulaHash.mockResolvedValue(null);
+
+      await expect(
+        service.login({ cedula: VALID_CEDULA, pin: VALID_PIN }, '192.168.1.1', TENANT_ID),
+      ).rejects.toThrow(new UnauthorizedException(GENERIC_AUTH_MESSAGE));
+
+      expect(auditServiceMock.logLogin).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: 'FAILED',
+          failureReason: 'User not found',
+          userId: null,
+        }),
+      );
+    });
+
+    it('throws 429 and logs FAILED when IP is rate limited', async () => {
+      redisMock.checkRateLimit.mockResolvedValue({
+        allowed: false,
+        remaining: 0,
+        resetAt: new Date(),
+      });
+
+      await expect(
+        service.login({ cedula: VALID_CEDULA, pin: VALID_PIN }, '192.168.1.1', TENANT_ID),
+      ).rejects.toMatchObject({ status: HttpStatus.TOO_MANY_REQUESTS });
+
+      expect(repoMock.findByCedulaHash).not.toHaveBeenCalled();
+      expect(auditServiceMock.logLogin).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: 'FAILED',
+          failureReason: 'Rate limit exceeded',
+        }),
+      );
+    });
+
+    it('resets login attempts and saves hashed refresh token on success', async () => {
+      await service.login({ cedula: VALID_CEDULA, pin: VALID_PIN }, '192.168.1.1', TENANT_ID);
+
+      expect(repoMock.resetLoginAttempts).toHaveBeenCalledWith(baseUser.id);
+      expect(bcryptMock.hash).toHaveBeenCalledWith('refresh-token', 12);
+      expect(repoMock.saveRefreshToken).toHaveBeenCalledWith(baseUser.id, 'hashed-refresh-token');
+    });
+
+    it('does not include raw cédula or PIN in thrown error messages', async () => {
+      (bcryptMock.compare as jest.Mock).mockResolvedValue(false);
+
+      try {
+        await service.login({ cedula: VALID_CEDULA, pin: VALID_PIN }, '192.168.1.1', TENANT_ID);
+        throw new Error('expected UnauthorizedException');
+      } catch (error) {
+        const message = (error as UnauthorizedException).message;
+        expect(message).toBe(GENERIC_AUTH_MESSAGE);
+        expect(message).not.toContain(VALID_CEDULA);
+        expect(message).not.toContain(VALID_PIN);
+      }
+    });
+
+    it('logs FAILED when credentials format is invalid', async () => {
+      await expect(
+        service.login({ cedula: 'abc', pin: VALID_PIN }, '192.168.1.1', TENANT_ID),
+      ).rejects.toThrow(UnauthorizedException);
+
+      expect(auditServiceMock.logLogin).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: 'FAILED',
+          failureReason: 'Invalid format',
+        }),
+      );
+    });
+  });
+
+  describe('me', () => {
+    it('returns safe user response without sensitive fields', async () => {
+      repoMock.findById.mockResolvedValue(baseUser);
+
+      const result = await service.me(baseUser.id);
+
+      expect(result).toEqual({
+        id: baseUser.id,
+        role: baseUser.role,
+        tenantId: baseUser.tenantId,
+        locationId: baseUser.sedeId,
+      });
+      expect(result).not.toHaveProperty('pinHash');
+      expect(result).not.toHaveProperty('cedulaHash');
+      expect(result).not.toHaveProperty('refreshToken');
+    });
+
+    it('throws NotFoundException when user does not exist', async () => {
+      repoMock.findById.mockResolvedValue(null);
+
+      await expect(service.me('unknown')).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('createUser', () => {
+    const owner = {
+      ...baseUser,
+      id: 'owner-1',
+      role: OperationalRole.OWNER,
+      tenantId: TENANT_ID,
+    };
+
+    const createDto = {
+      cedula: '87654321',
+      pin: '4321',
+      role: OperationalRole.OPERATOR,
+      locationId: 'location-principal',
+    };
+
+    beforeEach(() => {
+      bcryptMock.hash.mockResolvedValue('hashed-new-pin' as never);
+    });
+
+    it('creates user with hashed credentials in requester tenant', async () => {
+      const created = {
+        ...baseUser,
+        id: 'new-op-1',
+        cedulaHash: hashCedula(createDto.cedula),
+        role: OperationalRole.OPERATOR,
+        sedeId: 'location-principal',
+      };
+      repoMock.findById.mockResolvedValue(owner);
+      repoMock.findByCedulaHash.mockResolvedValue(null);
+      repoMock.createUser.mockResolvedValue(created);
+
+      const result = await service.createUser(owner.id, createDto);
+
+      expect(repoMock.createUser).toHaveBeenCalledWith({
+        tenantId: TENANT_ID,
+        cedulaHash: hashCedula(createDto.cedula),
+        pinHash: 'hashed-new-pin',
+        role: OperationalRole.OPERATOR,
+        sedeId: 'location-principal',
+      });
+      expect(result).toEqual({
+        id: 'new-op-1',
+        cedula: '****4321',
+        role: OperationalRole.OPERATOR,
+        tenantId: TENANT_ID,
+        locationId: 'location-principal',
+      });
+      expect(result).not.toHaveProperty('pinHash');
+      expect(result).not.toHaveProperty('cedulaHash');
+    });
+
+    it('throws ConflictException when cédula already exists in tenant', async () => {
+      repoMock.findById.mockResolvedValue(owner);
+      repoMock.findByCedulaHash.mockResolvedValue({
+        ...baseUser,
+        cedulaHash: hashCedula(createDto.cedula),
+      });
+
+      await expect(service.createUser(owner.id, createDto)).rejects.toThrow(ConflictException);
+      expect(repoMock.createUser).not.toHaveBeenCalled();
+    });
+
+    it('throws ConflictException on P2002 when create races duplicate cedulaHash', async () => {
+      const { PrismaClientKnownRequestError } = jest.requireActual(
+        '@prisma/client/runtime/library',
+      ) as typeof import('@prisma/client/runtime/library');
+      repoMock.findById.mockResolvedValue(owner);
+      repoMock.findByCedulaHash.mockResolvedValue(null);
+      const p2002 = new PrismaClientKnownRequestError('Unique constraint failed', {
+        code: 'P2002',
+        clientVersion: 'test',
+        meta: { target: ['tenantId', 'cedulaHash'] },
+      });
+      repoMock.createUser.mockRejectedValue(p2002);
+
+      await expect(service.createUser(owner.id, createDto)).rejects.toThrow(ConflictException);
+    });
+
+    it('throws ForbiddenException when requester is inactive', async () => {
+      repoMock.findById.mockResolvedValue({ ...owner, isActive: false });
+
+      await expect(service.createUser(owner.id, createDto)).rejects.toThrow(ForbiddenException);
+    });
+
+    it('throws NotFoundException when requester does not exist', async () => {
+      repoMock.findById.mockResolvedValue(null);
+
+      await expect(service.createUser('unknown', createDto)).rejects.toThrow(NotFoundException);
+    });
+
+    it('throws BadRequestException when OPERATOR has no locationId', async () => {
+      repoMock.findById.mockResolvedValue(owner);
+
+      await expect(
+        service.createUser(owner.id, {
+          cedula: '11112222',
+          pin: '1234',
+          role: OperationalRole.OPERATOR,
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('allows MANAGER without locationId', async () => {
+      const created = {
+        ...baseUser,
+        id: 'mgr-1',
+        role: OperationalRole.MANAGER,
+        sedeId: null,
+      };
+      repoMock.findById.mockResolvedValue(owner);
+      repoMock.findByCedulaHash.mockResolvedValue(null);
+      repoMock.createUser.mockResolvedValue(created);
+
+      const result = await service.createUser(owner.id, {
+        cedula: '55556666',
+        pin: '9999',
+        role: OperationalRole.MANAGER,
+      });
+
+      expect(result.locationId).toBeNull();
+      expect(repoMock.createUser).toHaveBeenCalledWith(
+        expect.objectContaining({ role: OperationalRole.MANAGER, sedeId: null }),
+      );
+    });
+
+    it('resolves assigned locations from linked global User', async () => {
+      const linkedUser = {
+        ...baseUser,
+        userId: LINKED_GLOBAL_USER_ID,
+        sedeId: null,
+      };
+      const assignedLocations = [
+        { id: 'location-assigned', name: 'Sede Centro', code: 'PL-03', city: 'Bogotá' },
+      ];
+      repoMock.findById.mockResolvedValue(linkedUser);
+      repoMock.findActiveLocationsByUserId.mockResolvedValue(assignedLocations);
+
+      const result = await service.myLocations(linkedUser.id);
+
+      expect(repoMock.findActiveLocationsByUserId).toHaveBeenCalledWith(
+        linkedUser.tenantId,
+        LINKED_GLOBAL_USER_ID,
+      );
+      expect(result).toEqual(assignedLocations);
+    });
+
+    it('selectLocation re-issues tokens with chosen sede', async () => {
+      const linkedUser = {
+        ...baseUser,
+        userId: LINKED_GLOBAL_USER_ID,
+        sedeId: null,
+      };
+      const locations = [
+        { id: 'location-1', name: 'Sede 1', code: 'PL-01', city: 'Bogotá' },
+        { id: 'location-2', name: 'Sede 2', code: 'PL-02', city: 'Bogotá' },
+      ];
+      repoMock.findById.mockResolvedValue(linkedUser);
+      repoMock.findActiveLocationsByUserId.mockResolvedValue(locations);
+      jwtMock.signAsync.mockResolvedValueOnce('new-access').mockResolvedValueOnce('new-refresh');
+
+      const result = await service.selectLocation(linkedUser.id, 'location-2');
+
+      expect(result.operator.locationId).toBe('location-2');
+      expect(result.requiresLocationSelection).toBe(false);
+      expect(jwtMock.signAsync).toHaveBeenCalledWith(
+        expect.objectContaining({ locationId: 'location-2' }),
+        expect.any(Object),
+      );
+    });
+
+    it('myLocations resolves legacy sedeId from location table', async () => {
+      const userWithSede = { ...baseUser, sedeId: 'sede-legacy' };
+      const location = {
+        id: 'sede-legacy',
+        name: 'Planta',
+        code: 'PL-01',
+        city: 'Bogotá',
+        address: 'Calle 1',
+      };
+      repoMock.findById.mockResolvedValue(userWithSede);
+      repoMock.findLocationById.mockResolvedValue(location);
+
+      const result = await service.myLocations(userWithSede.id);
+
+      expect(repoMock.findLocationById).toHaveBeenCalledWith(userWithSede.tenantId, 'sede-legacy');
+      expect(result).toEqual([location]);
+    });
+
+    it('myLocations falls back when legacy sede row is missing', async () => {
+      const userWithSede = { ...baseUser, sedeId: 'orphan-sede' };
+      repoMock.findById.mockResolvedValue(userWithSede);
+      repoMock.findLocationById.mockResolvedValue(null);
+
+      const result = await service.myLocations(userWithSede.id);
+
+      expect(result).toEqual([
+        {
+          id: 'orphan-sede',
+          name: 'Sede asignada',
+          code: null,
+          city: null,
+          address: null,
+        },
+      ]);
+    });
+
+    it('myLocations throws NotFoundException when user does not exist', async () => {
+      repoMock.findById.mockResolvedValue(null);
+
+      await expect(service.myLocations('missing-user')).rejects.toThrow(NotFoundException);
+    });
+
+    it('selectLocation throws ForbiddenException when sede is not assigned', async () => {
+      const linkedUser = {
+        ...baseUser,
+        userId: LINKED_GLOBAL_USER_ID,
+        sedeId: null,
+      };
+      repoMock.findById.mockResolvedValue(linkedUser);
+      repoMock.findActiveLocationsByUserId.mockResolvedValue([
+        { id: 'location-1', name: 'Sede 1', code: 'PL-01', city: 'Bogotá' },
+      ]);
+
+      await expect(service.selectLocation(linkedUser.id, 'other-location')).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('selectLocation throws NotFoundException when user does not exist', async () => {
+      repoMock.findById.mockResolvedValue(null);
+
+      await expect(service.selectLocation('missing-user', 'location-1')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('selectLocation throws ForbiddenException when user is inactive', async () => {
+      repoMock.findById.mockResolvedValue({ ...baseUser, isActive: false });
+
+      await expect(service.selectLocation(baseUser.id, 'location-1')).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('auto-selects legacy sedeId on login when location row exists', async () => {
+      const userWithSede = { ...baseUser, sedeId: 'sede-legacy' };
+      const location = {
+        id: 'sede-legacy',
+        name: 'Planta',
+        code: 'PL-01',
+        city: 'Bogotá',
+        address: null,
+      };
+      repoMock.findByCedulaHash.mockResolvedValue(userWithSede);
+      repoMock.findLocationById.mockResolvedValue(location);
+
+      const result = await service.login(
+        { cedula: VALID_CEDULA, pin: VALID_PIN },
+        '192.168.1.1',
+        TENANT_ID,
+      );
+
+      expect(result.operator.locationId).toBe('sede-legacy');
+      expect(result.locations).toEqual([location]);
+      expect(result.requiresLocationSelection).toBe(false);
+    });
+  });
+
+  describe('getRole', () => {
+    it('returns role when requester and target share tenant', async () => {
+      const requester = { ...baseUser, id: 'requester-1', role: OperationalRole.OWNER };
+      const target = { ...baseUser, id: 'target-1', role: OperationalRole.MANAGER };
+      repoMock.findById.mockResolvedValueOnce(requester).mockResolvedValueOnce(target);
+
+      const result = await service.getRole('requester-1', 'target-1');
+
+      expect(result).toEqual({ role: OperationalRole.MANAGER });
+    });
+
+    it('throws ForbiddenException when target is in another tenant', async () => {
+      const requester = { ...baseUser, id: 'requester-1', tenantId: 'tenant-a' };
+      const target = { ...baseUser, id: 'target-1', tenantId: 'tenant-b' };
+      repoMock.findById.mockResolvedValueOnce(requester).mockResolvedValueOnce(target);
+
+      await expect(service.getRole('requester-1', 'target-1')).rejects.toThrow(ForbiddenException);
+    });
+
+    it('throws NotFoundException when requester does not exist', async () => {
+      repoMock.findById.mockResolvedValue(null);
+
+      await expect(service.getRole('unknown', 'target-1')).rejects.toThrow(NotFoundException);
+    });
+
+    it('throws NotFoundException when target does not exist', async () => {
+      repoMock.findById.mockResolvedValueOnce(baseUser).mockResolvedValueOnce(null);
+
+      await expect(service.getRole(baseUser.id, 'unknown')).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('logout', () => {
+    it('clears refresh token in repository and logs LOGOUT', async () => {
+      repoMock.findById.mockResolvedValue(baseUser);
+      await service.logout(baseUser.id, undefined, '1.2.3.4', 'Mozilla');
+
+      expect(repoMock.saveRefreshToken).toHaveBeenCalledWith(baseUser.id, null);
+      expect(auditServiceMock.logLogin).toHaveBeenCalledWith({
+        tenantId: baseUser.tenantId,
+        userId: null,
+        identifier: `operational-user:${baseUser.id}`,
+        authMethod: 'PIN',
+        status: 'LOGOUT',
+        ipAddress: '1.2.3.4',
+        userAgent: 'Mozilla',
+      });
+    });
+
+    it('logs LOGOUT with global User.id and safe identifier when operational user is linked', async () => {
+      repoMock.findById.mockResolvedValue({
+        ...baseUser,
+        userId: LINKED_GLOBAL_USER_ID,
+      });
+
+      await service.logout(baseUser.id, undefined, '1.2.3.4', 'Mozilla');
+
+      expect(auditServiceMock.logLogin).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: LINKED_GLOBAL_USER_ID,
+          identifier: `operational-user:${baseUser.id}`,
+          status: 'LOGOUT',
+        }),
+      );
+    });
+
+    it('never passes OperationalUser.id as LoginAudit userId on success', async () => {
+      await service.login({ cedula: VALID_CEDULA, pin: VALID_PIN }, '192.168.1.1', TENANT_ID);
+
+      const successCall = auditServiceMock.logLogin.mock.calls.find(
+        (call) => call[0]?.status === 'SUCCESS',
+      );
+      expect(successCall?.[0]?.userId).not.toBe(baseUser.id);
+      expect(successCall?.[0]?.userId).toBeNull();
+    });
+
+    it('blacklists jti in Redis when provided', async () => {
+      await service.logout(baseUser.id, 'jti-abc-123');
+
+      expect(repoMock.saveRefreshToken).toHaveBeenCalledWith(baseUser.id, null);
+      expect(redisMock.blacklistToken).toHaveBeenCalledWith(
+        'jti-abc-123',
+        ACCESS_TOKEN_BLACKLIST_TTL_SECONDS,
+      );
+    });
+
+    it('does not blacklist when jti is missing', async () => {
+      await service.logout(baseUser.id);
+
+      expect(redisMock.blacklistToken).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('assertCredentialsFormat (via login)', () => {
+    it('throws UnauthorizedException when cédula has an invalid format', async () => {
+      await expect(
+        service.login({ cedula: 'abc', pin: VALID_PIN }, '192.168.1.1', TENANT_ID),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('throws UnauthorizedException when PIN has an invalid format', async () => {
+      await expect(
+        service.login({ cedula: VALID_CEDULA, pin: 'ab' }, '192.168.1.1', TENANT_ID),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+  });
+
+  describe('hashCedula with HMAC secret', () => {
+    it('uses HMAC-SHA256 when CEDULA_HMAC_SECRET env var is set', async () => {
+      process.env.CEDULA_HMAC_SECRET = 'my-secret';
+
+      const hmacHash = crypto.createHmac('sha256', 'my-secret').update(VALID_CEDULA).digest('hex');
+
+      repoMock.findByCedulaHash.mockResolvedValue({
+        ...baseUser,
+        cedulaHash: hmacHash,
+      });
+
+      await service.login({ cedula: VALID_CEDULA, pin: VALID_PIN }, '192.168.1.1', TENANT_ID);
+
+      expect(repoMock.findByCedulaHash).toHaveBeenCalledWith(TENANT_ID, hmacHash);
+
+      delete process.env.CEDULA_HMAC_SECRET;
+    });
+  });
+});

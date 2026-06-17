@@ -1,0 +1,15 @@
+.wrapper {
+  position: relative;
+  width: min(100%, 1232px);
+}
+
+.backdrop {
+  pointer-events: none;
+  user-select: none;
+}
+
+.modal {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+}

@@ -1,0 +1,46 @@
+{
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit",
+    "source.organizeImports": "never"
+  },
+  "eslint.validate": ["javascript", "javascriptreact", "typescript", "typescriptreact"],
+  "eslint.workingDirectories": [
+    { "directory": "apps/api", "changeProcessCWD": true },
+    { "directory": "apps/web", "changeProcessCWD": true },
+    { "directory": "apps/mobile-client", "changeProcessCWD": true },
+    { "directory": "apps/mobile-manager", "changeProcessCWD": true },
+    { "directory": "apps/mobile-rider", "changeProcessCWD": true },
+    { "directory": "packages/ui", "changeProcessCWD": true },
+    { "directory": "packages/utils", "changeProcessCWD": true },
+    { "directory": "packages/types", "changeProcessCWD": true },
+    { "directory": "packages/api-client", "changeProcessCWD": true }
+  ],
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[javascriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[scss]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+  "stylelint.enable": true,
+  "stylelint.validate": ["scss"],
+  "css.validate": false,
+  "scss.validate": false,
+  "editor.rulers": [100],
+  "files.eol": "\n"
+}

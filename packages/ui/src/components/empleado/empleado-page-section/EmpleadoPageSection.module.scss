@@ -1,0 +1,26 @@
+@use '../shared/empleado-theme' as emp;
+
+.section {
+  @include emp.empleado-theme-classes;
+
+  width: 100%;
+}
+
+.variant--header,
+.variant--toolbar,
+.variant--default {
+  padding: 18px 24px;
+}
+
+.divider {
+  border-bottom: 1px solid var(--empleado-border-subtle);
+}
+
+@media (max-width: 767px) {
+  .variant--header,
+  .variant--toolbar,
+  .variant--default {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
