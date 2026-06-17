@@ -10,9 +10,14 @@ import type { CSSProperties } from 'react';
 
 import { ResponsiveTableCard } from '@/components/responsive-table';
 import type { UiTheme } from '@/constants/theme';
-import type { ResponsiveColumnDef } from '@/lib/responsive-columns';
-import type { InventoryAlert, InventoryMovement, InventoryProduct } from '@/types/inventory';
 import type { SupplyCategoryApi } from '@/features/inventario/types';
+import type { ResponsiveColumnDef } from '@/lib/responsive-columns';
+import {
+  STOCK_UNIT_OPTIONS,
+  type InventoryAlert,
+  type InventoryMovement,
+  type InventoryProduct,
+} from '@/types/inventory';
 
 import styles from './inventario-responsive.module.scss';
 
@@ -87,14 +92,33 @@ export function InventarioProductRow({
             return <span className={styles.muted}>{product.category}</span>;
           case 'supplier':
             return <span className={styles.muted}>{product.supplier}</span>;
-          case 'stock':
+          case 'minStock':
             return (
-              <span className={[styles.stock, styles[`stock--${stockTone}`]].join(' ')}>
-                {product.currentStock}
+              <span className={[styles.cell, styles.number].join(' ')}>
+                <span className={[styles.stock, styles['stock--neutral']].join(' ')}>
+                  {product.minStock ?? '—'}
+                </span>
               </span>
             );
+          case 'stock':
+            return (
+              <span className={[styles.cell, styles.number].join(' ')}>
+                <span className={[styles.stock, styles[`stock--${stockTone}`]].join(' ')}>
+                  {product.currentStock ?? '0'}
+                </span>
+              </span>
+            );
+          case 'unit': {
+            const unitLabel =
+              STOCK_UNIT_OPTIONS.find((o) => o.value === product.unidadBase)?.label ?? '—';
+            return <span className={styles.muted}>{unitLabel}</span>;
+          }
           case 'price':
-            return <span className={styles.price}>{unitPrice}</span>;
+            return (
+              <span className={[styles.cell, styles.number].join(' ')}>
+                <span className={styles.price}>{unitPrice}</span>
+              </span>
+            );
           case 'lastMovement':
             return <span className={styles.muted}>{product.lastMovement}</span>;
           case 'actions':
@@ -122,6 +146,8 @@ export function InventarioProductCard({
   onEdit,
   onDelete,
 }: Omit<InventarioProductRowProps, 'visibleColumns' | 'columnsTemplate'>): React.JSX.Element {
+  const unitLabel = STOCK_UNIT_OPTIONS.find((o) => o.value === product.unidadBase)?.label ?? '—';
+
   return (
     <ResponsiveTableCard
       className={styles.card}
@@ -140,13 +166,21 @@ export function InventarioProductCard({
       }
       badge={
         <span className={[styles.stock, styles[`stock--${stockTone}`]].join(' ')}>
-          {product.currentStock}
+          {product.currentStock ?? '0'}
         </span>
       }
       fields={[
         { label: 'Categoría', value: product.category },
         { label: 'Proveedor', value: product.supplier },
-        { label: 'Precio unit.', value: unitPrice },
+        {
+          label: 'Stock mín.',
+          value:
+            product.minStock !== null && product.minStock !== undefined
+              ? String(product.minStock)
+              : '—',
+        },
+        { label: 'Unidad', value: unitLabel },
+        { label: 'Precio Unit.', value: unitPrice },
         { label: 'Último mov.', value: product.lastMovement },
       ]}
       footer={
@@ -343,12 +377,20 @@ export function InventarioAlertRow({
             return <span className={styles.name}>{alert.product}</span>;
           case 'currentStock':
             return (
-              <span className={[styles.stock, styles['stock--danger']].join(' ')}>
-                {alert.currentStock}
+              <span className={[styles.cell, styles.number].join(' ')}>
+                <span className={[styles.stock, styles['stock--danger']].join(' ')}>
+                  {alert.currentStock ?? '0'}
+                </span>
               </span>
             );
           case 'minStock':
-            return <span className={styles.muted}>{alert.threshold}</span>;
+            return (
+              <span className={[styles.cell, styles.number].join(' ')}>
+                <span className={[styles.stock, styles['stock--neutral']].join(' ')}>
+                  {alert.threshold ?? '—'}
+                </span>
+              </span>
+            );
           case 'supplier':
             return <span className={styles.muted}>{alert.supplier}</span>;
           case 'actions':
@@ -385,8 +427,8 @@ export function InventarioAlertCard({
         />
       }
       fields={[
-        { label: 'Stock actual', value: String(alert.currentStock) },
-        { label: 'Stock mín.', value: String(alert.threshold) },
+        { label: 'Stock actual', value: String(alert.currentStock ?? '0') },
+        { label: 'Stock mín.', value: String(alert.threshold ?? '—') },
         { label: 'Proveedor', value: alert.supplier },
       ]}
       footer={
