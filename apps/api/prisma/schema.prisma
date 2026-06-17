@@ -405,10 +405,11 @@ model Location {
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
-  tenant          Tenant            @relation(fields: [tenantId], references: [id])
-  users           UserLocation[]
-  employeeDetails EmployeeDetails[]
-  attendanceLogs  AttendanceLog[]
+  tenant              Tenant              @relation(fields: [tenantId], references: [id])
+  users               UserLocation[]
+  employeeDetails     EmployeeDetails[]
+  attendanceLogs      AttendanceLog[]
+  productionIncidents ProductionIncident[]
 
   @@unique([tenantId, name])
   @@unique([tenantId, code])
@@ -956,6 +957,7 @@ model ProductionIncident {
   orderId        String?
   executionId    String?
   workStationId  String
+  locationId     String?
   operatorUserId String
   type           IncidentType
   severity       AlarmSeverity
@@ -969,6 +971,7 @@ model ProductionIncident {
   order       ProductionOrder? @relation(fields: [orderId], references: [id])
   execution   PhaseExecution?  @relation(fields: [executionId], references: [id])
   workStation WorkStation      @relation(fields: [workStationId], references: [id])
+  location    Location?        @relation(fields: [locationId], references: [id])
   reporter    OperationalUser  @relation("IncidentReporter", fields: [operatorUserId], references: [id])
   resolver    OperationalUser? @relation("IncidentResolver", fields: [resolvedBy], references: [id])
 
@@ -976,6 +979,7 @@ model ProductionIncident {
   @@index([tenantId, workStationId])
   @@index([tenantId, orderId])
   @@index([tenantId, resolvedAt])
+  @@index([tenantId, locationId, createdAt])
   @@map("production_incidents")
 }
 

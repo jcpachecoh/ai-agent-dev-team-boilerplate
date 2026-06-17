@@ -13,6 +13,9 @@ const prismaMock = {
     updateMany: jest.fn(),
     findFirst: jest.fn(),
   },
+  location: {
+    findFirst: jest.fn(),
+  },
 };
 
 describe('IncidentRepository', () => {
@@ -47,6 +50,7 @@ describe('IncidentRepository', () => {
           tenantId,
           operatorUserId: 'op-1',
           workStationId: 'ws-1',
+          locationId: null,
           executionId: 'exec-1',
           orderId: 'order-1',
           type: IncidentType.QUALITY,
@@ -56,6 +60,24 @@ describe('IncidentRepository', () => {
         },
       });
       expect(result).toBe(created);
+    });
+
+    it('persists locationId when provided', async () => {
+      const created = { id: incidentId, tenantId, locationId: 'loc-1' };
+      prismaMock.productionIncident.create.mockResolvedValue(created);
+
+      await repository.createIncident(tenantId, 'op-1', {
+        workStationId: 'ws-1',
+        locationId: 'loc-1',
+        type: IncidentType.SAFETY,
+        severity: AlarmSeverity.CRITICAL,
+        description: 'Incidente',
+        photoUrl: null,
+      });
+
+      expect(prismaMock.productionIncident.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ locationId: 'loc-1' }),
+      });
     });
   });
 
@@ -76,10 +98,24 @@ describe('IncidentRepository', () => {
           tenantId,
           orderId: 'order-1',
           workStationId: 'ws-1',
+          locationId: undefined,
           type: IncidentType.SAFETY,
           severity: AlarmSeverity.CRITICAL,
           resolvedAt: null,
         },
+        orderBy: { createdAt: 'desc' },
+        take: DEFAULT_INCIDENT_LIST_LIMIT,
+        skip: 0,
+      });
+    });
+
+    it('filters by locationId when provided', async () => {
+      prismaMock.productionIncident.findMany.mockResolvedValue([]);
+
+      await repository.findIncidents(tenantId, { locationId: 'loc-1' });
+
+      expect(prismaMock.productionIncident.findMany).toHaveBeenCalledWith({
+        where: expect.objectContaining({ tenantId, locationId: 'loc-1' }),
         orderBy: { createdAt: 'desc' },
         take: DEFAULT_INCIDENT_LIST_LIMIT,
         skip: 0,
@@ -96,6 +132,7 @@ describe('IncidentRepository', () => {
           tenantId,
           orderId: undefined,
           workStationId: undefined,
+          locationId: undefined,
           type: undefined,
           severity: undefined,
           resolvedAt: { not: null },
@@ -116,6 +153,34 @@ describe('IncidentRepository', () => {
       expect(prismaMock.productionIncident.findFirst).toHaveBeenCalledWith({
         where: { id: incidentId, tenantId },
       });
+    });
+  });
+
+  describe('findLocationById', () => {
+    it('returns location when found for tenant', async () => {
+      // Arrange
+      prismaMock.location.findFirst.mockResolvedValue({ id: 'loc-1' });
+
+      // Act
+      const result = await repository.findLocationById(tenantId, 'loc-1');
+
+      // Assert
+      expect(prismaMock.location.findFirst).toHaveBeenCalledWith({
+        where: { id: 'loc-1', tenantId, deletedAt: null },
+        select: { id: true },
+      });
+      expect(result).toEqual({ id: 'loc-1' });
+    });
+
+    it('returns null when location not found or belongs to another tenant', async () => {
+      // Arrange
+      prismaMock.location.findFirst.mockResolvedValue(null);
+
+      // Act
+      const result = await repository.findLocationById(tenantId, 'loc-other');
+
+      // Assert
+      expect(result).toBeNull();
     });
   });
 

@@ -94,4 +94,9 @@ export class CreateNoveltyDto {
   @IsString()
   @IsOptional()
   stepId?: string;
+
+  @ApiPropertyOptional({ example: 'location-uuid' })
+  @IsString()
+  @IsOptional()
+  locationId?: string;
 }

@@ -24,6 +24,7 @@ export class IncidentRepository implements IIncidentRepository {
         tenantId,
         operatorUserId,
         workStationId: input.workStationId,
+        locationId: input.locationId ?? null,
         executionId: input.executionId ?? null,
         orderId: input.orderId ?? null,
         type: input.type,
@@ -43,6 +44,7 @@ export class IncidentRepository implements IIncidentRepository {
       tenantId,
       orderId: filters.orderId,
       workStationId: filters.workStationId,
+      locationId: filters.locationId,
       type: filters.type,
       severity: filters.severity,
     };
@@ -64,6 +66,13 @@ export class IncidentRepository implements IIncidentRepository {
   findIncidentById(tenantId: string, id: string): Promise<ProductionIncident | null> {
     return this.prisma.productionIncident.findFirst({
       where: { id, tenantId },
+    });
+  }
+
+  findLocationById(tenantId: string, locationId: string): Promise<{ id: string } | null> {
+    return this.prisma.location.findFirst({
+      where: { id: locationId, tenantId, deletedAt: null },
+      select: { id: true },
     });
   }
 

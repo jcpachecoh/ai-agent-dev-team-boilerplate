@@ -109,6 +109,13 @@ export class IncidentService implements IIncidentService {
         throw new BadRequestException('orderId does not belong to tenant');
       }
     }
+
+    if (input.locationId) {
+      const location = await this.incidentRepository.findLocationById(tenantId, input.locationId);
+      if (!location) {
+        throw new BadRequestException('locationId does not belong to tenant');
+      }
+    }
   }
 
   private async tryAutoPauseOrder(
@@ -135,6 +142,7 @@ function toIncidentResponse(incident: ProductionIncident): IncidentResponse {
     orderId: incident.orderId,
     executionId: incident.executionId,
     workStationId: incident.workStationId,
+    locationId: incident.locationId,
     operatorUserId: incident.operatorUserId,
     type: incident.type,
     severity: incident.severity,

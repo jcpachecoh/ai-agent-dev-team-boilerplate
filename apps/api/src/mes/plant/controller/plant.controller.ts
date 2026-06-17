@@ -578,6 +578,7 @@ export class PlantController {
   ): Promise<IncidentResponse> {
     return this.incidentService.createIncident(this.resolveTenantId(req), req.user.sub, {
       workStationId: dto.workStationId,
+      locationId: dto.locationId ?? null,
       executionId: dto.executionId ?? null,
       orderId: dto.orderId ?? null,
       type: dto.type,
@@ -635,6 +636,7 @@ export class PlantController {
   ): Promise<IncidentResponse> {
     return this.incidentService.createIncident(this.resolveTenantId(req), req.user.sub, {
       workStationId: dto.workStationId,
+      locationId: dto.locationId ?? null,
       executionId: dto.stepId ?? null,
       orderId,
       type: mapNoveltyType(dto.noveltyType),
@@ -645,20 +647,18 @@ export class PlantController {
     });
   }
 
-  @ApiOperation({
-    summary: 'List open novelties by workstation (PLT-05 alias). Note: :id is workStationId — the schema has no locationId FK.',
-  })
+  @ApiOperation({ summary: 'List incidents by location (PLT-05 alias)' })
   @ApiOkResponse({ type: [IncidentResponseDto] })
   @Get('locations/:id/incidents')
   @UseGuards(PlantAuthGuard, PlantRolesGuard)
   @Roles(...SUPERVISOR_ROLES)
   listLocationNovelties(
     @Req() req: MesRequest,
-    @Param('id') workStationId: string,
+    @Param('id') locationId: string,
     @Query('status') status?: string,
   ): Promise<IncidentResponse[]> {
     return this.incidentService.listIncidents(this.resolveTenantId(req), {
-      workStationId,
+      locationId,
       resolved: status === 'OPEN' ? false : undefined,
     });
   }
@@ -800,6 +800,7 @@ export class PlantController {
     return {
       orderId: query.orderId,
       workStationId: query.workStationId,
+      locationId: query.locationId,
       type: query.type,
       severity: query.severity,
       resolved: query.resolved,

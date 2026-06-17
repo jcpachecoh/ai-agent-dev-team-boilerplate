@@ -27,6 +27,7 @@ const incidentRecord = {
   orderId: 'order-1',
   executionId: 'exec-1',
   workStationId: 'ws-1',
+  locationId: null,
   operatorUserId,
   type: IncidentType.QUALITY,
   severity: AlarmSeverity.WARNING,
@@ -45,6 +46,7 @@ describe('IncidentService', () => {
     findIncidents: jest.fn(),
     findIncidentById: jest.fn(),
     resolveIncident: jest.fn(),
+    findLocationById: jest.fn(),
   };
   const plantRepositoryMock = {
     findWorkStationById: jest.fn(),
@@ -129,6 +131,42 @@ describe('IncidentService', () => {
       await expect(service.createIncident(tenantId, operatorUserId, createInput)).rejects.toThrow(
         BadRequestException,
       );
+    });
+
+    it('throws BadRequestException when locationId is outside tenant', async () => {
+      // Arrange
+      incidentRepositoryMock.findLocationById.mockResolvedValue(null);
+      const inputWithLocation: CreateIncidentInput = { ...createInput, locationId: 'loc-other' };
+
+      // Act & Assert
+      await expect(
+        service.createIncident(tenantId, operatorUserId, inputWithLocation),
+      ).rejects.toThrow(BadRequestException);
+      expect(incidentRepositoryMock.createIncident).not.toHaveBeenCalled();
+    });
+
+    it('creates incident successfully when locationId belongs to tenant', async () => {
+      // Arrange
+      incidentRepositoryMock.findLocationById.mockResolvedValue({ id: 'loc-1' });
+      const withLocation: CreateIncidentInput = { ...createInput, locationId: 'loc-1' };
+      const recordWithLocation = { ...incidentRecord, locationId: 'loc-1' };
+      incidentRepositoryMock.createIncident.mockResolvedValue(recordWithLocation);
+
+      // Act
+      const result = await service.createIncident(tenantId, operatorUserId, withLocation);
+
+      // Assert
+      expect(incidentRepositoryMock.findLocationById).toHaveBeenCalledWith(tenantId, 'loc-1');
+      expect(result.locationId).toBe('loc-1');
+    });
+
+    it('skips locationId validation when locationId is absent', async () => {
+      // Arrange — createInput has no locationId
+      // Act
+      await service.createIncident(tenantId, operatorUserId, createInput);
+
+      // Assert
+      expect(incidentRepositoryMock.findLocationById).not.toHaveBeenCalled();
     });
 
     it('auto-pauses order when severity is CRITICAL and orderId is present', async () => {

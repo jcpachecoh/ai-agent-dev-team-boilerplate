@@ -17,6 +17,9 @@ export class IncidentResponseDto {
   @ApiProperty({ example: 'work-station-uuid' })
   workStationId!: string;
 
+  @ApiPropertyOptional({ example: 'location-uuid', nullable: true })
+  locationId!: string | null;
+
   @ApiProperty({ example: 'operator-uuid', description: 'Reporter operational user id' })
   operatorUserId!: string;
 
