@@ -10,25 +10,52 @@
   color: var(--sede-subtle);
 }
 
-.search {
+.assignBlock {
   @include sede.sede-theme-classes;
 
-  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
 
-  svg {
-    position: absolute;
-    left: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 12px;
-    height: 12px;
-    color: var(--sede-faint);
-  }
+.assignLabel {
+  @include sede.sede-mono-label;
+
+  font-size: 0.5625rem;
+}
+
+.assignRow {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+}
+
+.assignSelectWrap,
+.assignButtonWrap {
+  width: 100%;
+  min-width: 0;
+}
+
+.assignSelect {
+  width: 100%;
+  min-width: 0;
+}
+
+.assignButton {
+  display: inline-flex;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.search {
+  @include sede.sede-theme-classes;
 
   input {
     width: 100%;
     min-height: 39.5px;
-    padding: 10px 13px 10px 31px;
+    padding: 10px 13px;
     border: $border-width solid var(--sede-border);
     border-radius: 4px;
     background: var(--sede-input);
@@ -51,6 +78,19 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
+  min-width: 0;
+}
+
+.emptyList {
+  @include sede.sede-theme-classes;
+
+  margin: 0;
+  padding: 12px;
+  border: $border-width dashed var(--sede-border-subtle);
+  border-radius: 4px;
+  font-size: 0.75rem;
+  text-align: center;
+  color: var(--sede-faint);
 }
 
 .footer {

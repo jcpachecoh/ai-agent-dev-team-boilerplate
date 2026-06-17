@@ -47,9 +47,11 @@ describe('useMe', () => {
 
     expect(result.current.data).toEqual({
       id: 'user-1',
+      tenantId: 'palos-de-lena',
       email: 'mes-owner@palos-de-lena.dev',
       displayName: 'Mes Owner',
       displayRole: 'Operador',
+      roleCode: 'OPERATOR',
     });
   });
 

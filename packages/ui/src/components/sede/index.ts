@@ -30,5 +30,6 @@ export * from './sede-table-item';
 export * from './sede-table-row';
 export * from './sede-user-avatar';
 export * from './sede-user-avatar-group';
+export * from './sede-user-select';
 export * from './shared/sede-columns';
 export * from './shared/sede-types';

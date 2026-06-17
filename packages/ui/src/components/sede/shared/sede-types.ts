@@ -17,6 +17,12 @@ export interface SedeAssignedUser {
   tone?: SedeUserAvatarTone;
 }
 
+export interface SedeAssignUserOption {
+  id: string;
+  label: string;
+  hint?: string;
+}
+
 export interface SedeTableRowData {
   id: string;
   name: string;

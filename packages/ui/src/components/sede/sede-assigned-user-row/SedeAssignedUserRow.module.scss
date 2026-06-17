@@ -4,9 +4,13 @@
 .row {
   @include sede.sede-theme-classes;
 
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    'avatar info remove'
+    'badge badge badge';
+  align-items: start;
+  gap: 8px 10px;
   padding: 10px 13px;
   border: $border-width solid var(--sede-border-subtle);
   border-radius: 4px;
@@ -14,8 +18,12 @@
   min-width: 0;
 }
 
+.avatar {
+  grid-area: avatar;
+}
+
 .info {
-  flex: 1;
+  grid-area: info;
   min-width: 0;
 }
 
@@ -23,13 +31,17 @@
   margin: 0;
   font-size: 0.8125rem;
   font-weight: $font-weight-medium;
+  line-height: 1.35;
   color: var(--sede-text);
-  overflow-wrap: anywhere;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .email {
-  margin: 0;
+  margin: 2px 0 0;
   font-size: 0.6875rem;
+  line-height: 1.35;
   color: var(--sede-faint);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -37,13 +49,18 @@
 }
 
 .roleBadge {
-  flex-shrink: 0;
+  grid-area: badge;
+  justify-self: start;
+  max-width: 100%;
   min-height: 19.5px;
   padding: 2px 7px;
   border-radius: 2px;
   border: $border-width solid transparent;
   font-family: $font-family-mono;
   font-size: 0.5625rem;
+  line-height: 1.35;
+  white-space: normal;
+  word-break: break-word;
 }
 
 .roleTone--teal {
@@ -59,6 +76,7 @@
 }
 
 .removeButton {
+  grid-area: remove;
   display: inline-flex;
   align-items: center;
   justify-content: center;

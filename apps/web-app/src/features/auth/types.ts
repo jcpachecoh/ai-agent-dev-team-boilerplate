@@ -33,6 +33,7 @@ export interface AuthUserProfile {
 
 export interface AuthUserViewModel {
   id: string;
+  tenantId: string;
   email: string;
   displayName: string;
   displayRole: string;

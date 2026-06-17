@@ -26,9 +26,11 @@ describe('auth display mappers', () => {
       }),
     ).toEqual({
       id: 'user-1',
+      tenantId: 'palos-de-lena',
       email: 'admin@example.com',
       displayName: 'Admin',
       displayRole: 'Administrador',
+      roleCode: 'ADMIN',
     });
   });
 });

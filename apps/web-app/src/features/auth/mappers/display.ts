@@ -26,6 +26,7 @@ export function formatUserDisplayName(email: string): string {
 export function mapAuthUserToViewModel(profile: AuthUserProfile): AuthUserViewModel {
   return {
     id: profile.id,
+    tenantId: profile.tenantId,
     email: profile.email,
     displayName: formatUserDisplayName(profile.email),
     displayRole: formatRoleCode(profile.roleCode),

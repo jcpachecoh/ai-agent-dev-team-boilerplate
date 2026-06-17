@@ -35,3 +35,16 @@ export const Default: Story = {
     onRemoveUser: () => undefined,
   },
 };
+
+export const WithAssign: Story = {
+  args: {
+    ...Default.args,
+    assignableUsers: [
+      { id: 'u3', label: 'Carlos Ruiz', hint: 'Supervisor' },
+      { id: 'u4', label: 'María Gómez', hint: 'Operadora' },
+    ],
+    selectedUserId: 'u3',
+    onAssignUser: () => undefined,
+    onSelectedUserChange: () => undefined,
+  },
+};

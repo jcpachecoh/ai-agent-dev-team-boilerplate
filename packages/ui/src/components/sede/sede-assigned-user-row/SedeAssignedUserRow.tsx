@@ -37,7 +37,9 @@ export function SedeAssignedUserRow({
         .filter(Boolean)
         .join(' ')}
     >
-      <SedeUserAvatar initials={resolveInitials(user)} tone={tone} theme={theme} size="xl" />
+      <div className={styles.avatar}>
+        <SedeUserAvatar initials={resolveInitials(user)} tone={tone} theme={theme} size="xl" />
+      </div>
       <div className={styles.info}>
         <p className={styles.name}>{user.name}</p>
         <p className={styles.email}>{user.email}</p>

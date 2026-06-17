@@ -1,5 +1,4 @@
 import {
-  SedeActionButton,
   SedeFormActions,
   SedeFormCard,
   SedeFormField,
@@ -13,39 +12,57 @@ import {
   type SedeFormPreviewValues,
   toast,
 } from '@restopsiq/ui';
-import { useMemo, useState, type JSX } from 'react';
+import { useEffect, useMemo, useState, type JSX } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { useUiTheme } from '@/hooks/useUiTheme';
+import { getErrorMessage, isGraphqlConfigured } from '@/lib/graphql-client';
 
-import { getMockAssignedUsers, MOCK_SEDES } from '../mock/sedes.mock';
+import { useLocation, useLocationUsers } from '../hooks/useLocations';
+import {
+  useAssignUserToLocation,
+  useCreateLocation,
+  useRemoveUserFromLocation,
+  useUpdateLocation,
+} from '../hooks/useLocationMutations';
+import { enrichAssignedUsers } from '../mappers/api';
+import { useAssignableUsers } from '../hooks/useAssignableUsers';
+import { useAdminUsers } from '@/features/usuarios/hooks/useAdminUsers';
+import styles from '../sedes.module.scss';
 
 interface SedeFormViewProps {
   mode: SedeFormPreviewMode;
 }
+
+const EMPTY_VALUES: SedeFormPreviewValues = {
+  name: '',
+  address: '',
+  city: '',
+  phone: '',
+  isActive: true,
+};
 
 export default function SedeFormView({ mode }: SedeFormViewProps): JSX.Element {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const theme = useUiTheme();
 
-  const existing = useMemo(
-    () => (mode === 'edit' ? MOCK_SEDES.find((sede) => sede.id === id) : undefined),
-    [id, mode],
-  );
+  const locationQuery = useLocation(mode === 'edit' ? id : undefined);
+  const usersQuery = useLocationUsers(mode === 'edit' ? id : undefined);
+  const createLocation = useCreateLocation();
+  const updateLocation = useUpdateLocation();
+  const removeUser = useRemoveUserFromLocation(id);
+  const assignUser = useAssignUserToLocation(id);
 
-  const [values, setValues] = useState<SedeFormPreviewValues>(() => ({
-    name: existing?.name ?? '',
-    address: existing?.address ?? '',
-    city: existing?.city ?? '',
-    phone: existing?.phone ?? '',
-    isActive: existing?.isActive ?? true,
-  }));
+  const [values, setValues] = useState<SedeFormPreviewValues>(EMPTY_VALUES);
   const [userSearch, setUserSearch] = useState('');
-  const [assignedUsers, setAssignedUsers] = useState(() =>
-    mode === 'edit' && id ? getMockAssignedUsers(id) : [],
-  );
-  const [submitting, setSubmitting] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState('');
+
+  useEffect(() => {
+    if (locationQuery.data) {
+      setValues(locationQuery.data);
+    }
+  }, [locationQuery.data]);
 
   const handleFieldChange = (field: keyof SedeFormPreviewValues, value: string | boolean) => {
     setValues((current) => ({ ...current, [field]: value }));
@@ -56,15 +73,33 @@ export default function SedeFormView({ mode }: SedeFormViewProps): JSX.Element {
       toast.error('Nombre y dirección son obligatorios.');
       return;
     }
-    setSubmitting(true);
+
     try {
-      await new Promise((resolve) => setTimeout(resolve, 400));
-      toast.success(mode === 'create' ? 'Sede creada correctamente.' : 'Cambios guardados.');
+      if (mode === 'create') {
+        await createLocation.mutateAsync(values);
+        toast.success('Sede creada correctamente.');
+      } else if (id) {
+        await updateLocation.mutateAsync({ id, values });
+        toast.success('Cambios guardados.');
+      }
       navigate('/empresa/sedes');
-    } finally {
-      setSubmitting(false);
+    } catch (submitError) {
+      toast.error(getErrorMessage(submitError));
     }
   };
+
+  const assignedUsersRaw = usersQuery.data ?? [];
+  const assignedUserIds = useMemo(
+    () => assignedUsersRaw.map((user) => user.id),
+    [assignedUsersRaw],
+  );
+  const { assignableUsers } = useAssignableUsers(assignedUserIds);
+  const { data: adminUsers } = useAdminUsers(false);
+
+  const assignedUsers = useMemo(
+    () => enrichAssignedUsers(assignedUsersRaw, adminUsers),
+    [assignedUsersRaw, adminUsers],
+  );
 
   const filteredAssignedUsers = useMemo(() => {
     const query = userSearch.trim().toLowerCase();
@@ -77,17 +112,53 @@ export default function SedeFormView({ mode }: SedeFormViewProps): JSX.Element {
     );
   }, [assignedUsers, userSearch]);
 
-  const title = mode === 'edit' ? `Editar: ${existing?.name ?? values.name}` : 'Nueva sede';
+  const title =
+    mode === 'edit'
+      ? `Editar: ${locationQuery.data?.name ?? (values.name || 'Sede')}`
+      : 'Nueva sede';
   const isActive = values.isActive ?? true;
+  const submitting = createLocation.isPending || updateLocation.isPending;
+  const loadingEdit = mode === 'edit' && locationQuery.isPending;
+  const loadError = mode === 'edit' && locationQuery.isError;
+
+  const handleRemoveUser = (userId: string) => {
+    removeUser.mutate(userId, {
+      onSuccess: () => toast.success('Usuario desasignado de la sede.'),
+      onError: (mutationError) => toast.error(getErrorMessage(mutationError)),
+    });
+  };
+
+  const handleAssignUser = () => {
+    if (!selectedUserId) return;
+
+    assignUser.mutate(selectedUserId, {
+      onSuccess: () => {
+        setSelectedUserId('');
+        toast.success('Usuario asignado a la sede.');
+      },
+      onError: (mutationError) => toast.error(getErrorMessage(mutationError)),
+    });
+  };
 
   return (
     <SedePage theme={theme}>
+      {!isGraphqlConfigured() && (
+        <p className={styles.banner}>Inicia sesión para guardar sedes contra la API GraphQL.</p>
+      )}
+
       <SedeFormHeader
         title={title}
-        locationId={mode === 'edit' ? existing?.id : undefined}
+        locationId={mode === 'edit' ? id : undefined}
         onBack={() => navigate('/empresa/sedes')}
         theme={theme}
       />
+
+      {loadError && (
+        <p className={`${styles.stateMessage} ${styles.stateMessageError}`} role="alert">
+          {getErrorMessage(locationQuery.error)}
+        </p>
+      )}
+
       <SedeFormLayout
         theme={theme}
         sideColumn={
@@ -97,9 +168,12 @@ export default function SedeFormView({ mode }: SedeFormViewProps): JSX.Element {
                 users={filteredAssignedUsers}
                 searchValue={userSearch}
                 onSearchChange={setUserSearch}
-                onRemoveUser={(userId) =>
-                  setAssignedUsers((current) => current.filter((user) => user.id !== userId))
-                }
+                onRemoveUser={handleRemoveUser}
+                assignableUsers={assignableUsers}
+                selectedUserId={selectedUserId}
+                onSelectedUserChange={setSelectedUserId}
+                onAssignUser={handleAssignUser}
+                assignLoading={assignUser.isPending}
                 theme={theme}
               />
               <SedePermissionBanner theme={theme} />
@@ -115,6 +189,7 @@ export default function SedeFormView({ mode }: SedeFormViewProps): JSX.Element {
             value={values.name ?? ''}
             onChange={(event) => handleFieldChange('name', event.target.value)}
             theme={theme}
+            disabled={loadingEdit}
           />
           <SedeFormField
             label="Dirección"
@@ -123,6 +198,7 @@ export default function SedeFormView({ mode }: SedeFormViewProps): JSX.Element {
             value={values.address ?? ''}
             onChange={(event) => handleFieldChange('address', event.target.value)}
             theme={theme}
+            disabled={loadingEdit}
           />
           <SedeFormField
             label="Ciudad"
@@ -130,6 +206,7 @@ export default function SedeFormView({ mode }: SedeFormViewProps): JSX.Element {
             value={values.city ?? ''}
             onChange={(event) => handleFieldChange('city', event.target.value)}
             theme={theme}
+            disabled={loadingEdit}
           />
           <SedeFormField
             label="Teléfono"
@@ -137,6 +214,7 @@ export default function SedeFormView({ mode }: SedeFormViewProps): JSX.Element {
             value={values.phone ?? ''}
             onChange={(event) => handleFieldChange('phone', event.target.value)}
             theme={theme}
+            disabled={loadingEdit}
           />
           <SedeStatusSegment
             value={isActive ? 'active' : 'inactive'}
@@ -148,6 +226,7 @@ export default function SedeFormView({ mode }: SedeFormViewProps): JSX.Element {
             onCancel={() => navigate('/empresa/sedes')}
             onSubmit={() => void handleSubmit()}
             submitLoading={submitting}
+            submitDisabled={loadingEdit || loadError}
             theme={theme}
           />
         </SedeFormCard>
