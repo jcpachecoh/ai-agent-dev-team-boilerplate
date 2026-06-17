@@ -1,0 +1,35 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/empleado-theme' as emp;
+
+.header {
+  @include emp.empleado-theme-classes;
+
+  display: grid;
+  grid-template-columns: var(--empleado-columns);
+  align-items: center;
+  min-height: 32px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--empleado-border);
+  background: var(--empleado-input);
+}
+
+.cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: 'IBM Plex Mono', $font-family-mono, monospace;
+  font-size: 0.56rem;
+  font-weight: $font-weight-bold;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--empleado-dim);
+
+  svg {
+    width: 9px;
+    height: 9px;
+  }
+}
+
+.accent {
+  color: var(--empleado-accent);
+}

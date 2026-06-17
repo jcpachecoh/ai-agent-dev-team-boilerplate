@@ -1,0 +1,49 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/asistencia-theme' as asis;
+
+.button {
+  @include asis.asistencia-theme-classes;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--asistencia-border);
+  border-radius: 4px;
+  background: var(--asistencia-surface);
+  color: var(--asistencia-dim);
+  font-family: $font-family-mono;
+  cursor: pointer;
+
+  &:focus-visible {
+    @include asis.asistencia-focus-ring;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.icon {
+  flex-shrink: 0;
+}
+
+.size--sm {
+  padding: 7px 13px;
+  font-size: 0.5625rem;
+
+  .icon {
+    width: 12px;
+    height: 12px;
+  }
+}
+
+.size--md {
+  padding: 8px 14px;
+  font-size: 0.625rem;
+
+  .icon {
+    width: 14px;
+    height: 14px;
+  }
+}

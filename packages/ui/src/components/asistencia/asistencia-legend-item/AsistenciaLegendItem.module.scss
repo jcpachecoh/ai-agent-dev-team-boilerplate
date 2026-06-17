@@ -1,0 +1,16 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/asistencia-theme' as asis;
+
+.item {
+  @include asis.asistencia-theme-classes;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--asistencia-faint);
+  font-size: 0.6875rem;
+}
+
+.label {
+  white-space: nowrap;
+}

@@ -1,0 +1,137 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/asistencia-theme' as asis;
+
+.card {
+  @include asis.asistencia-theme-classes;
+
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 14px 14px 12px;
+  border: 1px solid var(--asistencia-border);
+  border-top-width: 3px;
+  border-radius: 4px;
+  background: var(--asistencia-surface);
+  height: 100%;
+}
+
+.highlight--overtime {
+  border-color: var(--asistencia-amber-border);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.identity {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.name {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: $font-weight-semibold;
+  color: var(--asistencia-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.role {
+  margin: 0;
+  font-size: 0.625rem;
+  color: var(--asistencia-subtle);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.statusDotWrap {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.metaRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+}
+
+.entry {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--asistencia-text-secondary);
+  font-family: $font-family-mono;
+  font-size: 0.625rem;
+}
+
+.entryIcon {
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
+}
+
+.shift {
+  margin: 0;
+  font-family: $font-family-mono;
+  font-size: 0.5625rem;
+  color: var(--asistencia-dim);
+  white-space: nowrap;
+}
+
+.footer {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: auto;
+}
+
+.metricsRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+}
+
+.workedTime {
+  margin: 0;
+  font-family: $font-family-mono;
+  font-size: 1.125rem;
+  font-weight: $font-weight-bold;
+  color: var(--asistencia-text);
+}
+
+.workedTimeOvertime {
+  color: var(--asistencia-amber);
+}
+
+.absentLabel {
+  margin: 0;
+  font-family: $font-family-mono;
+  font-size: 0.625rem;
+  color: var(--asistencia-subtle);
+}
+
+@media (max-width: 767px) {
+  .card {
+    height: auto;
+    padding: 12px;
+    gap: 8px;
+  }
+
+  .footer {
+    margin-top: 0;
+  }
+
+  .workedTime {
+    font-size: 1rem;
+  }
+}

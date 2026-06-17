@@ -1,0 +1,12 @@
+@use '../shared/empleado-theme' as emp;
+
+.page {
+  @include emp.empleado-theme-classes;
+
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 100%;
+  background: var(--empleado-page);
+  color: var(--empleado-text);
+}

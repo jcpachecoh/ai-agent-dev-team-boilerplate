@@ -1,0 +1,98 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/asistencia-theme' as asis;
+
+.tabs {
+  @include asis.asistencia-theme-classes;
+
+  display: inline-flex;
+  max-width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--asistencia-border);
+  border-radius: 4px;
+}
+
+.button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  color: var(--asistencia-subtle);
+  font-family: $font-family-mono;
+  font-weight: $font-weight-bold;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  white-space: nowrap;
+
+  &:focus-visible {
+    @include asis.asistencia-focus-ring;
+  }
+}
+
+.withDivider {
+  border-left: 1px solid var(--asistencia-border);
+}
+
+.active {
+  background: var(--asistencia-accent-soft);
+  color: var(--asistencia-accent);
+}
+
+.name {
+  font-size: 0.625rem;
+  line-height: 1.5;
+}
+
+.city {
+  font-size: 0.5625rem;
+  line-height: 1.35;
+  color: var(--asistencia-dim);
+}
+
+.active .city {
+  color: rgba(asis.$asistencia-accent, 0.44);
+}
+
+.size--sm .button {
+  padding: 7px 16px;
+}
+
+.size--md .button {
+  padding: 8px 18px;
+}
+
+@media (max-width: 767px) {
+  .tabs {
+    display: flex;
+    width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
+  .button {
+    flex: 0 0 auto;
+    min-width: 112px;
+    scroll-snap-align: start;
+  }
+
+  .size--sm .button,
+  .size--md .button {
+    padding: 8px 14px;
+  }
+
+  .name {
+    font-size: 0.625rem;
+  }
+
+  .city {
+    font-size: 0.5625rem;
+  }
+}

@@ -13,6 +13,7 @@ export interface RecetaMetricCardProps {
   value?: string | number;
   description?: string;
   icon?: ReactNode;
+  showIcon?: boolean;
   loading?: boolean;
   theme?: RecetaTheme;
   size?: RecetaSize;
@@ -32,6 +33,7 @@ export function RecetaMetricCard({
   value = 7,
   description,
   icon,
+  showIcon = true,
   loading = false,
   theme = 'light',
   size = 'md',
@@ -52,7 +54,7 @@ export function RecetaMetricCard({
     );
   }
 
-  const visualIcon = icon ?? variantIcons[variant];
+  const visualIcon = showIcon ? (icon ?? variantIcons[variant]) : null;
 
   return (
     <article

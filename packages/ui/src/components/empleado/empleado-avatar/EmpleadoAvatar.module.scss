@@ -1,0 +1,64 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/empleado-theme' as emp;
+
+.avatar {
+  @include emp.empleado-theme-classes;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 6px;
+  border-width: 1.5px;
+  border-style: solid;
+  font-family: 'IBM Plex Mono', $font-family-mono, monospace;
+  font-weight: $font-weight-bold;
+}
+
+.size--sm {
+  width: 30px;
+  height: 30px;
+  font-size: 0.6rem;
+}
+
+.size--md {
+  width: 34px;
+  height: 34px;
+  font-size: 0.66rem;
+}
+
+.tone--teal {
+  color: emp.$empleado-teal;
+  background: rgba(emp.$empleado-teal, 0.1);
+  border-color: rgba(emp.$empleado-teal, 0.31);
+}
+
+.tone--cyan {
+  color: emp.$empleado-cyan;
+  background: rgba(emp.$empleado-cyan, 0.1);
+  border-color: rgba(emp.$empleado-cyan, 0.31);
+}
+
+.tone--amber {
+  color: emp.$empleado-amber;
+  background: rgba(emp.$empleado-amber, 0.1);
+  border-color: rgba(emp.$empleado-amber, 0.31);
+}
+
+.tone--blue {
+  color: emp.$empleado-blue;
+  background: rgba(emp.$empleado-blue, 0.1);
+  border-color: rgba(emp.$empleado-blue, 0.31);
+}
+
+.tone--coral {
+  color: emp.$empleado-coral;
+  background: rgba(emp.$empleado-coral, 0.1);
+  border-color: rgba(emp.$empleado-coral, 0.31);
+}
+
+.tone--purple {
+  color: emp.$empleado-purple;
+  background: rgba(emp.$empleado-purple, 0.1);
+  border-color: rgba(emp.$empleado-purple, 0.31);
+}

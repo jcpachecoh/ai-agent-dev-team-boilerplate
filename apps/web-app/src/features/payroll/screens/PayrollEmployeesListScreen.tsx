@@ -1,6 +1,18 @@
-import { toast } from '@restopsiq/ui';
+import {
+  EmpleadoActionButton,
+  EmpleadoListToolbar,
+  EmpleadoPage,
+  EmpleadoPageHeader,
+  EmpleadoPageSection,
+  EmpleadoTable,
+  EmpleadoTableItem,
+  RecetaMetricCard,
+  toast,
+} from '@restopsiq/ui';
+import { Users } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
+import { useTheme } from '@/providers/ThemeProvider';
 import {
   useCreatePayrollEmployeeMutation,
   useRemovePayrollEmployeeMutation,
@@ -17,10 +29,8 @@ import type {
 import { PayrollDeactivateEmployeeDialog } from '../components/PayrollDeactivateEmployeeDialog';
 import { PayrollEmployeeCreateModal } from '../components/PayrollEmployeeCreateModal';
 import { PayrollEmployeeEditDrawer } from '../components/PayrollEmployeeEditDrawer';
-import { PayrollEmployeesFilters } from '../components/PayrollEmployeesFilters';
-import { PayrollEmployeesTable } from '../components/PayrollEmployeesTable';
 import { PayrollApiError } from '../api/payroll.client';
-import styles from '../payroll.module.scss';
+import styles from './PayrollEmployeesListScreen.module.scss';
 
 function toCreateInput(values: PayrollEmployeeFormValues): CreatePayrollEmployeeInput {
   return {
@@ -68,15 +78,11 @@ function getErrorMessage(error: unknown): string {
 }
 
 export function PayrollEmployeesListScreen(): React.JSX.Element {
-  const {
-    state,
-    setSearch,
-    setLocationId,
-    setContractType,
-    setIncludeInactive,
-    setPage,
-    queryFilters,
-  } = usePayrollEmployeesFilters();
+  const { theme } = useTheme();
+  const empleadoTheme = theme === 'light' ? 'light' : 'dark';
+
+  const { state, setSearch, setStatusFilter, setPage, queryFilters } =
+    usePayrollEmployeesFilters(8);
   const employeesQuery = usePayrollEmployeesQuery(queryFilters);
   const createEmployee = useCreatePayrollEmployeeMutation();
   const updateEmployee = useUpdatePayrollEmployeeMutation();
@@ -88,21 +94,36 @@ export function PayrollEmployeesListScreen(): React.JSX.Element {
 
   const employees = employeesQuery.data ?? [];
 
-  const filteredBySearch = useMemo(() => {
+  const filteredEmployees = useMemo(() => {
     const search = state.search.trim().toLowerCase();
-    if (!search) return employees;
 
     return employees.filter((employee) => {
-      const fullText = [employee.name, employee.user?.cedula, employee.user?.email]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase();
-      return fullText.includes(search);
-    });
-  }, [employees, state.search]);
+      const matchesSearch =
+        !search ||
+        [employee.name, employee.user?.cedula, employee.user?.email]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase()
+          .includes(search);
 
-  const hasPreviousPage = state.page > 1;
-  const hasNextPage = (employeesQuery.data?.length ?? 0) >= state.pageSize;
+      const matchesStatus =
+        state.statusFilter === 'all' ||
+        (state.statusFilter === 'active' && employee.isActive) ||
+        (state.statusFilter === 'inactive' && !employee.isActive);
+
+      return matchesSearch && matchesStatus;
+    });
+  }, [employees, state.search, state.statusFilter]);
+
+  const totalCount = employees.length;
+  const activeCount = employees.filter((employee) => employee.isActive).length;
+  const inactiveCount = totalCount - activeCount;
+  const filteredCount = filteredEmployees.length;
+
+  const hasNextPage = employees.length >= state.pageSize;
+  const totalPages = Math.max(1, hasNextPage ? state.page + 1 : state.page);
+  const pageStart = filteredCount === 0 ? 0 : (state.page - 1) * state.pageSize + 1;
+  const pageEnd = Math.min(state.page * state.pageSize, filteredCount);
 
   const handleCreate = async (values: PayrollEmployeeFormValues) => {
     try {
@@ -142,74 +163,121 @@ export function PayrollEmployeesListScreen(): React.JSX.Element {
   };
 
   return (
-    <div className={styles.screen}>
-      <header className={styles.header}>
-        <div>
-          <h1 className={styles.title}>Nómina - Empleados</h1>
-          <p className={styles.subtitle}>
-            CRUD sobre employeeDetails (página {state.page}, resultados: {filteredBySearch.length})
-          </p>
-        </div>
-        <button className={styles.button} onClick={() => setCreateOpen(true)}>
-          Nuevo empleado
-        </button>
-      </header>
-
-      <PayrollEmployeesFilters
-        search={state.search}
-        locationId={state.locationId}
-        contractType={state.contractType}
-        includeInactive={state.includeInactive}
-        onSearchChange={setSearch}
-        onLocationChange={setLocationId}
-        onContractTypeChange={setContractType}
-        onIncludeInactiveChange={setIncludeInactive}
-      />
-
-      {employeesQuery.isLoading ? <div className={styles.empty}>Cargando empleados...</div> : null}
-
-      {employeesQuery.isError ? (
-        <div className={styles.empty}>
-          <p className={styles.error}>No se pudieron cargar empleados.</p>
-          <button className={styles.buttonSecondary} onClick={() => void employeesQuery.refetch()}>
-            Reintentar
-          </button>
-        </div>
-      ) : null}
-
-      {!employeesQuery.isLoading && !employeesQuery.isError && filteredBySearch.length === 0 ? (
-        <div className={styles.empty}>No hay empleados para los filtros seleccionados.</div>
-      ) : null}
-
-      {!employeesQuery.isLoading && !employeesQuery.isError && filteredBySearch.length > 0 ? (
-        <PayrollEmployeesTable
-          employees={filteredBySearch}
-          onEdit={(employee) => setEditingEmployee(employee)}
-          onDeactivate={(employee) => setDeactivatingEmployee(employee)}
+    <EmpleadoPage theme={empleadoTheme} className={styles.screen}>
+      <EmpleadoPageSection theme={empleadoTheme} divider variant="header">
+        <EmpleadoPageHeader
+          title="Empleados"
+          subtitle={`Todos los empleados del tenant · ${activeCount} activos de ${totalCount}`}
+          icon={<Users />}
+          theme={empleadoTheme}
+          primaryAction={
+            <EmpleadoActionButton theme={empleadoTheme} onClick={() => setCreateOpen(true)} />
+          }
         />
-      ) : null}
+      </EmpleadoPageSection>
 
-      <footer className={styles.footer}>
-        <button
-          className={styles.buttonSecondary}
-          disabled={!hasPreviousPage}
-          onClick={() => setPage(Math.max(1, state.page - 1))}
-        >
-          Anterior
-        </button>
-        <span className={styles.subtitle}>Página {state.page}</span>
-        <button
-          className={styles.buttonSecondary}
-          disabled={!hasNextPage}
-          onClick={() => setPage(state.page + 1)}
-        >
-          Siguiente
-        </button>
-      </footer>
+      <EmpleadoPageSection theme={empleadoTheme} divider>
+        <div className={styles.metrics}>
+          <RecetaMetricCard
+            theme={empleadoTheme}
+            size="sm"
+            title="Total"
+            value={totalCount}
+            variant="type-2"
+            showIcon={false}
+          />
+          <RecetaMetricCard
+            theme={empleadoTheme}
+            size="sm"
+            title="Activos"
+            value={activeCount}
+            variant="type-2"
+            showIcon={false}
+          />
+          <RecetaMetricCard
+            theme={empleadoTheme}
+            size="sm"
+            title="Inactivos"
+            value={inactiveCount}
+            variant="type-3"
+            showIcon={false}
+          />
+          <RecetaMetricCard
+            theme={empleadoTheme}
+            size="sm"
+            title="Filtrados"
+            value={filteredCount}
+            variant="type-1"
+            showIcon={false}
+          />
+        </div>
+      </EmpleadoPageSection>
+
+      <EmpleadoPageSection theme={empleadoTheme} divider variant="toolbar">
+        <EmpleadoListToolbar
+          searchValue={state.search}
+          statusFilter={state.statusFilter}
+          onSearchChange={setSearch}
+          onStatusFilterChange={setStatusFilter}
+          theme={empleadoTheme}
+        />
+      </EmpleadoPageSection>
+
+      <EmpleadoPageSection theme={empleadoTheme}>
+        {employeesQuery.isLoading ? (
+          <div className={styles.state}>Cargando empleados...</div>
+        ) : null}
+
+        {employeesQuery.isError ? (
+          <div className={styles.state}>
+            <p>No se pudieron cargar empleados.</p>
+            <button type="button" onClick={() => void employeesQuery.refetch()}>
+              Reintentar
+            </button>
+          </div>
+        ) : null}
+
+        {!employeesQuery.isLoading && !employeesQuery.isError && filteredEmployees.length === 0 ? (
+          <div className={styles.state}>No hay empleados para los filtros seleccionados.</div>
+        ) : null}
+
+        {!employeesQuery.isLoading && !employeesQuery.isError && filteredEmployees.length > 0 ? (
+          <EmpleadoTable
+            theme={empleadoTheme}
+            pagination={{
+              page: state.page,
+              totalPages,
+              summary: `${pageStart}-${pageEnd} de ${filteredCount}`,
+              onPrevious: () => setPage(Math.max(1, state.page - 1)),
+              onNext: () => setPage(state.page + 1),
+            }}
+          >
+            {filteredEmployees.map((employee) => (
+              <EmpleadoTableItem
+                key={employee.id}
+                id={employee.id}
+                name={employee.name}
+                email={employee.user?.email}
+                cedula={employee.user?.cedula}
+                position={employee.position}
+                area={employee.area}
+                contractType={employee.contractType}
+                locationName={employee.location?.name ?? employee.locationId}
+                hireDate={employee.hireDate}
+                isActive={employee.isActive}
+                theme={empleadoTheme}
+                onEdit={() => setEditingEmployee(employee)}
+                onToggleStatus={() => setDeactivatingEmployee(employee)}
+              />
+            ))}
+          </EmpleadoTable>
+        ) : null}
+      </EmpleadoPageSection>
 
       <PayrollEmployeeCreateModal
         open={createOpen}
         submitting={createEmployee.isPending}
+        theme={empleadoTheme}
         onClose={() => setCreateOpen(false)}
         onSubmit={(values) => void handleCreate(values)}
       />
@@ -218,6 +286,7 @@ export function PayrollEmployeesListScreen(): React.JSX.Element {
         employee={editingEmployee}
         open={Boolean(editingEmployee)}
         submitting={updateEmployee.isPending}
+        theme={empleadoTheme}
         onClose={() => setEditingEmployee(undefined)}
         onSubmit={(values) => void handleEdit(values)}
       />
@@ -229,6 +298,6 @@ export function PayrollEmployeesListScreen(): React.JSX.Element {
         onCancel={() => setDeactivatingEmployee(undefined)}
         onConfirm={() => void handleDeactivate()}
       />
-    </div>
+    </EmpleadoPage>
   );
 }

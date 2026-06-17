@@ -924,6 +924,7 @@ export async function seedPlantSupervisor(prisma: PrismaClient): Promise<void> {
     create: {
       userId: GLOBAL_MES_OPERATOR2_USER_ID,
       tenantId: TENANT_ID,
+      name: 'Carlos Mendoza',
       locationId,
       position: 'Operario Senior',
       area: 'Producción',
@@ -951,6 +952,7 @@ export async function seedPlantSupervisor(prisma: PrismaClient): Promise<void> {
     create: {
       userId: GLOBAL_MES_OPERATIONS_ADMIN_USER_ID,
       tenantId: TENANT_ID,
+      name: 'Admin de Operaciones',
       locationId,
       position: 'Administrador de Operaciones',
       area: 'Operaciones',

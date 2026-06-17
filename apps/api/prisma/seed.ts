@@ -1064,6 +1064,9 @@ async function main() {
   ]);
   const { seedPlantSupervisor } = await import('./seeds/plant-supervisor.seed');
   await seedPlantSupervisor(prisma);
+
+  const { seedAttendance } = await import('./seeds/attendance.seed');
+  await seedAttendance(prisma);
 }
 
 main()

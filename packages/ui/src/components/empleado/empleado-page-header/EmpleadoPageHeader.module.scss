@@ -1,0 +1,92 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/empleado-theme' as emp;
+
+.header {
+  @include emp.empleado-theme-classes;
+
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: $spacing-md;
+  width: 100%;
+}
+
+.leading {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+}
+
+.iconWrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 2px;
+  color: var(--empleado-accent);
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+.titles {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font-family: 'IBM Plex Sans', $font-family-base, sans-serif;
+  font-weight: $font-weight-bold;
+  letter-spacing: -0.01em;
+  color: var(--empleado-text);
+}
+
+.subtitle {
+  margin: 0;
+  font-family: 'IBM Plex Sans', $font-family-base, sans-serif;
+  color: var(--empleado-subtle);
+}
+
+.size--sm {
+  .title {
+    font-size: 1rem;
+  }
+
+  .subtitle {
+    font-size: 0.6875rem;
+  }
+}
+
+.size--md {
+  .title {
+    font-size: 1.1875rem;
+  }
+
+  .subtitle {
+    font-size: 0.75rem;
+  }
+}
+
+.action {
+  flex-shrink: 0;
+}
+
+@media (max-width: 767px) {
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .action {
+    width: 100%;
+
+    > * {
+      width: 100%;
+    }
+  }
+}

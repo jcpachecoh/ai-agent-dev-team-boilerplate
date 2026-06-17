@@ -1,0 +1,44 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/asistencia-theme' as asis;
+
+.badge {
+  @include asis.asistencia-theme-classes;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid var(--asistencia-teal-border);
+  border-radius: 20px;
+  background: var(--asistencia-teal-soft);
+  color: var(--asistencia-teal);
+  font-family: $font-family-mono;
+  font-weight: $font-weight-bold;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.dot {
+  border-radius: 3px;
+  background: var(--asistencia-teal);
+  flex-shrink: 0;
+}
+
+.size--sm {
+  padding: 4px 11px;
+  font-size: 0.5rem;
+
+  .dot {
+    width: 6px;
+    height: 6px;
+  }
+}
+
+.size--md {
+  padding: 5px 12px;
+  font-size: 0.5625rem;
+
+  .dot {
+    width: 7px;
+    height: 7px;
+  }
+}

@@ -1,46 +1,24 @@
-@use '@/styles/tokens' as t;
-
 .screen {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
   min-height: 100%;
-  gap: 1rem;
-  padding: 1.25rem;
-  background: var(--color-bg-primary);
-  color: var(--color-text-primary);
 }
 
-.header {
+.metrics {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: flex-end;
-  gap: 0.75rem;
+  flex-wrap: nowrap;
+  gap: 8px;
+  overflow-x: auto;
 }
 
-.title {
-  margin: 0;
-  font-size: clamp(1.2rem, 1rem + 0.8vw, 1.8rem);
-  line-height: 1.1;
-}
-
-.subtitle {
-  margin: 0.3rem 0 0;
-  color: var(--color-text-secondary);
-}
-
-.card {
-  border: 1px solid var(--color-border);
-  border-radius: t.$border-radius-base;
-  background: var(--color-bg-surface);
-  padding: 1rem;
+.metrics > * {
+  flex: 1 1 0;
+  min-width: 120px;
+  max-width: none;
 }
 
 .state {
-  border: 1px solid var(--color-border);
-  border-radius: t.$border-radius-base;
-  background: var(--color-bg-surface);
-  color: var(--color-text-secondary);
+  border: 1px solid var(--empleado-border, #2e2e2e);
+  border-radius: 4px;
+  background: var(--empleado-surface, #111);
+  color: var(--empleado-subtle, #666);
   padding: 1rem;
 }

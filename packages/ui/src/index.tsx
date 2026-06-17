@@ -177,6 +177,8 @@ export * from './components/produccion/shared/produccion-columns';
 export * from './components/produccion/shared/produccion-types';
 
 export * from './components/sede';
+export * from './components/empleado';
+export * from './components/asistencia';
 
 export * from './components/empresa';
 

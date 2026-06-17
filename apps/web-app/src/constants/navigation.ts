@@ -186,6 +186,12 @@ export const navigationItems: NavItem[] = [
     children: [
       { id: 'payroll', label: 'Nómina', path: '/payroll', icon: Wallet },
       { id: 'payroll-employees', label: 'Empleados', path: '/payroll/employees', icon: Users },
+      {
+        id: 'payroll-attendance',
+        label: 'Monitor de asistencia',
+        path: '/payroll/attendance',
+        icon: Monitor,
+      },
       { id: 'payroll-salaries', label: 'Salarios', path: '/payroll/salaries', icon: BarChart3 },
     ],
   },
@@ -239,6 +245,7 @@ const routeLabels: Record<string, string> = {
   '/users/permissions': 'Permisos',
   '/payroll': 'Nómina',
   '/payroll/employees': 'Empleados',
+  '/payroll/attendance': 'Monitor de asistencia',
   '/payroll/salaries': 'Salarios',
   '/empresa/informacion': 'Información del restaurante',
   '/empresa/sedes': 'Sedes',
