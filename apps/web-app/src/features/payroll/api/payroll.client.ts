@@ -2,6 +2,13 @@ import { getGraphqlAuthToken } from '@/lib/auth-token';
 import { getTenantId } from '@/lib/tenant';
 
 import type {
+  AttendanceReportQuery,
+  AttendanceReportResponse,
+  PayrollReportExportFormat,
+  PayrollReportQuery,
+  PayrollReportResponse,
+} from '../types/payroll-reports.types';
+import type {
   CreatePayrollEmployeeInput,
   PayrollEmployee,
   PayrollEmployeesFilters,
@@ -90,6 +97,55 @@ async function payrollFetch<T>(path: string, init?: RequestInit): Promise<T> {
   }
 
   return response.json() as Promise<T>;
+}
+
+async function payrollFetchBlob(path: string, init?: RequestInit): Promise<Blob> {
+  const response = await fetch(buildPayrollUrl(path), {
+    ...init,
+    headers: buildPayrollHeaders(init),
+  });
+
+  if (response.status === 401) {
+    window.location.href = '/login';
+    throw new PayrollApiError('No autorizado', 401);
+  }
+
+  if (!response.ok) {
+    const body = await response.text();
+    const message = await parseErrorMessage(body, response.statusText);
+    throw new PayrollApiError(message, response.status);
+  }
+
+  return response.blob();
+}
+
+export function getPayrollReport(query: PayrollReportQuery): Promise<PayrollReportResponse> {
+  const params = toQueryString({
+    period: query.period,
+    locationId: query.locationId,
+  });
+  return payrollFetch<PayrollReportResponse>(`/reports/payroll${params}`);
+}
+
+export function getAttendanceReport(
+  query: AttendanceReportQuery,
+): Promise<AttendanceReportResponse> {
+  const params = toQueryString({
+    from: query.from,
+    to: query.to,
+    locationId: query.locationId,
+  });
+  return payrollFetch<AttendanceReportResponse>(`/reports/attendance${params}`);
+}
+
+export function exportPayrollReport(
+  period: string,
+  format: PayrollReportExportFormat,
+): Promise<Blob> {
+  return payrollFetchBlob('/reports/payroll/export', {
+    method: 'POST',
+    body: JSON.stringify({ period, format }),
+  });
 }
 
 export function listPayrollEmployees(

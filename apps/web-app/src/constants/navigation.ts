@@ -184,7 +184,7 @@ export const navigationItems: NavItem[] = [
     icon: Wallet,
     accent: 'amber',
     children: [
-      { id: 'payroll', label: 'Nómina', path: '/payroll', icon: Wallet },
+      { id: 'payroll', label: 'Reportes', path: '/payroll', icon: Wallet },
       { id: 'payroll-employees', label: 'Empleados', path: '/payroll/employees', icon: Users },
       {
         id: 'payroll-attendance',
@@ -243,7 +243,8 @@ const routeLabels: Record<string, string> = {
   '/users': 'Usuarios',
   '/users/roles': 'Roles',
   '/users/permissions': 'Permisos',
-  '/payroll': 'Nómina',
+  '/payroll': 'Reportes de nómina',
+  '/payroll/reports': 'Reportes de nómina',
   '/payroll/employees': 'Empleados',
   '/payroll/attendance': 'Monitor de asistencia',
   '/payroll/salaries': 'Salarios',

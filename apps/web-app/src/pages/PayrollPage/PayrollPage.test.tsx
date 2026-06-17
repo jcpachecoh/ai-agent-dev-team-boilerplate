@@ -5,10 +5,11 @@ import PayrollPage from './PayrollPage';
 
 vi.mock('@/features/payroll', () => ({
   PayrollEmployeesListScreen: () => <div>Payroll Employees Screen</div>,
+  PayrollReportsScreen: () => <div>Payroll Reports Screen</div>,
 }));
 
 describe('PayrollPage', () => {
-  it('redirects /payroll to employees route', async () => {
+  it('renders payroll reports on index route', async () => {
     render(
       <MemoryRouter initialEntries={['/payroll']}>
         <Routes>
@@ -17,10 +18,10 @@ describe('PayrollPage', () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByText('Payroll Employees Screen')).toBeInTheDocument();
+    expect(await screen.findByText('Payroll Reports Screen')).toBeInTheDocument();
   });
 
-  it('renders salaries placeholder route', async () => {
+  it('redirects unknown payroll routes to employees', async () => {
     render(
       <MemoryRouter initialEntries={['/payroll/salaries']}>
         <Routes>

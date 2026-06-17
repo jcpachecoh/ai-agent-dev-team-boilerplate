@@ -1,0 +1,49 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/nomina-theme' as nomina;
+
+.root {
+  @include nomina.nomina-theme-classes;
+
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: $spacing-lg;
+  flex-wrap: wrap;
+}
+
+.copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.eyebrow {
+  @include nomina.nomina-eyebrow;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: $font-weight-bold;
+  line-height: 1.2;
+  color: var(--asistencia-text);
+}
+
+.subtitle {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--asistencia-faint);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}

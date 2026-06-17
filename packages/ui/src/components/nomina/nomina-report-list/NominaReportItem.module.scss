@@ -1,0 +1,104 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/nomina-theme' as nomina;
+
+.item {
+  @include nomina.nomina-theme-classes;
+
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--asistencia-border-subtle);
+
+  &:last-child {
+    border-bottom: 0;
+  }
+}
+
+.leading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 44px;
+}
+
+.code {
+  font-family: $font-family-mono;
+  font-size: 0.5rem;
+  font-weight: $font-weight-bold;
+  letter-spacing: 0.1em;
+  color: var(--report-accent);
+}
+
+.icon {
+  display: inline-flex;
+  color: var(--report-accent);
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.copy {
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: $font-weight-semibold;
+  color: var(--asistencia-text);
+}
+
+.description {
+  margin: 4px 0 0;
+  font-size: 0.6875rem;
+  line-height: 1.45;
+  color: var(--asistencia-faint);
+}
+
+.download {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--asistencia-border);
+  border-radius: 4px;
+  background: var(--asistencia-input);
+  color: var(--asistencia-faint);
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
+
+  svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  &:hover {
+    color: var(--report-accent);
+    border-color: var(--report-accent);
+  }
+}
+
+.tone--accent {
+  --report-accent: var(--asistencia-accent);
+}
+
+.tone--purple {
+  --report-accent: #818cf8;
+}
+
+.tone--teal {
+  --report-accent: var(--asistencia-teal);
+}
+
+.tone--amber {
+  --report-accent: var(--asistencia-amber);
+}

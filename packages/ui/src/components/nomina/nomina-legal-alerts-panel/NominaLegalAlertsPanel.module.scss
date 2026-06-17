@@ -1,0 +1,96 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/nomina-theme' as nomina;
+
+.panel {
+  @include nomina.nomina-theme-classes;
+  @include nomina.nomina-panel;
+}
+
+.header {
+  @include nomina.nomina-panel-header;
+}
+
+.eyebrow {
+  @include nomina.nomina-eyebrow;
+}
+
+.title {
+  margin: 4px 0 0;
+  font-size: 0.8125rem;
+  font-weight: $font-weight-semibold;
+  color: var(--asistencia-text);
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 28px 20px 32px;
+  text-align: center;
+}
+
+.icon {
+  width: 28px;
+  height: 28px;
+  color: var(--asistencia-teal);
+}
+
+.emptyTitle {
+  margin: 4px 0 0;
+  font-size: 0.8125rem;
+  font-weight: $font-weight-semibold;
+  color: var(--asistencia-text);
+}
+
+.emptyDescription {
+  margin: 0;
+  max-width: 220px;
+  font-size: 0.6875rem;
+  line-height: 1.5;
+  color: var(--asistencia-faint);
+}
+
+.list {
+  margin: 0;
+  padding: 8px 12px 12px;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--asistencia-amber) 12%, transparent);
+}
+
+.alertIcon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--asistencia-amber);
+}
+
+.itemContent {
+  min-width: 0;
+}
+
+.itemTitle {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: $font-weight-semibold;
+  color: var(--asistencia-text);
+}
+
+.itemSubtitle {
+  margin: 2px 0 0;
+  font-size: 0.6875rem;
+  line-height: 1.4;
+  color: var(--asistencia-faint);
+}
