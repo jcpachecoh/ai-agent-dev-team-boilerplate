@@ -16,7 +16,11 @@ const MAX_VISIBLE_PRIORITY: Record<Exclude<TableBreakpoint, 'mobile'>, ColumnPri
   tablet: 3,
 };
 
-export function isCardMode(bp: TableBreakpoint): boolean {
+export type CardModeBelow = 'mobile' | 'tablet' | 'laptop';
+
+export function isCardMode(bp: TableBreakpoint, cardBelow: CardModeBelow = 'mobile'): boolean {
+  if (cardBelow === 'laptop') return bp === 'mobile' || bp === 'tablet' || bp === 'laptop';
+  if (cardBelow === 'tablet') return bp === 'mobile' || bp === 'tablet';
   return bp === 'mobile';
 }
 

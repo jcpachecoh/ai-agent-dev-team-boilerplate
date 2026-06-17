@@ -129,56 +129,60 @@ export default function ProveedoresListView(): React.JSX.Element {
       </section>
 
       <section className={styles.toolbarRow} aria-label="Filtros y acciones">
-        <RecetaSearch
-          theme={theme}
-          size="md"
-          value={search}
-          onChange={setSearch}
-          placeholder="Buscar proveedor..."
-          ariaLabel="Buscar proveedor"
-          className={styles.searchGrow}
-        />
-        <RecetaFilterSelect
-          theme={theme}
-          size="md"
-          className={styles.filterSelect}
-          options={CATEGORY_FILTER_OPTIONS}
-          value={categoryFilter}
-          onChange={setCategoryFilter}
-          aria-label="Filtrar por categoría"
-        />
-        <RecetaFilterSelect
-          theme={theme}
-          size="md"
-          className={styles.filterSelect}
-          options={STATUS_FILTER_OPTIONS}
-          value={statusFilter}
-          onChange={(value) => setStatusFilter(value as SupplierStatusFilter)}
-          aria-label="Filtrar por estado"
-        />
-        <RecetaFilterSelect
-          theme={theme}
-          size="md"
-          className={styles.filterSelect}
-          options={PAYMENT_FILTER_OPTIONS}
-          value={paymentFilter}
-          onChange={(value) => setPaymentFilter(value as CondicionPagoFilter)}
-          aria-label="Filtrar por condición de pago"
-        />
-        <div className={styles.actionsStack}>
-          <ProveedorActionButton
-            variant="primary"
+        <div className={styles.toolbarFilters}>
+          <RecetaSearch
             theme={theme}
             size="md"
-            onClick={() => navigate('/proveedores/nuevo')}
+            value={search}
+            onChange={setSearch}
+            placeholder="Buscar proveedor..."
+            ariaLabel="Buscar proveedor"
+            className={styles.searchGrow}
           />
-          <ProveedorActionButton
-            variant="export"
+          <RecetaFilterSelect
             theme={theme}
             size="md"
-            className={styles.exportAction}
-            onClick={() => window.alert('Exportar — próximamente')}
+            className={styles.filterSelect}
+            options={CATEGORY_FILTER_OPTIONS}
+            value={categoryFilter}
+            onChange={setCategoryFilter}
+            aria-label="Filtrar por categoría"
           />
+          <RecetaFilterSelect
+            theme={theme}
+            size="md"
+            className={styles.filterSelect}
+            options={STATUS_FILTER_OPTIONS}
+            value={statusFilter}
+            onChange={(value) => setStatusFilter(value as SupplierStatusFilter)}
+            aria-label="Filtrar por estado"
+          />
+          <RecetaFilterSelect
+            theme={theme}
+            size="md"
+            className={styles.filterSelect}
+            options={PAYMENT_FILTER_OPTIONS}
+            value={paymentFilter}
+            onChange={(value) => setPaymentFilter(value as CondicionPagoFilter)}
+            aria-label="Filtrar por condición de pago"
+          />
+        </div>
+        <div className={styles.toolbarActions}>
+          <div className={styles.actionsStack}>
+            <ProveedorActionButton
+              variant="primary"
+              theme={theme}
+              size="md"
+              onClick={() => navigate('/proveedores/nuevo')}
+            />
+            <ProveedorActionButton
+              variant="export"
+              theme={theme}
+              size="md"
+              className={styles.exportAction}
+              onClick={() => window.alert('Exportar — próximamente')}
+            />
+          </div>
         </div>
       </section>
 
@@ -189,6 +193,7 @@ export default function ProveedoresListView(): React.JSX.Element {
           </p>
         ) : (
           <ProveedorSuppliersResponsiveTable
+            className={styles.suppliersTable}
             rows={tableRows}
             onRowClick={(supplierId) => navigate(`/proveedores/${supplierId}`)}
             emptyState={isPending ? 'Cargando proveedores…' : 'No hay proveedores'}

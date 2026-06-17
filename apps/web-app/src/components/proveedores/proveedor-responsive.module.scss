@@ -26,6 +26,13 @@
 
 .card {
   background: var(--color-bg-surface);
+
+  .name {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+    word-break: break-word;
+  }
 }
 
 .titleGroup {

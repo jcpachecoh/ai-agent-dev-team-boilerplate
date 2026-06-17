@@ -39,6 +39,7 @@ export function ProveedorSuppliersResponsiveTable({
       rows={rows}
       keyExtractor={(row) => row.supplierId ?? row.supplierCode ?? row.name ?? 'row'}
       className={className}
+      cardBelow="laptop"
       renderTableHeader={({ visibleColumns }) => (
         <ProveedorTableHeader
           columns={headerColumnsFromResponsive(visibleColumns, SUPPLIER_HEADER_ALIGN)}

@@ -6,6 +6,7 @@ import {
   columnsForBreakpoint,
   gridTemplateFromColumns,
   isCardMode,
+  type CardModeBelow,
   type ResponsiveColumnDef,
 } from '@/lib/responsive-columns';
 
@@ -31,6 +32,8 @@ export interface ResponsiveTableProps<TRow> {
   onCardClick?: (row: TRow) => void;
   emptyState?: ReactNode;
   className?: string;
+  /** Show card layout below this breakpoint (default: mobile only). */
+  cardBelow?: CardModeBelow;
 }
 
 export function ResponsiveTable<TRow>({
@@ -47,9 +50,10 @@ export function ResponsiveTable<TRow>({
   onCardClick,
   emptyState,
   className,
+  cardBelow = 'mobile',
 }: ResponsiveTableProps<TRow>): React.JSX.Element {
   const breakpoint = useTableBreakpoint();
-  const cardMode = isCardMode(breakpoint);
+  const cardMode = isCardMode(breakpoint, cardBelow);
   const visibleColumns = columnsForBreakpoint(columns, breakpoint);
   const columnsTemplate = gridTemplateFromColumns(visibleColumns);
 

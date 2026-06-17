@@ -1,4 +1,5 @@
 @use '@/styles/tokens' as *;
+@use '@/styles/breakpoints' as bp;
 
 .page {
   display: flex;
@@ -16,6 +17,8 @@
   padding: 1rem 1.25rem 1.5rem;
   overflow: auto;
   background: var(--color-bg-primary);
+  container-type: inline-size;
+  container-name: proveedores;
 }
 
 .contentPadded {
@@ -59,18 +62,29 @@
 
 .metricsRow {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.65rem;
   flex-shrink: 0;
   padding: 1rem 1.25rem;
   border-bottom: 1px solid var(--color-border);
+}
 
-  @media (max-width: 1100px) {
+@container proveedores (min-width: 520px) {
+  .metricsRow {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+}
 
-  @media (max-width: 560px) {
-    grid-template-columns: 1fr;
+@container proveedores (min-width: 1040px) {
+  .metricsRow {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@container proveedores (max-width: 519px) {
+  .metricCard {
+    --metric-value-size: 1.75rem;
+    --card-padding-y: 1rem;
   }
 }
 
@@ -83,51 +97,125 @@
 
 .toolbarRow {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.6rem;
+  flex-direction: column;
+  gap: 0.65rem;
   flex-shrink: 0;
   padding: 0.85rem 1.25rem;
   border-bottom: 1px solid var(--color-border);
-  align-items: center;
 }
 
-@media (min-width: 768px) {
-  .toolbarRow {
-    display: grid;
-    grid-template-columns: minmax(0, 2.4fr) repeat(3, minmax(0, 1fr)) auto;
-    align-items: center;
-  }
-}
-
-.searchGrow {
-  flex: 999 1 56%;
-  min-width: min(100%, 280px);
+.toolbarFilters {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.6rem;
   width: 100%;
-  --control-width: 100%;
+  min-width: 0;
 }
 
+.toolbarActions {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+}
+
+.searchGrow,
 .filterSelect {
-  flex: 1 1 140px;
-  min-width: 120px;
+  min-width: 0;
   max-width: 100%;
   width: 100%;
-  --control-width: 100%;
 }
 
 .actionsStack {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 0.45rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.6rem;
   width: 100%;
-  min-width: 160px;
-  max-width: 200px;
-  justify-self: end;
+  min-width: 0;
+
+  :global(button) {
+    width: 100%;
+    min-width: 0;
+  }
 }
 
 .exportAction {
-  align-self: center;
-  width: fit-content;
+  width: 100%;
+}
+
+@container proveedores (min-width: 480px) {
+  .actionsStack {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container proveedores (min-width: 560px) {
+  .toolbarFilters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .searchGrow {
+    grid-column: 1 / -1;
+  }
+}
+
+@container proveedores (min-width: 820px) {
+  .toolbarFilters {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@container proveedores (min-width: 1100px) {
+  .toolbarRow {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .toolbarFilters {
+    flex: 1;
+    grid-template-columns: minmax(0, 1.5fr) repeat(3, minmax(0, 1fr));
+  }
+
+  .searchGrow {
+    grid-column: auto;
+  }
+
+  .toolbarActions {
+    flex: 0 0 auto;
+    width: auto;
+  }
+
+  .actionsStack {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    width: auto;
+
+    :global(button) {
+      width: auto;
+    }
+  }
+
+  .exportAction {
+    width: auto;
+  }
+}
+
+.suppliersTable {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  overflow: hidden;
+  background: var(--color-bg-surface);
+
+  &:has([role='list']) {
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    overflow: visible;
+  }
 }
 
 .tableSection {
@@ -135,7 +223,20 @@
   min-width: 0;
   min-height: 0;
   padding: 0.75rem 1.25rem 1.25rem;
-  overflow-x: auto;
+}
+
+@include bp.mobile {
+  .content {
+    padding: 0.75rem 1rem 1.25rem;
+  }
+
+  .pageHeaderSection,
+  .metricsRow,
+  .toolbarRow,
+  .tableSection {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
 }
 
 .detailHeaderSection {

@@ -38,6 +38,10 @@
 }
 
 .cell {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-family: $font-family-mono;
   font-size: var(--header-font-size);
   font-weight: $font-weight-bold;

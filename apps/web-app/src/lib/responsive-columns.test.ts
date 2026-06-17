@@ -17,11 +17,18 @@ const DEMO_COLUMNS: ResponsiveColumnDef[] = [
 ];
 
 describe('responsive-columns', () => {
-  it('isCardMode is true only on mobile', () => {
+  it('isCardMode is true only on mobile by default', () => {
     expect(isCardMode('mobile')).toBe(true);
     expect(isCardMode('tablet')).toBe(false);
     expect(isCardMode('laptop')).toBe(false);
     expect(isCardMode('desktop')).toBe(false);
+  });
+
+  it('isCardMode respects cardBelow threshold', () => {
+    expect(isCardMode('laptop', 'laptop')).toBe(true);
+    expect(isCardMode('desktop', 'laptop')).toBe(false);
+    expect(isCardMode('tablet', 'tablet')).toBe(true);
+    expect(isCardMode('laptop', 'tablet')).toBe(false);
   });
 
   it('columnsForBreakpoint filters by priority', () => {
