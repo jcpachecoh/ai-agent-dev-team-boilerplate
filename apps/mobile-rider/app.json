@@ -1,0 +1,10 @@
+{
+  "expo": {
+    "name": "RestOpsIQ Rider",
+    "slug": "restopsiq-rider",
+    "version": "0.0.1",
+    "orientation": "portrait",
+    "scheme": "restopsiq-rider",
+    "platforms": ["ios", "android"]
+  }
+}

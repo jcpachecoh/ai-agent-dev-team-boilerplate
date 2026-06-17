@@ -1,0 +1,94 @@
+@use '../../../styles/abstracts/variables' as *;
+
+.container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: $font-family-base;
+  text-align: center;
+  padding: $spacing-xl;
+  background-color: transparent;
+  color: $color-text-primary;
+
+  &.page {
+    min-height: 400px;
+    height: 100vh;
+    width: 100%;
+  }
+
+  &.section {
+    min-height: 200px;
+    border: 1px dashed rgba($color-danger, 0.3);
+    border-radius: $border-radius-md;
+    width: 100%;
+  }
+}
+
+.content {
+  max-width: 500px;
+}
+
+.iconContainer {
+  margin-bottom: $spacing-lg;
+  color: $color-danger;
+  display: flex;
+  justify-content: center;
+}
+
+.title {
+  font-size: $font-size-2xl;
+  font-weight: $font-weight-bold;
+  margin-bottom: $spacing-md;
+}
+
+.message {
+  font-size: $font-size-base;
+  color: $color-text-secondary;
+  margin-bottom: $spacing-xl;
+  line-height: $line-height-base;
+}
+
+.actions {
+  display: flex;
+  justify-content: center;
+}
+
+.resetButton {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.refreshIcon {
+  transition: transform $transition-base;
+}
+
+.resetButton:hover .refreshIcon {
+  transform: rotate(180deg);
+}
+
+.debug {
+  margin-top: $spacing-2xl;
+  padding: $spacing-md;
+  background-color: rgba($color-black, 0.05);
+  border-radius: $border-radius-sm;
+  font-family: $font-family-mono;
+  font-size: $font-size-xs;
+  text-align: left;
+  overflow: auto;
+  max-width: 100%;
+}
+
+// Dark Mode
+:global(.dark) {
+  .title {
+    color: $color-text-inverse;
+  }
+  .message {
+    color: rgba($color-white, 0.6);
+  }
+  .debug {
+    background-color: rgba($color-white, 0.05);
+    color: rgba($color-white, 0.8);
+  }
+}

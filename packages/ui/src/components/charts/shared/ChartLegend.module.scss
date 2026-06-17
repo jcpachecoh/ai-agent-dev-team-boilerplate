@@ -1,0 +1,39 @@
+@use '../../../styles/abstracts/variables' as *;
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--chart-legend-gap, #{$spacing-sm});
+  margin-top: $spacing-sm;
+  font-size: var(--chart-font-size, #{$font-size-sm});
+}
+
+.item {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-xs;
+  padding: 2px $spacing-xs;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: $border-radius-sm;
+  font-family: inherit;
+  transition: opacity $transition-fast;
+
+  &:focus-visible {
+    outline: 2px solid #d4a017;
+    outline-offset: 2px;
+  }
+
+  &.hidden {
+    opacity: 0.4;
+    text-decoration: line-through;
+  }
+}
+
+.swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: $border-radius-full;
+  flex-shrink: 0;
+}

@@ -1,0 +1,106 @@
+@use '../../styles/abstracts/variables' as *;
+@use '../../styles/abstracts/mixins' as *;
+
+.btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  padding: 0;
+  box-sizing: border-box;
+  border: $border-width solid transparent;
+  background: transparent;
+  cursor: pointer;
+
+  &:focus-visible {
+    @include focus-ring;
+  }
+}
+
+.sm {
+  width: 30px;
+  height: 30px;
+
+  .icon svg {
+    width: 12px;
+    height: 12px;
+  }
+}
+
+.lg {
+  width: 44px;
+  height: 44px;
+
+  .icon svg {
+    width: 18px;
+  }
+}
+
+/* Para superficies claras */
+.light {
+  background: rgba($color-black, 0.06);
+  border-color: rgba($color-black, 0.14);
+
+  .icon {
+    color: $color-gray-900;
+  }
+}
+
+/* Para superficies oscuras */
+.dark {
+  background: rgba($color-white, 0.1);
+  border-color: rgba($color-white, 0.2);
+
+  .icon {
+    color: #f8fafc;
+  }
+}
+
+.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+
+.icon svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+}
+
+.badge {
+  position: absolute;
+  left: 18px;
+  top: -4px;
+  width: $spacing-md;
+  height: $spacing-md;
+  border-radius: $border-radius-full;
+  background: $color-danger;
+  color: $color-white;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: $font-weight-bold;
+  font-size: 8.8px;
+  line-height: $line-height-tight;
+  padding: 0;
+}
+
+.gold {
+  background: linear-gradient(180deg, #f5c042, #f0b120);
+  border-color: rgba(212, 160, 23, 0.18);
+
+  .icon {
+    color: $color-gray-900;
+  }
+
+  .badge {
+    background: #d4a017;
+    color: $color-gray-900;
+    border: $border-width solid rgba($color-black, 0.06);
+  }
+}

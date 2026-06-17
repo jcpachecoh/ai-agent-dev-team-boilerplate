@@ -1,0 +1,556 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AUDIT LOG
+// ─────────────────────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  action    String
+  entity    String
+  entityId  String
+  payload   Json?
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  // userId is kept as a plain reference (no FK relation after UserTestLab removal)
+
+  @@index([entity, entityId])
+  @@index([userId])
+  @@map("audit_logs")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SUPPLIERS
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum SupplierTipo {
+  PERSONA_NATURAL
+  PERSONA_JURIDICA
+}
+
+enum CondicionPago {
+  CONTADO
+  DIAS_15
+  DIAS_30
+  DIAS_60
+}
+
+model Supplier {
+  id             String        @id @default(cuid())
+  tenantId       String
+  razonSocial    String
+  nit            String
+  dv             String?
+  tipo           SupplierTipo
+  direccion      String?
+  ciudad         String?
+  telefono       String?
+  email          String?
+  contactoNombre String?
+  condicionPago  CondicionPago
+  cupoCredito    Int
+  calificacion   Decimal
+  isActive       Boolean       @default(true)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  products SupplierProduct[]
+
+  @@unique([tenantId, nit])
+  @@index([tenantId, isActive])
+  @@map("suppliers")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SUPPLY CATEGORIES
+// ─────────────────────────────────────────────────────────────────────────────
+
+model SupplyCategory {
+  id          String   @id @default(cuid())
+  tenantId    String
+  nombre      String
+  descripcion String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  items SupplyItem[]
+
+  @@unique([tenantId, nombre])
+  @@index([tenantId, isActive])
+  @@map("supply_categories")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INSUMOS (SUPPLY ITEMS)
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum StockUnit {
+  UNIT
+  GRAMS
+  KILOGRAMS
+  ML
+  LITERS
+}
+
+model SupplyItem {
+  id                     String    @id @default(cuid())
+  tenantId               String
+  nombre                 String
+  codigoInterno          String
+  categoriaId            String
+  descripcion            String?
+  unidadBase             StockUnit
+  factorConversion       Decimal
+  costoPromedioPonderado Decimal
+  stockMinimoBodega      Decimal
+  stockMaximoBodega      Decimal
+  aplicaVencimiento      Boolean   @default(false)
+  aplicaLote             Boolean   @default(false)
+  isActive               Boolean   @default(true)
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  categoria        SupplyCategory           @relation(fields: [categoriaId], references: [id])
+  supplierProducts SupplierProduct[]
+  priceHistory     SupplyItemPriceHistory[]
+
+  @@unique([tenantId, codigoInterno])
+  @@index([tenantId, categoriaId])
+  @@index([tenantId, isActive])
+  @@map("supply_items")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SUPPLIER PRODUCTS
+// ─────────────────────────────────────────────────────────────────────────────
+
+model SupplierProduct {
+  id                   String    @id @default(cuid())
+  tenantId             String
+  supplierId           String
+  supplyItemId         String
+  precioUnitario       Decimal
+  unidadCompra         StockUnit
+  factorConversion     Decimal
+  tiempoEntregaDias    Int
+  esProveedorPrincipal Boolean   @default(false)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  supplier   Supplier   @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  supplyItem SupplyItem @relation(fields: [supplyItemId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, supplierId, supplyItemId])
+  @@index([tenantId, supplierId])
+  @@index([tenantId, supplyItemId])
+  @@map("supplier_products")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PRICE HISTORY
+// ─────────────────────────────────────────────────────────────────────────────
+
+model SupplyItemPriceHistory {
+  id               String   @id @default(cuid())
+  tenantId         String
+  supplyItemId     String
+  costoAnterior    Decimal
+  costoNuevo       Decimal
+  cantidadRecibida Decimal?
+  stockAnterior    Decimal?
+  stockNuevo       Decimal?
+  motivo           String?
+  referenciaTipo   String?
+  referenciaId     String?
+  createdBy        String?
+  createdAt        DateTime @default(now())
+
+  supplyItem SupplyItem @relation(fields: [supplyItemId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, supplyItemId])
+  @@index([tenantId, createdAt])
+  @@map("supply_item_price_history")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PASSWORD RESET TOKENS
+// ─────────────────────────────────────────────────────────────────────────────
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  tenantId  String
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([tenantId, userId])
+  @@map("password_reset_tokens")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GLOBAL IDENTITY — ROLES & DOCUMENT TYPES (USR-01)
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum DocumentType {
+  CC
+  CE
+  PASAPORTE
+  TI
+  PEP
+}
+
+model Role {
+  id          String   @id @default(cuid())
+  tenantId    String
+  code        String
+  name        String
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users           User[]
+  rolePermissions RolePermission[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId, isActive])
+  @@map("roles")
+}
+
+model User {
+  id                String       @id @default(cuid())
+  tenantId          String
+  cedula            String
+  documentType      DocumentType
+  email             String
+  passwordHash      String
+  roleId            String
+  loginAttempts     Int          @default(0)
+  lockedUntil       DateTime?
+  lastLoginAt       DateTime?
+  passwordChangedAt DateTime?
+  refreshToken      String?
+  isActive          Boolean      @default(true)
+  emailVerified     Boolean      @default(false)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  deletedAt         DateTime?
+  createdBy         String?
+
+  role Role @relation(fields: [roleId], references: [id])
+
+  operationalProfile OperationalUser?
+  userPermissions    UserPermission[]
+
+  @@unique([tenantId, email])
+  @@unique([tenantId, cedula])
+  @@index([tenantId, roleId])
+  @@index([isActive])
+  @@index([tenantId, isActive])
+  @@map("users")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RBAC — PERMISSION CATALOG (USR-02)
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Permission {
+  id          String   @id @default(cuid())
+  code        String
+  name        String
+  description String?
+  module      String?
+  resource    String?
+  action      String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  rolePermissions RolePermission[]
+  userPermissions UserPermission[]
+
+  @@unique([code])
+  @@index([module])
+  @@index([resource, action])
+  @@index([isActive])
+  @@map("permissions")
+}
+
+model RolePermission {
+  id           String   @id @default(cuid())
+  roleId       String
+  permissionId String
+  createdAt    DateTime @default(now())
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@index([roleId])
+  @@index([permissionId])
+  @@map("role_permissions")
+}
+
+enum PermissionEffect {
+  ALLOW
+  DENY
+}
+
+model UserPermission {
+  id           String           @id @default(cuid())
+  userId       String
+  permissionId String
+  effect       PermissionEffect @default(ALLOW)
+  createdAt    DateTime         @default(now())
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, permissionId])
+  @@index([userId])
+  @@index([permissionId])
+  @@index([effect])
+  @@map("user_permissions")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MES OPERATIONAL USERS (cédula + PIN auth)
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum OperationalRole {
+  OWNER
+  SUPERVISOR
+  MANAGER
+  OPERATOR
+}
+
+model OperationalUser {
+  id            String          @id @default(cuid())
+  userId        String?         @unique
+  cedulaHash    String
+  pinHash       String
+  role          OperationalRole
+  tenantId      String
+  sedeId        String?
+  isActive      Boolean         @default(true)
+  loginAttempts Int             @default(0)
+  lockedUntil   DateTime?
+  lastLoginAt   DateTime?
+  refreshToken  String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  user             User?             @relation(fields: [userId], references: [id])
+  operatorSessions OperatorSession[]
+
+  @@unique([tenantId, cedulaHash])
+  @@index([tenantId])
+  @@index([tenantId, role])
+  @@map("operational_users")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MES — PRODUCTION MASTER DATA
+// ─────────────────────────────────────────────────────────────────────────────
+
+model WorkStation {
+  id          String   @id @default(cuid())
+  tenantId    String
+  name        String
+  code        String
+  description String?
+  location    String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  phases          ProductionPhase[]
+  sessions        OperatorSession[]
+  phaseExecutions PhaseExecution[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+  @@map("work_stations")
+}
+
+model ProductionRecipe {
+  id                String    @id @default(cuid())
+  tenantId          String
+  name              String
+  finishedProductId String
+  batchSize         Decimal   @db.Decimal(10, 3)
+  batchUnit         StockUnit
+  estimatedMinutes  Int
+  version           Int       @default(1)
+  isActive          Boolean   @default(true)
+  notes             String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  phases ProductionPhase[]
+  orders ProductionOrder[]
+
+  @@index([tenantId, isActive])
+  @@map("production_recipes")
+}
+
+model ProductionPhase {
+  id              String  @id @default(cuid())
+  tenantId        String
+  recipeId        String
+  workStationId   String
+  order           Int
+  name            String
+  description     String?
+  standardMinutes Int
+  minOperators    Int     @default(1)
+  maxOperators    Int     @default(4)
+  requiresQA      Boolean @default(false)
+
+  recipe     ProductionRecipe @relation(fields: [recipeId], references: [id])
+  station    WorkStation      @relation(fields: [workStationId], references: [id])
+  inputs     PhaseInput[]
+  executions PhaseExecution[]
+
+  @@index([recipeId, order])
+  @@map("production_phases")
+}
+
+model PhaseInput {
+  id               String    @id @default(cuid())
+  tenantId         String
+  phaseId          String
+  supplyItemId     String
+  quantityPerBatch Decimal   @db.Decimal(10, 3)
+  unit             StockUnit
+  isOptional       Boolean   @default(false)
+
+  phase ProductionPhase @relation(fields: [phaseId], references: [id], onDelete: Cascade)
+
+  @@index([phaseId])
+  @@map("phase_inputs")
+}
+
+model OperatorSession {
+  id               String    @id @default(cuid())
+  tenantId         String
+  workStationId    String
+  operatorUserId   String
+  phaseExecutionId String?
+  startedAt        DateTime  @default(now())
+  endedAt          DateTime?
+  createdAt        DateTime  @default(now())
+
+  station        WorkStation     @relation(fields: [workStationId], references: [id])
+  operator       OperationalUser @relation(fields: [operatorUserId], references: [id])
+  phaseExecution PhaseExecution? @relation(fields: [phaseExecutionId], references: [id])
+
+  @@index([tenantId])
+  @@index([workStationId])
+  @@index([operatorUserId])
+  @@index([phaseExecutionId])
+  @@map("operator_sessions")
+}
+
+enum ProductionOrderStatus {
+  DRAFT
+  PLANNED
+  IN_PROCESS
+  PAUSED
+  COMPLETED
+  CANCELLED
+}
+
+enum ProductionPriority {
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum ProductionShift {
+  MORNING
+  AFTERNOON
+  NIGHT
+}
+
+enum PhaseExecutionStatus {
+  PENDING
+  READY
+  IN_PROCESS
+  PAUSED
+  QA_PENDING
+  COMPLETED
+}
+
+model ProductionOrder {
+  id               String                @id @default(cuid())
+  tenantId         String
+  number           String
+  recipeId         String
+  recipeVersion    Int
+  status           ProductionOrderStatus @default(DRAFT)
+  priority         ProductionPriority    @default(NORMAL)
+  shift            ProductionShift
+  batchCount       Int
+  plannedQuantity  Decimal               @db.Decimal(10, 3)
+  producedQuantity Decimal?              @db.Decimal(10, 3)
+  unit             StockUnit
+  plannedStartAt   DateTime
+  plannedEndAt     DateTime
+  actualStartAt    DateTime?
+  actualEndAt      DateTime?
+  supervisorId     String?
+  notes            String?
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+
+  recipe     ProductionRecipe @relation(fields: [recipeId], references: [id])
+  executions PhaseExecution[]
+
+  @@index([tenantId, status])
+  @@index([tenantId, plannedStartAt])
+  @@map("production_orders")
+}
+
+model PhaseExecution {
+  id               String               @id @default(cuid())
+  tenantId         String
+  orderId          String
+  phaseId          String
+  workStationId    String
+  status           PhaseExecutionStatus @default(PENDING)
+  plannedMinutes   Int
+  actualMinutes    Int?
+  efficiencyPct    Decimal?             @db.Decimal(5, 2)
+  producedQuantity Decimal?             @db.Decimal(10, 3)
+  qaApprovedAt     DateTime?
+  qaApprovedBy     String?
+  completedAt      DateTime?
+  notes            String?
+  createdAt        DateTime             @default(now())
+
+  order       ProductionOrder   @relation(fields: [orderId], references: [id])
+  phase       ProductionPhase   @relation(fields: [phaseId], references: [id])
+  workStation WorkStation       @relation(fields: [workStationId], references: [id])
+  sessions    OperatorSession[]
+
+  @@index([orderId])
+  @@index([tenantId, workStationId, status])
+  @@map("phase_executions")
+}

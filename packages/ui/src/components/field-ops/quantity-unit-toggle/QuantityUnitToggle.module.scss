@@ -1,0 +1,91 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/field-ops-theme' as fo;
+
+.toggle {
+  display: inline-flex;
+  align-self: center;
+  gap: var(--toggle-gap);
+  padding: var(--toggle-padding);
+  border-radius: var(--toggle-radius);
+  border: $border-width solid var(--fo-border);
+  background-color: var(--fo-key-bg);
+  font-family: $font-family-base;
+  user-select: none;
+}
+
+.option {
+  min-width: var(--option-min-width);
+  min-height: var(--option-min-height);
+  padding: var(--option-padding-y) var(--option-padding-x);
+  border: $border-width solid transparent;
+  border-radius: calc(var(--toggle-radius) - 2px);
+  background: transparent;
+  color: var(--fo-text-secondary);
+  font-family: inherit;
+  font-size: var(--option-font-size);
+  font-weight: $font-weight-bold;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background-color $transition-fast,
+    border-color $transition-fast,
+    color $transition-fast;
+
+  &:focus-visible {
+    outline: 2px solid var(--fo-focus-ring);
+    outline-offset: 2px;
+  }
+}
+
+.optionSelected {
+  color: fo.$field-ops-gold;
+  background-color: rgba(fo.$field-ops-gold, 0.12);
+  border-color: rgba(fo.$field-ops-gold, 0.45);
+}
+
+.size--sm {
+  --toggle-gap: 3px;
+  --toggle-padding: 3px;
+  --toggle-radius: #{$border-radius-md};
+  --option-min-width: 2.25rem;
+  --option-min-height: 1.75rem;
+  --option-padding-x: #{$spacing-sm};
+  --option-padding-y: 0.2rem;
+  --option-font-size: 10px;
+}
+
+.size--md {
+  --toggle-gap: 4px;
+  --toggle-padding: 4px;
+  --toggle-radius: #{$border-radius-md};
+  --option-min-width: 2.75rem;
+  --option-min-height: 2rem;
+  --option-padding-x: 0.7rem;
+  --option-padding-y: 0.3rem;
+  --option-font-size: #{$font-size-xs};
+}
+
+.size--xl {
+  --toggle-gap: 5px;
+  --toggle-padding: 5px;
+  --toggle-radius: #{$border-radius-lg};
+  --option-min-width: 3.25rem;
+  --option-min-height: 2.5rem;
+  --option-padding-x: #{$spacing-md};
+  --option-padding-y: 0.4rem;
+  --option-font-size: #{$font-size-sm};
+}
+
+.theme--dark {
+  @include fo.field-ops-theme-dark;
+}
+
+.theme--light {
+  @include fo.field-ops-theme-light;
+
+  .optionSelected {
+    background-color: rgba(fo.$field-ops-gold, 0.1);
+  }
+}

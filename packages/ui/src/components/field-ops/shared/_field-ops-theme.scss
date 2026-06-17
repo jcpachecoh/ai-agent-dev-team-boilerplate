@@ -1,0 +1,66 @@
+@use '../../../styles/abstracts/variables' as *;
+
+$field-ops-gold: #c7a86d;
+$field-ops-teal: #4fd1c5;
+$field-ops-success-solid: #4ade80;
+$field-ops-success-on-solid: #0f1410;
+$field-ops-surface-dark: #141414;
+$field-ops-surface-dark-elevated: #1e1e1e;
+$field-ops-surface-light: #f9f8f3;
+$field-ops-surface-light-card: #fafafa;
+
+@mixin field-ops-theme-dark {
+  --fo-surface: #{$field-ops-surface-dark};
+  --fo-surface-elevated: #{$field-ops-surface-dark-elevated};
+  --fo-text-primary: #{rgba($color-white, 0.95)};
+  --fo-text-secondary: #{rgba($color-white, 0.55)};
+  --fo-text-muted: #{rgba($color-white, 0.4)};
+  --fo-border: #{rgba($color-white, 0.1)};
+  --fo-border-strong: #{rgba($color-white, 0.14)};
+  --fo-key-bg: #{rgba($color-white, 0.06)};
+  --fo-focus-ring: #{$field-ops-teal};
+}
+
+@mixin field-ops-theme-light {
+  --fo-surface: #{$field-ops-surface-light};
+  --fo-surface-elevated: #{$field-ops-surface-light-card};
+  --fo-text-primary: #{$color-gray-900};
+  --fo-text-secondary: #{$color-gray-600};
+  --fo-text-muted: #{$color-gray-500};
+  --fo-border: #{rgba($color-black, 0.1)};
+  --fo-border-strong: #{rgba($color-black, 0.12)};
+  --fo-key-bg: #{$color-gray-100};
+  --fo-focus-ring: #{$color-primary};
+}
+
+@mixin field-ops-control-sizes {
+  &.size--sm {
+    --control-width: 220px;
+    --control-min-height: 40px;
+    --control-gap: #{$spacing-xs};
+    --control-padding-x: #{$spacing-sm};
+    --control-padding-y: #{$spacing-xs};
+    --control-font-size: #{$font-size-sm};
+    --control-icon-size: 16px;
+  }
+
+  &.size--md {
+    --control-width: 320px;
+    --control-min-height: 48px;
+    --control-gap: #{$spacing-sm};
+    --control-padding-x: #{$spacing-md};
+    --control-padding-y: #{$spacing-sm};
+    --control-font-size: #{$font-size-base};
+    --control-icon-size: 20px;
+  }
+
+  &.size--xl {
+    --control-width: 100%;
+    --control-min-height: 56px;
+    --control-gap: #{$spacing-md};
+    --control-padding-x: #{$spacing-lg};
+    --control-padding-y: #{$spacing-md};
+    --control-font-size: #{$font-size-lg};
+    --control-icon-size: 24px;
+  }
+}

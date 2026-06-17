@@ -1,0 +1,133 @@
+@use '../../../styles/abstracts/variables' as *;
+
+.wrapper {
+  --control-width: 320px;
+
+  display: flex;
+  align-items: center;
+  height: 40px;
+  width: min(100%, var(--control-width));
+  border-radius: $border-radius-md;
+  border: $border-width solid rgba($color-black, 0.12);
+  overflow: hidden;
+  transition: all $transition-fast;
+}
+
+.size--sm {
+  --control-width: 220px;
+  height: 32px;
+}
+.size--md {
+  --control-width: 320px;
+  height: 40px;
+}
+.size--xl {
+  --control-width: 480px;
+  height: 52px;
+}
+
+.size--sm .button {
+  width: 32px;
+}
+.size--xl .button {
+  width: 52px;
+}
+
+.size--sm .input {
+  font-size: $font-size-xs;
+}
+.size--xl .input {
+  font-size: $font-size-base;
+}
+
+.button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 100%;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: inherit;
+  opacity: 0.9;
+  transition:
+    opacity $transition-fast,
+    background-color $transition-fast;
+
+  &:hover:not(:disabled) {
+    opacity: 1;
+    background-color: rgba($color-black, 0.05);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.2;
+  }
+}
+
+.inputContainer {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding: 0 $spacing-sm;
+  border-left: $border-width solid transparent;
+  border-right: $border-width solid transparent;
+}
+
+.prefix {
+  margin-right: $spacing-xs;
+  font-weight: $font-weight-medium;
+  color: $color-text-secondary;
+}
+
+.input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  font-family: $font-family-base;
+  font-size: $font-size-sm;
+  color: inherit;
+  outline: none;
+  text-align: center;
+
+  &::placeholder {
+    color: $color-text-secondary;
+    opacity: 0.6;
+  }
+}
+
+.theme--dark {
+  background-color: rgba($color-white, 0.05);
+  border-color: rgba($color-white, 0.1);
+  color: $color-text-inverse;
+
+  .inputContainer {
+    border-color: rgba($color-white, 0.1);
+  }
+
+  &:focus-within {
+    border-color: #d4a017;
+    background-color: rgba($color-white, 0.08);
+  }
+
+  .button:hover:not(:disabled) {
+    background-color: rgba($color-white, 0.1);
+  }
+}
+
+.theme--light {
+  background-color: $color-white;
+  border-color: rgba($color-black, 0.16);
+  color: $color-text-primary;
+
+  .inputContainer {
+    border-color: rgba($color-black, 0.12);
+  }
+
+  &:focus-within {
+    border-color: #d4a017;
+    background-color: $color-white;
+  }
+}

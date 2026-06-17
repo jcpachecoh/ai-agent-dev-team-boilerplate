@@ -1,0 +1,80 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/field-ops-theme' as fo;
+
+.card {
+  width: min(100%, var(--display-width));
+  min-height: var(--display-min-height);
+  padding: var(--card-padding);
+  border-radius: $border-radius-lg;
+  border: $border-width solid var(--fo-border);
+  background-color: var(--fo-surface-elevated);
+  display: flex;
+  flex-direction: column;
+  gap: var(--card-gap);
+  box-sizing: border-box;
+  font-family: $font-family-base;
+  text-align: center;
+}
+
+.opId {
+  margin: 0;
+  font-size: var(--op-size);
+  font-weight: $font-weight-bold;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: fo.$field-ops-gold;
+}
+
+.phaseLabel {
+  margin: 0;
+  font-size: var(--phase-size);
+  font-weight: $font-weight-semibold;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--fo-text-secondary);
+}
+
+.productName {
+  margin: 0;
+  font-size: var(--product-size);
+  font-weight: $font-weight-medium;
+  color: var(--fo-text-primary);
+}
+
+.size--sm {
+  --display-width: 220px;
+  --display-min-height: 88px;
+  --card-padding: #{$spacing-sm} #{$spacing-md};
+  --card-gap: 4px;
+  --op-size: #{$font-size-xs};
+  --phase-size: 10px;
+  --product-size: #{$font-size-sm};
+}
+
+.size--md {
+  --display-width: 320px;
+  --display-min-height: 108px;
+  --card-padding: #{$spacing-md};
+  --card-gap: #{$spacing-xs};
+  --op-size: #{$font-size-sm};
+  --phase-size: #{$font-size-xs};
+  --product-size: #{$font-size-base};
+}
+
+.size--xl {
+  --display-width: 100%;
+  --display-min-height: 128px;
+  --card-padding: #{$spacing-lg};
+  --card-gap: #{$spacing-sm};
+  --op-size: #{$font-size-base};
+  --phase-size: #{$font-size-sm};
+  --product-size: #{$font-size-lg};
+}
+
+.theme--dark {
+  @include fo.field-ops-theme-dark;
+}
+
+.theme--light {
+  @include fo.field-ops-theme-light;
+}

@@ -1,0 +1,74 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/proveedor-theme' as proveedor;
+
+.badge {
+  @include proveedor.proveedor-theme-classes;
+  @include proveedor.proveedor-size-vars;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  min-width: var(--badge-min-width);
+  min-height: var(--badge-height);
+  padding: 0 var(--badge-padding-x);
+  border-radius: $border-radius-sm;
+  border: $border-width solid transparent;
+  font-family: $font-family-mono;
+  font-size: var(--badge-font-size);
+  font-weight: $font-weight-bold;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.size--sm {
+  --badge-height: 20px;
+  --badge-padding-x: 8px;
+  --badge-font-size: 0.625rem;
+  --badge-min-width: 52px;
+}
+
+.size--md {
+  --badge-height: 21px;
+  --badge-padding-x: 10px;
+  --badge-font-size: 0.6875rem;
+  --badge-min-width: 60px;
+}
+
+.size--xl {
+  --badge-height: 24px;
+  --badge-padding-x: 12px;
+  --badge-font-size: 0.75rem;
+  --badge-min-width: 72px;
+}
+
+.domain--supplier.status--active {
+  color: proveedor.$proveedor-teal;
+  background: rgba(proveedor.$proveedor-teal, 0.14);
+  border-color: rgba(proveedor.$proveedor-teal, 0.35);
+}
+
+.domain--supplier.status--inactive {
+  color: var(--proveedor-muted);
+  background: rgba($color-white, 0.06);
+  border-color: var(--proveedor-border);
+}
+
+.domain--supplier.status--pending {
+  color: proveedor.$proveedor-warning;
+  background: rgba(proveedor.$proveedor-warning, 0.14);
+  border-color: rgba(proveedor.$proveedor-warning, 0.35);
+}
+
+.domain--catalog.status--available {
+  color: proveedor.$proveedor-teal;
+  background: rgba(proveedor.$proveedor-teal, 0.14);
+  border-color: rgba(proveedor.$proveedor-teal, 0.35);
+}
+
+.domain--catalog.status--limited {
+  color: proveedor.$proveedor-warning;
+  background: rgba(proveedor.$proveedor-warning, 0.14);
+  border-color: rgba(proveedor.$proveedor-warning, 0.35);
+}

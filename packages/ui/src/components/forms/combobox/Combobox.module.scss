@@ -1,0 +1,235 @@
+@use '../../../styles/abstracts/variables' as *;
+
+.container {
+  --control-width: 320px;
+
+  width: min(100%, var(--control-width));
+}
+
+.size--sm {
+  --control-width: 220px;
+}
+.size--md {
+  --control-width: 320px;
+}
+.size--xl {
+  --control-width: 480px;
+}
+
+.size--sm .trigger {
+  min-height: 32px;
+  font-size: $font-size-xs;
+}
+.size--md .trigger {
+  min-height: 40px;
+  font-size: $font-size-sm;
+}
+.size--xl .trigger {
+  min-height: 52px;
+  padding: $spacing-sm $spacing-md;
+  font-size: $font-size-base;
+}
+
+.trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 40px;
+  padding: $spacing-xs $spacing-sm;
+  font-family: $font-family-base;
+  font-size: $font-size-sm;
+  border-radius: $border-radius-md;
+  border: $border-width solid transparent;
+  background-color: transparent;
+  cursor: pointer;
+  transition: all $transition-fast;
+
+  &:focus {
+    border-color: #d4a017;
+    outline: none;
+  }
+}
+
+.valuesContainer {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-xs;
+  overflow: hidden;
+}
+
+.placeholder {
+  color: $color-text-secondary;
+  opacity: 0.6;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background-color: rgba(#d4a017, 0.12);
+  color: #8a610e;
+  padding: 2px 6px;
+  border-radius: $border-radius-sm;
+  font-size: $font-size-xs;
+  font-weight: $font-weight-medium;
+}
+
+.chipRemove {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  color: inherit;
+  opacity: 0.7;
+
+  &:hover {
+    opacity: 1;
+  }
+}
+
+.chevron {
+  color: $color-text-secondary;
+  margin-left: $spacing-sm;
+}
+
+.content {
+  z-index: 1000;
+  width: max(var(--radix-popover-trigger-width), 280px);
+  min-width: 280px;
+  background-color: $color-white;
+  border-radius: $border-radius-md;
+  border: $border-width solid $color-border;
+  box-shadow: $shadow-lg;
+  overflow: hidden;
+  animation: slideDownAndFade 0.2s ease-out;
+}
+
+.contentDark {
+  background-color: $color-gray-900;
+  border-color: rgba($color-white, 0.14);
+  color: $color-text-inverse;
+}
+
+.contentLight {
+  background-color: $color-white;
+  border-color: rgba($color-black, 0.16);
+  color: $color-text-primary;
+}
+
+.searchWrapper {
+  padding: $spacing-sm;
+  border-bottom: 1px solid $color-border;
+
+  .contentDark & {
+    border-color: rgba($color-white, 0.1);
+  }
+}
+
+.list {
+  min-height: 44px;
+  max-height: 300px;
+  overflow-y: auto;
+  padding: $spacing-xs;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 36px;
+  padding: 0 $spacing-sm;
+  color: $color-text-primary;
+  border-radius: $border-radius-sm;
+  cursor: pointer;
+  transition: background-color $transition-fast;
+
+  &:hover {
+    background-color: $color-gray-100;
+  }
+
+  &.selected {
+    background-color: rgba(#d4a017, 0.1);
+  }
+
+  .contentDark & {
+    color: $color-text-inverse;
+
+    &:hover {
+      background-color: rgba(#d4a017, 0.12);
+    }
+  }
+}
+
+.itemLabel {
+  font-size: $font-size-sm;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.check {
+  color: #d4a017;
+  flex-shrink: 0;
+}
+
+.empty {
+  padding: $spacing-md;
+  text-align: center;
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+}
+
+@keyframes slideDownAndFade {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Themes
+.theme--dark {
+  .trigger {
+    background-color: rgba($color-white, 0.05);
+    border-color: rgba($color-white, 0.1);
+    color: $color-text-inverse;
+    &:hover {
+      background-color: rgba($color-white, 0.08);
+    }
+    &:focus {
+      border-color: #d4a017;
+    }
+  }
+  .chip {
+    background-color: rgba($color-white, 0.1);
+    color: $color-text-inverse;
+  }
+}
+
+.theme--light {
+  .trigger {
+    background-color: $color-white;
+    border-color: rgba($color-black, 0.16);
+    color: $color-text-primary;
+    &:hover {
+      background-color: rgba($color-black, 0.02);
+    }
+    &:focus {
+      border-color: #d4a017;
+    }
+  }
+}
