@@ -13,6 +13,9 @@ import { Users } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 import { useTheme } from '@/providers/ThemeProvider';
+import { isPayrollReadOnlyRole } from '@/config/rbac.config';
+import { useMe } from '@/features/auth/hooks/useMe';
+import { getRoleCodeFromToken } from '@/lib/auth-token';
 import {
   useCreatePayrollEmployeeMutation,
   useRemovePayrollEmployeeMutation,
@@ -80,6 +83,9 @@ function getErrorMessage(error: unknown): string {
 export function PayrollEmployeesListScreen(): React.JSX.Element {
   const { theme } = useTheme();
   const empleadoTheme = theme === 'light' ? 'light' : 'dark';
+  const { data: me } = useMe();
+  const roleCode = me?.roleCode ?? getRoleCodeFromToken();
+  const readOnly = isPayrollReadOnlyRole(roleCode);
 
   const { state, setSearch, setStatusFilter, setPage, queryFilters } =
     usePayrollEmployeesFilters(8);
@@ -171,7 +177,9 @@ export function PayrollEmployeesListScreen(): React.JSX.Element {
           icon={<Users />}
           theme={empleadoTheme}
           primaryAction={
-            <EmpleadoActionButton theme={empleadoTheme} onClick={() => setCreateOpen(true)} />
+            readOnly ? undefined : (
+              <EmpleadoActionButton theme={empleadoTheme} onClick={() => setCreateOpen(true)} />
+            )
           }
         />
       </EmpleadoPageSection>
@@ -214,6 +222,12 @@ export function PayrollEmployeesListScreen(): React.JSX.Element {
       </EmpleadoPageSection>
 
       <EmpleadoPageSection theme={empleadoTheme} divider variant="toolbar">
+        {readOnly ? (
+          <p className={styles.readOnlyBanner} role="status">
+            Tu rol solo permite consultar empleados. Para crear, editar o desactivar registros,
+            contacta a un administrador.
+          </p>
+        ) : null}
         <EmpleadoListToolbar
           searchValue={state.search}
           statusFilter={state.statusFilter}
@@ -244,6 +258,7 @@ export function PayrollEmployeesListScreen(): React.JSX.Element {
         {!employeesQuery.isLoading && !employeesQuery.isError && filteredEmployees.length > 0 ? (
           <EmpleadoTable
             theme={empleadoTheme}
+            showActions={!readOnly}
             pagination={{
               page: state.page,
               totalPages,
@@ -266,38 +281,43 @@ export function PayrollEmployeesListScreen(): React.JSX.Element {
                 hireDate={employee.hireDate}
                 isActive={employee.isActive}
                 theme={empleadoTheme}
-                onEdit={() => setEditingEmployee(employee)}
-                onToggleStatus={() => setDeactivatingEmployee(employee)}
+                showActions={!readOnly}
+                onEdit={readOnly ? undefined : () => setEditingEmployee(employee)}
+                onToggleStatus={readOnly ? undefined : () => setDeactivatingEmployee(employee)}
               />
             ))}
           </EmpleadoTable>
         ) : null}
       </EmpleadoPageSection>
 
-      <PayrollEmployeeCreateModal
-        open={createOpen}
-        submitting={createEmployee.isPending}
-        theme={empleadoTheme}
-        onClose={() => setCreateOpen(false)}
-        onSubmit={(values) => void handleCreate(values)}
-      />
+      {!readOnly ? (
+        <>
+          <PayrollEmployeeCreateModal
+            open={createOpen}
+            submitting={createEmployee.isPending}
+            theme={empleadoTheme}
+            onClose={() => setCreateOpen(false)}
+            onSubmit={(values) => void handleCreate(values)}
+          />
 
-      <PayrollEmployeeEditDrawer
-        employee={editingEmployee}
-        open={Boolean(editingEmployee)}
-        submitting={updateEmployee.isPending}
-        theme={empleadoTheme}
-        onClose={() => setEditingEmployee(undefined)}
-        onSubmit={(values) => void handleEdit(values)}
-      />
+          <PayrollEmployeeEditDrawer
+            employee={editingEmployee}
+            open={Boolean(editingEmployee)}
+            submitting={updateEmployee.isPending}
+            theme={empleadoTheme}
+            onClose={() => setEditingEmployee(undefined)}
+            onSubmit={(values) => void handleEdit(values)}
+          />
 
-      <PayrollDeactivateEmployeeDialog
-        employee={deactivatingEmployee}
-        open={Boolean(deactivatingEmployee)}
-        submitting={removeEmployee.isPending}
-        onCancel={() => setDeactivatingEmployee(undefined)}
-        onConfirm={() => void handleDeactivate()}
-      />
+          <PayrollDeactivateEmployeeDialog
+            employee={deactivatingEmployee}
+            open={Boolean(deactivatingEmployee)}
+            submitting={removeEmployee.isPending}
+            onCancel={() => setDeactivatingEmployee(undefined)}
+            onConfirm={() => void handleDeactivate()}
+          />
+        </>
+      ) : null}
     </EmpleadoPage>
   );
 }

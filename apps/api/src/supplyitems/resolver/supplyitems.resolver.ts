@@ -24,7 +24,10 @@ import {
   IsString,
 } from 'class-validator';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { INVENTORY_MODULE_ROLES } from '../../common/config/rbac.config';
 import { PermissionsGuard } from '../../common/guards/permissions.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
 import { decimalToNumber } from '../../common/utils/decimal.util';
 import { SupplyCategoryType } from '../../supply-categories/resolver/supply-categories.resolver';
 import { resolveCategoryPrefijo } from '../../supply-categories/utils/derive-category-prefijo';
@@ -328,7 +331,8 @@ function toSupplyItemType(item: SupplyItemWithRelations): SupplyItemType {
   };
 }
 
-@UseGuards(PermissionsGuard)
+@UseGuards(PermissionsGuard, RolesGuard)
+@Roles(...INVENTORY_MODULE_ROLES)
 @Resolver(() => SupplyItemType)
 export class SupplyItemsResolver {
   constructor(private readonly supplyItemsService: SupplyItemsService) {}

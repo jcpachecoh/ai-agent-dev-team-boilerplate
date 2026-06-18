@@ -21,6 +21,9 @@ import {
 import { Response } from 'express';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { PAYROLL_MODULE_ROLES, PAYROLL_WRITE_ROLES } from '../../common/config/rbac.config';
 import { AttendanceQueryDto, PeriodQueryDto } from './dto/report-query.dto';
 import { PayrollReportResponseDto } from './dto/payroll-report-response.dto';
 import { AttendanceReportResponseDto } from './dto/attendance-report-response.dto';
@@ -33,7 +36,8 @@ import { ReportExcelService } from '../service/report-excel.service';
 @ApiTags('reports')
 @ApiBearerAuth()
 @ApiHeader({ name: 'x-tenant-id', required: false, description: 'Fallback tenant identifier' })
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(...PAYROLL_MODULE_ROLES)
 @Controller('reports')
 export class ReportsController {
   constructor(
@@ -84,6 +88,7 @@ export class ReportsController {
     'application/pdf',
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   )
+  @Roles(...PAYROLL_WRITE_ROLES)
   @Post('payroll/export')
   async exportPayrollReport(
     @CurrentUser() user: any,

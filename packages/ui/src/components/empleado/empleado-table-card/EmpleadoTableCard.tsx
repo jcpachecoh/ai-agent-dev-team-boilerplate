@@ -39,6 +39,7 @@ export function EmpleadoTableCard({
   isActive = true,
   onEdit,
   onToggleStatus,
+  showActions: showActionsProp,
   toggleLoading = false,
   theme = 'dark',
   size = 'md',
@@ -47,6 +48,7 @@ export function EmpleadoTableCard({
   const resolvedInitials = initials ?? resolveEmpleadoInitials(name);
   const resolvedTone = avatarTone ?? resolveEmpleadoAvatarTone(id ?? name);
   const contractLabel = formatEmpleadoContractLabel(contractType);
+  const showActions = showActionsProp ?? Boolean(onEdit || onToggleStatus);
 
   return (
     <article
@@ -102,16 +104,18 @@ export function EmpleadoTableCard({
         </div>
       </dl>
 
-      <footer className={styles.footer}>
-        <EmpleadoRowActionButton variant="edit" theme={theme} onClick={onEdit} />
-        <EmpleadoRowActionButton
-          variant="toggle"
-          active={isActive}
-          theme={theme}
-          onClick={onToggleStatus}
-          disabled={toggleLoading}
-        />
-      </footer>
+      {showActions ? (
+        <footer className={styles.footer}>
+          <EmpleadoRowActionButton variant="edit" theme={theme} onClick={onEdit} />
+          <EmpleadoRowActionButton
+            variant="toggle"
+            active={isActive}
+            theme={theme}
+            onClick={onToggleStatus}
+            disabled={toggleLoading}
+          />
+        </footer>
+      ) : null}
     </article>
   );
 }

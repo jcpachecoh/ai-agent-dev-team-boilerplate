@@ -12,7 +12,10 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiHeader, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Roles } from '../../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { PAYROLL_MODULE_ROLES, PAYROLL_WRITE_ROLES } from '../../common/config/rbac.config';
 import { PayrollService } from '../service/payroll.service';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
@@ -24,13 +27,15 @@ import { toEmployeeResponse, EmployeeResponseDto } from '../mapper/employees.map
 @ApiTags('employees')
 @ApiBearerAuth()
 @ApiHeader({ name: 'x-tenant-id', required: true, description: 'Tenant identifier' })
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(...PAYROLL_MODULE_ROLES)
 @Controller('employees')
 export class PayrollController {
   constructor(private readonly payrollService: PayrollService) {}
 
   @ApiOperation({ summary: 'Create a new employee' })
   @ApiResponse({ status: 201, type: EmployeeResponseDto })
+  @Roles(...PAYROLL_WRITE_ROLES)
   @Post()
   async create(
     @CurrentUser() user: any,
@@ -70,6 +75,7 @@ export class PayrollController {
 
   @ApiOperation({ summary: 'Update employee details' })
   @ApiResponse({ status: 200, type: EmployeeResponseDto })
+  @Roles(...PAYROLL_WRITE_ROLES)
   @Patch(':userId')
   async update(
     @CurrentUser() user: any,
@@ -84,6 +90,7 @@ export class PayrollController {
 
   @ApiOperation({ summary: 'Soft delete employee (isActive=false, deletedAt=now)' })
   @ApiResponse({ status: 200, type: Boolean })
+  @Roles(...PAYROLL_WRITE_ROLES)
   @Delete(':userId')
   async remove(
     @CurrentUser() user: any,

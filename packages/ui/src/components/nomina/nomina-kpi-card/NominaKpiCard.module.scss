@@ -55,7 +55,7 @@
   margin: 6px 0 0;
   font-size: 0.6875rem;
   line-height: 1.5;
-  color: var(--asistencia-faint);
+  color: var(--asistencia-muted);
 }
 
 .tone--accent {
@@ -71,5 +71,9 @@
 }
 
 .tone--muted {
-  --kpi-accent: var(--asistencia-faint);
+  --kpi-accent: var(--asistencia-muted);
+}
+
+.theme--light.tone--muted {
+  --kpi-accent: var(--asistencia-subtle);
 }

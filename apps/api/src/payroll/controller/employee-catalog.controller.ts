@@ -1,6 +1,9 @@
 import { Controller, Get, Headers, Query, UseGuards, BadRequestException } from '@nestjs/common';
 import { ApiBearerAuth, ApiHeader, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { PAYROLL_MODULE_ROLES } from '../../common/config/rbac.config';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { EmployeeCatalogService } from '../service/employee-catalog.service';
 import {
@@ -11,7 +14,8 @@ import {
 @ApiTags('employee-catalogs')
 @ApiBearerAuth()
 @ApiHeader({ name: 'x-tenant-id', required: true, description: 'Tenant identifier' })
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(...PAYROLL_MODULE_ROLES)
 @Controller('employee-catalogs')
 export class EmployeeCatalogController {
   constructor(private readonly employeeCatalogService: EmployeeCatalogService) {}

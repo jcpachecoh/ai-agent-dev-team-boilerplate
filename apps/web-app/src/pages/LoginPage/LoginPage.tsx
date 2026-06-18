@@ -3,7 +3,8 @@ import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 
 import { LoginPageView } from '@/features/auth/components/LoginPageView';
 import { getLoginErrorMessage, isValidLoginInput, useLogin } from '@/features/auth/hooks/useLogin';
-import { isAuthenticated } from '@/lib/auth-token';
+import { getDefaultRouteForRole, canAccessPath } from '@/config/rbac.config';
+import { getRoleCodeFromToken, isAuthenticated } from '@/lib/auth-token';
 
 /** Matches apps/api/prisma/seed.ts (global User — MES owner). */
 const DEMO_EMAIL = import.meta.env.VITE_DEMO_EMAIL ?? 'mes-owner@palos-de-lena.dev';
@@ -15,10 +16,13 @@ type LoginLocationState = {
 
 function getRedirectPath(state: unknown): string {
   const from = (state as LoginLocationState | null)?.from;
+  const roleCode = getRoleCodeFromToken();
   if (typeof from === 'string' && from.startsWith('/') && from !== '/login') {
-    return from;
+    if (roleCode && canAccessPath(roleCode, from)) {
+      return from;
+    }
   }
-  return '/';
+  return getDefaultRouteForRole(roleCode);
 }
 
 export default function LoginPage(): React.JSX.Element {

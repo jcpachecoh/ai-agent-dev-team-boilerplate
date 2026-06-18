@@ -13,6 +13,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
 import { GqlJwtRefreshGuard } from './guards/gql-jwt-refresh.guard';
 import { PermissionsGuard } from '../common/guards/permissions.guard';
+import { RolesGuard } from '../common/guards/roles.guard';
 import { PermissionsModule } from '../permissions/permissions.module';
 
 @Module({
@@ -37,7 +38,8 @@ import { PermissionsModule } from '../permissions/permissions.module';
     JwtStrategy,
     JwtRefreshStrategy,
     PermissionsGuard,
+    RolesGuard,
   ],
-  exports: [AuthService, PermissionsGuard, PermissionsModule],
+  exports: [AuthService, PermissionsGuard, RolesGuard, PermissionsModule],
 })
 export class AuthModule {}

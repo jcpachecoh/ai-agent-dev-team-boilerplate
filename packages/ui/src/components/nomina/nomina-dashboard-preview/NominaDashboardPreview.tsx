@@ -123,6 +123,7 @@ export function NominaDashboardPreview({
           {metrics.map((metric) => (
             <NominaKpiCard
               key={metric.id}
+              theme={theme}
               title={metric.title}
               value={metric.value}
               description={metric.description}

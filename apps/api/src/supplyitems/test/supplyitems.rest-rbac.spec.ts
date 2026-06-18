@@ -13,6 +13,8 @@ import {
   PermissionDeniedException,
 } from '../../common/exceptions/permission-denied.exception';
 import { PermissionsGuard } from '../../common/guards/permissions.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { ROLES_KEY } from '../../common/decorators/roles.decorator';
 import { PermissionsService } from '../../permissions/service/permissions.service';
 import { SupplyItemsController } from '../controller/supplyitems.controller';
 
@@ -34,6 +36,14 @@ const operatorJwtUser: JwtPayload = {
   tenantId: TENANT_ID,
   roleId: 'aaaaaaaa-0000-0000-0000-000000000004',
   roleCode: 'OPERATOR',
+};
+
+const nominaJwtUser: JwtPayload = {
+  sub: '11111111-0000-0000-0000-000000000008',
+  email: 'nomina@palos-de-lena.dev',
+  tenantId: TENANT_ID,
+  roleId: 'aaaaaaaa-0000-0000-0000-000000000006',
+  roleCode: 'NOMINA',
 };
 
 const permissionsServiceMock = {
@@ -218,6 +228,42 @@ describe('SupplyItems REST PermissionsGuard', () => {
       expect(error).toBeInstanceOf(PermissionDeniedException);
       expect((error as PermissionDeniedException).message).not.toContain(READ_PERMISSION);
     }
+  });
+});
+
+describe('SupplyItems REST RolesGuard', () => {
+  let guard: RolesGuard;
+  let reflector: Reflector;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [RolesGuard, Reflector],
+    }).compile();
+
+    guard = module.get(RolesGuard);
+    reflector = module.get(Reflector);
+    jest.restoreAllMocks();
+
+    jest.spyOn(reflector, 'getAllAndOverride').mockImplementation((key: unknown) => {
+      if (key === ROLES_KEY) {
+        return Reflect.getMetadata(ROLES_KEY, SupplyItemsController);
+      }
+      return undefined;
+    });
+  });
+
+  it('applies RolesGuard at controller level', () => {
+    const guards = Reflect.getMetadata(GUARDS_METADATA, SupplyItemsController) as unknown[];
+    expect(guards).toContain(RolesGuard);
+  });
+
+  it('rejects NOMINA before PermissionsGuard runs', () => {
+    const context = mockHttpContext(SupplyItemsController.prototype.findAll, {
+      user: nominaJwtUser,
+      headers: { 'x-tenant-id': TENANT_ID },
+    });
+
+    expect(() => guard.canActivate(context)).toThrow(PermissionDeniedException);
   });
 });
 

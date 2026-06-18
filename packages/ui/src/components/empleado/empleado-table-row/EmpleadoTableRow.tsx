@@ -4,7 +4,7 @@ import { EmpleadoAvatar } from '../empleado-avatar';
 import { EmpleadoContractBadge } from '../empleado-contract-badge';
 import { EmpleadoRowActionButton } from '../empleado-row-action-button';
 import { EmpleadoStatusBadge } from '../empleado-status-badge';
-import { empleadoGridTemplate } from '../shared/empleado-columns';
+import { getEmpleadoGridTemplate } from '../shared/empleado-columns';
 import type { EmpleadoAvatarTone, EmpleadoSize, EmpleadoTheme } from '../shared/empleado-types';
 import {
   formatEmpleadoCedula,
@@ -31,6 +31,7 @@ export interface EmpleadoTableRowProps {
   isActive?: boolean;
   onEdit?: () => void;
   onToggleStatus?: () => void;
+  showActions?: boolean;
   toggleLoading?: boolean;
   theme?: EmpleadoTheme;
   size?: EmpleadoSize;
@@ -60,6 +61,7 @@ export function EmpleadoTableRow({
   isActive = true,
   onEdit,
   onToggleStatus,
+  showActions: showActionsProp,
   toggleLoading = false,
   theme = 'dark',
   size = 'md',
@@ -68,6 +70,7 @@ export function EmpleadoTableRow({
   const resolvedInitials = initials ?? resolveEmpleadoInitials(name);
   const resolvedTone = avatarTone ?? resolveEmpleadoAvatarTone(id ?? name);
   const contractLabel = formatEmpleadoContractLabel(contractType);
+  const showActions = showActionsProp ?? Boolean(onEdit || onToggleStatus);
 
   return (
     <div
@@ -76,7 +79,7 @@ export function EmpleadoTableRow({
         .join(' ')}
       role="row"
       data-empleado-id={id}
-      style={{ '--empleado-columns': empleadoGridTemplate } as CSSProperties}
+      style={{ '--empleado-columns': getEmpleadoGridTemplate(showActions) } as CSSProperties}
     >
       <div className={styles.employeeCell} role="cell">
         <EmpleadoAvatar initials={resolvedInitials} tone={resolvedTone} theme={theme} size="md" />
@@ -110,16 +113,18 @@ export function EmpleadoTableRow({
       <div className={styles.statusCell} role="cell">
         <EmpleadoStatusBadge active={isActive} theme={theme} size="sm" />
       </div>
-      <div className={styles.actionsCell} role="cell">
-        <EmpleadoRowActionButton variant="edit" theme={theme} onClick={onEdit} />
-        <EmpleadoRowActionButton
-          variant="toggle"
-          active={isActive}
-          theme={theme}
-          onClick={onToggleStatus}
-          disabled={toggleLoading}
-        />
-      </div>
+      {showActions ? (
+        <div className={styles.actionsCell} role="cell">
+          <EmpleadoRowActionButton variant="edit" theme={theme} onClick={onEdit} />
+          <EmpleadoRowActionButton
+            variant="toggle"
+            active={isActive}
+            theme={theme}
+            onClick={onToggleStatus}
+            disabled={toggleLoading}
+          />
+        </div>
+      ) : null}
     </div>
   );
 }

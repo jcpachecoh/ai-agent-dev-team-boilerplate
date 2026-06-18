@@ -51,3 +51,18 @@ export function setGraphqlAuthToken(token: string): void {
 export function clearGraphqlAuthToken(): void {
   localStorage.removeItem(STORAGE_KEY);
 }
+
+export function getRoleCodeFromToken(): string | undefined {
+  const token = getAuthSessionToken();
+  if (!token) return undefined;
+
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return undefined;
+    const payload = JSON.parse(atob(parts[1])) as Record<string, unknown>;
+    const roleCode = payload['roleCode'];
+    return typeof roleCode === 'string' ? roleCode : undefined;
+  } catch {
+    return undefined;
+  }
+}

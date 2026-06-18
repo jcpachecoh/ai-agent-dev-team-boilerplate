@@ -9,10 +9,14 @@ import {
   Param,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiHeader, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Public } from '../../common/decorators/public.decorator';
+import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { PAYROLL_MODULE_ROLES } from '../../common/config/rbac.config';
 import { AttendanceService } from '../service/attendance.service';
 import { KioskAuthDto } from './dto/kiosk-auth.dto';
 import { RegisterEntryDto, RegisterExitDto } from './dto/register-event.dto';
@@ -101,6 +105,8 @@ export class AttendanceController {
   // ── JWT-protected endpoints ────────────────────────────────────────────────
 
   @ApiBearerAuth()
+  @UseGuards(RolesGuard)
+  @Roles(...PAYROLL_MODULE_ROLES)
   @Get()
   @ApiOperation({ summary: 'Historial de asistencia con filtros (tenant + JWT)' })
   @ApiResponse({ status: 200, description: 'Array de AttendanceLog' })
@@ -114,6 +120,8 @@ export class AttendanceController {
   }
 
   @ApiBearerAuth()
+  @UseGuards(RolesGuard)
+  @Roles(...PAYROLL_MODULE_ROLES)
   @Get('active')
   @ApiOperation({ summary: 'Empleados con entrada activa (sin salida) en una sede' })
   @ApiResponse({ status: 200, type: [ActiveAttendanceEntryDto] })
@@ -132,6 +140,8 @@ export class AttendanceController {
   }
 
   @ApiBearerAuth()
+  @UseGuards(RolesGuard)
+  @Roles(...PAYROLL_MODULE_ROLES)
   @Get('employees/:userId/overtime')
   @ApiOperation({ summary: 'Resumen de horas trabajadas y overtime de un empleado por día' })
   @ApiResponse({ status: 200, type: OvertimeSummaryDto })

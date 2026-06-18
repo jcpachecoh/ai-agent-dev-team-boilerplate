@@ -1,7 +1,7 @@
 import { ChevronDown } from 'lucide-react';
 import type { CSSProperties, JSX } from 'react';
 
-import { defaultEmpleadoColumns, empleadoGridTemplate } from '../shared/empleado-columns';
+import { defaultEmpleadoColumns, getEmpleadoGridTemplate } from '../shared/empleado-columns';
 import type { EmpleadoColumnDef } from '../shared/empleado-columns';
 import type { EmpleadoSize, EmpleadoTheme } from '../shared/empleado-types';
 import styles from './EmpleadoTableHeader.module.scss';
@@ -19,13 +19,15 @@ export function EmpleadoTableHeader({
   size = 'md',
   className,
 }: EmpleadoTableHeaderProps): JSX.Element {
+  const showActions = columns.some((column) => column.key === 'actions');
+
   return (
     <div
       className={[styles.header, styles[`theme--${theme}`], styles[`size--${size}`], className]
         .filter(Boolean)
         .join(' ')}
       role="row"
-      style={{ '--empleado-columns': empleadoGridTemplate } as CSSProperties}
+      style={{ '--empleado-columns': getEmpleadoGridTemplate(showActions) } as CSSProperties}
     >
       {columns.map((column) => (
         <div key={column.key} className={styles.cell} role="columnheader">

@@ -28,13 +28,17 @@ import { SupplyItemSupplierDto } from '../dto/supply-item-supplier.dto';
 import { UpdateSupplyItemDto } from '../dto/update-supply-item.dto';
 import { toSupplyItemResponse } from '../mapper/supply-item.mapper';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { INVENTORY_MODULE_ROLES } from '../../common/config/rbac.config';
 import { PermissionsGuard } from '../../common/guards/permissions.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
 import { SupplyItemsService } from '../service/supplyitems.service';
 
 @ApiTags('supplyitems')
 @ApiBearerAuth()
 @ApiHeader({ name: 'x-tenant-id', required: true, description: 'Tenant identifier' })
-@UseGuards(PermissionsGuard)
+@UseGuards(PermissionsGuard, RolesGuard)
+@Roles(...INVENTORY_MODULE_ROLES)
 @Controller('supply-items')
 export class SupplyItemsController {
   constructor(private readonly supplyItemsService: SupplyItemsService) {}

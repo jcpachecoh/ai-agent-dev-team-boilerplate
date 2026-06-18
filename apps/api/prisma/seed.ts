@@ -6,6 +6,7 @@
  *   mes-owner@palos-de-lena.dev           / TestPass123!
  *   mes-operator@palos-de-lena.dev        / TestPass123!
  *   operations.admin@palos-de-lena.dev    / TestPass123!  (OPERATIONS_ADMIN — committee modal)
+ *   nomina@palos-de-lena.dev              / TestPass123!  (NOMINA — payroll read-only)
  *
  * Operational tenant palos-de-lena (supply catalog + MES + plant):
  *   tenantId / mesTenantId = palos-de-lena  (x-tenant-id on supply-items & MES login)
@@ -13,7 +14,7 @@
  *   supplyItemId = SEED_SUPPLY_ITEM_ID (optional; also captured by Create Supply Item)
  *
  * Global User + Role (USR-01):
- *   Roles: OWNER, SUPERVISOR, MANAGER, OPERATOR, OPERATIONS_ADMIN (tenant-scoped)
+ *   Roles: OWNER, SUPERVISOR, MANAGER, OPERATOR, OPERATIONS_ADMIN, NOMINA (tenant-scoped)
  *
  * Global Permission catalog (USR-02 + USR-03):
  *   22 permission codes — see PERMISSION_SEEDS (ids cccccccc-0000-0000-0000-000000000001…022)
@@ -23,6 +24,7 @@
  *   SUPERVISOR — 17 permissions (base 13 + 4 admin.users/roles.read)
  *   MANAGER    — 14 permissions (base 13 + admin.users.read)
  *   OPERATOR   — plant.orders.read, supply.items.read
+ *   NOMINA     — no global permissions (module access via RolesGuard — OS-478)
  *
  * MES operational users (local/dev only — synthetic cédulas, never use in production):
  *   owner:    cédula 12345678 / PIN 1234  (OWNER) — linked to global User
@@ -74,6 +76,7 @@ const ROLE_SUPERVISOR_ID = 'aaaaaaaa-0000-0000-0000-000000000002';
 const ROLE_MANAGER_ID = 'aaaaaaaa-0000-0000-0000-000000000003';
 const ROLE_OPERATOR_ID = 'aaaaaaaa-0000-0000-0000-000000000004';
 const ROLE_OPERATIONS_ADMIN_ID = 'aaaaaaaa-0000-0000-0000-000000000005';
+const ROLE_NOMINA_ID = 'aaaaaaaa-0000-0000-0000-000000000006';
 
 const GLOBAL_MES_OWNER_USER_ID = '11111111-0000-0000-0000-000000000004';
 const GLOBAL_MES_OPERATOR_USER_ID = '11111111-0000-0000-0000-000000000005';
@@ -84,6 +87,7 @@ const MES_OPERATOR2_ID = 'eeeeeeee-0000-0000-0000-000000000006';
 
 const GLOBAL_MES_OPERATOR2_USER_ID = '11111111-0000-0000-0000-000000000006';
 const GLOBAL_MES_OPERATIONS_ADMIN_USER_ID = '11111111-0000-0000-0000-000000000007';
+const GLOBAL_NOMINA_USER_ID = '11111111-0000-0000-0000-000000000008';
 
 const ROLE_SEEDS = [
   { id: ROLE_OWNER_ID, code: 'OWNER', name: 'Owner' },
@@ -95,6 +99,7 @@ const ROLE_SEEDS = [
     code: 'OPERATIONS_ADMIN',
     name: 'Administrador de Operaciones',
   },
+  { id: ROLE_NOMINA_ID, code: 'NOMINA', name: 'Nómina' },
 ] as const;
 
 const PERMISSION_SEEDS = [
@@ -337,6 +342,7 @@ const ROLE_PERMISSION_MATRIX: Record<string, readonly string[]> = {
   MANAGER: MANAGER_PERMISSION_CODES,
   OPERATOR: OPERATOR_PERMISSION_CODES,
   OPERATIONS_ADMIN: OPERATIONS_ADMIN_PERMISSION_CODES,
+  NOMINA: [],
 };
 
 /** Matches MesAuthService cédula hashing (HMAC-SHA256 or SHA-256 fallback). */
@@ -629,12 +635,12 @@ async function main() {
   // ── Supply category (operational tenant) ─────────────────────────────────
   const category = await prisma.supplyCategory.upsert({
     where: { id: SEED_CATEGORY_ID },
-    update: { tenantId: OPERATIONAL_TENANT_ID, nombre: 'Abarrotes', prefijo: 'ABR' },
+    update: { tenantId: OPERATIONAL_TENANT_ID, nombre: 'Abarrotes' },
     create: {
       id: SEED_CATEGORY_ID,
       tenantId: OPERATIONAL_TENANT_ID,
       nombre: 'Abarrotes',
-      prefijo: 'ABR',
+      prefijo: 'ABA',
     },
   });
   console.log(
@@ -1022,11 +1028,40 @@ async function main() {
     operationsAdminGlobalUser.id,
   );
 
+  const nominaGlobalUser = await prisma.user.upsert({
+    where: {
+      tenantId_cedula: { tenantId: OPERATIONAL_TENANT_ID, cedula: '99887766' },
+    },
+    update: {
+      email: 'nomina@palos-de-lena.dev',
+      passwordHash: mesUserPasswordHash,
+      documentType: DocumentType.CC,
+      roleId: roles.NOMINA.id,
+      isActive: true,
+      emailVerified: true,
+    },
+    create: {
+      id: GLOBAL_NOMINA_USER_ID,
+      tenantId: OPERATIONAL_TENANT_ID,
+      cedula: '99887766',
+      documentType: DocumentType.CC,
+      email: 'nomina@palos-de-lena.dev',
+      passwordHash: mesUserPasswordHash,
+      roleId: roles.NOMINA.id,
+      isActive: true,
+      emailVerified: true,
+    },
+  });
+  console.log('Global User (NOMINA):', nominaGlobalUser.email, '—', nominaGlobalUser.id);
+
   console.log('\n✅ Email auth (global User — x-tenant-id: palos-de-lena):');
   console.log('  mes-owner          = mes-owner@palos-de-lena.dev / TestPass123!');
   console.log('  mes-operator       = mes-operator@palos-de-lena.dev / TestPass123!');
   console.log(
     '  operations-admin   = operations.admin@palos-de-lena.dev / TestPass123!  ← committee modal',
+  );
+  console.log(
+    '  nomina             = nomina@palos-de-lena.dev / TestPass123!  ← payroll read-only',
   );
   console.log('\n✅ Operational tenant (supply-items, MES, plant):');
   console.log('  tenantId / mesTenantId =', OPERATIONAL_TENANT_ID);

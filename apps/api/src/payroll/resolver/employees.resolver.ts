@@ -28,6 +28,9 @@ import { getTenantIdFromContext } from '../../common/graphql/tenant-from-context
 import { toEmployeeResponse } from '../mapper/employees.mapper';
 import { UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { PAYROLL_MODULE_ROLES, PAYROLL_WRITE_ROLES } from '../../common/config/rbac.config';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
 // Register Enums
@@ -204,7 +207,8 @@ export class UpdateEmployeeInput extends PartialType(CreateEmployeeInput) {
   isActive?: boolean;
 }
 
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(...PAYROLL_MODULE_ROLES)
 @Resolver(() => EmployeeDetailsType)
 export class EmployeesResolver {
   constructor(private readonly employeesService: PayrollService) {}
@@ -249,6 +253,7 @@ export class EmployeesResolver {
   }
 
   @Mutation(() => EmployeeDetailsType)
+  @Roles(...PAYROLL_WRITE_ROLES)
   async createEmployee(
     @CurrentUser() user: any,
     @Context() context: any,
@@ -260,6 +265,7 @@ export class EmployeesResolver {
   }
 
   @Mutation(() => EmployeeDetailsType)
+  @Roles(...PAYROLL_WRITE_ROLES)
   async updateEmployee(
     @CurrentUser() user: any,
     @Context() context: any,
@@ -272,6 +278,7 @@ export class EmployeesResolver {
   }
 
   @Mutation(() => Boolean)
+  @Roles(...PAYROLL_WRITE_ROLES)
   async deactivateEmployee(
     @CurrentUser() user: any,
     @Context() context: any,

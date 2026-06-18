@@ -1,11 +1,3 @@
-import {
-  Sidebar,
-  SIDEBAR_BRAND_MARK_DARK,
-  SIDEBAR_BRAND_MARK_LIGHT,
-  WEB_LOGIN_BRAND_LOGO_DARK,
-  WEB_LOGIN_BRAND_LOGO_LIGHT,
-  type SidebarNavItem,
-} from '@restopsiq/ui';
 import { useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
@@ -18,9 +10,15 @@ import {
 } from '@/constants/navigation';
 import { useMe } from '@/features/auth/hooks/useMe';
 import { useUiTheme } from '@/hooks/useUiTheme';
-
-const ADMIN_ONLY_NAV_IDS = new Set(['usuarios']);
-const ADMIN_ROLE_CODES = new Set(['OWNER', 'SUPERVISOR']);
+import { getVisibleNavigationItems } from '@/utils/navigation-access';
+import {
+  Sidebar,
+  SIDEBAR_BRAND_MARK_DARK,
+  SIDEBAR_BRAND_MARK_LIGHT,
+  WEB_LOGIN_BRAND_LOGO_DARK,
+  WEB_LOGIN_BRAND_LOGO_LIGHT,
+  type SidebarNavItem,
+} from '@restopsiq/ui';
 
 interface AppSidebarProps {
   collapsed?: boolean;
@@ -68,15 +66,7 @@ export default function AppSidebar({
   const { data: me } = useMe();
 
   const visibleItems = useMemo(
-    () =>
-      navigationItems.filter((item) => {
-        if (ADMIN_ONLY_NAV_IDS.has(item.id)) {
-          return (
-            me?.roleCode !== null && me?.roleCode !== undefined && ADMIN_ROLE_CODES.has(me.roleCode)
-          );
-        }
-        return true;
-      }),
+    () => getVisibleNavigationItems(me?.roleCode, navigationItems),
     [me?.roleCode],
   );
 

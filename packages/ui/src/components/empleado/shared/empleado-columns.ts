@@ -16,6 +16,15 @@ export const defaultEmpleadoColumns: EmpleadoColumnDef[] = [
   { key: 'actions', label: 'Acciones', width: '72px' },
 ];
 
-export const empleadoGridTemplate = defaultEmpleadoColumns
-  .map((column) => column.width ?? '1fr')
-  .join(' ');
+export function getEmpleadoColumns(showActions = true): EmpleadoColumnDef[] {
+  if (showActions) return defaultEmpleadoColumns;
+  return defaultEmpleadoColumns.filter((column) => column.key !== 'actions');
+}
+
+export function getEmpleadoGridTemplate(showActions = true): string {
+  return getEmpleadoColumns(showActions)
+    .map((column) => column.width ?? '1fr')
+    .join(' ');
+}
+
+export const empleadoGridTemplate = getEmpleadoGridTemplate(true);
