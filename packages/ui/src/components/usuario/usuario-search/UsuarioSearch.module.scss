@@ -1,0 +1,59 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/usuario-theme' as usr;
+
+.search {
+  @include usr.usuario-theme-classes;
+
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  border: 1px solid var(--usuario-border);
+  border-radius: 4px;
+  background: var(--usuario-input);
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+
+  &:focus-within {
+    border-color: var(--usuario-accent-border);
+    box-shadow: 0 0 0 2px var(--usuario-accent-soft);
+  }
+}
+
+.size--sm {
+  min-height: 32px;
+  padding: 0 10px 0 28px;
+}
+
+.size--md {
+  min-height: 34px;
+  padding: 0 11px 0 29px;
+}
+
+.icon {
+  position: absolute;
+  left: 9px;
+  width: 12px;
+  height: 12px;
+  color: var(--usuario-faint);
+  pointer-events: none;
+}
+
+.input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--usuario-text);
+  font-family: $font-family-base;
+  font-size: 0.75rem;
+
+  &::placeholder {
+    color: var(--usuario-placeholder);
+  }
+
+  &:focus {
+    outline: none;
+  }
+}

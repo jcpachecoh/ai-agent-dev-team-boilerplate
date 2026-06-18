@@ -1,0 +1,22 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/rol-theme' as rol;
+
+.header {
+  @include rol.rol-theme-classes;
+
+  display: grid;
+  grid-template-columns: var(--rol-columns);
+  align-items: center;
+  padding: 0.6rem 1rem;
+  border-bottom: 1px solid var(--rol-border);
+  background: var(--rol-surface-raised);
+}
+
+.cell {
+  font-family: 'IBM Plex Mono', $font-family-mono, monospace;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--rol-muted);
+}

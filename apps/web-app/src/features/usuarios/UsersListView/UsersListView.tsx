@@ -1,7 +1,18 @@
-import { toast } from '@restopsiq/ui';
-import { Pencil, UserX } from 'lucide-react';
+import {
+  toast,
+  UsuarioActionButton,
+  UsuarioListToolbar,
+  UsuarioPage,
+  UsuarioPageHeader,
+  UsuarioPageSection,
+  UsuarioTable,
+  UsuarioTableItem,
+} from '@restopsiq/ui';
+import { Users } from 'lucide-react';
 import { useMemo, useState, type JSX } from 'react';
 
+import { useMe } from '@/features/auth/hooks/useMe';
+import { useTheme } from '@/providers/ThemeProvider';
 import { getErrorMessage } from '@/lib/graphql-client';
 
 import styles from './UsersListView.module.scss';
@@ -15,20 +26,13 @@ import {
 import { useAdminUsers, useAdminRolesForSelect } from '../hooks/useAdminUsers';
 import type { AdminUserApi, UserUpdateFormValues } from '../types';
 
-const COL_TEMPLATE = '1fr 1.4fr 100px 120px 130px 110px 80px';
-
-function formatDate(iso: string | null): string {
-  if (!iso) {
-    return '—';
-  }
-  return new Date(iso).toLocaleDateString('es-CO', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  });
-}
+const ADMIN_ROLE_CODES = new Set(['OWNER', 'SUPERVISOR']);
 
 export default function UsersListView(): JSX.Element {
+  const { theme } = useTheme();
+  const usuarioTheme = theme === 'light' ? 'light' : 'dark';
+  const { data: me } = useMe();
+
   const usersQuery = useAdminUsers();
   const rolesQuery = useAdminRolesForSelect();
   const createMutation = useAdminCreateUser();
@@ -39,6 +43,9 @@ export default function UsersListView(): JSX.Element {
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<AdminUserApi | undefined>();
   const [deactivating, setDeactivating] = useState<AdminUserApi | undefined>();
+
+  const canManage =
+    me?.roleCode !== null && me?.roleCode !== undefined && ADMIN_ROLE_CODES.has(me.roleCode);
 
   const users = usersQuery.data ?? [];
   const roles = rolesQuery.data ?? [];
@@ -106,100 +113,59 @@ export default function UsersListView(): JSX.Element {
   const isSaving = createMutation.isPending || updateMutation.isPending;
 
   return (
-    <div className={styles.screen}>
-      <div className={styles.stickyTop}>
-        <header className={styles.pageHeader}>
-          <h1>Usuarios</h1>
-          <p>Gestión de cuentas de usuario y asignación de roles</p>
-        </header>
+    <UsuarioPage theme={usuarioTheme} className={styles.screen}>
+      <UsuarioPageSection theme={usuarioTheme} divider variant="header">
+        <UsuarioPageHeader
+          title="Usuarios"
+          subtitle="Gestión de cuentas de usuario y asignación de roles"
+          icon={<Users />}
+          theme={usuarioTheme}
+        />
+      </UsuarioPageSection>
 
-        <div className={styles.toolbar}>
-          <span className={styles.toolbarTitle}>
-            {filtered.length} usuario{filtered.length !== 1 ? 's' : ''}
-          </span>
-          <input
-            className={styles.searchInput}
-            type="search"
-            placeholder="Buscar por email, cédula o rol…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-          <button type="button" className={styles.newBtn} onClick={openCreate}>
-            + Nuevo usuario
-          </button>
-        </div>
-      </div>
+      <UsuarioPageSection theme={usuarioTheme} divider variant="toolbar">
+        <UsuarioListToolbar
+          count={filtered.length}
+          searchValue={search}
+          onSearchChange={setSearch}
+          theme={usuarioTheme}
+          primaryAction={
+            canManage ? (
+              <UsuarioActionButton theme={usuarioTheme} onClick={openCreate} />
+            ) : undefined
+          }
+        />
+      </UsuarioPageSection>
 
-      <div className={styles.scrollBody}>
+      <UsuarioPageSection theme={usuarioTheme} variant="body" className={styles.bodySection}>
         {usersQuery.isLoading ? (
-          <div className={styles.loadingState}>Cargando usuarios…</div>
+          <div className={styles.state}>Cargando usuarios…</div>
         ) : usersQuery.isError ? (
-          <div className={styles.loadingState}>Error al cargar usuarios.</div>
+          <div className={styles.state}>Error al cargar usuarios.</div>
+        ) : filtered.length === 0 ? (
+          <div className={styles.state}>No hay usuarios que coincidan con la búsqueda.</div>
         ) : (
-          <div className={styles.tableWrap}>
-            <div
-              className={styles.tableHeader}
-              style={{ '--col-template': COL_TEMPLATE } as React.CSSProperties}
-              role="row"
-            >
-              <span className={styles.colHead}>Email</span>
-              <span className={styles.colHead}>Cédula</span>
-              <span className={styles.colHead}>Tipo</span>
-              <span className={styles.colHead}>Rol</span>
-              <span className={styles.colHead}>Estado</span>
-              <span className={styles.colHead}>Último acceso</span>
-              <span className={styles.colHead}>Acciones</span>
-            </div>
-
-            {filtered.length === 0 ? (
-              <div className={styles.emptyState}>
-                <span>No hay usuarios que coincidan con la búsqueda.</span>
-              </div>
-            ) : (
-              filtered.map((user) => (
-                <div
-                  key={user.id}
-                  className={styles.tableRow}
-                  style={{ '--col-template': COL_TEMPLATE } as React.CSSProperties}
-                  role="row"
-                >
-                  <span className={styles.cell} title={user.email}>
-                    {user.email}
-                  </span>
-                  <span className={styles.cellMuted}>{user.cedula}</span>
-                  <span className={styles.cellMuted}>{user.documentType}</span>
-                  <span className={styles.cell}>{user.role.name}</span>
-                  <span className={styles.cell}>
-                    <span className={user.isActive ? styles.badgeActive : styles.badgeInactive}>
-                      {user.isActive ? 'Activo' : 'Inactivo'}
-                    </span>
-                  </span>
-                  <span className={styles.cellMuted}>{formatDate(user.lastLoginAt)}</span>
-                  <span className={styles.actionsCell}>
-                    <button
-                      type="button"
-                      className={styles.iconBtn}
-                      title="Editar"
-                      onClick={() => openEdit(user)}
-                    >
-                      <Pencil size={14} aria-hidden />
-                    </button>
-                    <button
-                      type="button"
-                      className={styles.iconBtnDanger}
-                      title="Desactivar"
-                      disabled={!user.isActive}
-                      onClick={() => setDeactivating(user)}
-                    >
-                      <UserX size={14} aria-hidden />
-                    </button>
-                  </span>
-                </div>
-              ))
-            )}
-          </div>
+          <UsuarioTable theme={usuarioTheme} showActions={canManage}>
+            {filtered.map((user) => (
+              <UsuarioTableItem
+                key={user.id}
+                id={user.id}
+                email={user.email}
+                cedula={user.cedula}
+                documentType={user.documentType}
+                roleName={user.role.name}
+                roleCode={user.role.code}
+                isActive={user.isActive}
+                lastLoginAt={user.lastLoginAt}
+                showActions={canManage}
+                theme={usuarioTheme}
+                onEdit={() => openEdit(user)}
+                onDeactivate={() => setDeactivating(user)}
+              />
+            ))}
+          </UsuarioTable>
         )}
-      </div>
+      </UsuarioPageSection>
 
       {editing ? (
         <UserFormModal
@@ -232,6 +198,6 @@ export default function UsersListView(): JSX.Element {
         onClose={() => setDeactivating(undefined)}
         onConfirm={() => void handleDeactivate()}
       />
-    </div>
+    </UsuarioPage>
   );
 }

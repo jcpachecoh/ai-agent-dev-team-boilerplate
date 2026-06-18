@@ -1,14 +1,18 @@
-import { toast } from '@restopsiq/ui';
-import { X } from 'lucide-react';
+import {
+  PermisoCheckboxItem,
+  PermisoModuleGroup,
+  RolPermissionsPanel,
+  groupPermissionsByModule,
+  toast,
+} from '@restopsiq/ui';
 import { useEffect, useMemo, useState, type JSX } from 'react';
 
+import { useTheme } from '@/providers/ThemeProvider';
 import { getErrorMessage } from '@/lib/graphql-client';
 
 import { useAdminAssignRolePermissions } from '../hooks/useAdminRoleMutations';
 import { useAdminRoleDetail, usePermissionCatalog } from '../hooks/useAdminRoles';
-import type { AdminRole, PermissionCatalogItem } from '../types';
-import { PermissionCheckbox } from './PermissionCheckbox';
-import styles from './RolePermissionsPanel.module.scss';
+import type { AdminRole } from '../types';
 
 interface RolePermissionsPanelProps {
   role: AdminRole;
@@ -16,15 +20,14 @@ interface RolePermissionsPanelProps {
   onClose: () => void;
 }
 
-function groupByModule(permissions: PermissionCatalogItem[]): Map<string, PermissionCatalogItem[]> {
-  const map = new Map<string, PermissionCatalogItem[]>();
-  for (const p of permissions) {
-    const key = p.module ?? 'other';
-    const group = map.get(key) ?? [];
-    group.push(p);
-    map.set(key, group);
+function countChanged(next: Set<string>, original: Set<string>): number {
+  let count = 0;
+  for (const id of next) {
+    if (!original.has(id)) {
+      count++;
+    }
   }
-  return map;
+  return count;
 }
 
 export function RolePermissionsPanel({
@@ -32,6 +35,7 @@ export function RolePermissionsPanel({
   canEdit,
   onClose,
 }: RolePermissionsPanelProps): JSX.Element {
+  const { theme } = useTheme();
   const detailQuery = useAdminRoleDetail(role.id);
   const catalogQuery = usePermissionCatalog();
   const assignMutation = useAdminAssignRolePermissions();
@@ -43,7 +47,7 @@ export function RolePermissionsPanel({
     if (!detailQuery.data) {
       return;
     }
-    const ids = new Set(detailQuery.data.permissions.map((p) => p.id));
+    const ids = new Set(detailQuery.data.permissions.map((permission) => permission.id));
     setSelectedIds(ids);
     setOriginalIds(ids);
   }, [detailQuery.data]);
@@ -61,7 +65,7 @@ export function RolePermissionsPanel({
   }, [selectedIds, originalIds]);
 
   const catalog = catalogQuery.data ?? [];
-  const grouped = useMemo(() => groupByModule(catalog), [catalog]);
+  const grouped = useMemo(() => groupPermissionsByModule(catalog), [catalog]);
 
   const toggle = (id: string) => {
     setSelectedIds((prev) => {
@@ -95,87 +99,33 @@ export function RolePermissionsPanel({
     Math.abs(selectedIds.size - originalIds.size) + countChanged(selectedIds, originalIds);
 
   return (
-    <div className={styles.panel}>
-      <div className={styles.panelHeader}>
-        <div className={styles.panelTitle}>
-          <h3 className={styles.panelRoleName}>{role.name}</h3>
-          <span className={styles.panelRoleCode}>{role.code}</span>
-          {isDirty ? (
-            <span className={styles.dirtyBadge}>
-              {diffCount} cambio{diffCount !== 1 ? 's' : ''}
-            </span>
-          ) : null}
-        </div>
-        <button
-          type="button"
-          className={styles.closeBtn}
-          onClick={onClose}
-          aria-label="Cerrar panel"
-        >
-          <X size={14} aria-hidden />
-        </button>
-      </div>
-
-      <div className={styles.panelBody}>
-        {isLoading ? (
-          <div className={styles.loading}>Cargando permisos…</div>
-        ) : (
-          Array.from(grouped.entries()).map(([module, perms]) => (
-            <div key={module} className={styles.moduleGroup}>
-              <div className={styles.moduleLabel}>
-                {module}
-                <span className={styles.moduleCount}>({perms.length})</span>
-              </div>
-              {perms.map((p) => (
-                <PermissionCheckbox
-                  key={p.id}
-                  permission={p}
-                  checked={selectedIds.has(p.id)}
-                  disabled={!canEdit || saving}
-                  onChange={() => toggle(p.id)}
-                />
-              ))}
-            </div>
-          ))
-        )}
-      </div>
-
-      <div className={styles.panelFooter}>
-        {canEdit ? (
-          <>
-            <button
-              type="button"
-              className={styles.discardBtn}
-              onClick={handleDiscard}
-              disabled={!isDirty || saving}
-            >
-              Descartar
-            </button>
-            <button
-              type="button"
-              className={styles.saveBtn}
-              onClick={() => void handleSave()}
-              disabled={!isDirty || saving}
-            >
-              {saving ? 'Guardando…' : 'Guardar cambios'}
-            </button>
-          </>
-        ) : (
-          <span className={styles.readonlyNote}>
-            Solo lectura — sin permiso para asignar permisos
-          </span>
-        )}
-      </div>
-    </div>
+    <RolPermissionsPanel
+      roleName={role.name}
+      roleCode={role.code}
+      dirtyCount={diffCount}
+      loading={isLoading}
+      canEdit={canEdit}
+      saving={saving}
+      theme={theme}
+      onClose={onClose}
+      onSave={() => void handleSave()}
+      onDiscard={handleDiscard}
+    >
+      {Array.from(grouped.entries()).map(([module, permissions]) => (
+        <PermisoModuleGroup key={module} module={module} count={permissions.length} theme={theme}>
+          {permissions.map((permission) => (
+            <PermisoCheckboxItem
+              key={permission.id}
+              code={permission.code}
+              name={permission.name}
+              checked={selectedIds.has(permission.id)}
+              disabled={!canEdit || saving}
+              onChange={() => toggle(permission.id)}
+              theme={theme}
+            />
+          ))}
+        </PermisoModuleGroup>
+      ))}
+    </RolPermissionsPanel>
   );
-}
-
-function countChanged(next: Set<string>, original: Set<string>): number {
-  let count = 0;
-  for (const id of next) {
-    if (!original.has(id)) {
-      count++;
-    }
-  }
-  return count;
 }

@@ -1,6 +1,8 @@
-import { RecetaFormButton } from '@restopsiq/ui';
+import { RecetaFilterSelect, RecetaFormButton } from '@restopsiq/ui';
 import { X } from 'lucide-react';
-import { useEffect, useId, useState, type JSX } from 'react';
+import { useEffect, useId, useMemo, useState, type JSX } from 'react';
+
+import { useTheme } from '@/providers/ThemeProvider';
 
 import styles from './UserFormModal.module.scss';
 import type {
@@ -58,6 +60,7 @@ export function UserFormModal({
   onClose,
   onSave,
 }: UserFormModalProps): JSX.Element | null {
+  const { theme } = useTheme();
   const titleId = useId();
   const [name, setName] = useState('');
   const [cedula, setCedula] = useState('');
@@ -97,11 +100,19 @@ export function UserFormModal({
     return () => window.removeEventListener('keydown', handleKey);
   }, [open, onClose]);
 
+  const activeRoles = roles.filter((r) => r.isActive);
+  const roleOptions = useMemo(
+    () => activeRoles.map((role) => ({ value: role.id, label: role.name })),
+    [activeRoles],
+  );
+  const documentTypeOptions = useMemo(
+    () => DOCUMENT_TYPES.map((item) => ({ value: item.value, label: item.label })),
+    [],
+  );
+
   if (!open) {
     return null;
   }
-
-  const activeRoles = roles.filter((r) => r.isActive);
 
   const handleSave = () => {
     if (!email.trim()) {
@@ -184,17 +195,15 @@ export function UserFormModal({
             <div className={styles.fieldGrid}>
               <label className={styles.field}>
                 <span className={styles.fieldLabel}>Tipo de doc. *</span>
-                <select
-                  className={styles.select}
+                <RecetaFilterSelect
+                  id="documentType"
+                  aria-label="Tipo de documento"
+                  options={documentTypeOptions}
                   value={documentType}
-                  onChange={(e) => setDocumentType(e.target.value as DocumentType)}
-                >
-                  {DOCUMENT_TYPES.map((dt) => (
-                    <option key={dt.value} value={dt.value}>
-                      {dt.label}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(value) => setDocumentType(value as DocumentType)}
+                  theme={theme}
+                  size="md"
+                />
               </label>
 
               <label className={styles.field}>
@@ -223,28 +232,33 @@ export function UserFormModal({
 
           <label className={styles.field}>
             <span className={styles.fieldLabel}>Rol *</span>
-            <select
-              className={styles.select}
+            <RecetaFilterSelect
+              id="roleId"
+              aria-label="Rol"
+              options={roleOptions}
               value={roleId}
-              onChange={(e) => setRoleId(e.target.value)}
-            >
-              <option value="">-- Seleccionar rol --</option>
-              {activeRoles.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.name}
-                </option>
-              ))}
-            </select>
+              onChange={setRoleId}
+              placeholder="-- Seleccionar rol --"
+              theme={theme}
+              size="md"
+            />
           </label>
 
           {error ? <p className={styles.errorText}>{error}</p> : null}
         </div>
 
         <footer className={styles.footer}>
-          <RecetaFormButton variant="cancel" label="Cancelar" onClick={onClose} disabled={saving} />
+          <RecetaFormButton
+            variant="cancel"
+            label="Cancelar"
+            theme={theme}
+            onClick={onClose}
+            disabled={saving}
+          />
           <RecetaFormButton
             variant="save"
             label={isEdit ? 'Guardar cambios' : 'Crear usuario'}
+            theme={theme}
             onClick={handleSave}
             disabled={saving}
           />

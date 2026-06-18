@@ -1,0 +1,55 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/usuario-theme' as usr;
+
+.badge {
+  @include usr.usuario-theme-classes;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 20px;
+  border: 1px solid transparent;
+  font-family: 'IBM Plex Mono', $font-family-mono, monospace;
+  font-weight: $font-weight-bold;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.size--sm {
+  min-height: 20px;
+  padding: 4px 9px;
+  font-size: 0.6875rem;
+}
+
+.size--md {
+  min-height: 22px;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+}
+
+.dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 2.5px;
+  flex-shrink: 0;
+}
+
+.active {
+  color: var(--usuario-green);
+  background: var(--usuario-green-soft);
+  border-color: var(--usuario-green-border);
+
+  .dot {
+    background: var(--usuario-green);
+  }
+}
+
+.inactive {
+  color: var(--usuario-red);
+  background: var(--usuario-red-soft);
+  border-color: var(--usuario-red-border);
+
+  .dot {
+    background: var(--usuario-red);
+  }
+}

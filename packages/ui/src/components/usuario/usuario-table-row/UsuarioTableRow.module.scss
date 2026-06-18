@@ -1,0 +1,52 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/usuario-theme' as usr;
+
+.row {
+  @include usr.usuario-theme-classes;
+
+  display: grid;
+  grid-template-columns: var(--usuario-columns);
+  align-items: center;
+  min-height: 52px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--usuario-border-subtle);
+  transition: background-color 120ms ease;
+
+  &:hover {
+    background: var(--usuario-hover);
+  }
+}
+
+.emailCell {
+  font-size: 0.8125rem;
+  font-weight: $font-weight-medium;
+  color: var(--usuario-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cedulaCell {
+  font-family: 'IBM Plex Mono', $font-family-mono, monospace;
+  font-size: 0.6875rem;
+  color: var(--usuario-muted);
+}
+
+.documentCell,
+.roleCell,
+.statusCell {
+  display: flex;
+  align-items: center;
+}
+
+.lastLoginCell {
+  font-family: 'IBM Plex Mono', $font-family-mono, monospace;
+  font-size: 0.625rem;
+  color: var(--usuario-subtle);
+}
+
+.actionsCell {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}

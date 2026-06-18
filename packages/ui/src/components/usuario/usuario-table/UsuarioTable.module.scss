@@ -1,0 +1,37 @@
+@use '../shared/usuario-theme' as usr;
+
+$mobile-breakpoint: 768px;
+
+.table {
+  @include usr.usuario-theme-classes;
+
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  border: 1px solid var(--usuario-border);
+  border-radius: 4px;
+  background: var(--usuario-surface);
+  overflow: hidden;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .table {
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    gap: 10px;
+  }
+
+  .body {
+    gap: 10px;
+  }
+
+  .desktopHeader {
+    display: none;
+  }
+}

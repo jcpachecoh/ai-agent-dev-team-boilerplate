@@ -120,11 +120,6 @@
   }
 }
 
-.select {
-  @extend .input;
-  cursor: pointer;
-}
-
 .errorText {
   margin: 0;
   font-size: 0.8rem;

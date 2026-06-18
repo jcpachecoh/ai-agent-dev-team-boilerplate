@@ -1,0 +1,149 @@
+@use '../shared/rol-theme' as rol;
+
+.panel {
+  @include rol.rol-theme-classes;
+
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--rol-surface);
+  color: var(--rol-text);
+  border-left: 1px solid var(--rol-border);
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--rol-border);
+  flex-shrink: 0;
+}
+
+.titleGroup {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.roleName {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dirtyBadge {
+  padding: 0.15rem 0.4rem;
+  border-radius: 9999px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  background: var(--rol-dirty-badge-bg);
+  color: var(--rol-dirty-badge-text);
+  white-space: nowrap;
+}
+
+.closeBtn {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--rol-border);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--rol-text-secondary);
+  cursor: pointer;
+
+  &:hover {
+    color: var(--rol-text);
+    background: var(--rol-hover);
+  }
+
+  &:focus-visible {
+    @include rol.rol-focus-ring;
+  }
+}
+
+.body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0.75rem 0;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 120px;
+  color: var(--rol-muted);
+  font-size: 0.8rem;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.85rem 1.25rem;
+  border-top: 1px solid var(--rol-border);
+  flex-shrink: 0;
+}
+
+.saveBtn {
+  flex: 1;
+  padding: 0.45rem 0.75rem;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: var(--rol-accent);
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--rol-accent) 85%, black);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.discardBtn {
+  padding: 0.45rem 0.75rem;
+  border: 1px solid var(--rol-border);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--rol-text-secondary);
+  font-size: 0.8rem;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: var(--rol-hover);
+    color: var(--rol-text);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.readonlyNote {
+  font-size: 0.75rem;
+  color: var(--rol-muted);
+  font-style: italic;
+}
+
+@media (max-width: 900px) {
+  .panel {
+    border-left: none;
+  }
+}

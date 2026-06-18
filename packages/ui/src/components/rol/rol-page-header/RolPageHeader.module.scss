@@ -1,0 +1,26 @@
+@use '../shared/rol-theme' as rol;
+
+.header {
+  @include rol.rol-theme-classes;
+
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.9rem;
+  color: var(--rol-text);
+}
+
+.subtitle {
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
+  color: var(--rol-text-secondary);
+}
+
+.action {
+  flex-shrink: 0;
+}

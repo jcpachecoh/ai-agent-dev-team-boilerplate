@@ -1,0 +1,29 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/permiso-theme' as perm;
+
+.group {
+  @include perm.permiso-theme-classes;
+
+  padding-bottom: 0.5rem;
+}
+
+.label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.25rem;
+  padding: 0.4rem 1.25rem;
+  border-bottom: 1px solid var(--permiso-border);
+  background: var(--permiso-surface-raised);
+  font-family: 'IBM Plex Mono', $font-family-mono, monospace;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--permiso-muted);
+}
+
+.count {
+  font-size: 0.65rem;
+  opacity: 0.7;
+}

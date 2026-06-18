@@ -1,6 +1,8 @@
 // Components
 export { Button } from './components/Button';
 export type { ButtonProps } from './components/Button';
+export { Checkbox } from './components/Checkbox';
+export type { CheckboxProps } from './components/Checkbox';
 export { Input } from './components/Input';
 export type { InputProps } from './components/Input/Input';
 export { LoginFields } from './components/LoginFields';
@@ -178,6 +180,9 @@ export * from './components/produccion/shared/produccion-types';
 
 export * from './components/sede';
 export * from './components/empleado';
+export * from './components/usuario';
+export * from './components/permiso';
+export * from './components/rol';
 export * from './components/asistencia';
 export * from './components/nomina';
 

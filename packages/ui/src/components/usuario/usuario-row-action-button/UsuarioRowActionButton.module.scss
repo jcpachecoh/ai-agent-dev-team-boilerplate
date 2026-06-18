@@ -1,0 +1,69 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/usuario-theme' as usr;
+
+.button {
+  @include usr.usuario-theme-classes;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  &:focus-visible {
+    @include usr.usuario-focus-ring;
+  }
+}
+
+.size--sm {
+  width: 26px;
+  height: 26px;
+}
+
+.size--md {
+  width: 30px;
+  height: 30px;
+}
+
+.icon {
+  display: inline-flex;
+
+  svg {
+    width: 12px;
+    height: 12px;
+  }
+}
+
+.variant--edit {
+  background: var(--usuario-purple-soft);
+  border-color: var(--usuario-purple-border);
+  color: var(--usuario-purple);
+
+  &:hover:not(:disabled) {
+    background: rgba(usr.$usuario-purple, 0.12);
+  }
+}
+
+.variant--deactivate {
+  background: var(--usuario-hover);
+  border-color: var(--usuario-border);
+  color: var(--usuario-faint);
+
+  &:hover:not(:disabled) {
+    background: rgba(usr.$usuario-coral, 0.12);
+    border-color: rgba(usr.$usuario-coral, 0.35);
+    color: usr.$usuario-coral;
+  }
+}

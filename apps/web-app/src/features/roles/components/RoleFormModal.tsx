@@ -1,6 +1,14 @@
-import { RecetaFormButton } from '@restopsiq/ui';
-import { X } from 'lucide-react';
+import {
+  RecetaFormButton,
+  RolCheckbox,
+  RolFormField,
+  RolModal,
+  RolTextInput,
+  RolTextarea,
+} from '@restopsiq/ui';
 import { useEffect, useId, useState, type JSX } from 'react';
+
+import { useTheme } from '@/providers/ThemeProvider';
 
 import type { AdminRole, CreateRoleFormValues, UpdateRoleFormValues } from '../types';
 import styles from './RoleFormModal.module.scss';
@@ -35,7 +43,12 @@ export function RoleFormModal({
   onClose,
   onSave,
 }: RoleFormModalProps): JSX.Element | null {
-  const titleId = useId();
+  const { theme } = useTheme();
+  const codeId = useId();
+  const nameId = useId();
+  const descriptionId = useId();
+  const activeId = useId();
+
   const [code, setCode] = useState('');
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -65,8 +78,8 @@ export function RoleFormModal({
     if (!open) {
       return;
     }
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
         onClose();
       }
     };
@@ -110,94 +123,81 @@ export function RoleFormModal({
   };
 
   return (
-    <div className={styles.backdrop} onClick={onClose} role="presentation">
-      <div
-        className={styles.dialog}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <header className={styles.header}>
-          <div className={styles.headerText}>
-            <h2 id={titleId} className={styles.title}>
-              {isEdit ? `Editar rol: ${role?.code}` : 'Nuevo rol'}
-            </h2>
-            <p className={styles.subtitle}>
-              {isEdit
-                ? 'Modifica nombre, descripción o estado del rol'
-                : 'Define código y nombre del rol'}
-            </p>
-          </div>
-          <button
-            type="button"
-            className={styles.closeButton}
+    <RolModal
+      open={open}
+      title={isEdit ? `Editar rol: ${role?.code}` : 'Nuevo rol'}
+      subtitle={
+        isEdit ? 'Modifica nombre, descripción o estado del rol' : 'Define código y nombre del rol'
+      }
+      theme={theme}
+      onClose={onClose}
+      closeLabel="Cerrar"
+      footer={
+        <>
+          <RecetaFormButton
+            variant="cancel"
+            label="Cancelar"
+            theme={theme}
             onClick={onClose}
-            aria-label="Cerrar"
-          >
-            <X size={18} aria-hidden />
-          </button>
-        </header>
-
-        <div className={styles.body}>
-          {!isEdit ? (
-            <label className={styles.field}>
-              <span className={styles.fieldLabel}>Código * (UPPER_SNAKE_CASE)</span>
-              <input
-                className={styles.input}
-                type="text"
-                value={code}
-                onChange={(e) => setCode(e.target.value.toUpperCase())}
-                placeholder="Ej: NUEVO_ROL"
-              />
-            </label>
-          ) : null}
-
-          <label className={styles.field}>
-            <span className={styles.fieldLabel}>Nombre *</span>
-            <input
-              className={styles.input}
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Ej: Nuevo Rol"
-            />
-          </label>
-
-          <label className={styles.field}>
-            <span className={styles.fieldLabel}>Descripción (opcional)</span>
-            <textarea
-              className={styles.textarea}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Descripción del rol y sus responsabilidades"
-            />
-          </label>
-
-          {isEdit ? (
-            <label className={styles.checkboxField}>
-              <input
-                type="checkbox"
-                checked={isActive}
-                onChange={(e) => setIsActive(e.target.checked)}
-              />
-              <span>Rol activo</span>
-            </label>
-          ) : null}
-
-          {error ? <p className={styles.errorText}>{error}</p> : null}
-        </div>
-
-        <footer className={styles.footer}>
-          <RecetaFormButton variant="cancel" label="Cancelar" onClick={onClose} disabled={saving} />
+            disabled={saving}
+          />
           <RecetaFormButton
             variant="save"
             label={isEdit ? 'Guardar cambios' : 'Crear rol'}
+            theme={theme}
             onClick={handleSave}
             disabled={saving}
           />
-        </footer>
+        </>
+      }
+    >
+      <div className={styles.body}>
+        {!isEdit ? (
+          <RolFormField label="Código * (UPPER_SNAKE_CASE)" htmlFor={codeId} theme={theme}>
+            <RolTextInput
+              id={codeId}
+              theme={theme}
+              type="text"
+              value={code}
+              onChange={(event) => setCode(event.target.value.toUpperCase())}
+              placeholder="Ej: NUEVO_ROL"
+            />
+          </RolFormField>
+        ) : null}
+
+        <RolFormField label="Nombre *" htmlFor={nameId} theme={theme}>
+          <RolTextInput
+            id={nameId}
+            theme={theme}
+            type="text"
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            placeholder="Ej: Nuevo Rol"
+          />
+        </RolFormField>
+
+        <RolFormField label="Descripción (opcional)" htmlFor={descriptionId} theme={theme}>
+          <RolTextarea
+            id={descriptionId}
+            theme={theme}
+            value={description}
+            onChange={(event) => setDescription(event.target.value)}
+            placeholder="Descripción del rol y sus responsabilidades"
+          />
+        </RolFormField>
+
+        {isEdit ? (
+          <RolCheckbox
+            id={activeId}
+            theme={theme}
+            label="Rol activo"
+            checked={isActive}
+            onChange={setIsActive}
+          />
+        ) : null}
+
+        {error ? <p className={styles.errorText}>{error}</p> : null}
       </div>
-    </div>
+    </RolModal>
   );
 }

@@ -1,0 +1,37 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/rol-theme' as rol;
+
+.toolbar {
+  @include rol.rol-theme-classes;
+
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.count {
+  flex: 1;
+  min-width: 140px;
+  font-family: 'IBM Plex Mono', $font-family-mono, monospace;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--rol-text-secondary);
+}
+
+.action {
+  margin-left: auto;
+}
+
+@media (max-width: 640px) {
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .action {
+    margin-left: 0;
+  }
+}
