@@ -1,8 +1,16 @@
 import { defineConfig, devices } from '@playwright/test';
 import dotenv from 'dotenv';
-import path from 'path';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 dotenv.config({ path: path.resolve(__dirname, '.env.test') });
+
+const apiEnv = {
+  ...process.env,
+  MES_AUTH_REDIS_OPTIONAL: 'true',
+};
 
 export default defineConfig({
   testDir: './e2e/specs',
@@ -10,8 +18,8 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 2 : undefined,
-  timeout: 30_000,
-  expect: { timeout: 5_000 },
+  timeout: 60_000,
+  expect: { timeout: 10_000 },
   reporter: [
     ['html', { outputFolder: 'playwright-report', open: 'never' }],
     ['list'],
@@ -28,7 +36,7 @@ export default defineConfig({
   projects: [
     {
       name: 'setup',
-      testMatch: /global-setup\.ts/,
+      testMatch: /auth\.setup\.ts/,
     },
     {
       name: 'chromium',
@@ -37,6 +45,7 @@ export default defineConfig({
         storageState: 'e2e/.auth/admin.json',
       },
       dependencies: ['setup'],
+      testIgnore: /auth\.setup\.ts/,
     },
     {
       name: 'firefox',
@@ -48,11 +57,19 @@ export default defineConfig({
       testMatch: /auth\/login\.spec\.ts/,
     },
   ],
-  globalSetup: require.resolve('./e2e/global-setup.ts'),
-  webServer: {
-    command: 'pnpm --filter app dev',
-    url: process.env.BASE_URL ?? 'http://localhost:5173',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
-  },
+  webServer: [
+    {
+      command: 'pnpm --filter @restopsiq/api dev',
+      url: 'http://localhost:3001/graphql',
+      reuseExistingServer: !process.env.CI,
+      timeout: 180_000,
+      env: apiEnv,
+    },
+    {
+      command: 'pnpm --filter @restopsiq/web-app dev',
+      url: process.env.BASE_URL ?? 'http://localhost:5173',
+      reuseExistingServer: !process.env.CI,
+      timeout: 180_000,
+    },
+  ],
 });

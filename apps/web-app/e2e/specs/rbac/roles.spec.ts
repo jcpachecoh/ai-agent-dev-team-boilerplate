@@ -1,17 +1,18 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('RBAC — Control de acceso por rol', () => {
-  test.describe('Rol: Employee (sin permisos de admin)', () => {
+  test.describe('Rol: Nómina (sin acceso a Empresa)', () => {
     test.use({ storageState: 'e2e/.auth/employee.json' });
 
-    test('botón "Crear Sede" no es visible para empleado', async ({ page }) => {
+    test('no puede acceder al módulo de sedes', async ({ page }) => {
       await page.goto('/empresa/sedes');
-      await expect(page.getByTestId('sede-create-btn')).not.toBeVisible();
+      await expect(page).toHaveURL(/\/unauthorized/);
+      await expect(page.getByText('Acceso denegado')).toBeVisible();
     });
 
-    test('ruta de configuración redirige a 403', async ({ page }) => {
-      await page.goto('/configuracion');
-      await expect(page).toHaveURL(/.*403|.*forbidden/);
+    test('no puede acceder a configuración', async ({ page }) => {
+      await page.goto('/settings');
+      await expect(page).toHaveURL(/\/unauthorized/);
     });
   });
 
@@ -20,7 +21,7 @@ test.describe('RBAC — Control de acceso por rol', () => {
 
     test('Owner puede ver el botón de crear sede', async ({ page }) => {
       await page.goto('/empresa/sedes');
-      await expect(page.getByTestId('sede-create-btn')).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Nueva sede' })).toBeVisible();
     });
   });
 });

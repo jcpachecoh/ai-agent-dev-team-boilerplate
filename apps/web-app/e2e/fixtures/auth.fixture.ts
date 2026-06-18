@@ -16,7 +16,7 @@ export const test = base.extend<AuthFixtures>({
     await use(new DashboardPage(page));
   },
   authenticatedPage: async ({ page }, use) => {
-    await page.goto('/dashboard');
+    await page.goto('/');
     await use();
   },
 });

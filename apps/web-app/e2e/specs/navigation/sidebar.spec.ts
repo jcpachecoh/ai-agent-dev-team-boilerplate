@@ -11,6 +11,7 @@ test.describe('Navegación — Sidebar', () => {
   test('sidebar contiene enlace a sedes', async ({ page }) => {
     const dashboard = new DashboardPage(page);
     await dashboard.goto();
-    await expect(dashboard.sidebar.getByRole('link', { name: /sedes/i })).toBeVisible();
+    await dashboard.sidebar.getByRole('button', { name: /^empresa$/i }).click();
+    await expect(dashboard.sidebar.getByRole('link', { name: 'Sedes' })).toBeVisible();
   });
 });

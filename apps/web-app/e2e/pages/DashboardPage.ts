@@ -3,30 +3,24 @@ import { Page, Locator, expect } from '@playwright/test';
 export class DashboardPage {
   readonly page: Page;
   readonly sidebar: Locator;
-  readonly userMenu: Locator;
+  readonly userMenuTrigger: Locator;
   readonly logoutButton: Locator;
-  readonly tenantBadge: Locator;
 
   constructor(page: Page) {
     this.page = page;
-    this.sidebar = page.getByTestId('sidebar');
-    this.userMenu = page.getByTestId('user-menu');
-    this.logoutButton = page.getByTestId('logout-button');
-    this.tenantBadge = page.getByTestId('tenant-badge');
+    this.sidebar = page.getByRole('complementary', { name: 'Navegación principal' });
+    this.userMenuTrigger = page.locator('button[aria-haspopup="menu"]');
+    this.logoutButton = page.getByRole('menuitem', { name: /cerrar sesión/i });
   }
 
-  async goto() {
-    await this.page.goto('/dashboard');
+  async goto(): Promise<void> {
+    await this.page.goto('/');
     await expect(this.sidebar).toBeVisible();
   }
 
-  async logout() {
-    await this.userMenu.click();
+  async logout(): Promise<void> {
+    await this.userMenuTrigger.click();
     await this.logoutButton.click();
     await this.page.waitForURL('**/login');
-  }
-
-  async expectTenant(tenantName: string) {
-    await expect(this.tenantBadge).toContainText(tenantName);
   }
 }
