@@ -26,72 +26,76 @@ $color-muted: rgba($color-operator-text, 0.55);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: $layout-gap-md;
+  gap: 0.85rem;
 }
 
 .brandHeader {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: $layout-gap-sm;
-  text-align: center;
+  display: grid;
+  place-items: center;
+  width: 100%;
 }
 
-.flameIcon {
-  display: block;
-  width: 1.25rem;
-  height: 1.25rem;
-  background: linear-gradient(180deg, #f5a623 0%, #e67e22 100%);
-  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2'%3E%3Cpath d='M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z'/%3E%3C/svg%3E");
-  mask-size: contain;
-  mask-repeat: no-repeat;
-  mask-position: center;
-}
+.brandLogo {
+  display: grid;
+  place-items: center;
+  width: min(100%, 17rem);
+  margin-inline: auto;
+  line-height: 0;
 
-.brandLine {
-  margin: 0;
-  font-size: 0.7rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: $color-muted;
-}
-
-.brandName {
-  color: $color-gold;
-}
-
-.brandDot {
-  margin: 0 0.35rem;
-  opacity: 0.6;
-}
-
-.plantLabel {
-  opacity: 0.85;
-}
-
-.stationBadge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.2rem 0.65rem;
-  border: 1px solid rgba($color-gold, 0.55);
-  border-radius: 0.35rem;
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  color: $color-gold;
+  img {
+    display: block;
+    width: 100%;
+    height: auto;
+    margin: 0;
+    object-fit: contain;
+    object-position: center;
+    transform: translateX(5px);
+  }
 }
 
 .areaTitle {
-  margin: $layout-gap-sm 0 0;
-  font-size: clamp(1.5rem, 4vw, 2rem);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  margin: 0.15rem 0 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
   text-align: center;
-  line-height: 1.15;
+}
+
+.areaTitleEyebrow {
+  margin: 0;
+  font-family: 'IBM Plex Mono', 'Menlo', monospace;
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: rgba($color-gold, 0.9);
+}
+
+.areaTitleDisplay {
+  margin: 0;
+  font-family: 'Cormorant Garamond', 'Georgia', serif;
+  font-size: clamp(2rem, 5.5vw, 2.75rem);
+  font-weight: 500;
+  line-height: 1.08;
+  letter-spacing: 0.015em;
+  text-wrap: balance;
   color: $color-operator-text;
+  text-shadow: 0 0 40px rgba($color-gold, 0.12);
+
+  &::after {
+    content: '';
+    display: block;
+    width: 2.75rem;
+    height: 1px;
+    margin: 0.65rem auto 0;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba($color-gold, 0.85) 50%,
+      transparent 100%
+    );
+  }
 }
 
 .instruction {
@@ -151,6 +155,11 @@ $color-muted: rgba($color-operator-text, 0.55);
     min-height: $keypad-key-min-h;
     width: $keypad-key-min-w;
     height: $keypad-key-min-h;
+  }
+
+  button[aria-label^='Tecla '] {
+    font-size: clamp(1.875rem, 5.5vw, 2.35rem);
+    line-height: 1;
   }
 }
 
