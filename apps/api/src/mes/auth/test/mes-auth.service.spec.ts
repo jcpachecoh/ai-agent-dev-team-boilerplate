@@ -63,6 +63,7 @@ const repoMock = {
   lockUser: jest.fn(),
   resetLoginAttempts: jest.fn(),
   saveRefreshToken: jest.fn(),
+  updatePinHash: jest.fn(),
 };
 
 const ACCESS_TOKEN_BLACKLIST_TTL_SECONDS = 8 * 60 * 60;
@@ -842,6 +843,84 @@ describe('MesAuthService', () => {
       await expect(
         service.login({ cedula: VALID_CEDULA, pin: 'ab' }, '192.168.1.1', TENANT_ID),
       ).rejects.toThrow(UnauthorizedException);
+    });
+  });
+
+  describe('resetPin', () => {
+    const requester = { ...baseUser, id: 'owner-1', role: OperationalRole.OWNER };
+    const target = { ...baseUser, id: 'op-user-2' };
+
+    beforeEach(() => {
+      repoMock.findById.mockResolvedValueOnce(requester).mockResolvedValueOnce(target);
+      (bcryptMock.hash as jest.Mock).mockResolvedValue('new-hashed-pin');
+      repoMock.updatePinHash.mockResolvedValue(undefined);
+      repoMock.saveRefreshToken.mockResolvedValue(undefined);
+    });
+
+    it('actualiza el pinHash y revoca el refreshToken del target', async () => {
+      // Arrange — mocks ya configurados en beforeEach
+
+      // Act
+      await service.resetPin(requester.id, target.id, '9012');
+
+      // Assert
+      expect(bcryptMock.hash).toHaveBeenCalledWith('9012', 12);
+      expect(repoMock.updatePinHash).toHaveBeenCalledWith(target.id, 'new-hashed-pin');
+      expect(repoMock.saveRefreshToken).toHaveBeenCalledWith(target.id, null);
+    });
+
+    it('lanza NotFoundException si el requester no existe', async () => {
+      // Arrange
+      repoMock.findById.mockReset().mockResolvedValue(null);
+
+      // Act & Assert
+      await expect(service.resetPin('ghost', target.id, '9012')).rejects.toThrow(NotFoundException);
+    });
+
+    it('lanza ForbiddenException si el requester está inactivo', async () => {
+      // Arrange
+      repoMock.findById
+        .mockReset()
+        .mockResolvedValueOnce({ ...requester, isActive: false })
+        .mockResolvedValueOnce(target);
+
+      // Act & Assert
+      await expect(service.resetPin(requester.id, target.id, '9012')).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('lanza NotFoundException si el target no existe', async () => {
+      // Arrange
+      repoMock.findById.mockReset().mockResolvedValueOnce(requester).mockResolvedValueOnce(null);
+
+      // Act & Assert
+      await expect(service.resetPin(requester.id, 'ghost', '9012')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('lanza ForbiddenException si el target pertenece a otro tenant', async () => {
+      // Arrange
+      repoMock.findById
+        .mockReset()
+        .mockResolvedValueOnce(requester)
+        .mockResolvedValueOnce({ ...target, tenantId: 'otro-tenant' });
+
+      // Act & Assert
+      await expect(service.resetPin(requester.id, target.id, '9012')).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('lanza BadRequestException si el nuevo PIN tiene formato inválido', async () => {
+      // Arrange
+      repoMock.findById.mockReset().mockResolvedValueOnce(requester).mockResolvedValueOnce(target);
+
+      // Act & Assert
+      await expect(service.resetPin(requester.id, target.id, 'abc')).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 

@@ -43,6 +43,7 @@ export interface IMesAuthRepository {
   lockUser(id: string, until: Date): Promise<void>;
   resetLoginAttempts(id: string): Promise<void>;
   saveRefreshToken(id: string, hashedToken: string | null): Promise<void>;
+  updatePinHash(id: string, pinHash: string): Promise<void>;
 }
 
 export interface MesLoginInput {
@@ -78,6 +79,7 @@ export interface IMesAuthService {
   selectLocation(userId: string, locationId: string): Promise<MesAuthTokens>;
   getRole(requesterUserId: string, targetUserId: string): Promise<{ role: OperationalRole }>;
   createUser(requesterUserId: string, dto: MesCreateUserInput): Promise<MesCreatedUserResponse>;
+  resetPin(requesterUserId: string, targetUserId: string, newPin: string): Promise<void>;
 }
 
 export interface MesJwtPayload {

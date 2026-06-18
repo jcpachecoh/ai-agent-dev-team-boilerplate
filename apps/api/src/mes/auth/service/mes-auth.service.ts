@@ -284,6 +284,34 @@ export class MesAuthService implements IMesAuthService {
     };
   }
 
+  async resetPin(requesterUserId: string, targetUserId: string, newPin: string): Promise<void> {
+    const requester = await this.mesAuthRepository.findById(requesterUserId);
+    if (!requester) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (!requester.isActive) {
+      throw new ForbiddenException('Access denied');
+    }
+
+    const target = await this.mesAuthRepository.findById(targetUserId);
+    if (!target) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (target.tenantId !== requester.tenantId) {
+      throw new ForbiddenException('Access denied');
+    }
+
+    if (!PIN_PATTERN.test(newPin)) {
+      throw new BadRequestException('pin must be 4–6 numeric digits');
+    }
+
+    const pinHash = await bcrypt.hash(newPin, SALT_ROUNDS);
+    await this.mesAuthRepository.updatePinHash(target.id, pinHash);
+    await this.mesAuthRepository.saveRefreshToken(target.id, null);
+  }
+
   private assertOperatorLocation(role: OperationalRole, locationId?: string): void {
     if (role === OperationalRole.OPERATOR && !locationId?.trim()) {
       throw new BadRequestException('locationId is required for OPERATOR role');

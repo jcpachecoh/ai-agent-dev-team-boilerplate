@@ -106,4 +106,11 @@ export class MesAuthRepository implements IMesAuthRepository {
       data: { refreshToken: hashedToken },
     });
   }
+
+  async updatePinHash(id: string, pinHash: string): Promise<void> {
+    await this.prisma.operationalUser.update({
+      where: { id },
+      data: { pinHash },
+    });
+  }
 }

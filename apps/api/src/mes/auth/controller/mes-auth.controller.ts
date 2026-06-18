@@ -6,6 +6,7 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  Patch,
   Post,
   Req,
   UseGuards,
@@ -16,6 +17,8 @@ import {
   ApiCreatedResponse,
   ApiForbiddenResponse,
   ApiHeader,
+  ApiNoContentResponse,
+  ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
@@ -37,6 +40,7 @@ import {
 } from './dto/mes-auth-response.dto';
 import { MesCreateUserDto } from './dto/mes-create-user.dto';
 import { MesLoginDto } from './dto/mes-login.dto';
+import { MesResetPinDto } from './dto/mes-reset-pin.dto';
 import { MesSelectLocationDto } from './dto/mes-select-location.dto';
 import { MesLocationSummaryDto } from './dto/mes-location-summary.dto';
 
@@ -131,6 +135,26 @@ export class MesAuthController {
   @HttpCode(HttpStatus.CREATED)
   createUser(@Body() dto: MesCreateUserDto, @Req() req: Request & { user: MesRequestUser }) {
     return this.mesAuthService.createUser(req.user.sub, dto);
+  }
+
+  @Public()
+  @UseGuards(MesJwtGuard, MesRolesGuard)
+  @Roles(OperationalRole.OWNER)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Reset PIN for an operational user (OWNER only)' })
+  @ApiNoContentResponse({ description: 'PIN reset successfully' })
+  @ApiNotFoundResponse({ description: 'User not found' })
+  @ApiForbiddenResponse({
+    description: 'Insufficient role, inactive requester, or cross-tenant access',
+  })
+  @Patch('mes/users/:userId/reset-pin')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async resetPin(
+    @Param('userId') userId: string,
+    @Body() dto: MesResetPinDto,
+    @Req() req: Request & { user: MesRequestUser },
+  ): Promise<void> {
+    await this.mesAuthService.resetPin(req.user.sub, userId, dto.pin);
   }
 
   private resolveClientIp(req: Request): string {
