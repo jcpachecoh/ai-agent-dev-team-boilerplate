@@ -9,6 +9,7 @@ const GLOBAL_ROLE_TO_OPERATIONAL: Record<string, OperationalRole> = {
   SUPERVISOR: OperationalRole.SUPERVISOR,
   MANAGER: OperationalRole.MANAGER,
   OPERATOR: OperationalRole.OPERATOR,
+  OPERATIONS_ADMIN: OperationalRole.OPERATOR,
 };
 
 type PlantRequestUser = {

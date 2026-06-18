@@ -34,7 +34,7 @@ export const MODULE_ROLES: Record<AppModule, readonly RoleCode[]> = {
   [AppModule.PROVEEDORES]: ['OWNER', 'SUPERVISOR', 'MANAGER'],
   [AppModule.INVENTARIOS]: ['OWNER', 'SUPERVISOR', 'MANAGER'],
   [AppModule.RECETAS]: ['OWNER', 'SUPERVISOR', 'MANAGER'],
-  [AppModule.PRODUCCION]: ['OWNER', 'SUPERVISOR', 'MANAGER'],
+  [AppModule.PRODUCCION]: ['OWNER', 'SUPERVISOR', 'MANAGER', 'OPERATIONS_ADMIN'],
   [AppModule.SUPERVISOR]: ['OWNER', 'SUPERVISOR', 'MANAGER'],
   [AppModule.DESPACHO]: ['OWNER', 'SUPERVISOR', 'MANAGER'],
   [AppModule.USUARIOS]: ['OWNER', 'SUPERVISOR'],
@@ -101,8 +101,11 @@ export function canAccessPath(roleCode: string | null | undefined, pathname: str
   return canAccessModule(roleCode, module);
 }
 
+export const PRODUCCION_DEFAULT_ROUTE = '/produccion/ordenes';
+
 export function getDefaultRouteForRole(roleCode: string | null | undefined): string {
   if (roleCode === 'NOMINA') return NOMINA_DEFAULT_ROUTE;
+  if (roleCode === 'OPERATIONS_ADMIN') return PRODUCCION_DEFAULT_ROUTE;
   return '/';
 }
 

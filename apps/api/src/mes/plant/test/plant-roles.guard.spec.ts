@@ -64,7 +64,7 @@ describe('PlantRolesGuard', () => {
     });
   });
 
-  it('denies platform JWT user with OPERATIONS_ADMIN global role', async () => {
+  it('denies platform JWT user with OPERATIONS_ADMIN on SUPERVISOR_ROLES endpoints', async () => {
     jest
       .spyOn(reflector, 'getAllAndOverride')
       .mockReturnValue([OperationalRole.SUPERVISOR, OperationalRole.OWNER]);
@@ -72,6 +72,19 @@ describe('PlantRolesGuard', () => {
 
     const context = mockContext({ sub: 'ops-admin-1' });
     await expect(guard.canActivate(context)).resolves.toBe(false);
+  });
+
+  it('allows platform JWT user with OPERATIONS_ADMIN on OPERATIONAL_ROLES endpoints', async () => {
+    jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([
+      OperationalRole.OWNER,
+      OperationalRole.SUPERVISOR,
+      OperationalRole.MANAGER,
+      OperationalRole.OPERATOR,
+    ]);
+    prismaMock.user.findFirst.mockResolvedValue({ role: { code: 'OPERATIONS_ADMIN' } });
+
+    const context = mockContext({ sub: 'ops-admin-1' });
+    await expect(guard.canActivate(context)).resolves.toBe(true);
   });
 
   it('denies when global user is not found', async () => {

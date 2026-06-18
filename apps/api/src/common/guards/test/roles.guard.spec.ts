@@ -5,7 +5,7 @@ import { GraphQLError } from 'graphql';
 import type { JwtPayload } from '../../../auth/interfaces/auth.interfaces';
 import { IS_PUBLIC_KEY } from '../../decorators/public.decorator';
 import { ROLES_KEY } from '../../decorators/roles.decorator';
-import { PAYROLL_MODULE_ROLES, INVENTORY_MODULE_ROLES } from '../../config/rbac.config';
+import { PAYROLL_MODULE_ROLES, INVENTORY_MODULE_ROLES, PRODUCCION_MODULE_ROLES } from '../../config/rbac.config';
 import {
   PERMISSION_DENIED_CODE,
   PermissionDeniedException,
@@ -28,6 +28,14 @@ const managerUser: JwtPayload = {
   tenantId: TENANT_ID,
   roleId: 'role-manager',
   roleCode: 'MANAGER',
+};
+
+const opsAdminUser: JwtPayload = {
+  sub: 'ops-admin-user-id',
+  email: 'operations.admin@palos-de-lena.dev',
+  tenantId: TENANT_ID,
+  roleId: 'role-ops-admin',
+  roleCode: 'OPERATIONS_ADMIN',
 };
 
 function mockHttpContext(
@@ -77,6 +85,34 @@ describe('RolesGuard', () => {
     const context = mockHttpContext({}, { user: managerUser });
 
     expect(guard.canActivate(context)).toBe(true);
+  });
+
+  it('allows OPERATIONS_ADMIN on produccion module roles', () => {
+    const guard = new RolesGuard(mockReflectorRoles(PRODUCCION_MODULE_ROLES));
+    const context = mockHttpContext({}, { user: opsAdminUser });
+
+    expect(guard.canActivate(context)).toBe(true);
+  });
+
+  it('rejects OPERATIONS_ADMIN on payroll module roles', () => {
+    const guard = new RolesGuard(mockReflectorRoles(PAYROLL_MODULE_ROLES));
+    const context = mockHttpContext({}, { user: opsAdminUser });
+
+    expect(() => guard.canActivate(context)).toThrow(PermissionDeniedException);
+  });
+
+  it('rejects OPERATIONS_ADMIN on inventory module roles', () => {
+    const guard = new RolesGuard(mockReflectorRoles(INVENTORY_MODULE_ROLES));
+    const context = mockHttpContext({}, { user: opsAdminUser });
+
+    expect(() => guard.canActivate(context)).toThrow(PermissionDeniedException);
+  });
+
+  it('rejects NOMINA on produccion module roles', () => {
+    const guard = new RolesGuard(mockReflectorRoles(PRODUCCION_MODULE_ROLES));
+    const context = mockHttpContext({}, { user: nominaUser });
+
+    expect(() => guard.canActivate(context)).toThrow(PermissionDeniedException);
   });
 
   it('rejects when x-tenant-id header does not match JWT tenantId', () => {

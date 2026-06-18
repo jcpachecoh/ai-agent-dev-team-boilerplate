@@ -106,6 +106,15 @@ const SUPERVISOR_ROLES = [
   OperationalRole.OWNER,
 ] as const;
 
+/** Roles allowed for operational plant actions (pause, resume, novelties).
+ *  Includes OPERATOR so OPERATIONS_ADMIN (mapped via PlantRolesGuard) gets access. */
+const OPERATIONAL_ROLES = [
+  OperationalRole.OWNER,
+  OperationalRole.SUPERVISOR,
+  OperationalRole.MANAGER,
+  OperationalRole.OPERATOR,
+] as const;
+
 type MesRequest = Request & { user: MesJwtPayload & { tenantId?: string } };
 
 @ApiTags('plant')
@@ -460,7 +469,7 @@ export class PlantController {
   @ApiOkResponse({ type: [IncidentResponseDto] })
   @Get('orders/:id/incidents')
   @UseGuards(PlantAuthGuard, PlantRolesGuard)
-  @Roles(...SUPERVISOR_ROLES)
+  @Roles(...OPERATIONAL_ROLES)
   listOrderNovelties(
     @Req() req: MesRequest,
     @Param('id') orderId: string,
@@ -484,7 +493,7 @@ export class PlantController {
   @ApiParam({ name: 'id', description: 'Production order ID' })
   @Get('orders/:id/pdf')
   @UseGuards(PlantAuthGuard, PlantRolesGuard)
-  @Roles(...SUPERVISOR_ROLES)
+  @Roles(...OPERATIONAL_ROLES)
   async downloadOrderPdf(
     @Req() req: MesRequest,
     @Param('id') id: string,
@@ -512,7 +521,7 @@ export class PlantController {
   @ApiOkResponse({ type: OrderDetailResponseDto })
   @Post('orders/:id/pause')
   @UseGuards(PlantAuthGuard, PlantRolesGuard)
-  @Roles(...SUPERVISOR_ROLES)
+  @Roles(...OPERATIONAL_ROLES)
   pauseOrder(
     @Req() req: MesRequest,
     @Param('id') id: string,
@@ -526,7 +535,7 @@ export class PlantController {
   @ApiOkResponse({ type: OrderDetailResponseDto })
   @Post('orders/:id/resume')
   @UseGuards(PlantAuthGuard, PlantRolesGuard)
-  @Roles(...SUPERVISOR_ROLES)
+  @Roles(...OPERATIONAL_ROLES)
   resumeOrder(@Req() req: MesRequest, @Param('id') id: string): Promise<OrderDetailResponse> {
     return this.plantService.resumeOrder(this.resolveTenantId(req), id);
   }
@@ -649,7 +658,7 @@ export class PlantController {
   @ApiOkResponse({ type: [IncidentResponseDto] })
   @Get('locations/:id/incidents')
   @UseGuards(PlantAuthGuard, PlantRolesGuard)
-  @Roles(...SUPERVISOR_ROLES)
+  @Roles(...OPERATIONAL_ROLES)
   listLocationNovelties(
     @Req() req: MesRequest,
     @Param('id') locationId: string,

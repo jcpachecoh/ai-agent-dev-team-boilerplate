@@ -17,11 +17,13 @@ export type RoleCode = (typeof ROLE_CODES)[number];
 export enum AppModule {
   INVENTARIOS = 'INVENTARIOS',
   NOMINA = 'NOMINA',
+  PRODUCCION = 'PRODUCCION',
 }
 
 export const MODULE_ROLES: Record<AppModule, readonly RoleCode[]> = {
   [AppModule.INVENTARIOS]: ['OWNER', 'SUPERVISOR', 'MANAGER', 'OPERATOR'],
   [AppModule.NOMINA]: ['OWNER', 'SUPERVISOR', 'MANAGER', 'NOMINA'],
+  [AppModule.PRODUCCION]: ['OWNER', 'SUPERVISOR', 'MANAGER', 'OPERATIONS_ADMIN'],
 };
 
 export const PAYROLL_MODULE_ROLES: readonly RoleCode[] = MODULE_ROLES[AppModule.NOMINA];
@@ -29,6 +31,8 @@ export const PAYROLL_MODULE_ROLES: readonly RoleCode[] = MODULE_ROLES[AppModule.
 export const PAYROLL_WRITE_ROLES: readonly RoleCode[] = ['OWNER', 'SUPERVISOR', 'MANAGER'];
 
 export const INVENTORY_MODULE_ROLES: readonly RoleCode[] = MODULE_ROLES[AppModule.INVENTARIOS];
+
+export const PRODUCCION_MODULE_ROLES: readonly RoleCode[] = MODULE_ROLES[AppModule.PRODUCCION];
 
 export const NOMINA_READ_ONLY_HTTP_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
