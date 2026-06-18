@@ -50,3 +50,14 @@ coverage/
 *.tsbuildinfo
 
 .pnpm-store/
+
+# E2E
+apps/app/e2e/.auth/
+apps/app/.env.test
+apps/app/playwright-report/
+apps/app/test-results/
+apps/web-app/e2e/.auth/
+apps/web-app/.env.test
+apps/web-app/playwright-report/
+apps/web-app/test-results/
+.claude/worktrees/
