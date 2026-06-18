@@ -42,7 +42,10 @@ export class IncidentService implements IIncidentService {
 
     this.plantEventsService.emitIncidentCreated(tenantId, response);
 
-    if ((input.severity === AlarmSeverity.CRITICAL || input.requiresPause === true) && input.orderId) {
+    if (
+      (input.severity === AlarmSeverity.CRITICAL || input.requiresPause === true) &&
+      input.orderId
+    ) {
       await this.tryAutoPauseOrder(tenantId, input.orderId, incident);
     }
 

@@ -177,7 +177,12 @@ describe('IncidentService', () => {
         type: IncidentType.EQUIPMENT,
         description: 'Falla en mezcladora principal',
       };
-      const criticalRecord = { ...incidentRecord, severity: AlarmSeverity.CRITICAL, type: IncidentType.EQUIPMENT, description: 'Falla en mezcladora principal' };
+      const criticalRecord = {
+        ...incidentRecord,
+        severity: AlarmSeverity.CRITICAL,
+        type: IncidentType.EQUIPMENT,
+        description: 'Falla en mezcladora principal',
+      };
       incidentRepositoryMock.createIncident.mockResolvedValue(criticalRecord);
 
       // Act

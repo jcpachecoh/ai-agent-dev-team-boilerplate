@@ -48,11 +48,8 @@ function filterCategories(
     if (status === 'inactive' && item.isActive) return false;
     if (!q) return true;
     const desc = (item.descripcion ?? '').toLowerCase();
-    return (
-      item.nombre.toLowerCase().includes(q) ||
-      item.prefijo.toLowerCase().includes(q) ||
-      desc.includes(q)
-    );
+    const prefijo = (item.prefijo ?? '').toLowerCase();
+    return item.nombre.toLowerCase().includes(q) || prefijo.includes(q) || desc.includes(q);
   });
 }
 

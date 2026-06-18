@@ -26,7 +26,7 @@ const emptyForm: SupplyCategoryFormValues = {
 function categoryToFormValues(category: SupplyCategoryApi): SupplyCategoryFormValues {
   return {
     nombre: category.nombre,
-    prefijo: category.prefijo,
+    prefijo: category.prefijo ?? '',
     descripcion: category.descripcion ?? '',
     isActive: category.isActive,
   };

@@ -3,7 +3,7 @@ export type StockUnit = 'UNIT' | 'GRAMS' | 'KILOGRAMS' | 'ML' | 'LITERS';
 export interface SupplyCategoryApi {
   id: string;
   nombre: string;
-  prefijo: string;
+  prefijo?: string;
   descripcion?: string | null;
   isActive: boolean;
 }

@@ -91,11 +91,7 @@ import { ReorderPhaseItemDto } from './dto/reorder-phases.dto';
 import { UpdatePhaseDto } from './dto/update-phase.dto';
 import { CreatePhaseDto } from './dto/create-recipe.dto';
 import { ResolveIncidentDto } from './dto/resolve-incident.dto';
-import {
-  CreateNoveltyDto,
-  mapNoveltyType,
-  mapNoveltySeverity,
-} from './dto/create-novelty.dto';
+import { CreateNoveltyDto, mapNoveltyType, mapNoveltySeverity } from './dto/create-novelty.dto';
 import { RecipeDetailResponseDto } from './dto/recipe-detail.response';
 import { UpdateRecipeDto } from './dto/update-recipe.dto';
 import { UpdateWorkstationDto } from './dto/update-workstation.dto';
@@ -458,7 +454,9 @@ export class PlantController {
     return this.plantService.findOrders(this.resolveTenantId(req), this.toListOrdersFilters(query));
   }
 
-  @ApiOperation({ summary: 'List novelties (incidents) for a specific production order (PLT-05 alias)' })
+  @ApiOperation({
+    summary: 'List novelties (incidents) for a specific production order (PLT-05 alias)',
+  })
   @ApiOkResponse({ type: [IncidentResponseDto] })
   @Get('orders/:id/incidents')
   @UseGuards(PlantAuthGuard, PlantRolesGuard)

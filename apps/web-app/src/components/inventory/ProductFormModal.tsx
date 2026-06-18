@@ -9,6 +9,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useSupplyCategories } from '@/features/inventario/hooks/useSupplyCategories';
 import { fetchNextSupplyItemCodigo } from '@/features/inventario/api/inventario.api';
 import { productToFormValues } from '@/features/inventario/mappers/formValues';
+import { resolveNextSupplyItemSku } from '@/features/inventario/utils/nextSupplyItemSku';
 import type { InventoryProduct, InventoryProductFormValues } from '@/types/inventory';
 import { STOCK_UNIT_OPTIONS } from '@/types/inventory';
 import type { UiTheme } from '@/constants/theme';
@@ -80,49 +81,47 @@ export function ProductFormModal({
   useEffect(() => {
     if (!open || mode !== 'create' || !values.categoryId) return;
 
+    const category = categoriesQuery.data?.find((item) => item.id === values.categoryId);
+    if (!category) return;
+
     let cancelled = false;
     setSkuLoading(true);
-    void fetchNextSupplyItemCodigo(values.categoryId)
-      .then((codigo) => {
+
+    void resolveNextSupplyItemSku(category)
+      .then((sku) => {
         if (!cancelled) {
-          setValues((prev) => ({ ...prev, sku: codigo }));
+          setValues((prev) => ({ ...prev, sku }));
         }
       })
       .catch(() => {
         if (!cancelled) {
-          setFormError('No se pudo generar el código del insumo para esta categoría.');
+          setValues((prev) => ({ ...prev, sku: '' }));
         }
       })
       .finally(() => {
-        if (!cancelled) setSkuLoading(false);
+        if (!cancelled) {
+          setSkuLoading(false);
+        }
       });
 
     return () => {
       cancelled = true;
     };
-  }, [open, mode, values.categoryId]);
+  }, [open, mode, values.categoryId, categoriesQuery.data]);
 
   const handleSave = () => {
-    const cost = Number(values.costPrice);
     const min = Number(values.minStock);
     const max = Number(values.maxStock);
-    const current = Number(values.currentStock);
     if (!values.name.trim() || !values.categoryId) {
       setFormError('Complete nombre y categoría.');
       return;
     }
-    if (mode === 'create' && !values.sku.trim()) {
-      setFormError('Espere a que se genere el código o seleccione otra categoría.');
+    if (!values.sku.trim()) {
+      setFormError('Seleccione una categoría para generar el SKU.');
       return;
     }
-    if (
-      Number.isNaN(cost) ||
-      Number.isNaN(min) ||
-      Number.isNaN(max) ||
-      (mode === 'create' && (Number.isNaN(current) || current < 0)) ||
-      min > max
-    ) {
-      setFormError('Revise costo y stock (mínimo ≤ máximo).');
+    if (Number.isNaN(min) || Number.isNaN(max) || min > max) {
+      setFormError('Revise stock mínimo y máximo (mínimo ≤ máximo).');
       return;
     }
     setFormError(null);
@@ -131,6 +130,13 @@ export function ProductFormModal({
 
   const update = (patch: Partial<InventoryProductFormValues>) =>
     setValues((prev) => ({ ...prev, ...patch }));
+
+  const skuPlaceholder =
+    mode === 'create'
+      ? skuLoading
+        ? 'Generando SKU…'
+        : 'Se genera al elegir categoría'
+      : values.sku;
 
   return (
     <InventarioModal
@@ -148,31 +154,34 @@ export function ProductFormModal({
       size="xl"
     >
       <div className={styles.formGrid}>
-        <InventarioFormField label="SKU (código interno)" theme={theme} size="md">
-          <input
-            id="insumo-sku"
-            className={mode === 'create' ? `${styles.input} ${styles.inputReadonly}` : styles.input}
-            value={skuLoading && mode === 'create' ? 'Generando…' : values.sku}
-            readOnly={mode === 'create'}
-            onChange={mode === 'create' ? undefined : (e) => update({ sku: e.target.value })}
-          />
-        </InventarioFormField>
+        <div className={styles.categoryRow}>
+          <InventarioFormField label="Categoría *" inputType="select" theme={theme} size="md">
+            <InventarioSelect
+              options={categoryOptions}
+              value={values.categoryId}
+              onChange={(v) => update({ categoryId: v })}
+              theme={theme}
+              size="md"
+              aria-label="Categoría"
+            />
+          </InventarioFormField>
+          <InventarioFormField label="SKU *" theme={theme} size="md">
+            <input
+              id="insumo-sku"
+              className={`${styles.input} ${styles.inputReadonly}`}
+              value={values.sku}
+              readOnly
+              placeholder={skuPlaceholder}
+              aria-busy={skuLoading}
+            />
+          </InventarioFormField>
+        </div>
         <InventarioFormField label="Nombre *" theme={theme} size="md">
           <input
             id="insumo-nombre"
             className={styles.input}
             value={values.name}
             onChange={(e) => update({ name: e.target.value })}
-          />
-        </InventarioFormField>
-        <InventarioFormField label="Categoría" inputType="select" theme={theme} size="md">
-          <InventarioSelect
-            options={categoryOptions}
-            value={values.categoryId}
-            onChange={(v) => update({ categoryId: v })}
-            theme={theme}
-            size="md"
-            aria-label="Categoría"
           />
         </InventarioFormField>
         <InventarioFormField label="Unidad base" inputType="select" theme={theme} size="md">
@@ -183,22 +192,6 @@ export function ProductFormModal({
             theme={theme}
             size="md"
             aria-label="Unidad base"
-          />
-        </InventarioFormField>
-        <InventarioFormField label="Costo promedio (CPP)" theme={theme} size="md">
-          <input
-            className={styles.input}
-            type="number"
-            value={values.costPrice}
-            onChange={(e) => update({ costPrice: e.target.value })}
-          />
-        </InventarioFormField>
-        <InventarioFormField label="Factor de conversión" theme={theme} size="md">
-          <input
-            className={styles.input}
-            type="number"
-            value={values.factorConversion}
-            onChange={(e) => update({ factorConversion: e.target.value })}
           />
         </InventarioFormField>
         <InventarioFormField label="Stock Mínimo" theme={theme} size="md">
@@ -217,16 +210,6 @@ export function ProductFormModal({
             onChange={(e) => update({ maxStock: e.target.value })}
           />
         </InventarioFormField>
-        <InventarioFormField label="Stock actual" theme={theme} size="md">
-          <input
-            className={mode === 'edit' ? `${styles.input} ${styles.inputReadonly}` : styles.input}
-            type="number"
-            min="0"
-            value={values.currentStock}
-            readOnly={mode === 'edit'}
-            onChange={mode === 'edit' ? undefined : (e) => update({ currentStock: e.target.value })}
-          />
-        </InventarioFormField>
         <div className={styles.togglePair}>
           <FormToggle
             label="Aplica vencimiento"
@@ -239,29 +222,9 @@ export function ProductFormModal({
             onChange={(checked) => update({ aplicaLote: checked })}
           />
         </div>
-        {mode === 'edit' ? (
-          <div className={styles.toggleField}>
-            <div className={styles.toggleCopy}>
-              <span className={styles.toggleLabel}>Estado</span>
-              <span className={styles.toggleHint}>
-                {values.isActive
-                  ? 'Activo — visible en catálogo y selección de insumos'
-                  : 'Inactivo — descontinuado, no aparece al crear nuevos vínculos'}
-              </span>
-            </div>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={values.isActive}
-              aria-label="Insumo activo"
-              className={[styles.toggle, values.isActive ? styles.toggleOn : ''].join(' ')}
-              onClick={() => update({ isActive: !values.isActive })}
-            >
-              <span className={styles.toggleThumb} aria-hidden />
-            </button>
-          </div>
+        {formError ? (
+          <span className={[styles.errorText, styles.fullWidthField].join(' ')}>{formError}</span>
         ) : null}
-        {formError ? <span className={styles.errorText}>{formError}</span> : null}
       </div>
     </InventarioModal>
   );
