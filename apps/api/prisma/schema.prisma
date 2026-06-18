@@ -392,6 +392,16 @@ enum ArlRiskLevel {
   RIESGO_V
 }
 
+enum EmployeeCatalogType {
+  EPS
+  ARL
+  PENSION_FUND
+  CESANTIAS_FUND
+  CAJA_COMPENSACION
+  AREA
+  DEPARTMENT
+}
+
 model Location {
   id        String    @id @default(cuid())
   tenantId  String
@@ -474,6 +484,20 @@ model EmployeeDetails {
   @@index([contractType])
   @@index([isActive])
   @@map("employee_details")
+}
+
+model EmployeeCatalogOption {
+  id        String              @id @default(cuid())
+  tenantId  String
+  type      EmployeeCatalogType
+  name      String
+  isActive  Boolean             @default(true)
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+
+  @@unique([tenantId, type, name])
+  @@index([tenantId, type, isActive])
+  @@map("employee_catalog_options")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

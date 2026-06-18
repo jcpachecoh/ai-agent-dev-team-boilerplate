@@ -1,4 +1,4 @@
-import { RecetaFilterSelect } from '@restopsiq/ui';
+import { RecetaFilterSelect, RecetaFormButton } from '@restopsiq/ui';
 import { useEffect, useMemo, useState } from 'react';
 
 import { useUiTheme } from '@/hooks/useUiTheme';
@@ -14,6 +14,12 @@ import {
   type PayrollEmployeeFormValues,
   type SalaryType,
 } from '../types/payroll.types';
+import { EMPLOYEE_CATALOG_TYPES } from '../types/employee-catalog.types';
+import {
+  buildCatalogSelectOptions,
+  catalogSelectPlaceholder,
+  useEmployeeCatalogsGrouped,
+} from '../hooks/useEmployeeCatalogOptions';
 import styles from '../payroll.module.scss';
 
 export interface PayrollEmployeeFormProps {
@@ -50,6 +56,28 @@ const EMPTY_VALUES: PayrollEmployeeFormValues = {
   arlRiskLevel: 'RIESGO_I',
   cajaCompensacion: '',
 };
+
+const REQUIRED_CATALOG_FIELDS: Array<{
+  key: keyof Pick<
+    PayrollEmployeeFormValues,
+    | 'area'
+    | 'department'
+    | 'epsName'
+    | 'pensionFundName'
+    | 'cesantiasFundName'
+    | 'arlName'
+    | 'cajaCompensacion'
+  >;
+  label: string;
+}> = [
+  { key: 'area', label: 'Área' },
+  { key: 'department', label: 'Departamento' },
+  { key: 'epsName', label: 'EPS' },
+  { key: 'pensionFundName', label: 'Fondo de pensión' },
+  { key: 'cesantiasFundName', label: 'Fondo de cesantías' },
+  { key: 'arlName', label: 'ARL' },
+  { key: 'cajaCompensacion', label: 'Caja de compensación' },
+];
 
 function toDateInputValue(value: string | null | undefined): string {
   if (!value) return '';
@@ -89,25 +117,33 @@ function labelForMode(mode: 'create' | 'edit'): string {
   return mode === 'create' ? 'Crear empleado' : 'Guardar cambios';
 }
 
-const CONTRACT_TYPES: EmployeeContractType[] = [
-  'FIJO',
-  'INDEFINIDO',
-  'OBRA',
-  'PRESTACION',
-  'APRENDIZAJE',
+const DOCUMENT_TYPE_OPTIONS: Array<{ value: DocumentType; label: string }> = [
+  { value: 'CC', label: 'Cédula de ciudadanía' },
+  { value: 'CE', label: 'Cédula de extranjería' },
+  { value: 'NIT', label: 'NIT' },
+  { value: 'PASSPORT', label: 'Pasaporte' },
 ];
-const DOCUMENT_TYPES: DocumentType[] = ['CC', 'CE', 'NIT', 'PASSPORT'];
-const SALARY_TYPES: SalaryType[] = ['ORDINARIO', 'INTEGRAL'];
-const ARL_LEVELS: ArlRiskLevel[] = ['RIESGO_I', 'RIESGO_II', 'RIESGO_III', 'RIESGO_IV', 'RIESGO_V'];
 
-function toSelectOptions(values: readonly string[]): Array<{ value: string; label: string }> {
-  return values.map((value) => ({ value, label: value }));
-}
+const CONTRACT_TYPE_OPTIONS: Array<{ value: EmployeeContractType; label: string }> = [
+  { value: 'FIJO', label: 'Fijo' },
+  { value: 'INDEFINIDO', label: 'Indefinido' },
+  { value: 'OBRA', label: 'Obra o labor' },
+  { value: 'PRESTACION', label: 'Prestación de servicios' },
+  { value: 'APRENDIZAJE', label: 'Aprendizaje' },
+];
 
-const DOCUMENT_TYPE_OPTIONS = toSelectOptions(DOCUMENT_TYPES);
-const CONTRACT_TYPE_OPTIONS = toSelectOptions(CONTRACT_TYPES);
-const SALARY_TYPE_OPTIONS = toSelectOptions(SALARY_TYPES);
-const ARL_LEVEL_OPTIONS = toSelectOptions(ARL_LEVELS);
+const SALARY_TYPE_OPTIONS: Array<{ value: SalaryType; label: string }> = [
+  { value: 'ORDINARIO', label: 'Ordinario' },
+  { value: 'INTEGRAL', label: 'Integral' },
+];
+
+const ARL_LEVEL_OPTIONS: Array<{ value: ArlRiskLevel; label: string }> = [
+  { value: 'RIESGO_I', label: 'Riesgo I' },
+  { value: 'RIESGO_II', label: 'Riesgo II' },
+  { value: 'RIESGO_III', label: 'Riesgo III' },
+  { value: 'RIESGO_IV', label: 'Riesgo IV' },
+  { value: 'RIESGO_V', label: 'Riesgo V' },
+];
 
 export function PayrollEmployeeForm({
   mode,
@@ -121,6 +157,7 @@ export function PayrollEmployeeForm({
   const theme = useUiTheme();
   const locationsQuery = useLocations();
   const rolesQuery = useAdminRolesForSelect();
+  const catalogsQuery = useEmployeeCatalogsGrouped();
   const locationRows = locations ?? locationsQuery.data ?? [];
   const roleRows = roles ?? rolesQuery.data ?? [];
   const [values, setValues] = useState<PayrollEmployeeFormValues>(
@@ -146,9 +183,6 @@ export function PayrollEmployeeForm({
 
     return options;
   }, [initialValues?.location?.name, locationRows, values.locationId]);
-
-  const selectedLocationName =
-    locationOptions.find((option) => option.id === values.locationId)?.name ?? null;
 
   const roleOptions = useMemo(() => {
     const options = roleRows
@@ -179,74 +213,73 @@ export function PayrollEmployeeForm({
     [roleOptions],
   );
 
-  const selectedRoleName = roleOptions.find((option) => option.id === values.roleId)?.name ?? null;
+  const areaSelectOptions = useMemo(
+    () =>
+      buildCatalogSelectOptions(
+        catalogsQuery.grouped[EMPLOYEE_CATALOG_TYPES.AREA] ?? [],
+        values.area,
+      ),
+    [catalogsQuery.grouped, values.area],
+  );
+
+  const departmentSelectOptions = useMemo(
+    () =>
+      buildCatalogSelectOptions(
+        catalogsQuery.grouped[EMPLOYEE_CATALOG_TYPES.DEPARTMENT] ?? [],
+        values.department,
+      ),
+    [catalogsQuery.grouped, values.department],
+  );
+
+  const epsSelectOptions = useMemo(
+    () =>
+      buildCatalogSelectOptions(
+        catalogsQuery.grouped[EMPLOYEE_CATALOG_TYPES.EPS] ?? [],
+        values.epsName,
+      ),
+    [catalogsQuery.grouped, values.epsName],
+  );
+
+  const pensionSelectOptions = useMemo(
+    () =>
+      buildCatalogSelectOptions(
+        catalogsQuery.grouped[EMPLOYEE_CATALOG_TYPES.PENSION_FUND] ?? [],
+        values.pensionFundName,
+      ),
+    [catalogsQuery.grouped, values.pensionFundName],
+  );
+
+  const cesantiasSelectOptions = useMemo(
+    () =>
+      buildCatalogSelectOptions(
+        catalogsQuery.grouped[EMPLOYEE_CATALOG_TYPES.CESANTIAS_FUND] ?? [],
+        values.cesantiasFundName,
+      ),
+    [catalogsQuery.grouped, values.cesantiasFundName],
+  );
+
+  const arlSelectOptions = useMemo(
+    () =>
+      buildCatalogSelectOptions(
+        catalogsQuery.grouped[EMPLOYEE_CATALOG_TYPES.ARL] ?? [],
+        values.arlName,
+      ),
+    [catalogsQuery.grouped, values.arlName],
+  );
+
+  const cajaSelectOptions = useMemo(
+    () =>
+      buildCatalogSelectOptions(
+        catalogsQuery.grouped[EMPLOYEE_CATALOG_TYPES.CAJA_COMPENSACION] ?? [],
+        values.cajaCompensacion,
+      ),
+    [catalogsQuery.grouped, values.cajaCompensacion],
+  );
 
   useEffect(() => {
     setValues(initialValues ? employeeToFormValues(initialValues) : EMPTY_VALUES);
     setError(null);
-    // #region agent log
-    if (initialValues) {
-      const mapped = employeeToFormValues(initialValues);
-      fetch('http://127.0.0.1:7828/ingest/355d2ecf-3818-453c-8510-c7b3fe83712b', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '0046ac' },
-        body: JSON.stringify({
-          sessionId: '0046ac',
-          runId: 'post-fix',
-          hypothesisId: 'A-B',
-          location: 'PayrollEmployeeForm.tsx:useEffect',
-          message: 'Form initialValues mapped',
-          data: {
-            mode,
-            apiLocationId: initialValues.locationId,
-            apiLocationName: initialValues.location?.name ?? null,
-            formLocationId: mapped.locationId,
-            selectedLocationName,
-            apiRoleId: initialValues.user?.roleId ?? null,
-            formRoleId: mapped.roleId,
-            selectedRoleName,
-            roleOptionsCount: roleOptions.length,
-            locationOptionsCount: locationOptions.length,
-          },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-    }
-    // #endregion
   }, [initialValues, mode]);
-
-  useEffect(() => {
-    // #region agent log
-    fetch('http://127.0.0.1:7828/ingest/355d2ecf-3818-453c-8510-c7b3fe83712b', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '0046ac' },
-      body: JSON.stringify({
-        sessionId: '0046ac',
-        runId: 'post-fix-role',
-        hypothesisId: 'role-select',
-        location: 'PayrollEmployeeForm.tsx:selects',
-        message: 'Role and location select state',
-        data: {
-          roleId: values.roleId,
-          selectedRoleName,
-          roleOptionsCount: roleOptions.length,
-          rolesLoading: rolesQuery.isLoading && !roles,
-          locationId: values.locationId,
-          selectedLocationName,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
-  }, [
-    roleOptions.length,
-    rolesQuery.isLoading,
-    roles,
-    selectedLocationName,
-    selectedRoleName,
-    values.locationId,
-    values.roleId,
-  ]);
 
   const update = (patch: Partial<PayrollEmployeeFormValues>) =>
     setValues((prev) => ({ ...prev, ...patch }));
@@ -255,7 +288,7 @@ export function PayrollEmployeeForm({
     event.preventDefault();
 
     if (!values.name.trim() || !values.email.trim() || !values.cedula.trim()) {
-      setError('Nombre, email y cedula son obligatorios.');
+      setError('Nombre, correo y cédula son obligatorios.');
       return;
     }
 
@@ -265,13 +298,19 @@ export function PayrollEmployeeForm({
     }
 
     if (mode === 'create' && !values.password.trim()) {
-      setError('La contrasena es obligatoria para crear.');
+      setError('La contraseña es obligatoria para crear.');
       return;
     }
 
     const salary = Number(values.salaryAmount);
     if (!Number.isFinite(salary) || salary <= 0) {
-      setError('El salario debe ser un numero mayor que 0.');
+      setError('El salario debe ser un número mayor que 0.');
+      return;
+    }
+
+    const missingCatalogField = REQUIRED_CATALOG_FIELDS.find((field) => !values[field.key].trim());
+    if (missingCatalogField) {
+      setError(`${missingCatalogField.label} es obligatorio.`);
       return;
     }
 
@@ -279,9 +318,27 @@ export function PayrollEmployeeForm({
     onSubmit(values);
   };
 
+  const catalogsLoading = catalogsQuery.isLoading;
+  const catalogsError = catalogsQuery.isError;
+
+  const catalogPlaceholder = (hasOptions: boolean) =>
+    catalogSelectPlaceholder(
+      catalogsLoading,
+      hasOptions,
+      undefined,
+      undefined,
+      undefined,
+      catalogsError,
+    );
+
   return (
     <form onSubmit={handleSubmit}>
       <div className={styles.modalBody}>
+        {catalogsError ? (
+          <p className={styles.error}>
+            No se pudieron cargar los catálogos. Recarga la página e intenta de nuevo.
+          </p>
+        ) : null}
         <div className={styles.formGrid}>
           <label className={styles.field}>
             <span className={styles.fieldLabel}>Nombre *</span>
@@ -293,18 +350,18 @@ export function PayrollEmployeeForm({
             />
           </label>
           <label className={styles.field}>
-            <span className={styles.fieldLabel}>Cedula *</span>
+            <span className={styles.fieldLabel}>Cédula *</span>
             <input
-              aria-label="Cedula"
+              aria-label="Cédula"
               className={styles.input}
               value={values.cedula}
               onChange={(event) => update({ cedula: event.target.value })}
             />
           </label>
           <label className={styles.field}>
-            <span className={styles.fieldLabel}>Email *</span>
+            <span className={styles.fieldLabel}>Correo *</span>
             <input
-              aria-label="Email"
+              aria-label="Correo"
               className={styles.input}
               type="email"
               value={values.email}
@@ -312,9 +369,9 @@ export function PayrollEmployeeForm({
             />
           </label>
           <label className={styles.field}>
-            <span className={styles.fieldLabel}>Contrasena {mode === 'create' ? '*' : ''}</span>
+            <span className={styles.fieldLabel}>Contraseña {mode === 'create' ? '*' : ''}</span>
             <input
-              aria-label="Contrasena"
+              aria-label="Contraseña"
               className={styles.input}
               type="password"
               value={values.password}
@@ -323,9 +380,9 @@ export function PayrollEmployeeForm({
             />
           </label>
           <div className={styles.field}>
-            <span className={styles.fieldLabel}>Document Type</span>
+            <span className={styles.fieldLabel}>Tipo de documento</span>
             <RecetaFilterSelect
-              aria-label="Document Type"
+              aria-label="Tipo de documento"
               options={DOCUMENT_TYPE_OPTIONS}
               value={values.documentType}
               onChange={(value) => update({ documentType: value as DocumentType })}
@@ -369,22 +426,32 @@ export function PayrollEmployeeForm({
               onChange={(event) => update({ position: event.target.value })}
             />
           </label>
-          <label className={styles.field}>
-            <span className={styles.fieldLabel}>Area</span>
-            <input
-              className={styles.input}
+          <div className={styles.field}>
+            <span className={styles.fieldLabel}>Área *</span>
+            <RecetaFilterSelect
+              aria-label="Área"
+              options={areaSelectOptions}
               value={values.area}
-              onChange={(event) => update({ area: event.target.value })}
+              disabled={catalogsLoading || areaSelectOptions.length === 0}
+              placeholder={catalogPlaceholder(areaSelectOptions.length > 0)}
+              onChange={(value) => update({ area: value })}
+              theme={theme}
+              size="md"
             />
-          </label>
-          <label className={styles.field}>
-            <span className={styles.fieldLabel}>Departamento</span>
-            <input
-              className={styles.input}
+          </div>
+          <div className={styles.field}>
+            <span className={styles.fieldLabel}>Departamento *</span>
+            <RecetaFilterSelect
+              aria-label="Departamento"
+              options={departmentSelectOptions}
               value={values.department}
-              onChange={(event) => update({ department: event.target.value })}
+              disabled={catalogsLoading || departmentSelectOptions.length === 0}
+              placeholder={catalogPlaceholder(departmentSelectOptions.length > 0)}
+              onChange={(value) => update({ department: value })}
+              theme={theme}
+              size="md"
             />
-          </label>
+          </div>
           <div className={styles.field}>
             <span className={styles.fieldLabel}>Tipo de contrato</span>
             <RecetaFilterSelect
@@ -397,7 +464,7 @@ export function PayrollEmployeeForm({
             />
           </div>
           <label className={styles.field}>
-            <span className={styles.fieldLabel}>Fecha ingreso</span>
+            <span className={styles.fieldLabel}>Fecha de ingreso</span>
             <input
               className={styles.input}
               type="date"
@@ -406,7 +473,7 @@ export function PayrollEmployeeForm({
             />
           </label>
           <label className={styles.field}>
-            <span className={styles.fieldLabel}>Inicio contrato</span>
+            <span className={styles.fieldLabel}>Inicio de contrato</span>
             <input
               className={styles.input}
               type="date"
@@ -415,7 +482,7 @@ export function PayrollEmployeeForm({
             />
           </label>
           <label className={styles.field}>
-            <span className={styles.fieldLabel}>Fin contrato</span>
+            <span className={styles.fieldLabel}>Fin de contrato</span>
             <input
               className={styles.input}
               type="date"
@@ -445,38 +512,58 @@ export function PayrollEmployeeForm({
               onChange={(event) => update({ salaryAmount: event.target.value })}
             />
           </label>
-          <label className={styles.field}>
-            <span className={styles.fieldLabel}>EPS</span>
-            <input
-              className={styles.input}
+          <div className={styles.field}>
+            <span className={styles.fieldLabel}>EPS *</span>
+            <RecetaFilterSelect
+              aria-label="EPS"
+              options={epsSelectOptions}
               value={values.epsName}
-              onChange={(event) => update({ epsName: event.target.value })}
+              disabled={catalogsLoading || epsSelectOptions.length === 0}
+              placeholder={catalogPlaceholder(epsSelectOptions.length > 0)}
+              onChange={(value) => update({ epsName: value })}
+              theme={theme}
+              size="md"
             />
-          </label>
-          <label className={styles.field}>
-            <span className={styles.fieldLabel}>Fondo pension</span>
-            <input
-              className={styles.input}
+          </div>
+          <div className={styles.field}>
+            <span className={styles.fieldLabel}>Fondo de pensión *</span>
+            <RecetaFilterSelect
+              aria-label="Fondo de pensión"
+              options={pensionSelectOptions}
               value={values.pensionFundName}
-              onChange={(event) => update({ pensionFundName: event.target.value })}
+              disabled={catalogsLoading || pensionSelectOptions.length === 0}
+              placeholder={catalogPlaceholder(pensionSelectOptions.length > 0)}
+              onChange={(value) => update({ pensionFundName: value })}
+              theme={theme}
+              size="md"
             />
-          </label>
-          <label className={styles.field}>
-            <span className={styles.fieldLabel}>Cesantias</span>
-            <input
-              className={styles.input}
+          </div>
+          <div className={styles.field}>
+            <span className={styles.fieldLabel}>Fondo de cesantías *</span>
+            <RecetaFilterSelect
+              aria-label="Fondo de cesantías"
+              options={cesantiasSelectOptions}
               value={values.cesantiasFundName}
-              onChange={(event) => update({ cesantiasFundName: event.target.value })}
+              disabled={catalogsLoading || cesantiasSelectOptions.length === 0}
+              placeholder={catalogPlaceholder(cesantiasSelectOptions.length > 0)}
+              onChange={(value) => update({ cesantiasFundName: value })}
+              theme={theme}
+              size="md"
             />
-          </label>
-          <label className={styles.field}>
-            <span className={styles.fieldLabel}>ARL</span>
-            <input
-              className={styles.input}
+          </div>
+          <div className={styles.field}>
+            <span className={styles.fieldLabel}>ARL *</span>
+            <RecetaFilterSelect
+              aria-label="ARL"
+              options={arlSelectOptions}
               value={values.arlName}
-              onChange={(event) => update({ arlName: event.target.value })}
+              disabled={catalogsLoading || arlSelectOptions.length === 0}
+              placeholder={catalogPlaceholder(arlSelectOptions.length > 0)}
+              onChange={(value) => update({ arlName: value })}
+              theme={theme}
+              size="md"
             />
-          </label>
+          </div>
           <div className={styles.field}>
             <span className={styles.fieldLabel}>Nivel ARL</span>
             <RecetaFilterSelect
@@ -488,14 +575,19 @@ export function PayrollEmployeeForm({
               size="md"
             />
           </div>
-          <label className={styles.field}>
-            <span className={styles.fieldLabel}>Caja compensacion</span>
-            <input
-              className={styles.input}
+          <div className={styles.field}>
+            <span className={styles.fieldLabel}>Caja de compensación *</span>
+            <RecetaFilterSelect
+              aria-label="Caja de compensación"
+              options={cajaSelectOptions}
               value={values.cajaCompensacion}
-              onChange={(event) => update({ cajaCompensacion: event.target.value })}
+              disabled={catalogsLoading || cajaSelectOptions.length === 0}
+              placeholder={catalogPlaceholder(cajaSelectOptions.length > 0)}
+              onChange={(value) => update({ cajaCompensacion: value })}
+              theme={theme}
+              size="md"
             />
-          </label>
+          </div>
         </div>
         {error ? <p className={styles.error}>{error}</p> : null}
         <p className={styles.formHint}>
@@ -503,12 +595,21 @@ export function PayrollEmployeeForm({
         </p>
       </div>
       <footer className={styles.modalFooter}>
-        <button className={styles.buttonSecondary} type="button" onClick={onCancel}>
-          Cancelar
-        </button>
-        <button className={styles.button} type="submit" disabled={submitting}>
-          {submitting ? 'Guardando...' : labelForMode(mode)}
-        </button>
+        <RecetaFormButton
+          variant="cancel"
+          label="Cancelar"
+          type="button"
+          theme={theme}
+          onClick={onCancel}
+          disabled={submitting}
+        />
+        <RecetaFormButton
+          variant="save"
+          label={submitting ? 'Guardando...' : labelForMode(mode)}
+          type="submit"
+          theme={theme}
+          disabled={submitting}
+        />
       </footer>
     </form>
   );

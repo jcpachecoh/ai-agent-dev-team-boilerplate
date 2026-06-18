@@ -1062,6 +1062,8 @@ async function main() {
   }
 
   // ── NOM-01: Seed EmployeeDetails ─────────────────────────────────────────
+  const { seedEmployeeCatalogOptions } = await import('./seeds/employee-catalog.seed');
+  await seedEmployeeCatalogOptions(prisma, OPERATIONAL_TENANT_ID);
   await seedEmployeeDetails(ownerGlobalUser.id, operatorGlobalUser.id, firstLocationId);
   await seedUserLocationAssignments([
     { userId: ownerGlobalUser.id, locationIds: [firstLocationId] },

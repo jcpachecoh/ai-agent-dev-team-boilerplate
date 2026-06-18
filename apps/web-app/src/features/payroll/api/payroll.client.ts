@@ -14,6 +14,7 @@ import type {
   PayrollEmployeesFilters,
   UpdatePayrollEmployeeInput,
 } from '../types/payroll.types';
+import type { EmployeeCatalogOption, EmployeeCatalogType } from '../types/employee-catalog.types';
 
 export class PayrollApiError extends Error {
   constructor(
@@ -186,4 +187,11 @@ export function removePayrollEmployee(userId: string): Promise<boolean> {
   return payrollFetch<boolean>(`/employees/${userId}`, {
     method: 'DELETE',
   });
+}
+
+export function listEmployeeCatalogOptions(
+  type?: EmployeeCatalogType,
+): Promise<EmployeeCatalogOption[]> {
+  const query = toQueryString({ type });
+  return payrollFetch<EmployeeCatalogOption[]>(`/employee-catalogs${query}`);
 }

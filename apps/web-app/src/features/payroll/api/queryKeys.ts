@@ -7,6 +7,8 @@ export const payrollKeys = {
   employeeList: (filters: PayrollEmployeesFilters) =>
     [...payrollKeys.employees(), filters] as const,
   employee: (userId: string) => [...payrollKeys.employees(), 'detail', userId] as const,
+  catalogs: () => [...payrollKeys.all, 'employee-catalogs'] as const,
+  catalogList: (type?: string) => [...payrollKeys.catalogs(), type ?? 'all'] as const,
   reports: () => [...payrollKeys.all, 'reports'] as const,
   payrollReport: (query: PayrollReportQuery) =>
     [...payrollKeys.reports(), 'payroll', query] as const,
