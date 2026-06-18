@@ -12,6 +12,7 @@ const mockRepo = {
   findById: jest.fn(),
   findByEmail: jest.fn(),
   findByCedula: jest.fn(),
+  findRoleCode: jest.fn(),
   create: jest.fn(),
   createWithEmployeeDetails: jest.fn(),
   update: jest.fn(),
@@ -63,8 +64,10 @@ describe('AdminUsersService', () => {
 
   describe('createUser', () => {
     it('creates user with employee details and returns list item', async () => {
+      process.env.OPERATOR_TEMP_PASSWORD = '1234';
       mockRepo.findByEmail.mockResolvedValue(null);
       mockRepo.findByCedula.mockResolvedValue(null);
+      mockRepo.findRoleCode.mockResolvedValue('OPERATOR');
       mockRepo.createWithEmployeeDetails.mockResolvedValue(baseUser);
 
       const result = await service.createUser(

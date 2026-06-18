@@ -63,6 +63,14 @@ export class AdminUsersRepository implements IAdminUsersRepository {
     });
   }
 
+  async findRoleCode(roleId: string): Promise<string | null> {
+    const role = await this.prisma.role.findUnique({
+      where: { id: roleId },
+      select: { code: true },
+    });
+    return role?.code ?? null;
+  }
+
   async create(tenantId: string, data: CreateAdminUserData): Promise<AdminUserListItem> {
     const row = await this.prisma.user.create({
       data: {

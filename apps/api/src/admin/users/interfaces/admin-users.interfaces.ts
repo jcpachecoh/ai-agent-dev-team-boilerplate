@@ -52,6 +52,7 @@ export interface IAdminUsersRepository {
   findById(tenantId: string, userId: string): Promise<AdminUserDetail | null>;
   findByEmail(tenantId: string, email: string): Promise<{ id: string } | null>;
   findByCedula(tenantId: string, cedula: string): Promise<{ id: string } | null>;
+  findRoleCode(roleId: string): Promise<string | null>;
   create(tenantId: string, data: CreateAdminUserData): Promise<AdminUserListItem>;
   createWithEmployeeDetails(
     tenantId: string,

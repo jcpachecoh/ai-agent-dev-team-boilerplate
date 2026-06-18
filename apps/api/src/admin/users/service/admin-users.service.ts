@@ -68,7 +68,15 @@ export class AdminUsersService implements IAdminUsersService {
       throw new ConflictException('Cédula already registered in this tenant');
     }
 
-    const temporaryPassword = crypto.randomBytes(9).toString('base64url');
+    const roleCode = await this.repo.findRoleCode(data.roleId);
+
+    const operatorTempPassword = process.env.OPERATOR_TEMP_PASSWORD;
+    if (roleCode === 'OPERATOR' && !operatorTempPassword) {
+      throw new Error('OPERATOR_TEMP_PASSWORD is not set');
+    }
+
+    const temporaryPassword =
+      roleCode === 'OPERATOR' ? operatorTempPassword! : crypto.randomBytes(9).toString('base64url');
     const passwordHash = await bcrypt.hash(temporaryPassword, SALT_ROUNDS);
 
     const user = await this.repo.createWithEmployeeDetails(tenantId, {
