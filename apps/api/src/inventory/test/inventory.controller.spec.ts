@@ -7,6 +7,7 @@ const serviceMock = {
   getAlerts: jest.fn(),
   getAlertSummary: jest.fn(),
   resolveAlert: jest.fn(),
+  getResolvedAlerts: jest.fn(),
   getReport: jest.fn(),
 };
 
@@ -35,7 +36,7 @@ describe('InventoryController', () => {
   it('getAlerts and getAlertSummary use service', async () => {
     const alerts = [{ id: 'alert-1', severity: 'critical' }];
     serviceMock.getAlerts.mockResolvedValue(alerts);
-    serviceMock.getAlertSummary.mockReturnValue({ critical: 1, warning: 0, resolvedToday: 0 });
+    serviceMock.getAlertSummary.mockResolvedValue({ critical: 1, warning: 0, resolvedToday: 0 });
 
     await expect(controller.getAlerts('palos-de-lena')).resolves.toEqual(alerts);
     await expect(controller.getAlertSummary('palos-de-lena')).resolves.toEqual({
@@ -43,12 +44,77 @@ describe('InventoryController', () => {
       warning: 0,
       resolvedToday: 0,
     });
-    expect(serviceMock.getAlertSummary).toHaveBeenCalledWith(alerts);
+    expect(serviceMock.getAlertSummary).toHaveBeenCalledWith(alerts, 'palos-de-lena');
   });
 
-  it('resolveAlert returns ok payload', () => {
-    expect(controller.resolveAlert('alert-1')).toEqual({ ok: true });
-    expect(serviceMock.resolveAlert).toHaveBeenCalledWith('alert-1');
+  it('resolveAlert passes tenantId to service and returns ok', async () => {
+    // Arrange
+    serviceMock.resolveAlert.mockResolvedValue(undefined);
+
+    // Act
+    const result = await controller.resolveAlert('alert-item-1', 'palos-de-lena', {});
+
+    // Assert
+    expect(result).toEqual({ ok: true });
+    expect(serviceMock.resolveAlert).toHaveBeenCalledWith('alert-item-1', 'palos-de-lena', undefined, undefined);
+  });
+
+  it('resolveAlert forwards note from body to service', async () => {
+    // Arrange
+    serviceMock.resolveAlert.mockResolvedValue(undefined);
+
+    // Act
+    await controller.resolveAlert('alert-item-1', 'palos-de-lena', {
+      note: 'Se realizó ajuste de inventario',
+    });
+
+    // Assert
+    expect(serviceMock.resolveAlert).toHaveBeenCalledWith(
+      'alert-item-1',
+      'palos-de-lena',
+      undefined,
+      'Se realizó ajuste de inventario',
+    );
+  });
+
+  it('resolveAlert resolvedById is always undefined — no JWT in this controller', async () => {
+    // Arrange
+    serviceMock.resolveAlert.mockResolvedValue(undefined);
+
+    // Act
+    await controller.resolveAlert('alert-item-1', 'palos-de-lena', {});
+
+    // Assert — second arg undefined confirms no user is injected
+    expect(serviceMock.resolveAlert).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.any(String),
+      undefined,
+      undefined,
+    );
+  });
+
+  it('getResolvedAlerts delegates to service with tenantId and pagination', async () => {
+    // Arrange
+    const resolved = [{ id: 'res-1', product: 'Pollo', resolvedAt: '2026-06-18T10:00:00.000Z' }];
+    serviceMock.getResolvedAlerts.mockResolvedValue(resolved);
+
+    // Act
+    const result = await controller.getResolvedAlerts('palos-de-lena', 'cursor-abc', '10');
+
+    // Assert
+    expect(result).toEqual(resolved);
+    expect(serviceMock.getResolvedAlerts).toHaveBeenCalledWith('palos-de-lena', 'cursor-abc', 10);
+  });
+
+  it('getResolvedAlerts passes undefined cursor and take when not provided', async () => {
+    // Arrange
+    serviceMock.getResolvedAlerts.mockResolvedValue([]);
+
+    // Act
+    await controller.getResolvedAlerts('palos-de-lena');
+
+    // Assert
+    expect(serviceMock.getResolvedAlerts).toHaveBeenCalledWith('palos-de-lena', undefined, undefined);
   });
 
   it('getReport delegates type to service', async () => {

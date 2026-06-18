@@ -191,10 +191,11 @@ model SupplyItem {
   createdAt              DateTime  @default(now())
   updatedAt              DateTime  @updatedAt
 
-  categoria        SupplyCategory            @relation(fields: [categoriaId], references: [id])
+  categoria        SupplyCategory              @relation(fields: [categoriaId], references: [id])
   supplierProducts SupplierProduct[]
   priceHistory     SupplyItemPriceHistory[]
   orderMaterials   ProductionOrderMaterial[]
+  alertResolutions InventoryAlertResolution[]
 
   @@unique([tenantId, codigoInterno])
   @@index([tenantId, categoriaId])
@@ -252,6 +253,30 @@ model SupplyItemPriceHistory {
   @@index([tenantId, supplyItemId])
   @@index([tenantId, createdAt])
   @@map("supply_item_price_history")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INVENTORY ALERT RESOLUTIONS
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum InventoryAlertType {
+  LOW_STOCK
+}
+
+model InventoryAlertResolution {
+  id           String             @id @default(cuid())
+  tenantId     String
+  supplyItemId String
+  alertType    InventoryAlertType @default(LOW_STOCK)
+  resolvedAt   DateTime           @default(now())
+  resolvedById String?
+  note         String?
+
+  supplyItem SupplyItem @relation(fields: [supplyItemId], references: [id])
+
+  @@index([tenantId, supplyItemId, resolvedAt])
+  @@index([tenantId, resolvedAt])
+  @@map("inventory_alert_resolutions")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -1,8 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { decimalToNumber } from '../../common/utils/decimal.util';
 import type {
   InventoryAlertDto,
   InventoryAlertSummaryDto,
+  InventoryResolvedAlertDto,
 } from '../controller/dto/inventory-alert.dto';
 import type { InventoryDashboardDto } from '../controller/dto/inventory-dashboard.dto';
 import type { InventoryReportDto } from '../controller/dto/inventory-report.dto';
@@ -13,8 +14,6 @@ const ACCENTS = ['teal', 'amber', 'rose', 'violet', 'sky'] as const;
 
 @Injectable()
 export class InventoryService implements IInventoryService {
-  private readonly resolvedAlerts = new Set<string>();
-
   constructor(private readonly inventoryRepository: InventoryRepository) {}
 
   async getDashboard(tenantId: string): Promise<InventoryDashboardDto> {
@@ -67,22 +66,36 @@ export class InventoryService implements IInventoryService {
   }
 
   async getAlerts(tenantId: string): Promise<InventoryAlertDto[]> {
-    const items = await this.inventoryRepository.findActiveForAlerts(tenantId);
+    const [items, resolvedPage] = await Promise.all([
+      this.inventoryRepository.findActiveForAlerts(tenantId),
+      this.inventoryRepository.findResolvedAlerts(tenantId, undefined, 1000),
+    ]);
+
+    // Build a set of supplyItemIds that have been resolved today so we can
+    // suppress the active alert. An alert reappears if the stock doesn't recover
+    // (intentional — the item is still below minimum), but the user explicitly
+    // dismissed it; showing it again on the same day would be noisy.
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+    const resolvedTodayIds = new Set(
+      resolvedPage.edges
+        .filter((r) => r.resolvedAt >= startOfDay)
+        .map((r) => r.supplyItemId),
+    );
+
     const alerts: InventoryAlertDto[] = [];
 
     for (const item of items) {
       const currentStock = decimalToNumber(item.stockActualBodega);
       const threshold = decimalToNumber(item.stockMinimoBodega);
       if (threshold <= 0 || currentStock >= threshold) continue;
-
-      const alertId = `alert-${item.id}`;
-      if (this.resolvedAlerts.has(alertId)) continue;
+      if (resolvedTodayIds.has(item.id)) continue;
 
       const ratio = threshold > 0 ? currentStock / threshold : 1;
       const severity: InventoryAlertDto['severity'] = ratio <= 0.5 ? 'critical' : 'warning';
 
       alerts.push({
-        id: alertId,
+        id: `alert-${item.id}`,
         productId: item.id,
         product: item.nombre,
         currentStock,
@@ -96,16 +109,43 @@ export class InventoryService implements IInventoryService {
     return alerts;
   }
 
-  getAlertSummary(alerts: InventoryAlertDto[]): InventoryAlertSummaryDto {
+  async getAlertSummary(alerts: InventoryAlertDto[], tenantId: string): Promise<InventoryAlertSummaryDto> {
+    const resolvedToday = await this.inventoryRepository.countResolvedToday(tenantId);
     return {
       critical: alerts.filter((a) => a.severity === 'critical').length,
       warning: alerts.filter((a) => a.severity === 'warning').length,
-      resolvedToday: this.resolvedAlerts.size,
+      resolvedToday,
     };
   }
 
-  resolveAlert(alertId: string): void {
-    this.resolvedAlerts.add(alertId);
+  async resolveAlert(alertId: string, tenantId: string, resolvedById?: string, note?: string): Promise<void> {
+    // alertId format: "alert-<supplyItemId>"
+    const supplyItemId = alertId.startsWith('alert-') ? alertId.slice(6) : alertId;
+    const result = await this.inventoryRepository.createAlertResolution({ supplyItemId, tenantId, resolvedById, note });
+    if (!result) {
+      throw new NotFoundException(`Insumo ${supplyItemId} no encontrado`);
+    }
+  }
+
+  async getResolvedAlerts(
+    tenantId: string,
+    cursor?: string,
+    take?: number,
+  ): Promise<InventoryResolvedAlertDto[]> {
+    const { edges } = await this.inventoryRepository.findResolvedAlerts(tenantId, cursor, take);
+
+    return edges.map((resolution) => ({
+      id: resolution.id,
+      supplyItemId: resolution.supplyItemId,
+      product: resolution.supplyItem.nombre,
+      currentStock: decimalToNumber(resolution.supplyItem.stockActualBodega),
+      threshold: decimalToNumber(resolution.supplyItem.stockMinimoBodega),
+      supplier:
+        resolution.supplyItem.supplierProducts[0]?.supplier.razonSocial ?? 'Sin proveedor principal',
+      resolvedAt: resolution.resolvedAt.toISOString(),
+      resolvedById: resolution.resolvedById ?? undefined,
+      note: resolution.note ?? undefined,
+    }));
   }
 
   async getReport(tenantId: string, type: string): Promise<InventoryReportDto> {

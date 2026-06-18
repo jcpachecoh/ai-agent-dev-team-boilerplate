@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { NotFoundException } from '@nestjs/common';
 import { StockUnit } from '@prisma/client';
 import { InventoryRepository } from '../repository/inventory.repository';
 import { InventoryService } from '../service/inventory.service';
@@ -57,10 +58,29 @@ function buildItem(
   };
 }
 
+function buildResolution(overrides: Partial<{ id: string; supplyItemId: string; resolvedAt: Date }> = {}) {
+  const supplyItemId = overrides.supplyItemId ?? 'item-1';
+  return {
+    id: overrides.id ?? 'res-1',
+    tenantId,
+    supplyItemId,
+    alertType: 'LOW_STOCK' as const,
+    resolvedAt: overrides.resolvedAt ?? new Date(),
+    resolvedById: null,
+    note: null,
+    supplyItem: {
+      ...buildItem({ id: supplyItemId }),
+    },
+  };
+}
+
 const repositoryMock = {
   findActiveForDashboard: jest.fn(),
   findActiveForAlerts: jest.fn(),
   findActiveForReport: jest.fn(),
+  createAlertResolution: jest.fn(),
+  findResolvedAlerts: jest.fn(),
+  countResolvedToday: jest.fn(),
 };
 
 describe('InventoryService', () => {
@@ -119,6 +139,7 @@ describe('InventoryService', () => {
         buildItem({ id: 'crit-2', stockMinimoBodega: '4' }),
         buildItem({ id: 'ok', stockMinimoBodega: '0' }),
       ]);
+      repositoryMock.findResolvedAlerts.mockResolvedValue({ edges: [], hasNextPage: false, endCursor: null });
 
       const alerts = await service.getAlerts(tenantId);
 
@@ -131,6 +152,7 @@ describe('InventoryService', () => {
       repositoryMock.findActiveForAlerts.mockResolvedValue([
         buildItem({ id: 'solo', stockMinimoBodega: '5', supplierName: null }),
       ]);
+      repositoryMock.findResolvedAlerts.mockResolvedValue({ edges: [], hasNextPage: false, endCursor: null });
 
       const alerts = await service.getAlerts(tenantId);
 
@@ -141,37 +163,254 @@ describe('InventoryService', () => {
       repositoryMock.findActiveForAlerts.mockResolvedValue([
         buildItem({ id: 'ok-stock', stockMinimoBodega: '20', stockActualBodega: '25' }),
       ]);
+      repositoryMock.findResolvedAlerts.mockResolvedValue({ edges: [], hasNextPage: false, endCursor: null });
 
       const alerts = await service.getAlerts(tenantId);
 
       expect(alerts).toHaveLength(0);
     });
 
-    it('omits resolved alerts', async () => {
+    it('omits alerts resolved today', async () => {
+      // Arrange
       repositoryMock.findActiveForAlerts.mockResolvedValue([
         buildItem({ id: 'resolved-item', stockMinimoBodega: '10' }),
       ]);
+      repositoryMock.findResolvedAlerts.mockResolvedValue({
+        edges: [buildResolution({ supplyItemId: 'resolved-item', resolvedAt: new Date() })],
+        hasNextPage: false,
+        endCursor: null,
+      });
 
-      service.resolveAlert('alert-resolved-item');
+      // Act
       const alerts = await service.getAlerts(tenantId);
 
+      // Assert
       expect(alerts).toHaveLength(0);
+    });
+
+    it('shows alert again if resolution was before today', async () => {
+      // Arrange
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+
+      repositoryMock.findActiveForAlerts.mockResolvedValue([
+        buildItem({ id: 'old-resolved', stockMinimoBodega: '10' }),
+      ]);
+      repositoryMock.findResolvedAlerts.mockResolvedValue({
+        edges: [buildResolution({ supplyItemId: 'old-resolved', resolvedAt: yesterday })],
+        hasNextPage: false,
+        endCursor: null,
+      });
+
+      // Act
+      const alerts = await service.getAlerts(tenantId);
+
+      // Assert — alert reappears because stock is still low
+      expect(alerts).toHaveLength(1);
+    });
+
+    it('filters by tenantId when querying resolved alerts', async () => {
+      // Arrange
+      repositoryMock.findActiveForAlerts.mockResolvedValue([]);
+      repositoryMock.findResolvedAlerts.mockResolvedValue({ edges: [], hasNextPage: false, endCursor: null });
+
+      // Act
+      await service.getAlerts(tenantId);
+
+      // Assert
+      expect(repositoryMock.findResolvedAlerts).toHaveBeenCalledWith(tenantId, undefined, 1000);
     });
   });
 
   describe('getAlertSummary', () => {
-    it('counts severities and resolved alerts', () => {
-      const localService = new InventoryService(repositoryMock as unknown as InventoryRepository);
-      localService.resolveAlert('alert-x');
-      localService.resolveAlert('alert-y');
+    it('counts severities and resolved today from repository', async () => {
+      // Arrange
+      repositoryMock.countResolvedToday.mockResolvedValue(3);
 
-      const summary = localService.getAlertSummary([
-        { severity: 'critical' } as never,
-        { severity: 'critical' } as never,
-        { severity: 'warning' } as never,
-      ]);
+      // Act
+      const summary = await service.getAlertSummary(
+        [
+          { severity: 'critical' } as never,
+          { severity: 'critical' } as never,
+          { severity: 'warning' } as never,
+        ],
+        tenantId,
+      );
 
-      expect(summary).toEqual({ critical: 2, warning: 1, resolvedToday: 2 });
+      // Assert
+      expect(summary).toEqual({ critical: 2, warning: 1, resolvedToday: 3 });
+      expect(repositoryMock.countResolvedToday).toHaveBeenCalledWith(tenantId);
+    });
+  });
+
+  describe('resolveAlert', () => {
+    it('persists InventoryAlertResolution with correct supplyItemId', async () => {
+      // Arrange
+      const resolution = buildResolution({ supplyItemId: 'item-abc' });
+      repositoryMock.createAlertResolution.mockResolvedValue(resolution);
+
+      // Act
+      await service.resolveAlert('alert-item-abc', tenantId, 'user-001');
+
+      // Assert
+      expect(repositoryMock.createAlertResolution).toHaveBeenCalledWith(
+        expect.objectContaining({ supplyItemId: 'item-abc', tenantId, resolvedById: 'user-001' }),
+      );
+    });
+
+    it('persists note when provided', async () => {
+      // Arrange
+      repositoryMock.createAlertResolution.mockResolvedValue(buildResolution());
+
+      // Act
+      await service.resolveAlert('alert-item-1', tenantId, undefined, 'Se realizó ajuste de inventario');
+
+      // Assert
+      expect(repositoryMock.createAlertResolution).toHaveBeenCalledWith(
+        expect.objectContaining({ note: 'Se realizó ajuste de inventario' }),
+      );
+    });
+
+    it('resolves without note when body is omitted', async () => {
+      // Arrange
+      repositoryMock.createAlertResolution.mockResolvedValue(buildResolution());
+
+      // Act
+      await service.resolveAlert('alert-item-1', tenantId);
+
+      // Assert — note is undefined, not an error
+      expect(repositoryMock.createAlertResolution).toHaveBeenCalledWith(
+        expect.objectContaining({ note: undefined }),
+      );
+    });
+
+    it('resolvedById is undefined when no auth user is present', async () => {
+      // Arrange
+      repositoryMock.createAlertResolution.mockResolvedValue(buildResolution());
+
+      // Act
+      await service.resolveAlert('alert-item-1', tenantId);
+
+      // Assert — controller passes undefined when there is no JWT user
+      expect(repositoryMock.createAlertResolution).toHaveBeenCalledWith(
+        expect.objectContaining({ resolvedById: undefined }),
+      );
+    });
+
+    it('strips "alert-" prefix when building supplyItemId', async () => {
+      // Arrange
+      repositoryMock.createAlertResolution.mockResolvedValue(buildResolution());
+
+      // Act
+      await service.resolveAlert('alert-some-cuid', tenantId);
+
+      // Assert
+      expect(repositoryMock.createAlertResolution).toHaveBeenCalledWith(
+        expect.objectContaining({ supplyItemId: 'some-cuid' }),
+      );
+    });
+
+    it('throws NotFoundException when repository returns null (item not found)', async () => {
+      // Arrange — repository returns null when the supplyItem doesn't belong to the tenant
+      repositoryMock.createAlertResolution.mockResolvedValue(null);
+
+      // Act & Assert
+      await expect(service.resolveAlert('alert-not-found', tenantId)).rejects.toThrow(NotFoundException);
+    });
+
+    it('enforces tenant isolation — tenantId is always forwarded', async () => {
+      // Arrange
+      repositoryMock.createAlertResolution.mockResolvedValue(buildResolution());
+
+      // Act
+      await service.resolveAlert('alert-item-1', 'other-tenant');
+
+      // Assert
+      expect(repositoryMock.createAlertResolution).toHaveBeenCalledWith(
+        expect.objectContaining({ tenantId: 'other-tenant' }),
+      );
+    });
+  });
+
+  describe('getResolvedAlerts', () => {
+    it('returns mapped resolved alerts with item data', async () => {
+      // Arrange
+      const resolvedAt = new Date('2026-06-18T10:00:00Z');
+      repositoryMock.findResolvedAlerts.mockResolvedValue({
+        edges: [
+          buildResolution({
+            id: 'res-1',
+            supplyItemId: 'item-1',
+            resolvedAt,
+          }),
+        ],
+        hasNextPage: false,
+        endCursor: null,
+      });
+
+      // Act
+      const result = await service.getResolvedAlerts(tenantId);
+
+      // Assert
+      expect(result).toHaveLength(1);
+      expect(result[0]).toMatchObject({
+        id: 'res-1',
+        supplyItemId: 'item-1',
+        product: 'Pollo',
+        resolvedAt: resolvedAt.toISOString(),
+      });
+    });
+
+    it('includes note when resolution has one', async () => {
+      // Arrange
+      repositoryMock.findResolvedAlerts.mockResolvedValue({
+        edges: [{ ...buildResolution(), note: 'Se recibió compra de emergencia' }],
+        hasNextPage: false,
+        endCursor: null,
+      });
+
+      // Act
+      const result = await service.getResolvedAlerts(tenantId);
+
+      // Assert
+      expect(result[0]?.note).toBe('Se recibió compra de emergencia');
+    });
+
+    it('returns note as undefined when not set', async () => {
+      // Arrange
+      repositoryMock.findResolvedAlerts.mockResolvedValue({
+        edges: [{ ...buildResolution(), note: null }],
+        hasNextPage: false,
+        endCursor: null,
+      });
+
+      // Act
+      const result = await service.getResolvedAlerts(tenantId);
+
+      // Assert
+      expect(result[0]?.note).toBeUndefined();
+    });
+
+    it('filters by tenantId', async () => {
+      // Arrange
+      repositoryMock.findResolvedAlerts.mockResolvedValue({ edges: [], hasNextPage: false, endCursor: null });
+
+      // Act
+      await service.getResolvedAlerts(tenantId, undefined, 10);
+
+      // Assert
+      expect(repositoryMock.findResolvedAlerts).toHaveBeenCalledWith(tenantId, undefined, 10);
+    });
+
+    it('returns empty array when no resolutions exist', async () => {
+      // Arrange
+      repositoryMock.findResolvedAlerts.mockResolvedValue({ edges: [], hasNextPage: false, endCursor: null });
+
+      // Act
+      const result = await service.getResolvedAlerts(tenantId);
+
+      // Assert
+      expect(result).toEqual([]);
     });
   });
 

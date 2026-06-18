@@ -18,6 +18,7 @@ import {
   type InventoryAlert,
   type InventoryMovement,
   type InventoryProduct,
+  type InventoryResolvedAlert,
 } from '@/types/inventory';
 
 import styles from './inventario-responsive.module.scss';
@@ -494,6 +495,86 @@ export function InventarioAlertCard({
           <InventarioIconButton variant="resolve" theme={theme} onClick={onResolve} />
         </>
       }
+    />
+  );
+}
+
+export interface InventarioResolvedAlertRowProps extends RowBaseProps {
+  alert: InventoryResolvedAlert;
+  theme: UiTheme;
+}
+
+export function InventarioResolvedAlertRow({
+  alert,
+  visibleColumns,
+  columnsTemplate,
+}: InventarioResolvedAlertRowProps): React.JSX.Element {
+  const resolvedLabel = new Date(alert.resolvedAt).toLocaleString('es-CO', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+  return (
+    <ResponsiveGridRow visibleColumns={visibleColumns} columnsTemplate={columnsTemplate}>
+      {(columnId) => {
+        switch (columnId) {
+          case 'product':
+            return <span className={styles.name}>{alert.product}</span>;
+          case 'currentStock':
+            return (
+              <span className={[styles.cell, styles.number].join(' ')}>
+                <span className={[styles.stock, styles['stock--neutral']].join(' ')}>
+                  {alert.currentStock ?? '0'}
+                </span>
+              </span>
+            );
+          case 'minStock':
+            return (
+              <span className={[styles.cell, styles.number].join(' ')}>
+                <span className={[styles.stock, styles['stock--neutral']].join(' ')}>
+                  {alert.threshold ?? '—'}
+                </span>
+              </span>
+            );
+          case 'supplier':
+            return <span className={styles.muted}>{alert.supplier}</span>;
+          case 'resolvedAt':
+            return <span className={styles.muted}>{resolvedLabel}</span>;
+          case 'note':
+            return <span className={styles.muted}>{alert.note ?? '—'}</span>;
+          default:
+            return null;
+        }
+      }}
+    </ResponsiveGridRow>
+  );
+}
+
+export function InventarioResolvedAlertCard({
+  alert,
+}: Omit<InventarioResolvedAlertRowProps, 'visibleColumns' | 'columnsTemplate'>): React.JSX.Element {
+  const resolvedLabel = new Date(alert.resolvedAt).toLocaleString('es-CO', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+  return (
+    <ResponsiveTableCard
+      className={styles.card}
+      title={<span className={styles.name}>{alert.product}</span>}
+      fields={[
+        { label: 'Stock actual', value: String(alert.currentStock ?? '0') },
+        { label: 'Stock mín.', value: String(alert.threshold ?? '—') },
+        { label: 'Proveedor', value: alert.supplier },
+        { label: 'Resuelta el', value: resolvedLabel },
+        { label: 'Razón', value: alert.note ?? '—' },
+      ]}
     />
   );
 }

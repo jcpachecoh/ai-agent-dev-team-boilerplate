@@ -70,6 +70,18 @@ export interface InventoryAlert {
   resolvedAt?: string;
 }
 
+export interface InventoryResolvedAlert {
+  id: string;
+  supplyItemId: string;
+  product: string;
+  currentStock: number;
+  threshold: number;
+  supplier: string;
+  resolvedAt: string;
+  resolvedById?: string;
+  note?: string;
+}
+
 export interface InventoryStockBySite {
   site: string;
   current: number;

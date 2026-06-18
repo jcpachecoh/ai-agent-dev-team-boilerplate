@@ -1,6 +1,11 @@
-import { Controller, Get, Headers, Param, Patch, Query } from '@nestjs/common';
-import { ApiBearerAuth, ApiHeader, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import type { InventoryAlertDto, InventoryAlertSummaryDto } from './dto/inventory-alert.dto';
+import { Body, Controller, Get, Headers, Param, Patch, Query } from '@nestjs/common';
+import { ApiBearerAuth, ApiHeader, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import type {
+  InventoryAlertDto,
+  InventoryAlertSummaryDto,
+  InventoryResolvedAlertDto,
+} from './dto/inventory-alert.dto';
+import { ResolveInventoryAlertDto } from './dto/inventory-alert.dto';
 import { InventoryDashboardDto } from './dto/inventory-dashboard.dto';
 import { InventoryReportDto } from './dto/inventory-report.dto';
 import { InventoryService } from '../service/inventory.service';
@@ -31,13 +36,30 @@ export class InventoryController {
     @Headers('x-tenant-id') tenantId: string,
   ): Promise<InventoryAlertSummaryDto> {
     const alerts = await this.inventoryService.getAlerts(tenantId);
-    return this.inventoryService.getAlertSummary(alerts);
+    return this.inventoryService.getAlertSummary(alerts, tenantId);
   }
 
-  @ApiOperation({ summary: 'Resolve alert (session-scoped v1)' })
+  @ApiOperation({ summary: 'Resolved alert history' })
+  @ApiQuery({ name: 'cursor', required: false })
+  @ApiQuery({ name: 'take', required: false, type: Number })
+  @Get('alerts/resolved')
+  getResolvedAlerts(
+    @Headers('x-tenant-id') tenantId: string,
+    @Query('cursor') cursor?: string,
+    @Query('take') take?: string,
+  ): Promise<InventoryResolvedAlertDto[]> {
+    return this.inventoryService.getResolvedAlerts(tenantId, cursor, take ? Number(take) : undefined);
+  }
+
+  @ApiOperation({ summary: 'Resolve alert — persists to InventoryAlertResolution' })
   @Patch('alerts/:id/resolve')
-  resolveAlert(@Param('id') id: string): { ok: true } {
-    this.inventoryService.resolveAlert(id);
+  async resolveAlert(
+    @Param('id') id: string,
+    @Headers('x-tenant-id') tenantId: string,
+    @Body() body: ResolveInventoryAlertDto,
+  ): Promise<{ ok: true }> {
+    // resolvedById is null — this controller uses x-tenant-id header only (no JWT auth)
+    await this.inventoryService.resolveAlert(id, tenantId, undefined, body.note);
     return { ok: true };
   }
 

@@ -45,3 +45,12 @@ export const INVENTARIO_ALERT_RESPONSIVE_COLUMNS: ResponsiveColumnDef[] = [
   { id: 'supplier', label: 'Proveedor', priority: 2, gridTrack: 'minmax(110px, 1fr)' },
   { id: 'actions', label: 'Acciones', priority: 1, gridTrack: 'minmax(120px, 140px)' },
 ];
+
+export const INVENTARIO_RESOLVED_ALERT_RESPONSIVE_COLUMNS: ResponsiveColumnDef[] = [
+  { id: 'product', label: 'Insumo', priority: 1, gridTrack: 'minmax(140px, 1.5fr)' },
+  { id: 'currentStock', label: 'Stock actual', priority: 2, gridTrack: 'minmax(88px, 100px)' },
+  { id: 'minStock', label: 'Stock mín.', priority: 3, gridTrack: 'minmax(88px, 100px)' },
+  { id: 'supplier', label: 'Proveedor', priority: 3, gridTrack: 'minmax(110px, 1fr)' },
+  { id: 'resolvedAt', label: 'Resuelta el', priority: 1, gridTrack: 'minmax(140px, 160px)' },
+  { id: 'note', label: 'Razón', priority: 2, gridTrack: 'minmax(120px, 1.5fr)' },
+];
