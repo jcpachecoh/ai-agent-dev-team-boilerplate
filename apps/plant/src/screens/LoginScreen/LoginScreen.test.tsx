@@ -45,6 +45,9 @@ vi.mock('@restopsiq/ui', () => ({
   }: React.ButtonHTMLAttributes<HTMLButtonElement> & { loading?: boolean }) => (
     <button {...props}>{loading ? 'Guardando…' : children}</button>
   ),
+  WebLoginBrandLogo: ({ alt }: { alt?: string }) => (
+    <img role="img" alt={alt ?? 'Palos de Leña Restaurantes'} />
+  ),
 }));
 
 vi.mock('@/services/auth.service', async (importOriginal) => {
@@ -103,13 +106,21 @@ describe('LoginScreen', () => {
     });
   });
 
-  it('renders station badge, area title, four pin dots and keypad', () => {
-    renderLoginScreen(<LoginScreen areaName="Corte y deshuese" />);
+  it('renders brand logo, welcome title, and keypad', () => {
+    renderLoginScreen(<LoginScreen />);
 
-    expect(screen.getByText('EST-02')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /corte y deshuese/i })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: /palos de leña/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: /bienvenido al módulo de planta/i }),
+    ).toBeInTheDocument();
     expect(screen.getByText(/ingrese su número de cédula/i)).toBeInTheDocument();
     expect(screen.getByRole('group', { name: /teclado pin/i })).toBeInTheDocument();
+  });
+
+  it('allows overriding the welcome title', () => {
+    renderLoginScreen(<LoginScreen welcomeTitle="Corte y deshuese" />);
+
+    expect(screen.getByRole('heading', { name: /corte y deshuese/i })).toBeInTheDocument();
   });
 
   it('does not submit when cédula is shorter than 8 digits', async () => {

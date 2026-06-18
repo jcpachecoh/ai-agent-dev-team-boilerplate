@@ -1,4 +1,4 @@
-import { Button, FieldAlertBanner, Input, PinKeypad } from '@restopsiq/ui';
+import { Button, FieldAlertBanner, Input, PinKeypad, WebLoginBrandLogo } from '@restopsiq/ui';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -24,12 +24,18 @@ const SUCCESS_DISPLAY_MS = 1800;
 type LoginStep = 'cedula' | 'pin';
 
 export interface LoginScreenProps {
-  /** Work area title, e.g. "Corte y deshuese" */
-  areaName?: string;
-  brandName?: string;
-  plantLabel?: string;
+  /** Main heading on the login screen */
+  welcomeTitle?: string;
+  /** Alt text for the brand logo */
+  logoAlt?: string;
   statusLine?: string;
   onLoginSuccess?: () => void;
+  /** @deprecated Use welcomeTitle */
+  areaName?: string;
+  /** @deprecated Logo is shown via WebLoginBrandLogo */
+  brandName?: string;
+  /** @deprecated Logo is shown via WebLoginBrandLogo */
+  plantLabel?: string;
 }
 
 function vibratePinError(): void {
@@ -38,13 +44,43 @@ function vibratePinError(): void {
   }
 }
 
+const DEFAULT_WELCOME_TITLE = 'Bienvenido al módulo de planta';
+
+function LoginHeading({ title }: { title: string }): React.JSX.Element {
+  const isDefaultWelcome =
+    title.localeCompare(DEFAULT_WELCOME_TITLE, 'es', {
+      sensitivity: 'accent',
+    }) === 0;
+
+  if (isDefaultWelcome) {
+    return (
+      <h1 className={styles.areaTitle} aria-label={title}>
+        <span className={styles.areaTitleEyebrow}>Bienvenido al</span>
+        <span className={styles.areaTitleDisplay}>Módulo de planta</span>
+      </h1>
+    );
+  }
+
+  return (
+    <h1 className={styles.areaTitle}>
+      <span className={styles.areaTitleDisplay}>{title}</span>
+    </h1>
+  );
+}
+
 export function LoginScreen({
-  areaName = import.meta.env.VITE_KDS_AREA_NAME ?? 'Corte y deshuese',
-  brandName = import.meta.env.VITE_KDS_BRAND_NAME ?? 'Palos de Leña',
-  plantLabel = 'RESTOPSIQ PLANT',
+  welcomeTitle,
+  areaName,
+  logoAlt = 'Palos de Leña Restaurantes',
   statusLine = 'Sistema operativo · Turno 1 · 06:00-14:00 · Bogotá',
   onLoginSuccess,
 }: LoginScreenProps): React.JSX.Element {
+  const headingTitle =
+    welcomeTitle ??
+    areaName ??
+    import.meta.env.VITE_KDS_WELCOME_TITLE ??
+    import.meta.env.VITE_KDS_AREA_NAME ??
+    DEFAULT_WELCOME_TITLE;
   const queryClient = useQueryClient();
   const stationId = useSessionStore((s) => s.stationId);
   const login = useSessionStore((s) => s.login);
@@ -249,16 +285,10 @@ export function LoginScreen({
     <div className={`screen-operator ${styles.screen}`}>
       <div className={styles.content}>
         <header className={styles.brandHeader}>
-          <span className={styles.flameIcon} aria-hidden />
-          <p className={styles.brandLine}>
-            <span className={styles.brandName}>{brandName}</span>
-            <span className={styles.brandDot}>·</span>
-            <span className={styles.plantLabel}>{plantLabel}</span>
-          </p>
-          <span className={styles.stationBadge}>{stationId}</span>
+          <WebLoginBrandLogo theme="dark" size="xl" alt={logoAlt} className={styles.brandLogo} />
         </header>
 
-        <h1 className={styles.areaTitle}>{areaName}</h1>
+        <LoginHeading title={headingTitle} />
 
         {step === 'cedula' ? (
           <>
@@ -356,8 +386,6 @@ export function LoginScreen({
             </button>
           </>
         )}
-
-        {showDemoHint && <p className={styles.demoHint}>DEMO: PIN correcto = {getDemoPinHint()}</p>}
 
         <footer className={styles.statusFooter}>
           <span className={styles.statusDot} aria-hidden />

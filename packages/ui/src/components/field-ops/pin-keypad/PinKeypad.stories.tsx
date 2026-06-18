@@ -46,7 +46,6 @@ export const WithInput: Story = {
             }
           }}
         />
-        <p style={{ fontSize: 12, opacity: 0.6 }}>DEMO: PIN correcto = 1234</p>
       </div>
     );
   },
