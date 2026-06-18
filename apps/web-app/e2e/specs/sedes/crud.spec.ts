@@ -2,6 +2,8 @@ import { test, expect } from '@playwright/test';
 import { SedesPage } from '../../pages/SedesPage';
 import { faker } from '@faker-js/faker/locale/es';
 
+test.describe.configure({ mode: 'serial' });
+
 test.describe('Sedes — CRUD', () => {
   let sedesPage: SedesPage;
   let testSedeName: string;
@@ -20,25 +22,30 @@ test.describe('Sedes — CRUD', () => {
   test('editar una sede actualiza el nombre en la tabla', async ({ page }) => {
     await sedesPage.createSede(testSedeName, faker.location.streetAddress());
     const updatedName = `${testSedeName} EDITADA`;
-    const row = sedesPage.sedeTable.getByRole('row', { name: testSedeName });
-    await row.getByTestId('sede-edit-btn').click();
-    await sedesPage.nameInput.clear();
-    await sedesPage.nameInput.fill(updatedName);
-    await sedesPage.saveButton.click();
+
+    const row = page
+      .getByRole('table')
+      .getByRole('row')
+      .filter({ has: page.getByText(testSedeName, { exact: true }) })
+      .first();
+    await row.getByRole('button', { name: 'Editar sede' }).click();
+    await page.getByPlaceholder('Ej: Sede Chapinero').fill(updatedName);
+    await page.getByRole('button', { name: 'Guardar cambios' }).click();
+    await expect(page.getByText('Cambios guardados.')).toBeVisible();
+
+    await sedesPage.goto();
     await sedesPage.expectSedeInTable(updatedName);
     await sedesPage.expectSedeNotInTable(testSedeName);
   });
 
-  test('eliminar una sede la remueve de la tabla', async () => {
+  test('desactivar una sede la marca como inactiva', async ({ page }) => {
     await sedesPage.createSede(testSedeName, faker.location.streetAddress());
-    await sedesPage.deleteSede(testSedeName);
-    await sedesPage.expectSedeNotInTable(testSedeName);
-  });
-
-  test('soft delete — sede eliminada no aparece en listado activo', async ({ page }) => {
-    await sedesPage.createSede(testSedeName, faker.location.streetAddress());
-    await sedesPage.deleteSede(testSedeName);
-    await page.reload();
-    await sedesPage.expectSedeNotInTable(testSedeName);
+    await sedesPage.deactivateSede(testSedeName);
+    const row = page
+      .getByRole('table')
+      .getByRole('row')
+      .filter({ has: page.getByText(testSedeName, { exact: true }) })
+      .first();
+    await expect(row.getByText('INACTIVO')).toBeVisible();
   });
 });

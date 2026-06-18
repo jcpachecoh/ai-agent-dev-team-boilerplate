@@ -9,24 +9,25 @@ export class LoginPage {
 
   constructor(page: Page) {
     this.page = page;
-    this.emailInput = page.getByTestId('login-email');
-    this.passwordInput = page.getByTestId('login-password');
-    this.submitButton = page.getByTestId('login-submit');
-    this.errorMessage = page.getByTestId('login-error');
+    this.emailInput = page.getByRole('textbox', { name: /correo electrónico/i });
+    this.passwordInput = page.locator('input[name="password"]');
+    this.submitButton = page.getByRole('button', { name: /acceder al sistema/i });
+    this.errorMessage = page.getByRole('alert');
   }
 
-  async goto() {
-    await this.page.goto('/login');
+  async goto(): Promise<void> {
+    const baseURL = process.env.BASE_URL ?? 'http://localhost:5173';
+    await this.page.goto(new URL('/login', baseURL).toString());
     await expect(this.emailInput).toBeVisible();
   }
 
-  async login(email: string, password: string) {
+  async login(email: string, password: string): Promise<void> {
     await this.emailInput.fill(email);
     await this.passwordInput.fill(password);
     await this.submitButton.click();
   }
 
-  async expectError(message: string) {
+  async expectError(message: string): Promise<void> {
     await expect(this.errorMessage).toContainText(message);
   }
 }
