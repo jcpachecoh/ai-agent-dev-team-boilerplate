@@ -78,6 +78,7 @@ describe('AdminUsersService', () => {
           documentType: DocumentType.CC,
           email: 'test@test.com',
           roleId: 'role-1',
+          locationId: 'sede-1',
         },
         'requester-1',
       );
@@ -93,6 +94,90 @@ describe('AdminUsersService', () => {
           createdBy: 'requester-1',
         }),
       );
+    });
+
+    it('pasa operationalUser con cedulaHash y pinHash cuando roleCode es OPERATOR', async () => {
+      // Arrange
+      process.env.OPERATOR_TEMP_PASSWORD = '1234';
+      mockRepo.findByEmail.mockResolvedValue(null);
+      mockRepo.findByCedula.mockResolvedValue(null);
+      mockRepo.findRoleCode.mockResolvedValue('OPERATOR');
+      mockRepo.createWithEmployeeDetails.mockResolvedValue(baseUser);
+
+      // Act
+      await service.createUser(
+        'tenant-1',
+        { name: 'Test', cedula: '12345678', documentType: DocumentType.CC, email: 'op@test.com', roleId: 'role-op', locationId: 'sede-1' },
+        'req',
+      );
+
+      // Assert
+      const callArg = mockRepo.createWithEmployeeDetails.mock.calls[0][1];
+      expect(callArg.operationalUser).toBeDefined();
+      expect(typeof callArg.operationalUser.cedulaHash).toBe('string');
+      expect(callArg.operationalUser.cedulaHash).toHaveLength(64); // SHA-256 hex
+      expect(typeof callArg.operationalUser.pinHash).toBe('string');
+      // pinHash is a bcrypt hash, not the raw PIN
+      expect(callArg.operationalUser.pinHash).not.toBe('1234');
+    });
+
+    it('no pasa operationalUser cuando roleCode no es OPERATOR', async () => {
+      // Arrange
+      mockRepo.findByEmail.mockResolvedValue(null);
+      mockRepo.findByCedula.mockResolvedValue(null);
+      mockRepo.findRoleCode.mockResolvedValue('OWNER');
+      mockRepo.createWithEmployeeDetails.mockResolvedValue({
+        ...baseUser,
+        role: { id: 'role-owner', code: 'OWNER', name: 'Owner' },
+      });
+
+      // Act
+      await service.createUser(
+        'tenant-1',
+        { name: 'Test', cedula: '12345678', documentType: DocumentType.CC, email: 'owner@test.com', roleId: 'role-owner' },
+        'req',
+      );
+
+      // Assert
+      const callArg = mockRepo.createWithEmployeeDetails.mock.calls[0][1];
+      expect(callArg.operationalUser).toBeUndefined();
+    });
+
+    it('lanza Error cuando OPERATOR no tiene locationId', async () => {
+      // Arrange
+      process.env.OPERATOR_TEMP_PASSWORD = '1234';
+      mockRepo.findByEmail.mockResolvedValue(null);
+      mockRepo.findByCedula.mockResolvedValue(null);
+      mockRepo.findRoleCode.mockResolvedValue('OPERATOR');
+
+      // Act & Assert
+      await expect(
+        service.createUser(
+          'tenant-1',
+          { name: 'Test', cedula: '12345678', documentType: DocumentType.CC, email: 'op@test.com', roleId: 'role-op' },
+          'req',
+        ),
+      ).rejects.toThrow('locationId is required for OPERATOR users');
+    });
+
+    it('lanza Error cuando OPERATOR_TEMP_PASSWORD no es PIN válido (no numérico)', async () => {
+      // Arrange
+      process.env.OPERATOR_TEMP_PASSWORD = 'abc123';
+      mockRepo.findByEmail.mockResolvedValue(null);
+      mockRepo.findByCedula.mockResolvedValue(null);
+      mockRepo.findRoleCode.mockResolvedValue('OPERATOR');
+
+      // Act & Assert
+      await expect(
+        service.createUser(
+          'tenant-1',
+          { name: 'Test', cedula: '12345678', documentType: DocumentType.CC, email: 'op@test.com', roleId: 'role-op' },
+          'req',
+        ),
+      ).rejects.toThrow('OPERATOR_TEMP_PASSWORD must be 4–6 numeric digits');
+
+      // Cleanup
+      process.env.OPERATOR_TEMP_PASSWORD = '1234';
     });
 
     it('throws ConflictException on duplicate email', async () => {

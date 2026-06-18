@@ -56,6 +56,7 @@ class CreateAdminUserInput {
   @IsEnum(DocumentType) @Field() documentType!: DocumentType;
   @IsEmail() @Field() email!: string;
   @IsString() @IsNotEmpty() @Field() roleId!: string;
+  @IsString() @IsOptional() @Field({ nullable: true }) locationId?: string;
 }
 
 @InputType()

@@ -54,6 +54,7 @@ const baseUser = {
 const repoMock = {
   findByCedulaHash: jest.fn(),
   findById: jest.fn(),
+  findByUserId: jest.fn(),
   findLocationIdByUserId: jest.fn(),
   findActiveLocationsByUserId: jest.fn(),
   findLocationById: jest.fn(),
@@ -106,6 +107,7 @@ describe('MesAuthService', () => {
       resetAt: new Date(),
     });
     repoMock.findByCedulaHash.mockResolvedValue(baseUser);
+    repoMock.findByUserId.mockResolvedValue(null);
     repoMock.findLocationIdByUserId.mockResolvedValue(null);
     repoMock.findActiveLocationsByUserId.mockResolvedValue([]);
     repoMock.findLocationById.mockResolvedValue(null);
@@ -921,6 +923,87 @@ describe('MesAuthService', () => {
       await expect(service.resetPin(requester.id, target.id, 'abc')).rejects.toThrow(
         BadRequestException,
       );
+    });
+
+    describe('global token fallback (sub = User.id)', () => {
+      const ownerLinked = {
+        ...baseUser,
+        id: 'op-owner-linked',
+        role: OperationalRole.OWNER,
+        userId: 'global-user-owner-id',
+      };
+
+      beforeEach(() => {
+        (bcryptMock.hash as jest.Mock).mockResolvedValue('new-hashed-pin');
+        repoMock.updatePinHash.mockResolvedValue(undefined);
+        repoMock.saveRefreshToken.mockResolvedValue(undefined);
+      });
+
+      it('usa findByUserId como fallback cuando findById no encuentra al requester', async () => {
+        // Arrange — sub es User.id global, no existe como OperationalUser.id
+        repoMock.findById.mockReset().mockResolvedValueOnce(null).mockResolvedValueOnce(target);
+        repoMock.findByUserId.mockResolvedValueOnce(ownerLinked);
+
+        // Act
+        await service.resetPin('global-user-owner-id', target.id, '9012');
+
+        // Assert
+        expect(repoMock.findByUserId).toHaveBeenCalledWith('global-user-owner-id');
+        expect(repoMock.updatePinHash).toHaveBeenCalledWith(target.id, 'new-hashed-pin');
+        expect(repoMock.saveRefreshToken).toHaveBeenCalledWith(target.id, null);
+      });
+
+      it('no llama findByUserId cuando findById ya resuelve el requester (token MES)', async () => {
+        // Arrange — sub es OperationalUser.id, findById lo encuentra directo
+        repoMock.findById
+          .mockReset()
+          .mockResolvedValueOnce(requester)
+          .mockResolvedValueOnce(target);
+
+        // Act
+        await service.resetPin(requester.id, target.id, '9012');
+
+        // Assert
+        expect(repoMock.findByUserId).not.toHaveBeenCalled();
+      });
+
+      it('lanza NotFoundException si User.id global no tiene OperationalUser vinculado', async () => {
+        // Arrange — ni findById ni findByUserId encuentran al requester
+        repoMock.findById.mockReset().mockResolvedValueOnce(null);
+        repoMock.findByUserId.mockResolvedValueOnce(null);
+
+        // Act & Assert
+        await expect(service.resetPin('orphan-global-id', target.id, '9012')).rejects.toThrow(
+          NotFoundException,
+        );
+        expect(repoMock.updatePinHash).not.toHaveBeenCalled();
+      });
+
+      it('lanza ForbiddenException cuando el OperationalUser vinculado no es OWNER', async () => {
+        // Arrange — global user existe pero su OperationalUser tiene rol MANAGER
+        const managerLinked = { ...ownerLinked, role: OperationalRole.MANAGER };
+        repoMock.findById.mockReset().mockResolvedValueOnce(null).mockResolvedValueOnce(target);
+        repoMock.findByUserId.mockResolvedValueOnce(managerLinked);
+
+        // Act & Assert
+        await expect(service.resetPin('global-manager-id', target.id, '9012')).rejects.toThrow(
+          ForbiddenException,
+        );
+        expect(repoMock.updatePinHash).not.toHaveBeenCalled();
+      });
+
+      it('mantiene validación de tenant cuando requester viene por findByUserId', async () => {
+        // Arrange — OperationalUser vinculado pertenece a otro tenant
+        const ownerOtherTenant = { ...ownerLinked, tenantId: 'otro-tenant' };
+        repoMock.findById.mockReset().mockResolvedValueOnce(null).mockResolvedValueOnce(target);
+        repoMock.findByUserId.mockResolvedValueOnce(ownerOtherTenant);
+
+        // Act & Assert
+        await expect(service.resetPin('global-owner-other', target.id, '9012')).rejects.toThrow(
+          ForbiddenException,
+        );
+        expect(repoMock.updatePinHash).not.toHaveBeenCalled();
+      });
     });
   });
 

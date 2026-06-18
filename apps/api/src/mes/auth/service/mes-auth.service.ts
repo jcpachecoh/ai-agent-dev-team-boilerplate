@@ -285,12 +285,21 @@ export class MesAuthService implements IMesAuthService {
   }
 
   async resetPin(requesterUserId: string, targetUserId: string, newPin: string): Promise<void> {
-    const requester = await this.mesAuthRepository.findById(requesterUserId);
+    // MES token: sub = OperationalUser.id → findById succeeds.
+    // Global token: sub = User.id → findById returns null, fallback to findByUserId.
+    let requester = await this.mesAuthRepository.findById(requesterUserId);
+    if (!requester) {
+      requester = await this.mesAuthRepository.findByUserId(requesterUserId);
+    }
     if (!requester) {
       throw new NotFoundException('User not found');
     }
 
     if (!requester.isActive) {
+      throw new ForbiddenException('Access denied');
+    }
+
+    if (requester.role !== OperationalRole.OWNER) {
       throw new ForbiddenException('Access denied');
     }
 

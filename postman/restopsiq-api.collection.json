@@ -525,7 +525,9 @@
               "listen": "test",
               "script": {
                 "type": "text/javascript",
-                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ]
               }
             }
           ],
@@ -778,7 +780,9 @@
                   "listen": "test",
                   "script": {
                     "type": "text/javascript",
-                    "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]
+                    "exec": [
+                      "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                    ]
                   }
                 }
               ],
@@ -1185,7 +1189,9 @@
                   "listen": "test",
                   "script": {
                     "type": "text/javascript",
-                    "exec": ["pm.test('Status 401', () => pm.response.to.have.status(401));"]
+                    "exec": [
+                      "pm.test('Status 401', () => pm.response.to.have.status(401));"
+                    ]
                   }
                 }
               ],
@@ -1225,7 +1231,9 @@
                   "listen": "test",
                   "script": {
                     "type": "text/javascript",
-                    "exec": ["pm.test('Status 401', () => pm.response.to.have.status(401));"]
+                    "exec": [
+                      "pm.test('Status 401', () => pm.response.to.have.status(401));"
+                    ]
                   }
                 }
               ],
@@ -1605,7 +1613,9 @@
                   "listen": "test",
                   "script": {
                     "type": "text/javascript",
-                    "exec": ["pm.test('Status 401', () => pm.response.to.have.status(401));"]
+                    "exec": [
+                      "pm.test('Status 401', () => pm.response.to.have.status(401));"
+                    ]
                   }
                 }
               ]
@@ -1644,7 +1654,9 @@
                   "listen": "test",
                   "script": {
                     "type": "text/javascript",
-                    "exec": ["pm.test('Status 401', () => pm.response.to.have.status(401));"]
+                    "exec": [
+                      "pm.test('Status 401', () => pm.response.to.have.status(401));"
+                    ]
                   }
                 }
               ]
@@ -1683,7 +1695,9 @@
                   "listen": "test",
                   "script": {
                     "type": "text/javascript",
-                    "exec": ["pm.test('Status 401', () => pm.response.to.have.status(401));"]
+                    "exec": [
+                      "pm.test('Status 401', () => pm.response.to.have.status(401));"
+                    ]
                   }
                 }
               ]
@@ -1722,7 +1736,9 @@
                   "listen": "test",
                   "script": {
                     "type": "text/javascript",
-                    "exec": ["pm.test('Status 401', () => pm.response.to.have.status(401));"]
+                    "exec": [
+                      "pm.test('Status 401', () => pm.response.to.have.status(401));"
+                    ]
                   }
                 }
               ]
@@ -2027,7 +2043,7 @@
                       "pm.test('Has masked cedula', () => pm.expect(body.cedula).to.match(/^\\*+\\d{4}$/));",
                       "pm.test('Has role OPERATOR', () => pm.expect(body.role).to.eql('OPERATOR'));",
                       "pm.test('Has tenantId', () => pm.expect(body).to.have.property('tenantId'));",
-                      "pm.test('Has sedeId', () => pm.expect(body.sedeId).to.eql('sede-principal'));",
+                      "pm.test('Has locationId', () => pm.expect(body).to.have.property('locationId'));",
                       "if (body.id) {",
                       "  pm.collectionVariables.set('mesCreatedUserId', body.id);",
                       "  pm.environment.set('mesCreatedUserId', body.id);",
@@ -2056,7 +2072,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"cedula\": \"{{mesNewUserCedula}}\",\n  \"pin\": \"{{mesNewUserPin}}\",\n  \"role\": \"OPERATOR\",\n  \"sedeId\": \"sede-principal\"\n}",
+                  "raw": "{\n  \"cedula\": \"{{mesNewUserCedula}}\",\n  \"pin\": \"{{mesNewUserPin}}\",\n  \"role\": \"OPERATOR\",\n  \"locationId\": \"{{locationId}}\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -2064,6 +2080,52 @@
                   }
                 },
                 "url": "{{baseUrl}}/api/mes/users"
+              },
+              "response": []
+            },
+            {
+              "name": "Reset PIN",
+              "description": "PATCH /api/mes/users/:userId/reset-pin — OWNER only.\nResets the PIN of {{mesCreatedUserId}} (created in Create User step).\nInvalidates target’s refreshToken. Expects 204 No Content.",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 204', () => pm.response.to.have.status(204));",
+                      "pm.test('Empty body', () => pm.expect(pm.response.text()).to.be.empty);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{mesAccessToken}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"pin\": \"9012\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": "{{baseUrl}}/api/mes/users/{{mesCreatedUserId}}/reset-pin"
               },
               "response": []
             }
@@ -2128,7 +2190,9 @@
                   "listen": "test",
                   "script": {
                     "type": "text/javascript",
-                    "exec": ["pm.test('Status 400', () => pm.response.to.have.status(400));"]
+                    "exec": [
+                      "pm.test('Status 400', () => pm.response.to.have.status(400));"
+                    ]
                   }
                 }
               ],
@@ -2153,6 +2217,145 @@
                   }
                 },
                 "url": "{{baseUrl}}/api/mes/auth/login"
+              },
+              "response": []
+            },
+            {
+              "name": "Reset PIN — Operator forbidden (negative)",
+              "description": "PATCH /api/mes/users/:userId/reset-pin with OPERATOR token — expects 403.",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 403', () => pm.response.to.have.status(403));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{mesTokenOperator}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"pin\": \"9012\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": "{{baseUrl}}/api/mes/users/{{mesCreatedUserId}}/reset-pin"
+              },
+              "response": []
+            },
+            {
+              "name": "Reset PIN — Invalid PIN format (negative)",
+              "description": "PATCH /api/mes/users/:userId/reset-pin with non-numeric PIN — expects 400.",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 400', () => pm.response.to.have.status(400));",
+                      "pm.test('Validation message', () => {",
+                      "  const body = pm.response.json();",
+                      "  pm.expect(JSON.stringify(body)).to.include('pin');",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{mesAccessToken}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"pin\": \"abc\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": "{{baseUrl}}/api/mes/users/{{mesCreatedUserId}}/reset-pin"
+              },
+              "response": []
+            },
+            {
+              "name": "Reset PIN — User not found (negative)",
+              "description": "PATCH /api/mes/users/:userId/reset-pin with non-existent userId — expects 404.",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 404', () => pm.response.to.have.status(404));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{mesAccessToken}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"pin\": \"9012\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": "{{baseUrl}}/api/mes/users/00000000-0000-0000-0000-000000000000/reset-pin"
               },
               "response": []
             }
@@ -2279,7 +2482,9 @@
               "listen": "prerequest",
               "script": {
                 "type": "text/javascript",
-                "exec": ["pm.collectionVariables.set('supplyItemCode', 'SI-BOX-' + Date.now());"]
+                "exec": [
+                  "pm.collectionVariables.set('supplyItemCode', 'SI-BOX-' + Date.now());"
+                ]
               }
             },
             {
@@ -2698,7 +2903,9 @@
               "listen": "test",
               "script": {
                 "type": "text/javascript",
-                "exec": ["pm.test('Status 401', () => pm.response.to.have.status(401));"]
+                "exec": [
+                  "pm.test('Status 401', () => pm.response.to.have.status(401));"
+                ]
               }
             }
           ],
@@ -2992,7 +3199,9 @@
               "listen": "test",
               "script": {
                 "type": "text/javascript",
-                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ]
               }
             }
           ],
@@ -3063,7 +3272,9 @@
               "listen": "test",
               "script": {
                 "type": "text/javascript",
-                "exec": ["pm.test('Status 204', () => pm.response.to.have.status(204));"]
+                "exec": [
+                  "pm.test('Status 204', () => pm.response.to.have.status(204));"
+                ]
               }
             }
           ],
@@ -3142,7 +3353,9 @@
               "listen": "test",
               "script": {
                 "type": "text/javascript",
-                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ]
               }
             }
           ],
@@ -3233,7 +3446,9 @@
               "listen": "test",
               "script": {
                 "type": "text/javascript",
-                "exec": ["pm.test('Status 404', () => pm.response.to.have.status(404));"]
+                "exec": [
+                  "pm.test('Status 404', () => pm.response.to.have.status(404));"
+                ]
               }
             }
           ],
@@ -3370,7 +3585,9 @@
               "listen": "test",
               "script": {
                 "type": "text/javascript",
-                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ]
               }
             }
           ],
@@ -3399,7 +3616,9 @@
               "listen": "test",
               "script": {
                 "type": "text/javascript",
-                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ]
               }
             }
           ],
@@ -3428,7 +3647,9 @@
               "listen": "test",
               "script": {
                 "type": "text/javascript",
-                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ]
               }
             }
           ],
@@ -3727,8 +3948,14 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/plant/orders?status=DRAFT&shift=MORNING",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "plant", "orders"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "plant",
+                "orders"
+              ],
               "query": [
                 {
                   "key": "status",
@@ -4054,7 +4281,9 @@
               "listen": "test",
               "script": {
                 "type": "text/javascript",
-                "exec": ["pm.test('Status 403', () => pm.response.to.have.status(403));"]
+                "exec": [
+                  "pm.test('Status 403', () => pm.response.to.have.status(403));"
+                ]
               }
             }
           ],
@@ -4112,8 +4341,14 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/plant/incidents?orderId={{orderId}}&workStationId={{workStationId}}&type=QUALITY&severity=WARNING&resolved=false",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "plant", "incidents"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "plant",
+                "incidents"
+              ],
               "query": [
                 {
                   "key": "orderId",
@@ -4197,7 +4432,9 @@
               "listen": "test",
               "script": {
                 "type": "text/javascript",
-                "exec": ["pm.test('Status 403', () => pm.response.to.have.status(403));"]
+                "exec": [
+                  "pm.test('Status 403', () => pm.response.to.have.status(403));"
+                ]
               }
             }
           ],
@@ -6193,8 +6430,13 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/employees",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "employees"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "employees"
+              ]
             }
           },
           "event": [
@@ -6231,8 +6473,13 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/employees",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "employees"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "employees"
+              ]
             }
           }
         },
@@ -6252,8 +6499,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/employees/{{employeeUserId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "employees", "{{employeeUserId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "employees",
+                "{{employeeUserId}}"
+              ]
             }
           }
         },
@@ -6281,8 +6534,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/employees/{{employeeUserId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "employees", "{{employeeUserId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "employees",
+                "{{employeeUserId}}"
+              ]
             }
           }
         },
@@ -6303,8 +6562,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/employees/{{employeeUserId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "employees", "{{employeeUserId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "employees",
+                "{{employeeUserId}}"
+              ]
             }
           }
         },
@@ -6324,8 +6589,15 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/employees/location/{{locationId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "employees", "location", "{{locationId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "employees",
+                "location",
+                "{{locationId}}"
+              ]
             }
           }
         },
@@ -6345,8 +6617,15 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/employees/contract-type/FIJO",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "employees", "contract-type", "FIJO"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "employees",
+                "contract-type",
+                "FIJO"
+              ]
             }
           }
         }
@@ -6376,8 +6655,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/attendance/kiosk-auth",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "attendance", "kiosk-auth"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "attendance",
+                "kiosk-auth"
+              ]
             }
           },
           "event": [
@@ -6421,8 +6706,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/attendance/entry",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "attendance", "entry"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "attendance",
+                "entry"
+              ]
             }
           },
           "event": [
@@ -6461,8 +6752,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/attendance/exit",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "attendance", "exit"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "attendance",
+                "exit"
+              ]
             }
           },
           "event": [
@@ -6499,8 +6796,13 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/attendance?userId={{attendanceUserId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "attendance"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "attendance"
+              ],
               "query": [
                 {
                   "key": "userId",
@@ -6526,8 +6828,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/attendance/active?locationId={{attendanceLocationId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "attendance", "active"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "attendance",
+                "active"
+              ],
               "query": [
                 {
                   "key": "locationId",
@@ -6553,8 +6861,16 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/attendance/employees/{{attendanceUserId}}/overtime",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "attendance", "employees", "{{attendanceUserId}}", "overtime"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "attendance",
+                "employees",
+                "{{attendanceUserId}}",
+                "overtime"
+              ]
             }
           },
           "event": [
@@ -6598,8 +6914,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/reports/payroll?period={{reportPeriod}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "reports", "payroll"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "payroll"
+              ],
               "query": [
                 {
                   "key": "period",
@@ -6646,8 +6968,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/reports/payroll?period={{reportPeriod}}&locationId={{locationId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "reports", "payroll"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "payroll"
+              ],
               "query": [
                 {
                   "key": "period",
@@ -6691,8 +7019,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/reports/attendance?from={{reportFrom}}&to={{reportTo}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "reports", "attendance"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "attendance"
+              ],
               "query": [
                 {
                   "key": "from",
@@ -6749,8 +7083,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/reports/social-security?period={{reportPeriod}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "reports", "social-security"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "social-security"
+              ],
               "query": [
                 {
                   "key": "period",
@@ -6803,8 +7143,15 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/reports/payroll/export",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "reports", "payroll", "export"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "payroll",
+                "export"
+              ]
             },
             "description": "Descarga el reporte de nómina como PDF (A4 landscape).\nEn Postman: la respuesta se muestra como binario — haz clic en 'Save to file' para guardar payroll-report-{{reportPeriod}}.pdf.\nContent-Type esperado: application/pdf\nContent-Disposition: attachment; filename=\"payroll-report-{{reportPeriod}}.pdf\""
           },
@@ -6854,8 +7201,15 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/reports/payroll/export",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "reports", "payroll", "export"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "payroll",
+                "export"
+              ]
             },
             "description": "Descarga el reporte de nómina como Excel (.xlsx) con hoja 'Nómina'.\nColumnas: Empleado, Cédula, Sede, Sal. Base, Aux. Transp., HH. Extra, Deducciones, Neto, Aportes Emp., Costo Total.\nEn Postman: haz clic en 'Save to file' para guardar payroll-report-{{reportPeriod}}.xlsx.\nContent-Type esperado: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
           },
@@ -6894,8 +7248,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/reports/payroll?period={{reportPeriod}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "reports", "payroll"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "payroll"
+              ],
               "query": [
                 {
                   "key": "period",
@@ -6941,8 +7301,15 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/reports/payroll/export",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "reports", "payroll", "export"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "payroll",
+                "export"
+              ]
             },
             "description": "Negativo: format=CSV no es válido → 400 Bad Request. Solo PDF y XLSX aceptados."
           },

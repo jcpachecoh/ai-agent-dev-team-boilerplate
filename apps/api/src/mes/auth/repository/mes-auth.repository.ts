@@ -21,6 +21,10 @@ export class MesAuthRepository implements IMesAuthRepository {
     return this.prisma.operationalUser.findUnique({ where: { id } });
   }
 
+  findByUserId(userId: string): Promise<OperationalUser | null> {
+    return this.prisma.operationalUser.findFirst({ where: { userId } });
+  }
+
   async findLocationIdByUserId(tenantId: string, userId: string): Promise<string | null> {
     const assignment = await this.prisma.userLocation.findFirst({
       where: { tenantId, userId },

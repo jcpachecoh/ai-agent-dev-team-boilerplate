@@ -34,6 +34,12 @@ export interface CreateAdminUserData {
   roleId: string;
   passwordHash: string;
   createdBy: string;
+  locationId?: string;
+  /** Set when roleCode === 'OPERATOR' to auto-create linked OperationalUser in the same transaction */
+  operationalUser?: {
+    cedulaHash: string;
+    pinHash: string;
+  };
 }
 
 export interface UpdateAdminUserData {

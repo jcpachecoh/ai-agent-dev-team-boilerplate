@@ -11,6 +11,8 @@ import type { DocumentType } from '@prisma/client';
 import { EmailService } from '@restopsiq/email';
 import * as bcrypt from 'bcrypt';
 
+const PIN_PATTERN = /^\d{4,6}$/;
+
 import type {
   AdminUserDetail,
   AdminUserListItem,
@@ -53,6 +55,7 @@ export class AdminUsersService implements IAdminUsersService {
       documentType: DocumentType;
       email: string;
       roleId: string;
+      locationId?: string;
     },
     requesterId: string,
   ): Promise<AdminUserListItem> {
@@ -74,15 +77,32 @@ export class AdminUsersService implements IAdminUsersService {
     if (roleCode === 'OPERATOR' && !operatorTempPassword) {
       throw new Error('OPERATOR_TEMP_PASSWORD is not set');
     }
+    if (roleCode === 'OPERATOR' && operatorTempPassword && !PIN_PATTERN.test(operatorTempPassword)) {
+      throw new Error('OPERATOR_TEMP_PASSWORD must be 4–6 numeric digits to be a valid MES PIN');
+    }
+    if (roleCode === 'OPERATOR' && !data.locationId?.trim()) {
+      throw new Error('locationId is required for OPERATOR users');
+    }
 
     const temporaryPassword =
       roleCode === 'OPERATOR' ? operatorTempPassword! : crypto.randomBytes(9).toString('base64url');
     const passwordHash = await bcrypt.hash(temporaryPassword, SALT_ROUNDS);
 
+    let operationalUser: { cedulaHash: string; pinHash: string } | undefined;
+    if (roleCode === 'OPERATOR') {
+      const [cedulaHash, pinHash] = await Promise.all([
+        Promise.resolve(this.hashCedula(data.cedula)),
+        bcrypt.hash(temporaryPassword, SALT_ROUNDS),
+      ]);
+      operationalUser = { cedulaHash, pinHash };
+    }
+
     const user = await this.repo.createWithEmployeeDetails(tenantId, {
       ...data,
+      locationId: data.locationId?.trim(),
       passwordHash,
       createdBy: requesterId,
+      operationalUser,
     });
 
     this.sendWelcomeEmail(user.email, user.role.name, temporaryPassword, tenantId).catch(
@@ -138,6 +158,14 @@ export class AdminUsersService implements IAdminUsersService {
     }
 
     await this.repo.setUserPermissionOverrides(userId, overrides);
+  }
+
+  private hashCedula(cedula: string): string {
+    const hmacSecret = process.env.CEDULA_HMAC_SECRET;
+    if (hmacSecret) {
+      return crypto.createHmac('sha256', hmacSecret).update(cedula).digest('hex');
+    }
+    return crypto.createHash('sha256').update(cedula).digest('hex');
   }
 
   private async sendWelcomeEmail(
