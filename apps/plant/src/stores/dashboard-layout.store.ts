@@ -131,10 +131,12 @@ interface DashboardLayoutState {
   layoutMode: PlantLayoutMode;
   cells: WorkstationCell[];
   availableOrders: PlantAvailableOrder[];
+  setAvailableOrders: (orders: PlantAvailableOrder[]) => void;
   setLayoutMode: (mode: PlantLayoutMode) => void;
-  assignOrderToCell: (cellIndex: number, orderId: string) => void;
+  assignOrderToCell: (cellIndex: number, order: PlantAvailableOrder) => void;
   clearCell: (cellIndex: number) => void;
   updateCellStatus: (orderId: string, status: Exclude<PlantWorkstationStatus, 'empty'>) => void;
+  updateCellSnapshot: (orderId: string, patch: Partial<PlantWorkstationSnapshot>) => void;
   hydrateFromPreferences: () => Promise<void>;
   hydrateDemoAssignments: () => void;
   getVisibleCellCount: () => number;
@@ -144,17 +146,15 @@ interface DashboardLayoutState {
 export const useDashboardLayoutStore = create<DashboardLayoutState>((set, get) => ({
   layoutMode: loadLayoutMode(),
   cells: createEmptyCells(),
-  availableOrders: DEMO_AVAILABLE_ORDERS,
+  availableOrders: [],
+  setAvailableOrders: (orders) => set({ availableOrders: orders }),
 
   setLayoutMode: (mode) => {
     persistLayoutMode(mode);
     set({ layoutMode: mode });
   },
 
-  assignOrderToCell: (cellIndex, orderId) => {
-    const order = get().availableOrders.find((item) => item.orderId === orderId);
-    if (!order) return;
-
+  assignOrderToCell: (cellIndex, order) => {
     set((state) => ({
       cells: state.cells.map((cell) =>
         cell.cellIndex === cellIndex
@@ -167,6 +167,9 @@ export const useDashboardLayoutStore = create<DashboardLayoutState>((set, get) =
             }
           : cell,
       ),
+      availableOrders: state.availableOrders.some((item) => item.orderId === order.orderId)
+        ? state.availableOrders
+        : [...state.availableOrders, order],
     }));
   },
 
@@ -184,12 +187,23 @@ export const useDashboardLayoutStore = create<DashboardLayoutState>((set, get) =
     }));
   },
 
+  updateCellSnapshot: (orderId, patch) => {
+    set((state) => ({
+      cells: state.cells.map((cell) =>
+        cell.orderId === orderId && cell.snapshot
+          ? { ...cell, snapshot: { ...cell.snapshot, ...patch } }
+          : cell,
+      ),
+    }));
+  },
+
   hydrateFromPreferences: async () => {
     set({ layoutMode: loadLayoutMode() });
   },
 
   hydrateDemoAssignments: () => {
     set({
+      availableOrders: DEMO_AVAILABLE_ORDERS,
       cells: DEMO_AVAILABLE_ORDERS.map((order, cellIndex) => ({
         cellIndex,
         orderId: order.orderId,

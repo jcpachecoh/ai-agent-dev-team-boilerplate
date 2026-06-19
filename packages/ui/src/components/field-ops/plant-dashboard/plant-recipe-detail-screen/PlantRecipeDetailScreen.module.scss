@@ -640,6 +640,21 @@
   color: var(--pd-recipe-action-finish-text);
 }
 
+.actionCompleted {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: clamp(2.85rem, 8vh, 3.35rem);
+  border: 2px solid rgba(107, 114, 128, 0.45);
+  border-radius: 4px;
+  background: rgba(107, 114, 128, 0.12);
+  color: #9ca3af;
+  font-size: clamp(0.82rem, 2.2vw, 0.98rem);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
 @media (max-width: 1024px) and (orientation: portrait) {
   .body {
     flex-direction: column;

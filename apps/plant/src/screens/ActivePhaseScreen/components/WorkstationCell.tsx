@@ -4,10 +4,11 @@ import {
   type PlantLayoutMode,
   type PlantWorkstationDensity,
 } from '@restopsiq/ui';
-import { useCallback, useEffect, type JSX } from 'react';
+import { type JSX } from 'react';
 
+import { useOrderLiveStatus } from '@/hooks/useOrderLiveStatus';
+import { useWorkstationOrderRuntime } from '@/hooks/useWorkstationOrderRuntime';
 import type { WorkstationCell } from '@/stores/dashboard-layout.store';
-import { useWorkstationTimerStore } from '@/stores/workstation-timer.store';
 
 export interface WorkstationCellProps {
   cell: WorkstationCell;
@@ -16,7 +17,6 @@ export interface WorkstationCellProps {
   onChangeOrder: (cellIndex: number) => void;
   onViewRecipe: (cellIndex: number) => void;
   onReportIssue?: () => void;
-  onFinish?: () => void;
 }
 
 function resolveDensity(layoutMode: PlantLayoutMode): PlantWorkstationDensity {
@@ -30,38 +30,32 @@ export function WorkstationCellView({
   onChangeOrder,
   onViewRecipe,
   onReportIssue,
-  onFinish,
 }: WorkstationCellProps): JSX.Element {
   const density = resolveDensity(layoutMode);
-  const ensureTimer = useWorkstationTimerStore((s) => s.ensureTimer);
-  const startTimer = useWorkstationTimerStore((s) => s.startTimer);
-  const pauseTimer = useWorkstationTimerStore((s) => s.pauseTimer);
-  const resumeTimer = useWorkstationTimerStore((s) => s.resumeTimer);
-  const elapsedMs = useWorkstationTimerStore((s) => s.timers[cell.cellIndex]?.elapsedMs ?? 0);
-  const timerRunning =
-    useWorkstationTimerStore((s) => s.timers[cell.cellIndex]?.status === 'running') ?? false;
+  const { data: liveStatus } = useOrderLiveStatus(cell.orderId);
 
-  useEffect(() => {
-    if (cell.status === 'empty' || !cell.snapshot) return;
-    const initialMs =
-      cell.status === 'in_progress' ? 14 * 60 * 1000 + 37 * 1000 : 8 * 60 * 1000 + 26 * 1000;
-    ensureTimer(cell.cellIndex, initialMs);
-    if (cell.status === 'in_progress') {
-      startTimer(cell.cellIndex);
-    }
-  }, [cell.cellIndex, cell.snapshot?.orderId, cell.status, ensureTimer, startTimer]);
+  const fallbackStatus: 'pending' | 'in_progress' | 'paused' | 'incident' | 'completed' =
+    liveStatus ?? (cell.status === 'empty' ? 'pending' : cell.status);
 
-  const handleStart = useCallback(() => {
-    startTimer(cell.cellIndex);
-  }, [cell.cellIndex, startTimer]);
-
-  const handlePause = useCallback(() => {
-    pauseTimer(cell.cellIndex);
-  }, [cell.cellIndex, pauseTimer]);
-
-  const handleResume = useCallback(() => {
-    resumeTimer(cell.cellIndex);
-  }, [cell.cellIndex, resumeTimer]);
+  const {
+    displayStatus,
+    elapsedMs,
+    timerRunning,
+    handleStart,
+    handlePause,
+    handleResume,
+    handleNextStep,
+    handleFinish,
+    isPending,
+    canStart,
+    canAdvanceStep,
+  } = useWorkstationOrderRuntime({
+    cellIndex: cell.cellIndex,
+    orderId: cell.orderId,
+    fallbackWorkStationId: cell.snapshot?.workStationId,
+    fallbackStepId: cell.snapshot?.currentStepId,
+    fallbackStatus,
+  });
 
   if (cell.status === 'empty' || !cell.snapshot) {
     return (
@@ -71,17 +65,18 @@ export function WorkstationCellView({
 
   return (
     <PlantWorkstationCard
-      status={cell.status}
+      status={displayStatus}
       snapshot={cell.snapshot}
       density={density}
       elapsedMs={elapsedMs}
       timerRunning={timerRunning}
-      onStart={handleStart}
-      onPause={handlePause}
-      onResume={handleResume}
+      onStart={isPending || !canStart ? undefined : () => void handleStart()}
+      onPause={isPending ? undefined : () => void handlePause()}
+      onResume={isPending ? undefined : () => void handleResume()}
+      onNextStep={isPending || !canAdvanceStep ? undefined : () => void handleNextStep()}
+      onFinish={isPending ? undefined : () => void handleFinish()}
       onChangeOrder={() => onChangeOrder(cell.cellIndex)}
       onViewRecipe={() => onViewRecipe(cell.cellIndex)}
-      onFinish={onFinish}
       onReportIssue={onReportIssue}
     />
   );

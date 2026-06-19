@@ -11,6 +11,36 @@ vi.mock('@/hooks/usePlantSocket', () => ({
   usePlantSocket: vi.fn(),
 }));
 
+vi.mock('@/hooks/useAvailableProductionOrders', () => ({
+  useAvailableProductionOrders: vi.fn(() => ({
+    data: undefined,
+    isLoading: false,
+    isError: false,
+    isFetching: false,
+    refetch: vi.fn(),
+  })),
+}));
+
+vi.mock('@/hooks/useOrderLiveStatus', () => ({
+  useOrderLiveStatus: vi.fn(() => ({ data: undefined })),
+}));
+
+vi.mock('@/hooks/useWorkstationOrderRuntime', () => ({
+  useWorkstationOrderRuntime: vi.fn(() => ({
+    displayStatus: 'pending',
+    elapsedMs: 0,
+    timerRunning: false,
+    handleStart: vi.fn(),
+    handlePause: vi.fn(),
+    handleResume: vi.fn(),
+    handleFinish: vi.fn(),
+    isPending: false,
+  })),
+}));
+
+import { useAvailableProductionOrders } from '@/hooks/useAvailableProductionOrders';
+import { DEMO_AVAILABLE_ORDERS } from '@/stores/dashboard-layout.store';
+
 describe('dashboard-layout store', () => {
   beforeEach(() => {
     localStorage.clear();
@@ -29,8 +59,11 @@ describe('dashboard-layout store', () => {
   });
 
   it('keeps hidden cell assignments when reducing layout', () => {
+    useDashboardLayoutStore.setState({ availableOrders: DEMO_AVAILABLE_ORDERS });
     const { assignOrderToCell, setLayoutMode } = useDashboardLayoutStore.getState();
-    assignOrderToCell(2, 'OP-000014');
+    const order = DEMO_AVAILABLE_ORDERS.find((item) => item.orderId === 'OP-000014');
+    if (!order) throw new Error('Demo order OP-000014 not found');
+    assignOrderToCell(2, order);
     setLayoutMode('1x2');
 
     const cells = useDashboardLayoutStore.getState().cells;
@@ -100,11 +133,19 @@ describe('ActivePhaseScreen', () => {
     });
     useDashboardLayoutStore.setState({
       layoutMode: '2x2',
+      availableOrders: DEMO_AVAILABLE_ORDERS,
       cells: Array.from({ length: 4 }, (_, cellIndex) => ({
         cellIndex,
         status: 'empty' as const,
       })),
     });
+    vi.mocked(useAvailableProductionOrders).mockReturnValue({
+      data: DEMO_AVAILABLE_ORDERS,
+      isLoading: false,
+      isError: false,
+      isFetching: false,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useAvailableProductionOrders>);
   });
 
   it('renders dashboard header and workstation grid', () => {

@@ -41,6 +41,10 @@
   --status-accent: #e05a44;
 }
 
+.status--completed {
+  --status-accent: #6b7280;
+}
+
 .density--full {
   --title-size: 1.2rem;
   --phase-size: 0.9rem;
@@ -330,6 +334,7 @@
 .actionStart,
 .actionPause,
 .actionResume,
+.actionNext,
 .actionFinish,
 .actionAlert {
   display: inline-flex;
@@ -349,6 +354,11 @@
   border: 1px solid rgba(46, 196, 160, 0.5);
   background: rgba(46, 196, 160, 0.14);
   color: #2ec4a0;
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
 }
 
 .actionPause {
@@ -363,6 +373,18 @@
   border: 1px solid rgba(59, 130, 246, 0.5);
   background: rgba(59, 130, 246, 0.14);
   color: #3b82f6;
+}
+
+.actionNext {
+  flex: 1;
+  border: 1px solid var(--pd-border-strong);
+  background: var(--pd-finish-bg);
+  color: var(--pd-text);
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
 }
 
 .actionFinish {
@@ -383,6 +405,21 @@
   border: 1px solid rgba(224, 90, 68, 0.5);
   background: rgba(224, 90, 68, 0.12);
   color: #e05a44;
+}
+
+.actionCompleted {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--action-height);
+  border: 1px solid rgba(107, 114, 128, 0.45);
+  border-radius: 4px;
+  background: rgba(107, 114, 128, 0.12);
+  color: #9ca3af;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
 }
 
 .urgentTag {

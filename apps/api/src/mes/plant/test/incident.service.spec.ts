@@ -4,6 +4,7 @@ import { AlarmSeverity, IncidentType } from '@prisma/client';
 import type { CreateIncidentInput } from '../interfaces/plant.interfaces';
 import { IncidentRepository } from '../repository/incident.repository';
 import { PlantRepository } from '../repository/plant.repository';
+import { ProductionLogRepository } from '../repository/production-log.repository';
 import { IncidentService } from '../service/incident.service';
 import { PlantEventsService } from '../service/plant-events.service';
 import { PlantService } from '../service/plant.service';
@@ -66,6 +67,7 @@ describe('IncidentService', () => {
         IncidentService,
         { provide: IncidentRepository, useValue: incidentRepositoryMock },
         { provide: PlantRepository, useValue: plantRepositoryMock },
+        { provide: ProductionLogRepository, useValue: productionLogRepositoryMock },
         { provide: PlantEventsService, useValue: plantEventsServiceMock },
         { provide: PlantService, useValue: plantServiceMock },
       ],

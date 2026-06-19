@@ -110,7 +110,7 @@ describe('PhaseChainService', () => {
   });
 
   describe('completeExecution', () => {
-    it('promotes next execution to READY when completed phase does not require QA', async () => {
+    it('promotes next execution to IN_PROCESS when order is already running', async () => {
       const exec1 = buildExecution({
         id: 'exec-1',
         phaseId: 'phase-1',
@@ -152,12 +152,13 @@ describe('PhaseChainService', () => {
         notes: null,
       });
       expect(repoMock.updateExecution).toHaveBeenCalledWith(tenantId, 'exec-2', {
-        status: PhaseExecutionStatus.READY,
+        status: PhaseExecutionStatus.IN_PROCESS,
+        startedAt: expect.any(Date),
       });
       expect(result.changedExecutions).toEqual(
         expect.arrayContaining([
           expect.objectContaining({ id: 'exec-1', status: PhaseExecutionStatus.COMPLETED }),
-          expect.objectContaining({ id: 'exec-2', status: PhaseExecutionStatus.READY }),
+          expect.objectContaining({ id: 'exec-2', status: PhaseExecutionStatus.IN_PROCESS }),
         ]),
       );
       expect(plantEventsServiceMock.emitPhaseStatusChanges).toHaveBeenCalledWith(
@@ -165,6 +166,145 @@ describe('PhaseChainService', () => {
         result.changedExecutions,
       );
       expect(repoMock.updateOrder).not.toHaveBeenCalled();
+    });
+
+    it('does not mark order COMPLETED when completing the first of three steps', async () => {
+      const exec1 = buildExecution({
+        id: 'exec-1',
+        phaseId: 'phase-1',
+        workStationId: 'ws-1',
+        status: PhaseExecutionStatus.IN_PROCESS,
+        phase: {
+          id: 'phase-1',
+          order: 1,
+          name: 'Recepción insumos',
+          requiresQA: false,
+          workStationId: 'ws-1',
+        },
+      });
+      const exec2 = buildExecution({
+        id: 'exec-2',
+        phaseId: 'phase-2',
+        workStationId: 'ws-2',
+        status: PhaseExecutionStatus.PENDING,
+        plannedMinutes: 20,
+        phase: {
+          id: 'phase-2',
+          order: 2,
+          name: 'Cocción',
+          requiresQA: false,
+          workStationId: 'ws-2',
+        },
+      });
+      const exec3 = buildExecution({
+        id: 'exec-3',
+        phaseId: 'phase-3',
+        workStationId: 'ws-3',
+        status: PhaseExecutionStatus.PENDING,
+        plannedMinutes: 15,
+        phase: {
+          id: 'phase-3',
+          order: 3,
+          name: 'Porcionado',
+          requiresQA: false,
+          workStationId: 'ws-3',
+        },
+      });
+
+      repoMock.findExecutionById.mockResolvedValue(exec1);
+      repoMock.findOrderDetailById.mockResolvedValue(buildOrderDetail([exec1, exec2, exec3]));
+
+      await service.completeExecution(tenantId, 'exec-1', {});
+
+      expect(repoMock.updateExecution).toHaveBeenCalledWith(tenantId, 'exec-2', {
+        status: PhaseExecutionStatus.IN_PROCESS,
+        startedAt: expect.any(Date),
+      });
+      expect(repoMock.updateOrder).not.toHaveBeenCalled();
+    });
+
+    it('does not mark order COMPLETED when next phase is missing but later phases remain pending', async () => {
+      const exec1 = buildExecution({
+        id: 'exec-1',
+        phaseId: 'phase-1',
+        workStationId: 'ws-1',
+        status: PhaseExecutionStatus.IN_PROCESS,
+        phase: {
+          id: 'phase-1',
+          order: 1,
+          name: 'Recepción insumos',
+          requiresQA: false,
+          workStationId: 'ws-1',
+        },
+      });
+      const exec3 = buildExecution({
+        id: 'exec-3',
+        phaseId: 'phase-3',
+        workStationId: 'ws-3',
+        status: PhaseExecutionStatus.PENDING,
+        plannedMinutes: 15,
+        phase: {
+          id: 'phase-3',
+          order: 3,
+          name: 'Porcionado',
+          requiresQA: false,
+          workStationId: 'ws-3',
+        },
+      });
+
+      repoMock.findExecutionById.mockResolvedValue(exec1);
+      repoMock.findOrderDetailById.mockResolvedValue(buildOrderDetail([exec1, exec3]));
+
+      await service.completeExecution(tenantId, 'exec-1', {});
+
+      expect(repoMock.updateOrder).not.toHaveBeenCalled();
+    });
+
+    it('promotes next execution to IN_PROCESS when order is paused', async () => {
+      const exec1 = buildExecution({
+        id: 'exec-1',
+        phaseId: 'phase-1',
+        workStationId: 'ws-1',
+        status: PhaseExecutionStatus.IN_PROCESS,
+        phase: {
+          id: 'phase-1',
+          order: 1,
+          name: 'Mezclado',
+          requiresQA: false,
+          workStationId: 'ws-1',
+        },
+      });
+      const exec2 = buildExecution({
+        id: 'exec-2',
+        phaseId: 'phase-2',
+        workStationId: 'ws-2',
+        status: PhaseExecutionStatus.PENDING,
+        plannedMinutes: 20,
+        phase: {
+          id: 'phase-2',
+          order: 2,
+          name: 'Horneado',
+          requiresQA: false,
+          workStationId: 'ws-2',
+        },
+      });
+
+      repoMock.findExecutionById.mockResolvedValue(exec1);
+      repoMock.findOrderDetailById.mockResolvedValue(
+        buildOrderDetail([exec1, exec2], ProductionOrderStatus.PAUSED),
+      );
+
+      const result = await service.completeExecution(tenantId, 'exec-1', {});
+
+      expect(repoMock.updateExecution).toHaveBeenCalledWith(tenantId, 'exec-2', {
+        status: PhaseExecutionStatus.IN_PROCESS,
+        startedAt: expect.any(Date),
+      });
+      expect(result.changedExecutions).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ id: 'exec-2', status: PhaseExecutionStatus.IN_PROCESS }),
+        ]),
+      );
     });
 
     it('promotes next execution to QA_PENDING when completed phase requires QA', async () => {
@@ -362,7 +502,7 @@ describe('PhaseChainService', () => {
   });
 
   describe('qaApproveExecution', () => {
-    it('promotes next QA_PENDING execution to READY', async () => {
+    it('promotes next QA_PENDING execution to IN_PROCESS when order is running', async () => {
       const exec1 = {
         id: 'exec-1',
         tenantId,
@@ -427,12 +567,13 @@ describe('PhaseChainService', () => {
         }),
       );
       expect(repoMock.updateExecution).toHaveBeenCalledWith(tenantId, 'exec-2', {
-        status: PhaseExecutionStatus.READY,
+        status: PhaseExecutionStatus.IN_PROCESS,
+        startedAt: expect.any(Date),
       });
       expect(result.changedExecutions).toEqual([
         expect.objectContaining({
           id: 'exec-2',
-          status: PhaseExecutionStatus.READY,
+          status: PhaseExecutionStatus.IN_PROCESS,
         }),
       ]);
       expect(plantEventsServiceMock.emitPhaseStatusChanges).toHaveBeenCalledWith(

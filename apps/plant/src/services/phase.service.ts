@@ -1,10 +1,11 @@
 import { enqueue } from '@/services/offline-queue.service';
-import { plantFetch } from '@/services/plant-api.service';
+import { completeProductionStep } from '@/api/operator-order.api';
 import { useConnectivityStore } from '@/stores/connectivity.store';
 
 export interface CompletePhasePayload {
   opId: string;
   stationId: string;
+  stepId: string;
   quantity: number;
   unit: string;
   notes?: string;
@@ -15,11 +16,16 @@ export interface CompletePhasePayload {
 export type CompletePhaseResult = 'synced' | 'queued';
 
 async function completePhaseViaApi(payload: CompletePhasePayload): Promise<void> {
-  await plantFetch<{ ok: boolean }>('/api/plant/phases/complete', {
-    method: 'POST',
-    headers: { 'Idempotency-Key': payload.idempotencyKey },
-    body: JSON.stringify(payload),
-  });
+  await completeProductionStep(
+    payload.opId,
+    payload.stepId,
+    {
+      actualMinutes: Math.max(1, Math.round(payload.elapsedMs / 60_000)),
+      producedQuantity: String(payload.quantity),
+      notes: payload.notes,
+    },
+    payload.idempotencyKey,
+  );
 }
 
 /**
@@ -43,7 +49,7 @@ export async function submitPhaseCompletion(
   }
 
   await enqueue({
-    type: 'phase.complete',
+    type: 'order.complete-step',
     idempotencyKey: payload.idempotencyKey,
     payload: payload as unknown as Record<string, unknown>,
   });

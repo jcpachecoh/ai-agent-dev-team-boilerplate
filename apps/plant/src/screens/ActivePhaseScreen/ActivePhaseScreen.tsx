@@ -2,6 +2,7 @@ import { PlantDashboardHeader, PlantLayoutModeFab } from '@restopsiq/ui';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { usePlantSocket } from '@/hooks/usePlantSocket';
+import { useAvailableProductionOrders } from '@/hooks/useAvailableProductionOrders';
 import type { PhaseStatusChangedPayload } from '@/services/plant-socket.service';
 import { computeStatusCounts, useDashboardLayoutStore } from '@/stores/dashboard-layout.store';
 import { useSessionStore } from '@/stores/session.store';
@@ -66,6 +67,8 @@ export function ActivePhaseScreen({
   const [assignModalCell, setAssignModalCell] = useState<number | null>(null);
   const [recipeDetailCell, setRecipeDetailCell] = useState<number | null>(null);
 
+  useAvailableProductionOrders(true);
+
   const statusCounts = useMemo(() => computeStatusCounts(cells), [cells]);
 
   const handlePhaseStatusChanged = useCallback(
@@ -111,7 +114,6 @@ export function ActivePhaseScreen({
           cellIndex={recipeDetailCell}
           operatorName={operatorName ?? 'Operador'}
           onBack={closeRecipeDetail}
-          onFinish={onCompletePhase}
           onReportIssue={onReportIssue}
         />
       </div>
@@ -142,7 +144,6 @@ export function ActivePhaseScreen({
             onChangeOrder={openAssignModal}
             onViewRecipe={openRecipeDetail}
             onReportIssue={onReportIssue}
-            onFinish={onCompletePhase}
           />
         ))}
       </WorkstationGrid>

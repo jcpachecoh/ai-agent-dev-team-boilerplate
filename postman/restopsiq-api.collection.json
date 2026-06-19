@@ -4216,6 +4216,201 @@
       ]
     },
     {
+      "name": "06b — Operator Runtime (MES-11)",
+      "description": "MES-11 operator tablet runtime.\n\nPrerequisites: **06 — Production Orders** through **Plan Order** (order in PLANNED). Use **MES Auth → Login Operator** ({{mesAccessToken}}).\n\nVariables: {{orderId}}, {{workstationId}}, {{stepId}} (phase execution id from GET recipe).\n\nRun top-to-bottom. Start requires PLANNED; pause/resume require IN_PROCESS/PAUSED; complete-step needs current stepId; finish needs all steps COMPLETED.",
+      "item": [
+        {
+          "name": "Get Order Recipe View",
+          "description": "GET /api/plant/orders/:id/recipe",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Has phases', () => pm.expect(body.phases).to.be.an('array'));",
+                  "const current = body.phases.find((p) => p.status === 'current') || body.phases[0];",
+                  "if (current && current.id) {",
+                  "  pm.collectionVariables.set('stepId', current.id);",
+                  "  pm.environment.set('stepId', current.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{mesAccessToken}}", "type": "string" }]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/plant/orders/{{orderId}}/recipe"
+          },
+          "response": []
+        },
+        {
+          "name": "Start Order (Operator)",
+          "description": "POST /api/plant/orders/:id/start",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200 or 409', () => pm.expect([200, 409]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{mesAccessToken}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Idempotency-Key", "value": "mes11-start-{{orderId}}" }
+            ],
+            "url": "{{baseUrl}}/api/plant/orders/{{orderId}}/start",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workStationId\": \"{{workstationId}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Pause Order (Operator)",
+          "description": "POST /api/plant/orders/:id/operator/pause",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200 or 409', () => pm.expect([200, 409]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{mesAccessToken}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Idempotency-Key", "value": "mes11-pause-{{orderId}}" }
+            ],
+            "url": "{{baseUrl}}/api/plant/orders/{{orderId}}/operator/pause",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"notes\": \"Pausa operario Postman\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Resume Order (Operator)",
+          "description": "POST /api/plant/orders/:id/operator/resume",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200 or 409', () => pm.expect([200, 409]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{mesAccessToken}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [{ "key": "Idempotency-Key", "value": "mes11-resume-{{orderId}}" }],
+            "url": "{{baseUrl}}/api/plant/orders/{{orderId}}/operator/resume"
+          },
+          "response": []
+        },
+        {
+          "name": "Complete Step (Operator)",
+          "description": "POST /api/plant/orders/:id/complete-step",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200 or 409', () => pm.expect([200, 409]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{mesAccessToken}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Idempotency-Key", "value": "mes11-step-{{stepId}}" }
+            ],
+            "url": "{{baseUrl}}/api/plant/orders/{{orderId}}/complete-step",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stepId\": \"{{stepId}}\",\n  \"actualMinutes\": 5\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Finish Order (Operator)",
+          "description": "POST /api/plant/orders/:id/finish — requires all steps COMPLETED.",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200 or 409', () => pm.expect([200, 409]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{mesAccessToken}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Idempotency-Key", "value": "mes11-finish-{{orderId}}" }
+            ],
+            "url": "{{baseUrl}}/api/plant/orders/{{orderId}}/finish",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"notes\": \"Cierre operario Postman\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
       "name": "07 — Incidents & Alarms (MES-08)",
       "description": "MES-08 incidents API + RBAC smoke.\n\nPrerequisites (run first):\n1. **MES Auth → Login Owner** (mesTokenSupervisor)\n2. **MES Auth → Login Operator** (mesTokenOperator)\n3. **Plant — Production Orders** (workStationId, orderId, executionId)\n\nAuth: operator requests use Bearer {{mesTokenOperator}}; supervisor requests use Bearer {{mesTokenSupervisor}}.\n\nAlarms/cron/WebSocket/dedup are manual — see tasks/mes-plant/MES-08-alarms-incidents/10-manual-testing.md.",
       "item": [

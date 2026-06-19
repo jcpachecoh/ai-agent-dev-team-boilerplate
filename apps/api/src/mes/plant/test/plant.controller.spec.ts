@@ -14,6 +14,7 @@ import { PhaseChainService } from '../service/phase-chain.service';
 import { PlantService } from '../service/plant.service';
 import { ProductionOrderPdfService } from '../service/production-order-pdf.service';
 import { SupervisorService } from '../service/supervisor.service';
+import { OperatorOrderRuntimeService } from '../service/operator-order-runtime.service';
 
 const tenantId = 'palos-de-lena';
 
@@ -79,6 +80,15 @@ const supervisorServiceMock = {
   getStationLiveDetail: jest.fn(),
 };
 
+const operatorOrderRuntimeServiceMock = {
+  getOrderRecipeView: jest.fn(),
+  startOrder: jest.fn(),
+  pauseOrderByOperator: jest.fn(),
+  resumeOrderByOperator: jest.fn(),
+  completeStep: jest.fn(),
+  finishOrder: jest.fn(),
+};
+
 describe('PlantController', () => {
   let controller: PlantController;
 
@@ -92,6 +102,7 @@ describe('PlantController', () => {
         { provide: IncidentService, useValue: incidentServiceMock },
         { provide: ProductionOrderPdfService, useValue: productionOrderPdfServiceMock },
         { provide: SupervisorService, useValue: supervisorServiceMock },
+        { provide: OperatorOrderRuntimeService, useValue: operatorOrderRuntimeServiceMock },
       ],
     })
       .overrideGuard(PlantAuthGuard)
@@ -357,6 +368,61 @@ describe('PlantController', () => {
       await controller.cancelOrder(buildReq(), 'order-1', dto);
 
       expect(serviceMock.cancelOrder).toHaveBeenCalledWith(tenantId, 'order-1', dto, mesUser.sub);
+    });
+  });
+
+  describe('operator runtime (MES-11)', () => {
+    it('getOrderRecipeView passes tenantId and order id', async () => {
+      operatorOrderRuntimeServiceMock.getOrderRecipeView.mockResolvedValue({ orderId: 'order-1' });
+
+      await controller.getOrderRecipeView(buildReq(), 'order-1');
+
+      expect(operatorOrderRuntimeServiceMock.getOrderRecipeView).toHaveBeenCalledWith(
+        tenantId,
+        'order-1',
+      );
+    });
+
+    it('startOrder passes tenantId, order id, operator sub, and dto', async () => {
+      const dto = { workStationId: 'ws-1' };
+      operatorOrderRuntimeServiceMock.startOrder.mockResolvedValue({ id: 'order-1' });
+
+      await controller.startOrder(buildReq(), 'order-1', dto, 'idem-1');
+
+      expect(operatorOrderRuntimeServiceMock.startOrder).toHaveBeenCalledWith(
+        tenantId,
+        'order-1',
+        { operatorUserId: mesUser.sub, idempotencyKey: 'idem-1' },
+        dto,
+      );
+    });
+
+    it('completeStep passes tenantId, order id, operator sub, and dto', async () => {
+      const dto = { stepId: 'exec-1', actualMinutes: 5 };
+      operatorOrderRuntimeServiceMock.completeStep.mockResolvedValue({ id: 'order-1' });
+
+      await controller.completeStep(buildReq(), 'order-1', dto, 'idem-2');
+
+      expect(operatorOrderRuntimeServiceMock.completeStep).toHaveBeenCalledWith(
+        tenantId,
+        'order-1',
+        { operatorUserId: mesUser.sub, idempotencyKey: 'idem-2' },
+        dto,
+      );
+    });
+
+    it('finishOrder passes tenantId, order id, operator sub, and dto', async () => {
+      const dto = { notes: 'Listo' };
+      operatorOrderRuntimeServiceMock.finishOrder.mockResolvedValue({ id: 'order-1' });
+
+      await controller.finishOrder(buildReq(), 'order-1', dto, 'idem-3');
+
+      expect(operatorOrderRuntimeServiceMock.finishOrder).toHaveBeenCalledWith(
+        tenantId,
+        'order-1',
+        { operatorUserId: mesUser.sub, idempotencyKey: 'idem-3' },
+        dto,
+      );
     });
   });
 

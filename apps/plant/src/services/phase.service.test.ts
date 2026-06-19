@@ -2,8 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { submitPhaseCompletion } from './phase.service';
 
-vi.mock('@/services/plant-api.service', () => ({
-  plantFetch: vi.fn(),
+vi.mock('@/api/operator-order.api', () => ({
+  completeProductionStep: vi.fn(),
 }));
 
 vi.mock('@/services/offline-queue.service', () => ({
@@ -16,13 +16,14 @@ vi.mock('@/stores/connectivity.store', () => ({
   },
 }));
 
-import { plantFetch } from '@/services/plant-api.service';
+import { completeProductionStep } from '@/api/operator-order.api';
 import { enqueue } from '@/services/offline-queue.service';
 import { useConnectivityStore } from '@/stores/connectivity.store';
 
 const payload = {
   opId: 'OP-000012',
   stationId: 'EST-02',
+  stepId: 'exec-1',
   quantity: 48.5,
   unit: 'kg',
   notes: '',
@@ -40,12 +41,12 @@ describe('phase.service', () => {
       isOnline: true,
       ping: vi.fn().mockResolvedValue(true),
     } as unknown as ReturnType<typeof useConnectivityStore.getState>);
-    vi.mocked(plantFetch).mockResolvedValue({ ok: true });
+    vi.mocked(completeProductionStep).mockResolvedValue({ id: 'OP-000012', status: 'IN_PROCESS' });
 
     const result = await submitPhaseCompletion(payload);
 
     expect(result).toBe('synced');
-    expect(plantFetch).toHaveBeenCalled();
+    expect(completeProductionStep).toHaveBeenCalled();
     expect(enqueue).not.toHaveBeenCalled();
   });
 
@@ -59,7 +60,7 @@ describe('phase.service', () => {
 
     expect(result).toBe('queued');
     expect(enqueue).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'phase.complete', idempotencyKey: 'idem-1' }),
+      expect.objectContaining({ type: 'order.complete-step', idempotencyKey: 'idem-1' }),
     );
   });
 });

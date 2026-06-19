@@ -2,7 +2,14 @@ import { idbGet, idbSet } from '@/utils/storage';
 import { STORAGE_KEYS } from '@/constants/storage-keys';
 import { useConnectivityStore } from '@/stores/connectivity.store';
 
-export type OfflineQueueType = 'incident.create' | 'phase.complete';
+export type OfflineQueueType =
+  | 'incident.create'
+  | 'phase.complete'
+  | 'order.start'
+  | 'order.pause'
+  | 'order.resume'
+  | 'order.complete-step'
+  | 'order.finish';
 
 export interface OfflineQueueItem {
   id: string;
@@ -53,10 +60,71 @@ export async function listQueue(): Promise<OfflineQueueItem[]> {
   return loadQueue();
 }
 
+function resolveQueuePath(item: OfflineQueueItem): string {
+  if (item.type === 'incident.create') return '/api/plant/incidents';
+
+  const orderId = String(item.payload.orderId ?? item.payload.opId ?? '');
+  switch (item.type) {
+    case 'order.start':
+      return `/api/plant/orders/${orderId}/start`;
+    case 'order.pause':
+      return `/api/plant/orders/${orderId}/operator/pause`;
+    case 'order.resume':
+      return `/api/plant/orders/${orderId}/operator/resume`;
+    case 'order.complete-step':
+    case 'phase.complete':
+      return `/api/plant/orders/${orderId}/complete-step`;
+    case 'order.finish':
+      return `/api/plant/orders/${orderId}/finish`;
+    default:
+      return '/api/plant/incidents';
+  }
+}
+
+function resolveQueueBody(item: OfflineQueueItem): Record<string, unknown> {
+  if (item.type === 'incident.create') return item.payload;
+
+  if (item.type === 'phase.complete') {
+    const payload = item.payload;
+    return {
+      stepId: payload.stepId,
+      actualMinutes: Math.max(1, Math.round(Number(payload.elapsedMs ?? 0) / 60_000)),
+      producedQuantity: payload.quantity != null ? String(payload.quantity) : undefined,
+      notes: payload.notes,
+    };
+  }
+
+  if (item.type === 'order.start') {
+    return { workStationId: item.payload.workStationId };
+  }
+
+  if (item.type === 'order.pause') {
+    return { notes: item.payload.notes };
+  }
+
+  if (item.type === 'order.resume') {
+    return {};
+  }
+
+  if (item.type === 'order.complete-step') {
+    return {
+      stepId: item.payload.stepId,
+      actualMinutes: item.payload.actualMinutes,
+      producedQuantity: item.payload.producedQuantity,
+      notes: item.payload.notes,
+    };
+  }
+
+  if (item.type === 'order.finish') {
+    return { notes: item.payload.notes };
+  }
+
+  return item.payload;
+}
+
 async function submitItem(item: OfflineQueueItem): Promise<boolean> {
   const base = import.meta.env.VITE_PLANT_API_URL?.replace(/\/$/, '') ?? '';
-  const path =
-    item.type === 'incident.create' ? '/api/plant/incidents' : '/api/plant/phases/complete';
+  const path = resolveQueuePath(item);
   const url = base ? `${base}${path}` : path;
 
   const res = await fetch(url, {
@@ -65,7 +133,7 @@ async function submitItem(item: OfflineQueueItem): Promise<boolean> {
       'Content-Type': 'application/json',
       'Idempotency-Key': item.idempotencyKey,
     },
-    body: JSON.stringify(item.payload),
+    body: JSON.stringify(resolveQueueBody(item)),
   });
   return res.ok;
 }

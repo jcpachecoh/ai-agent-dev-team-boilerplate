@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { AlarmSeverity } from '@prisma/client';
 import type { ProductionIncident } from '@prisma/client';
+import { ProductionLogEvent } from '@prisma/client';
 import type {
   CreateIncidentInput,
   IIncidentService,
@@ -16,6 +17,7 @@ import type {
 } from '../interfaces/plant.interfaces';
 import { IncidentRepository } from '../repository/incident.repository';
 import { PlantRepository } from '../repository/plant.repository';
+import { ProductionLogRepository } from '../repository/production-log.repository';
 import { PlantEventsService } from './plant-events.service';
 import { PlantService } from './plant.service';
 
@@ -26,6 +28,7 @@ export class IncidentService implements IIncidentService {
   constructor(
     private readonly incidentRepository: IncidentRepository,
     private readonly plantRepository: PlantRepository,
+    private readonly productionLogRepository: ProductionLogRepository,
     private readonly plantEventsService: PlantEventsService,
     private readonly plantService: PlantService,
   ) {}
@@ -39,6 +42,18 @@ export class IncidentService implements IIncidentService {
 
     const incident = await this.incidentRepository.createIncident(tenantId, operatorUserId, input);
     const response = toIncidentResponse(incident);
+
+    if (input.orderId) {
+      await this.productionLogRepository.append({
+        tenantId,
+        orderId: input.orderId,
+        phaseExecutionId: input.executionId ?? null,
+        employeeId: operatorUserId,
+        workStationId: input.workStationId,
+        event: ProductionLogEvent.NOVELTY_ADDED,
+        notes: input.description,
+      });
+    }
 
     this.plantEventsService.emitIncidentCreated(tenantId, response);
 
