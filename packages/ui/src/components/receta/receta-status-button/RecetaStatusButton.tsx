@@ -44,7 +44,8 @@ export function RecetaStatusButton({
       aria-pressed={status === 'active'}
       {...props}
     >
-      <span>{label ?? statusLabels[status]}</span>
+      <span className={styles.dot} aria-hidden />
+      <span className={styles.label}>{label ?? statusLabels[status]}</span>
     </button>
   );
 }

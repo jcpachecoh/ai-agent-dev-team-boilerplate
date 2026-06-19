@@ -63,9 +63,6 @@ describe('IncidentService', () => {
   const plantServiceMock = {
     pauseOrder: jest.fn(),
   };
-  const productionLogRepositoryMock = {
-    append: jest.fn(),
-  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({

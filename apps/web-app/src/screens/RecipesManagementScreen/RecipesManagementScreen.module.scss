@@ -168,12 +168,17 @@
   }
 }
 
-.categoryRowHost,
-.recipeRowHost {
+.categoryRowHost {
   flex: 0 0 auto;
   height: 44px;
   min-height: 44px;
   max-height: 44px;
+  overflow: hidden;
+}
+
+.recipeRowHost {
+  flex: 0 0 auto;
+  min-height: 64px;
   overflow: hidden;
 }
 
@@ -314,6 +319,7 @@
   margin-bottom: 0;
   border-bottom: 1px solid var(--color-border);
 }
+
 .editorLeft {
   display: flex;
   align-items: center;

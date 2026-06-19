@@ -14,6 +14,7 @@ export interface RecetaStepCardProps {
   theme?: RecetaTheme;
   onEdit?: () => void;
   onDelete?: () => void;
+  readOnly?: boolean;
   className?: string;
 }
 
@@ -32,6 +33,7 @@ export function RecetaStepCard({
   theme = 'dark',
   onEdit,
   onDelete,
+  readOnly = false,
   className,
 }: RecetaStepCardProps): JSX.Element {
   return (
@@ -57,22 +59,26 @@ export function RecetaStepCard({
         </div>
       </div>
       <div className={styles.actions}>
-        <button
-          type="button"
-          className={styles.iconButton}
-          onClick={onEdit}
-          aria-label="Editar paso"
-        >
-          <Pencil aria-hidden />
-        </button>
-        <button
-          type="button"
-          className={styles.iconButton}
-          onClick={onDelete}
-          aria-label="Eliminar paso"
-        >
-          <Trash2 aria-hidden />
-        </button>
+        {!readOnly ? (
+          <>
+            <button
+              type="button"
+              className={styles.iconButton}
+              onClick={onEdit}
+              aria-label="Editar paso"
+            >
+              <Pencil aria-hidden />
+            </button>
+            <button
+              type="button"
+              className={styles.iconButton}
+              onClick={onDelete}
+              aria-label="Eliminar paso"
+            >
+              <Trash2 aria-hidden />
+            </button>
+          </>
+        ) : null}
       </div>
     </article>
   );

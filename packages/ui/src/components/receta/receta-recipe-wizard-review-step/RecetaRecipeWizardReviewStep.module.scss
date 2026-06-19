@@ -1,0 +1,151 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/receta-theme' as receta;
+
+.panel {
+  @include receta.receta-theme-dark;
+
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+  padding: $spacing-lg;
+}
+
+.themeLight {
+  @include receta.receta-theme-light;
+}
+
+.themeDark {
+  @include receta.receta-theme-dark;
+}
+
+.title {
+  margin: 0;
+  font-family: $font-family-mono;
+  font-size: 0.6875rem;
+  font-weight: $font-weight-bold;
+  line-height: 1.5;
+  color: var(--receta-text);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.hint {
+  margin: $spacing-xs 0 0;
+  font-size: $font-size-sm;
+  line-height: 1.5;
+  color: var(--receta-muted);
+}
+
+.summary {
+  padding: $spacing-lg;
+  border: 1px solid var(--receta-border);
+  border-radius: $border-radius-sm;
+  background: var(--receta-surface-raised);
+}
+
+.summaryHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: $spacing-md;
+  margin-bottom: $spacing-md;
+}
+
+.recipeName {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: $font-weight-semibold;
+  color: var(--receta-text);
+}
+
+.version {
+  margin: 0.2rem 0 0;
+  font-size: 0.75rem;
+  color: var(--receta-muted);
+}
+
+.rows {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: $spacing-md;
+}
+
+.row {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+  min-width: 0;
+}
+
+.rowLabel {
+  font-size: 0.6875rem;
+  font-weight: $font-weight-semibold;
+  color: var(--receta-muted);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.rowValue {
+  font-size: $font-size-sm;
+  line-height: 1.5;
+  color: var(--receta-text);
+  word-break: break-word;
+}
+
+.phasesSection {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.phasesTitle {
+  margin: 0;
+  font-family: $font-family-mono;
+  font-size: 0.6875rem;
+  font-weight: $font-weight-bold;
+  color: var(--receta-text-secondary);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.phasesList {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.panelCompact {
+  gap: $spacing-md;
+  padding: 16px 20px;
+
+  .hint {
+    margin-bottom: 0;
+    font-size: $font-size-xs;
+  }
+
+  .summary {
+    padding: $spacing-md;
+  }
+
+  .recipeName {
+    font-size: 1rem;
+  }
+
+  .rows {
+    gap: 12px;
+  }
+
+  .phasesList {
+    gap: $spacing-sm;
+  }
+}
+
+@media (width <= 720px) {
+  .rows {
+    grid-template-columns: 1fr;
+  }
+
+  .summaryHeader {
+    flex-direction: column;
+  }
+}

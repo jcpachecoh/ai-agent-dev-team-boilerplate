@@ -1,0 +1,102 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/receta-theme' as receta;
+
+.row {
+  @include receta.receta-theme-classes;
+
+  display: grid;
+  grid-template-columns: var(
+    --receta-columns,
+    88px minmax(180px, 1.35fr) minmax(120px, 0.9fr) 112px 72px 72px 108px 88px
+  );
+  align-items: center;
+  width: 100%;
+  min-height: 64px;
+  padding: 0 14px;
+  border-bottom: $border-width solid var(--receta-border);
+  border-left: 3px solid transparent;
+  background: var(--receta-surface);
+  color: var(--receta-text);
+  box-sizing: border-box;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease;
+
+  &:hover {
+    background: var(--receta-hover);
+  }
+}
+
+.cell {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+.code {
+  font-family: $font-family-mono;
+  font-size: 0.75rem;
+  font-weight: $font-weight-bold;
+  letter-spacing: 0.04em;
+  color: receta.$receta-purple;
+}
+
+.nameCell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding-left: 2px;
+}
+
+.name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: $font-family-base;
+  font-size: 0.8125rem;
+  font-weight: $font-weight-semibold;
+  line-height: 1.5;
+  color: var(--receta-text);
+}
+
+.updatedAt {
+  font-family: $font-family-base;
+  font-size: 0.625rem;
+  line-height: 1.5;
+  color: #444444;
+}
+
+.categoryCell,
+.timeCell,
+.phasesCell,
+.statusCell,
+.actionsCell {
+  min-width: 0;
+}
+
+.phasesCell,
+.statusCell {
+  justify-content: center;
+  width: 100%;
+}
+
+.actionsCell {
+  justify-content: flex-end;
+  gap: 5px;
+  width: 100%;
+}
+
+.version {
+  font-family: $font-family-mono;
+  font-size: 0.6875rem;
+  line-height: 1.5;
+  color: #444444;
+}
+
+.theme--light {
+  .updatedAt,
+  .version {
+    color: var(--receta-subtle);
+  }
+}
