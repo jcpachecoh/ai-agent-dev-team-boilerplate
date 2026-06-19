@@ -27,6 +27,12 @@ export const TOGGLE_LOCATION_STATUS_MUTATION = `
   }
 `;
 
+export const DELETE_LOCATION_MUTATION = `
+  mutation DeleteLocation($id: ID!) {
+    deleteLocation(id: $id)
+  }
+`;
+
 export const REMOVE_USER_FROM_LOCATION_MUTATION = `
   mutation RemoveUserFromLocation($userId: ID!, $locationId: ID!) {
     removeUserFromLocation(userId: $userId, locationId: $locationId)
@@ -70,6 +76,11 @@ export async function toggleLocationStatus(id: string): Promise<LocationApiModel
     { id },
   );
   return data.toggleLocationStatus;
+}
+
+export async function deleteLocation(id: string): Promise<boolean> {
+  const data = await graphqlRequest<{ deleteLocation: boolean }>(DELETE_LOCATION_MUTATION, { id });
+  return data.deleteLocation;
 }
 
 export async function removeUserFromLocation(userId: string, locationId: string): Promise<boolean> {

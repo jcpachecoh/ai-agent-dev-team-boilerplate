@@ -17,6 +17,8 @@ export * from './components/feedback/progress';
 export * from './components/feedback/skeleton';
 export * from './components/feedback/toast';
 
+export * from './components/Modal';
+
 export * from './components/forms/combobox';
 export * from './components/forms/date-picker';
 export * from './components/forms/date-range-picker';

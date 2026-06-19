@@ -63,6 +63,9 @@ describe('IncidentService', () => {
   const plantServiceMock = {
     pauseOrder: jest.fn(),
   };
+  const productionLogRepositoryMock = {
+    append: jest.fn(),
+  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -84,6 +87,7 @@ describe('IncidentService', () => {
     plantRepositoryMock.findOrderDetailById.mockResolvedValue({ order: { id: 'order-1' } });
     incidentRepositoryMock.createIncident.mockResolvedValue(incidentRecord);
     plantServiceMock.pauseOrder.mockResolvedValue({ id: 'order-1', status: 'PAUSED' });
+    productionLogRepositoryMock.append.mockResolvedValue({ id: 'log-1' });
   });
 
   describe('createIncident', () => {

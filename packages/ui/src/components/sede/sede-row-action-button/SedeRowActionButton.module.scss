@@ -55,3 +55,9 @@
   border-color: rgba(sede.$sede-teal, 0.19);
   color: var(--sede-teal);
 }
+
+.variant--delete {
+  background: var(--sede-coral-soft);
+  border-color: var(--sede-coral-border);
+  color: var(--sede-coral);
+}

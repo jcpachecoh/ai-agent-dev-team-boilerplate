@@ -577,7 +577,7 @@ export class PlantController {
   @ApiOkResponse({ type: OrderDetailResponseDto })
   @Post('orders/:id/start')
   @UseGuards(PlantAuthGuard, PlantRolesGuard)
-  @Roles(...OPERATOR_ROLES)
+  @Roles(...OPERATIONAL_ROLES)
   startOrder(
     @Req() req: MesRequest,
     @Param('id') id: string,
@@ -597,7 +597,7 @@ export class PlantController {
   @ApiOkResponse({ type: OrderDetailResponseDto })
   @Post('orders/:id/operator/pause')
   @UseGuards(PlantAuthGuard, PlantRolesGuard)
-  @Roles(...OPERATOR_ROLES)
+  @Roles(...OPERATIONAL_ROLES)
   pauseOrderByOperator(
     @Req() req: MesRequest,
     @Param('id') id: string,
@@ -617,7 +617,7 @@ export class PlantController {
   @ApiOkResponse({ type: OrderDetailResponseDto })
   @Post('orders/:id/operator/resume')
   @UseGuards(PlantAuthGuard, PlantRolesGuard)
-  @Roles(...OPERATOR_ROLES)
+  @Roles(...OPERATIONAL_ROLES)
   resumeOrderByOperator(
     @Req() req: MesRequest,
     @Param('id') id: string,
@@ -634,7 +634,7 @@ export class PlantController {
   @ApiOkResponse({ type: OrderDetailResponseDto })
   @Post('orders/:id/complete-step')
   @UseGuards(PlantAuthGuard, PlantRolesGuard)
-  @Roles(...OPERATOR_ROLES)
+  @Roles(...OPERATIONAL_ROLES)
   completeStep(
     @Req() req: MesRequest,
     @Param('id') id: string,
@@ -654,7 +654,7 @@ export class PlantController {
   @ApiOkResponse({ type: OrderDetailResponseDto })
   @Post('orders/:id/finish')
   @UseGuards(PlantAuthGuard, PlantRolesGuard)
-  @Roles(...OPERATOR_ROLES)
+  @Roles(...OPERATIONAL_ROLES)
   finishOrder(
     @Req() req: MesRequest,
     @Param('id') id: string,

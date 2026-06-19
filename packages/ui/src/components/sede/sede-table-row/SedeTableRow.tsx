@@ -19,7 +19,9 @@ export interface SedeTableRowProps {
   assignedUsers?: SedeAssignedUser[];
   onEdit?: () => void;
   onToggleStatus?: () => void;
+  onDelete?: () => void;
   toggleLoading?: boolean;
+  deleteLoading?: boolean;
   theme?: SedeTheme;
   size?: SedeSize;
   className?: string;
@@ -36,7 +38,9 @@ export function SedeTableRow({
   assignedUsers = [],
   onEdit,
   onToggleStatus,
+  onDelete,
   toggleLoading = false,
+  deleteLoading = false,
   theme = 'dark',
   size = 'md',
   className,
@@ -83,7 +87,13 @@ export function SedeTableRow({
           active={isActive}
           theme={theme}
           onClick={onToggleStatus}
-          disabled={toggleLoading}
+          disabled={toggleLoading || deleteLoading}
+        />
+        <SedeRowActionButton
+          variant="delete"
+          theme={theme}
+          onClick={onDelete}
+          disabled={deleteLoading || toggleLoading}
         />
       </div>
     </div>

@@ -18,7 +18,9 @@ export interface SedeTableCardProps {
   assignedUsers?: SedeAssignedUser[];
   onEdit?: () => void;
   onToggleStatus?: () => void;
+  onDelete?: () => void;
   toggleLoading?: boolean;
+  deleteLoading?: boolean;
   theme?: SedeTheme;
   size?: SedeSize;
   className?: string;
@@ -35,7 +37,9 @@ export function SedeTableCard({
   assignedUsers = [],
   onEdit,
   onToggleStatus,
+  onDelete,
   toggleLoading = false,
+  deleteLoading = false,
   theme = 'light',
   size = 'md',
   className,
@@ -94,7 +98,13 @@ export function SedeTableCard({
           active={isActive}
           theme={theme}
           onClick={onToggleStatus}
-          disabled={toggleLoading}
+          disabled={toggleLoading || deleteLoading}
+        />
+        <SedeRowActionButton
+          variant="delete"
+          theme={theme}
+          onClick={onDelete}
+          disabled={deleteLoading || toggleLoading}
         />
       </footer>
     </article>
