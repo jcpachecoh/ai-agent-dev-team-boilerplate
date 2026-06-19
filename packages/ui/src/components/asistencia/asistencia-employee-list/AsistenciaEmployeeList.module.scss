@@ -1,0 +1,205 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/asistencia-theme' as asis;
+
+$list-columns: minmax(180px, 1.4fr) 110px 150px 90px 120px minmax(100px, 1fr);
+
+.list {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  border: 1px solid var(--asistencia-border);
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--asistencia-surface);
+}
+
+.header {
+  display: grid;
+  grid-template-columns: $list-columns;
+  gap: 12px;
+  align-items: center;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--asistencia-border);
+  background: var(--asistencia-surface-raised);
+  font-family: $font-family-mono;
+  font-size: 0.5625rem;
+  font-weight: $font-weight-bold;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--asistencia-faint);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+}
+
+.row {
+  @include asis.asistencia-theme-classes;
+
+  display: grid;
+  grid-template-columns: $list-columns;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--asistencia-border-subtle);
+  background: var(--asistencia-surface);
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.highlight--overtime {
+  background: var(--asistencia-amber-soft);
+}
+
+.employee {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+
+.identity {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.name {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: $font-weight-semibold;
+  color: var(--asistencia-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.role {
+  margin: 0;
+  font-size: 0.625rem;
+  color: var(--asistencia-subtle);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dot {
+  display: none;
+}
+
+.entry {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--asistencia-text-secondary);
+  font-family: $font-family-mono;
+  font-size: 0.625rem;
+}
+
+.entryIcon {
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
+}
+
+.shift {
+  margin: 4px 0 0;
+  font-family: $font-family-mono;
+  font-size: 0.5625rem;
+  color: var(--asistencia-dim);
+}
+
+.absentLabel {
+  margin: 0;
+  font-family: $font-family-mono;
+  font-size: 0.625rem;
+  color: var(--asistencia-subtle);
+}
+
+.workedTime {
+  margin: 0;
+  font-family: $font-family-mono;
+  font-size: 0.875rem;
+  font-weight: $font-weight-bold;
+  color: var(--asistencia-text);
+}
+
+.workedTimeOvertime {
+  color: var(--asistencia-amber);
+}
+
+.timePlaceholder {
+  color: var(--asistencia-dim);
+  font-family: $font-family-mono;
+  font-size: 0.75rem;
+}
+
+.progressCell {
+  min-width: 0;
+}
+
+@media (max-width: 1023px) {
+  .header {
+    display: none;
+  }
+
+  .row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 12px 14px;
+  }
+
+  .dot {
+    display: inline-flex;
+  }
+
+  .statusCell,
+  .entryCell,
+  .timeCell,
+  .overtimeCell,
+  .progressCell {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+
+    &::before {
+      font-family: $font-family-mono;
+      font-size: 0.5625rem;
+      font-weight: $font-weight-bold;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--asistencia-faint);
+      flex-shrink: 0;
+    }
+  }
+
+  .statusCell::before {
+    content: 'Estado';
+  }
+
+  .entryCell::before {
+    content: 'Registro';
+  }
+
+  .timeCell::before {
+    content: 'Tiempo';
+  }
+
+  .overtimeCell::before {
+    content: 'Extra';
+  }
+
+  .progressCell::before {
+    content: 'Progreso';
+  }
+
+  .progressCell {
+    width: 100%;
+  }
+}

@@ -8,6 +8,8 @@ export type AsistenciaAvatarTone = 'sand' | 'teal' | 'blue' | 'purple' | 'coral'
 
 export type AsistenciaCardHighlight = 'none' | 'overtime';
 
+export type AsistenciaViewMode = 'grid' | 'list';
+
 export interface AsistenciaLocationTab {
   id: string;
   name: string;
