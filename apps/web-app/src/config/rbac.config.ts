@@ -5,6 +5,7 @@
 
 export const ROLE_CODES = [
   'OWNER',
+  'SUPER_ADMIN',
   'SUPERVISOR',
   'MANAGER',
   'OPERATOR',
@@ -28,19 +29,28 @@ export enum AppModule {
   CONFIGURACION = 'CONFIGURACION',
 }
 
+/** Roles that always mirror OWNER access — any module OWNER can reach, SUPER_ADMIN can too. */
+export const SYSTEM_ADMIN_ROLES = ['OWNER', 'SUPER_ADMIN'] as const satisfies readonly RoleCode[];
+
 /** Roles allowed per module (sidebar + route guards). */
 export const MODULE_ROLES: Record<AppModule, readonly RoleCode[]> = {
-  [AppModule.DASHBOARD]: ['OWNER', 'SUPERVISOR', 'MANAGER', 'OPERATOR', 'OPERATIONS_ADMIN'],
-  [AppModule.PROVEEDORES]: ['OWNER', 'SUPERVISOR', 'MANAGER'],
-  [AppModule.INVENTARIOS]: ['OWNER', 'SUPERVISOR', 'MANAGER'],
-  [AppModule.RECETAS]: ['OWNER', 'SUPERVISOR', 'MANAGER'],
-  [AppModule.PRODUCCION]: ['OWNER', 'SUPERVISOR', 'MANAGER', 'OPERATIONS_ADMIN'],
-  [AppModule.SUPERVISOR]: ['OWNER', 'SUPERVISOR', 'MANAGER'],
-  [AppModule.DESPACHO]: ['OWNER', 'SUPERVISOR', 'MANAGER'],
-  [AppModule.USUARIOS]: ['OWNER', 'SUPERVISOR'],
-  [AppModule.NOMINA]: ['OWNER', 'SUPERVISOR', 'MANAGER', 'NOMINA'],
-  [AppModule.EMPRESA]: ['OWNER', 'SUPERVISOR', 'MANAGER'],
-  [AppModule.CONFIGURACION]: ['OWNER', 'SUPERVISOR', 'MANAGER'],
+  [AppModule.DASHBOARD]: [
+    ...SYSTEM_ADMIN_ROLES,
+    'SUPERVISOR',
+    'MANAGER',
+    'OPERATOR',
+    'OPERATIONS_ADMIN',
+  ],
+  [AppModule.PROVEEDORES]: [...SYSTEM_ADMIN_ROLES, 'SUPERVISOR', 'MANAGER'],
+  [AppModule.INVENTARIOS]: [...SYSTEM_ADMIN_ROLES, 'SUPERVISOR', 'MANAGER'],
+  [AppModule.RECETAS]: [...SYSTEM_ADMIN_ROLES, 'SUPERVISOR', 'MANAGER'],
+  [AppModule.PRODUCCION]: [...SYSTEM_ADMIN_ROLES, 'SUPERVISOR', 'MANAGER', 'OPERATIONS_ADMIN'],
+  [AppModule.SUPERVISOR]: [...SYSTEM_ADMIN_ROLES, 'SUPERVISOR', 'MANAGER'],
+  [AppModule.DESPACHO]: [...SYSTEM_ADMIN_ROLES, 'SUPERVISOR', 'MANAGER'],
+  [AppModule.USUARIOS]: [...SYSTEM_ADMIN_ROLES, 'SUPERVISOR'],
+  [AppModule.NOMINA]: [...SYSTEM_ADMIN_ROLES, 'SUPERVISOR', 'MANAGER', 'NOMINA'],
+  [AppModule.EMPRESA]: [...SYSTEM_ADMIN_ROLES, 'SUPERVISOR', 'MANAGER'],
+  [AppModule.CONFIGURACION]: [...SYSTEM_ADMIN_ROLES, 'SUPERVISOR', 'MANAGER'],
 };
 
 export const NAV_ID_TO_MODULE: Record<string, AppModule> = {
@@ -76,7 +86,11 @@ export const ROUTE_PREFIX_TO_MODULE: ReadonlyArray<{ prefix: string; module: App
 
 export const NOMINA_READ_ONLY_HTTP_METHODS = ['GET', 'HEAD', 'OPTIONS'] as const;
 
-export const PAYROLL_WRITE_ROLES: readonly RoleCode[] = ['OWNER', 'SUPERVISOR', 'MANAGER'];
+export const PAYROLL_WRITE_ROLES: readonly RoleCode[] = [
+  ...SYSTEM_ADMIN_ROLES,
+  'SUPERVISOR',
+  'MANAGER',
+];
 
 export const NOMINA_DEFAULT_ROUTE = '/payroll/employees';
 
@@ -103,9 +117,12 @@ export function canAccessPath(roleCode: string | null | undefined, pathname: str
 
 export const PRODUCCION_DEFAULT_ROUTE = '/produccion/ordenes';
 
+export const SUPER_ADMIN_DEFAULT_ROUTE = '/users/roles';
+
 export function getDefaultRouteForRole(roleCode: string | null | undefined): string {
   if (roleCode === 'NOMINA') return NOMINA_DEFAULT_ROUTE;
   if (roleCode === 'OPERATIONS_ADMIN') return PRODUCCION_DEFAULT_ROUTE;
+  if (roleCode === 'SUPER_ADMIN') return SUPER_ADMIN_DEFAULT_ROUTE;
   return '/';
 }
 

@@ -8,6 +8,7 @@ import {
   isPayrollReadOnlyRole,
   NOMINA_DEFAULT_ROUTE,
   PRODUCCION_DEFAULT_ROUTE,
+  SUPER_ADMIN_DEFAULT_ROUTE,
 } from './rbac.config';
 
 describe('rbac.config', () => {
@@ -39,6 +40,43 @@ describe('rbac.config', () => {
   it('marks NOMINA as payroll read-only', () => {
     expect(isPayrollReadOnlyRole('NOMINA')).toBe(true);
     expect(isPayrollReadOnlyRole('MANAGER')).toBe(false);
+  });
+
+  describe('SUPER_ADMIN', () => {
+    it('allows SUPER_ADMIN on usuarios module', () => {
+      expect(canAccessModule('SUPER_ADMIN', AppModule.USUARIOS)).toBe(true);
+    });
+
+    it('allows SUPER_ADMIN on all modules where OWNER has access', () => {
+      const ownerModules = [
+        AppModule.DASHBOARD,
+        AppModule.PROVEEDORES,
+        AppModule.INVENTARIOS,
+        AppModule.RECETAS,
+        AppModule.PRODUCCION,
+        AppModule.SUPERVISOR,
+        AppModule.DESPACHO,
+        AppModule.USUARIOS,
+        AppModule.NOMINA,
+        AppModule.EMPRESA,
+        AppModule.CONFIGURACION,
+      ];
+      for (const module of ownerModules) {
+        expect(canAccessModule('SUPER_ADMIN', module)).toBe(true);
+      }
+    });
+
+    it('allows SUPER_ADMIN on users/roles path', () => {
+      expect(canAccessPath('SUPER_ADMIN', '/users/roles')).toBe(true);
+    });
+
+    it('returns /users/roles as default route for SUPER_ADMIN', () => {
+      expect(getDefaultRouteForRole('SUPER_ADMIN')).toBe(SUPER_ADMIN_DEFAULT_ROUTE);
+    });
+
+    it('does not mark SUPER_ADMIN as payroll read-only', () => {
+      expect(isPayrollReadOnlyRole('SUPER_ADMIN')).toBe(false);
+    });
   });
 
   describe('OPERATIONS_ADMIN', () => {

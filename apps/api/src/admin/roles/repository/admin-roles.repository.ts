@@ -4,9 +4,11 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import type {
   AdminRoleDetail,
   AdminRoleListItem,
+  CreatePermissionData,
   CreateRoleData,
   IAdminRolesRepository,
   PermissionCatalogItem,
+  UpdatePermissionData,
   UpdateRoleData,
 } from '../interfaces/admin-roles.interfaces';
 
@@ -108,6 +110,50 @@ export class AdminRolesRepository implements IAdminRolesRepository {
     });
   }
 
+  async duplicateRole(
+    tenantId: string,
+    sourceRoleId: string,
+    data: CreateRoleData,
+  ): Promise<AdminRoleListItem> {
+    const sourcePerms = await this.prisma.rolePermission.findMany({
+      where: { roleId: sourceRoleId },
+      select: { permissionId: true },
+    });
+
+    const newRole = await this.prisma.$transaction(async (tx) => {
+      const role = await tx.role.create({
+        data: {
+          tenantId,
+          code: data.code,
+          name: data.name,
+          description: data.description,
+          isActive: true,
+        },
+      });
+
+      if (sourcePerms.length > 0) {
+        await tx.rolePermission.createMany({
+          data: sourcePerms.map(({ permissionId }) => ({ roleId: role.id, permissionId })),
+          skipDuplicates: true,
+        });
+      }
+
+      return role;
+    });
+
+    return {
+      id: newRole.id,
+      tenantId: newRole.tenantId,
+      code: newRole.code,
+      name: newRole.name,
+      description: newRole.description,
+      isActive: newRole.isActive,
+      createdAt: newRole.createdAt,
+      userCount: 0,
+      permissionCount: sourcePerms.length,
+    };
+  }
+
   async setRolePermissions(roleId: string, permissionIds: string[]): Promise<void> {
     await this.prisma.$transaction([
       this.prisma.rolePermission.deleteMany({ where: { roleId } }),
@@ -118,9 +164,9 @@ export class AdminRolesRepository implements IAdminRolesRepository {
     ]);
   }
 
-  async findAllPermissions(): Promise<PermissionCatalogItem[]> {
+  async findAllPermissions(includeInactive = false): Promise<PermissionCatalogItem[]> {
     return this.prisma.permission.findMany({
-      where: { isActive: true },
+      where: includeInactive ? {} : { isActive: true },
       select: {
         id: true,
         code: true,
@@ -132,6 +178,89 @@ export class AdminRolesRepository implements IAdminRolesRepository {
         isActive: true,
       },
       orderBy: [{ module: 'asc' }, { resource: 'asc' }, { action: 'asc' }],
+    });
+  }
+
+  async findPermissionById(id: string): Promise<PermissionCatalogItem | null> {
+    return this.prisma.permission.findFirst({
+      where: { id },
+      select: {
+        id: true,
+        code: true,
+        name: true,
+        description: true,
+        module: true,
+        resource: true,
+        action: true,
+        isActive: true,
+      },
+    });
+  }
+
+  async findPermissionByCode(code: string): Promise<{ id: string } | null> {
+    return this.prisma.permission.findFirst({
+      where: { code },
+      select: { id: true },
+    });
+  }
+
+  async isPermissionInUse(id: string): Promise<boolean> {
+    const count = await this.prisma.rolePermission.count({ where: { permissionId: id } });
+    return count > 0;
+  }
+
+  async createPermission(data: CreatePermissionData): Promise<PermissionCatalogItem> {
+    return this.prisma.permission.create({
+      data: {
+        code: data.code,
+        name: data.name,
+        description: data.description,
+        module: data.module,
+        resource: data.resource,
+        action: data.action,
+        isActive: true,
+      },
+      select: {
+        id: true,
+        code: true,
+        name: true,
+        description: true,
+        module: true,
+        resource: true,
+        action: true,
+        isActive: true,
+      },
+    });
+  }
+
+  async updatePermission(id: string, data: UpdatePermissionData): Promise<PermissionCatalogItem> {
+    return this.prisma.permission.update({
+      where: { id },
+      data: {
+        ...(data.name !== undefined && { name: data.name }),
+        ...(data.description !== undefined && { description: data.description }),
+        ...(data.module !== undefined && { module: data.module }),
+        ...(data.resource !== undefined && { resource: data.resource }),
+        ...(data.action !== undefined && { action: data.action }),
+        ...(data.isActive !== undefined && { isActive: data.isActive }),
+      },
+      select: {
+        id: true,
+        code: true,
+        name: true,
+        description: true,
+        module: true,
+        resource: true,
+        action: true,
+        isActive: true,
+      },
+    });
+  }
+
+  async deactivatePermission(id: string): Promise<void> {
+    await this.prisma.permission.update({
+      where: { id },
+      data: { isActive: false },
     });
   }
 

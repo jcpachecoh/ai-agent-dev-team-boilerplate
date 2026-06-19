@@ -14,6 +14,7 @@ import { useState, type JSX } from 'react';
 import { useMe } from '@/features/auth/hooks/useMe';
 import { getErrorMessage } from '@/lib/graphql-client';
 import { useTheme } from '@/providers/ThemeProvider';
+import { SYSTEM_ADMIN_ROLES } from '@/config/rbac.config';
 
 import { DeactivateRoleDialog } from '../components/DeactivateRoleDialog';
 import { RoleFormModal } from '../components/RoleFormModal';
@@ -21,10 +22,16 @@ import { RolePermissionsPanel } from '../components/RolePermissionsPanel';
 import {
   useAdminCreateRole,
   useAdminDeactivateRole,
+  useAdminDuplicateRole,
   useAdminUpdateRole,
 } from '../hooks/useAdminRoleMutations';
 import { useAdminRoles } from '../hooks/useAdminRoles';
-import type { AdminRole, CreateRoleFormValues, UpdateRoleFormValues } from '../types';
+import type {
+  AdminRole,
+  CreateRoleFormValues,
+  DuplicateRoleFormValues,
+  UpdateRoleFormValues,
+} from '../types';
 import styles from './RolesListView.module.scss';
 
 export default function RolesListView(): JSX.Element {
@@ -34,14 +41,17 @@ export default function RolesListView(): JSX.Element {
   const createMutation = useAdminCreateRole();
   const updateMutation = useAdminUpdateRole();
   const deactivateMutation = useAdminDeactivateRole();
+  const duplicateMutation = useAdminDuplicateRole();
 
   const [selectedRole, setSelectedRole] = useState<AdminRole | undefined>();
   const [formOpen, setFormOpen] = useState(false);
   const [editingRole, setEditingRole] = useState<AdminRole | undefined>();
   const [deactivatingRole, setDeactivatingRole] = useState<AdminRole | undefined>();
+  const [duplicatingRole, setDuplicatingRole] = useState<AdminRole | undefined>();
 
-  const canManage = me?.roleCode === 'OWNER' || me?.roleCode === 'SUPERVISOR';
-  const canAssignPermissions = me?.roleCode === 'OWNER';
+  const isSystemAdmin = (SYSTEM_ADMIN_ROLES as readonly string[]).includes(me?.roleCode ?? '');
+  const canManage = isSystemAdmin || me?.roleCode === 'SUPERVISOR';
+  const canAssignPermissions = isSystemAdmin;
 
   const roles = rolesQuery.data ?? [];
 
@@ -98,11 +108,35 @@ export default function RolesListView(): JSX.Element {
     }
   };
 
+  const openDuplicate = (role: AdminRole) => {
+    setDuplicatingRole(role);
+    setEditingRole(undefined);
+    setFormOpen(true);
+  };
+
+  const handleDuplicate = async (values: DuplicateRoleFormValues) => {
+    if (!duplicatingRole) {
+      return;
+    }
+    try {
+      const created = await duplicateMutation.mutateAsync({
+        sourceId: duplicatingRole.id,
+        input: values,
+      });
+      toast.success(`Rol "${created.code}" creado como copia de "${duplicatingRole.code}".`);
+      setFormOpen(false);
+      setDuplicatingRole(undefined);
+    } catch (err) {
+      toast.error(getErrorMessage(err));
+    }
+  };
+
   const toggleSelectedRole = (role: AdminRole) => {
     setSelectedRole((current) => (current?.id === role.id ? undefined : role));
   };
 
-  const isSaving = createMutation.isPending || updateMutation.isPending;
+  const isSaving =
+    createMutation.isPending || updateMutation.isPending || duplicateMutation.isPending;
 
   return (
     <RolPage theme={theme} className={styles.screen}>
@@ -151,6 +185,7 @@ export default function RolesListView(): JSX.Element {
                       onSelect={() => toggleSelectedRole(role)}
                       onViewPermissions={() => toggleSelectedRole(role)}
                       onEdit={() => openEdit(role)}
+                      onDuplicate={canManage ? () => openDuplicate(role) : undefined}
                       onDeactivate={() => setDeactivatingRole(role)}
                     />
                   ))}
@@ -181,6 +216,18 @@ export default function RolesListView(): JSX.Element {
             setEditingRole(undefined);
           }}
           onSave={(values) => void handleUpdate(values)}
+        />
+      ) : duplicatingRole ? (
+        <RoleFormModal
+          open={formOpen}
+          mode="duplicate"
+          role={duplicatingRole}
+          saving={isSaving}
+          onClose={() => {
+            setFormOpen(false);
+            setDuplicatingRole(undefined);
+          }}
+          onSave={(values) => void handleDuplicate(values)}
         />
       ) : (
         <RoleFormModal

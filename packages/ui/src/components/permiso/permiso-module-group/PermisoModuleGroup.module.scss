@@ -23,7 +23,32 @@
   color: var(--permiso-muted);
 }
 
+.moduleName {
+  flex: 1;
+}
+
 .count {
   font-size: 0.65rem;
   opacity: 0.7;
+}
+
+.toggleAllBtn {
+  margin-left: auto;
+  padding: 0 0.35rem;
+  border: 1px solid var(--permiso-border);
+  border-radius: 3px;
+  background: transparent;
+  font-family: inherit;
+  font-size: 0.55rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--permiso-muted);
+  cursor: pointer;
+  line-height: 1.6;
+
+  &:hover {
+    background: var(--permiso-surface-raised);
+    color: var(--permiso-text);
+  }
 }

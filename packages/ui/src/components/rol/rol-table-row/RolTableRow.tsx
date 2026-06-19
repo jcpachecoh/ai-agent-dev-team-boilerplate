@@ -21,6 +21,7 @@ export interface RolTableRowProps {
   onViewPermissions?: () => void;
   onEdit?: () => void;
   onDeactivate?: () => void;
+  onDuplicate?: () => void;
   theme?: RolTheme;
   size?: RolSize;
   className?: string;
@@ -39,6 +40,7 @@ export function RolTableRow({
   onViewPermissions,
   onEdit,
   onDeactivate,
+  onDuplicate,
   theme = 'dark',
   size = 'md',
   className,
@@ -92,6 +94,9 @@ export function RolTableRow({
           />
           {onEdit ? (
             <RolRowActionButton variant="edit" theme={theme} size="sm" onClick={onEdit} />
+          ) : null}
+          {onDuplicate ? (
+            <RolRowActionButton variant="duplicate" theme={theme} size="sm" onClick={onDuplicate} />
           ) : null}
           {onDeactivate ? (
             <RolRowActionButton

@@ -1,10 +1,10 @@
-import { Pencil, Shield, UserX } from 'lucide-react';
+import { Copy, Pencil, Shield, UserX } from 'lucide-react';
 import type { ButtonHTMLAttributes, JSX, ReactNode } from 'react';
 
 import type { RolSize, RolTheme } from '../shared/rol-types';
 import styles from './RolRowActionButton.module.scss';
 
-export type RolRowActionVariant = 'permissions' | 'edit' | 'deactivate';
+export type RolRowActionVariant = 'permissions' | 'edit' | 'deactivate' | 'duplicate';
 
 export interface RolRowActionButtonProps extends Omit<
   ButtonHTMLAttributes<HTMLButtonElement>,
@@ -20,12 +20,14 @@ const defaultIcons: Record<RolRowActionVariant, ReactNode> = {
   permissions: <Shield aria-hidden />,
   edit: <Pencil aria-hidden />,
   deactivate: <UserX aria-hidden />,
+  duplicate: <Copy aria-hidden />,
 };
 
 const defaultLabels: Record<RolRowActionVariant, string> = {
   permissions: 'Ver permisos',
   edit: 'Editar rol',
   deactivate: 'Desactivar rol',
+  duplicate: 'Duplicar rol',
 };
 
 export function RolRowActionButton({

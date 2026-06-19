@@ -22,10 +22,10 @@ export function useAdminRoleDetail(id: string | undefined) {
   });
 }
 
-export function usePermissionCatalog() {
+export function usePermissionCatalog(includeInactive = false) {
   return useQuery({
-    queryKey: rolesKeys.permissions(),
-    queryFn: fetchPermissionCatalogGql,
+    queryKey: rolesKeys.permissions(includeInactive),
+    queryFn: () => fetchPermissionCatalogGql(includeInactive),
     staleTime: 10 * 60 * 1000,
   });
 }

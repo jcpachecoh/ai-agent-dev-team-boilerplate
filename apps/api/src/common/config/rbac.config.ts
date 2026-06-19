@@ -5,6 +5,7 @@
 
 export const ROLE_CODES = [
   'OWNER',
+  'SUPER_ADMIN',
   'SUPERVISOR',
   'MANAGER',
   'OPERATOR',
@@ -20,15 +21,22 @@ export enum AppModule {
   PRODUCCION = 'PRODUCCION',
 }
 
+/** Roles that always mirror OWNER access — any module OWNER can reach, SUPER_ADMIN can too. */
+export const SYSTEM_ADMIN_ROLES = ['OWNER', 'SUPER_ADMIN'] as const satisfies readonly RoleCode[];
+
 export const MODULE_ROLES: Record<AppModule, readonly RoleCode[]> = {
-  [AppModule.INVENTARIOS]: ['OWNER', 'SUPERVISOR', 'MANAGER', 'OPERATOR'],
-  [AppModule.NOMINA]: ['OWNER', 'SUPERVISOR', 'MANAGER', 'NOMINA'],
-  [AppModule.PRODUCCION]: ['OWNER', 'SUPERVISOR', 'MANAGER', 'OPERATIONS_ADMIN'],
+  [AppModule.INVENTARIOS]: [...SYSTEM_ADMIN_ROLES, 'SUPERVISOR', 'MANAGER', 'OPERATOR'],
+  [AppModule.NOMINA]: [...SYSTEM_ADMIN_ROLES, 'SUPERVISOR', 'MANAGER', 'NOMINA'],
+  [AppModule.PRODUCCION]: [...SYSTEM_ADMIN_ROLES, 'SUPERVISOR', 'MANAGER', 'OPERATIONS_ADMIN'],
 };
 
 export const PAYROLL_MODULE_ROLES: readonly RoleCode[] = MODULE_ROLES[AppModule.NOMINA];
 
-export const PAYROLL_WRITE_ROLES: readonly RoleCode[] = ['OWNER', 'SUPERVISOR', 'MANAGER'];
+export const PAYROLL_WRITE_ROLES: readonly RoleCode[] = [
+  ...SYSTEM_ADMIN_ROLES,
+  'SUPERVISOR',
+  'MANAGER',
+];
 
 export const INVENTORY_MODULE_ROLES: readonly RoleCode[] = MODULE_ROLES[AppModule.INVENTARIOS];
 

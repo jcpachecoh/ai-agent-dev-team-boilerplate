@@ -11,6 +11,10 @@ import {
   Resolver,
 } from '@nestjs/graphql';
 import { IsBoolean, IsNotEmpty, IsOptional, IsString, Matches } from 'class-validator';
+import type {
+  CreatePermissionData,
+  UpdatePermissionData,
+} from '../interfaces/admin-roles.interfaces';
 
 import type { JwtPayload } from '../../../auth/interfaces/auth.interfaces';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
@@ -28,6 +32,27 @@ class PermissionCatalogType {
   @Field(() => String, { nullable: true }) module!: string | null;
   @Field(() => String, { nullable: true }) resource!: string | null;
   @Field(() => String, { nullable: true }) action!: string | null;
+  @Field() isActive!: boolean;
+}
+
+@InputType()
+class CreatePermissionInput implements CreatePermissionData {
+  @IsString() @IsNotEmpty() @Field() code!: string;
+  @IsString() @IsNotEmpty() @Field() name!: string;
+  @IsString() @IsOptional() @Field({ nullable: true }) description?: string;
+  @IsString() @IsOptional() @Field({ nullable: true }) module?: string;
+  @IsString() @IsOptional() @Field({ nullable: true }) resource?: string;
+  @IsString() @IsOptional() @Field({ nullable: true }) action?: string;
+}
+
+@InputType()
+class UpdatePermissionInput implements UpdatePermissionData {
+  @IsString() @IsOptional() @Field({ nullable: true }) name?: string;
+  @IsString() @IsOptional() @Field({ nullable: true }) description?: string;
+  @IsString() @IsOptional() @Field({ nullable: true }) module?: string;
+  @IsString() @IsOptional() @Field({ nullable: true }) resource?: string;
+  @IsString() @IsOptional() @Field({ nullable: true }) action?: string;
+  @IsBoolean() @IsOptional() @Field({ nullable: true }) isActive?: boolean;
 }
 
 @ObjectType('RolePermissionRef')
@@ -85,8 +110,10 @@ export class AdminRolesResolver {
 
   @RequirePermission('admin.roles.read')
   @Query(() => [PermissionCatalogType], { name: 'adminPermissions' })
-  getPermissions() {
-    return this.service.getPermissionCatalog();
+  getPermissions(
+    @Args('includeInactive', { nullable: true, type: () => Boolean }) includeInactive?: boolean,
+  ) {
+    return this.service.getPermissionCatalog(includeInactive ?? false);
   }
 
   @RequirePermission('admin.roles.read')
@@ -138,6 +165,38 @@ export class AdminRolesResolver {
     @Args('permissionIds', { type: () => [ID] }) permissionIds: string[],
   ) {
     await this.service.assignRolePermissions(user.tenantId, roleId, permissionIds);
+    return true;
+  }
+
+  @RequirePermission('admin.roles.manage')
+  @Mutation(() => AdminRoleType, { name: 'adminDuplicateRole' })
+  duplicateRole(
+    @CurrentUser() user: JwtPayload,
+    @Args('sourceId', { type: () => ID }) sourceId: string,
+    @Args('input') input: CreateRoleInput,
+  ) {
+    return this.service.duplicateRole(user.tenantId, sourceId, input);
+  }
+
+  @RequirePermission('admin.roles.manage')
+  @Mutation(() => PermissionCatalogType, { name: 'adminCreatePermission' })
+  createPermission(@Args('input') input: CreatePermissionInput) {
+    return this.service.createPermission(input);
+  }
+
+  @RequirePermission('admin.roles.manage')
+  @Mutation(() => PermissionCatalogType, { name: 'adminUpdatePermission' })
+  updatePermission(
+    @Args('id', { type: () => ID }) id: string,
+    @Args('input') input: UpdatePermissionInput,
+  ) {
+    return this.service.updatePermission(id, input);
+  }
+
+  @RequirePermission('admin.roles.manage')
+  @Mutation(() => Boolean, { name: 'adminDeactivatePermission' })
+  async deactivatePermission(@Args('id', { type: () => ID }) id: string) {
+    await this.service.deactivatePermission(id);
     return true;
   }
 }

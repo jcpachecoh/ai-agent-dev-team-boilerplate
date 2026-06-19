@@ -1,0 +1,132 @@
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem 0.5rem;
+  border-bottom: 1px solid var(--permiso-border, rgba(255 255 255 / 0.08));
+}
+
+.searchRow {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.search {
+  flex: 1;
+  padding: 0.35rem 0.6rem;
+  border: 1px solid var(--permiso-border, rgba(255 255 255 / 0.15));
+  border-radius: 4px;
+  background: var(--permiso-surface-raised, rgba(255 255 255 / 0.05));
+  color: var(--permiso-text, #e2e8f0);
+  font-size: 0.8rem;
+  outline: none;
+
+  &::placeholder {
+    color: var(--permiso-muted, #94a3b8);
+  }
+
+  &:focus {
+    border-color: var(--color-accent, #6366f1);
+  }
+}
+
+.newPermBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 1px solid var(--permiso-border, rgba(255 255 255 / 0.15));
+  border-radius: 4px;
+  background: transparent;
+  color: var(--permiso-muted, #94a3b8);
+  cursor: pointer;
+  flex-shrink: 0;
+
+  &:hover {
+    background: var(--color-accent, #6366f1);
+    border-color: var(--color-accent, #6366f1);
+    color: #fff;
+  }
+}
+
+.filters {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.filterBtn {
+  flex: 1;
+  padding: 0.2rem 0.4rem;
+  border: 1px solid var(--permiso-border, rgba(255 255 255 / 0.15));
+  border-radius: 3px;
+  background: transparent;
+  color: var(--permiso-muted, #94a3b8);
+  font-size: 0.7rem;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s;
+
+  &:hover {
+    background: var(--permiso-surface-raised, rgba(255 255 255 / 0.05));
+    color: var(--permiso-text, #e2e8f0);
+  }
+}
+
+.filterBtnActive {
+  background: var(--color-accent, #6366f1);
+  border-color: var(--color-accent, #6366f1);
+  color: #fff;
+
+  &:hover {
+    background: var(--color-accent, #6366f1);
+    color: #fff;
+  }
+}
+
+.permRow {
+  display: flex;
+  align-items: center;
+  position: relative;
+
+  &:hover .editPermBtn {
+    opacity: 1;
+  }
+}
+
+.permCheckbox {
+  flex: 1;
+  min-width: 0;
+}
+
+.editPermBtn {
+  opacity: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-right: 0.5rem;
+  border: 1px solid var(--permiso-border, rgba(255 255 255 / 0.15));
+  border-radius: 3px;
+  background: transparent;
+  color: var(--permiso-muted, #94a3b8);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: opacity 0.15s;
+
+  &:hover {
+    background: var(--permiso-surface-raised, rgba(255 255 255 / 0.08));
+    color: var(--permiso-text, #e2e8f0);
+  }
+}
+
+.empty {
+  padding: 1.5rem 1.25rem;
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--permiso-muted, #94a3b8);
+  text-align: center;
+}
