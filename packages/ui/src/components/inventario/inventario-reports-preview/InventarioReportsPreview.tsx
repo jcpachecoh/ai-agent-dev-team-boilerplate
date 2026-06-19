@@ -50,9 +50,9 @@ export function InventarioReportsPreview({
           size="xl"
         />
 
-        <InventarioReportFilterBar theme={theme} size={size} />
-
         <InventarioExportActions theme={theme} size={size} />
+
+        <InventarioReportFilterBar theme={theme} size={size} />
 
         <div className={styles.dataSection}>
           <InventarioReportDataTable theme={theme} size="xl" className={styles.dataTable} />

@@ -122,6 +122,8 @@ const OPERATIONAL_ROLES = [
   OperationalRole.OPERATOR,
 ] as const;
 
+const OPERATOR_ROLES = [OperationalRole.OPERATOR] as const;
+
 type MesRequest = Request & { user: MesJwtPayload & { tenantId?: string } };
 
 @ApiTags('plant')

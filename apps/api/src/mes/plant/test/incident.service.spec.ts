@@ -54,6 +54,9 @@ describe('IncidentService', () => {
     findExecutionById: jest.fn(),
     findOrderDetailById: jest.fn(),
   };
+  const productionLogRepositoryMock = {
+    append: jest.fn(),
+  };
   const plantEventsServiceMock = {
     emitIncidentCreated: jest.fn(),
   };
