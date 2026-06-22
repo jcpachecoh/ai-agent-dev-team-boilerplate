@@ -141,8 +141,8 @@ export class MesAuthResolver {
 
   @Public()
   @UseGuards(MesJwtGuard)
-  @Query(() => [OperationalLocationSummaryType], { name: 'myLocations' })
-  myLocations(@CurrentUser() user: MesJwtPayload): Promise<MesLocationSummary[]> {
+  @Query(() => [OperationalLocationSummaryType], { name: 'myOperationalLocations' })
+  myOperationalLocations(@CurrentUser() user: MesJwtPayload): Promise<MesLocationSummary[]> {
     return this.mesAuthService.myLocations(user.sub);
   }
 

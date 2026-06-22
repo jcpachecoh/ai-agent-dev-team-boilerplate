@@ -6,13 +6,17 @@ import type { SignupInput, SignupResponse } from '../types';
 import { proveedoresKeys } from '@/features/proveedores/api/proveedores.keys';
 import { setGraphqlAuthToken } from '@/lib/auth-token';
 
+import { useLocationSession } from '../context/LocationSessionContext';
+
 export function useSignup(options?: { onSuccess?: (result: SignupResponse) => void }) {
   const queryClient = useQueryClient();
+  const { applyAuthSession } = useLocationSession();
 
   return useMutation({
     mutationFn: (input: SignupInput) => signupWithEmailPassword(input),
     onSuccess: (result) => {
       setGraphqlAuthToken(result.accessToken);
+      applyAuthSession(result);
       void queryClient.invalidateQueries({ queryKey: authKeys.all });
       void queryClient.invalidateQueries({ queryKey: proveedoresKeys.all });
       options?.onSuccess?.(result);

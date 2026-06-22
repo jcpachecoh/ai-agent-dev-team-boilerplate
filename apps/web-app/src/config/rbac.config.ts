@@ -54,6 +54,7 @@ export const MODULE_ROLES: Record<AppModule, readonly RoleCode[]> = {
 };
 
 export const NAV_ID_TO_MODULE: Record<string, AppModule> = {
+  dashboard: AppModule.DASHBOARD,
   proveedores: AppModule.PROVEEDORES,
   inventario: AppModule.INVENTARIOS,
   recetas: AppModule.RECETAS,

@@ -21,6 +21,8 @@ const authServiceMock = {
   refresh: jest.fn(),
   logout: jest.fn(),
   me: jest.fn(),
+  myLocations: jest.fn(),
+  selectLocation: jest.fn(),
   changePassword: jest.fn(),
   resetPassword: jest.fn(),
   findByTenantAndEmail: jest.fn(),
@@ -85,6 +87,7 @@ describe('AuthResolver', () => {
       'raw-refresh',
       '203.0.113.10',
       'jest-graphql',
+      null,
     );
   });
 
@@ -114,7 +117,7 @@ describe('AuthResolver', () => {
     });
 
     expect(result).toEqual({ id: 'user-1', tenantId, email: 'test@example.com' });
-    expect(authServiceMock.me).toHaveBeenCalledWith('user-1');
+    expect(authServiceMock.me).toHaveBeenCalledWith('user-1', null);
   });
 
   it('requests a reset email for forgotPassword with tenant from context', async () => {

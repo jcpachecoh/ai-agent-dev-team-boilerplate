@@ -59,9 +59,20 @@ export interface IAuthRepository {
   markEmailVerified(userId: string, tenantId?: string): Promise<boolean>;
 }
 
+export interface UserLocationSummary {
+  id: string;
+  name: string;
+  code: string | null;
+  city: string | null;
+  address: string | null;
+}
+
 export interface AuthTokens {
   accessToken: string;
   refreshToken: string;
+  locations: UserLocationSummary[];
+  locationId: string | null;
+  requiresLocationSelection: boolean;
 }
 
 /** Global access/refresh JWT claims (no secrets, no permissions array). */
@@ -71,14 +82,23 @@ export interface JwtPayload {
   tenantId: string;
   roleId: string;
   roleCode: string;
+  locationId?: string | null;
 }
 
 export interface IAuthService {
   signup(tenantId: string, dto: SignupDto): Promise<AuthTokens>;
   login(tenantId: string, dto: LoginDto): Promise<AuthTokens>;
-  refresh(userId: string, refreshToken: string): Promise<AuthTokens>;
+  refresh(
+    userId: string,
+    refreshToken: string,
+    ipAddress?: string,
+    userAgent?: string,
+    previousLocationId?: string | null,
+  ): Promise<AuthTokens>;
   logout(userId: string): Promise<void>;
-  me(userId: string): Promise<AuthUserProfile>;
+  me(userId: string, activeLocationId?: string | null): Promise<AuthUserProfile>;
+  myLocations(tenantId: string, userId: string): Promise<UserLocationSummary[]>;
+  selectLocation(tenantId: string, userId: string, locationId: string): Promise<AuthTokens>;
   changePassword(
     userId: string,
     currentPassword: string,

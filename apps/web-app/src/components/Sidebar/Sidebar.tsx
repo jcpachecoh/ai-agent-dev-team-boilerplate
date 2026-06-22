@@ -9,6 +9,7 @@ import {
   type NavItem,
 } from '@/constants/navigation';
 import { useMe } from '@/features/auth/hooks/useMe';
+import { getRoleCodeFromToken } from '@/lib/auth-token';
 import { useUiTheme } from '@/hooks/useUiTheme';
 import { getVisibleNavigationItems } from '@/utils/navigation-access';
 import {
@@ -64,11 +65,31 @@ export default function AppSidebar({
   const navigate = useNavigate();
   const theme = useUiTheme();
   const { data: me } = useMe();
+  const roleCode = me?.roleCode ?? getRoleCodeFromToken();
 
-  const visibleItems = useMemo(
-    () => getVisibleNavigationItems(me?.roleCode, navigationItems),
-    [me?.roleCode],
-  );
+  const visibleItems = useMemo(() => {
+    const items = getVisibleNavigationItems(roleCode, navigationItems);
+    // #region agent log
+    fetch('http://127.0.0.1:7828/ingest/355d2ecf-3818-453c-8510-c7b3fe83712b', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '6b229d' },
+      body: JSON.stringify({
+        sessionId: '6b229d',
+        runId: 'sidebar-fix',
+        hypothesisId: 'H3',
+        location: 'Sidebar.tsx:visibleItems',
+        message: 'sidebar navigation resolved',
+        data: {
+          roleCode: roleCode ?? null,
+          meLoaded: Boolean(me),
+          visibleCount: items.length,
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
+    return items;
+  }, [me, roleCode]);
 
   const items = useMemo(
     () => visibleItems.map((item) => mapNavItem(item, pathname)),

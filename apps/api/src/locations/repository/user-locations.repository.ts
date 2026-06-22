@@ -52,6 +52,18 @@ export class UserLocationsRepository implements IUserLocationsRepository {
     });
   }
 
+  findActiveLocationsByUser(tenantId: string, userId: string): Promise<Location[]> {
+    return this.prisma.location.findMany({
+      where: {
+        tenantId,
+        deletedAt: null,
+        isActive: true,
+        users: { some: { userId, tenantId } },
+      },
+      orderBy: { name: 'asc' },
+    });
+  }
+
   findUserForTenant(tenantId: string, userId: string): Promise<User | null> {
     return this.prisma.user.findFirst({
       where: { id: userId, tenantId, deletedAt: null },

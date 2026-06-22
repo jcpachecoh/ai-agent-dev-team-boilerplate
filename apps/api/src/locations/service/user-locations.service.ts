@@ -71,4 +71,13 @@ export class UserLocationsService implements IUserLocationsService {
 
     return this.repository.findLocationsByUser(tenantId, userId);
   }
+
+  async getActiveUserLocations(tenantId: string, userId: string): Promise<Location[]> {
+    const user = await this.repository.findUserForTenant(tenantId, userId);
+    if (!user) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+
+    return this.repository.findActiveLocationsByUser(tenantId, userId);
+  }
 }

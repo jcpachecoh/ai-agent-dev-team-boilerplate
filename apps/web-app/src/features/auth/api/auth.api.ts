@@ -1,12 +1,21 @@
 import { GraphqlRequestError, graphqlRequest } from '@/lib/graphql-client';
+import { getGraphqlAuthToken } from '@/lib/auth-token';
 import type {
+  AssignedLocationSummary,
   AuthUserProfile,
   LoginInput,
   LoginResponse,
   SignupInput,
   SignupResponse,
 } from '../types';
-import { LOGIN_MUTATION, LOGOUT_MUTATION, ME_QUERY, SIGNUP_MUTATION } from './auth.graphql';
+import {
+  LOGIN_MUTATION,
+  LOGOUT_MUTATION,
+  ME_QUERY,
+  MY_LOCATIONS_QUERY,
+  SELECT_USER_LOCATION_MUTATION,
+  SIGNUP_MUTATION,
+} from './auth.graphql';
 
 export class AuthApiError extends Error {
   constructor(
@@ -65,7 +74,46 @@ export async function fetchCurrentUser(): Promise<AuthUserProfile> {
   }
 }
 
-type AuthOperation = 'login' | 'signup' | 'logout' | 'me';
+export async function fetchMyLocations(): Promise<AssignedLocationSummary[]> {
+  try {
+    const data = await graphqlRequest<{ myLocations: AssignedLocationSummary[] }>(
+      MY_LOCATIONS_QUERY,
+    );
+    return data.myLocations;
+  } catch (error) {
+    throw toAuthApiError(error, 'myLocations');
+  }
+}
+
+export async function selectUserLocation(locationId: string): Promise<LoginResponse> {
+  try {
+    const hasToken = Boolean(getGraphqlAuthToken());
+    // #region agent log
+    fetch('http://127.0.0.1:7828/ingest/355d2ecf-3818-453c-8510-c7b3fe83712b', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '6b229d' },
+      body: JSON.stringify({
+        sessionId: '6b229d',
+        runId: 'post-fix',
+        hypothesisId: 'H2',
+        location: 'auth.api.ts:selectUserLocation',
+        message: 'selectUserLocation request',
+        data: { hasToken, locationId },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
+    const data = await graphqlRequest<{ selectUserLocation: LoginResponse }>(
+      SELECT_USER_LOCATION_MUTATION,
+      { input: { locationId } },
+    );
+    return data.selectUserLocation;
+  } catch (error) {
+    throw toAuthApiError(error, 'selectLocation');
+  }
+}
+
+type AuthOperation = 'login' | 'signup' | 'logout' | 'me' | 'myLocations' | 'selectLocation';
 
 function toAuthApiError(error: unknown, operation: AuthOperation): AuthApiError {
   if (error instanceof GraphqlRequestError) {
@@ -128,6 +176,12 @@ function mapGraphqlMessage(
     return error.message || 'Datos de registro inválidos. Revisa los campos e intenta de nuevo.';
   }
   if (operation === 'me' && (status === 401 || error.code === 'UNAUTHENTICATED')) {
+    return 'Sesión expirada. Inicia sesión de nuevo.';
+  }
+  if (operation === 'selectLocation' && (status === 403 || error.code === 'FORBIDDEN')) {
+    return 'La sede seleccionada no está asignada a tu usuario.';
+  }
+  if (operation === 'myLocations' && (status === 401 || error.code === 'UNAUTHENTICATED')) {
     return 'Sesión expirada. Inicia sesión de nuevo.';
   }
   if (error.message) {

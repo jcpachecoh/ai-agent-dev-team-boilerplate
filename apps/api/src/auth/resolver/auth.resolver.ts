@@ -30,9 +30,28 @@ import type {
   AuthUserProfile,
   JwtPayload,
   TenantContext,
+  UserLocationSummary,
 } from '../interfaces/auth.interfaces';
 
 registerEnumType(DocumentType, { name: 'DocumentType' });
+
+@ObjectType('UserLocationSummary')
+class UserLocationSummaryType {
+  @Field(() => ID)
+  id!: string;
+
+  @Field()
+  name!: string;
+
+  @Field(() => String, { nullable: true })
+  code!: string | null;
+
+  @Field(() => String, { nullable: true })
+  city!: string | null;
+
+  @Field(() => String, { nullable: true })
+  address!: string | null;
+}
 
 @ObjectType('AuthTokens')
 class AuthTokensType {
@@ -41,6 +60,15 @@ class AuthTokensType {
 
   @Field()
   refreshToken!: string;
+
+  @Field(() => [UserLocationSummaryType])
+  locations!: UserLocationSummary[];
+
+  @Field(() => ID, { nullable: true })
+  locationId!: string | null;
+
+  @Field()
+  requiresLocationSelection!: boolean;
 }
 
 @ObjectType('AuthUserProfile')
@@ -173,6 +201,13 @@ class RefreshTokenInput {
   refreshToken?: string;
 }
 
+@InputType('SelectUserLocationInput')
+class SelectUserLocationInput {
+  @Field(() => ID)
+  @IsString()
+  locationId!: string;
+}
+
 @Resolver()
 export class AuthResolver {
   constructor(
@@ -215,7 +250,21 @@ export class AuthResolver {
       currentUser.refreshToken,
       getClientIpFromContext(context),
       getUserAgentFromContext(context),
+      currentUser.locationId ?? null,
     );
+  }
+
+  @Mutation(() => AuthTokensType)
+  selectUserLocation(
+    @CurrentUser() currentUser: JwtPayload,
+    @Args('input') input: SelectUserLocationInput,
+  ): Promise<AuthTokens> {
+    return this.authService.selectLocation(currentUser.tenantId, currentUser.sub, input.locationId);
+  }
+
+  @Query(() => [UserLocationSummaryType])
+  myLocations(@CurrentUser() currentUser: JwtPayload): Promise<UserLocationSummary[]> {
+    return this.authService.myLocations(currentUser.tenantId, currentUser.sub);
   }
 
   @Mutation(() => Boolean)
@@ -237,7 +286,7 @@ export class AuthResolver {
 
   @Query(() => AuthUserProfileType)
   me(@CurrentUser() currentUser: JwtPayload): Promise<AuthUserProfile> {
-    return this.authService.me(currentUser.sub);
+    return this.authService.me(currentUser.sub, currentUser.locationId ?? null);
   }
 
   @Mutation(() => MessageResponseType)

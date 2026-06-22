@@ -16,11 +16,13 @@ import type {
   AuthUserProfile,
   IAuthService,
   JwtPayload,
+  UserLocationSummary,
 } from '../interfaces/auth.interfaces';
 import { AuthRepository } from '../repository/auth.repository';
 import { AuthEmailRepository } from '../repository/auth-email.repository';
 import { AuthEmailService } from './auth-email.service';
 import { AuditService } from '../../audit/service/audit.service';
+import { UserLocationsService } from '../../locations/service/user-locations.service';
 import type { SignupDto } from '../controller/dto/signup.dto';
 import type { LoginDto } from '../controller/dto/login.dto';
 
@@ -43,6 +45,7 @@ export class AuthService implements IAuthService {
     private readonly authEmailService: AuthEmailService,
     private readonly jwtService: JwtService,
     private readonly auditService: AuditService,
+    private readonly userLocationsService: UserLocationsService,
   ) {}
 
   async signup(tenantId: string, dto: SignupDto): Promise<AuthTokens> {
@@ -96,13 +99,7 @@ export class AuthService implements IAuthService {
       );
     }
 
-    return this.issueTokens({
-      sub: user.id,
-      email: user.email,
-      tenantId: user.tenantId,
-      roleId: user.roleId,
-      roleCode: role.code,
-    });
+    return this.issueSessionTokens(await this.resolveJwtPayload(user.id), resolvedTenantId);
   }
 
   async login(
@@ -186,7 +183,7 @@ export class AuthService implements IAuthService {
       this.logger.log(
         `Login success (tenant=${resolvedTenantId}, userId=${user.id}, identifier=${maskedIdentifier}, ip=${ipAddress ?? 'n/a'})`,
       );
-      return this.issueTokens(await this.resolveJwtPayload(user.id));
+      return this.issueSessionTokens(await this.resolveJwtPayload(user.id), resolvedTenantId);
     } catch (error) {
       if (error instanceof UnauthorizedException || error instanceof BadRequestException) {
         throw error;
@@ -205,6 +202,7 @@ export class AuthService implements IAuthService {
     refreshToken: string,
     ipAddress?: string,
     userAgent?: string,
+    previousLocationId?: string | null,
   ): Promise<AuthTokens> {
     const user = await this.authRepository.findByIdForRefresh(userId);
 
@@ -247,7 +245,16 @@ export class AuthService implements IAuthService {
       userAgent,
     });
 
-    return this.issueTokens(await this.resolveJwtPayload(user.id));
+    const claims = await this.resolveJwtPayload(user.id);
+    const locations = await this.getAssignedLocations(user.tenantId, user.id);
+    const resolvedLocationId = this.resolveActiveLocationId(locations, previousLocationId);
+
+    return this.issueSessionTokens(
+      { ...claims, locationId: resolvedLocationId },
+      user.tenantId,
+      locations,
+      resolvedLocationId,
+    );
   }
 
   async logout(userId: string, ipAddress?: string, userAgent?: string): Promise<void> {
@@ -271,12 +278,34 @@ export class AuthService implements IAuthService {
     return this.authRepository.findByTenantAndEmail(this.requireTenantId(tenantId), email);
   }
 
-  async me(userId: string): Promise<AuthUserProfile> {
+  async me(userId: string, activeLocationId?: string | null): Promise<AuthUserProfile> {
     const user = await this.authRepository.findByIdWithRoleCode(userId);
     if (!user || !user.isActive) {
       throw new UnauthorizedException('User not found or inactive');
     }
     return user;
+  }
+
+  async myLocations(tenantId: string, userId: string): Promise<UserLocationSummary[]> {
+    return this.getAssignedLocations(this.requireTenantId(tenantId), userId);
+  }
+
+  async selectLocation(tenantId: string, userId: string, locationId: string): Promise<AuthTokens> {
+    const resolvedTenantId = this.requireTenantId(tenantId);
+    const trimmedLocationId = locationId.trim();
+    const locations = await this.getAssignedLocations(resolvedTenantId, userId);
+    const isAssigned = locations.some((location) => location.id === trimmedLocationId);
+    if (!isAssigned) {
+      throw new ForbiddenException('La sede no está asignada a este usuario');
+    }
+
+    const claims = await this.resolveJwtPayload(userId);
+    return this.issueSessionTokens(
+      { ...claims, locationId: trimmedLocationId },
+      resolvedTenantId,
+      locations,
+      trimmedLocationId,
+    );
   }
 
   async changePassword(
@@ -375,7 +404,71 @@ export class AuthService implements IAuthService {
     return `${localMasked}@${domain}`;
   }
 
-  private async issueTokens(payload: JwtPayload): Promise<AuthTokens> {
+  private async getAssignedLocations(
+    tenantId: string,
+    userId: string,
+  ): Promise<UserLocationSummary[]> {
+    const locations = await this.userLocationsService.getActiveUserLocations(tenantId, userId);
+    return locations.map((location) => ({
+      id: location.id,
+      name: location.name,
+      code: location.code,
+      city: location.city,
+      address: location.address,
+    }));
+  }
+
+  private resolveLoginLocation(
+    locations: UserLocationSummary[],
+    selectedLocationId?: string | null,
+  ): { locationId: string | null; requiresLocationSelection: boolean } {
+    if (selectedLocationId) {
+      return { locationId: selectedLocationId, requiresLocationSelection: false };
+    }
+    if (locations.length === 0) {
+      return { locationId: null, requiresLocationSelection: false };
+    }
+    if (locations.length === 1) {
+      return { locationId: locations[0].id, requiresLocationSelection: false };
+    }
+    return { locationId: null, requiresLocationSelection: true };
+  }
+
+  private resolveActiveLocationId(
+    locations: UserLocationSummary[],
+    activeLocationId?: string | null,
+  ): string | null {
+    if (activeLocationId && locations.some((location) => location.id === activeLocationId)) {
+      return activeLocationId;
+    }
+    return this.resolveLoginLocation(locations).locationId;
+  }
+
+  private async issueSessionTokens(
+    baseClaims: JwtPayload,
+    tenantId: string,
+    preloadedLocations?: UserLocationSummary[],
+    selectedLocationId?: string | null,
+  ): Promise<AuthTokens> {
+    const locations =
+      preloadedLocations ?? (await this.getAssignedLocations(tenantId, baseClaims.sub));
+    const { locationId, requiresLocationSelection } = this.resolveLoginLocation(
+      locations,
+      selectedLocationId ?? baseClaims.locationId ?? null,
+    );
+    const payload: JwtPayload = { ...baseClaims, locationId };
+    const tokens = await this.issueTokens(payload);
+    return {
+      ...tokens,
+      locations,
+      locationId,
+      requiresLocationSelection,
+    };
+  }
+
+  private async issueTokens(
+    payload: JwtPayload,
+  ): Promise<Pick<AuthTokens, 'accessToken' | 'refreshToken'>> {
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(payload, { expiresIn: ACCESS_TOKEN_TTL }),
       this.jwtService.signAsync(payload, {

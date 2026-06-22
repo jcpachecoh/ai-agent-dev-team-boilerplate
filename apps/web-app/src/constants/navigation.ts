@@ -62,6 +62,13 @@ export function getUserInitials(name: string): string {
 
 export const navigationItems: NavItem[] = [
   {
+    id: 'dashboard',
+    label: 'Dashboard',
+    path: '/',
+    icon: LayoutGrid,
+    accent: 'teal',
+  },
+  {
     id: 'proveedores',
     label: 'Gestión de Proveedores',
     path: '/proveedores',

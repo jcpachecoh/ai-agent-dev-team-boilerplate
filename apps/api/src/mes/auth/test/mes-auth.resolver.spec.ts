@@ -86,11 +86,15 @@ describe('MesAuthResolver', () => {
     expect(mesAuthServiceMock.me).toHaveBeenCalledWith('op-1', null);
   });
 
-  it('delegates myLocations to MesAuthService', async () => {
+  it('delegates myOperationalLocations to MesAuthService', async () => {
     const locations = [{ id: 'loc-1', name: 'Sede 1', code: 'PL-01', city: 'Bogotá' }];
     mesAuthServiceMock.myLocations.mockResolvedValue(locations);
 
-    const result = await resolver.myLocations({ sub: 'op-1', locationId: null, tenantId } as never);
+    const result = await resolver.myOperationalLocations({
+      sub: 'op-1',
+      locationId: null,
+      tenantId,
+    } as never);
 
     expect(result).toEqual(locations);
     expect(mesAuthServiceMock.myLocations).toHaveBeenCalledWith('op-1');

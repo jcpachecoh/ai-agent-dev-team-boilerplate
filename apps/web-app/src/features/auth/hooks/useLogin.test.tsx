@@ -8,10 +8,13 @@ import * as authApi from '../api/auth.api';
 import { proveedoresKeys } from '@/features/proveedores/api/proveedores.keys';
 
 import { authKeys } from '../api/auth.keys';
+import { LocationSessionProvider } from '../context/LocationSessionContext';
 import { useLogin } from './useLogin';
 
 vi.mock('../api/auth.api', () => ({
   loginWithEmailPassword: vi.fn(),
+  fetchMyLocations: vi.fn().mockResolvedValue([]),
+  selectUserLocation: vi.fn(),
   AuthApiError: class AuthApiError extends Error {
     constructor(
       message: string,
@@ -27,12 +30,31 @@ vi.mock('@/lib/auth-token', () => ({
   setGraphqlAuthToken: vi.fn(),
   getGraphqlAuthToken: vi.fn(),
   clearGraphqlAuthToken: vi.fn(),
+  isAuthenticated: vi.fn(() => false),
+  getLocationIdFromToken: vi.fn(() => null),
 }));
 
 const mockLoginResponse = {
   accessToken: 'jwt-test-token',
   refreshToken: 'refresh-test-token',
+  locations: [],
+  locationId: null,
+  requiresLocationSelection: false,
 };
+
+function TestProviders({
+  children,
+  client,
+}: {
+  children: React.ReactNode;
+  client: ReturnType<typeof createTestQueryClient>;
+}) {
+  return (
+    <TestQueryProvider client={client}>
+      <LocationSessionProvider>{children}</LocationSessionProvider>
+    </TestQueryProvider>
+  );
+}
 
 describe('useLogin', () => {
   beforeEach(() => {
@@ -46,7 +68,7 @@ describe('useLogin', () => {
 
     const onSuccess = vi.fn();
     const { result } = renderHook(() => useLogin({ onSuccess }), {
-      wrapper: ({ children }) => <TestQueryProvider client={client}>{children}</TestQueryProvider>,
+      wrapper: ({ children }) => <TestProviders client={client}>{children}</TestProviders>,
     });
 
     await result.current.mutateAsync({
@@ -68,7 +90,9 @@ describe('useLogin', () => {
     );
 
     const { result } = renderHook(() => useLogin(), {
-      wrapper: TestQueryProvider,
+      wrapper: ({ children }) => (
+        <TestProviders client={createTestQueryClient()}>{children}</TestProviders>
+      ),
     });
 
     await expect(

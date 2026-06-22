@@ -45,6 +45,7 @@
   display: inline-flex;
   align-items: center;
   gap: t.$space-2;
+  max-width: min(100%, 14rem);
   padding: t.$space-2 t.$space-3;
   border: 1px solid var(--color-border);
   border-radius: t.$border-radius-sm;
@@ -52,6 +53,17 @@
   font-family: var(--font-body, inherit);
   font-size: t.$font-size-sm;
   color: var(--color-text-secondary);
+  cursor: pointer;
+
+  span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &:hover {
+    color: var(--color-text-primary);
+  }
 }
 
 .pillActive {

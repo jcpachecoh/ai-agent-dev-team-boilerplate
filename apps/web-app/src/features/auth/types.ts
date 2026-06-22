@@ -6,6 +6,17 @@ export interface LoginInput {
 export interface LoginResponse {
   accessToken: string;
   refreshToken: string;
+  locations: AssignedLocationSummary[];
+  locationId: string | null;
+  requiresLocationSelection: boolean;
+}
+
+export interface AssignedLocationSummary {
+  id: string;
+  name: string;
+  code: string | null;
+  city?: string | null;
+  address?: string | null;
 }
 
 export type SignupDocumentType = 'CC' | 'CE' | 'PASAPORTE' | 'TI' | 'PEP';

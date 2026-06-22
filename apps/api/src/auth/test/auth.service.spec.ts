@@ -14,6 +14,7 @@ import { AuthRepository } from '../repository/auth.repository';
 import { AuthEmailRepository } from '../repository/auth-email.repository';
 import { AuthEmailService } from '../service/auth-email.service';
 import { AuditService } from '../../audit/service/audit.service';
+import { UserLocationsService } from '../../locations/service/user-locations.service';
 
 jest.mock('bcrypt');
 const bcryptMock = bcrypt as jest.Mocked<typeof bcrypt>;
@@ -26,6 +27,17 @@ const expectedJwtPayload = {
   tenantId: TENANT_ID,
   roleId: 'role-1',
   roleCode: 'OPERATOR',
+  locationId: null,
+};
+
+const emptySessionMeta = {
+  locations: [] as const,
+  locationId: null,
+  requiresLocationSelection: false,
+};
+
+const userLocationsServiceMock = {
+  getActiveUserLocations: jest.fn(),
 };
 
 const mockUserSafe = {
@@ -105,12 +117,14 @@ describe('AuthService', () => {
         { provide: AuthEmailService, useValue: authEmailServiceMock },
         { provide: JwtService, useValue: jwtMock },
         { provide: AuditService, useValue: auditServiceMock },
+        { provide: UserLocationsService, useValue: userLocationsServiceMock },
       ],
     }).compile();
 
     service = module.get<AuthService>(AuthService);
     jest.clearAllMocks();
     auditServiceMock.logLogin.mockResolvedValue(undefined);
+    userLocationsServiceMock.getActiveUserLocations.mockResolvedValue([]);
     repoMock.incrementLoginAttempts.mockResolvedValue(1);
     repoMock.lockUser.mockResolvedValue(undefined);
     repoMock.resetLoginAttempts.mockResolvedValue(undefined);
@@ -140,6 +154,13 @@ describe('AuthService', () => {
         roleId: 'role-op',
         emailVerified: false,
       });
+      repoMock.findJwtClaimsByUserId.mockResolvedValue({
+        sub: 'user-2',
+        email: dto.email,
+        tenantId: TENANT_ID,
+        roleId: 'role-op',
+        roleCode: 'OPERATOR',
+      });
       (bcryptMock.hash as jest.Mock).mockResolvedValue('hashed-pw');
       jwtMock.signAsync
         .mockResolvedValueOnce('access-token')
@@ -148,8 +169,11 @@ describe('AuthService', () => {
       repoMock.saveRefreshToken.mockResolvedValue(undefined);
 
       const result = await service.signup(TENANT_ID, dto);
-      expect(result).toHaveProperty('accessToken');
-      expect(result).toHaveProperty('refreshToken');
+      expect(result).toEqual({
+        accessToken: 'access-token',
+        refreshToken: 'refresh-token',
+        ...emptySessionMeta,
+      });
       expect(jwtMock.signAsync).toHaveBeenCalledWith(
         {
           sub: 'user-2',
@@ -157,6 +181,7 @@ describe('AuthService', () => {
           tenantId: TENANT_ID,
           roleId: 'role-op',
           roleCode: 'OPERATOR',
+          locationId: null,
         },
         { expiresIn: '60m' },
       );
@@ -226,6 +251,13 @@ describe('AuthService', () => {
         email: dto.email,
         emailVerified: false,
       });
+      repoMock.findJwtClaimsByUserId.mockResolvedValue({
+        sub: 'user-2',
+        email: dto.email,
+        tenantId: TENANT_ID,
+        roleId: 'role-op',
+        roleCode: 'OPERATOR',
+      });
       authEmailServiceMock.sendVerifyEmail.mockRejectedValue(new Error('Redis unavailable'));
       (bcryptMock.hash as jest.Mock).mockResolvedValue('hashed-pw');
       jwtMock.signAsync
@@ -235,7 +267,11 @@ describe('AuthService', () => {
 
       const result = await service.signup(TENANT_ID, dto);
 
-      expect(result).toEqual({ accessToken: 'access-token', refreshToken: 'refresh-token' });
+      expect(result).toEqual({
+        accessToken: 'access-token',
+        refreshToken: 'refresh-token',
+        ...emptySessionMeta,
+      });
     });
 
     it('does not send verification email when email is already registered', async () => {
@@ -604,6 +640,13 @@ describe('AuthService', () => {
         email: signupDto.email,
         roleId: 'role-op',
       });
+      repoMock.findJwtClaimsByUserId.mockResolvedValue({
+        sub: 'user-jwt',
+        email: signupDto.email,
+        tenantId: TENANT_ID,
+        roleId: 'role-op',
+        roleCode: 'OPERATOR',
+      });
       (bcryptMock.hash as jest.Mock).mockResolvedValue('hashed');
       jwtMock.signAsync.mockResolvedValue('token');
       repoMock.saveRefreshToken.mockResolvedValue(undefined);
@@ -617,6 +660,7 @@ describe('AuthService', () => {
         tenantId: TENANT_ID,
         roleId: 'role-op',
         roleCode: 'OPERATOR',
+        locationId: null,
       });
       expect(accessCall?.[0]).not.toHaveProperty('permissions');
       expect(accessCall?.[0]).not.toHaveProperty('passwordHash');
@@ -780,6 +824,112 @@ describe('AuthService', () => {
 
       expect(bcryptMock.hash).toHaveBeenCalledWith('newpass123', 12);
       expect(repoMock.updatePassword).toHaveBeenCalledWith('user-1', 'hashed-new-pw');
+    });
+  });
+
+  describe('location session', () => {
+    const assignedLocations = [
+      {
+        id: 'loc-1',
+        name: 'Sede Centro',
+        code: 'PL-01',
+        city: 'Bogotá',
+        address: 'Calle 1',
+        tenantId: TENANT_ID,
+        isActive: true,
+        deletedAt: null,
+      },
+      {
+        id: 'loc-2',
+        name: 'Sede Norte',
+        code: 'PL-02',
+        city: 'Bogotá',
+        address: 'Calle 2',
+        tenantId: TENANT_ID,
+        isActive: true,
+        deletedAt: null,
+      },
+    ];
+
+    beforeEach(() => {
+      repoMock.findJwtClaimsByUserId.mockResolvedValue(expectedJwtPayload);
+      jwtMock.signAsync.mockResolvedValue('token');
+      (bcryptMock.hash as jest.Mock).mockResolvedValue('hashed-refresh');
+      repoMock.saveRefreshToken.mockResolvedValue(undefined);
+    });
+
+    it('login auto-selects location when user has one assigned sede', async () => {
+      userLocationsServiceMock.getActiveUserLocations.mockResolvedValue([assignedLocations[0]]);
+      repoMock.findByTenantAndEmailForAuth.mockResolvedValue(mockUserWithPassword);
+      (bcryptMock.compare as jest.Mock).mockResolvedValue(true);
+
+      const result = await service.login(TENANT_ID, {
+        email: mockUserWithPassword.email,
+        password: 'pw',
+      });
+
+      expect(result.locationId).toBe('loc-1');
+      expect(result.requiresLocationSelection).toBe(false);
+      expect(result.locations).toHaveLength(1);
+    });
+
+    it('login requires selection when user has multiple assigned sedes', async () => {
+      userLocationsServiceMock.getActiveUserLocations.mockResolvedValue(assignedLocations);
+      repoMock.findByTenantAndEmailForAuth.mockResolvedValue(mockUserWithPassword);
+      (bcryptMock.compare as jest.Mock).mockResolvedValue(true);
+
+      const result = await service.login(TENANT_ID, {
+        email: mockUserWithPassword.email,
+        password: 'pw',
+      });
+
+      expect(result.locationId).toBeNull();
+      expect(result.requiresLocationSelection).toBe(true);
+      expect(result.locations).toHaveLength(2);
+    });
+
+    it('selectLocation issues tokens with chosen locationId', async () => {
+      userLocationsServiceMock.getActiveUserLocations.mockResolvedValue(assignedLocations);
+
+      const result = await service.selectLocation(TENANT_ID, 'user-1', 'loc-2');
+
+      expect(result.locationId).toBe('loc-2');
+      expect(result.requiresLocationSelection).toBe(false);
+      expect(jwtMock.signAsync).toHaveBeenCalledWith(
+        expect.objectContaining({ locationId: 'loc-2' }),
+        expect.any(Object),
+      );
+    });
+
+    it('selectLocation rejects sede not assigned to user', async () => {
+      userLocationsServiceMock.getActiveUserLocations.mockResolvedValue([assignedLocations[0]]);
+
+      await expect(service.selectLocation(TENANT_ID, 'user-1', 'loc-2')).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('myLocations returns active assigned sedes for user', async () => {
+      userLocationsServiceMock.getActiveUserLocations.mockResolvedValue(assignedLocations);
+
+      const result = await service.myLocations(TENANT_ID, 'user-1');
+
+      expect(result).toEqual([
+        {
+          id: 'loc-1',
+          name: 'Sede Centro',
+          code: 'PL-01',
+          city: 'Bogotá',
+          address: 'Calle 1',
+        },
+        {
+          id: 'loc-2',
+          name: 'Sede Norte',
+          code: 'PL-02',
+          city: 'Bogotá',
+          address: 'Calle 2',
+        },
+      ]);
     });
   });
 });

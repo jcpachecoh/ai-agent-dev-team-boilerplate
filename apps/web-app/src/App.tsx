@@ -2,6 +2,8 @@ import { Route, Routes } from 'react-router-dom';
 
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { AppModule } from '@/config/rbac.config';
+import { LocationSessionGate } from '@/features/auth/components/LocationSessionGate';
+import { LocationSessionProvider } from '@/features/auth/context/LocationSessionContext';
 import AppLayout from '@/layouts/AppLayout';
 import DashboardPage from '@/pages/DashboardPage';
 import DispatchPage from '@/pages/DispatchPage';
@@ -32,211 +34,219 @@ import { RequireAuth } from '@/routes/RequireAuth';
 
 export default function App(): React.JSX.Element {
   return (
-    <Routes>
-      {/* Public */}
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/signup" element={<SignupPage />} />
+    <LocationSessionProvider>
+      <Routes>
+        {/* Public */}
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignupPage />} />
 
-      {/* Protected — all routes require authentication */}
-      <Route element={<RequireAuth />}>
-        <Route element={<AppLayout />}>
-          <Route path="/unauthorized" element={<UnauthorizedPage />} />
+        {/* Protected — all routes require authentication */}
+        <Route element={<RequireAuth />}>
           <Route
-            path="/"
             element={
-              <ProtectedRoute module={AppModule.DASHBOARD}>
-                <DashboardPage />
-              </ProtectedRoute>
+              <LocationSessionGate>
+                <AppLayout />
+              </LocationSessionGate>
             }
-          />
-          <Route
-            path="/proveedores/*"
-            element={
-              <ProtectedRoute module={AppModule.PROVEEDORES}>
-                <ProveedoresPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/inventory"
-            element={
-              <ProtectedRoute module={AppModule.INVENTARIOS}>
-                <InventoryDashboardPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/inventory/products"
-            element={
-              <ProtectedRoute module={AppModule.INVENTARIOS}>
-                <InventoryProductsPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/inventory/categories"
-            element={
-              <ProtectedRoute module={AppModule.INVENTARIOS}>
-                <InventoryCategoriesPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/inventory/products/:id"
-            element={
-              <ProtectedRoute module={AppModule.INVENTARIOS}>
-                <InventoryProductDetailPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/inventory/movements"
-            element={
-              <ProtectedRoute module={AppModule.INVENTARIOS}>
-                <InventoryMovementsPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/inventory/alerts"
-            element={
-              <ProtectedRoute module={AppModule.INVENTARIOS}>
-                <InventoryAlertsPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/inventory/reports"
-            element={
-              <ProtectedRoute module={AppModule.INVENTARIOS}>
-                <InventoryReportsPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/recetas"
-            element={
-              <ProtectedRoute module={AppModule.RECETAS}>
-                <RecipesPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/recetas/categorias"
-            element={
-              <ProtectedRoute module={AppModule.RECETAS}>
-                <RecipesPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/recetas/procesos"
-            element={
-              <ProtectedRoute module={AppModule.RECETAS}>
-                <RecipesPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/recetas/historial"
-            element={
-              <ProtectedRoute module={AppModule.RECETAS}>
-                <RecipesPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/produccion/ordenes/*"
-            element={
-              <ProtectedRoute module={AppModule.PRODUCCION}>
-                <ProduccionPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/produccion/comites/*"
-            element={
-              <ProtectedRoute module={AppModule.PRODUCCION}>
-                <ProduccionComitesPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/supervisor/*"
-            element={
-              <ProtectedRoute module={AppModule.SUPERVISOR}>
-                <SupervisorPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/reports"
-            element={
-              <ProtectedRoute module={AppModule.SUPERVISOR}>
-                <ReportsPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/dispatch"
-            element={
-              <ProtectedRoute module={AppModule.DESPACHO}>
-                <DispatchPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/users/*"
-            element={
-              <ProtectedRoute module={AppModule.USUARIOS}>
-                <UsersPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/payroll/*"
-            element={
-              <ProtectedRoute module={AppModule.NOMINA}>
-                <PayrollPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/empresa/informacion"
-            element={
-              <ProtectedRoute module={AppModule.EMPRESA}>
-                <EmpresaInformacionPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/empresa/sedes/*"
-            element={
-              <ProtectedRoute module={AppModule.EMPRESA}>
-                <SedesPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/settings"
-            element={
-              <ProtectedRoute module={AppModule.CONFIGURACION}>
-                <SettingsPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/dev/responsive-table"
-            element={
-              <ProtectedRoute module={AppModule.CONFIGURACION}>
-                <ResponsiveTableDemoPage />
-              </ProtectedRoute>
-            }
-          />
+          >
+            <Route path="/unauthorized" element={<UnauthorizedPage />} />
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute module={AppModule.DASHBOARD}>
+                  <DashboardPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/proveedores/*"
+              element={
+                <ProtectedRoute module={AppModule.PROVEEDORES}>
+                  <ProveedoresPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/inventory"
+              element={
+                <ProtectedRoute module={AppModule.INVENTARIOS}>
+                  <InventoryDashboardPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/inventory/products"
+              element={
+                <ProtectedRoute module={AppModule.INVENTARIOS}>
+                  <InventoryProductsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/inventory/categories"
+              element={
+                <ProtectedRoute module={AppModule.INVENTARIOS}>
+                  <InventoryCategoriesPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/inventory/products/:id"
+              element={
+                <ProtectedRoute module={AppModule.INVENTARIOS}>
+                  <InventoryProductDetailPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/inventory/movements"
+              element={
+                <ProtectedRoute module={AppModule.INVENTARIOS}>
+                  <InventoryMovementsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/inventory/alerts"
+              element={
+                <ProtectedRoute module={AppModule.INVENTARIOS}>
+                  <InventoryAlertsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/inventory/reports"
+              element={
+                <ProtectedRoute module={AppModule.INVENTARIOS}>
+                  <InventoryReportsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/recetas"
+              element={
+                <ProtectedRoute module={AppModule.RECETAS}>
+                  <RecipesPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/recetas/categorias"
+              element={
+                <ProtectedRoute module={AppModule.RECETAS}>
+                  <RecipesPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/recetas/procesos"
+              element={
+                <ProtectedRoute module={AppModule.RECETAS}>
+                  <RecipesPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/recetas/historial"
+              element={
+                <ProtectedRoute module={AppModule.RECETAS}>
+                  <RecipesPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/produccion/ordenes/*"
+              element={
+                <ProtectedRoute module={AppModule.PRODUCCION}>
+                  <ProduccionPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/produccion/comites/*"
+              element={
+                <ProtectedRoute module={AppModule.PRODUCCION}>
+                  <ProduccionComitesPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/supervisor/*"
+              element={
+                <ProtectedRoute module={AppModule.SUPERVISOR}>
+                  <SupervisorPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/reports"
+              element={
+                <ProtectedRoute module={AppModule.SUPERVISOR}>
+                  <ReportsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dispatch"
+              element={
+                <ProtectedRoute module={AppModule.DESPACHO}>
+                  <DispatchPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/users/*"
+              element={
+                <ProtectedRoute module={AppModule.USUARIOS}>
+                  <UsersPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/payroll/*"
+              element={
+                <ProtectedRoute module={AppModule.NOMINA}>
+                  <PayrollPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/empresa/informacion"
+              element={
+                <ProtectedRoute module={AppModule.EMPRESA}>
+                  <EmpresaInformacionPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/empresa/sedes/*"
+              element={
+                <ProtectedRoute module={AppModule.EMPRESA}>
+                  <SedesPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/settings"
+              element={
+                <ProtectedRoute module={AppModule.CONFIGURACION}>
+                  <SettingsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dev/responsive-table"
+              element={
+                <ProtectedRoute module={AppModule.CONFIGURACION}>
+                  <ResponsiveTableDemoPage />
+                </ProtectedRoute>
+              }
+            />
+          </Route>
         </Route>
-      </Route>
 
-      <Route path="*" element={<NotFoundPage />} />
-    </Routes>
+        <Route path="*" element={<NotFoundPage />} />
+      </Routes>
+    </LocationSessionProvider>
   );
 }

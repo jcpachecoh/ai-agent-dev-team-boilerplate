@@ -75,7 +75,7 @@ export class AuthController {
   @ApiOkResponse({ description: 'Returns new access + refresh tokens' })
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
-  refresh(@Req() req: Request & { user: { sub: string; refreshToken: string } }) {
+  refresh(@Req() req: Request & { user: JwtPayload & { refreshToken: string } }) {
     const ipAddress = (req.headers['x-forwarded-for'] as string) ?? req.socket.remoteAddress;
     const userAgent = req.headers['user-agent'];
     return this.authService.refresh(
@@ -83,7 +83,23 @@ export class AuthController {
       req.user.refreshToken,
       Array.isArray(ipAddress) ? ipAddress[0] : ipAddress,
       userAgent,
+      req.user.locationId ?? null,
     );
+  }
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get active locations assigned to the authenticated user' })
+  @Get('my-locations')
+  myLocations(@Req() req: Request & { user: JwtPayload }) {
+    return this.authService.myLocations(req.user.tenantId, req.user.sub);
+  }
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Select active location and rotate session tokens' })
+  @Post('select-location')
+  @HttpCode(HttpStatus.OK)
+  selectLocation(@Body() body: { locationId: string }, @Req() req: Request & { user: JwtPayload }) {
+    return this.authService.selectLocation(req.user.tenantId, req.user.sub, body.locationId);
   }
 
   @ApiBearerAuth()
@@ -106,7 +122,7 @@ export class AuthController {
   @ApiOkResponse({ type: MeResponseDto })
   @Get('me')
   me(@Req() req: Request & { user: JwtPayload }) {
-    return this.authService.me(req.user.sub);
+    return this.authService.me(req.user.sub, req.user.locationId ?? null);
   }
 
   @ApiBearerAuth()

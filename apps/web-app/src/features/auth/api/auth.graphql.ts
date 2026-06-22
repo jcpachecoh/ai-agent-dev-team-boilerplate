@@ -3,6 +3,15 @@ export const LOGIN_MUTATION = `
     login(input: $input) {
       accessToken
       refreshToken
+      locationId
+      requiresLocationSelection
+      locations {
+        id
+        name
+        code
+        city
+        address
+      }
     }
   }
 `;
@@ -12,6 +21,15 @@ export const SIGNUP_MUTATION = `
     signup(input: $input) {
       accessToken
       refreshToken
+      locationId
+      requiresLocationSelection
+      locations {
+        id
+        name
+        code
+        city
+        address
+      }
     }
   }
 `;
@@ -34,6 +52,36 @@ export const ME_QUERY = `
       isActive
       roleCode
       createdAt
+    }
+  }
+`;
+
+export const MY_LOCATIONS_QUERY = `
+  query MyLocations {
+    myLocations {
+      id
+      name
+      code
+      city
+      address
+    }
+  }
+`;
+
+export const SELECT_USER_LOCATION_MUTATION = `
+  mutation SelectUserLocation($input: SelectUserLocationInput!) {
+    selectUserLocation(input: $input) {
+      accessToken
+      refreshToken
+      locationId
+      requiresLocationSelection
+      locations {
+        id
+        name
+        code
+        city
+        address
+      }
     }
   }
 `;

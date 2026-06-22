@@ -87,6 +87,21 @@ export function parseGraphqlError(error: unknown): GraphqlRequestError {
   const response = (error as GraphqlClientErrorShape).response;
   const first = response?.errors?.[0];
   if (first?.extensions?.code === 'UNAUTHENTICATED') {
+    // #region agent log
+    fetch('http://127.0.0.1:7828/ingest/355d2ecf-3818-453c-8510-c7b3fe83712b', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '6b229d' },
+      body: JSON.stringify({
+        sessionId: '6b229d',
+        runId: 'post-fix',
+        hypothesisId: 'H1',
+        location: 'graphql-client.ts:parseGraphqlError',
+        message: 'UNAUTHENTICATED — clearing stored token',
+        data: { graphqlMessage: first?.message, path: first?.path },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
     clearGraphqlAuthToken();
   }
   const nested = first?.extensions?.response?.message;

@@ -66,3 +66,18 @@ export function getRoleCodeFromToken(): string | undefined {
     return undefined;
   }
 }
+
+export function getLocationIdFromToken(): string | null {
+  const token = getAuthSessionToken();
+  if (!token) return null;
+
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    const payload = JSON.parse(atob(parts[1])) as Record<string, unknown>;
+    const locationId = payload['locationId'];
+    return typeof locationId === 'string' && locationId.trim() ? locationId : null;
+  } catch {
+    return null;
+  }
+}
