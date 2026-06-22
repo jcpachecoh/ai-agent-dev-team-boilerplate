@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
+import React from 'react';
 
 import { proveedorDarkDecorator, proveedorStoryMeta } from '../shared/story-decorators';
 import { ProveedorPageHeader } from './ProveedorPageHeader';
@@ -15,7 +16,7 @@ type Story = StoryObj<typeof ProveedorPageHeader>;
 
 export const Default: Story = {};
 export const CustomTitle: Story = {
-  args: { title: 'GESTIÓN DE PROVEEDORES', subtitle: 'RESTOPSIQ · ENTERPRISE' },
+  args: { title: 'Proveedores', subtitle: 'Gestión de proveedores ' },
 };
 export const DarkMode: Story = {
   decorators: [proveedorDarkDecorator],

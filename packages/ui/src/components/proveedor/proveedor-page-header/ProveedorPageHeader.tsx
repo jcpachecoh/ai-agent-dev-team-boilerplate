@@ -14,9 +14,8 @@ export interface ProveedorPageHeaderProps {
 }
 
 export function ProveedorPageHeader({
-  title = 'SUPPLIER MANAGEMENT',
-  subtitle = 'PROCUREMENT · RESTOPSIQ ENTERPRISE',
-  brandInitial = 'S',
+  title = 'Proveedores',
+  subtitle = 'Gestión de proveedores',
   icon,
   theme = 'light',
   size = 'md',
