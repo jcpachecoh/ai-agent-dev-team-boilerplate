@@ -1,35 +1,26 @@
 @use '../../../styles/abstracts/variables' as *;
+@use '../../../styles/abstracts/page-header-title' as ph;
 @use '../shared/inventario-theme' as inventario;
 
 .toolbar {
   @include inventario.inventario-theme-classes;
   @include inventario.inventario-size-vars;
+  @include ph.page-header-shell;
 
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: $spacing-lg;
-  width: 100%;
   color: var(--inventario-text);
 }
 
 .titles {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 0;
+  @include ph.page-header-titles-stack;
 }
 
 .title {
-  margin: 0;
-  font-size: 1.5rem;
-  font-weight: $font-weight-bold;
-  line-height: 1.25;
+  @include ph.page-header-title;
+  color: var(--inventario-text);
 }
 
 .subtitle {
-  margin: 0;
-  font-size: $font-size-sm;
+  @include ph.page-header-subtitle;
   color: var(--inventario-muted);
 }
 

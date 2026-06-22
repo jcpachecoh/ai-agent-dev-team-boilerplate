@@ -125,12 +125,12 @@ export function InventoryCategoriesScreen(): React.JSX.Element {
       subtitle={
         categoriesQuery.isLoading
           ? 'Cargando categorías…'
-          : `Total: ${filtered.length} categorías • Página ${page} de ${totalPages}`
+          : `${filtered.length} categorías · Página ${page} de ${totalPages}`
       }
       actionLabel="CREAR CATEGORÍA"
       onAction={openCreate}
       theme={theme}
-      size="xl"
+      size="md"
       className={shared.pageHeaderHost}
     />
   );
@@ -220,7 +220,7 @@ export function InventoryCategoriesScreen(): React.JSX.Element {
                     visibleColumns={visibleColumns}
                     columnsTemplate={columnsTemplate}
                     onEdit={() => openEdit(category)}
-                    onDelete={() => void handleDeactivate(category)}
+                    onToggleStatus={() => void handleDeactivate(category)}
                   />
                 )}
                 renderCard={(category) => (
@@ -228,7 +228,7 @@ export function InventoryCategoriesScreen(): React.JSX.Element {
                     category={category}
                     theme={theme}
                     onEdit={() => openEdit(category)}
-                    onDelete={() => void handleDeactivate(category)}
+                    onToggleStatus={() => void handleDeactivate(category)}
                   />
                 )}
               />

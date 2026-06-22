@@ -11,7 +11,8 @@ export interface RecipeListResponsiveRowProps {
   columnsTemplate: string;
   maxDurationMin?: number;
   onEdit: () => void;
-  onCopy?: () => void;
+  onToggleStatus?: () => void;
+  toggleLoading?: boolean;
 }
 
 export function RecipeListResponsiveRow({
@@ -21,7 +22,8 @@ export function RecipeListResponsiveRow({
   columnsTemplate,
   maxDurationMin = 120,
   onEdit,
-  onCopy,
+  onToggleStatus,
+  toggleLoading = false,
 }: RecipeListResponsiveRowProps): React.JSX.Element {
   return (
     <RecetaRecipeListTableRow
@@ -39,7 +41,8 @@ export function RecipeListResponsiveRow({
       columnsTemplate={columnsTemplate}
       visibleColumnKeys={visibleColumns.map((column) => column.id)}
       onEdit={onEdit}
-      onCopy={onCopy}
+      onToggleStatus={onToggleStatus}
+      toggleLoading={toggleLoading}
     />
   );
 }

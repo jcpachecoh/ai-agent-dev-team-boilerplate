@@ -1,7 +1,7 @@
 import {
+  EmpleadoRowActionButton,
   InventarioIconButton,
   InventarioStatusBadge,
-  SedeRowActionButton,
   type InventarioMovementType,
   type InventarioSeverity,
   type InventarioStockTone,
@@ -138,9 +138,9 @@ export function InventarioProductRow({
           case 'actions':
             return (
               <span className={styles.actions}>
-                <InventarioIconButton variant="edit" theme={theme} onClick={onEdit} />
+                <EmpleadoRowActionButton variant="edit" theme={theme} size="sm" onClick={onEdit} />
                 {onToggleStatus ? (
-                  <SedeRowActionButton
+                  <EmpleadoRowActionButton
                     variant="toggle"
                     active={product.isActive}
                     theme={theme}
@@ -226,9 +226,9 @@ export function InventarioProductCard({
       ]}
       footer={
         <>
-          <InventarioIconButton variant="edit" theme={theme} onClick={onEdit} />
+          <EmpleadoRowActionButton variant="edit" theme={theme} size="sm" onClick={onEdit} />
           {onToggleStatus ? (
-            <SedeRowActionButton
+            <EmpleadoRowActionButton
               variant="toggle"
               active={product.isActive}
               theme={theme}
@@ -250,7 +250,8 @@ export interface InventarioCategoryRowProps extends RowBaseProps {
   category: SupplyCategoryApi;
   theme: UiTheme;
   onEdit: () => void;
-  onDelete: () => void;
+  onToggleStatus: () => void;
+  toggleLoading?: boolean;
 }
 
 export function InventarioCategoryRow({
@@ -259,7 +260,8 @@ export function InventarioCategoryRow({
   columnsTemplate,
   theme,
   onEdit,
-  onDelete,
+  onToggleStatus,
+  toggleLoading = false,
 }: InventarioCategoryRowProps): React.JSX.Element {
   return (
     <ResponsiveGridRow visibleColumns={visibleColumns} columnsTemplate={columnsTemplate}>
@@ -284,8 +286,20 @@ export function InventarioCategoryRow({
           case 'actions':
             return (
               <span className={styles.actions}>
-                <InventarioIconButton variant="edit" theme={theme} onClick={onEdit} />
-                <InventarioIconButton variant="delete" theme={theme} onClick={onDelete} />
+                <EmpleadoRowActionButton variant="edit" theme={theme} size="sm" onClick={onEdit} />
+                <EmpleadoRowActionButton
+                  variant="toggle"
+                  active={category.isActive}
+                  theme={theme}
+                  size="sm"
+                  onClick={onToggleStatus}
+                  disabled={toggleLoading}
+                  aria-label={
+                    category.isActive
+                      ? `Desactivar ${category.nombre}`
+                      : `Activar ${category.nombre}`
+                  }
+                />
               </span>
             );
           default:
@@ -300,7 +314,8 @@ export function InventarioCategoryCard({
   category,
   theme,
   onEdit,
-  onDelete,
+  onToggleStatus,
+  toggleLoading = false,
 }: Omit<InventarioCategoryRowProps, 'visibleColumns' | 'columnsTemplate'>): React.JSX.Element {
   return (
     <ResponsiveTableCard
@@ -321,8 +336,18 @@ export function InventarioCategoryCard({
       ]}
       footer={
         <>
-          <InventarioIconButton variant="edit" theme={theme} onClick={onEdit} />
-          <InventarioIconButton variant="delete" theme={theme} onClick={onDelete} />
+          <EmpleadoRowActionButton variant="edit" theme={theme} size="sm" onClick={onEdit} />
+          <EmpleadoRowActionButton
+            variant="toggle"
+            active={category.isActive}
+            theme={theme}
+            size="sm"
+            onClick={onToggleStatus}
+            disabled={toggleLoading}
+            aria-label={
+              category.isActive ? `Desactivar ${category.nombre}` : `Activar ${category.nombre}`
+            }
+          />
         </>
       }
     />

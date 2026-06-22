@@ -1,6 +1,7 @@
-import { Eye, MapPin, SquarePen } from 'lucide-react';
+import { Eye, MapPin } from 'lucide-react';
 import React, { type JSX } from 'react';
 
+import { EmpleadoRowActionButton } from '../../empleado/empleado-row-action-button';
 import styles from './ProduccionStationTableRow.module.scss';
 import { ProduccionStatusBadge } from '../produccion-status-badge/ProduccionStatusBadge';
 import { ProduccionTypeBadge } from '../produccion-type-badge/ProduccionTypeBadge';
@@ -73,15 +74,13 @@ export function ProduccionStationTableRow({
             <Eye size={12} aria-hidden />
             Ver
           </button>
-          <button
-            type="button"
-            className={[styles.actionButton, styles.actionButtonPrimary].join(' ')}
-            onClick={onEdit}
+          <EmpleadoRowActionButton
+            variant="edit"
+            theme={theme}
+            size="sm"
             aria-label={`Editar estación ${code}`}
-          >
-            <SquarePen size={12} aria-hidden />
-            Editar
-          </button>
+            onClick={onEdit}
+          />
         </span>
       </span>
     </div>

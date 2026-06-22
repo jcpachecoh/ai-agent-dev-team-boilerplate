@@ -93,12 +93,20 @@ export default function ProveedoresListView(): React.JSX.Element {
           theme={theme}
           size={PROVEEDOR_TABLE_SIZE}
           actions={
-            <ProveedorActionButton
-              variant="export"
-              theme={theme}
-              size="md"
-              onClick={() => window.alert('Exportar — próximamente')}
-            />
+            <>
+              <ProveedorActionButton
+                variant="export"
+                theme={theme}
+                size="md"
+                onClick={() => window.alert('Exportar — próximamente')}
+              />
+              <ProveedorActionButton
+                variant="primary"
+                theme={theme}
+                size="md"
+                onClick={() => navigate('/proveedores/nuevo')}
+              />
+            </>
           }
         />
       </section>
@@ -178,14 +186,6 @@ export default function ProveedoresListView(): React.JSX.Element {
             value={paymentFilter}
             onChange={(value) => setPaymentFilter(value as CondicionPagoFilter)}
             aria-label="Filtrar por condición de pago"
-          />
-        </div>
-        <div className={styles.toolbarActions}>
-          <ProveedorActionButton
-            variant="primary"
-            theme={theme}
-            size="md"
-            onClick={() => navigate('/proveedores/nuevo')}
           />
         </div>
       </section>

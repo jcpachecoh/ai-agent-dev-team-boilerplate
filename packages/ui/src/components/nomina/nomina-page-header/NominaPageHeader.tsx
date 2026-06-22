@@ -25,7 +25,6 @@ export function NominaPageHeader({
       className={[styles.root, styles[`theme--${theme}`], className].filter(Boolean).join(' ')}
     >
       <div className={styles.copy}>
-        <p className={styles.eyebrow}>Reportes</p>
         <div className={styles.titleRow}>
           <h1 className={styles.title}>{title}</h1>
           {badge}

@@ -9,7 +9,6 @@ import {
   RecetaMetricCard,
   toast,
 } from '@restopsiq/ui';
-import { Users } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 import { useTheme } from '@/providers/ThemeProvider';
@@ -182,7 +181,6 @@ export function PayrollEmployeesListScreen(): React.JSX.Element {
         <EmpleadoPageHeader
           title="Empleados"
           subtitle={`Todos los empleados del tenant · ${activeCount} activos de ${totalCount}`}
-          icon={<Users />}
           theme={empleadoTheme}
           primaryAction={
             readOnly ? undefined : (

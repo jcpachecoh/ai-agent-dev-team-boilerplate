@@ -1,4 +1,4 @@
-import { Pencil, Power, Trash2 } from 'lucide-react';
+import { Pencil, ToggleRight, Trash2 } from 'lucide-react';
 import React, { type ButtonHTMLAttributes, type JSX, type ReactNode } from 'react';
 
 import type { SedeSize, SedeTheme } from '../shared/sede-types';
@@ -19,7 +19,7 @@ export interface SedeRowActionButtonProps extends Omit<
 
 const defaultIcons: Record<SedeRowActionVariant, ReactNode> = {
   edit: <Pencil aria-hidden />,
-  toggle: <Power aria-hidden />,
+  toggle: <ToggleRight aria-hidden />,
   delete: <Trash2 aria-hidden />,
 };
 

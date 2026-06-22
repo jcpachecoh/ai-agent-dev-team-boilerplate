@@ -1,18 +1,22 @@
 @use '../../../styles/abstracts/variables' as *;
+@use '../../../styles/abstracts/page-header-action' as pha;
 @use '../shared/receta-theme' as receta;
 
 .button {
-  @include receta.receta-control-base;
   @include receta.receta-theme-classes;
   @include receta.receta-size-vars;
 
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: var(--control-gap);
-  padding: var(--control-padding-y) var(--control-padding-x);
+  width: auto;
+  min-width: 0;
+  max-width: 100%;
+  border-radius: var(--control-radius);
+  border: $border-width solid var(--receta-border);
+  box-sizing: border-box;
+  font-family: $font-family-base;
   font-weight: $font-weight-semibold;
-  font-size: var(--control-font-size);
   cursor: pointer;
   transition:
     background-color 160ms ease,
@@ -37,6 +41,25 @@
   }
 }
 
+.size--md {
+  @include pha.page-header-action-size-md;
+}
+
+.size--sm {
+  min-height: var(--control-min-height);
+  padding: var(--control-padding-y) var(--control-padding-x);
+  gap: var(--control-gap);
+  font-size: var(--control-font-size);
+}
+
+.size--xl {
+  min-height: var(--control-min-height);
+  padding: var(--control-padding-y) var(--control-padding-x);
+  gap: var(--control-gap);
+  font-size: var(--control-font-size);
+  width: min(100%, var(--control-width));
+}
+
 .icon {
   display: inline-flex;
 
@@ -44,6 +67,10 @@
     width: var(--control-icon-size);
     height: var(--control-icon-size);
   }
+}
+
+.size--md .icon svg {
+  @include pha.page-header-action-icon-md;
 }
 
 .label {

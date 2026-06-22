@@ -1,14 +1,10 @@
 @use '../../../styles/abstracts/variables' as *;
+@use '../../../styles/abstracts/page-header-title' as ph;
 @use '../shared/usuario-theme' as usr;
 
 .header {
   @include usr.usuario-theme-classes;
-
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: $spacing-md;
-  width: 100%;
+  @include ph.page-header-shell;
 }
 
 .leading {
@@ -19,23 +15,11 @@
 }
 
 .iconWrap {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  margin-top: 2px;
-  color: var(--usuario-accent);
-
-  svg {
-    width: 18px;
-    height: 18px;
-  }
+  display: none;
 }
 
 .titles {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  min-width: 0;
+  @include ph.page-header-titles-stack;
 }
 
 .eyebrow {
@@ -43,36 +27,22 @@
 }
 
 .title {
-  margin: 0;
-  font-family: 'IBM Plex Sans', $font-family-base, sans-serif;
-  font-weight: $font-weight-bold;
-  letter-spacing: -0.01em;
+  @include ph.page-header-title;
   color: var(--usuario-text);
 }
 
 .subtitle {
-  margin: 0;
-  font-family: 'IBM Plex Sans', $font-family-base, sans-serif;
+  @include ph.page-header-subtitle;
   color: var(--usuario-subtle);
 }
 
 .size--sm {
   .title {
-    font-size: 1rem;
+    font-size: 1.125rem;
   }
 
   .subtitle {
-    font-size: 0.6875rem;
-  }
-}
-
-.size--md {
-  .title {
-    font-size: 1.5rem;
-  }
-
-  .subtitle {
-    font-size: 0.8125rem;
+    font-size: $font-size-xs;
   }
 }
 

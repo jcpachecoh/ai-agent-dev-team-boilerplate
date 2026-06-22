@@ -1,13 +1,20 @@
+@use '@/styles/tokens' as *;
+
 .row {
   display: grid;
   grid-template-columns: var(--receta-columns);
   align-items: center;
   width: 100%;
-  min-height: 72px;
-  padding: 0 1.25rem;
+  min-height: 52px;
+  padding: 0 14px;
   border-bottom: 1px solid var(--color-border);
   background: var(--color-bg-surface);
   box-sizing: border-box;
+  transition: background-color 160ms ease;
+
+  &:hover {
+    background: var(--color-bg-surface-hover);
+  }
 }
 
 .cell {
@@ -16,16 +23,26 @@
   align-items: center;
 }
 
+.cellCenter {
+  justify-content: center;
+}
+
+.cellRight {
+  justify-content: flex-end;
+}
+
 .code {
-  font-family: var(--font-mono);
-  font-size: 0.6875rem;
-  font-weight: 600;
-  color: #7c3aed;
+  font-family: $font-family-mono;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: $color-recipes-accent;
 }
 
 .name {
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   font-weight: 600;
+  line-height: 1.4;
   color: var(--color-text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -34,6 +51,7 @@
 
 .description {
   font-size: 0.8125rem;
+  line-height: 1.4;
   color: var(--color-text-secondary);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -41,9 +59,8 @@
 }
 
 .actions {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 0.35rem;
-  width: 100%;
+  gap: 5px;
 }

@@ -141,18 +141,16 @@ export default function RolesListView(): JSX.Element {
   return (
     <RolPage theme={theme} className={styles.screen}>
       <RolPageSection theme={theme} divider sticky variant="header">
-        <RolPageHeader theme={theme} />
-      </RolPageSection>
-
-      <RolPageSection theme={theme} divider sticky variant="toolbar">
-        <RolListToolbar
-          count={roles.length}
-          countLabel="roles"
+        <RolPageHeader
           theme={theme}
           primaryAction={
             canManage ? <RolActionButton theme={theme} onClick={openCreate} /> : undefined
           }
         />
+      </RolPageSection>
+
+      <RolPageSection theme={theme} divider sticky variant="toolbar">
+        <RolListToolbar count={roles.length} countLabel="roles" theme={theme} />
       </RolPageSection>
 
       <RolPageSection theme={theme} variant="body">

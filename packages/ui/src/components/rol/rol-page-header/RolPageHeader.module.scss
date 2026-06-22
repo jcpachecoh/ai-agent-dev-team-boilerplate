@@ -1,23 +1,23 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../../../styles/abstracts/page-header-title' as ph;
 @use '../shared/rol-theme' as rol;
 
 .header {
   @include rol.rol-theme-classes;
+  @include ph.page-header-shell;
+}
 
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
+.titles {
+  @include ph.page-header-titles-stack;
 }
 
 .title {
-  margin: 0;
-  font-size: 1.9rem;
+  @include ph.page-header-title;
   color: var(--rol-text);
 }
 
 .subtitle {
-  margin: 0.25rem 0 0;
-  font-size: 0.85rem;
+  @include ph.page-header-subtitle;
   color: var(--rol-text-secondary);
 }
 

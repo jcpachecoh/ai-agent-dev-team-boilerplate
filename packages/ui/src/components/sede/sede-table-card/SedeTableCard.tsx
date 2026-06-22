@@ -1,6 +1,7 @@
 import { Building2, MapPin, Phone } from 'lucide-react';
 import React, { type JSX } from 'react';
 
+import { EmpleadoRowActionButton } from '../../empleado/empleado-row-action-button';
 import { SedeRowActionButton } from '../sede-row-action-button';
 import { SedeStatusBadge } from '../sede-status-badge';
 import { SedeUserAvatarGroup } from '../sede-user-avatar-group';
@@ -92,11 +93,12 @@ export function SedeTableCard({
       </dl>
 
       <footer className={styles.footer}>
-        <SedeRowActionButton variant="edit" theme={theme} onClick={onEdit} />
-        <SedeRowActionButton
+        <EmpleadoRowActionButton variant="edit" theme={theme} size="sm" onClick={onEdit} />
+        <EmpleadoRowActionButton
           variant="toggle"
           active={isActive}
           theme={theme}
+          size="sm"
           onClick={onToggleStatus}
           disabled={toggleLoading || deleteLoading}
         />

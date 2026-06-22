@@ -15,7 +15,7 @@ export interface UsuarioPageHeaderProps {
 }
 
 export function UsuarioPageHeader({
-  eyebrow = 'Administración',
+  eyebrow,
   title = 'Usuarios',
   subtitle = 'Gestión de cuentas de usuario y asignación de roles',
   icon,

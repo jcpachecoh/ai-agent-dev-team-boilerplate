@@ -10,7 +10,7 @@ export const RECIPE_LIST_RESPONSIVE_COLUMNS: ResponsiveColumnDef[] = [
   { id: 'fases', label: 'Fases', priority: 3, gridTrack: '72px' },
   { id: 'version', label: 'Versión', priority: 3, gridTrack: '72px' },
   { id: 'estado', label: 'Estado', priority: 2, gridTrack: '108px' },
-  { id: 'acciones', label: 'Acciones', priority: 1, gridTrack: '88px' },
+  { id: 'acciones', label: 'Acciones', priority: 1, gridTrack: '72px' },
 ];
 
 export function recetaTableColumnsForVisible(

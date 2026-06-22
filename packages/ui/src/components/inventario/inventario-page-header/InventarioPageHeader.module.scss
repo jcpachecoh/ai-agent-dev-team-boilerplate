@@ -1,4 +1,5 @@
 @use '../../../styles/abstracts/variables' as *;
+@use '../../../styles/abstracts/page-header-title' as ph;
 @use '../shared/inventario-theme' as inventario;
 
 .header {
@@ -7,44 +8,26 @@
 
   display: flex;
   flex-direction: column;
-  gap: var(--header-gap);
+  gap: 6px;
   width: min(100%, var(--control-width));
   color: var(--inventario-text);
 }
 
 .size--sm {
-  --header-gap: 4px;
   --header-title-size: 1.125rem;
-  --header-subtitle-size: #{$font-size-xs};
 }
 
-.size--md {
-  --header-gap: 8px;
-  --header-title-size: 1.5rem;
-  --header-subtitle-size: #{$font-size-sm};
-}
-
+.size--md,
 .size--xl {
   --control-width: 100%;
-  --header-gap: 8px;
-  --header-title-size: 1.5rem;
-  --header-subtitle-size: #{$font-size-sm};
 }
 
 .title {
-  margin: 0;
-  font-family: $font-family-base;
-  font-size: var(--header-title-size);
-  font-weight: $font-weight-bold;
-  line-height: 1.3;
-  letter-spacing: -0.01em;
+  @include ph.page-header-title;
   color: var(--inventario-text);
 }
 
 .subtitle {
-  margin: 0;
-  font-family: $font-family-base;
-  font-size: var(--header-subtitle-size);
-  line-height: 1.5;
+  @include ph.page-header-subtitle;
   color: var(--inventario-muted);
 }

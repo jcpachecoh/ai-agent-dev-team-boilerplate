@@ -23,7 +23,7 @@ export default function PermissionsListView(): JSX.Element {
   return (
     <div className={styles.screen}>
       <header className={styles.pageHeader}>
-        <h1>Catálogo de Permisos</h1>
+        <h1>Catálogo de permisos</h1>
         <p>
           Los permisos definen qué acciones puede realizar cada rol en el sistema. Solo lectura.
         </p>

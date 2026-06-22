@@ -1,6 +1,5 @@
 import type { JSX } from 'react';
 import { useState } from 'react';
-import { Radio } from 'lucide-react';
 
 import { RecetaMetricCard } from '../../receta/receta-metric-card';
 import { AsistenciaContextBar } from '../asistencia-context-bar';
@@ -150,7 +149,6 @@ export function AsistenciaMonitorPreview({
         <AsistenciaPageHeader
           title={title}
           subtitle={resolvedSubtitle}
-          icon={<Radio />}
           theme={theme}
           syncAction={
             <div className={styles.actions}>

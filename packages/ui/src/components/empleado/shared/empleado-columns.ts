@@ -5,14 +5,16 @@ export interface EmpleadoColumnDef {
   width?: string;
 }
 
+export const EMPLEADO_TABLE_COLUMN_GAP_PX = 16;
+
 export const defaultEmpleadoColumns: EmpleadoColumnDef[] = [
   { key: 'employee', label: 'Empleado', sortable: true, width: 'minmax(220px, 1.5fr)' },
   { key: 'cedula', label: 'Cédula', width: 'minmax(120px, 0.9fr)' },
   { key: 'role', label: 'Cargo / Área', sortable: true, width: 'minmax(160px, 1.1fr)' },
-  { key: 'contract', label: 'Contrato', width: 'minmax(110px, 0.8fr)' },
-  { key: 'location', label: 'Sede', width: 'minmax(130px, 0.9fr)' },
+  { key: 'contract', label: 'Contrato', width: 'max-content' },
+  { key: 'location', label: 'Sede', width: 'minmax(140px, 0.9fr)' },
   { key: 'hireDate', label: 'Ingreso', sortable: true, width: 'minmax(100px, 0.7fr)' },
-  { key: 'status', label: 'Estado', width: '110px' },
+  { key: 'status', label: 'Estado', width: 'max-content' },
   { key: 'actions', label: 'Acciones', width: '72px' },
 ];
 
@@ -41,14 +43,16 @@ function parseColumnMinWidthPx(width: string): number {
   return 100;
 }
 
-/** Minimum table width (px) before horizontal scroll — sum of column mins + row padding. */
+/** Minimum table width (px) before horizontal scroll — sum of column mins + row padding + gaps. */
 export function getEmpleadoTableMinWidthPx(showActions = true): number {
-  const columnSum = getEmpleadoColumns(showActions).reduce(
+  const columns = getEmpleadoColumns(showActions);
+  const columnSum = columns.reduce(
     (total, column) => total + parseColumnMinWidthPx(column.width ?? '1fr'),
     0,
   );
+  const gapSum = Math.max(0, columns.length - 1) * EMPLEADO_TABLE_COLUMN_GAP_PX;
 
-  return columnSum + 24;
+  return columnSum + gapSum + 24;
 }
 
 export const empleadoGridTemplate = getEmpleadoGridTemplate(true);

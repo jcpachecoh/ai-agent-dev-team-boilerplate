@@ -1,6 +1,7 @@
 import { AlertTriangle } from 'lucide-react';
 import React, { type CSSProperties, type JSX } from 'react';
 
+import { EmpleadoRowActionButton } from '../../empleado/empleado-row-action-button';
 import { InventarioIconButton } from '../inventario-icon-button';
 import { InventarioStatusBadge } from '../inventario-status-badge';
 import {
@@ -33,7 +34,9 @@ export interface InventarioTableRowProductProps {
   lowStockWarning?: boolean;
   onSkuClick?: () => void;
   onEdit?: () => void;
-  onDelete?: () => void;
+  onToggleStatus?: () => void;
+  isActive?: boolean;
+  toggleLoading?: boolean;
 }
 
 export interface InventarioTableRowMovementProps {
@@ -63,7 +66,8 @@ export interface InventarioTableRowCategoryProps {
   descripcion?: string;
   isActive?: boolean;
   onEdit?: () => void;
-  onDelete?: () => void;
+  onToggleStatus?: () => void;
+  toggleLoading?: boolean;
 }
 
 export type InventarioTableRowProps = (
@@ -117,7 +121,8 @@ function CategoryCells({
   descripcion = '—',
   isActive = true,
   onEdit,
-  onDelete,
+  onToggleStatus,
+  toggleLoading = false,
   theme = 'light',
 }: InventarioTableRowCategoryProps & { theme: InventarioTheme }): JSX.Element {
   return (
@@ -138,8 +143,17 @@ function CategoryCells({
         />
       </span>
       <span className={styles.actions} role="cell">
-        <InventarioIconButton variant="edit" theme={theme} onClick={onEdit} />
-        <InventarioIconButton variant="delete" theme={theme} onClick={onDelete} />
+        <EmpleadoRowActionButton variant="edit" theme={theme} size="sm" onClick={onEdit} />
+        {onToggleStatus ? (
+          <EmpleadoRowActionButton
+            variant="toggle"
+            active={isActive}
+            theme={theme}
+            size="sm"
+            onClick={onToggleStatus}
+            disabled={toggleLoading}
+          />
+        ) : null}
       </span>
     </>
   );
@@ -157,7 +171,9 @@ function ProductCells({
   lowStockWarning = false,
   onSkuClick,
   onEdit,
-  onDelete,
+  onToggleStatus,
+  isActive = true,
+  toggleLoading = false,
   theme = 'light',
 }: InventarioTableRowProductProps & { theme: InventarioTheme }): JSX.Element {
   return (
@@ -193,8 +209,17 @@ function ProductCells({
         {lastMovement}
       </span>
       <span className={styles.actions} role="cell">
-        <InventarioIconButton variant="edit" theme={theme} onClick={onEdit} />
-        <InventarioIconButton variant="delete" theme={theme} onClick={onDelete} />
+        <EmpleadoRowActionButton variant="edit" theme={theme} size="sm" onClick={onEdit} />
+        {onToggleStatus ? (
+          <EmpleadoRowActionButton
+            variant="toggle"
+            active={isActive}
+            theme={theme}
+            size="sm"
+            onClick={onToggleStatus}
+            disabled={toggleLoading}
+          />
+        ) : null}
       </span>
     </>
   );

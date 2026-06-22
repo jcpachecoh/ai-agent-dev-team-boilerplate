@@ -172,12 +172,12 @@ export function InventoryProductsScreen(): React.JSX.Element {
     <div className={shared.screen}>
       <section className={shared.pageHeader}>
         <InventarioPageToolbar
-          title="Gestión de Insumos"
-          subtitle={`Total: ${filtered.length} insumos • Página ${page} de ${totalPages}`}
+          title="Gestión de insumos"
+          subtitle={`${filtered.length} insumos · Página ${page} de ${totalPages}`}
           actionLabel="CREAR INSUMO"
           onAction={openCreate}
           theme={theme}
-          size="xl"
+          size="md"
           className={shared.pageHeaderHost}
         />
       </section>

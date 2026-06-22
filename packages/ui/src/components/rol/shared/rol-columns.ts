@@ -10,7 +10,7 @@ export const defaultRolColumns: RolColumnDef[] = [
   { key: 'users', label: 'Usuarios', width: '80px' },
   { key: 'permissions', label: 'Permisos', width: '90px' },
   { key: 'status', label: 'Estado', width: '100px' },
-  { key: 'actions', label: 'Acciones', width: '90px' },
+  { key: 'actions', label: 'Acciones', width: '148px' },
 ];
 
 export function getRolColumns(showActions = true): RolColumnDef[] {

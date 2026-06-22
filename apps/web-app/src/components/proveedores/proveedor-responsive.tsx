@@ -1,5 +1,5 @@
 import {
-  ProveedorCatalogEditButton,
+  EmpleadoRowActionButton,
   ProveedorStatusBadge,
   type ProveedorCatalogTableRowProps,
   type ProveedorTableRowProps,
@@ -200,7 +200,13 @@ export function ProveedorCatalogRow({
           case 'actions':
             return (
               <span className={styles.actions}>
-                <ProveedorCatalogEditButton theme={theme} size="sm" onClick={row.onEdit} />
+                <EmpleadoRowActionButton
+                  variant="edit"
+                  theme={theme}
+                  size="sm"
+                  aria-label="Editar producto"
+                  onClick={row.onEdit}
+                />
               </span>
             );
           default:
@@ -247,7 +253,15 @@ export function ProveedorCatalogCard({
         { label: 'Precio anterior', value: row.previousPrice ?? '—' },
         { label: 'MOQ', value: row.moq ?? '—' },
       ]}
-      footer={<ProveedorCatalogEditButton theme={theme} size="sm" onClick={row.onEdit} />}
+      footer={
+        <EmpleadoRowActionButton
+          variant="edit"
+          theme={theme}
+          size="sm"
+          aria-label="Editar producto"
+          onClick={row.onEdit}
+        />
+      }
     />
   );
 }

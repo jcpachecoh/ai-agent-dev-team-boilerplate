@@ -6,6 +6,7 @@
 
   display: grid;
   grid-template-columns: var(--empleado-columns);
+  column-gap: 16px;
   align-items: center;
   min-height: 32px;
   padding: 0 12px;

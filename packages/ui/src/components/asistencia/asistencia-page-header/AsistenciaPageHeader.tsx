@@ -16,8 +16,8 @@ export interface AsistenciaPageHeaderProps {
 }
 
 export function AsistenciaPageHeader({
-  title = 'Monitor de Asistencia',
-  subtitle = 'Tiempo real · Polling cada 30s',
+  title = 'Monitor de asistencia',
+  subtitle = 'Tiempo real · Polling cada 30 s',
   icon,
   live = true,
   liveLabel,
