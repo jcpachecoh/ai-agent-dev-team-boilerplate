@@ -2,7 +2,13 @@ import type { FieldOpsSize, FieldOpsTheme } from '../../shared/field-ops-types';
 
 export type PlantLayoutMode = '1x1' | '1x2' | '2x2';
 
-export type PlantWorkstationStatus = 'empty' | 'pending' | 'in_progress' | 'paused' | 'incident';
+export type PlantWorkstationStatus =
+  | 'empty'
+  | 'pending'
+  | 'in_progress'
+  | 'paused'
+  | 'incident'
+  | 'completed';
 
 export type PlantWorkstationDensity = 'full' | 'compact';
 
@@ -35,6 +41,7 @@ export interface PlantRecipeDetail {
   recipeName: string;
   batchSize: string;
   stationId: string;
+  stationName: string;
   phases: PlantRecipePhase[];
 }
 
@@ -55,12 +62,19 @@ export function resolveRecipePhaseStatuses(
 
 export interface PlantWorkstationSnapshot {
   orderId: string;
+  /** Human-readable OP number for UI (e.g. OP0001-01). Falls back to orderId when omitted. */
+  orderNumber?: string;
   productName: string;
   recipeName: string;
   phaseName: string;
   phaseIndex: number;
   phaseTotal: number;
+  /** Workstation code for display (e.g. EST-02). */
   stationId: string;
+  /** Workstation UUID for operator runtime API calls. */
+  workStationId?: string;
+  /** Active phase execution id for complete-step API calls. */
+  currentStepId?: string;
   priority?: 'urgent' | 'normal';
   operatorName?: string;
   ingredients: PlantWorkstationIngredient[];
@@ -97,6 +111,7 @@ export const PLANT_STATUS_LABELS: Record<Exclude<PlantWorkstationStatus, 'empty'
   paused: 'PAUSADO',
   pending: 'PENDIENTE',
   incident: 'NOVEDAD',
+  completed: 'TERMINADA',
 };
 
 export const PLANT_STATUS_ACCENT: Record<Exclude<PlantWorkstationStatus, 'empty'>, string> = {
@@ -104,6 +119,7 @@ export const PLANT_STATUS_ACCENT: Record<Exclude<PlantWorkstationStatus, 'empty'
   paused: '#f0c040',
   pending: '#3b82f6',
   incident: '#e05a44',
+  completed: '#6b7280',
 };
 
 export function formatPlantElapsed(ms: number): string {

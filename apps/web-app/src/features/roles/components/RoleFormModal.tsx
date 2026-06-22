@@ -10,12 +10,17 @@ import { useEffect, useId, useState, type JSX } from 'react';
 
 import { useTheme } from '@/providers/ThemeProvider';
 
-import type { AdminRole, CreateRoleFormValues, UpdateRoleFormValues } from '../types';
+import type {
+  AdminRole,
+  CreateRoleFormValues,
+  DuplicateRoleFormValues,
+  UpdateRoleFormValues,
+} from '../types';
 import styles from './RoleFormModal.module.scss';
 
 const UPPER_SNAKE_RE = /^[A-Z][A-Z0-9_]*$/;
 
-export type RoleFormMode = 'create' | 'edit';
+export type RoleFormMode = 'create' | 'edit' | 'duplicate';
 
 interface CreateProps {
   mode: 'create';
@@ -29,7 +34,13 @@ interface EditProps {
   onSave: (values: UpdateRoleFormValues) => void;
 }
 
-type RoleFormModalProps = (CreateProps | EditProps) & {
+interface DuplicateProps {
+  mode: 'duplicate';
+  role: AdminRole;
+  onSave: (values: DuplicateRoleFormValues) => void;
+}
+
+type RoleFormModalProps = (CreateProps | EditProps | DuplicateProps) & {
   open: boolean;
   saving?: boolean;
   onClose: () => void;
@@ -55,6 +66,7 @@ export function RoleFormModal({
   const [isActive, setIsActive] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const isEdit = mode === 'edit';
+  const isDuplicate = mode === 'duplicate';
 
   useEffect(() => {
     if (!open) {
@@ -66,13 +78,18 @@ export function RoleFormModal({
       setName(role.name);
       setDescription(role.description ?? '');
       setIsActive(role.isActive);
+    } else if (isDuplicate && role) {
+      setCode('');
+      setName(`${role.name} (Copia)`);
+      setDescription(role.description ?? '');
+      setIsActive(true);
     } else {
       setCode('');
       setName('');
       setDescription('');
       setIsActive(true);
     }
-  }, [open, isEdit, role]);
+  }, [open, isEdit, isDuplicate, role]);
 
   useEffect(() => {
     if (!open) {
@@ -108,13 +125,13 @@ export function RoleFormModal({
     }
     setError(null);
     if (isEdit) {
-      onSave({
+      (onSave as (values: UpdateRoleFormValues) => void)({
         name: name.trim() || undefined,
         description: description.trim() || undefined,
         isActive,
       });
     } else {
-      onSave({
+      (onSave as (values: CreateRoleFormValues | DuplicateRoleFormValues) => void)({
         code: code.trim(),
         name: name.trim(),
         description: description.trim() || undefined,
@@ -125,9 +142,19 @@ export function RoleFormModal({
   return (
     <RolModal
       open={open}
-      title={isEdit ? `Editar rol: ${role?.code}` : 'Nuevo rol'}
+      title={
+        isEdit
+          ? `Editar rol: ${role?.code}`
+          : isDuplicate
+            ? `Duplicar rol: ${role?.code}`
+            : 'Nuevo rol'
+      }
       subtitle={
-        isEdit ? 'Modifica nombre, descripción o estado del rol' : 'Define código y nombre del rol'
+        isEdit
+          ? 'Modifica nombre, descripción o estado del rol'
+          : isDuplicate
+            ? 'Define el código y nombre del nuevo rol duplicado'
+            : 'Define código y nombre del rol'
       }
       theme={theme}
       onClose={onClose}

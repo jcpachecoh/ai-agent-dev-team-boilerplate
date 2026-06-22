@@ -21,6 +21,7 @@ import type {
   InventoryProduct,
   InventoryProductFormValues,
   InventoryReportData,
+  InventoryResolvedAlert,
   InventoryStockBySite,
 } from '@/types/inventory';
 
@@ -29,6 +30,8 @@ import {
   fetchInventoryAlertsApi,
   fetchInventoryDashboardApi,
   fetchInventoryReportApi,
+  fetchResolvedInventoryAlertsApi,
+  resolveInventoryAlertApi,
 } from '@/features/inventario/api/inventario.rest';
 import { inventoryFetch } from './client';
 import { useInventoryMock, useInventoryMovementsMock } from './config';
@@ -100,14 +103,22 @@ export async function fetchInventoryAlerts(): Promise<InventoryAlert[]> {
   return list;
 }
 
-export async function resolveInventoryAlert(id: string): Promise<void> {
+export async function resolveInventoryAlert(id: string, note?: string): Promise<void> {
   if (useInventoryMock()) return inventoryMockStore.resolveAlert(id);
-  await inventoryFetch(`/inventory/alerts/${id}/resolve`, { method: 'PATCH' });
+  await resolveInventoryAlertApi(id, note);
 }
 
 export function fetchInventoryAlertSummary(): AlertSummary {
   if (useInventoryMock()) return inventoryMockStore.getAlertSummary();
   return cachedAlertSummary ?? { critical: 0, warning: 0, resolvedToday: 0 };
+}
+
+export async function fetchResolvedInventoryAlerts(
+  cursor?: string,
+  take?: number,
+): Promise<InventoryResolvedAlert[]> {
+  if (useInventoryMock()) return [];
+  return fetchResolvedInventoryAlertsApi(cursor, take);
 }
 
 export async function fetchStockBySite(productId: string): Promise<InventoryStockBySite[]> {

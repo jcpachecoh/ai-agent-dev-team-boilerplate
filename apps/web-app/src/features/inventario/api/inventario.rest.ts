@@ -3,6 +3,7 @@ import type {
   InventoryAlert,
   InventoryDashboardData,
   InventoryReportData,
+  InventoryResolvedAlert,
 } from '@/types/inventory';
 
 import type {
@@ -117,8 +118,19 @@ export function fetchInventoryAlertSummaryApi(): Promise<{
   return inventoryFetch('/inventory/alerts/summary');
 }
 
-export function resolveInventoryAlertApi(id: string): Promise<void> {
-  return inventoryFetch(`/inventory/alerts/${id}/resolve`, { method: 'PATCH' });
+export function resolveInventoryAlertApi(id: string, note?: string): Promise<void> {
+  return inventoryFetch(`/inventory/alerts/${id}/resolve`, {
+    method: 'PATCH',
+    body: JSON.stringify({ note }),
+  });
+}
+
+export function fetchResolvedInventoryAlertsApi(cursor?: string, take?: number): Promise<InventoryResolvedAlert[]> {
+  const params = new URLSearchParams();
+  if (cursor) params.set('cursor', cursor);
+  if (take !== undefined) params.set('take', String(take));
+  const qs = params.toString();
+  return inventoryFetch<InventoryResolvedAlert[]>(`/inventory/alerts/resolved${qs ? `?${qs}` : ''}`);
 }
 
 export function fetchInventoryReportApi(

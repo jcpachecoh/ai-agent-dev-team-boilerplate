@@ -77,9 +77,11 @@ const ROLE_MANAGER_ID = 'aaaaaaaa-0000-0000-0000-000000000003';
 const ROLE_OPERATOR_ID = 'aaaaaaaa-0000-0000-0000-000000000004';
 const ROLE_OPERATIONS_ADMIN_ID = 'aaaaaaaa-0000-0000-0000-000000000005';
 const ROLE_NOMINA_ID = 'aaaaaaaa-0000-0000-0000-000000000006';
+const ROLE_SUPER_ADMIN_ID = 'aaaaaaaa-0000-0000-0000-000000000007';
 
 const GLOBAL_MES_OWNER_USER_ID = '11111111-0000-0000-0000-000000000004';
 const GLOBAL_MES_OPERATOR_USER_ID = '11111111-0000-0000-0000-000000000005';
+const GLOBAL_SUPER_ADMIN_USER_ID = '11111111-0000-0000-0000-000000000009';
 
 const MES_OWNER_ID = 'dddddddd-0000-0000-0000-000000000004';
 const MES_OPERATOR_ID = 'eeeeeeee-0000-0000-0000-000000000005';
@@ -100,6 +102,7 @@ const ROLE_SEEDS = [
     name: 'Administrador de Operaciones',
   },
   { id: ROLE_NOMINA_ID, code: 'NOMINA', name: 'Nómina' },
+  { id: ROLE_SUPER_ADMIN_ID, code: 'SUPER_ADMIN', name: 'Super Admin' },
 ] as const;
 
 const PERMISSION_SEEDS = [
@@ -336,8 +339,11 @@ const OPERATOR_PERMISSION_CODES = ['plant.orders.read', 'supply.items.read'] as 
 
 const OPERATIONS_ADMIN_PERMISSION_CODES = ['plant.orders.read', 'plant.committees.read'] as const;
 
+const ALL_PERMISSION_CODES = PERMISSION_SEEDS.map((permissionSeed) => permissionSeed.code);
+
 const ROLE_PERMISSION_MATRIX: Record<string, readonly string[]> = {
-  OWNER: PERMISSION_SEEDS.map((permissionSeed) => permissionSeed.code),
+  OWNER: ALL_PERMISSION_CODES,
+  SUPER_ADMIN: ALL_PERMISSION_CODES,
   SUPERVISOR: SUPERVISOR_PERMISSION_CODES,
   MANAGER: MANAGER_PERMISSION_CODES,
   OPERATOR: OPERATOR_PERMISSION_CODES,
@@ -1054,6 +1060,37 @@ async function main() {
   });
   console.log('Global User (NOMINA):', nominaGlobalUser.email, '—', nominaGlobalUser.id);
 
+  const superAdminGlobalUser = await prisma.user.upsert({
+    where: {
+      tenantId_cedula: { tenantId: OPERATIONAL_TENANT_ID, cedula: '00000001' },
+    },
+    update: {
+      email: 'superadmin@opssynk.dev',
+      passwordHash: mesUserPasswordHash,
+      documentType: DocumentType.CC,
+      roleId: roles.SUPER_ADMIN.id,
+      isActive: true,
+      emailVerified: true,
+    },
+    create: {
+      id: GLOBAL_SUPER_ADMIN_USER_ID,
+      tenantId: OPERATIONAL_TENANT_ID,
+      cedula: '00000001',
+      documentType: DocumentType.CC,
+      email: 'superadmin@opssynk.dev',
+      passwordHash: mesUserPasswordHash,
+      roleId: roles.SUPER_ADMIN.id,
+      isActive: true,
+      emailVerified: true,
+    },
+  });
+  console.log(
+    'Global User (SUPER_ADMIN):',
+    superAdminGlobalUser.email,
+    '—',
+    superAdminGlobalUser.id,
+  );
+
   console.log('\n✅ Email auth (global User — x-tenant-id: palos-de-lena):');
   console.log('  mes-owner          = mes-owner@palos-de-lena.dev / TestPass123!');
   console.log('  mes-operator       = mes-operator@palos-de-lena.dev / TestPass123!');
@@ -1062,6 +1099,9 @@ async function main() {
   );
   console.log(
     '  nomina             = nomina@palos-de-lena.dev / TestPass123!  ← payroll read-only',
+  );
+  console.log(
+    '  superadmin         = superadmin@opssynk.dev / TestPass123!  ← admin de roles/permisos',
   );
   console.log('\n✅ Operational tenant (supply-items, MES, plant):');
   console.log('  tenantId / mesTenantId =', OPERATIONAL_TENANT_ID);

@@ -635,4 +635,34 @@ export class PlantRepository implements IPlantRepository {
       data,
     });
   }
+
+  findSupplyItemsWithPrincipalSupplier(
+    tenantId: string,
+    supplyItemIds: string[],
+  ): Promise<
+    Array<{
+      id: string;
+      nombre: string;
+      stockActualBodega: Decimal;
+      supplierProducts: Array<{ supplier: { razonSocial: string } }>;
+    }>
+  > {
+    if (supplyItemIds.length === 0) {
+      return Promise.resolve([]);
+    }
+
+    return this.prisma.supplyItem.findMany({
+      where: { tenantId, id: { in: supplyItemIds } },
+      select: {
+        id: true,
+        nombre: true,
+        stockActualBodega: true,
+        supplierProducts: {
+          where: { esProveedorPrincipal: true },
+          select: { supplier: { select: { razonSocial: true } } },
+          take: 1,
+        },
+      },
+    });
+  }
 }

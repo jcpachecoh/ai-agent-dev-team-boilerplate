@@ -8,6 +8,9 @@ export interface RecipeListItem {
   category: string;
   durationMin: number;
   phases: number;
+  version: number;
+  versionLabel: string;
+  updatedAt: string;
   status: RecetaStatus;
 }
 

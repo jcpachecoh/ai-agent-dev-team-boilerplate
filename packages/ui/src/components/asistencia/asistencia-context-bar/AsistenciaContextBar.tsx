@@ -7,6 +7,7 @@ import styles from './AsistenciaContextBar.module.scss';
 export interface AsistenciaContextBarProps {
   summary?: string;
   legend?: ReactNode;
+  actions?: ReactNode;
   theme?: AsistenciaTheme;
   className?: string;
 }
@@ -14,6 +15,7 @@ export interface AsistenciaContextBarProps {
 export function AsistenciaContextBar({
   summary = 'SEDE · 0 EMPLEADOS ACTIVOS',
   legend,
+  actions,
   theme = 'dark',
   className,
 }: AsistenciaContextBarProps): JSX.Element {
@@ -23,7 +25,10 @@ export function AsistenciaContextBar({
         <Users className={styles.icon} aria-hidden />
         <p className={styles.summary}>{summary}</p>
       </div>
-      {legend ? <div className={styles.legend}>{legend}</div> : null}
+      <div className={styles.trailing}>
+        {legend ? <div className={styles.legend}>{legend}</div> : null}
+        {actions ? <div className={styles.actions}>{actions}</div> : null}
+      </div>
     </div>
   );
 }

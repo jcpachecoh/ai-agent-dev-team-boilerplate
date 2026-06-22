@@ -40,6 +40,24 @@ export interface UpdateRoleData {
   isActive?: boolean;
 }
 
+export interface CreatePermissionData {
+  code: string;
+  name: string;
+  description?: string;
+  module?: string;
+  resource?: string;
+  action?: string;
+}
+
+export interface UpdatePermissionData {
+  name?: string;
+  description?: string;
+  module?: string;
+  resource?: string;
+  action?: string;
+  isActive?: boolean;
+}
+
 export interface IAdminRolesRepository {
   findAll(tenantId: string, includeInactive?: boolean): Promise<AdminRoleListItem[]>;
   findById(tenantId: string, roleId: string): Promise<AdminRoleDetail | null>;
@@ -48,8 +66,19 @@ export interface IAdminRolesRepository {
   create(tenantId: string, data: CreateRoleData): Promise<AdminRoleListItem>;
   update(tenantId: string, roleId: string, data: UpdateRoleData): Promise<AdminRoleListItem>;
   deactivate(tenantId: string, roleId: string): Promise<void>;
+  duplicateRole(
+    tenantId: string,
+    sourceRoleId: string,
+    data: CreateRoleData,
+  ): Promise<AdminRoleListItem>;
   setRolePermissions(roleId: string, permissionIds: string[]): Promise<void>;
-  findAllPermissions(): Promise<PermissionCatalogItem[]>;
+  findAllPermissions(includeInactive?: boolean): Promise<PermissionCatalogItem[]>;
+  findPermissionById(id: string): Promise<PermissionCatalogItem | null>;
+  findPermissionByCode(code: string): Promise<{ id: string } | null>;
+  isPermissionInUse(id: string): Promise<boolean>;
+  createPermission(data: CreatePermissionData): Promise<PermissionCatalogItem>;
+  updatePermission(id: string, data: UpdatePermissionData): Promise<PermissionCatalogItem>;
+  deactivatePermission(id: string): Promise<void>;
   findPermissionsByIds(ids: string[]): Promise<{ id: string }[]>;
 }
 
@@ -59,6 +88,14 @@ export interface IAdminRolesService {
   createRole(tenantId: string, data: CreateRoleData): Promise<AdminRoleListItem>;
   updateRole(tenantId: string, roleId: string, data: UpdateRoleData): Promise<AdminRoleListItem>;
   deactivateRole(tenantId: string, roleId: string): Promise<void>;
+  duplicateRole(
+    tenantId: string,
+    sourceRoleId: string,
+    data: CreateRoleData,
+  ): Promise<AdminRoleListItem>;
   assignRolePermissions(tenantId: string, roleId: string, permissionIds: string[]): Promise<void>;
-  getPermissionCatalog(): Promise<PermissionCatalogItem[]>;
+  getPermissionCatalog(includeInactive?: boolean): Promise<PermissionCatalogItem[]>;
+  createPermission(data: CreatePermissionData): Promise<PermissionCatalogItem>;
+  updatePermission(id: string, data: UpdatePermissionData): Promise<PermissionCatalogItem>;
+  deactivatePermission(id: string): Promise<void>;
 }

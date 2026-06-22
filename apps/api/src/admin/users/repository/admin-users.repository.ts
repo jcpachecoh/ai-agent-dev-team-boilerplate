@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { ArlRiskLevel, EmployeeContractType, SalaryType } from '@prisma/client';
+import { ArlRiskLevel, EmployeeContractType, OperationalRole, SalaryType } from '@prisma/client';
 
 import { PrismaService } from '../../../prisma/prisma.service';
 import type {
@@ -94,13 +94,15 @@ export class AdminUsersRepository implements IAdminUsersRepository {
     tenantId: string,
     data: CreateAdminUserData,
   ): Promise<AdminUserListItem> {
-    const location = await this.prisma.location.findFirst({
-      where: { tenantId, isActive: true },
-      select: { id: true },
-      orderBy: { createdAt: 'asc' },
-    });
-
-    const locationId = location?.id ?? tenantId;
+    let locationId = data.locationId;
+    if (!locationId) {
+      const location = await this.prisma.location.findFirst({
+        where: { tenantId, isActive: true },
+        select: { id: true },
+        orderBy: { createdAt: 'asc' },
+      });
+      locationId = location?.id ?? tenantId;
+    }
 
     const row = await this.prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
@@ -141,6 +143,26 @@ export class AdminUsersRepository implements IAdminUsersRepository {
           cajaCompensacion: 'Por definir',
         },
       });
+
+      if (data.operationalUser) {
+        await tx.operationalUser.create({
+          data: {
+            userId: user.id,
+            tenantId,
+            cedulaHash: data.operationalUser.cedulaHash,
+            pinHash: data.operationalUser.pinHash,
+            role: OperationalRole.OPERATOR,
+            isActive: true,
+            loginAttempts: 0,
+          },
+        });
+
+        if (locationId) {
+          await tx.userLocation.create({
+            data: { userId: user.id, locationId, tenantId },
+          });
+        }
+      }
 
       return user;
     });

@@ -34,6 +34,7 @@ export interface MesCreatedUserResponse {
 export interface IMesAuthRepository {
   findByCedulaHash(tenantId: string, cedulaHash: string): Promise<OperationalUser | null>;
   findById(id: string): Promise<OperationalUser | null>;
+  findByUserId(userId: string): Promise<OperationalUser | null>;
   findLocationIdByUserId(tenantId: string, userId: string): Promise<string | null>;
   findActiveLocationsByUserId(tenantId: string, userId: string): Promise<MesLocationSummary[]>;
   findLocationById(tenantId: string, locationId: string): Promise<MesLocationSummary | null>;

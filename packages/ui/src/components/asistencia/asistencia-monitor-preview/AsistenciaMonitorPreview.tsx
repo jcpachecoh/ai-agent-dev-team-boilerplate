@@ -1,4 +1,5 @@
 import type { JSX } from 'react';
+import { useState } from 'react';
 import { Radio } from 'lucide-react';
 
 import { RecetaMetricCard } from '../../receta/receta-metric-card';
@@ -6,15 +7,18 @@ import { AsistenciaContextBar } from '../asistencia-context-bar';
 import { AsistenciaEmployeeCard } from '../asistencia-employee-card';
 import type { AsistenciaEmployeeCardProps } from '../asistencia-employee-card';
 import { AsistenciaEmployeeGrid } from '../asistencia-employee-grid';
+import { AsistenciaEmployeeList, AsistenciaEmployeeListRow } from '../asistencia-employee-list';
 import { AsistenciaLegendItem } from '../asistencia-legend-item';
 import { AsistenciaLocationTabs } from '../asistencia-location-tabs';
 import { AsistenciaPage } from '../asistencia-page';
 import { AsistenciaPageHeader } from '../asistencia-page-header';
 import { AsistenciaSyncButton } from '../asistencia-sync-button';
+import { AsistenciaViewToggle } from '../asistencia-view-toggle';
 import type {
   AsistenciaLocationTab,
   AsistenciaMonitorMetrics,
   AsistenciaTheme,
+  AsistenciaViewMode,
 } from '../shared/asistencia-types';
 import { formatMetricFraction } from '../shared/asistencia-utils';
 import styles from './AsistenciaMonitorPreview.module.scss';
@@ -32,6 +36,9 @@ export interface AsistenciaMonitorPreviewProps {
   onSync?: () => void;
   onQuickEntry?: () => void;
   onQuickExit?: () => void;
+  viewMode?: AsistenciaViewMode;
+  onViewModeChange?: (mode: AsistenciaViewMode) => void;
+  emptyMessage?: string;
   theme?: AsistenciaTheme;
   className?: string;
 }
@@ -119,9 +126,22 @@ export function AsistenciaMonitorPreview({
   onSync,
   onQuickEntry,
   onQuickExit,
+  viewMode,
+  onViewModeChange,
+  emptyMessage,
   theme = 'dark',
   className,
 }: AsistenciaMonitorPreviewProps): JSX.Element {
+  const [internalViewMode, setInternalViewMode] = useState<AsistenciaViewMode>('list');
+  const resolvedViewMode = viewMode ?? internalViewMode;
+
+  const handleViewModeChange = (mode: AsistenciaViewMode) => {
+    if (viewMode === undefined) {
+      setInternalViewMode(mode);
+    }
+    onViewModeChange?.(mode);
+  };
+
   const resolvedSubtitle = `${subtitle} · Última sync: ${lastSyncLabel}`;
 
   return (
@@ -212,17 +232,38 @@ export function AsistenciaMonitorPreview({
               <AsistenciaLegendItem label="Fuera de horario" status="off-schedule" theme={theme} />
             </>
           }
+          actions={
+            <AsistenciaViewToggle
+              theme={theme}
+              value={resolvedViewMode}
+              onChange={handleViewModeChange}
+            />
+          }
         />
 
-        <AsistenciaEmployeeGrid>
-          {employees.map((employee) => (
-            <AsistenciaEmployeeCard
-              key={employee.id ?? employee.name}
-              {...employee}
-              theme={theme}
-            />
-          ))}
-        </AsistenciaEmployeeGrid>
+        {employees.length === 0 && emptyMessage ? (
+          <p className={styles.emptyMessage}>{emptyMessage}</p>
+        ) : resolvedViewMode === 'grid' ? (
+          <AsistenciaEmployeeGrid>
+            {employees.map((employee) => (
+              <AsistenciaEmployeeCard
+                key={employee.id ?? employee.name}
+                {...employee}
+                theme={theme}
+              />
+            ))}
+          </AsistenciaEmployeeGrid>
+        ) : (
+          <AsistenciaEmployeeList>
+            {employees.map((employee) => (
+              <AsistenciaEmployeeListRow
+                key={employee.id ?? employee.name}
+                {...employee}
+                theme={theme}
+              />
+            ))}
+          </AsistenciaEmployeeList>
+        )}
       </div>
     </AsistenciaPage>
   );

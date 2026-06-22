@@ -17,6 +17,8 @@ export * from './components/feedback/progress';
 export * from './components/feedback/skeleton';
 export * from './components/feedback/toast';
 
+export * from './components/Modal';
+
 export * from './components/forms/combobox';
 export * from './components/forms/date-picker';
 export * from './components/forms/date-range-picker';
@@ -57,6 +59,12 @@ export * from './components/field-ops/operations-stat-card';
 export * from './components/field-ops/operations-stats-bar';
 export * from './components/field-ops/plant-dashboard';
 
+export * from './components/receta/receta-category-chip';
+export * from './components/receta/receta-copy-button';
+export * from './components/receta/receta-phases-count';
+export * from './components/receta/receta-recipe-list-table-row';
+export * from './components/receta/receta-time-progress';
+export * from './components/receta/shared/receta-category-utils';
 export * from './components/receta/receta-metric-card';
 export * from './components/receta/receta-search';
 export * from './components/receta/receta-action-button';
@@ -78,6 +86,14 @@ export * from './components/receta/receta-text-input';
 export * from './components/receta/receta-filter-select';
 export * from './components/receta/receta-phase-add-button';
 export * from './components/receta/receta-phase-modal';
+export * from './components/receta/receta-wizard-stepper';
+export * from './components/receta/receta-wizard-shell';
+export * from './components/receta/receta-wizard-field';
+export * from './components/receta/receta-recipe-wizard-general-step';
+export * from './components/receta/receta-recipe-wizard-phases-step';
+export * from './components/receta/receta-recipe-wizard-review-step';
+export * from './components/receta/receta-recipe-wizard';
+export * from './components/receta/shared/receta-wizard-types';
 
 export * from './components/proveedor/proveedor-page-header';
 export * from './components/proveedor/proveedor-metric-card';

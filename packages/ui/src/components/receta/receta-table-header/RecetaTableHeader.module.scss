@@ -2,29 +2,25 @@
 @use '../shared/receta-theme' as receta;
 
 .header {
-  --control-width: 100%;
-  --control-min-height: 52px;
-  --control-padding-x: #{$spacing-lg};
-  --control-radius: #{$border-radius-md};
-  --header-font-size: 0.625rem;
-
-  @include receta.receta-control-base;
+  @include receta.receta-theme-classes;
 
   display: grid;
   grid-template-columns: var(--receta-columns);
   align-items: center;
   width: 100%;
-  padding: 0 var(--control-padding-x);
-  border-radius: var(--control-radius) var(--control-radius) 0 0;
+  min-height: 34px;
+  padding: 0 14px;
+  border-bottom: $border-width solid var(--receta-border);
+  background: #0d0d0d;
   overflow-x: auto;
 }
 
 .themeLight {
-  @include receta.receta-theme-light;
+  background: var(--receta-surface-raised);
 }
 
 .themeDark {
-  @include receta.receta-theme-dark;
+  background: #0d0d0d;
 }
 
 .sizeSm {
@@ -34,27 +30,73 @@
   --header-font-size: 0.5625rem;
 }
 .sizeXl {
-  --header-font-size: 0.625rem;
+  --header-font-size: 0.5625rem;
 }
 
 .cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   min-width: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
   font-family: $font-family-mono;
-  font-size: var(--header-font-size);
+  font-size: var(--header-font-size, 0.5625rem);
   font-weight: $font-weight-bold;
-  line-height: 1;
-  letter-spacing: 0.12em;
+  line-height: 1.5;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   white-space: nowrap;
-  color: var(--receta-muted);
+  color: #444444;
+}
+
+.sortable {
+  cursor: pointer;
+
+  &:hover {
+    color: var(--receta-text-secondary);
+  }
+
+  &:focus-visible {
+    @include receta.receta-focus-ring;
+  }
+}
+
+.cellActive {
+  color: receta.$receta-purple;
+}
+
+.label {
+  min-width: 0;
+}
+
+.sortIcon {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.sortIconMuted {
+  opacity: 0.25;
 }
 
 .alignLeft {
+  justify-content: flex-start;
   text-align: left;
 }
 .alignCenter {
+  justify-content: center;
   text-align: center;
 }
 .alignRight {
+  justify-content: flex-end;
   text-align: right;
+}
+
+.theme--light .cell {
+  color: var(--receta-subtle);
+}
+
+.theme--light .cellActive {
+  color: receta.$receta-purple;
 }

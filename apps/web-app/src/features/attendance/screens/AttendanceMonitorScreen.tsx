@@ -2,6 +2,7 @@ import { AsistenciaMonitorPreview, type AsistenciaLocationTab, toast } from '@re
 import { useQueries } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 
+import { useLocations } from '@/features/sedes/hooks/useLocations';
 import { useTheme } from '@/providers/ThemeProvider';
 import { AttendanceApiError, getAttendanceOvertimeSummary } from '../api/attendance.client';
 import { attendanceKeys } from '../api/queryKeys';
@@ -50,6 +51,18 @@ function mapLocationTabs(history: AttendanceHistoryItem[]): AsistenciaLocationTa
   return Array.from(map.values());
 }
 
+function mapSedeLocationTabs(
+  rows: Array<{ id: string; name: string; city?: string; isActive: boolean }>,
+): AsistenciaLocationTab[] {
+  return rows
+    .filter((row) => row.isActive)
+    .map((row) => ({
+      id: row.id,
+      name: row.name,
+      city: row.city ?? '',
+    }));
+}
+
 function getEmployeeDisplayName(employee?: AttendanceEmployeeSummary): string {
   if (employee?.name?.trim()) return employee.name;
   if (employee?.user?.email) return employee.user.email.split('@')[0] ?? 'Empleado';
@@ -77,7 +90,16 @@ export function AttendanceMonitorScreen(): React.JSX.Element {
     dateFrom: today,
     dateTo: today,
   });
-  const locationTabs = useMemo(() => mapLocationTabs(historyQuery.data ?? []), [historyQuery.data]);
+  const locationsQuery = useLocations();
+  const historyLocationTabs = useMemo(
+    () => mapLocationTabs(historyQuery.data ?? []),
+    [historyQuery.data],
+  );
+  const fallbackLocationTabs = useMemo(
+    () => mapSedeLocationTabs(locationsQuery.data ?? []),
+    [locationsQuery.data],
+  );
+  const locationTabs = historyLocationTabs.length > 0 ? historyLocationTabs : fallbackLocationTabs;
 
   useEffect(() => {
     if (!locationId && locationTabs.length > 0) {
@@ -234,6 +256,11 @@ export function AttendanceMonitorScreen(): React.JSX.Element {
       onSync={handleSync}
       onQuickEntry={registerQuickEntry}
       onQuickExit={registerQuickExit}
+      emptyMessage={
+        !historyQuery.isLoading && employees.length === 0
+          ? `No hay registros de asistencia para hoy (${today}). Ejecuta el seed o registra entradas desde el kiosko.`
+          : undefined
+      }
     />
   );
 }

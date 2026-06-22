@@ -4,6 +4,7 @@ import { AlarmSeverity, IncidentType } from '@prisma/client';
 import type { CreateIncidentInput } from '../interfaces/plant.interfaces';
 import { IncidentRepository } from '../repository/incident.repository';
 import { PlantRepository } from '../repository/plant.repository';
+import { ProductionLogRepository } from '../repository/production-log.repository';
 import { IncidentService } from '../service/incident.service';
 import { PlantEventsService } from '../service/plant-events.service';
 import { PlantService } from '../service/plant.service';
@@ -53,6 +54,9 @@ describe('IncidentService', () => {
     findExecutionById: jest.fn(),
     findOrderDetailById: jest.fn(),
   };
+  const productionLogRepositoryMock = {
+    append: jest.fn(),
+  };
   const plantEventsServiceMock = {
     emitIncidentCreated: jest.fn(),
   };
@@ -66,6 +70,7 @@ describe('IncidentService', () => {
         IncidentService,
         { provide: IncidentRepository, useValue: incidentRepositoryMock },
         { provide: PlantRepository, useValue: plantRepositoryMock },
+        { provide: ProductionLogRepository, useValue: productionLogRepositoryMock },
         { provide: PlantEventsService, useValue: plantEventsServiceMock },
         { provide: PlantService, useValue: plantServiceMock },
       ],
@@ -79,6 +84,7 @@ describe('IncidentService', () => {
     plantRepositoryMock.findOrderDetailById.mockResolvedValue({ order: { id: 'order-1' } });
     incidentRepositoryMock.createIncident.mockResolvedValue(incidentRecord);
     plantServiceMock.pauseOrder.mockResolvedValue({ id: 'order-1', status: 'PAUSED' });
+    productionLogRepositoryMock.append.mockResolvedValue({ id: 'log-1' });
   });
 
   describe('createIncident', () => {

@@ -11,7 +11,7 @@ class TestController {
   openEndpoint() {}
 }
 
-const mockContext = (user?: { role?: OperationalRole }) =>
+const mockContext = (user?: { role?: OperationalRole; roleCode?: string }) =>
   ({
     getHandler: () => ({}),
     getClass: () => ({}),
@@ -89,8 +89,34 @@ describe('MesRolesGuard', () => {
 
   it('denies when request.user has no role property', () => {
     jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([OperationalRole.OWNER]);
-    const context = mockContext({} as { role?: OperationalRole });
+    const context = mockContext({});
 
     expect(guard.canActivate(context)).toBe(false);
+  });
+
+  it('allows access using roleCode fallback when role is absent (global token path)', () => {
+    // normaliseMesPayload maps roleCode→role for global tokens, but guard stays defensive
+    // and accepts roleCode directly in case the payload arrives before normalisation.
+    jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([OperationalRole.OWNER]);
+    const context = mockContext({ roleCode: 'OWNER' });
+
+    expect(guard.canActivate(context)).toBe(true);
+  });
+
+  it('denies when roleCode fallback does not match required role', () => {
+    jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([OperationalRole.OWNER]);
+    const context = mockContext({ roleCode: 'OPERATOR' });
+
+    expect(guard.canActivate(context)).toBe(false);
+  });
+
+  it('prefers role over roleCode when both are present', () => {
+    jest
+      .spyOn(reflector, 'getAllAndOverride')
+      .mockReturnValue([OperationalRole.OWNER]);
+    // role wins — roleCode is ignored
+    const context = mockContext({ role: OperationalRole.OWNER, roleCode: 'OPERATOR' });
+
+    expect(guard.canActivate(context)).toBe(true);
   });
 });

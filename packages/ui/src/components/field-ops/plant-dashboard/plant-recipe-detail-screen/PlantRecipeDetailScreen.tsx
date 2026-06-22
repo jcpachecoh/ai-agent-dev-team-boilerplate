@@ -91,20 +91,27 @@ export function PlantRecipeDetailScreen({
   theme = 'dark',
   className,
 }: PlantRecipeDetailScreenProps): JSX.Element {
-  const phases = useMemo(
-    () => resolveRecipePhaseStatuses(recipe.phases, currentPhaseIndex),
-    [recipe.phases, currentPhaseIndex],
-  );
+  const phases = useMemo(() => {
+    if (status === 'completed') {
+      return recipe.phases.map((phase) => ({ ...phase, status: 'completed' as const }));
+    }
+    return resolveRecipePhaseStatuses(recipe.phases, currentPhaseIndex);
+  }, [recipe.phases, currentPhaseIndex, status]);
 
-  const currentPhase = phases.find((phase) => phase.status === 'current') ?? phases[0];
+  const currentPhase =
+    status === 'completed'
+      ? (phases.at(-1) ?? phases[0])
+      : (phases.find((phase) => phase.status === 'current') ?? phases[0]);
   const currentIngredients = currentPhase?.ingredients ?? [];
   const hasStockIssue =
     currentPhase?.stockIssue || currentIngredients.some((item) => item.stockWarning);
   const standardMs = (currentPhase?.durationMinutes ?? 0) * 60 * 1000;
   const progressPct =
     standardMs > 0 ? Math.min(100, Math.round((elapsedMs / standardMs) * 100)) : 0;
-  const timerMuted = status === 'paused' || status === 'pending' || !timerRunning;
+  const timerMuted =
+    status === 'paused' || status === 'pending' || status === 'completed' || !timerRunning;
   const showRunningTimer = status === 'in_progress' && timerRunning;
+  const canFinishOrder = currentPhaseIndex >= recipe.phases.length;
 
   return (
     <div
@@ -131,7 +138,8 @@ export function PlantRecipeDetailScreen({
             <p className={styles.sidebarEyebrow}>RECETA</p>
             <h2 className={styles.recipeTitle}>{recipe.recipeName}</h2>
             <p className={styles.recipeMeta}>
-              {recipe.phases.length} pasos · {recipe.batchSize} · {recipe.stationId}
+              {recipe.phases.length} pasos · {recipe.batchSize} ·{' '}
+              {recipe.stationName ?? recipe.stationId}
             </p>
           </div>
 
@@ -267,6 +275,11 @@ export function PlantRecipeDetailScreen({
                   <p className={styles.timerStatusMuted}>NO INICIADO</p>
                   <p className={styles.timerValueMuted}>00:00</p>
                 </>
+              ) : status === 'completed' ? (
+                <>
+                  <p className={styles.timerStatusMuted}>ORDEN TERMINADA</p>
+                  <p className={styles.timerValueMuted}>{formatPlantElapsed(elapsedMs)}</p>
+                </>
               ) : (
                 <>
                   <p className={styles.timerStatusMuted}>⏸ PAUSADO</p>
@@ -276,7 +289,9 @@ export function PlantRecipeDetailScreen({
             </section>
 
             <div className={styles.actions}>
-              {status === 'pending' ? (
+              {status === 'completed' ? (
+                <div className={styles.actionCompleted}>ORDEN TERMINADA</div>
+              ) : status === 'pending' ? (
                 <button type="button" className={styles.actionStart} onClick={onStart}>
                   INICIAR
                 </button>
@@ -302,10 +317,12 @@ export function PlantRecipeDetailScreen({
                       <AlertTriangle size={16} aria-hidden />
                     </button>
                   </div>
-                  <button type="button" className={styles.actionFinish} onClick={onFinishOrder}>
-                    <Check size={16} aria-hidden />
-                    FINALIZAR ORDEN
-                  </button>
+                  {canFinishOrder ? (
+                    <button type="button" className={styles.actionFinish} onClick={onFinishOrder}>
+                      <Check size={16} aria-hidden />
+                      FINALIZAR ORDEN
+                    </button>
+                  ) : null}
                 </>
               )}
             </div>

@@ -1,5 +1,5 @@
-import { Check, ChevronRight, Pause, RotateCcw } from 'lucide-react';
-import { useState, type JSX } from 'react';
+import { Check, ChevronRight, Pause, RotateCcw, SkipForward } from 'lucide-react';
+import { useEffect, useState, type JSX } from 'react';
 
 import type { PlantDashboardThemeProps } from '../shared/plant-workstation-types';
 import {
@@ -25,6 +25,7 @@ export interface PlantWorkstationCardProps extends PlantDashboardThemeProps {
   onStart?: () => void;
   onPause?: () => void;
   onResume?: () => void;
+  onNextStep?: () => void;
   onFinish?: () => void;
   onReportIssue?: () => void;
   onChangeOrder?: () => void;
@@ -40,6 +41,7 @@ export function PlantWorkstationCard({
   onStart,
   onPause,
   onResume,
+  onNextStep,
   onFinish,
   onReportIssue,
   onChangeOrder,
@@ -58,6 +60,24 @@ export function PlantWorkstationCard({
   const timerMuted = status === 'paused' || status === 'pending' || !timerRunning;
   const timerLabel = formatPlantElapsed(elapsedMs);
   const standardLabel = formatPlantStandard(snapshot.standardDurationMs);
+  const canFinishOrder = snapshot.phaseIndex >= snapshot.phaseTotal;
+  const [armedAction, setArmedAction] = useState<'next' | 'finish' | null>(null);
+
+  useEffect(() => {
+    if (!armedAction) return;
+    const timeoutId = window.setTimeout(() => setArmedAction(null), 2000);
+    return () => window.clearTimeout(timeoutId);
+  }, [armedAction]);
+
+  const handleGuardedAction = (action: 'next' | 'finish', cb?: () => void) => {
+    if (!cb) return;
+    if (armedAction !== action) {
+      setArmedAction(action);
+      return;
+    }
+    setArmedAction(null);
+    cb();
+  };
 
   return (
     <article
@@ -76,7 +96,7 @@ export function PlantWorkstationCard({
       <div className={styles.topBar}>
         <div className={styles.opRow}>
           <span className={styles.statusDot} aria-hidden />
-          <span className={styles.opId}>{snapshot.orderId}</span>
+          <span className={styles.opId}>{snapshot.orderNumber ?? snapshot.orderId}</span>
         </div>
         <div className={styles.topActions}>
           <button type="button" className={styles.recipeBtn} onClick={onViewRecipe}>
@@ -141,7 +161,9 @@ export function PlantWorkstationCard({
             <span className={[styles.timer, timerMuted && styles.timerMuted].join(' ')}>
               {timerLabel}
             </span>
-            {status === 'paused' ? (
+            {status === 'completed' ? (
+              <span className={styles.timerMeta}>TERMINADA</span>
+            ) : status === 'paused' ? (
               <span className={styles.timerMeta}>⏸ PAUSADO</span>
             ) : status === 'pending' ? (
               <span className={styles.timerMeta}>NO INICIADO</span>
@@ -164,8 +186,15 @@ export function PlantWorkstationCard({
       )}
 
       <div className={styles.actions}>
-        {status === 'pending' ? (
-          <button type="button" className={styles.actionStart} onClick={onStart}>
+        {status === 'completed' ? (
+          <div className={styles.actionCompleted}>ORDEN TERMINADA</div>
+        ) : status === 'pending' ? (
+          <button
+            type="button"
+            className={styles.actionStart}
+            onClick={onStart}
+            disabled={!onStart}
+          >
             INICIAR
           </button>
         ) : (
@@ -181,15 +210,28 @@ export function PlantWorkstationCard({
                 REANUDAR
               </button>
             )}
-            <button
-              type="button"
-              className={styles.actionFinish}
-              onClick={onFinish}
-              disabled={status !== 'in_progress'}
-            >
-              <Check size={14} aria-hidden />
-              FINALIZAR
-            </button>
+            {!canFinishOrder ? (
+              <button
+                type="button"
+                className={styles.actionNext}
+                onClick={() => handleGuardedAction('next', onNextStep)}
+                disabled={!onNextStep}
+              >
+                <SkipForward size={14} aria-hidden />
+                {armedAction === 'next' ? 'CONFIRMAR' : 'SIGUIENTE PASO'}
+              </button>
+            ) : null}
+            {canFinishOrder ? (
+              <button
+                type="button"
+                className={styles.actionFinish}
+                onClick={() => handleGuardedAction('finish', onFinish)}
+                disabled={status !== 'in_progress' && status !== 'paused'}
+              >
+                <Check size={14} aria-hidden />
+                {armedAction === 'finish' ? 'CONFIRMAR' : 'FINALIZAR'}
+              </button>
+            ) : null}
             <button type="button" className={styles.actionAlert} onClick={onReportIssue}>
               ⚠
             </button>

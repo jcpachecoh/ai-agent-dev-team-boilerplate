@@ -1,4 +1,6 @@
 import type { PlantProductionOrder, PlantProductionRecipe, PlantRecipeCategory } from '@/api/plant';
+import { formatRecetaListDate, formatRecetaVersionLabel } from '@restopsiq/ui';
+
 import type { ProcessRow, ProcessViewData, RecipeListItem, RecetaResult } from '../types';
 
 const DATE_FORMATTER = new Intl.DateTimeFormat('es-CO', {
@@ -32,6 +34,9 @@ export function mapPlantRecipeToListItem(
     category: recipe.category?.nombre ?? 'Sin categoría',
     durationMin: recipe.estimatedMinutes,
     phases: phaseCount,
+    version: recipe.version,
+    versionLabel: formatRecetaVersionLabel(recipe.version),
+    updatedAt: formatRecetaListDate(recipe.updatedAt),
     status: recipe.isActive ? 'active' : 'inactive',
   };
 }

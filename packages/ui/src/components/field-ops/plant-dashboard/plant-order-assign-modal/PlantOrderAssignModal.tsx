@@ -74,7 +74,7 @@ export function PlantOrderAssignModal({
                   <span className={styles.rowBody}>
                     <span className={styles.rowTop}>
                       <span className={styles.rowOp} style={{ color: accent }}>
-                        {order.orderId}
+                        {order.orderNumber ?? order.orderId}
                       </span>
                       {order.priority === 'urgent' ? (
                         <span className={styles.urgent}>URGENTE</span>

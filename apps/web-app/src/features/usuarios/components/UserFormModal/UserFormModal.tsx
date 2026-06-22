@@ -12,6 +12,11 @@ import type {
   UserUpdateFormValues,
 } from '../../types';
 
+export interface LocationOption {
+  id: string;
+  name: string;
+}
+
 const DOCUMENT_TYPES: { value: DocumentType; label: string }[] = [
   { value: 'CC', label: 'Cédula de Ciudadanía' },
   { value: 'CE', label: 'Cédula de Extranjería' },
@@ -39,6 +44,7 @@ type ModeProps = CreateProps | EditProps;
 type UserFormModalProps = ModeProps & {
   open: boolean;
   roles: AdminRoleOptionApi[];
+  locations?: LocationOption[];
   saving?: boolean;
   onClose: () => void;
 };
@@ -56,6 +62,7 @@ export function UserFormModal({
   mode,
   initialValues,
   roles,
+  locations = [],
   saving = false,
   onClose,
   onSave,
@@ -67,8 +74,12 @@ export function UserFormModal({
   const [documentType, setDocumentType] = useState<DocumentType>('CC');
   const [email, setEmail] = useState('');
   const [roleId, setRoleId] = useState('');
+  const [locationId, setLocationId] = useState('');
   const [error, setError] = useState<string | null>(null);
   const isEdit = mode === 'edit';
+
+  const selectedRole = roles.find((r) => r.id === roleId);
+  const isOperator = selectedRole?.code === 'OPERATOR';
 
   useEffect(() => {
     if (!open) {
@@ -84,6 +95,7 @@ export function UserFormModal({
       setDocumentType(emptyCreate.documentType);
       setEmail(emptyCreate.email);
       setRoleId(roles[0]?.id ?? '');
+      setLocationId('');
     }
   }, [open, isEdit, initialValues, roles]);
 
@@ -109,6 +121,10 @@ export function UserFormModal({
     () => DOCUMENT_TYPES.map((item) => ({ value: item.value, label: item.label })),
     [],
   );
+  const locationOptions = useMemo(
+    () => locations.map((loc) => ({ value: loc.id, label: loc.name })),
+    [locations],
+  );
 
   if (!open) {
     return null;
@@ -132,6 +148,10 @@ export function UserFormModal({
         setError('La cédula es obligatoria.');
         return;
       }
+      if (isOperator && !locationId) {
+        setError('Selecciona una sede para el operador de planta.');
+        return;
+      }
     }
     setError(null);
     if (isEdit) {
@@ -143,6 +163,7 @@ export function UserFormModal({
         documentType,
         email: email.trim(),
         roleId,
+        ...(isOperator && locationId ? { locationId } : {}),
       });
     }
   };
@@ -237,12 +258,31 @@ export function UserFormModal({
               aria-label="Rol"
               options={roleOptions}
               value={roleId}
-              onChange={setRoleId}
+              onChange={(value) => {
+                setRoleId(value);
+                setLocationId('');
+              }}
               placeholder="-- Seleccionar rol --"
               theme={theme}
               size="md"
             />
           </label>
+
+          {!isEdit && isOperator ? (
+            <label className={styles.field}>
+              <span className={styles.fieldLabel}>Sede de planta *</span>
+              <RecetaFilterSelect
+                id="locationId"
+                aria-label="Sede de planta"
+                options={locationOptions}
+                value={locationId}
+                onChange={setLocationId}
+                placeholder="-- Seleccionar sede --"
+                theme={theme}
+                size="md"
+              />
+            </label>
+          ) : null}
 
           {error ? <p className={styles.errorText}>{error}</p> : null}
         </div>

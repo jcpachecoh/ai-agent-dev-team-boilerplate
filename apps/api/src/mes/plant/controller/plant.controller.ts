@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  Headers,
   HttpCode,
   HttpStatus,
   Param,
@@ -62,6 +63,7 @@ import type {
   UpdateCommitteeInput,
 } from '../interfaces/committee.interfaces';
 import { CommitteeService } from '../service/committee.service';
+import { OperatorOrderRuntimeService } from '../service/operator-order-runtime.service';
 import { PhaseChainService } from '../service/phase-chain.service';
 import { IncidentService } from '../service/incident.service';
 import { PlantService } from '../service/plant.service';
@@ -76,15 +78,19 @@ import { CreateCommitteeDto } from './dto/create-committee.dto';
 import { ListCommitteesQueryDto } from './dto/list-committees-query.dto';
 import { UpdateCommitteeDto } from './dto/update-committee.dto';
 import { CancelOrderDto } from './dto/cancel-order.dto';
+import { CompleteStepDto } from './dto/complete-step.dto';
 import { CreateIncidentDto } from './dto/create-incident.dto';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { CreatePhaseInputDto } from './dto/create-phase-input.dto';
 import { CreateRecipeDto } from './dto/create-recipe.dto';
 import { CreateWorkstationDto } from './dto/create-workstation.dto';
+import { FinishOrderDto } from './dto/finish-order.dto';
 import { IncidentResponseDto } from './dto/incident.response';
 import { ListIncidentsQueryDto } from './dto/list-incidents-query.dto';
 import { ListOrdersQueryDto } from './dto/list-orders-query.dto';
+import { OperatorPauseOrderDto } from './dto/operator-pause-order.dto';
 import { OrderDetailResponseDto, OrderListItemResponseDto } from './dto/order-detail.response';
+import { OrderRecipeViewResponseDto } from './dto/order-recipe-view.response';
 import { PauseOrderDto } from './dto/pause-order.dto';
 import { QaApproveDto } from './dto/qa-approve.dto';
 import { ReorderPhaseItemDto } from './dto/reorder-phases.dto';
@@ -93,6 +99,7 @@ import { CreatePhaseDto } from './dto/create-recipe.dto';
 import { ResolveIncidentDto } from './dto/resolve-incident.dto';
 import { CreateNoveltyDto, mapNoveltyType, mapNoveltySeverity } from './dto/create-novelty.dto';
 import { RecipeDetailResponseDto } from './dto/recipe-detail.response';
+import { StartOrderDto } from './dto/start-order.dto';
 import { UpdateRecipeDto } from './dto/update-recipe.dto';
 import { UpdateWorkstationDto } from './dto/update-workstation.dto';
 import {
@@ -115,6 +122,8 @@ const OPERATIONAL_ROLES = [
   OperationalRole.OPERATOR,
 ] as const;
 
+const OPERATOR_ROLES = [OperationalRole.OPERATOR] as const;
+
 type MesRequest = Request & { user: MesJwtPayload & { tenantId?: string } };
 
 @ApiTags('plant')
@@ -130,6 +139,7 @@ export class PlantController {
     private readonly incidentService: IncidentService,
     private readonly productionOrderPdfService: ProductionOrderPdfService,
     private readonly supervisorService: SupervisorService,
+    private readonly operatorOrderRuntimeService: OperatorOrderRuntimeService,
   ) {}
 
   /** MES JWT carries tenantId; platform login uses x-tenant-id on existing plant routes. */
@@ -552,6 +562,111 @@ export class PlantController {
     @Body() dto: CancelOrderDto,
   ): Promise<OrderDetailResponse> {
     return this.plantService.cancelOrder(this.resolveTenantId(req), id, dto, req.user.sub);
+  }
+
+  @ApiOperation({ summary: 'Get production order recipe view for operator tablet' })
+  @ApiParam({ name: 'id', description: 'Production order ID' })
+  @ApiOkResponse({ type: OrderRecipeViewResponseDto })
+  @Get('orders/:id/recipe')
+  getOrderRecipeView(@Req() req: MesRequest, @Param('id') id: string) {
+    return this.operatorOrderRuntimeService.getOrderRecipeView(this.resolveTenantId(req), id);
+  }
+
+  @ApiOperation({ summary: 'Start a planned production order (operator)' })
+  @ApiParam({ name: 'id', description: 'Production order ID' })
+  @ApiOkResponse({ type: OrderDetailResponseDto })
+  @Post('orders/:id/start')
+  @UseGuards(PlantAuthGuard, PlantRolesGuard)
+  @Roles(...OPERATIONAL_ROLES)
+  startOrder(
+    @Req() req: MesRequest,
+    @Param('id') id: string,
+    @Body() dto: StartOrderDto,
+    @Headers('idempotency-key') idempotencyKey?: string,
+  ) {
+    return this.operatorOrderRuntimeService.startOrder(
+      this.resolveTenantId(req),
+      id,
+      { operatorUserId: req.user.sub, idempotencyKey },
+      dto,
+    );
+  }
+
+  @ApiOperation({ summary: 'Pause an in-process production order (operator)' })
+  @ApiParam({ name: 'id', description: 'Production order ID' })
+  @ApiOkResponse({ type: OrderDetailResponseDto })
+  @Post('orders/:id/operator/pause')
+  @UseGuards(PlantAuthGuard, PlantRolesGuard)
+  @Roles(...OPERATIONAL_ROLES)
+  pauseOrderByOperator(
+    @Req() req: MesRequest,
+    @Param('id') id: string,
+    @Body() dto: OperatorPauseOrderDto,
+    @Headers('idempotency-key') idempotencyKey?: string,
+  ) {
+    return this.operatorOrderRuntimeService.pauseOrderByOperator(
+      this.resolveTenantId(req),
+      id,
+      { operatorUserId: req.user.sub, idempotencyKey },
+      dto,
+    );
+  }
+
+  @ApiOperation({ summary: 'Resume a paused production order (operator)' })
+  @ApiParam({ name: 'id', description: 'Production order ID' })
+  @ApiOkResponse({ type: OrderDetailResponseDto })
+  @Post('orders/:id/operator/resume')
+  @UseGuards(PlantAuthGuard, PlantRolesGuard)
+  @Roles(...OPERATIONAL_ROLES)
+  resumeOrderByOperator(
+    @Req() req: MesRequest,
+    @Param('id') id: string,
+    @Headers('idempotency-key') idempotencyKey?: string,
+  ) {
+    return this.operatorOrderRuntimeService.resumeOrderByOperator(this.resolveTenantId(req), id, {
+      operatorUserId: req.user.sub,
+      idempotencyKey,
+    });
+  }
+
+  @ApiOperation({ summary: 'Complete the current production step (operator)' })
+  @ApiParam({ name: 'id', description: 'Production order ID' })
+  @ApiOkResponse({ type: OrderDetailResponseDto })
+  @Post('orders/:id/complete-step')
+  @UseGuards(PlantAuthGuard, PlantRolesGuard)
+  @Roles(...OPERATIONAL_ROLES)
+  completeStep(
+    @Req() req: MesRequest,
+    @Param('id') id: string,
+    @Body() dto: CompleteStepDto,
+    @Headers('idempotency-key') idempotencyKey?: string,
+  ) {
+    return this.operatorOrderRuntimeService.completeStep(
+      this.resolveTenantId(req),
+      id,
+      { operatorUserId: req.user.sub, idempotencyKey },
+      dto,
+    );
+  }
+
+  @ApiOperation({ summary: 'Finish a production order after all steps are completed' })
+  @ApiParam({ name: 'id', description: 'Production order ID' })
+  @ApiOkResponse({ type: OrderDetailResponseDto })
+  @Post('orders/:id/finish')
+  @UseGuards(PlantAuthGuard, PlantRolesGuard)
+  @Roles(...OPERATIONAL_ROLES)
+  finishOrder(
+    @Req() req: MesRequest,
+    @Param('id') id: string,
+    @Body() dto: FinishOrderDto,
+    @Headers('idempotency-key') idempotencyKey?: string,
+  ) {
+    return this.operatorOrderRuntimeService.finishOrder(
+      this.resolveTenantId(req),
+      id,
+      { operatorUserId: req.user.sub, idempotencyKey },
+      dto,
+    );
   }
 
   @ApiOperation({ summary: 'Supervisor QA approval for a completed phase execution' })

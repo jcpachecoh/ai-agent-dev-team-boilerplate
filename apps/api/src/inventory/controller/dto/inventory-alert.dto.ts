@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class InventoryAlertDto {
   @ApiProperty()
@@ -38,4 +39,41 @@ export class InventoryAlertSummaryDto {
 
   @ApiProperty()
   resolvedToday!: number;
+}
+
+export class ResolveInventoryAlertDto {
+  @ApiPropertyOptional({ description: 'Razón de resolución', maxLength: 500 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  note?: string;
+}
+
+export class InventoryResolvedAlertDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty()
+  supplyItemId!: string;
+
+  @ApiProperty()
+  product!: string;
+
+  @ApiProperty()
+  currentStock!: number;
+
+  @ApiProperty()
+  threshold!: number;
+
+  @ApiProperty()
+  supplier!: string;
+
+  @ApiProperty()
+  resolvedAt!: string;
+
+  @ApiPropertyOptional()
+  resolvedById?: string;
+
+  @ApiPropertyOptional()
+  note?: string;
 }

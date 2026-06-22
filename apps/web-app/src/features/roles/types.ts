@@ -6,6 +6,7 @@ export type PermissionCatalogItem = {
   module: string | null;
   resource: string | null;
   action: string | null;
+  isActive: boolean;
 };
 
 export type AdminRolePermission = {
@@ -42,5 +43,20 @@ export type CreateRoleFormValues = {
 export type UpdateRoleFormValues = {
   name?: string;
   description?: string;
+  isActive?: boolean;
+};
+
+export type DuplicateRoleFormValues = {
+  code: string;
+  name: string;
+  description?: string;
+};
+
+export type PermissionFormValues = {
+  name: string;
+  description?: string;
+  module?: string;
+  resource?: string;
+  action?: string;
   isActive?: boolean;
 };

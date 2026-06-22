@@ -36,6 +36,7 @@ export interface SedeListPreviewProps {
   onCreate?: () => void;
   onEdit?: (id: string) => void;
   onToggleStatus?: (id: string) => void;
+  onDelete?: (id: string) => void;
   theme?: SedeTheme;
   size?: SedeSize;
   className?: string;
@@ -105,6 +106,7 @@ export function SedeListPreview({
   onCreate,
   onEdit,
   onToggleStatus,
+  onDelete,
   theme = 'light',
   size = 'md',
   className,
@@ -160,6 +162,7 @@ export function SedeListPreview({
               size={size}
               onEdit={() => onEdit?.(row.id)}
               onToggleStatus={() => onToggleStatus?.(row.id)}
+              onDelete={() => onDelete?.(row.id)}
             />
           ))}
         </SedeTable>

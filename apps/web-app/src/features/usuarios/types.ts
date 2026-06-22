@@ -32,6 +32,7 @@ export interface UserFormValues {
   documentType: DocumentType;
   email: string;
   roleId: string;
+  locationId?: string;
 }
 
 export interface UserUpdateFormValues {

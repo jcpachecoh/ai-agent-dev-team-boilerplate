@@ -191,10 +191,11 @@ model SupplyItem {
   createdAt              DateTime  @default(now())
   updatedAt              DateTime  @updatedAt
 
-  categoria        SupplyCategory            @relation(fields: [categoriaId], references: [id])
+  categoria        SupplyCategory              @relation(fields: [categoriaId], references: [id])
   supplierProducts SupplierProduct[]
   priceHistory     SupplyItemPriceHistory[]
   orderMaterials   ProductionOrderMaterial[]
+  alertResolutions InventoryAlertResolution[]
 
   @@unique([tenantId, codigoInterno])
   @@index([tenantId, categoriaId])
@@ -252,6 +253,30 @@ model SupplyItemPriceHistory {
   @@index([tenantId, supplyItemId])
   @@index([tenantId, createdAt])
   @@map("supply_item_price_history")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INVENTORY ALERT RESOLUTIONS
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum InventoryAlertType {
+  LOW_STOCK
+}
+
+model InventoryAlertResolution {
+  id           String             @id @default(cuid())
+  tenantId     String
+  supplyItemId String
+  alertType    InventoryAlertType @default(LOW_STOCK)
+  resolvedAt   DateTime           @default(now())
+  resolvedById String?
+  note         String?
+
+  supplyItem SupplyItem @relation(fields: [supplyItemId], references: [id])
+
+  @@index([tenantId, supplyItemId, resolvedAt])
+  @@index([tenantId, resolvedAt])
+  @@map("inventory_alert_resolutions")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -475,8 +500,8 @@ model EmployeeDetails {
   updatedAt           DateTime             @updatedAt
   deletedAt           DateTime?
 
-  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  location       Location       @relation(fields: [locationId], references: [id])
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  location       Location        @relation(fields: [locationId], references: [id])
   attendanceLogs AttendanceLog[]
 
   @@index([tenantId])
@@ -595,6 +620,7 @@ model OperationalUser {
   reportedIncidents     ProductionIncident[] @relation("IncidentReporter")
   resolvedIncidents     ProductionIncident[] @relation("IncidentResolver")
   responsibleExecutions PhaseExecution[]     @relation("ExecutionResponsible")
+  productionLogs        ProductionLog[]
 
   @@unique([tenantId, cedulaHash])
   @@index([tenantId])
@@ -620,6 +646,7 @@ model WorkStation {
   sessions        OperatorSession[]
   phaseExecutions PhaseExecution[]
   incidents       ProductionIncident[]
+  productionLogs  ProductionLog[]
 
   @@unique([tenantId, code])
   @@index([tenantId])
@@ -755,6 +782,15 @@ enum PhaseExecutionStatus {
   COMPLETED
 }
 
+enum ProductionLogEvent {
+  ORDER_STARTED
+  ORDER_PAUSED
+  ORDER_RESUMED
+  STEP_COMPLETED
+  ORDER_COMPLETED
+  NOVELTY_ADDED
+}
+
 enum PlantAlarmType {
   TIEMPO_EXCEDIDO
   FASE_SIN_OPERARIO
@@ -857,6 +893,7 @@ model ProductionOrder {
   materials       ProductionOrderMaterial[]
   byproducts      ProductionByproduct[]
   qualityChecks   ProductionQualityCheck[]
+  productionLogs  ProductionLog[]
 
   @@index([tenantId, status])
   @@index([tenantId, plannedStartAt])
@@ -892,12 +929,37 @@ model PhaseExecution {
   sessions        OperatorSession[]
   alarmDispatches PlantAlarmDispatch[]
   incidents       ProductionIncident[]
+  productionLogs  ProductionLog[]
 
   @@index([orderId])
   @@index([tenantId, workStationId, status])
   @@index([tenantId, status, startedAt])
   @@index([responsibleUserId])
   @@map("phase_executions")
+}
+
+model ProductionLog {
+  id               String             @id @default(cuid())
+  tenantId         String
+  orderId          String
+  phaseExecutionId String?
+  employeeId       String
+  workStationId    String
+  event            ProductionLogEvent
+  timestamp        DateTime           @default(now())
+  notes            String?
+  durationSeconds  Int?
+  idempotencyKey   String?
+
+  order          ProductionOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  phaseExecution PhaseExecution? @relation(fields: [phaseExecutionId], references: [id])
+  employee       OperationalUser @relation(fields: [employeeId], references: [id])
+  workStation    WorkStation     @relation(fields: [workStationId], references: [id])
+
+  @@unique([tenantId, idempotencyKey])
+  @@index([tenantId, orderId, timestamp])
+  @@index([tenantId, orderId, event])
+  @@map("production_logs")
 }
 
 model ProductionOrderMaterial {
@@ -1021,38 +1083,38 @@ enum AttendanceEventType {
 // Definido independientemente de ProductionShift (dominio MES) para evitar
 // acoplamiento entre módulos de planta y nómina.
 enum AttendanceShift {
-  MORNING   // 06:00–14:00
+  MORNING // 06:00–14:00
   AFTERNOON // 14:00–22:00
-  NIGHT     // 22:00–06:00
+  NIGHT // 22:00–06:00
 }
 
 // Clasificación de horas extra según CST colombiano.
 // Usado en Task 02 (service) para cálculo de recargos.
 // FESTIVO_DIURNO / FESTIVO_NOCTURNO requieren calendario de festivos (NOM-04).
 enum AttendanceOvertimeType {
-  REGULAR          // Jornada ordinaria (≤ 8h/día)
-  DIURNO           // Extra diurna 06:00–21:00 — recargo 25% CST art. 168
-  NOCTURNO         // Extra nocturna 21:00–06:00 — recargo 75% CST art. 168
-  FESTIVO_DIURNO   // Trabajo en festivo diurno — recargo 75% CST art. 179
+  REGULAR // Jornada ordinaria (≤ 8h/día)
+  DIURNO // Extra diurna 06:00–21:00 — recargo 25% CST art. 168
+  NOCTURNO // Extra nocturna 21:00–06:00 — recargo 75% CST art. 168
+  FESTIVO_DIURNO // Trabajo en festivo diurno — recargo 75% CST art. 179
   FESTIVO_NOCTURNO // Trabajo en festivo nocturno — recargo 150% CST art. 179
 }
 
 model AttendanceLog {
-  id          String               @id @default(cuid())
-  tenantId    String
-  employeeId  String
-  locationId  String
-  eventType   AttendanceEventType
-  shift       AttendanceShift?
-  timestamp   DateTime             @default(now())
+  id         String              @id @default(cuid())
+  tenantId   String
+  employeeId String
+  locationId String
+  eventType  AttendanceEventType
+  shift      AttendanceShift?
+  timestamp  DateTime            @default(now())
   // workDate: fecha de jornada (sin hora), normalizada a America/Bogota.
   // Se asigna por ENTRY; el EXIT hereda la workDate del ENTRY abierto
   // para soportar turnos nocturnos que cruzan medianoche.
-  workDate    DateTime
-  notes       String?
-  isActive    Boolean              @default(true)
-  createdAt   DateTime             @default(now())
-  updatedAt   DateTime             @updatedAt
+  workDate   DateTime
+  notes      String?
+  isActive   Boolean             @default(true)
+  createdAt  DateTime            @default(now())
+  updatedAt  DateTime            @updatedAt
 
   employee EmployeeDetails @relation(fields: [employeeId], references: [id])
   location Location        @relation(fields: [locationId], references: [id])

@@ -43,6 +43,7 @@ export interface AdminCreateUserInput {
   documentType: DocumentType;
   email: string;
   roleId: string;
+  locationId?: string;
 }
 
 export interface AdminUpdateUserInput {

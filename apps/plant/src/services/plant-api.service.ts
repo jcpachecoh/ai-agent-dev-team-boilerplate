@@ -21,12 +21,15 @@ export class PlantApiError extends Error {
 
 export async function plantFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const url = base() ? `${base()}${path}` : path;
-  const token = useSessionStore.getState().operator?.accessToken;
+  const { operator } = useSessionStore.getState();
+  const token = operator?.accessToken;
+  const tenantId = operator?.tenantId;
   const res = await fetch(url, {
     ...init,
     headers: {
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(tenantId ? { 'x-tenant-id': tenantId } : {}),
       ...init?.headers,
     },
   });

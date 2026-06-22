@@ -81,12 +81,21 @@ export class PhaseChainService implements IPhaseChainService {
     );
 
     if (nextExecution) {
-      const nextStatus = executionDetail.phase.requiresQA
+      let nextStatus: PhaseExecutionStatus = executionDetail.phase.requiresQA
         ? PhaseExecutionStatus.QA_PENDING
         : PhaseExecutionStatus.READY;
 
+      if (
+        (orderDetail.status === ProductionOrderStatus.IN_PROCESS ||
+          orderDetail.status === ProductionOrderStatus.PAUSED) &&
+        nextStatus === PhaseExecutionStatus.READY
+      ) {
+        nextStatus = PhaseExecutionStatus.IN_PROCESS;
+      }
+
       await this.plantRepository.updateExecution(tenantId, nextExecution.id, {
         status: nextStatus,
+        ...(nextStatus === PhaseExecutionStatus.IN_PROCESS ? { startedAt: completedAt } : {}),
       });
 
       changedExecutions.push({
@@ -98,15 +107,19 @@ export class PhaseChainService implements IPhaseChainService {
       });
     }
 
-    const allCompleted = orderDetail.executions.every(
-      (item) => item.id === executionId || item.status === PhaseExecutionStatus.COMPLETED,
-    );
+    // Only close the order when there is no next phase in the chain and every other
+    // execution was already completed before this step finished.
+    if (!nextExecution) {
+      const hasIncompleteOthers = orderDetail.executions.some(
+        (item) => item.id !== executionId && item.status !== PhaseExecutionStatus.COMPLETED,
+      );
 
-    if (allCompleted) {
-      await this.plantRepository.updateOrder(tenantId, execution.orderId, {
-        status: ProductionOrderStatus.COMPLETED,
-        actualEndAt: completedAt,
-      });
+      if (!hasIncompleteOthers) {
+        await this.plantRepository.updateOrder(tenantId, execution.orderId, {
+          status: ProductionOrderStatus.COMPLETED,
+          actualEndAt: completedAt,
+        });
+      }
     }
 
     this.plantEventsService.emitPhaseStatusChanges(tenantId, changedExecutions);
@@ -170,8 +183,18 @@ export class PhaseChainService implements IPhaseChainService {
     );
 
     if (nextExecution?.status === PhaseExecutionStatus.QA_PENDING) {
+      let nextStatus: PhaseExecutionStatus = PhaseExecutionStatus.READY;
+      if (
+        (orderDetail.status === ProductionOrderStatus.IN_PROCESS ||
+          orderDetail.status === ProductionOrderStatus.PAUSED) &&
+        nextStatus === PhaseExecutionStatus.READY
+      ) {
+        nextStatus = PhaseExecutionStatus.IN_PROCESS;
+      }
+
       await this.plantRepository.updateExecution(tenantId, nextExecution.id, {
-        status: PhaseExecutionStatus.READY,
+        status: nextStatus,
+        ...(nextStatus === PhaseExecutionStatus.IN_PROCESS ? { startedAt: qaApprovedAt } : {}),
       });
 
       changedExecutions.push({
@@ -179,7 +202,7 @@ export class PhaseChainService implements IPhaseChainService {
         orderId: execution.orderId,
         phaseId: nextExecution.phaseId,
         workStationId: nextExecution.workStationId,
-        status: PhaseExecutionStatus.READY,
+        status: nextStatus,
       });
     }
 

@@ -265,8 +265,10 @@ export interface UpdateExecutionData {
   producedQuantity?: Decimal | null;
   qaApprovedAt?: Date | null;
   qaApprovedBy?: string | null;
+  startedAt?: Date | null;
   completedAt?: Date | null;
   notes?: string | null;
+  responsibleUserId?: string | null;
 }
 
 export interface PauseOrderInput {
@@ -592,6 +594,17 @@ export interface IPlantRepository {
   updateOrder(tenantId: string, id: string, data: UpdateOrderData): Promise<ProductionOrder>;
   findExecutionById(tenantId: string, id: string): Promise<PhaseExecution | null>;
   updateExecution(tenantId: string, id: string, data: UpdateExecutionData): Promise<PhaseExecution>;
+  findSupplyItemsWithPrincipalSupplier(
+    tenantId: string,
+    supplyItemIds: string[],
+  ): Promise<
+    Array<{
+      id: string;
+      nombre: string;
+      stockActualBodega: Decimal;
+      supplierProducts: Array<{ supplier: { razonSocial: string } }>;
+    }>
+  >;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

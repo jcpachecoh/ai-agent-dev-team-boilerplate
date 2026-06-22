@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   assignUserToLocation,
   createLocation,
+  deleteLocation,
   removeUserFromLocation,
   toggleLocationStatus,
   updateLocation,
@@ -75,6 +76,21 @@ export function useToggleLocationStatus() {
       void queryClient.invalidateQueries({ queryKey: sedesKeys.lists() });
       void queryClient.invalidateQueries({
         queryKey: sedesKeys.detail(restaurantId, location.id),
+      });
+    },
+  });
+}
+
+export function useDeleteLocation() {
+  const queryClient = useQueryClient();
+  const restaurantId = useRestaurantId();
+
+  return useMutation({
+    mutationFn: (id: string) => deleteLocation(id),
+    onSuccess: (_result, id) => {
+      void queryClient.invalidateQueries({ queryKey: sedesKeys.lists() });
+      void queryClient.invalidateQueries({
+        queryKey: sedesKeys.detail(restaurantId, id),
       });
     },
   });

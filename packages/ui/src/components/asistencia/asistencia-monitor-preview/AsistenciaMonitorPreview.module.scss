@@ -35,6 +35,17 @@
   --metric-value-size: 1.375rem;
 }
 
+.emptyMessage {
+  margin: 0;
+  padding: 24px 16px;
+  border: 1px dashed var(--asistencia-border);
+  border-radius: 4px;
+  color: var(--asistencia-subtle);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  text-align: center;
+}
+
 @media (max-width: 767px) {
   .monitor {
     gap: 10px;

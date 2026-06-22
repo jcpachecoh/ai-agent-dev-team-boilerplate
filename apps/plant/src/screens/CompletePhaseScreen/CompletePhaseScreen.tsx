@@ -62,6 +62,7 @@ export function CompletePhaseScreen({
   const stationId = useSessionStore((s) => s.stationId);
 
   const opId = usePhaseStore((s) => s.opId);
+  const stepId = usePhaseStore((s) => s.stepId);
   const productName = usePhaseStore((s) => s.productName);
   const phaseTitle = usePhaseStore((s) => s.phaseTitle);
   const stationAreaLabel = usePhaseStore((s) => s.stationAreaLabel);
@@ -122,6 +123,7 @@ export function CompletePhaseScreen({
       const idempotencyKey = `${opId}-${Date.now()}`;
       const result = await submitPhaseCompletion({
         opId,
+        stepId,
         stationId,
         quantity: actualAmount,
         unit,

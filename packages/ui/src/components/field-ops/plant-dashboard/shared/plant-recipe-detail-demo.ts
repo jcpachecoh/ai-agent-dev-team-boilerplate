@@ -4,6 +4,7 @@ const CHICHARRON_RECIPE: PlantRecipeDetail = {
   recipeName: 'Receta Chicharrón Casa',
   batchSize: '20 kg',
   stationId: 'EST-04',
+  stationName: 'Fritura',
   phases: [
     {
       id: 'chicharron-p1',
@@ -52,6 +53,7 @@ const POLLO_RECIPE: PlantRecipeDetail = {
   recipeName: 'Receta Base Pollo',
   batchSize: '15 kg',
   stationId: 'EST-02',
+  stationName: 'Corte y porcionado',
   phases: [
     {
       id: 'pollo-p1',
@@ -96,6 +98,7 @@ const COSTILLA_RECIPE: PlantRecipeDetail = {
   recipeName: 'Receta Costilla Premium',
   batchSize: '12 kg',
   stationId: 'EST-03',
+  stationName: 'Parrilla',
   phases: [
     {
       id: 'costilla-p1',
@@ -131,6 +134,7 @@ const MORCILLA_RECIPE: PlantRecipeDetail = {
   recipeName: 'Receta Morcilla Tradicional',
   batchSize: '10 kg',
   stationId: 'EST-05',
+  stationName: 'Embutidos',
   phases: [
     {
       id: 'morcilla-p1',

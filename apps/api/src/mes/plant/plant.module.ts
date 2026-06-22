@@ -23,6 +23,7 @@ import { AlarmRepository } from './repository/alarm.repository';
 import { IncidentRepository } from './repository/incident.repository';
 import { CommitteeRepository } from './repository/committee.repository';
 import { PlantRepository } from './repository/plant.repository';
+import { ProductionLogRepository } from './repository/production-log.repository';
 import { SupervisorRepository } from './repository/supervisor.repository';
 import { AlarmEvaluatorService } from './service/alarm-evaluator.service';
 import { AlarmNotificationService } from './service/alarm-notification.service';
@@ -32,6 +33,7 @@ import {
   PLANT_ALARM_QUEUE,
 } from './service/alarm.service';
 import { IncidentService } from './service/incident.service';
+import { OperatorOrderRuntimeService } from './service/operator-order-runtime.service';
 import { PhaseChainService } from './service/phase-chain.service';
 import { PlantEventsService } from './service/plant-events.service';
 import { CommitteeService } from './service/committee.service';
@@ -66,12 +68,14 @@ function createPlantAlarmEventsPort(plantEventsService: PlantEventsService): IPl
   controllers: [PlantController],
   providers: [
     PlantRepository,
+    ProductionLogRepository,
     SupervisorRepository,
     CommitteeRepository,
     AlarmRepository,
     IncidentRepository,
     CommitteeService,
     PlantService,
+    OperatorOrderRuntimeService,
     SupervisorService,
     ProductionOrderPdfService,
     IncidentService,

@@ -1,16 +1,14 @@
 import {
   RecetaActionButton,
   RecetaFilterSelect,
-  RecetaFormButton,
   RecetaMetricCard,
-  RecetaPhaseAddButton,
   RecetaPhaseModal,
+  RecetaRecipeWizard,
+  type RecetaRecipeWizardStepId,
   RecetaResultButton,
   RecetaSearch,
-  RecetaStepCard,
   RecetaTableHeader,
   type RecetaTableColumn,
-  RecetaTimelinePanel,
   RecetaUtilityButton,
 } from '@restopsiq/ui';
 import { useEffect, useMemo, useState } from 'react';
@@ -45,8 +43,10 @@ import { STOCK_UNIT_OPTIONS } from '@/types/inventory';
 import styles from './RecipesManagementScreen.module.scss';
 import { useUiTheme } from '@/hooks/useUiTheme';
 
-type RecipesView = 'list' | 'process' | 'history' | 'editor';
+type RecipesView = 'list' | 'process' | 'history';
 type ResponsibleRole = 'Operario' | 'Supervisor' | 'Manager';
+
+const WIZARD_STEP_ORDER: RecetaRecipeWizardStepId[] = ['general', 'phases', 'review'];
 
 const responsibleOptions = [
   { value: 'Operario', label: 'Operario' },
@@ -238,13 +238,21 @@ function formatQuantity(value: string): string {
 }
 
 const recipeListTableColumns: RecetaTableColumn[] = [
-  { key: 'id', label: 'ID', width: '120px' },
-  { key: 'nombre', label: 'Nombre', width: 'minmax(0, 2fr)' },
-  { key: 'categoria', label: 'Categoria', width: 'minmax(140px, 1fr)' },
-  { key: 'tiempo', label: 'Tiempo est.', width: '120px' },
-  { key: 'fases', label: 'Fases', width: '90px', align: 'center' },
-  { key: 'estado', label: 'Estado', width: '150px', align: 'center' },
-  { key: 'acciones', label: 'Acciones', width: '130px', align: 'right' },
+  { key: 'id', label: 'ID', width: '88px' },
+  {
+    key: 'nombre',
+    label: 'Nombre',
+    width: 'minmax(180px, 1.35fr)',
+    sortable: true,
+    active: true,
+    sortDirection: 'asc',
+  },
+  { key: 'categoria', label: 'Categoría', width: 'minmax(120px, 0.9fr)' },
+  { key: 'tiempo', label: 'Tiempo Est.', width: '112px', sortable: true },
+  { key: 'fases', label: 'Fases', width: '72px', align: 'center', sortable: true },
+  { key: 'version', label: 'Versión', width: '72px' },
+  { key: 'estado', label: 'Estado', width: '108px', align: 'center' },
+  { key: 'acciones', label: 'Acciones', width: '88px', align: 'right' },
 ];
 
 const processTableColumns: RecetaTableColumn[] = [
@@ -305,6 +313,10 @@ export function RecipesManagementScreen({
   const [statusFilter, setStatusFilter] = useState<'all' | RecetaStatus>('all');
 
   const [editingRecipeId, setEditingRecipeId] = useState<string | null>(null);
+  const [recipeEditorOpen, setRecipeEditorOpen] = useState(false);
+  const [wizardStep, setWizardStep] = useState<RecetaRecipeWizardStepId>('general');
+  const [maxReachedWizardStep, setMaxReachedWizardStep] =
+    useState<RecetaRecipeWizardStepId>('general');
   const [name, setName] = useState('');
   const [notes, setNotes] = useState('');
   const [batchSize, setBatchSize] = useState('1');
@@ -335,8 +347,8 @@ export function RecipesManagementScreen({
     warning: historyRows.filter((r) => r.result === 'warning').length,
     failed: historyRows.filter((r) => r.result === 'failed').length,
   };
-  const isListOrEditor = currentView === 'list' || currentView === 'editor';
-  const isEditor = currentView === 'editor';
+  const isListOrEditor = currentView === 'list' || recipeEditorOpen;
+  const isEditor = recipeEditorOpen;
 
   const recipesQuery = usePlantRecipes(isListOrEditor);
   const processQuery = usePlantProcess(currentView === 'process');
@@ -418,7 +430,7 @@ export function RecipesManagementScreen({
         ? recipeDetailQuery.error.message
         : 'No se pudo cargar la receta',
     );
-    setCurrentView('list');
+    setRecipeEditorOpen(false);
     setEditingRecipeId(null);
   }, [editingRecipeId, recipeDetailQuery.isError, recipeDetailQuery.error]);
 
@@ -509,6 +521,80 @@ export function RecipesManagementScreen({
     }
   };
 
+  const resetWizardNavigation = (): void => {
+    setWizardStep('general');
+    setMaxReachedWizardStep('general');
+  };
+
+  const advanceWizardStep = (step: RecetaRecipeWizardStepId): void => {
+    setWizardStep(step);
+    const currentMaxIndex = WIZARD_STEP_ORDER.indexOf(maxReachedWizardStep);
+    const nextIndex = WIZARD_STEP_ORDER.indexOf(step);
+    if (nextIndex > currentMaxIndex) {
+      setMaxReachedWizardStep(step);
+    }
+  };
+
+  const validateGeneralStep = (): boolean => {
+    if (!name.trim()) {
+      setSaveError('El nombre de la receta es obligatorio');
+      return false;
+    }
+    if (!finishedProductId) {
+      setSaveError('Selecciona un producto terminado (insumo)');
+      return false;
+    }
+    const parsedBatch = Number.parseFloat(batchSize.replace(',', '.'));
+    if (Number.isNaN(parsedBatch) || parsedBatch <= 0) {
+      setSaveError('El tamaño de lote debe ser mayor a cero');
+      return false;
+    }
+    const parsedMinutes = Number.parseInt(estimatedMinutes, 10);
+    if (Number.isNaN(parsedMinutes) || parsedMinutes < 1) {
+      setSaveError('El tiempo estimado debe ser al menos 1 minuto');
+      return false;
+    }
+    setSaveError(null);
+    return true;
+  };
+
+  const validatePhasesStep = (): boolean => {
+    if (phases.length === 0) {
+      setSaveError('Agrega al menos una fase al proceso');
+      return false;
+    }
+    setSaveError(null);
+    return true;
+  };
+
+  const handleWizardNext = (): void => {
+    if (wizardStep === 'general' && validateGeneralStep()) {
+      advanceWizardStep('phases');
+      return;
+    }
+    if (wizardStep === 'phases' && validatePhasesStep()) {
+      advanceWizardStep('review');
+    }
+  };
+
+  const handleWizardPrevious = (): void => {
+    const currentIndex = WIZARD_STEP_ORDER.indexOf(wizardStep);
+    const previousStep = WIZARD_STEP_ORDER[currentIndex - 1];
+    if (previousStep) {
+      setSaveError(null);
+      setWizardStep(previousStep);
+    }
+  };
+
+  const handleWizardStepChange = (step: RecetaRecipeWizardStepId): void => {
+    const targetIndex = WIZARD_STEP_ORDER.indexOf(step);
+    const maxIndex = WIZARD_STEP_ORDER.indexOf(maxReachedWizardStep);
+    if (targetIndex <= maxIndex) {
+      setSaveError(null);
+      setWizardStep(step);
+    }
+  };
+
   const openNewRecipeEditor = (): void => {
     setEditingRecipeId(null);
     setPersistedPhaseIds([]);
@@ -523,18 +609,22 @@ export function RecipesManagementScreen({
     setPhases([]);
     setFinishedProductId('');
     setSaveError(null);
-    setCurrentView('editor');
+    resetWizardNavigation();
+    setRecipeEditorOpen(true);
   };
 
   const openEditRecipeEditor = (recipeId: string): void => {
     setSaveError(null);
+    resetWizardNavigation();
     setEditingRecipeId(recipeId);
-    setCurrentView('editor');
+    setRecipeEditorOpen(true);
   };
 
   const handleDiscardEditor = (): void => {
     setSaveError(null);
-    setCurrentView('list');
+    resetWizardNavigation();
+    setRecipeEditorOpen(false);
+    setEditingRecipeId(null);
   };
 
   const handleSaveRecipe = async (): Promise<void> => {
@@ -612,7 +702,8 @@ export function RecipesManagementScreen({
       {
         onSuccess: () => {
           setEditingRecipeId(null);
-          setCurrentView('list');
+          resetWizardNavigation();
+          setRecipeEditorOpen(false);
         },
         onError: (error) => {
           setSaveError(error instanceof Error ? error.message : 'No se pudo guardar la receta');
@@ -1017,235 +1108,6 @@ export function RecipesManagementScreen({
       );
     }
 
-    if (currentView === 'editor') {
-      const editorTitle = editingRecipeId ? 'Editar Receta' : 'Nueva Receta';
-      const editorCode = editingRecipeId
-        ? (recipes.find((recipe) => recipe.id === editingRecipeId)?.code ??
-          (recipeDetailQuery.data ? formatRecipeCode(recipeDetailQuery.data) : '—'))
-        : 'Nueva';
-
-      return (
-        <>
-          <header className={styles.pageHeaderEditor}>
-            <div className={styles.editorLeft}>
-              <RecetaFormButton
-                variant="cancel"
-                theme={theme}
-                label="Volver"
-                onClick={handleDiscardEditor}
-              />
-              <div>
-                <h1>{editorTitle}</h1>
-                <p>{editorCode}</p>
-              </div>
-            </div>
-            <div className={styles.editorActions}>
-              <RecetaFormButton
-                variant="discard"
-                theme={theme}
-                label="Descartar"
-                onClick={handleDiscardEditor}
-              />
-              <RecetaFormButton
-                variant="save"
-                theme={theme}
-                label={saving ? 'Guardando...' : 'Guardar'}
-                disabled={saving || editorLoading}
-                onClick={() => void handleSaveRecipe()}
-              />
-            </div>
-          </header>
-          {saveError ? <p className={styles.loadError}>{saveError}</p> : null}
-          {editorLoading ? <p className={styles.loadError}>Cargando datos del editor...</p> : null}
-          <section className={styles.editorLayout}>
-            <div className={styles.editorMain}>
-              <section className={styles.panelCard}>
-                <h3 className={styles.panelCardTitle}>Datos de la receta</h3>
-                <div className={styles.editorFieldGrid}>
-                  <label className={styles.editorField}>
-                    <span>Nombre *</span>
-                    <input
-                      className={styles.editorInput}
-                      type="text"
-                      value={name}
-                      onChange={(event) => setName(event.target.value)}
-                      placeholder="Ej. Arroz pilaf"
-                    />
-                  </label>
-                  <label className={styles.editorField}>
-                    <span>Categoría</span>
-                    <select
-                      className={styles.editorSelect}
-                      value={categoryId}
-                      onChange={(event) => setCategoryId(event.target.value)}
-                    >
-                      <option value="">Sin categoría</option>
-                      {recipeCategories.map((category) => (
-                        <option key={category.id} value={category.id}>
-                          {category.nombre}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label className={styles.editorField}>
-                    <span>Producto terminado *</span>
-                    <select
-                      className={styles.editorSelect}
-                      value={finishedProductId}
-                      onChange={(event) => handleFinishedProductChange(event.target.value)}
-                    >
-                      <option value="">Seleccionar insumo</option>
-                      {supplyItems.map((item) => (
-                        <option key={item.id} value={item.id}>
-                          {item.nombre} ({item.codigoInterno})
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label className={styles.editorField}>
-                    <span>Tamaño de lote *</span>
-                    <input
-                      className={styles.editorInput}
-                      type="text"
-                      inputMode="decimal"
-                      placeholder="Ej. 10"
-                      value={batchSize}
-                      onChange={(event) => setBatchSize(event.target.value)}
-                    />
-                  </label>
-                  <label className={styles.editorField}>
-                    <span>Unidad del lote *</span>
-                    <select
-                      className={styles.editorSelect}
-                      value={batchUnit}
-                      onChange={(event) => setBatchUnit(event.target.value as StockUnit)}
-                    >
-                      {STOCK_UNIT_OPTIONS.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label className={styles.editorField}>
-                    <span>Peso aprox. por paquete (kg)</span>
-                    <input
-                      className={styles.editorInput}
-                      type="text"
-                      inputMode="decimal"
-                      placeholder="Ej. 440"
-                      value={packageWeight}
-                      onChange={(event) => setPackageWeight(event.target.value)}
-                    />
-                  </label>
-                  <label className={styles.editorField}>
-                    <span>Tiempo estimado (min) *</span>
-                    <input
-                      className={styles.editorInput}
-                      type="number"
-                      min={1}
-                      value={estimatedMinutes}
-                      onChange={(event) => setEstimatedMinutes(event.target.value)}
-                    />
-                  </label>
-                  <label className={styles.editorField}>
-                    <span>Estado *</span>
-                    <select
-                      className={styles.editorSelect}
-                      value={recipeActive ? 'active' : 'inactive'}
-                      onChange={(event) => setRecipeActive(event.target.value === 'active')}
-                    >
-                      <option value="active">Activa</option>
-                      <option value="inactive">Inactiva</option>
-                    </select>
-                  </label>
-                  {editingRecipeId ? (
-                    <label className={styles.editorField}>
-                      <span>Versión</span>
-                      <input
-                        className={styles.editorInput}
-                        type="text"
-                        value={
-                          recipes.find((recipe) => recipe.id === editingRecipeId)?.code ??
-                          (recipeDetailQuery.data ? formatRecipeCode(recipeDetailQuery.data) : '—')
-                        }
-                        readOnly
-                      />
-                    </label>
-                  ) : null}
-                  <label className={[styles.editorField, styles.editorFieldFull].join(' ')}>
-                    <span>Notas</span>
-                    <textarea
-                      className={[styles.editorInput, styles.editorTextarea].join(' ')}
-                      value={notes}
-                      onChange={(event) => setNotes(event.target.value)}
-                      placeholder="Notas de la receta (opcional)"
-                      rows={3}
-                    />
-                  </label>
-                </div>
-              </section>
-
-              <section className={styles.panelCard}>
-                <div className={styles.panelHeaderRow}>
-                  <h3>Fases del Proceso ({phases.length})</h3>
-                  <RecetaPhaseAddButton
-                    theme={theme}
-                    label="Agregar Fase"
-                    size="xl"
-                    onClick={openPhaseModal}
-                  />
-                </div>
-                <div className={styles.stepsList}>
-                  {phases.map((phase, index) => (
-                    <RecetaStepCard
-                      key={phase.id}
-                      theme={theme}
-                      selected
-                      stepNumber={index + 1}
-                      title={phase.title}
-                      description={phase.description}
-                      duration={`${phase.durationMin} min`}
-                      assignee={phase.assignee}
-                      onEdit={() => openPhaseModalForEdit(phase)}
-                      onDelete={() =>
-                        setPhases((prev) => prev.filter((item) => item.id !== phase.id))
-                      }
-                    />
-                  ))}
-                </div>
-              </section>
-            </div>
-
-            <aside className={styles.editorSidebar}>
-              <RecetaMetricCard
-                theme={theme}
-                variant="type-2"
-                title="Suma fases"
-                value={`${totalMinutes || 0} min`}
-                size="xl"
-              />
-              <RecetaMetricCard
-                theme={theme}
-                variant="type-1"
-                title="Fases definidas"
-                value={phases.length}
-                size="xl"
-              />
-              <RecetaTimelinePanel
-                theme={theme}
-                title="Linea de Tiempo"
-                items={phases.map((phase) => ({
-                  label: phase.title,
-                  duration: `${phase.durationMin} min`,
-                }))}
-              />
-            </aside>
-          </section>
-        </>
-      );
-    }
-
     return (
       <>
         <header className={styles.pageHeader}>
@@ -1340,6 +1202,7 @@ export function RecipesManagementScreen({
                   theme={theme}
                   visibleColumns={visibleColumns}
                   columnsTemplate={columnsTemplate}
+                  maxDurationMin={Math.max(120, ...filteredRecipes.map((item) => item.durationMin))}
                   onEdit={() => openEditRecipeEditor(recipe.id)}
                 />
               </div>
@@ -1358,10 +1221,111 @@ export function RecipesManagementScreen({
     );
   };
 
+  const editorCode = editingRecipeId
+    ? (recipes.find((recipe) => recipe.id === editingRecipeId)?.code ??
+      (recipeDetailQuery.data ? formatRecipeCode(recipeDetailQuery.data) : '—'))
+    : 'Nueva';
+  const selectedCategory = recipeCategories.find((category) => category.id === categoryId);
+  const selectedProduct = supplyItems.find((item) => item.id === finishedProductId);
+  const batchUnitLabel =
+    STOCK_UNIT_OPTIONS.find((option) => option.value === batchUnit)?.label ?? batchUnit;
+  const formattedPackageWeight = formatOptionalPackageWeight(packageWeight);
+
   return (
     <div className={styles.screen}>
       {loadError ? <p className={styles.loadError}>{loadError}</p> : null}
       <main className={styles.content}>{renderMainContent()}</main>
+
+      <RecetaRecipeWizard
+        open={recipeEditorOpen}
+        onClose={handleDiscardEditor}
+        mode={editingRecipeId ? 'edit' : 'create'}
+        code={editorCode}
+        currentStep={wizardStep}
+        maxReachedStep={maxReachedWizardStep}
+        onStepChange={handleWizardStepChange}
+        theme={theme}
+        loading={editorLoading}
+        saving={saving}
+        error={saveError}
+        onSave={() => void handleSaveRecipe()}
+        onNext={handleWizardNext}
+        onPrevious={handleWizardPrevious}
+        generalStep={{
+          name,
+          onNameChange: setName,
+          categoryId,
+          onCategoryChange: setCategoryId,
+          categoryOptions: recipeCategories.map((category) => ({
+            value: category.id,
+            label: category.nombre,
+          })),
+          finishedProductId,
+          onFinishedProductChange: handleFinishedProductChange,
+          supplyItemOptions: supplyItems.map((item) => ({
+            value: item.id,
+            label: `${item.nombre} (${item.codigoInterno})`,
+          })),
+          batchSize,
+          onBatchSizeChange: setBatchSize,
+          batchUnit,
+          onBatchUnitChange: (value) => setBatchUnit(value as StockUnit),
+          batchUnitOptions: STOCK_UNIT_OPTIONS.map((option) => ({
+            value: option.value,
+            label: option.label,
+          })),
+          packageWeight,
+          onPackageWeightChange: setPackageWeight,
+          estimatedMinutes,
+          onEstimatedMinutesChange: setEstimatedMinutes,
+          isActive: recipeActive,
+          onIsActiveChange: setRecipeActive,
+          notes,
+          onNotesChange: setNotes,
+          showVersion: Boolean(editingRecipeId),
+          versionLabel: editorCode,
+        }}
+        phasesStep={{
+          phases: phases.map((phase) => ({
+            id: phase.id,
+            title: phase.title,
+            description: phase.description,
+            durationMin: phase.durationMin,
+            assignee: phase.assignee,
+          })),
+          onAddPhase: openPhaseModal,
+          onEditPhase: (phaseId) => {
+            const phase = phases.find((item) => item.id === phaseId);
+            if (phase) {
+              openPhaseModalForEdit(phase);
+            }
+          },
+          onDeletePhase: (phaseId) => {
+            setPhases((prev) => prev.filter((item) => item.id !== phaseId));
+          },
+          totalMinutes,
+        }}
+        reviewStep={{
+          name: name.trim() || 'Sin nombre',
+          categoryLabel: selectedCategory?.nombre,
+          finishedProductLabel: selectedProduct
+            ? `${selectedProduct.nombre} (${selectedProduct.codigoInterno})`
+            : undefined,
+          batchLabel: `${batchSize} ${batchUnitLabel}`,
+          packageWeightLabel: formattedPackageWeight ? `${formattedPackageWeight} kg` : undefined,
+          estimatedMinutes: parseEstimatedMinutes(estimatedMinutes, totalMinutes),
+          isActive: recipeActive,
+          notes,
+          versionLabel: editingRecipeId ? editorCode : undefined,
+          phases: phases.map((phase) => ({
+            id: phase.id,
+            title: phase.title,
+            description: phase.description,
+            durationMin: phase.durationMin,
+            assignee: phase.assignee,
+          })),
+        }}
+      />
 
       <RecetaPhaseModal
         open={phaseModalOpen}

@@ -65,6 +65,15 @@ export function InventoryReportsScreen(): React.JSX.Element {
         />
       </section>
 
+      <section className={shared.contentSection}>
+        <InventarioExportActions
+          onExportCsv={handleExportCsv}
+          onExportPdf={handleExportPdf}
+          theme={theme}
+          size="md"
+        />
+      </section>
+
       <section className={shared.toolbarSection}>
         <InventarioReportFilterBar
           reportTypeValue={reportType}
@@ -74,15 +83,6 @@ export function InventoryReportsScreen(): React.JSX.Element {
           onStartDateChange={setDateStart}
           onEndDateChange={setDateEnd}
           onGenerate={() => void handleGenerate()}
-          theme={theme}
-          size="md"
-        />
-      </section>
-
-      <section className={shared.contentSection}>
-        <InventarioExportActions
-          onExportCsv={handleExportCsv}
-          onExportPdf={handleExportPdf}
           theme={theme}
           size="md"
         />

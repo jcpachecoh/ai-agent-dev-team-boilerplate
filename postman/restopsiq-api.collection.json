@@ -525,7 +525,9 @@
               "listen": "test",
               "script": {
                 "type": "text/javascript",
-                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ]
               }
             }
           ],
@@ -778,7 +780,9 @@
                   "listen": "test",
                   "script": {
                     "type": "text/javascript",
-                    "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]
+                    "exec": [
+                      "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                    ]
                   }
                 }
               ],
@@ -1185,7 +1189,9 @@
                   "listen": "test",
                   "script": {
                     "type": "text/javascript",
-                    "exec": ["pm.test('Status 401', () => pm.response.to.have.status(401));"]
+                    "exec": [
+                      "pm.test('Status 401', () => pm.response.to.have.status(401));"
+                    ]
                   }
                 }
               ],
@@ -1225,7 +1231,9 @@
                   "listen": "test",
                   "script": {
                     "type": "text/javascript",
-                    "exec": ["pm.test('Status 401', () => pm.response.to.have.status(401));"]
+                    "exec": [
+                      "pm.test('Status 401', () => pm.response.to.have.status(401));"
+                    ]
                   }
                 }
               ],
@@ -1605,7 +1613,9 @@
                   "listen": "test",
                   "script": {
                     "type": "text/javascript",
-                    "exec": ["pm.test('Status 401', () => pm.response.to.have.status(401));"]
+                    "exec": [
+                      "pm.test('Status 401', () => pm.response.to.have.status(401));"
+                    ]
                   }
                 }
               ]
@@ -1644,7 +1654,9 @@
                   "listen": "test",
                   "script": {
                     "type": "text/javascript",
-                    "exec": ["pm.test('Status 401', () => pm.response.to.have.status(401));"]
+                    "exec": [
+                      "pm.test('Status 401', () => pm.response.to.have.status(401));"
+                    ]
                   }
                 }
               ]
@@ -1683,7 +1695,9 @@
                   "listen": "test",
                   "script": {
                     "type": "text/javascript",
-                    "exec": ["pm.test('Status 401', () => pm.response.to.have.status(401));"]
+                    "exec": [
+                      "pm.test('Status 401', () => pm.response.to.have.status(401));"
+                    ]
                   }
                 }
               ]
@@ -1722,7 +1736,9 @@
                   "listen": "test",
                   "script": {
                     "type": "text/javascript",
-                    "exec": ["pm.test('Status 401', () => pm.response.to.have.status(401));"]
+                    "exec": [
+                      "pm.test('Status 401', () => pm.response.to.have.status(401));"
+                    ]
                   }
                 }
               ]
@@ -2027,7 +2043,7 @@
                       "pm.test('Has masked cedula', () => pm.expect(body.cedula).to.match(/^\\*+\\d{4}$/));",
                       "pm.test('Has role OPERATOR', () => pm.expect(body.role).to.eql('OPERATOR'));",
                       "pm.test('Has tenantId', () => pm.expect(body).to.have.property('tenantId'));",
-                      "pm.test('Has sedeId', () => pm.expect(body.sedeId).to.eql('sede-principal'));",
+                      "pm.test('Has locationId', () => pm.expect(body).to.have.property('locationId'));",
                       "if (body.id) {",
                       "  pm.collectionVariables.set('mesCreatedUserId', body.id);",
                       "  pm.environment.set('mesCreatedUserId', body.id);",
@@ -2056,7 +2072,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"cedula\": \"{{mesNewUserCedula}}\",\n  \"pin\": \"{{mesNewUserPin}}\",\n  \"role\": \"OPERATOR\",\n  \"sedeId\": \"sede-principal\"\n}",
+                  "raw": "{\n  \"cedula\": \"{{mesNewUserCedula}}\",\n  \"pin\": \"{{mesNewUserPin}}\",\n  \"role\": \"OPERATOR\",\n  \"locationId\": \"{{locationId}}\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -2064,6 +2080,52 @@
                   }
                 },
                 "url": "{{baseUrl}}/api/mes/users"
+              },
+              "response": []
+            },
+            {
+              "name": "Reset PIN",
+              "description": "PATCH /api/mes/users/:userId/reset-pin — OWNER only.\nResets the PIN of {{mesCreatedUserId}} (created in Create User step).\nInvalidates target’s refreshToken. Expects 204 No Content.",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 204', () => pm.response.to.have.status(204));",
+                      "pm.test('Empty body', () => pm.expect(pm.response.text()).to.be.empty);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{mesAccessToken}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"pin\": \"9012\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": "{{baseUrl}}/api/mes/users/{{mesCreatedUserId}}/reset-pin"
               },
               "response": []
             }
@@ -2128,7 +2190,9 @@
                   "listen": "test",
                   "script": {
                     "type": "text/javascript",
-                    "exec": ["pm.test('Status 400', () => pm.response.to.have.status(400));"]
+                    "exec": [
+                      "pm.test('Status 400', () => pm.response.to.have.status(400));"
+                    ]
                   }
                 }
               ],
@@ -2153,6 +2217,145 @@
                   }
                 },
                 "url": "{{baseUrl}}/api/mes/auth/login"
+              },
+              "response": []
+            },
+            {
+              "name": "Reset PIN — Operator forbidden (negative)",
+              "description": "PATCH /api/mes/users/:userId/reset-pin with OPERATOR token — expects 403.",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 403', () => pm.response.to.have.status(403));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{mesTokenOperator}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"pin\": \"9012\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": "{{baseUrl}}/api/mes/users/{{mesCreatedUserId}}/reset-pin"
+              },
+              "response": []
+            },
+            {
+              "name": "Reset PIN — Invalid PIN format (negative)",
+              "description": "PATCH /api/mes/users/:userId/reset-pin with non-numeric PIN — expects 400.",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 400', () => pm.response.to.have.status(400));",
+                      "pm.test('Validation message', () => {",
+                      "  const body = pm.response.json();",
+                      "  pm.expect(JSON.stringify(body)).to.include('pin');",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{mesAccessToken}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"pin\": \"abc\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": "{{baseUrl}}/api/mes/users/{{mesCreatedUserId}}/reset-pin"
+              },
+              "response": []
+            },
+            {
+              "name": "Reset PIN — User not found (negative)",
+              "description": "PATCH /api/mes/users/:userId/reset-pin with non-existent userId — expects 404.",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 404', () => pm.response.to.have.status(404));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{mesAccessToken}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"pin\": \"9012\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": "{{baseUrl}}/api/mes/users/00000000-0000-0000-0000-000000000000/reset-pin"
               },
               "response": []
             }
@@ -2279,7 +2482,9 @@
               "listen": "prerequest",
               "script": {
                 "type": "text/javascript",
-                "exec": ["pm.collectionVariables.set('supplyItemCode', 'SI-BOX-' + Date.now());"]
+                "exec": [
+                  "pm.collectionVariables.set('supplyItemCode', 'SI-BOX-' + Date.now());"
+                ]
               }
             },
             {
@@ -2698,7 +2903,9 @@
               "listen": "test",
               "script": {
                 "type": "text/javascript",
-                "exec": ["pm.test('Status 401', () => pm.response.to.have.status(401));"]
+                "exec": [
+                  "pm.test('Status 401', () => pm.response.to.have.status(401));"
+                ]
               }
             }
           ],
@@ -2992,7 +3199,9 @@
               "listen": "test",
               "script": {
                 "type": "text/javascript",
-                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ]
               }
             }
           ],
@@ -3063,7 +3272,9 @@
               "listen": "test",
               "script": {
                 "type": "text/javascript",
-                "exec": ["pm.test('Status 204', () => pm.response.to.have.status(204));"]
+                "exec": [
+                  "pm.test('Status 204', () => pm.response.to.have.status(204));"
+                ]
               }
             }
           ],
@@ -3142,7 +3353,9 @@
               "listen": "test",
               "script": {
                 "type": "text/javascript",
-                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ]
               }
             }
           ],
@@ -3233,7 +3446,9 @@
               "listen": "test",
               "script": {
                 "type": "text/javascript",
-                "exec": ["pm.test('Status 404', () => pm.response.to.have.status(404));"]
+                "exec": [
+                  "pm.test('Status 404', () => pm.response.to.have.status(404));"
+                ]
               }
             }
           ],
@@ -3370,7 +3585,9 @@
               "listen": "test",
               "script": {
                 "type": "text/javascript",
-                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ]
               }
             }
           ],
@@ -3399,7 +3616,9 @@
               "listen": "test",
               "script": {
                 "type": "text/javascript",
-                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ]
               }
             }
           ],
@@ -3428,7 +3647,9 @@
               "listen": "test",
               "script": {
                 "type": "text/javascript",
-                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ]
               }
             }
           ],
@@ -3727,8 +3948,14 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/plant/orders?status=DRAFT&shift=MORNING",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "plant", "orders"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "plant",
+                "orders"
+              ],
               "query": [
                 {
                   "key": "status",
@@ -3989,6 +4216,201 @@
       ]
     },
     {
+      "name": "06b — Operator Runtime (MES-11)",
+      "description": "MES-11 operator tablet runtime.\n\nPrerequisites: **06 — Production Orders** through **Plan Order** (order in PLANNED). Use **MES Auth → Login Operator** ({{mesAccessToken}}).\n\nVariables: {{orderId}}, {{workstationId}}, {{stepId}} (phase execution id from GET recipe).\n\nRun top-to-bottom. Start requires PLANNED; pause/resume require IN_PROCESS/PAUSED; complete-step needs current stepId; finish needs all steps COMPLETED.",
+      "item": [
+        {
+          "name": "Get Order Recipe View",
+          "description": "GET /api/plant/orders/:id/recipe",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Has phases', () => pm.expect(body.phases).to.be.an('array'));",
+                  "const current = body.phases.find((p) => p.status === 'current') || body.phases[0];",
+                  "if (current && current.id) {",
+                  "  pm.collectionVariables.set('stepId', current.id);",
+                  "  pm.environment.set('stepId', current.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{mesAccessToken}}", "type": "string" }]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/plant/orders/{{orderId}}/recipe"
+          },
+          "response": []
+        },
+        {
+          "name": "Start Order (Operator)",
+          "description": "POST /api/plant/orders/:id/start",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200 or 409', () => pm.expect([200, 409]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{mesAccessToken}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Idempotency-Key", "value": "mes11-start-{{orderId}}" }
+            ],
+            "url": "{{baseUrl}}/api/plant/orders/{{orderId}}/start",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workStationId\": \"{{workstationId}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Pause Order (Operator)",
+          "description": "POST /api/plant/orders/:id/operator/pause",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200 or 409', () => pm.expect([200, 409]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{mesAccessToken}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Idempotency-Key", "value": "mes11-pause-{{orderId}}" }
+            ],
+            "url": "{{baseUrl}}/api/plant/orders/{{orderId}}/operator/pause",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"notes\": \"Pausa operario Postman\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Resume Order (Operator)",
+          "description": "POST /api/plant/orders/:id/operator/resume",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200 or 409', () => pm.expect([200, 409]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{mesAccessToken}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [{ "key": "Idempotency-Key", "value": "mes11-resume-{{orderId}}" }],
+            "url": "{{baseUrl}}/api/plant/orders/{{orderId}}/operator/resume"
+          },
+          "response": []
+        },
+        {
+          "name": "Complete Step (Operator)",
+          "description": "POST /api/plant/orders/:id/complete-step",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200 or 409', () => pm.expect([200, 409]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{mesAccessToken}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Idempotency-Key", "value": "mes11-step-{{stepId}}" }
+            ],
+            "url": "{{baseUrl}}/api/plant/orders/{{orderId}}/complete-step",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stepId\": \"{{stepId}}\",\n  \"actualMinutes\": 5\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Finish Order (Operator)",
+          "description": "POST /api/plant/orders/:id/finish — requires all steps COMPLETED.",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200 or 409', () => pm.expect([200, 409]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{mesAccessToken}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Idempotency-Key", "value": "mes11-finish-{{orderId}}" }
+            ],
+            "url": "{{baseUrl}}/api/plant/orders/{{orderId}}/finish",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"notes\": \"Cierre operario Postman\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
       "name": "07 — Incidents & Alarms (MES-08)",
       "description": "MES-08 incidents API + RBAC smoke.\n\nPrerequisites (run first):\n1. **MES Auth → Login Owner** (mesTokenSupervisor)\n2. **MES Auth → Login Operator** (mesTokenOperator)\n3. **Plant — Production Orders** (workStationId, orderId, executionId)\n\nAuth: operator requests use Bearer {{mesTokenOperator}}; supervisor requests use Bearer {{mesTokenSupervisor}}.\n\nAlarms/cron/WebSocket/dedup are manual — see tasks/mes-plant/MES-08-alarms-incidents/10-manual-testing.md.",
       "item": [
@@ -4054,7 +4476,9 @@
               "listen": "test",
               "script": {
                 "type": "text/javascript",
-                "exec": ["pm.test('Status 403', () => pm.response.to.have.status(403));"]
+                "exec": [
+                  "pm.test('Status 403', () => pm.response.to.have.status(403));"
+                ]
               }
             }
           ],
@@ -4112,8 +4536,14 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/plant/incidents?orderId={{orderId}}&workStationId={{workStationId}}&type=QUALITY&severity=WARNING&resolved=false",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "plant", "incidents"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "plant",
+                "incidents"
+              ],
               "query": [
                 {
                   "key": "orderId",
@@ -4197,7 +4627,9 @@
               "listen": "test",
               "script": {
                 "type": "text/javascript",
-                "exec": ["pm.test('Status 403', () => pm.response.to.have.status(403));"]
+                "exec": [
+                  "pm.test('Status 403', () => pm.response.to.have.status(403));"
+                ]
               }
             }
           ],
@@ -5607,6 +6039,439 @@
       ]
     },
     {
+      "name": "12 — Inventory Alerts (Resueltas)",
+      "item": [
+        {
+          "name": "[DOC] Inventory Alerts — Contexto y flujo",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/",
+            "description": "# Flujo de prueba — Alertas de Inventario (Resueltas)\n\n## Requisitos previos\n- API corriendo en `{{baseUrl}}` (default: http://localhost:3001)\n- Environment: `RestOpsIQ — Local` con `tenantId = palos-de-lena`\n- Seed ejecutado: `pnpm prisma db seed`\n\n## Variables capturadas automáticamente\n| Variable | Capturada en | Descripción |\n|---|---|---|\n| `alertSupplyItemId` | Paso 01 | ID del insumo de prueba con stock bajo |\n| `alertSupplyItemCode` | Paso 01 | Código interno único por run |\n| `alertId` | Paso 02 | ID de la alerta activa (`alert-<supplyItemId>`) |\n\n## Flujo completo\n```\n01 → Crear insumo con stock bajo  (POST /api/supply-items)\n02 → Ver alertas activas            (GET  /inventory/alerts)          → alerta crítica visible\n03 → Ver resumen                   (GET  /inventory/alerts/summary)   → critical:1, warning:0\n04 → Resolver SIN nota             (PATCH /inventory/alerts/{{alertId}}/resolve)  body: {}\n05 → Ver activas (suprimida hoy)   (GET  /inventory/alerts)          → alerta no aparece\n06 → Resolver CON nota             (PATCH /inventory/alerts/{{alertId}}/resolve)  body: {note:\"...\"}\n07 → Ver resueltas                 (GET  /inventory/alerts/resolved)  → 2 registros con y sin nota\n08 → Ver resueltas paginado        (GET  /inventory/alerts/resolved?take=1)\n09 → Cleanup: Restaurar stock      (PATCH /api/supply-items/{{alertSupplyItemId}})\n```\n\n## Notas técnicas\n- `resolvedById` siempre es `null` — este controller no usa JWT (solo `x-tenant-id`).\n- Una alerta resuelta HOY se suprime en `GET /alerts`. Si el stock sigue bajo mañana, reaparece.\n- Se pueden crear múltiples resoluciones para el mismo ítem; cada una queda en historial.\n- El campo `note` es opcional (max 500 chars). Sin body o con `{}` funciona igual."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[DOC] Documentation-only — no API assertion required', () => { pm.expect(true).to.be.true; });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "01 — Setup: Crear insumo con stock bajo",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Unique code per run to avoid @@unique([tenantId, codigoInterno]) conflict",
+                  "const code = 'ALERT-TEST-' + Date.now();",
+                  "pm.collectionVariables.set('alertSupplyItemCode', code);",
+                  "console.log('[Inventory Alerts] Creating low-stock item with code:', code);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Has id', () => pm.expect(pm.response.json()).to.have.property('id'));",
+                  "const body = pm.response.json();",
+                  "pm.test('stockActualBodega is 2', () => pm.expect(body.stockActualBodega).to.equal(2));",
+                  "if (body.id) {",
+                  "  pm.collectionVariables.set('alertSupplyItemId', body.id);",
+                  "  pm.collectionVariables.set('alertId', 'alert-' + body.id);",
+                  "  console.log('[Inventory Alerts] Captured alertSupplyItemId:', body.id);",
+                  "  console.log('[Inventory Alerts] Captured alertId:', 'alert-' + body.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Pollo Entero (alert-test)\",\n  \"codigoInterno\": \"{{alertSupplyItemCode}}\",\n  \"categoriaId\": \"{{categoryId}}\",\n  \"descripcion\": \"Ítem de prueba para alertas — eliminar con paso 09\",\n  \"unidadBase\": \"KILOGRAMS\",\n  \"factorConversion\": \"1\",\n  \"costoPromedioPonderado\": \"12000\",\n  \"stockMinimoBodega\": \"20\",\n  \"stockMaximoBodega\": \"100\",\n  \"stockActualBodega\": \"2\",\n  \"aplicaVencimiento\": false,\n  \"aplicaLote\": false,\n  \"isActive\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/supply-items",
+            "description": "Crea un insumo con `stockActualBodega: 2` y `stockMinimoBodega: 20`.\nRatio = 2/20 = 0.1 → severidad **critical** (≤ 50% del mínimo).\n\nEl pre-request genera un `codigoInterno` único por run (`ALERT-TEST-<timestamp>`).\nEl test script captura `alertSupplyItemId` y `alertId` para los pasos siguientes."
+          },
+          "response": []
+        },
+        {
+          "name": "02 — GET Alertas activas (alerta crítica visible)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response is array', () => pm.expect(pm.response.json()).to.be.an('array'));",
+                  "const alerts = pm.response.json();",
+                  "const alertId = pm.collectionVariables.get('alertId');",
+                  "const found = alerts.find(a => a.id === alertId);",
+                  "pm.test('Alert for our item is present', () => pm.expect(found).to.exist);",
+                  "if (found) {",
+                  "  pm.test('Severity is critical', () => pm.expect(found.severity).to.equal('critical'));",
+                  "  pm.test('isResolved is false', () => pm.expect(found.isResolved).to.be.false);",
+                  "  pm.test('Has product name', () => pm.expect(found.product).to.equal('Pollo Entero (alert-test)'));",
+                  "  pm.test('currentStock is 2', () => pm.expect(found.currentStock).to.equal(2));",
+                  "  pm.test('threshold is 20', () => pm.expect(found.threshold).to.equal(20));",
+                  "  console.log('[Inventory Alerts] Alert found:', JSON.stringify(found, null, 2));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/inventory/alerts",
+            "description": "Devuelve alertas activas (stock < mínimo, no resueltas hoy).\n\nDebe incluir la alerta del ítem creado en el paso 01 con severity `critical`.\n\n⚠️ Si el ítem ya fue resuelto hoy (paso 04/06), no aparecerá aquí."
+          },
+          "response": []
+        },
+        {
+          "name": "03 — GET Resumen de alertas",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Has critical count', () => pm.expect(body).to.have.property('critical'));",
+                  "pm.test('Has warning count', () => pm.expect(body).to.have.property('warning'));",
+                  "pm.test('Has resolvedToday count', () => pm.expect(body).to.have.property('resolvedToday'));",
+                  "pm.test('critical >= 1', () => pm.expect(body.critical).to.be.at.least(1));",
+                  "console.log('[Inventory Alerts] Summary:', JSON.stringify(body));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/inventory/alerts/summary",
+            "description": "Devuelve conteos: `{ critical, warning, resolvedToday }`.\n`resolvedToday` se lee desde la base de datos (persistente, no en memoria)."
+          },
+          "response": []
+        },
+        {
+          "name": "04 — PATCH Resolver SIN nota (body vacío)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Returns ok:true', () => pm.expect(pm.response.json()).to.deep.equal({ ok: true }));",
+                  "console.log('[Inventory Alerts] Resolved without note — ok:', pm.response.json());"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/inventory/alerts/{{alertId}}/resolve",
+            "description": "Resuelve la alerta **sin razón**. El body `{}` es válido — `note` es opcional.\n\nCrea un registro en `inventory_alert_resolutions` con:\n- `note = null`\n- `resolvedById = null` (sin JWT en este controller)\n- `resolvedAt = now()`\n\nDespués de este paso, la alerta ya no aparece en `GET /inventory/alerts` (suprimida hoy)."
+          },
+          "response": []
+        },
+        {
+          "name": "05 — GET Alertas activas (alerta suprimida hoy)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const alerts = pm.response.json();",
+                  "const alertId = pm.collectionVariables.get('alertId');",
+                  "const found = alerts.find(a => a.id === alertId);",
+                  "pm.test('Alert is suppressed (not in active list)', () => pm.expect(found).to.be.undefined);",
+                  "console.log('[Inventory Alerts] Active alerts after resolve:', alerts.length, '(alert suppressed for today)');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/inventory/alerts",
+            "description": "Verifica que la alerta resuelta **no aparece** en la lista activa.\n\nLa alerta está suprimida para hoy. Si el stock sigue bajo mañana, reaparece automáticamente."
+          },
+          "response": []
+        },
+        {
+          "name": "06 — PATCH Resolver CON nota",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Returns ok:true', () => pm.expect(pm.response.json()).to.deep.equal({ ok: true }));",
+                  "console.log('[Inventory Alerts] Resolved WITH note — ok:', pm.response.json());"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"note\": \"Se recibió compra de emergencia — stock repuesto manualmente\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/inventory/alerts/{{alertId}}/resolve",
+            "description": "Resuelve la alerta **con razón de resolución** (campo `note`, max 500 chars).\n\nEste request crea un **segundo** registro en `inventory_alert_resolutions` para el mismo ítem.\nAmbos registros (sin nota y con nota) aparecerán en `GET /inventory/alerts/resolved`.\n\nVariantes de nota que puedes probar:\n- `\"Se realizó ajuste de inventario\"`\n- `\"Se recibió compra de emergencia\"`\n- `\"Reconteo físico — stock corregido\"`"
+          },
+          "response": []
+        },
+        {
+          "name": "07 — GET Alertas resueltas (historial completo)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response is array', () => pm.expect(pm.response.json()).to.be.an('array'));",
+                  "const resolutions = pm.response.json();",
+                  "const supplyItemId = pm.collectionVariables.get('alertSupplyItemId');",
+                  "const forOurItem = resolutions.filter(r => r.supplyItemId === supplyItemId);",
+                  "pm.test('Has at least 2 resolutions for our item (sin nota + con nota)', () => {",
+                  "  pm.expect(forOurItem.length).to.be.at.least(2);",
+                  "});",
+                  "const withNote = forOurItem.find(r => r.note !== null && r.note !== undefined);",
+                  "const withoutNote = forOurItem.find(r => r.note === null || r.note === undefined);",
+                  "pm.test('One resolution has note', () => pm.expect(withNote).to.exist);",
+                  "pm.test('One resolution has no note (null/undefined)', () => pm.expect(withoutNote).to.exist);",
+                  "if (withNote) {",
+                  "  pm.test('Note content matches', () => pm.expect(withNote.note).to.include('compra de emergencia'));",
+                  "}",
+                  "pm.test('Each resolution has resolvedAt', () => {",
+                  "  forOurItem.forEach(r => pm.expect(r).to.have.property('resolvedAt'));",
+                  "});",
+                  "pm.test('resolvedById is null (no JWT in this controller)', () => {",
+                  "  forOurItem.forEach(r => pm.expect(r.resolvedById).to.be.undefined);",
+                  "});",
+                  "console.log('[Inventory Alerts] Resolutions for our item:', JSON.stringify(forOurItem, null, 2));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/inventory/alerts/resolved",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "inventory",
+                "alerts",
+                "resolved"
+              ]
+            },
+            "description": "Devuelve el historial completo de resoluciones del tenant (orden descendente por `resolvedAt`).\n\nCampos por registro:\n- `id` — ID de la resolución\n- `supplyItemId` — ID del insumo\n- `product` — nombre del insumo\n- `currentStock` / `threshold` — valores actuales del ítem\n- `supplier` — proveedor principal\n- `resolvedAt` — ISO timestamp de cuándo se resolvió\n- `resolvedById` — `null` (sin JWT) — cuando se implemente auth, traerá el ID del usuario\n- `note` — razón de resolución (`undefined` si no se ingresó)\n\nDeben aparecer al menos 2 registros: uno sin nota (paso 04) y uno con nota (paso 06)."
+          },
+          "response": []
+        },
+        {
+          "name": "08 — GET Alertas resueltas paginado (take=1)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const resolutions = pm.response.json();",
+                  "pm.test('Returns at most 1 item (take=1)', () => pm.expect(resolutions.length).to.be.at.most(1));",
+                  "pm.test('First item has required fields', () => {",
+                  "  if (resolutions.length > 0) {",
+                  "    const r = resolutions[0];",
+                  "    pm.expect(r).to.have.property('id');",
+                  "    pm.expect(r).to.have.property('product');",
+                  "    pm.expect(r).to.have.property('resolvedAt');",
+                  "  }",
+                  "});",
+                  "console.log('[Inventory Alerts] Paged result (take=1):', JSON.stringify(resolutions));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/inventory/alerts/resolved?take=1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "inventory",
+                "alerts",
+                "resolved"
+              ],
+              "query": [
+                {
+                  "key": "take",
+                  "value": "1"
+                },
+                {
+                  "key": "cursor",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Paginación cursor-based: `take=1` devuelve solo el registro más reciente.\n\nPara paginar: copiar el `id` del último registro devuelto y pasarlo como `cursor=<id>` en la siguiente llamada."
+          },
+          "response": []
+        },
+        {
+          "name": "09 — Cleanup: Restaurar stock (desactiva alerta)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('stockActualBodega restored to 50', () => pm.expect(body.stockActualBodega).to.equal(50));",
+                  "console.log('[Inventory Alerts] Stock restored. Item will not trigger alerts again with stock=50, min=20.');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stockActualBodega\": \"50\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/supply-items/{{alertSupplyItemId}}",
+            "description": "Restaura el stock del ítem de prueba a 50 (por encima del mínimo de 20).\nEsto elimina la condición de alerta para futuros `GET /inventory/alerts`.\n\nEl historial en `inventory_alert_resolutions` **no se borra** — queda como registro permanente."
+          },
+          "response": []
+        }
+      ],
+      "description": "Flujo completo para probar alertas de inventario: crear ítem con stock bajo, ver alerta activa, resolver con y sin nota, consultar historial de resueltas.\n\n**Variables necesarias en el environment:** `tenantId`, `baseUrl`, `categoryId`\n**Variables capturadas automáticamente:** `alertSupplyItemId`, `alertSupplyItemCode`, `alertId`"
+    },
+    {
       "name": "99 — Legacy / Deprecated",
       "description": "Deprecated modules — do not run in CI/Newman full collection.",
       "item": [
@@ -6193,8 +7058,13 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/employees",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "employees"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "employees"
+              ]
             }
           },
           "event": [
@@ -6231,8 +7101,13 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/employees",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "employees"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "employees"
+              ]
             }
           }
         },
@@ -6252,8 +7127,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/employees/{{employeeUserId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "employees", "{{employeeUserId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "employees",
+                "{{employeeUserId}}"
+              ]
             }
           }
         },
@@ -6281,8 +7162,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/employees/{{employeeUserId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "employees", "{{employeeUserId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "employees",
+                "{{employeeUserId}}"
+              ]
             }
           }
         },
@@ -6303,8 +7190,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/employees/{{employeeUserId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "employees", "{{employeeUserId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "employees",
+                "{{employeeUserId}}"
+              ]
             }
           }
         },
@@ -6324,8 +7217,15 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/employees/location/{{locationId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "employees", "location", "{{locationId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "employees",
+                "location",
+                "{{locationId}}"
+              ]
             }
           }
         },
@@ -6345,8 +7245,15 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/employees/contract-type/FIJO",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "employees", "contract-type", "FIJO"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "employees",
+                "contract-type",
+                "FIJO"
+              ]
             }
           }
         }
@@ -6376,8 +7283,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/attendance/kiosk-auth",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "attendance", "kiosk-auth"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "attendance",
+                "kiosk-auth"
+              ]
             }
           },
           "event": [
@@ -6421,8 +7334,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/attendance/entry",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "attendance", "entry"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "attendance",
+                "entry"
+              ]
             }
           },
           "event": [
@@ -6461,8 +7380,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/attendance/exit",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "attendance", "exit"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "attendance",
+                "exit"
+              ]
             }
           },
           "event": [
@@ -6499,8 +7424,13 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/attendance?userId={{attendanceUserId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "attendance"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "attendance"
+              ],
               "query": [
                 {
                   "key": "userId",
@@ -6526,8 +7456,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/attendance/active?locationId={{attendanceLocationId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "attendance", "active"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "attendance",
+                "active"
+              ],
               "query": [
                 {
                   "key": "locationId",
@@ -6553,8 +7489,16 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/attendance/employees/{{attendanceUserId}}/overtime",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "attendance", "employees", "{{attendanceUserId}}", "overtime"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "attendance",
+                "employees",
+                "{{attendanceUserId}}",
+                "overtime"
+              ]
             }
           },
           "event": [
@@ -6598,8 +7542,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/reports/payroll?period={{reportPeriod}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "reports", "payroll"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "payroll"
+              ],
               "query": [
                 {
                   "key": "period",
@@ -6646,8 +7596,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/reports/payroll?period={{reportPeriod}}&locationId={{locationId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "reports", "payroll"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "payroll"
+              ],
               "query": [
                 {
                   "key": "period",
@@ -6691,8 +7647,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/reports/attendance?from={{reportFrom}}&to={{reportTo}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "reports", "attendance"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "attendance"
+              ],
               "query": [
                 {
                   "key": "from",
@@ -6749,8 +7711,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/reports/social-security?period={{reportPeriod}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "reports", "social-security"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "social-security"
+              ],
               "query": [
                 {
                   "key": "period",
@@ -6803,8 +7771,15 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/reports/payroll/export",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "reports", "payroll", "export"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "payroll",
+                "export"
+              ]
             },
             "description": "Descarga el reporte de nómina como PDF (A4 landscape).\nEn Postman: la respuesta se muestra como binario — haz clic en 'Save to file' para guardar payroll-report-{{reportPeriod}}.pdf.\nContent-Type esperado: application/pdf\nContent-Disposition: attachment; filename=\"payroll-report-{{reportPeriod}}.pdf\""
           },
@@ -6854,8 +7829,15 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/reports/payroll/export",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "reports", "payroll", "export"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "payroll",
+                "export"
+              ]
             },
             "description": "Descarga el reporte de nómina como Excel (.xlsx) con hoja 'Nómina'.\nColumnas: Empleado, Cédula, Sede, Sal. Base, Aux. Transp., HH. Extra, Deducciones, Neto, Aportes Emp., Costo Total.\nEn Postman: haz clic en 'Save to file' para guardar payroll-report-{{reportPeriod}}.xlsx.\nContent-Type esperado: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
           },
@@ -6894,8 +7876,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/reports/payroll?period={{reportPeriod}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "reports", "payroll"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "payroll"
+              ],
               "query": [
                 {
                   "key": "period",
@@ -6941,8 +7929,15 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/reports/payroll/export",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "reports", "payroll", "export"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "payroll",
+                "export"
+              ]
             },
             "description": "Negativo: format=CSV no es válido → 400 Bad Request. Solo PDF y XLSX aceptados."
           },

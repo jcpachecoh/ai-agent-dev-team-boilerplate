@@ -12,6 +12,7 @@ export interface PhaseInstruction {
 
 export interface ActivePhaseSnapshot {
   opId: string;
+  stepId: string;
   productName: string;
   phaseTitle: string;
   stationAreaLabel: string;
@@ -38,6 +39,7 @@ interface PhaseState extends ActivePhaseSnapshot {
 
 const DEMO_PHASE: ActivePhaseSnapshot = {
   opId: 'OP-000012',
+  stepId: 'exec-demo-1',
   productName: 'Pollo asado porcionado',
   phaseTitle: 'Fase 2 — Corte y porcionado',
   stationAreaLabel: 'Corte y deshuese',
