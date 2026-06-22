@@ -177,7 +177,7 @@ export async function seedPlantSupervisor(prisma: PrismaClient): Promise<void> {
       id: RECIPE_CATEGORY_ID,
       tenantId: TENANT_ID,
       nombre: 'Producción planta',
-      descripcion: 'Recetas demo supervisor',
+      descripcion: 'Receta demo supervisor',
       isActive: true,
     },
   });
