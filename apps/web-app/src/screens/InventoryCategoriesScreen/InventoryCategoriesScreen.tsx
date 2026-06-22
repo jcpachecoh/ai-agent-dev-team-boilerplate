@@ -15,11 +15,11 @@ import {
 import { ResponsiveTable } from '@/components/responsive-table';
 import { CategoryFormModal } from '@/components/inventory/CategoryFormModal';
 import { InventoryScreenState } from '@/components/inventory/InventoryScreenState';
+import { CategoryStatusConfirmDialog } from '@/components/shared/CategoryStatusConfirmDialog';
 import { INVENTARIO_CATEGORY_RESPONSIVE_COLUMNS } from '@/features/inventario/responsive-columns';
 import { headerColumnsFromResponsive } from '@/lib/responsive-columns';
 import {
   useCreateSupplyCategory,
-  useDeactivateSupplyCategory,
   useUpdateSupplyCategory,
 } from '@/features/inventario/hooks/useSupplyCategoryMutations';
 import { useSupplyCategories } from '@/features/inventario/hooks/useSupplyCategories';
@@ -53,12 +53,20 @@ function filterCategories(
   });
 }
 
+function categoryToFormValues(category: SupplyCategoryApi): SupplyCategoryFormValues {
+  return {
+    nombre: category.nombre,
+    prefijo: category.prefijo ?? '',
+    descripcion: category.descripcion ?? '',
+    isActive: category.isActive,
+  };
+}
+
 export function InventoryCategoriesScreen(): React.JSX.Element {
   const theme = useUiTheme();
   const categoriesQuery = useSupplyCategories('all');
   const createMutation = useCreateSupplyCategory();
   const updateMutation = useUpdateSupplyCategory();
-  const deactivateMutation = useDeactivateSupplyCategory();
 
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<'all' | 'active' | 'inactive'>('all');
@@ -66,6 +74,9 @@ export function InventoryCategoriesScreen(): React.JSX.Element {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
   const [editing, setEditing] = useState<SupplyCategoryApi | undefined>();
+  const [statusTarget, setStatusTarget] = useState<
+    { category: SupplyCategoryApi; isActive: boolean } | undefined
+  >();
 
   const categories = categoriesQuery.data ?? [];
 
@@ -104,20 +115,30 @@ export function InventoryCategoriesScreen(): React.JSX.Element {
     }
   };
 
-  const handleDeactivate = async (category: SupplyCategoryApi) => {
-    const confirmed = window.confirm(`¿Desactivar la categoría "${category.nombre}"?`);
-    if (!confirmed) return;
+  const requestStatusChange = (category: SupplyCategoryApi, isActive: boolean) => {
+    setStatusTarget({ category, isActive });
+  };
+
+  const handleConfirmStatusChange = async () => {
+    if (!statusTarget) return;
 
     try {
-      await deactivateMutation.mutateAsync(category.id);
-      toast.success('Categoría desactivada');
+      await updateMutation.mutateAsync({
+        id: statusTarget.category.id,
+        values: {
+          ...categoryToFormValues(statusTarget.category),
+          isActive: statusTarget.isActive,
+        },
+        original: statusTarget.category,
+      });
+      toast.success(statusTarget.isActive ? 'Categoría activada' : 'Categoría desactivada');
+      setStatusTarget(undefined);
     } catch (err) {
       toast.error(getErrorMessage(err));
     }
   };
 
-  const saving =
-    createMutation.isPending || updateMutation.isPending || deactivateMutation.isPending;
+  const saving = createMutation.isPending || updateMutation.isPending;
 
   const pageToolbar = (
     <InventarioPageToolbar
@@ -220,7 +241,9 @@ export function InventoryCategoriesScreen(): React.JSX.Element {
                     visibleColumns={visibleColumns}
                     columnsTemplate={columnsTemplate}
                     onEdit={() => openEdit(category)}
-                    onToggleStatus={() => void handleDeactivate(category)}
+                    onDelete={() => requestStatusChange(category, false)}
+                    onToggleStatus={() => requestStatusChange(category, !category.isActive)}
+                    toggleLoading={updateMutation.isPending}
                   />
                 )}
                 renderCard={(category) => (
@@ -228,7 +251,9 @@ export function InventoryCategoriesScreen(): React.JSX.Element {
                     category={category}
                     theme={theme}
                     onEdit={() => openEdit(category)}
-                    onToggleStatus={() => void handleDeactivate(category)}
+                    onDelete={() => requestStatusChange(category, false)}
+                    onToggleStatus={() => requestStatusChange(category, !category.isActive)}
+                    toggleLoading={updateMutation.isPending}
                   />
                 )}
               />
@@ -254,6 +279,16 @@ export function InventoryCategoriesScreen(): React.JSX.Element {
             saving={saving}
             onClose={() => setModalOpen(false)}
             onSave={(values) => void handleSave(values)}
+          />
+
+          <CategoryStatusConfirmDialog
+            open={Boolean(statusTarget)}
+            categoryName={statusTarget?.category.nombre}
+            isActivating={Boolean(statusTarget?.isActive)}
+            submitting={updateMutation.isPending}
+            theme={theme}
+            onCancel={() => setStatusTarget(undefined)}
+            onConfirm={() => void handleConfirmStatusChange()}
           />
         </>
       ) : null}

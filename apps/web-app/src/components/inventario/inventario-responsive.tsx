@@ -250,6 +250,7 @@ export interface InventarioCategoryRowProps extends RowBaseProps {
   category: SupplyCategoryApi;
   theme: UiTheme;
   onEdit: () => void;
+  onDelete: () => void;
   onToggleStatus: () => void;
   toggleLoading?: boolean;
 }
@@ -260,6 +261,7 @@ export function InventarioCategoryRow({
   columnsTemplate,
   theme,
   onEdit,
+  onDelete,
   onToggleStatus,
   toggleLoading = false,
 }: InventarioCategoryRowProps): React.JSX.Element {
@@ -287,6 +289,13 @@ export function InventarioCategoryRow({
             return (
               <span className={styles.actions}>
                 <EmpleadoRowActionButton variant="edit" theme={theme} size="sm" onClick={onEdit} />
+                <InventarioIconButton
+                  variant="delete"
+                  theme={theme}
+                  onClick={onDelete}
+                  disabled={toggleLoading || !category.isActive}
+                  ariaLabel={`Desactivar ${category.nombre}`}
+                />
                 <EmpleadoRowActionButton
                   variant="toggle"
                   active={category.isActive}
@@ -314,6 +323,7 @@ export function InventarioCategoryCard({
   category,
   theme,
   onEdit,
+  onDelete,
   onToggleStatus,
   toggleLoading = false,
 }: Omit<InventarioCategoryRowProps, 'visibleColumns' | 'columnsTemplate'>): React.JSX.Element {
@@ -337,6 +347,13 @@ export function InventarioCategoryCard({
       footer={
         <>
           <EmpleadoRowActionButton variant="edit" theme={theme} size="sm" onClick={onEdit} />
+          <InventarioIconButton
+            variant="delete"
+            theme={theme}
+            onClick={onDelete}
+            disabled={toggleLoading || !category.isActive}
+            ariaLabel={`Desactivar ${category.nombre}`}
+          />
           <EmpleadoRowActionButton
             variant="toggle"
             active={category.isActive}

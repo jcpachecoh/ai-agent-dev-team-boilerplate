@@ -128,29 +128,6 @@ export function RecipeCategoryFormModal({
             />
           </label>
 
-          {mode === 'edit' ? (
-            <div className={styles.toggleField}>
-              <div className={styles.toggleCopy}>
-                <span className={styles.toggleLabel}>Estado</span>
-                <span className={styles.toggleHint}>
-                  {values.isActive
-                    ? 'Activa — visible al crear o editar recetas'
-                    : 'Inactiva — no aparece en el selector de recetas'}
-                </span>
-              </div>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={values.isActive}
-                aria-label="Categoría activa"
-                className={[styles.toggle, values.isActive ? styles.toggleOn : ''].join(' ')}
-                onClick={() => update({ isActive: !values.isActive })}
-              >
-                <span className={styles.toggleThumb} aria-hidden />
-              </button>
-            </div>
-          ) : null}
-
           {formError ? <p className={styles.errorText}>{formError}</p> : null}
         </div>
 

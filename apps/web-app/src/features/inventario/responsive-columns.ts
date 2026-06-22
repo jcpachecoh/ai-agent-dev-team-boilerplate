@@ -25,7 +25,7 @@ export const INVENTARIO_CATEGORY_RESPONSIVE_COLUMNS: ResponsiveColumnDef[] = [
   },
   { id: 'descripcion', label: 'Descripción', priority: 2, gridTrack: 'minmax(160px, 2fr)' },
   { id: 'estado', label: 'Estado', priority: 2, gridTrack: 'minmax(96px, 120px)' },
-  { id: 'actions', label: 'Acciones', priority: 1, gridTrack: 'minmax(88px, 100px)' },
+  { id: 'actions', label: 'Acciones', priority: 1, gridTrack: 'minmax(112px, 128px)' },
 ];
 
 export const INVENTARIO_MOVEMENT_RESPONSIVE_COLUMNS: ResponsiveColumnDef[] = [

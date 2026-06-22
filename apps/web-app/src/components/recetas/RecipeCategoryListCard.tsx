@@ -1,4 +1,4 @@
-import { EmpleadoRowActionButton, RecetaStatusButton } from '@restopsiq/ui';
+import { EmpleadoRowActionButton, InventarioIconButton, RecetaStatusButton } from '@restopsiq/ui';
 
 import { ResponsiveTableCard } from '@/components/responsive-table';
 import type { UiTheme } from '@/constants/theme';
@@ -13,6 +13,7 @@ export interface RecipeCategoryListCardProps {
   status: RecetaStatus;
   theme: UiTheme;
   onEdit: () => void;
+  onDelete: () => void;
   onStatusChange: (status: RecetaStatus) => void;
   onOpen: () => void;
   toggleLoading?: boolean;
@@ -25,6 +26,7 @@ export function RecipeCategoryListCard({
   status,
   theme,
   onEdit,
+  onDelete,
   onStatusChange,
   onOpen,
   toggleLoading = false,
@@ -40,17 +42,7 @@ export function RecipeCategoryListCard({
           <span className={styles.name}>{nombre}</span>
         </span>
       }
-      badge={
-        <RecetaStatusButton
-          status={status}
-          theme={theme}
-          size="sm"
-          onClick={(event) => {
-            event.stopPropagation();
-            onStatusChange(nextStatus);
-          }}
-        />
-      }
+      badge={<RecetaStatusButton status={status} theme={theme} size="sm" />}
       fields={[{ label: 'Descripción', value: descripcion || '—' }]}
       footer={
         <>
@@ -63,6 +55,13 @@ export function RecipeCategoryListCard({
               event.stopPropagation();
               onEdit();
             }}
+          />
+          <InventarioIconButton
+            variant="delete"
+            theme={theme}
+            onClick={() => onDelete()}
+            disabled={toggleLoading}
+            ariaLabel="Eliminar categoría"
           />
           <EmpleadoRowActionButton
             variant="toggle"

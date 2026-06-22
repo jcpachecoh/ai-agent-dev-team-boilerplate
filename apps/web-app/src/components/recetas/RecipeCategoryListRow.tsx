@@ -1,4 +1,4 @@
-import { EmpleadoRowActionButton, RecetaStatusButton } from '@restopsiq/ui';
+import { EmpleadoRowActionButton, InventarioIconButton, RecetaStatusButton } from '@restopsiq/ui';
 import type { CSSProperties } from 'react';
 
 import type { UiTheme } from '@/constants/theme';
@@ -16,6 +16,7 @@ export interface RecipeCategoryListRowProps {
   visibleColumns: ResponsiveColumnDef[];
   columnsTemplate: string;
   onEdit: () => void;
+  onDelete: () => void;
   onStatusChange: (status: RecetaStatus) => void;
   toggleLoading?: boolean;
 }
@@ -29,6 +30,7 @@ export function RecipeCategoryListRow({
   visibleColumns,
   columnsTemplate,
   onEdit,
+  onDelete,
   onStatusChange,
   toggleLoading = false,
 }: RecipeCategoryListRowProps): React.JSX.Element {
@@ -52,18 +54,7 @@ export function RecipeCategoryListRow({
       case 'descripcion':
         return <span className={styles.description}>{descripcion || '—'}</span>;
       case 'estado':
-        return (
-          <RecetaStatusButton
-            status={status}
-            theme={theme}
-            size="sm"
-            compact
-            onClick={(event) => {
-              event.stopPropagation();
-              onStatusChange(nextStatus);
-            }}
-          />
-        );
+        return <RecetaStatusButton status={status} theme={theme} size="sm" compact />;
       case 'acciones':
         return (
           <span className={styles.actions}>
@@ -76,6 +67,15 @@ export function RecipeCategoryListRow({
                 event.stopPropagation();
                 onEdit();
               }}
+            />
+            <InventarioIconButton
+              variant="delete"
+              theme={theme}
+              onClick={() => {
+                onDelete();
+              }}
+              disabled={toggleLoading}
+              ariaLabel="Eliminar categoría"
             />
             <EmpleadoRowActionButton
               variant="toggle"
