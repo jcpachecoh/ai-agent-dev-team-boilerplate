@@ -27,6 +27,7 @@ const mockEmailService = {
 const baseUser: AdminUserListItem = {
   id: 'user-1',
   tenantId: 'tenant-1',
+  name: 'Test User',
   cedula: '12345678',
   documentType: DocumentType.CC,
   email: 'test@test.com',
@@ -107,7 +108,14 @@ describe('AdminUsersService', () => {
       // Act
       await service.createUser(
         'tenant-1',
-        { name: 'Test', cedula: '12345678', documentType: DocumentType.CC, email: 'op@test.com', roleId: 'role-op', locationId: 'sede-1' },
+        {
+          name: 'Test',
+          cedula: '12345678',
+          documentType: DocumentType.CC,
+          email: 'op@test.com',
+          roleId: 'role-op',
+          locationId: 'sede-1',
+        },
         'req',
       );
 
@@ -134,7 +142,13 @@ describe('AdminUsersService', () => {
       // Act
       await service.createUser(
         'tenant-1',
-        { name: 'Test', cedula: '12345678', documentType: DocumentType.CC, email: 'owner@test.com', roleId: 'role-owner' },
+        {
+          name: 'Test',
+          cedula: '12345678',
+          documentType: DocumentType.CC,
+          email: 'owner@test.com',
+          roleId: 'role-owner',
+        },
         'req',
       );
 
@@ -154,7 +168,13 @@ describe('AdminUsersService', () => {
       await expect(
         service.createUser(
           'tenant-1',
-          { name: 'Test', cedula: '12345678', documentType: DocumentType.CC, email: 'op@test.com', roleId: 'role-op' },
+          {
+            name: 'Test',
+            cedula: '12345678',
+            documentType: DocumentType.CC,
+            email: 'op@test.com',
+            roleId: 'role-op',
+          },
           'req',
         ),
       ).rejects.toThrow('locationId is required for OPERATOR users');
@@ -171,7 +191,13 @@ describe('AdminUsersService', () => {
       await expect(
         service.createUser(
           'tenant-1',
-          { name: 'Test', cedula: '12345678', documentType: DocumentType.CC, email: 'op@test.com', roleId: 'role-op' },
+          {
+            name: 'Test',
+            cedula: '12345678',
+            documentType: DocumentType.CC,
+            email: 'op@test.com',
+            roleId: 'role-op',
+          },
           'req',
         ),
       ).rejects.toThrow('OPERATOR_TEMP_PASSWORD must be 4–6 numeric digits');
