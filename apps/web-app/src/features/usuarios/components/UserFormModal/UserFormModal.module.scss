@@ -126,6 +126,12 @@
   color: var(--color-error, #ef4444);
 }
 
+.hintText {
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+}
+
 .footer {
   display: flex;
   justify-content: flex-end;

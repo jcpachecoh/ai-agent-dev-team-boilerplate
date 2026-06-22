@@ -6,6 +6,7 @@ import { UsuarioTableRow } from './UsuarioTableRow';
 describe('UsuarioTableRow', () => {
   const baseProps = {
     id: 'user-1',
+    name: 'Juan Carlos Pérez',
     email: 'owner@test.dev',
     cedula: '12345678',
     documentType: 'CC',
@@ -17,6 +18,7 @@ describe('UsuarioTableRow', () => {
 
   it('renders row columns', () => {
     render(<UsuarioTableRow {...baseProps} />);
+    expect(screen.getByText('Juan Carlos Pérez')).toBeTruthy();
     expect(screen.getByText('owner@test.dev')).toBeTruthy();
     expect(screen.getByText('12345678')).toBeTruthy();
     expect(screen.getByText('Propietario')).toBeTruthy();

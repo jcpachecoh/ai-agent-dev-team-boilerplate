@@ -14,6 +14,7 @@ const mockUsers: AdminUserApi[] = [
   {
     id: 'user-1',
     tenantId: 'tenant-1',
+    name: 'Juan Carlos Pérez',
     cedula: '12345678',
     documentType: 'CC',
     email: 'owner@test.dev',
@@ -26,6 +27,7 @@ const mockUsers: AdminUserApi[] = [
   {
     id: 'user-2',
     tenantId: 'tenant-1',
+    name: 'María Operadora',
     cedula: '87654321',
     documentType: 'CC',
     email: 'operator@test.dev',

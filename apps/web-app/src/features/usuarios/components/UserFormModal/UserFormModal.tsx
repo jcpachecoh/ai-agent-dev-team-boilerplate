@@ -1,9 +1,13 @@
 import { RecetaFilterSelect, RecetaFormButton } from '@restopsiq/ui';
 import { X } from 'lucide-react';
-import { useEffect, useId, useMemo, useState, type JSX } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type JSX } from 'react';
 
 import { useTheme } from '@/providers/ThemeProvider';
 
+import {
+  findEmployeeNameByDocument,
+  resetEmployeeDocumentLookupCache,
+} from '../../api/employee-document-lookup';
 import styles from './UserFormModal.module.scss';
 import type {
   AdminRoleOptionApi,
@@ -76,6 +80,9 @@ export function UserFormModal({
   const [roleId, setRoleId] = useState('');
   const [locationId, setLocationId] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [lookupHint, setLookupHint] = useState<string | null>(null);
+  const [lookingUpEmployee, setLookingUpEmployee] = useState(false);
+  const lookupRequestIdRef = useRef(0);
   const isEdit = mode === 'edit';
 
   const selectedRole = roles.find((r) => r.id === roleId);
@@ -86,6 +93,9 @@ export function UserFormModal({
       return;
     }
     setError(null);
+    setLookupHint(null);
+    setLookingUpEmployee(false);
+    lookupRequestIdRef.current += 1;
     if (isEdit && initialValues) {
       setEmail(initialValues.email);
       setRoleId(initialValues.roleId);
@@ -96,8 +106,44 @@ export function UserFormModal({
       setEmail(emptyCreate.email);
       setRoleId(roles[0]?.id ?? '');
       setLocationId('');
+      resetEmployeeDocumentLookupCache();
     }
   }, [open, isEdit, initialValues, roles]);
+
+  const lookupEmployeeName = useCallback(async (cedulaValue: string, docType: DocumentType) => {
+    const trimmedCedula = cedulaValue.trim();
+    if (!trimmedCedula) {
+      setLookupHint(null);
+      return;
+    }
+
+    const requestId = lookupRequestIdRef.current + 1;
+    lookupRequestIdRef.current = requestId;
+    setLookingUpEmployee(true);
+    setLookupHint('Consultando empleado registrado...');
+
+    try {
+      const employeeName = await findEmployeeNameByDocument(trimmedCedula, docType);
+      if (lookupRequestIdRef.current !== requestId) {
+        return;
+      }
+
+      if (employeeName) {
+        setName(employeeName);
+        setLookupHint('Nombre completado desde empleados registrados.');
+      } else {
+        setLookupHint(null);
+      }
+    } catch {
+      if (lookupRequestIdRef.current === requestId) {
+        setLookupHint(null);
+      }
+    } finally {
+      if (lookupRequestIdRef.current === requestId) {
+        setLookingUpEmployee(false);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     if (!open) {
@@ -200,19 +246,6 @@ export function UserFormModal({
 
         <div className={styles.body}>
           {!isEdit ? (
-            <label className={styles.field}>
-              <span className={styles.fieldLabel}>Nombre completo *</span>
-              <input
-                className={styles.input}
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Ej: Juan Carlos Pérez"
-              />
-            </label>
-          ) : null}
-
-          {!isEdit ? (
             <div className={styles.fieldGrid}>
               <label className={styles.field}>
                 <span className={styles.fieldLabel}>Tipo de doc. *</span>
@@ -221,7 +254,14 @@ export function UserFormModal({
                   aria-label="Tipo de documento"
                   options={documentTypeOptions}
                   value={documentType}
-                  onChange={(value) => setDocumentType(value as DocumentType)}
+                  onChange={(value) => {
+                    const nextDocumentType = value as DocumentType;
+                    setDocumentType(nextDocumentType);
+                    setLookupHint(null);
+                    if (cedula.trim()) {
+                      void lookupEmployeeName(cedula, nextDocumentType);
+                    }
+                  }}
                   theme={theme}
                   size="md"
                 />
@@ -233,11 +273,33 @@ export function UserFormModal({
                   className={styles.input}
                   type="text"
                   value={cedula}
-                  onChange={(e) => setCedula(e.target.value)}
+                  onChange={(e) => {
+                    setCedula(e.target.value);
+                    setLookupHint(null);
+                  }}
+                  onBlur={() => void lookupEmployeeName(cedula, documentType)}
                   placeholder="Ej: 1023456789"
                 />
               </label>
             </div>
+          ) : null}
+
+          {!isEdit ? (
+            <label className={styles.field}>
+              <span className={styles.fieldLabel}>Nombre completo *</span>
+              <input
+                className={styles.input}
+                type="text"
+                value={name}
+                onChange={(e) => {
+                  setName(e.target.value);
+                  setLookupHint(null);
+                }}
+                placeholder="Ej: Juan Carlos Pérez"
+                disabled={lookingUpEmployee}
+              />
+              {lookupHint ? <p className={styles.hintText}>{lookupHint}</p> : null}
+            </label>
           ) : null}
 
           <label className={styles.field}>

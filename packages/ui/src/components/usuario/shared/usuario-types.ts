@@ -5,6 +5,7 @@ export type UsuarioRoleVariant = 'owner' | 'supervisor' | 'manager' | 'default';
 
 export interface UsuarioTableRowData {
   id: string;
+  name: string;
   email: string;
   cedula: string;
   documentType: string;

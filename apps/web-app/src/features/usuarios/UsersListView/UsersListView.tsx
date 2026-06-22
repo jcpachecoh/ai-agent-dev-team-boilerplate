@@ -61,6 +61,7 @@ export default function UsersListView(): JSX.Element {
     }
     return users.filter(
       (u) =>
+        u.name.toLowerCase().includes(q) ||
         u.email.toLowerCase().includes(q) ||
         u.cedula.includes(q) ||
         u.role.name.toLowerCase().includes(q),
@@ -153,6 +154,7 @@ export default function UsersListView(): JSX.Element {
               <UsuarioTableItem
                 key={user.id}
                 id={user.id}
+                name={user.name}
                 email={user.email}
                 cedula={user.cedula}
                 documentType={user.documentType}

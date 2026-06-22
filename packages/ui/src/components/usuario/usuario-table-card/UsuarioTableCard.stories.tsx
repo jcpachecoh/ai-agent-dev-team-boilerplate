@@ -15,6 +15,7 @@ type Story = StoryObj<typeof UsuarioTableCard>;
 export const Default: Story = {
   args: {
     id: 'user-1',
+    name: 'Juan Carlos Pérez',
     email: 'mes-owner@palos-de-lena.dev',
     cedula: '12345678',
     documentType: 'CC',

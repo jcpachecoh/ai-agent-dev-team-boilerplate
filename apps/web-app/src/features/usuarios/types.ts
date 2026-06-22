@@ -9,6 +9,7 @@ export interface AdminUserRoleRef {
 export interface AdminUserApi {
   id: string;
   tenantId: string;
+  name: string;
   cedula: string;
   documentType: DocumentType;
   email: string;

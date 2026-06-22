@@ -12,6 +12,7 @@ export type UsuarioTableCardProps = UsuarioTableRowProps;
 
 export function UsuarioTableCard({
   id,
+  name,
   email,
   cedula,
   documentType,
@@ -37,6 +38,7 @@ export function UsuarioTableCard({
     >
       <header className={styles.header}>
         <div className={styles.leading}>
+          <p className={styles.name}>{name || '—'}</p>
           <p className={styles.email}>{email}</p>
           <p className={styles.cedula}>{cedula}</p>
         </div>

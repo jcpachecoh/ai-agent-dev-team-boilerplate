@@ -11,6 +11,7 @@ import styles from './UsuarioTableRow.module.scss';
 
 export interface UsuarioTableRowProps {
   id: string;
+  name: string;
   email: string;
   cedula: string;
   documentType: string;
@@ -28,6 +29,7 @@ export interface UsuarioTableRowProps {
 
 export function UsuarioTableRow({
   id,
+  name,
   email,
   cedula,
   documentType,
@@ -53,6 +55,9 @@ export function UsuarioTableRow({
       data-usuario-id={id}
       style={{ '--usuario-columns': getUsuarioGridTemplate(showActions) } as CSSProperties}
     >
+      <span className={styles.nameCell} role="cell" title={name}>
+        {name || '—'}
+      </span>
       <span className={styles.emailCell} role="cell" title={email}>
         {email}
       </span>

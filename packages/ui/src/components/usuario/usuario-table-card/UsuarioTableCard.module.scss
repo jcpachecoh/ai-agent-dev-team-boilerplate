@@ -26,11 +26,19 @@
   min-width: 0;
 }
 
-.email {
+.name {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   font-weight: $font-weight-semibold;
   color: var(--usuario-text);
+  word-break: break-word;
+}
+
+.email {
+  margin: 2px 0 0;
+  font-size: 0.75rem;
+  font-weight: $font-weight-regular;
+  color: var(--usuario-muted);
   word-break: break-word;
 }
 

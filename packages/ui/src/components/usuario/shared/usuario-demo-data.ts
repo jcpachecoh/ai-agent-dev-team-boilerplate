@@ -3,6 +3,7 @@ import type { UsuarioTableRowProps } from '../usuario-table-row/UsuarioTableRow'
 export const defaultUsuarioDemoRows: UsuarioTableRowProps[] = [
   {
     id: 'user-owner',
+    name: 'Juan Carlos Pérez',
     email: 'mes-owner@palos-de-lena.dev',
     cedula: '12345678',
     documentType: 'CC',
@@ -13,6 +14,7 @@ export const defaultUsuarioDemoRows: UsuarioTableRowProps[] = [
   },
   {
     id: 'user-operator',
+    name: 'María Operadora',
     email: 'mes-operator@palos-de-lena.dev',
     cedula: '87654321',
     documentType: 'CC',
@@ -23,6 +25,7 @@ export const defaultUsuarioDemoRows: UsuarioTableRowProps[] = [
   },
   {
     id: 'user-supervisor',
+    name: 'Ana Supervisor',
     email: 'supervisor@palos-de-lena.dev',
     cedula: '1020304050',
     documentType: 'CC',
@@ -33,6 +36,7 @@ export const defaultUsuarioDemoRows: UsuarioTableRowProps[] = [
   },
   {
     id: 'user-manager',
+    name: 'Carlos Manager',
     email: 'manager@palos-de-lena.dev',
     cedula: '5566778899',
     documentType: 'CE',

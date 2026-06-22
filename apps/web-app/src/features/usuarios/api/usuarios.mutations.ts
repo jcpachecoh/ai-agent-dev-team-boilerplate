@@ -5,6 +5,7 @@ import type { AdminUserApi, DocumentType } from '../types';
 const ADMIN_USER_FIELDS = `
   id
   tenantId
+  name
   cedula
   documentType
   email

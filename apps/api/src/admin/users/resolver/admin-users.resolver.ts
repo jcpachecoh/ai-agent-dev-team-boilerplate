@@ -31,6 +31,7 @@ class AdminUserRoleType {
 export class AdminUserType {
   @Field(() => ID) id!: string;
   @Field() tenantId!: string;
+  @Field() name!: string;
   @Field() cedula!: string;
   @Field() documentType!: string;
   @Field() email!: string;

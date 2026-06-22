@@ -15,6 +15,7 @@ type Story = StoryObj<typeof UsuarioTableRow>;
 export const Default: Story = {
   args: {
     id: 'user-1',
+    name: 'Juan Carlos Pérez',
     email: 'mes-owner@palos-de-lena.dev',
     cedula: '12345678',
     documentType: 'CC',
@@ -29,6 +30,7 @@ export const Inactive: Story = {
   args: {
     ...Default.args,
     id: 'user-2',
+    name: 'Carlos Manager',
     email: 'manager@palos-de-lena.dev',
     roleName: 'Manager',
     roleCode: 'MANAGER',

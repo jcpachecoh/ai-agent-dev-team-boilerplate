@@ -9,6 +9,7 @@ export interface AdminUserRole {
 export interface AdminUserListItem {
   id: string;
   tenantId: string;
+  name: string;
   cedula: string;
   documentType: DocumentType;
   email: string;

@@ -17,10 +17,19 @@
   }
 }
 
-.emailCell {
+.nameCell {
   font-size: 0.8125rem;
   font-weight: $font-weight-medium;
   color: var(--usuario-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.emailCell {
+  font-size: 0.8125rem;
+  font-weight: $font-weight-regular;
+  color: var(--usuario-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

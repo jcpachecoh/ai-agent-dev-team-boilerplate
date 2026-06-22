@@ -33,6 +33,7 @@ const baseRow = {
   passwordChangedAt: null,
   createdBy: null,
   role: { id: 'r1', code: 'OPERATOR', name: 'Operator' },
+  employeeDetails: { name: 'Test User' },
 };
 
 describe('AdminUsersRepository', () => {

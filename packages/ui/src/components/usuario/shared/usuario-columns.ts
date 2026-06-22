@@ -6,6 +6,7 @@ export interface UsuarioColumnDef {
 }
 
 export const defaultUsuarioColumns: UsuarioColumnDef[] = [
+  { key: 'name', label: 'Nombre', sortable: true, width: 'minmax(160px, 1.2fr)' },
   { key: 'email', label: 'Email', sortable: true, width: 'minmax(180px, 1.4fr)' },
   { key: 'cedula', label: 'Cédula', width: 'minmax(120px, 1fr)' },
   { key: 'documentType', label: 'Tipo', width: '100px' },

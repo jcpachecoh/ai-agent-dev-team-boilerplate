@@ -23,7 +23,7 @@ export class AdminUsersRepository implements IAdminUsersRepository {
         tenantId,
         ...(includeInactive ? {} : { isActive: true, deletedAt: null }),
       },
-      include: { role: ROLE_SELECT },
+      include: { role: ROLE_SELECT, employeeDetails: { select: { name: true } } },
       orderBy: { createdAt: 'desc' },
     });
 
@@ -33,7 +33,7 @@ export class AdminUsersRepository implements IAdminUsersRepository {
   async findById(tenantId: string, userId: string): Promise<AdminUserDetail | null> {
     const row = await this.prisma.user.findFirst({
       where: { id: userId, tenantId },
-      include: { role: ROLE_SELECT },
+      include: { role: ROLE_SELECT, employeeDetails: { select: { name: true } } },
     });
 
     if (!row) {
@@ -84,7 +84,7 @@ export class AdminUsersRepository implements IAdminUsersRepository {
         isActive: true,
         emailVerified: false,
       },
-      include: { role: ROLE_SELECT },
+      include: { role: ROLE_SELECT, employeeDetails: { select: { name: true } } },
     });
 
     return toListItem(row);
@@ -117,7 +117,7 @@ export class AdminUsersRepository implements IAdminUsersRepository {
           isActive: true,
           emailVerified: false,
         },
-        include: { role: ROLE_SELECT },
+        include: { role: ROLE_SELECT, employeeDetails: { select: { name: true } } },
       });
 
       const now = new Date();
@@ -167,7 +167,7 @@ export class AdminUsersRepository implements IAdminUsersRepository {
       return user;
     });
 
-    return toListItem(row);
+    return { ...toListItem(row), name: data.name.trim() };
   }
 
   async update(
@@ -185,7 +185,7 @@ export class AdminUsersRepository implements IAdminUsersRepository {
           ...(data.isActive ? { deletedAt: null } : { deletedAt: new Date() }),
         }),
       },
-      include: { role: ROLE_SELECT },
+      include: { role: ROLE_SELECT, employeeDetails: { select: { name: true } } },
     });
 
     return toListItem(row);
@@ -226,10 +226,12 @@ function toListItem(row: {
   lastLoginAt: Date | null;
   createdAt: Date;
   role: { id: string; code: string; name: string };
+  employeeDetails?: { name: string } | null;
 }): AdminUserListItem {
   return {
     id: row.id,
     tenantId: row.tenantId,
+    name: row.employeeDetails?.name?.trim() ?? '',
     cedula: row.cedula,
     documentType: row.documentType,
     email: row.email,
