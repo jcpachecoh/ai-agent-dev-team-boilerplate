@@ -12,6 +12,9 @@ import {
   SalaryType,
   StockUnit,
 } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
+
+const SALT_ROUNDS = 12;
 
 const TENANT_ID = 'palos-de-lena';
 
@@ -918,9 +921,13 @@ export async function seedPlantSupervisor(prisma: PrismaClient): Promise<void> {
   });
   const locationId = firstLocation!.id;
 
+  // NOM-03: pinHash para kiosko de asistencia (distinto de OperationalUser.pinHash del MES)
+  const operator2PinHashEmployee = await bcrypt.hash('4321', SALT_ROUNDS);
+  const opsAdminPinHashEmployee = await bcrypt.hash('5678', SALT_ROUNDS);
+
   await prisma.employeeDetails.upsert({
     where: { userId: GLOBAL_MES_OPERATOR2_USER_ID },
-    update: { isActive: true },
+    update: { isActive: true, pinHash: operator2PinHashEmployee },
     create: {
       userId: GLOBAL_MES_OPERATOR2_USER_ID,
       tenantId: TENANT_ID,
@@ -942,13 +949,14 @@ export async function seedPlantSupervisor(prisma: PrismaClient): Promise<void> {
       arlName: 'Sura',
       arlRiskLevel: ArlRiskLevel.RIESGO_II,
       cajaCompensacion: 'Comfama',
+      pinHash: operator2PinHashEmployee,
       isActive: true,
     },
   });
 
   await prisma.employeeDetails.upsert({
     where: { userId: GLOBAL_MES_OPERATIONS_ADMIN_USER_ID },
-    update: { isActive: true },
+    update: { isActive: true, pinHash: opsAdminPinHashEmployee },
     create: {
       userId: GLOBAL_MES_OPERATIONS_ADMIN_USER_ID,
       tenantId: TENANT_ID,
@@ -970,6 +978,7 @@ export async function seedPlantSupervisor(prisma: PrismaClient): Promise<void> {
       arlName: 'Sura',
       arlRiskLevel: ArlRiskLevel.RIESGO_I,
       cajaCompensacion: 'Comfama',
+      pinHash: opsAdminPinHashEmployee,
       isActive: true,
     },
   });

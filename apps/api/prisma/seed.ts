@@ -523,9 +523,11 @@ async function seedEmployeeDetails(
   locationId: string,
 ) {
   // Seed for owner
+  // NOM-03: pinHash = bcrypt('1234') — PIN de kiosko de asistencia (distinto de OperationalUser.pinHash)
+  const ownerPinHashEmployee = await bcrypt.hash('1234', SALT_ROUNDS);
   await prisma.employeeDetails.upsert({
     where: { userId: ownerUserId },
-    update: { isActive: true },
+    update: { isActive: true, pinHash: ownerPinHashEmployee },
     create: {
       userId: ownerUserId,
       tenantId: OPERATIONAL_TENANT_ID,
@@ -547,6 +549,7 @@ async function seedEmployeeDetails(
       arlName: 'Sura',
       arlRiskLevel: ArlRiskLevel.RIESGO_I,
       cajaCompensacion: 'Comfama',
+      pinHash: ownerPinHashEmployee,
       isActive: true,
     },
   });
@@ -585,6 +588,51 @@ async function seedEmployeeDetails(
   });
 
   console.log('EmployeeDetails: Seeded for owner and operator');
+}
+
+/**
+ * Asigna sedes PL-01, PL-02, PL-03 al usuario de signup creado vía API por QA.
+ * El usuario NO se crea aquí — si no existe en la DB, se omite con un aviso.
+ * Idempotente: upsert por userId_locationId.
+ */
+async function seedSignupUserLocations(
+  client: typeof prisma,
+  locations: Location[],
+): Promise<void> {
+  const SIGNUP_EMAIL = 'signup-1781213262141@palos-de-lena.dev';
+
+  const signupUser = await client.user.findFirst({
+    where: { email: SIGNUP_EMAIL, tenantId: OPERATIONAL_TENANT_ID },
+    select: { id: true, email: true, isActive: true },
+  });
+
+  if (!signupUser) {
+    console.warn(`⚠️  seedSignupUserLocations: usuario "${SIGNUP_EMAIL}" no encontrado en la DB.`);
+    console.warn(
+      '    Crea el usuario vía signup o registro antes de correr este seed, luego vuelve a correr pnpm db:seed.',
+    );
+    return;
+  }
+
+  const targetCodes = ['PL-01', 'PL-02', 'PL-03'];
+  const targetLocations = locations.filter(
+    (loc) => loc.code !== null && targetCodes.includes(loc.code),
+  );
+
+  if (targetLocations.length === 0) {
+    console.warn('⚠️  seedSignupUserLocations: ninguna de PL-01/02/03 encontrada — skipping');
+    return;
+  }
+
+  for (const loc of targetLocations) {
+    await client.userLocation.upsert({
+      where: { userId_locationId: { userId: signupUser.id, locationId: loc.id } },
+      update: { tenantId: OPERATIONAL_TENANT_ID },
+      create: { userId: signupUser.id, locationId: loc.id, tenantId: OPERATIONAL_TENANT_ID },
+    });
+  }
+
+  console.log(`✅ seedSignupUserLocations: ${signupUser.email} → ${targetCodes.join(', ')}`);
 }
 
 async function main() {
@@ -1150,8 +1198,12 @@ async function main() {
   const { seedPlantSupervisor } = await import('./seeds/plant-supervisor.seed');
   await seedPlantSupervisor(prisma);
 
-  const { seedAttendance } = await import('./seeds/attendance.seed');
+  const { seedAttendance, seedHistoricalAttendance, seedMonitorOvertime } =
+    await import('./seeds/attendance.seed');
   await seedAttendance(prisma);
+  await seedHistoricalAttendance(prisma);
+  await seedMonitorOvertime(prisma);
+  await seedSignupUserLocations(prisma, locations);
 }
 
 main()
