@@ -68,10 +68,10 @@ export function InventoryDashboardScreen(): React.JSX.Element {
     <div className={shared.screen}>
       <section className={shared.pageHeader}>
         <InventarioPageHeader
-          title="Dashboard de Inventario"
-          subtitle="Resumen operacional en tiempo real • Actualización automática cada 30s"
+          title="Dashboard de inventario"
+          subtitle="Resumen operacional en tiempo real · Actualización automática cada 30 s"
           theme={theme}
-          size="xl"
+          size="md"
           className={shared.pageHeaderHost}
         />
       </section>

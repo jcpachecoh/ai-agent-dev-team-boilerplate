@@ -8,6 +8,7 @@ interface ImportMetaEnv {
   readonly VITE_CAPGO_CHANNEL?: string;
   readonly VITE_KDS_WELCOME_TITLE?: string;
   readonly VITE_KDS_AREA_NAME?: string;
+  readonly VITE_BLE_SCAN_SERVICE_UUID?: string;
 }
 
 interface ImportMeta {

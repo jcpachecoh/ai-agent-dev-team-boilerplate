@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import React from 'react';
 
+import { ProveedorActionButton } from '../proveedor-action-button/ProveedorActionButton';
 import { proveedorDarkDecorator, proveedorStoryMeta } from '../shared/story-decorators';
 import { ProveedorPageHeader } from './ProveedorPageHeader';
 
@@ -21,6 +22,14 @@ export const CustomTitle: Story = {
 export const DarkMode: Story = {
   decorators: [proveedorDarkDecorator],
   args: { theme: 'dark' },
+};
+export const WithExportAction: Story = {
+  decorators: [proveedorDarkDecorator],
+  args: {
+    theme: 'dark',
+    size: 'xl',
+    actions: <ProveedorActionButton variant="export" theme="dark" size="md" />,
+  },
 };
 export const Sizes: Story = {
   render: (args) => (

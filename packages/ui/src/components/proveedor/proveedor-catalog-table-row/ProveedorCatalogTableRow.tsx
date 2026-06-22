@@ -1,6 +1,6 @@
 import React, { type CSSProperties, type JSX } from 'react';
 
-import { ProveedorCatalogEditButton } from '../proveedor-catalog-edit-button/ProveedorCatalogEditButton';
+import { EmpleadoRowActionButton } from '../../empleado/empleado-row-action-button';
 import { ProveedorStatusBadge } from '../proveedor-status-badge/ProveedorStatusBadge';
 import { catalogGridTemplate } from '../shared/proveedor-columns';
 import type {
@@ -83,7 +83,13 @@ export function ProveedorCatalogTableRow({
         <ProveedorStatusBadge domain="catalog" status={status} theme={theme} size="sm" />
       </span>
       <span className={styles.actions} role="cell">
-        <ProveedorCatalogEditButton theme={theme} size="sm" onClick={onEdit} />
+        <EmpleadoRowActionButton
+          variant="edit"
+          theme={theme}
+          size="sm"
+          aria-label="Editar producto"
+          onClick={onEdit}
+        />
       </span>
     </div>
   );

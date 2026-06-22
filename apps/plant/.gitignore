@@ -3,10 +3,9 @@ node_modules
 .DS_Store
 .env
 .env.local
-android/build
-android/.gradle
-android/app/build
 
-ios/App/build
-ios/Pods
+# Capacitor native projects (regenerate with cap add / cap sync)
+android/
+ios/
+
 coverage

@@ -53,7 +53,12 @@ export default defineConfig({
   css: {
     preprocessorOptions: {
       scss: {
-        additionalData: `@use "@/styles/tokens" as plant;\n`,
+        additionalData(source: string, filename: string) {
+          if (filename.includes('/apps/plant/src/')) {
+            return `@use "@/styles/tokens" as plant;\n${source}`;
+          }
+          return source;
+        },
       },
     },
   },

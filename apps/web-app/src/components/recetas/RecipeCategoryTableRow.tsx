@@ -1,4 +1,4 @@
-import { InventarioIconButton, RecetaEditButton, RecetaStatusButton } from '@restopsiq/ui';
+import { EmpleadoRowActionButton, RecetaStatusButton } from '@restopsiq/ui';
 import type { CSSProperties, JSX } from 'react';
 
 import type { UiTheme } from '@/constants/theme';
@@ -14,8 +14,8 @@ export interface RecipeCategoryTableRowProps {
   status: RecetaStatus;
   columnsTemplate: string;
   onEdit?: () => void;
-  onDelete?: () => void;
   onStatusChange?: (status: RecetaStatus) => void;
+  toggleLoading?: boolean;
 }
 
 export function RecipeCategoryTableRow({
@@ -26,8 +26,8 @@ export function RecipeCategoryTableRow({
   status,
   columnsTemplate,
   onEdit,
-  onDelete,
   onStatusChange,
+  toggleLoading = false,
 }: RecipeCategoryTableRowProps): JSX.Element {
   const nextStatus: RecetaStatus = status === 'active' ? 'inactive' : 'active';
 
@@ -59,28 +59,28 @@ export function RecipeCategoryTableRow({
         />
       </span>
       <span className={styles.actions} role="cell">
-        <RecetaEditButton
+        <EmpleadoRowActionButton
+          variant="edit"
           theme={theme}
           size="sm"
-          compact
+          aria-label="Editar categoría"
           onClick={(event) => {
             event.stopPropagation();
             onEdit?.();
           }}
         />
-        <span
-          className={styles.deleteAction}
-          role="presentation"
-          onClick={(event) => event.stopPropagation()}
-          onKeyDown={(event) => event.stopPropagation()}
-        >
-          <InventarioIconButton
-            variant="delete"
-            theme={theme}
-            ariaLabel="Eliminar categoría"
-            onClick={() => onDelete?.()}
-          />
-        </span>
+        <EmpleadoRowActionButton
+          variant="toggle"
+          active={status === 'active'}
+          theme={theme}
+          size="sm"
+          disabled={toggleLoading}
+          aria-label={status === 'active' ? 'Desactivar categoría' : 'Activar categoría'}
+          onClick={(event) => {
+            event.stopPropagation();
+            onStatusChange?.(nextStatus);
+          }}
+        />
       </span>
     </div>
   );

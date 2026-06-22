@@ -32,6 +32,8 @@ async function bootstrap() {
     .filter(Boolean);
   const isProduction = process.env.NODE_ENV === 'production';
   const localhostOriginPattern = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
+  /** Capacitor WebView origins (iOS: capacitor://, Android: https://localhost) */
+  const capacitorOriginPattern = /^(capacitor|ionic):\/\/localhost$/;
 
   app.enableCors({
     origin: (origin, callback) => {
@@ -40,6 +42,13 @@ async function bootstrap() {
         return;
       }
       if (!isProduction && localhostOriginPattern.test(origin)) {
+        callback(null, true);
+        return;
+      }
+      if (
+        !isProduction &&
+        (capacitorOriginPattern.test(origin) || origin === 'https://localhost')
+      ) {
         callback(null, true);
         return;
       }

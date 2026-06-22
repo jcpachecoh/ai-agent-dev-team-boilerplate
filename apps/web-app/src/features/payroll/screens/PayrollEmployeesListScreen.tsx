@@ -12,7 +12,6 @@ import {
   type EmpleadoSortColumnKey,
   type EmpleadoSortDirection,
 } from '@restopsiq/ui';
-import { Users } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 import { useTheme } from '@/providers/ThemeProvider';
@@ -173,13 +172,21 @@ export function PayrollEmployeesListScreen(): React.JSX.Element {
     }
   };
 
-  const handleDeactivate = async () => {
-    if (!deactivatingEmployee) return;
+  const handleStatusChange = async () => {
+    if (!statusChangeEmployee) return;
 
     try {
-      await removeEmployee.mutateAsync(deactivatingEmployee.userId);
-      toast.success('Empleado desactivado');
-      setDeactivatingEmployee(undefined);
+      if (statusChangeEmployee.isActive) {
+        await removeEmployee.mutateAsync(statusChangeEmployee.userId);
+        toast.success('Empleado desactivado');
+      } else {
+        await updateEmployee.mutateAsync({
+          userId: statusChangeEmployee.userId,
+          input: { isActive: true },
+        });
+        toast.success('Empleado activado');
+      }
+      setStatusChangeEmployee(undefined);
     } catch (error) {
       toast.error(getErrorMessage(error));
     }
@@ -191,7 +198,6 @@ export function PayrollEmployeesListScreen(): React.JSX.Element {
         <EmpleadoPageHeader
           title="Empleados"
           subtitle={`Todos los empleados del tenant · ${activeCount} activos de ${totalCount}`}
-          icon={<Users />}
           theme={empleadoTheme}
           primaryAction={
             readOnly ? undefined : (
@@ -303,7 +309,7 @@ export function PayrollEmployeesListScreen(): React.JSX.Element {
                 theme={empleadoTheme}
                 showActions={!readOnly}
                 onEdit={readOnly ? undefined : () => setEditingEmployee(employee)}
-                onToggleStatus={readOnly ? undefined : () => setDeactivatingEmployee(employee)}
+                onToggleStatus={readOnly ? undefined : () => setStatusChangeEmployee(employee)}
               />
             ))}
           </EmpleadoTable>
@@ -330,11 +336,12 @@ export function PayrollEmployeesListScreen(): React.JSX.Element {
           />
 
           <PayrollDeactivateEmployeeDialog
-            employee={deactivatingEmployee}
-            open={Boolean(deactivatingEmployee)}
-            submitting={removeEmployee.isPending}
-            onCancel={() => setDeactivatingEmployee(undefined)}
-            onConfirm={() => void handleDeactivate()}
+            employee={statusChangeEmployee}
+            open={Boolean(statusChangeEmployee)}
+            submitting={removeEmployee.isPending || updateEmployee.isPending}
+            theme={empleadoTheme}
+            onCancel={() => setStatusChangeEmployee(undefined)}
+            onConfirm={() => void handleStatusChange()}
           />
         </>
       ) : null}

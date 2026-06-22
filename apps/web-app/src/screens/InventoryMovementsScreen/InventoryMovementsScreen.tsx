@@ -86,8 +86,8 @@ export function InventoryMovementsScreen(): React.JSX.Element {
     <div className={shared.screen}>
       <section className={shared.pageHeader}>
         <InventarioPageToolbar
-          title="Movimientos de Stock"
-          subtitle={`Total: ${filtered.length} movimientos`}
+          title="Movimientos de stock"
+          subtitle={`${filtered.length} movimientos`}
           showAction
           action={
             <InventarioPrimaryButton
@@ -100,7 +100,7 @@ export function InventoryMovementsScreen(): React.JSX.Element {
             />
           }
           theme={theme}
-          size="xl"
+          size="md"
           className={shared.pageHeaderHost}
         />
       </section>

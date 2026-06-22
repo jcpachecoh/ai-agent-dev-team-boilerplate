@@ -1,4 +1,4 @@
-import { InventarioIconButton, RecetaEditButton, RecetaStatusButton } from '@restopsiq/ui';
+import { EmpleadoRowActionButton, RecetaStatusButton } from '@restopsiq/ui';
 
 import { ResponsiveTableCard } from '@/components/responsive-table';
 import type { UiTheme } from '@/constants/theme';
@@ -13,9 +13,9 @@ export interface RecipeCategoryListCardProps {
   status: RecetaStatus;
   theme: UiTheme;
   onEdit: () => void;
-  onDelete: () => void;
   onStatusChange: (status: RecetaStatus) => void;
   onOpen: () => void;
+  toggleLoading?: boolean;
 }
 
 export function RecipeCategoryListCard({
@@ -25,9 +25,9 @@ export function RecipeCategoryListCard({
   status,
   theme,
   onEdit,
-  onDelete,
   onStatusChange,
   onOpen,
+  toggleLoading = false,
 }: RecipeCategoryListCardProps): React.JSX.Element {
   const nextStatus: RecetaStatus = status === 'active' ? 'inactive' : 'active';
 
@@ -54,22 +54,28 @@ export function RecipeCategoryListCard({
       fields={[{ label: 'Descripción', value: descripcion || '—' }]}
       footer={
         <>
-          <RecetaEditButton
+          <EmpleadoRowActionButton
+            variant="edit"
             theme={theme}
             size="sm"
+            aria-label="Editar categoría"
             onClick={(event) => {
               event.stopPropagation();
               onEdit();
             }}
           />
-          <span role="presentation" onClick={(event) => event.stopPropagation()}>
-            <InventarioIconButton
-              variant="delete"
-              theme={theme}
-              ariaLabel="Eliminar categoría"
-              onClick={onDelete}
-            />
-          </span>
+          <EmpleadoRowActionButton
+            variant="toggle"
+            active={status === 'active'}
+            theme={theme}
+            size="sm"
+            disabled={toggleLoading}
+            aria-label={status === 'active' ? 'Desactivar categoría' : 'Activar categoría'}
+            onClick={(event) => {
+              event.stopPropagation();
+              onStatusChange(nextStatus);
+            }}
+          />
         </>
       }
       onClick={onOpen}

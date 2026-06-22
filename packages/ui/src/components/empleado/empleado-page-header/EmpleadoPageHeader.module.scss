@@ -1,14 +1,10 @@
 @use '../../../styles/abstracts/variables' as *;
+@use '../../../styles/abstracts/page-header-title' as ph;
 @use '../shared/empleado-theme' as emp;
 
 .header {
   @include emp.empleado-theme-classes;
-
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: $spacing-md;
-  width: 100%;
+  @include ph.page-header-shell;
 }
 
 .leading {
@@ -19,56 +15,30 @@
 }
 
 .iconWrap {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  margin-top: 2px;
-  color: var(--empleado-accent);
-
-  svg {
-    width: 18px;
-    height: 18px;
-  }
+  display: none;
 }
 
 .titles {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  min-width: 0;
+  @include ph.page-header-titles-stack;
 }
 
 .title {
-  margin: 0;
-  font-family: 'IBM Plex Sans', $font-family-base, sans-serif;
-  font-weight: $font-weight-bold;
-  letter-spacing: -0.01em;
+  @include ph.page-header-title;
   color: var(--empleado-text);
 }
 
 .subtitle {
-  margin: 0;
-  font-family: 'IBM Plex Sans', $font-family-base, sans-serif;
+  @include ph.page-header-subtitle;
   color: var(--empleado-subtle);
 }
 
 .size--sm {
   .title {
-    font-size: 1rem;
+    font-size: 1.125rem;
   }
 
   .subtitle {
-    font-size: 0.6875rem;
-  }
-}
-
-.size--md {
-  .title {
-    font-size: 1.1875rem;
-  }
-
-  .subtitle {
-    font-size: 0.75rem;
+    font-size: $font-size-xs;
   }
 }
 

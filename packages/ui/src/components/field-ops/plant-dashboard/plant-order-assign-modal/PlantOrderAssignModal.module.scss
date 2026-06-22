@@ -1,14 +1,8 @@
 @use '../shared/plant-dashboard-theme' as pd;
+@use '../shared/plant-modal-shell' as shell;
 
 .overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 30;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
-  background: var(--pd-overlay);
+  @include shell.overlay;
 }
 
 .theme--dark {
@@ -19,9 +13,22 @@
   @include pd.plant-dashboard-theme-light;
 }
 
+.size--sm {
+  @include shell.size-sm;
+}
+
+.size--md {
+  @include shell.size-md;
+}
+
+.size--xl {
+  @include shell.size-xl;
+}
+
 .dialog {
   width: min(100%, 32rem);
   max-height: min(90vh, 28rem);
+  max-height: min(90dvh, 28rem);
   display: flex;
   flex-direction: column;
   border: 1px solid var(--pd-border-strong);
@@ -29,8 +36,10 @@
   border-top-color: var(--pd-border-strong);
   border-radius: 4px;
   overflow: hidden;
-  background: var(--pd-bg-elevated);
-  box-shadow: 0 0 48px rgba(0, 0, 0, 0.2);
+  background: var(--pd-bg-elevated, #111);
+  box-shadow: 0 12px 48px rgb(0 0 0 / 45%);
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
 }
 
 .header {
@@ -74,6 +83,131 @@
 
 .list {
   overflow: auto;
+  min-height: 12rem;
+}
+
+.loadingHint {
+  margin: 0;
+  padding: 0.75rem 1.1rem 0.35rem;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--pd-muted);
+}
+
+@keyframes order-assign-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@mixin skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--pd-muted) 12%, transparent) 0%,
+    color-mix(in srgb, var(--pd-muted) 22%, transparent) 45%,
+    color-mix(in srgb, var(--pd-muted) 12%, transparent) 90%
+  );
+  background-size: 200% 100%;
+  animation: order-assign-shimmer 1.35s ease-in-out infinite;
+}
+
+.skeletonRow {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.85rem 1.1rem 0.85rem 1.25rem;
+  border-bottom: 1px solid var(--pd-border);
+  border-left: 3px solid color-mix(in srgb, var(--pd-muted) 25%, transparent);
+}
+
+.skeletonDotWrap {
+  flex-shrink: 0;
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 3px;
+  @include skeleton-shimmer;
+}
+
+.skeletonBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.skeletonLineShort,
+.skeletonLineTitle,
+.skeletonLineMeta,
+.skeletonBadge {
+  display: block;
+  border-radius: 2px;
+  @include skeleton-shimmer;
+}
+
+.skeletonLineShort {
+  width: 28%;
+  height: 0.55rem;
+}
+
+.skeletonLineTitle {
+  width: 72%;
+  height: 0.8rem;
+}
+
+.skeletonLineMeta {
+  width: 55%;
+  height: 0.55rem;
+}
+
+.skeletonBadge {
+  flex-shrink: 0;
+  width: 4.5rem;
+  height: 1.65rem;
+}
+
+.errorState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.85rem;
+  min-height: 12rem;
+  padding: 1.5rem 1.1rem;
+  text-align: center;
+}
+
+.errorMessage {
+  margin: 0;
+  max-width: 18rem;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: #ffb4a2;
+}
+
+.retryBtn {
+  border: 1px solid var(--pd-border-strong);
+  border-radius: 3px;
+  padding: 0.45rem 0.9rem;
+  background: color-mix(in srgb, #e85d04 18%, transparent);
+  color: var(--pd-title);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.retryBtn:hover {
+  background: color-mix(in srgb, #e85d04 28%, transparent);
 }
 
 .empty {

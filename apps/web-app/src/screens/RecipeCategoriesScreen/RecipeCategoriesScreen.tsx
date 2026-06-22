@@ -30,11 +30,11 @@ import { getErrorMessage } from '@/lib/graphql-client';
 import listStyles from '../RecipesManagementScreen/RecipesManagementScreen.module.scss';
 
 const categoryListTableColumns: RecetaTableColumn[] = [
-  { key: 'id', label: 'Código', width: '120px' },
-  { key: 'nombre', label: 'Nombre', width: 'minmax(0, 2fr)' },
-  { key: 'descripcion', label: 'Descripción', width: 'minmax(140px, 1.5fr)' },
-  { key: 'estado', label: 'Estado', width: '150px', align: 'center' },
-  { key: 'acciones', label: 'Acciones', width: '180px', align: 'right' },
+  { key: 'id', label: 'Código', width: '112px' },
+  { key: 'nombre', label: 'Nombre', width: 'minmax(160px, 1.2fr)' },
+  { key: 'descripcion', label: 'Descripción', width: 'minmax(120px, 1fr)' },
+  { key: 'estado', label: 'Estado', width: '108px', align: 'center' },
+  { key: 'acciones', label: 'Acciones', width: '88px', align: 'right' },
 ];
 
 const statusFilterOptions = [
@@ -159,8 +159,17 @@ export function RecipeCategoriesScreen(): JSX.Element {
       {loadError ? <p className={listStyles.loadError}>{loadError}</p> : null}
       <main className={listStyles.content}>
         <header className={listStyles.pageHeader}>
-          <h1>Categorías de Recetas</h1>
-          <p>Clasificación de recetas de producción en planta</p>
+          <div className={listStyles.pageHeaderMain}>
+            <h1>Categorías de recetas</h1>
+            <p>Clasificación de recetas de producción en planta</p>
+          </div>
+          <RecetaActionButton
+            theme={theme}
+            size="md"
+            label="Nueva Categoría"
+            className={listStyles.pageHeaderAction}
+            onClick={openCreate}
+          />
         </header>
 
         <section className={[listStyles.metricsRow, listStyles.metricsRowThree].join(' ')}>
@@ -202,13 +211,6 @@ export function RecipeCategoriesScreen(): JSX.Element {
             value={statusFilter}
             options={statusFilterOptions}
             onChange={(value) => setStatusFilter(value as 'all' | RecetaStatus)}
-          />
-          <RecetaActionButton
-            theme={theme}
-            size="md"
-            label="Nueva Categoría"
-            className={[listStyles.toolbarAction, listStyles.toolbarActionList].join(' ')}
-            onClick={openCreate}
           />
         </section>
 
@@ -254,7 +256,6 @@ export function RecipeCategoriesScreen(): JSX.Element {
                     visibleColumns={visibleColumns}
                     columnsTemplate={columnsTemplate}
                     onEdit={() => openEdit(category)}
-                    onDelete={() => void handleDelete(category)}
                     onStatusChange={(next) => void handleStatusChange(category, next)}
                   />
                 </div>
@@ -267,7 +268,6 @@ export function RecipeCategoriesScreen(): JSX.Element {
                   status={category.isActive ? 'active' : 'inactive'}
                   theme={theme}
                   onEdit={() => openEdit(category)}
-                  onDelete={() => void handleDelete(category)}
                   onStatusChange={(next) => void handleStatusChange(category, next)}
                   onOpen={() => openEdit(category)}
                 />

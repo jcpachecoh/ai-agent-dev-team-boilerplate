@@ -180,23 +180,6 @@ export default function ProveedoresListView(): React.JSX.Element {
             aria-label="Filtrar por condición de pago"
           />
         </div>
-        <div className={styles.toolbarActions}>
-          <div className={styles.actionsStack}>
-            <ProveedorActionButton
-              variant="primary"
-              theme={theme}
-              size="md"
-              onClick={() => navigate('/proveedores/nuevo')}
-            />
-            <ProveedorActionButton
-              variant="export"
-              theme={theme}
-              size="md"
-              className={styles.exportAction}
-              onClick={() => window.alert('Exportar — próximamente')}
-            />
-          </div>
-        </div>
       </section>
 
       <section className={styles.tableSection} aria-label="Lista de proveedores">

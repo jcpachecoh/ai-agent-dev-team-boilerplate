@@ -1,4 +1,5 @@
 @use '@/styles/tokens' as *;
+@use '@/styles/page-header-title' as ph;
 @use '../../styles/breakpoints' as bp;
 
 .screen {
@@ -24,21 +25,28 @@
 }
 
 .pageHeader {
+  @include ph.page-header-shell;
+  align-items: center;
   flex-shrink: 0;
   padding: 1.1rem 1.25rem 1rem;
   margin-bottom: 0;
   border-bottom: 1px solid var(--color-border);
+}
+
+.pageHeaderMain {
+  @include ph.page-header-titles-stack;
 
   h1 {
-    margin: 0;
-    font-size: 1.9rem;
+    @include ph.page-header-title;
   }
 
   p {
-    margin: 0.25rem 0 0;
-    color: var(--color-text-secondary);
-    font-size: 0.85rem;
+    @include ph.page-header-subtitle;
   }
+}
+
+.pageHeaderAction {
+  flex-shrink: 0;
 }
 
 .metricsRow {
@@ -170,10 +178,8 @@
 
 .categoryRowHost {
   flex: 0 0 auto;
-  height: 44px;
-  min-height: 44px;
-  max-height: 44px;
-  overflow: hidden;
+  width: 100%;
+  min-width: 0;
 }
 
 .recipeRowHost {

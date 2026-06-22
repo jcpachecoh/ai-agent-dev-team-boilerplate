@@ -110,8 +110,17 @@ export default function SupervisorStationsListView(): React.JSX.Element {
     <div className={styles.screen}>
       <div className={styles.stickyTop}>
         <header className={styles.pageHeader}>
-          <h1>Estaciones de producción</h1>
-          <p>Configuración y consulta de estaciones de trabajo en planta</p>
+          <div className={styles.pageHeaderMain}>
+            <h1>Estaciones de producción</h1>
+            <p>Configuración y consulta de estaciones de trabajo en planta</p>
+          </div>
+          <ProduccionPrimaryAction
+            label="NUEVA ESTACIÓN"
+            theme={theme}
+            size="md"
+            className={styles.pageHeaderAction}
+            onClick={openCreateModal}
+          />
         </header>
 
         <section className={styles.toolbarSection}>
@@ -123,12 +132,6 @@ export default function SupervisorStationsListView(): React.JSX.Element {
             size="sm"
             activeId={filter}
             onChange={(chipId) => setFilter(chipId as SupervisorStationFilter)}
-          />
-          <ProduccionPrimaryAction
-            label="NUEVA ESTACIÓN"
-            theme={theme}
-            size="sm"
-            onClick={openCreateModal}
           />
         </section>
       </div>

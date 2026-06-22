@@ -1,82 +1,77 @@
 @use '../../../styles/abstracts/variables' as *;
+@use '../../../styles/abstracts/page-header-title' as ph;
 @use '../shared/proveedor-theme' as proveedor;
+
+$mobile-breakpoint: 768px;
 
 .header {
   @include proveedor.proveedor-theme-classes;
-  @include proveedor.proveedor-size-vars;
-
-  display: flex;
+  @include ph.page-header-shell;
   align-items: center;
-  gap: var(--header-gap);
-  width: min(100%, var(--control-width));
 }
 
-.brand {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: var(--brand-size);
-  height: var(--brand-size);
-  border-radius: $border-radius-sm;
-  border: $border-width solid var(--proveedor-border);
-  background: var(--proveedor-surface-raised);
-  color: proveedor.$proveedor-enterprise;
-  flex-shrink: 0;
+.leading {
+  @include ph.page-header-titles-stack;
 }
 
-.initial {
-  font-family: $font-family-mono;
-  font-size: var(--brand-font-size);
-  font-weight: $font-weight-bold;
+.iconWrap {
+  display: none;
 }
 
 .titles {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
+  @include ph.page-header-titles-stack;
 }
 
 .title {
-  margin: 0;
-  font-family: $font-family-mono;
-  font-size: var(--title-size);
-  font-weight: $font-weight-bold;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: proveedor.$proveedor-enterprise;
+  @include ph.page-header-title;
+  color: var(--proveedor-text);
 }
 
 .subtitle {
-  margin: 0;
-  font-family: $font-family-mono;
-  font-size: var(--subtitle-size);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--proveedor-muted);
+  @include ph.page-header-subtitle;
+  color: var(--proveedor-text-secondary);
 }
 
-.size--sm {
-  --brand-size: 28px;
-  --brand-font-size: 0.75rem;
-  --title-size: 0.75rem;
-  --subtitle-size: 0.625rem;
-  --header-gap: #{$spacing-sm};
+.theme--dark .subtitle {
+  color: var(--proveedor-subtle);
 }
 
-.size--md {
-  --brand-size: 36px;
-  --brand-font-size: 0.875rem;
-  --title-size: 0.875rem;
-  --subtitle-size: 0.6875rem;
-  --header-gap: 16px;
+.theme--light .subtitle {
+  color: var(--proveedor-text);
+  opacity: 0.72;
 }
 
-.size--xl {
-  --control-width: 100%;
-  --brand-size: 36px;
-  --brand-font-size: 0.875rem;
-  --title-size: 1rem;
-  --subtitle-size: 0.6875rem;
-  --header-gap: 16px;
+.actions {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 0.65rem;
+}
+
+.size--sm .title {
+  font-size: 1.125rem;
+}
+
+.size--xl .title {
+  font-size: 1.625rem;
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .header {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .title {
+    font-size: 1.25rem;
+  }
+
+  .actions {
+    width: 100%;
+
+    > * {
+      width: 100%;
+    }
+  }
 }

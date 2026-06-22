@@ -2,6 +2,7 @@ import type { CSSProperties, JSX, MouseEvent } from 'react';
 
 import { RolCodeChip } from '../rol-code-chip';
 import { RolMetricCell } from '../rol-metric-cell';
+import { EmpleadoRowActionButton } from '../../empleado/empleado-row-action-button';
 import { RolRowActionButton } from '../rol-row-action-button';
 import { RolStatusBadge } from '../rol-status-badge';
 import { getRolGridTemplate } from '../shared/rol-columns';
@@ -93,17 +94,19 @@ export function RolTableRow({
             onClick={onViewPermissions ?? onSelect}
           />
           {onEdit ? (
-            <RolRowActionButton variant="edit" theme={theme} size="sm" onClick={onEdit} />
+            <EmpleadoRowActionButton variant="edit" theme={theme} size="sm" onClick={onEdit} />
           ) : null}
           {onDuplicate ? (
             <RolRowActionButton variant="duplicate" theme={theme} size="sm" onClick={onDuplicate} />
           ) : null}
           {onDeactivate ? (
-            <RolRowActionButton
-              variant="deactivate"
+            <EmpleadoRowActionButton
+              variant="toggle"
+              active={isActive}
               theme={theme}
               size="sm"
               disabled={!isActive}
+              aria-label="Desactivar rol"
               onClick={onDeactivate}
             />
           ) : null}

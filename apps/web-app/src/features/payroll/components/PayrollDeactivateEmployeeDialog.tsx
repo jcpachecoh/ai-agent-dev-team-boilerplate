@@ -1,10 +1,12 @@
+import { Button, Modal } from '@restopsiq/ui';
+
 import type { PayrollEmployee } from '../types/payroll.types';
-import styles from '../payroll.module.scss';
 
 interface PayrollDeactivateEmployeeDialogProps {
   employee?: PayrollEmployee;
   open: boolean;
   submitting?: boolean;
+  theme?: 'light' | 'dark';
   onCancel: () => void;
   onConfirm: () => void;
 }
@@ -13,37 +15,64 @@ export function PayrollDeactivateEmployeeDialog({
   employee,
   open,
   submitting,
+  theme = 'dark',
   onCancel,
   onConfirm,
 }: PayrollDeactivateEmployeeDialogProps): React.JSX.Element | null {
-  if (!open || !employee) return null;
+  if (!employee) return null;
+
+  const isActivating = !employee.isActive;
 
   return (
-    <div className={styles.modalBackdrop} role="presentation" onClick={onCancel}>
-      <section
-        className={styles.modal}
-        role="dialog"
-        aria-modal="true"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <header className={styles.modalHeader}>
-          <h2 className={styles.title}>Desactivar empleado</h2>
-        </header>
-        <div className={styles.modalBody}>
-          <p>
+    <Modal
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen && !submitting) {
+          onCancel();
+        }
+      }}
+      size="md"
+      theme={theme}
+      title={isActivating ? 'Activar empleado' : 'Desactivar empleado'}
+      description={
+        isActivating ? (
+          <>
+            Vas a activar a <strong>{employee.name}</strong>. El empleado volverá a aparecer en el
+            listado por defecto.
+          </>
+        ) : (
+          <>
             Vas a desactivar a <strong>{employee.name}</strong>. Este cambio aplica soft delete y el
-            empleado dejara de aparecer en el listado por defecto.
-          </p>
-        </div>
-        <footer className={styles.modalFooter}>
-          <button className={styles.buttonSecondary} onClick={onCancel} disabled={submitting}>
+            empleado dejará de aparecer en el listado por defecto.
+          </>
+        )
+      }
+      onInteractOutside={(event) => {
+        if (submitting) {
+          event.preventDefault();
+        }
+      }}
+      footer={
+        <>
+          <Button variant="secondary" size="medium" onClick={onCancel} disabled={submitting}>
             Cancelar
-          </button>
-          <button className={styles.buttonDanger} onClick={onConfirm} disabled={submitting}>
-            {submitting ? 'Desactivando...' : 'Confirmar desactivacion'}
-          </button>
-        </footer>
-      </section>
-    </div>
+          </Button>
+          <Button
+            variant={isActivating ? 'primary' : 'danger'}
+            size="medium"
+            onClick={onConfirm}
+            disabled={submitting}
+          >
+            {submitting
+              ? isActivating
+                ? 'Activando...'
+                : 'Desactivando...'
+              : isActivating
+                ? 'Confirmar activación'
+                : 'Confirmar desactivación'}
+          </Button>
+        </>
+      }
+    />
   );
 }

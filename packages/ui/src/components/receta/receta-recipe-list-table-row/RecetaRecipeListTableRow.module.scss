@@ -7,7 +7,7 @@
   display: grid;
   grid-template-columns: var(
     --receta-columns,
-    88px minmax(180px, 1.35fr) minmax(120px, 0.9fr) 112px 72px 72px 108px 88px
+    88px minmax(180px, 1.35fr) minmax(120px, 0.9fr) 112px 72px 72px 108px 72px
   );
   align-items: center;
   width: 100%;
@@ -82,8 +82,10 @@
 }
 
 .actionsCell {
+  display: inline-flex;
+  align-items: center;
   justify-content: flex-end;
-  gap: 5px;
+  gap: 8px;
   width: 100%;
 }
 

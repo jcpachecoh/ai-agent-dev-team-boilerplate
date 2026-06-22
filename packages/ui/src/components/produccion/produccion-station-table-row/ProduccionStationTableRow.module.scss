@@ -79,7 +79,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 6px;
+  gap: 5px;
 }
 
 .actionButton {
@@ -107,11 +107,6 @@
 
 .actionButton:focus-visible {
   @include produccion.produccion-focus-ring;
-}
-
-.actionButtonPrimary {
-  border-color: rgba(produccion.$produccion-gold, 0.35);
-  color: produccion.$produccion-gold;
 }
 
 @media (width <= 720px) {

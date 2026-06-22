@@ -8,7 +8,6 @@ import {
   UsuarioTable,
   UsuarioTableItem,
 } from '@restopsiq/ui';
-import { Users } from 'lucide-react';
 import { useMemo, useState, type JSX } from 'react';
 
 import { useMe } from '@/features/auth/hooks/useMe';
@@ -123,8 +122,12 @@ export default function UsersListView(): JSX.Element {
         <UsuarioPageHeader
           title="Usuarios"
           subtitle="Gestión de cuentas de usuario y asignación de roles"
-          icon={<Users />}
           theme={usuarioTheme}
+          actions={
+            canManage ? (
+              <UsuarioActionButton theme={usuarioTheme} onClick={openCreate} />
+            ) : undefined
+          }
         />
       </UsuarioPageSection>
 
@@ -134,11 +137,6 @@ export default function UsersListView(): JSX.Element {
           searchValue={search}
           onSearchChange={setSearch}
           theme={usuarioTheme}
-          primaryAction={
-            canManage ? (
-              <UsuarioActionButton theme={usuarioTheme} onClick={openCreate} />
-            ) : undefined
-          }
         />
       </UsuarioPageSection>
 

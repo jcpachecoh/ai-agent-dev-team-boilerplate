@@ -57,10 +57,10 @@ export function InventoryReportsScreen(): React.JSX.Element {
     <div className={shared.screen}>
       <section className={shared.pageHeader}>
         <InventarioPageHeader
-          title="Reportes de Inventario"
+          title="Reportes de inventario"
           subtitle="Genera reportes personalizados y exporta en CSV o PDF"
           theme={theme}
-          size="xl"
+          size="md"
           className={shared.pageHeaderHost}
         />
       </section>

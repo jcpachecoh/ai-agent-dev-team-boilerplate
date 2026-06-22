@@ -1,5 +1,4 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { Users } from 'lucide-react';
 
 import { usuarioStoryMeta } from '../shared/story-decorators';
 import { UsuarioPageHeader } from './UsuarioPageHeader';
@@ -13,11 +12,7 @@ const meta: Meta<typeof UsuarioPageHeader> = {
 export default meta;
 type Story = StoryObj<typeof UsuarioPageHeader>;
 
-export const Default: Story = {
-  args: {
-    icon: <Users />,
-  },
-};
+export const Default: Story = {};
 
 export const Light: Story = {
   args: {

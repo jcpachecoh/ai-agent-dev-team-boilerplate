@@ -1,19 +1,14 @@
 @use '../../../styles/abstracts/variables' as *;
+@use '../../../styles/abstracts/page-header-title' as ph;
 @use '../shared/asistencia-theme' as asis;
 
 .header {
   @include asis.asistencia-theme-classes;
-
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: $spacing-md;
+  @include ph.page-header-shell;
 }
 
 .leading {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
+  @include ph.page-header-titles-stack;
 }
 
 .titleRow {
@@ -23,26 +18,16 @@
 }
 
 .iconWrap {
-  display: inline-flex;
-  color: var(--asistencia-accent);
-
-  svg {
-    width: 18px;
-    height: 18px;
-  }
+  display: none;
 }
 
 .title {
-  margin: 0;
-  font-size: 1.1875rem;
-  font-weight: $font-weight-bold;
-  letter-spacing: -0.01em;
+  @include ph.page-header-title;
   color: var(--asistencia-text);
 }
 
 .subtitle {
-  margin: 0;
-  font-size: 0.75rem;
+  @include ph.page-header-subtitle;
   color: var(--asistencia-subtle);
 }
 
