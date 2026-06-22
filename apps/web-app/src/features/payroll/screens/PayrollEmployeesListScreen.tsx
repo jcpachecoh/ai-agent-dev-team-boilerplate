@@ -99,7 +99,7 @@ export function PayrollEmployeesListScreen(): React.JSX.Element {
 
   const [createOpen, setCreateOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<PayrollEmployee | undefined>();
-  const [deactivatingEmployee, setDeactivatingEmployee] = useState<PayrollEmployee | undefined>();
+  const [statusChangeEmployee, setStatusChangeEmployee] = useState<PayrollEmployee | undefined>();
   const [sortColumn, setSortColumn] = useState<EmpleadoSortColumnKey | null>(null);
   const [sortDirection, setSortDirection] = useState<EmpleadoSortDirection>('asc');
 
