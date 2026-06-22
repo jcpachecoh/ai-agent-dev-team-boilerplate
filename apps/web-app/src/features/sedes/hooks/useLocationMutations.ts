@@ -9,26 +9,42 @@ import {
   updateLocation,
 } from '../api/sedes.mutations';
 import { sedesKeys } from '../api/sedes.keys';
-import type { SedeFormValues } from '../types';
+import type { LocationBusinessHoursInput, SedeFormValues } from '../types';
 import { useRestaurantId } from './useRestaurantId';
 
-function formToCreateInput(restaurantId: string, values: SedeFormValues) {
+function serializeBusinessHours(
+  bh: LocationBusinessHoursInput | null | undefined,
+): string | undefined {
+  if (!bh) return undefined;
+  return JSON.stringify(bh);
+}
+
+function formToCreateInput(
+  restaurantId: string,
+  values: SedeFormValues,
+  businessHours: LocationBusinessHoursInput | null,
+) {
   return {
     restaurantId,
     name: values.name?.trim() ?? '',
     address: values.address?.trim() ?? '',
     city: values.city?.trim() || undefined,
     phone: values.phone?.trim() || undefined,
+    businessHours: serializeBusinessHours(businessHours),
   };
 }
 
-function formToUpdateInput(values: SedeFormValues) {
+function formToUpdateInput(
+  values: SedeFormValues,
+  businessHours: LocationBusinessHoursInput | null | undefined,
+) {
   return {
     name: values.name?.trim() ?? '',
     address: values.address?.trim() ?? '',
     city: values.city?.trim() || undefined,
     phone: values.phone?.trim() || undefined,
     isActive: values.isActive ?? true,
+    businessHours: serializeBusinessHours(businessHours),
   };
 }
 
@@ -37,8 +53,14 @@ export function useCreateLocation() {
   const restaurantId = useRestaurantId();
 
   return useMutation({
-    mutationFn: async (values: SedeFormValues) => {
-      const created = await createLocation(formToCreateInput(restaurantId, values));
+    mutationFn: async ({
+      values,
+      businessHours,
+    }: {
+      values: SedeFormValues;
+      businessHours: LocationBusinessHoursInput | null;
+    }) => {
+      const created = await createLocation(formToCreateInput(restaurantId, values, businessHours));
       if (values.isActive === false) {
         return updateLocation(created.id, { isActive: false });
       }
@@ -55,8 +77,15 @@ export function useUpdateLocation() {
   const restaurantId = useRestaurantId();
 
   return useMutation({
-    mutationFn: ({ id, values }: { id: string; values: SedeFormValues }) =>
-      updateLocation(id, formToUpdateInput(values)),
+    mutationFn: ({
+      id,
+      values,
+      businessHours,
+    }: {
+      id: string;
+      values: SedeFormValues;
+      businessHours: LocationBusinessHoursInput | null | undefined;
+    }) => updateLocation(id, formToUpdateInput(values, businessHours)),
     onSuccess: (location) => {
       void queryClient.invalidateQueries({ queryKey: sedesKeys.lists() });
       void queryClient.invalidateQueries({

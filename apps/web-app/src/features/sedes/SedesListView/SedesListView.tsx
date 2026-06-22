@@ -22,7 +22,7 @@ import { getErrorMessage, isGraphqlConfigured } from '@/lib/graphql-client';
 
 import { useLocation, useLocationMetrics, useLocationUsers } from '../hooks/useLocations';
 import { useDeleteLocation, useToggleLocationStatus } from '../hooks/useLocationMutations';
-import { enrichAssignedUsers } from '../mappers/api';
+import { enrichAssignedUsers, mapLocationToFormValues } from '../mappers/api';
 import styles from '../sedes.module.scss';
 
 export default function SedesListView(): JSX.Element {
@@ -219,7 +219,9 @@ export default function SedesListView(): JSX.Element {
         open={viewTargetId !== null}
         title={`Consultar: ${viewTargetName}`}
         locationId={viewTargetId ?? undefined}
-        values={viewLocationQuery.data}
+        values={
+          viewLocationQuery.data ? mapLocationToFormValues(viewLocationQuery.data) : undefined
+        }
         assignedUsers={filteredViewUsers}
         userSearchValue={viewUserSearch}
         onUserSearchChange={setViewUserSearch}

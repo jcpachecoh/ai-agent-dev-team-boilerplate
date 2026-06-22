@@ -27,4 +27,10 @@ export class CreateLocationInput {
   @IsString()
   @IsNotEmpty()
   restaurantId!: string;
+
+  /** JSON string with LocationBusinessHours structure */
+  @Field(() => String, { nullable: true })
+  @IsString()
+  @IsOptional()
+  businessHours?: string;
 }

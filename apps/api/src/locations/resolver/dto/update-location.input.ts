@@ -29,4 +29,10 @@ export class UpdateLocationInput {
   @IsBoolean()
   @IsOptional()
   isActive?: boolean;
+
+  /** JSON string with LocationBusinessHours structure */
+  @Field(() => String, { nullable: true })
+  @IsString()
+  @IsOptional()
+  businessHours?: string;
 }

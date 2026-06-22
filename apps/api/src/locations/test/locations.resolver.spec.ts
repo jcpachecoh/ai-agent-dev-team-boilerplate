@@ -33,6 +33,7 @@ const baseLocation = {
 
 const serviceMock = {
   assertTenantAccess: jest.fn(),
+  parseAndValidateBusinessHours: jest.fn().mockReturnValue(null),
   findAll: jest.fn(),
   findOne: jest.fn(),
   create: jest.fn(),
@@ -112,12 +113,15 @@ describe('LocationsResolver', () => {
     await resolver.createLocation(jwtUser, input);
 
     expect(serviceMock.assertTenantAccess).toHaveBeenCalledWith(tenantId, tenantId);
-    expect(serviceMock.create).toHaveBeenCalledWith(tenantId, {
-      name: 'Sede Nueva',
-      address: 'Calle 2',
-      city: undefined,
-      phone: undefined,
-    });
+    expect(serviceMock.create).toHaveBeenCalledWith(
+      tenantId,
+      expect.objectContaining({
+        name: 'Sede Nueva',
+        address: 'Calle 2',
+        city: undefined,
+        phone: undefined,
+      }),
+    );
   });
 
   it('updateLocation delegates to service with user.tenantId', async () => {

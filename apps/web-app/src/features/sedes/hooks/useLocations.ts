@@ -4,7 +4,7 @@ import { isGraphqlConfigured } from '@/lib/graphql-client';
 
 import { fetchLocationTableRows, fetchLocation, fetchLocationUsers } from '../api/sedes.queries';
 import { sedesKeys } from '../api/sedes.keys';
-import { mapLocationAssignedUser, mapLocationToFormValues } from '../mappers/api';
+import { mapLocationAssignedUser } from '../mappers/api';
 import { useRestaurantId } from './useRestaurantId';
 
 export function useLocations() {
@@ -37,7 +37,6 @@ export function useLocation(locationId: string | undefined) {
     queryKey: sedesKeys.detail(restaurantId, locationId ?? ''),
     queryFn: () => fetchLocation(locationId!, restaurantId),
     enabled: isGraphqlConfigured() && Boolean(locationId),
-    select: mapLocationToFormValues,
   });
 }
 

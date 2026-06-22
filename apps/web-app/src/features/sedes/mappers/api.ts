@@ -90,6 +90,15 @@ export function mapLocationUsersToAssigned(
   return enrichAssignedUsers(mapped, adminUsers);
 }
 
+export function parseLocationBusinessHours(raw: string | null | undefined) {
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as import('../types').LocationBusinessHoursInput;
+  } catch {
+    return null;
+  }
+}
+
 export function mapLocationToFormValues(location: LocationApiModel): SedeFormValues {
   return {
     name: location.name,

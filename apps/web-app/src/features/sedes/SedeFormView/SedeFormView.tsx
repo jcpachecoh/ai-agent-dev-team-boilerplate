@@ -25,9 +25,15 @@ import {
   useRemoveUserFromLocation,
   useUpdateLocation,
 } from '../hooks/useLocationMutations';
-import { enrichAssignedUsers } from '../mappers/api';
+import {
+  enrichAssignedUsers,
+  mapLocationToFormValues,
+  parseLocationBusinessHours,
+} from '../mappers/api';
 import { useAssignableUsers } from '../hooks/useAssignableUsers';
 import { useAdminUsers } from '@/features/usuarios/hooks/useAdminUsers';
+import { SedeBusinessHoursPanel } from '../components/SedeBusinessHoursPanel';
+import { DEFAULT_BUSINESS_HOURS, type BusinessHoursDayInput } from '../types';
 import styles from '../sedes.module.scss';
 
 interface SedeFormViewProps {
@@ -55,12 +61,17 @@ export default function SedeFormView({ mode }: SedeFormViewProps): JSX.Element {
   const assignUser = useAssignUserToLocation(id);
 
   const [values, setValues] = useState<SedeFormPreviewValues>(EMPTY_VALUES);
+  const [businessHoursInput, setBusinessHoursInput] = useState<BusinessHoursDayInput[]>(
+    DEFAULT_BUSINESS_HOURS.hoursPerDay,
+  );
   const [userSearch, setUserSearch] = useState('');
   const [selectedUserId, setSelectedUserId] = useState('');
 
   useEffect(() => {
     if (locationQuery.data) {
-      setValues(locationQuery.data);
+      setValues(mapLocationToFormValues(locationQuery.data));
+      const rawBh = parseLocationBusinessHours(locationQuery.data.businessHours);
+      setBusinessHoursInput(rawBh?.hoursPerDay ?? DEFAULT_BUSINESS_HOURS.hoursPerDay);
     }
   }, [locationQuery.data]);
 
@@ -74,12 +85,17 @@ export default function SedeFormView({ mode }: SedeFormViewProps): JSX.Element {
       return;
     }
 
+    const businessHours = {
+      timezone: 'America/Bogota',
+      hoursPerDay: businessHoursInput,
+    };
+
     try {
       if (mode === 'create') {
-        await createLocation.mutateAsync(values);
+        await createLocation.mutateAsync({ values, businessHours });
         toast.success('Sede creada correctamente.');
       } else if (id) {
-        await updateLocation.mutateAsync({ id, values });
+        await updateLocation.mutateAsync({ id, values, businessHours });
         toast.success('Cambios guardados.');
       }
       navigate('/empresa/sedes');
@@ -228,6 +244,14 @@ export default function SedeFormView({ mode }: SedeFormViewProps): JSX.Element {
             submitLoading={submitting}
             submitDisabled={loadingEdit || loadError}
             theme={theme}
+          />
+        </SedeFormCard>
+
+        <SedeFormCard title="Horario de atención" theme={theme}>
+          <SedeBusinessHoursPanel
+            hoursPerDay={businessHoursInput}
+            onChange={setBusinessHoursInput}
+            disabled={loadingEdit}
           />
         </SedeFormCard>
       </SedeFormLayout>

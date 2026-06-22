@@ -24,6 +24,10 @@ export class LocationType {
   @Field(() => String, { nullable: true })
   code?: string | null;
 
+  /** Serialized JSON string of LocationBusinessHours */
+  @Field(() => String, { nullable: true })
+  businessHours?: string | null;
+
   @Field()
   isActive!: boolean;
 
@@ -43,6 +47,7 @@ export function toLocationType(location: Location): LocationType {
     city: location.city,
     phone: location.phone,
     code: location.code,
+    businessHours: location.businessHours != null ? JSON.stringify(location.businessHours) : null,
     isActive: location.isActive,
     createdAt: location.createdAt,
     updatedAt: location.updatedAt,

@@ -467,6 +467,19 @@ async function seedRolePermissions() {
   return countsByRole;
 }
 
+const DEFAULT_BUSINESS_HOURS = {
+  timezone: 'America/Bogota',
+  hoursPerDay: [
+    { dayOfWeek: 'monday', openingTime: '06:00', closingTime: '22:00', isOpen: true },
+    { dayOfWeek: 'tuesday', openingTime: '06:00', closingTime: '22:00', isOpen: true },
+    { dayOfWeek: 'wednesday', openingTime: '06:00', closingTime: '22:00', isOpen: true },
+    { dayOfWeek: 'thursday', openingTime: '06:00', closingTime: '22:00', isOpen: true },
+    { dayOfWeek: 'friday', openingTime: '06:00', closingTime: '23:00', isOpen: true },
+    { dayOfWeek: 'saturday', openingTime: '08:00', closingTime: '23:00', isOpen: true },
+    { dayOfWeek: 'sunday', openingTime: '08:00', closingTime: '20:00', isOpen: true },
+  ],
+};
+
 async function seedLocations() {
   const locations: Location[] = [];
   for (let i = 1; i <= 10; i++) {
@@ -479,7 +492,7 @@ async function seedLocations() {
       where: {
         tenantId_code: { tenantId: OPERATIONAL_TENANT_ID, code },
       },
-      update: { name, address, city, phone, isActive: true },
+      update: { name, address, city, phone, isActive: true, businessHours: DEFAULT_BUSINESS_HOURS },
       create: {
         tenantId: OPERATIONAL_TENANT_ID,
         name,
@@ -488,6 +501,7 @@ async function seedLocations() {
         city,
         phone,
         isActive: true,
+        businessHours: DEFAULT_BUSINESS_HOURS,
       },
     });
     locations.push(location);

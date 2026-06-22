@@ -94,13 +94,13 @@ describe('LocationsRepository', () => {
     });
 
     expect(prismaMock.location.create).toHaveBeenCalledWith({
-      data: {
+      data: expect.objectContaining({
         tenantId: 'tenant-1',
         name: 'Sede Principal',
         address: 'Calle 1',
         city: 'Bogotá',
         phone: undefined,
-      },
+      }),
     });
   });
 

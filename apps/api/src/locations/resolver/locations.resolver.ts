@@ -56,11 +56,13 @@ export class LocationsResolver {
     @Args('input') input: CreateLocationInput,
   ): Promise<LocationType> {
     this.locationsService.assertTenantAccess(user.tenantId, input.restaurantId);
+    const businessHours = this.locationsService.parseAndValidateBusinessHours(input.businessHours);
     const result = await this.locationsService.create(user.tenantId, {
       name: input.name,
       address: input.address,
       city: input.city,
       phone: input.phone,
+      businessHours,
     });
     return toLocationType(result);
   }
@@ -71,7 +73,18 @@ export class LocationsResolver {
     @Args('id', { type: () => ID }) id: string,
     @Args('input') input: UpdateLocationInput,
   ): Promise<LocationType> {
-    const result = await this.locationsService.update(user.tenantId, id, input);
+    const businessHours =
+      'businessHours' in input
+        ? this.locationsService.parseAndValidateBusinessHours(input.businessHours)
+        : undefined;
+    const result = await this.locationsService.update(user.tenantId, id, {
+      name: input.name,
+      address: input.address,
+      city: input.city,
+      phone: input.phone,
+      isActive: input.isActive,
+      ...(businessHours !== undefined && { businessHours }),
+    });
     return toLocationType(result);
   }
 

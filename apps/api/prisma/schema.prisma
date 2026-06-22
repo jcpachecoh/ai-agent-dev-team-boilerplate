@@ -430,19 +430,20 @@ enum EmployeeCatalogType {
 }
 
 model Location {
-  id        String    @id @default(cuid())
-  tenantId  String
-  name      String
-  address   String
-  city      String?
-  phone     String?
-  code      String?
-  latitude  String?
-  longitude String?
-  isActive  Boolean   @default(true)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
+  id            String    @id @default(cuid())
+  tenantId      String
+  name          String
+  address       String
+  city          String?
+  phone         String?
+  code          String?
+  latitude      String?
+  longitude     String?
+  businessHours Json?
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
 
   tenant              Tenant               @relation(fields: [tenantId], references: [id])
   users               UserLocation[]

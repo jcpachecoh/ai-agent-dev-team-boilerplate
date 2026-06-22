@@ -12,6 +12,7 @@ import type {
   UpdateLocationData,
 } from '../interfaces/locations.interfaces';
 import { LocationsRepository } from '../repository/locations.repository';
+import { parseBusinessHoursInput, type LocationBusinessHours } from '../types/business-hours.types';
 
 @Injectable()
 export class LocationsService implements ILocationsService {
@@ -20,6 +21,15 @@ export class LocationsService implements ILocationsService {
   assertTenantAccess(jwtTenantId: string, requestedRestaurantId: string): void {
     if (jwtTenantId !== requestedRestaurantId) {
       throw new ForbiddenException('Acceso denegado');
+    }
+  }
+
+  parseAndValidateBusinessHours(raw: string | null | undefined): LocationBusinessHours | null {
+    try {
+      return parseBusinessHoursInput(raw);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'businessHours inválido';
+      throw new BadRequestException(message);
     }
   }
 

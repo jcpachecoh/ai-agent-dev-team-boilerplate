@@ -6,6 +6,7 @@ export const LOCATION_FIELDS = `
   city
   phone
   code
+  businessHours
   isActive
   createdAt
   updatedAt

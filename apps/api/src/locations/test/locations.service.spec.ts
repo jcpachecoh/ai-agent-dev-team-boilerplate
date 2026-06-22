@@ -2,6 +2,7 @@ import { BadRequestException, ForbiddenException, NotFoundException } from '@nes
 import { Test, TestingModule } from '@nestjs/testing';
 import { LocationsRepository } from '../repository/locations.repository';
 import { LocationsService } from '../service/locations.service';
+import { DEFAULT_BUSINESS_HOURS } from '../types/business-hours.types';
 
 const baseLocation = {
   id: 'loc-1',
@@ -13,6 +14,7 @@ const baseLocation = {
   code: 'PL-01',
   latitude: null,
   longitude: null,
+  businessHours: null,
   isActive: true,
   createdAt: new Date(),
   updatedAt: new Date(),
@@ -127,6 +129,82 @@ describe('LocationsService', () => {
     await expect(service.toggleStatus('tenant-1', 'loc-1')).resolves.toEqual({
       ...baseLocation,
       isActive: false,
+    });
+  });
+
+  describe('parseAndValidateBusinessHours', () => {
+    it('returns null when raw is null', () => {
+      expect(service.parseAndValidateBusinessHours(null)).toBeNull();
+    });
+
+    it('returns null when raw is undefined', () => {
+      expect(service.parseAndValidateBusinessHours(undefined)).toBeNull();
+    });
+
+    it('returns null when raw is empty string', () => {
+      expect(service.parseAndValidateBusinessHours('')).toBeNull();
+    });
+
+    it('returns parsed object when valid JSON is provided', () => {
+      const raw = JSON.stringify(DEFAULT_BUSINESS_HOURS);
+      const result = service.parseAndValidateBusinessHours(raw);
+
+      expect(result).not.toBeNull();
+      expect(result?.timezone).toBe('America/Bogota');
+      expect(result?.hoursPerDay).toHaveLength(7);
+    });
+
+    it('throws BadRequestException when JSON is malformed', () => {
+      expect(() => service.parseAndValidateBusinessHours('{not json')).toThrow(BadRequestException);
+    });
+
+    it('throws BadRequestException when dayOfWeek is invalid', () => {
+      const invalid = JSON.stringify({
+        timezone: 'America/Bogota',
+        hoursPerDay: [
+          { dayOfWeek: 'lunes', isOpen: true, openingTime: '06:00', closingTime: '22:00' },
+        ],
+      });
+      expect(() => service.parseAndValidateBusinessHours(invalid)).toThrow(BadRequestException);
+    });
+
+    it('throws BadRequestException when openingTime format is invalid', () => {
+      const invalid = JSON.stringify({
+        timezone: 'America/Bogota',
+        hoursPerDay: [
+          { dayOfWeek: 'monday', isOpen: true, openingTime: '6:00', closingTime: '22:00' },
+        ],
+      });
+      expect(() => service.parseAndValidateBusinessHours(invalid)).toThrow(BadRequestException);
+    });
+
+    it('throws BadRequestException when closingTime format is invalid', () => {
+      const invalid = JSON.stringify({
+        timezone: 'America/Bogota',
+        hoursPerDay: [
+          { dayOfWeek: 'monday', isOpen: true, openingTime: '06:00', closingTime: '10pm' },
+        ],
+      });
+      expect(() => service.parseAndValidateBusinessHours(invalid)).toThrow(BadRequestException);
+    });
+
+    it('accepts isOpen=false without openingTime/closingTime', () => {
+      const valid = JSON.stringify({
+        timezone: 'America/Bogota',
+        hoursPerDay: [{ dayOfWeek: 'sunday', isOpen: false }],
+      });
+      const result = service.parseAndValidateBusinessHours(valid);
+      expect(result?.hoursPerDay[0]?.isOpen).toBe(false);
+    });
+
+    it('accepts closing time earlier than opening time (cross-midnight not blocked)', () => {
+      const valid = JSON.stringify({
+        timezone: 'America/Bogota',
+        hoursPerDay: [
+          { dayOfWeek: 'friday', isOpen: true, openingTime: '22:00', closingTime: '02:00' },
+        ],
+      });
+      expect(() => service.parseAndValidateBusinessHours(valid)).not.toThrow();
     });
   });
 });

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { Location } from '@prisma/client';
+import { Prisma, type Location } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import type {
   CreateLocationData,
@@ -34,6 +34,10 @@ export class LocationsRepository implements ILocationsRepository {
         address: data.address,
         city: data.city,
         phone: data.phone,
+        businessHours:
+          data.businessHours != null
+            ? (data.businessHours as unknown as Prisma.InputJsonValue)
+            : Prisma.JsonNull,
       },
     });
   }
@@ -42,7 +46,19 @@ export class LocationsRepository implements ILocationsRepository {
     void tenantId;
     return this.prisma.location.update({
       where: { id },
-      data,
+      data: {
+        name: data.name,
+        address: data.address,
+        city: data.city,
+        phone: data.phone,
+        isActive: data.isActive,
+        ...(data.businessHours !== undefined && {
+          businessHours:
+            data.businessHours !== null
+              ? (data.businessHours as unknown as Prisma.InputJsonValue)
+              : Prisma.JsonNull,
+        }),
+      },
     });
   }
 

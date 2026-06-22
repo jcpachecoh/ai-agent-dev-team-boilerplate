@@ -1,4 +1,5 @@
 import type { Location } from '@prisma/client';
+import type { LocationBusinessHours } from '../types/business-hours.types';
 
 export interface LocationCursorPage {
   items: Location[];
@@ -11,6 +12,7 @@ export interface CreateLocationData {
   address: string;
   city?: string | null;
   phone?: string | null;
+  businessHours?: LocationBusinessHours | null;
 }
 
 export interface UpdateLocationData {
@@ -19,6 +21,7 @@ export interface UpdateLocationData {
   city?: string | null;
   phone?: string | null;
   isActive?: boolean;
+  businessHours?: LocationBusinessHours | null;
 }
 
 export interface ILocationsRepository {
