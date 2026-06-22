@@ -30,3 +30,43 @@ export interface AsistenciaMonitorMetrics {
   legalAlerts: number;
   total: number;
 }
+
+export interface AsistenciaLocationMetrics {
+  total: number;
+  onShift: number;
+  absent: number;
+  lateArrivals: number;
+  overtime: number;
+}
+
+export interface AsistenciaLocationSummary {
+  id: string;
+  name: string;
+  city: string;
+  metrics: AsistenciaLocationMetrics;
+}
+
+export type AsistenciaMonitorPeriod = 'day' | 'week' | 'month' | 'year';
+
+export type AsistenciaEmployeeCategory = 'on-shift' | 'absent' | 'late' | 'overtime';
+
+export interface AsistenciaCategoryEmployees {
+  onShift: AsistenciaEmployeeCardData[];
+  absent: AsistenciaEmployeeCardData[];
+  late: AsistenciaEmployeeCardData[];
+  overtime: AsistenciaEmployeeCardData[];
+}
+
+export interface AsistenciaEmployeeCardData {
+  id: string;
+  name: string;
+  role: string;
+  status?: AsistenciaEmployeeStatus;
+  entryLabel?: string;
+  shiftRange?: string;
+  workedTime?: string;
+  overtimeLabel?: string;
+  progressPercent?: number;
+  progressTone?: 'accent' | 'amber' | 'muted';
+  highlight?: AsistenciaCardHighlight;
+}

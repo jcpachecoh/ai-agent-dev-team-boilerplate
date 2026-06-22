@@ -18,6 +18,7 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { PAYROLL_MODULE_ROLES } from '../../common/config/rbac.config';
 import { AttendanceService } from '../service/attendance.service';
+import { AttendanceMonitorSummaryService } from '../service/attendance-monitor-summary.service';
 import { KioskAuthDto } from './dto/kiosk-auth.dto';
 import { RegisterEntryDto, RegisterExitDto } from './dto/register-event.dto';
 import {
@@ -32,6 +33,8 @@ import {
   KioskAuthResponseDto,
   OvertimeSummaryDto,
 } from './dto/attendance-summary.response';
+import { MonitorSummaryQueryDto } from './dto/monitor-summary-query.dto';
+import { AttendanceMonitorSummaryDto } from './dto/monitor-summary.response';
 
 @ApiTags('attendance')
 @ApiHeader({
@@ -41,7 +44,10 @@ import {
 })
 @Controller('attendance')
 export class AttendanceController {
-  constructor(private readonly attendanceService: AttendanceService) {}
+  constructor(
+    private readonly attendanceService: AttendanceService,
+    private readonly monitorSummaryService: AttendanceMonitorSummaryService,
+  ) {}
 
   // ── Public kiosk endpoints ─────────────────────────────────────────────────
   //
@@ -137,6 +143,30 @@ export class AttendanceController {
     return this.attendanceService.listActive(query.locationId, tenantId) as Promise<
       ActiveAttendanceEntryDto[]
     >;
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(RolesGuard)
+  @Roles(...PAYROLL_MODULE_ROLES)
+  @Get('locations/:locationId/monitor-summary')
+  @ApiOperation({ summary: 'Resumen de monitor de asistencia por sede y periodo' })
+  @ApiResponse({ status: 200, type: AttendanceMonitorSummaryDto })
+  @ApiResponse({ status: 404, description: 'Sede no encontrada' })
+  getMonitorSummary(
+    @CurrentUser() user: any,
+    @Headers('x-tenant-id') headerTenantId: string,
+    @Param('locationId') locationId: string,
+    @Query() query: MonitorSummaryQueryDto,
+  ): Promise<AttendanceMonitorSummaryDto> {
+    const tenantId = this.resolveTenantId(user, headerTenantId);
+    return this.monitorSummaryService.getMonitorSummary(
+      {
+        locationId,
+        period: query.period,
+        anchorDate: query.anchorDate,
+      },
+      tenantId,
+    ) as Promise<AttendanceMonitorSummaryDto>;
   }
 
   @ApiBearerAuth()

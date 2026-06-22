@@ -102,7 +102,7 @@ export class AttendanceRepository implements IAttendanceRepository {
         location: true,
       },
       orderBy: { timestamp: 'desc' },
-      take: filters.limit ?? 50,
+      take: filters.limit ?? 500,
       skip: filters.offset ?? 0,
     }) as Promise<AttendanceLogFull[]>;
   }
@@ -139,6 +139,20 @@ export class AttendanceRepository implements IAttendanceRepository {
         location: true,
       },
     }) as Promise<AttendanceLogFull | null>;
+  }
+
+  findLocationById(locationId: string, tenantId: string): Promise<Location | null> {
+    return this.prisma.location.findFirst({
+      where: { id: locationId, tenantId, deletedAt: null },
+    });
+  }
+
+  findEmployeesAtLocation(locationId: string, tenantId: string): Promise<EmployeeWithUser[]> {
+    return this.prisma.employeeDetails.findMany({
+      where: { locationId, tenantId, isActive: true, deletedAt: null },
+      include: { user: true },
+      orderBy: { name: 'asc' },
+    }) as Promise<EmployeeWithUser[]>;
   }
 
   private getTodayWorkDate(): Date {

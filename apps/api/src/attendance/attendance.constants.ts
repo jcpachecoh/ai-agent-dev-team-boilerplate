@@ -9,6 +9,7 @@ export const SHIFT_MORNING_START = 6;
 export const SHIFT_MORNING_END = 14;
 export const SHIFT_AFTERNOON_START = 14;
 export const SHIFT_AFTERNOON_END = 22;
+export const LATE_ARRIVAL_TOLERANCE_MINUTES = 5;
 
 // Ley 2101/2021: jornada semanal máxima 46h a partir de 2025
 export const MAX_WEEKLY_MINUTES = 46 * 60;

@@ -9,6 +9,8 @@ import type {
   AttendanceExitResult,
   AttendanceHistoryFilters,
   AttendanceHistoryItem,
+  AttendanceMonitorSummary,
+  AttendanceMonitorSummaryFilters,
   AttendanceOvertimeSummary,
 } from '../types/attendance.types';
 
@@ -161,4 +163,17 @@ export async function getAttendanceOvertimeSummary(
     }
     throw error;
   }
+}
+
+export function getAttendanceMonitorSummary(
+  locationId: string,
+  filters: AttendanceMonitorSummaryFilters,
+): Promise<AttendanceMonitorSummary> {
+  const query = toQueryString({
+    period: filters.period,
+    anchorDate: filters.anchorDate,
+  });
+  return attendanceFetch<AttendanceMonitorSummary>(
+    `/attendance/locations/${locationId}/monitor-summary${query}`,
+  );
 }

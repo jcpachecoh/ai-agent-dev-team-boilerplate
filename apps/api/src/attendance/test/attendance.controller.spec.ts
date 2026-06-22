@@ -2,12 +2,14 @@ import { BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AttendanceController } from '../controller/attendance.controller';
 import { AttendanceService } from '../service/attendance.service';
+import { AttendanceMonitorSummaryService } from '../service/attendance-monitor-summary.service';
 import { KioskAuthDto } from '../controller/dto/kiosk-auth.dto';
 import { RegisterEntryDto, RegisterExitDto } from '../controller/dto/register-event.dto';
 import {
   ListAttendanceQueryDto,
   ActiveAttendanceQueryDto,
 } from '../controller/dto/list-attendance-query.dto';
+import { MonitorSummaryQueryDto } from '../controller/dto/monitor-summary-query.dto';
 
 const serviceMock = {
   kioskAuth: jest.fn(),
@@ -16,6 +18,10 @@ const serviceMock = {
   listHistory: jest.fn(),
   listActive: jest.fn(),
   getOvertimeSummary: jest.fn(),
+};
+
+const monitorSummaryServiceMock = {
+  getMonitorSummary: jest.fn(),
 };
 
 const TENANT = 'test-tenant';
@@ -33,7 +39,10 @@ describe('AttendanceController', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AttendanceController],
-      providers: [{ provide: AttendanceService, useValue: serviceMock }],
+      providers: [
+        { provide: AttendanceService, useValue: serviceMock },
+        { provide: AttendanceMonitorSummaryService, useValue: monitorSummaryServiceMock },
+      ],
     }).compile();
 
     controller = module.get<AttendanceController>(AttendanceController);
@@ -153,6 +162,26 @@ describe('AttendanceController', () => {
       await controller.listActive(user, '', query);
 
       expect(serviceMock.listActive).toHaveBeenCalledWith('loc-001', TENANT);
+    });
+  });
+
+  describe('getMonitorSummary', () => {
+    it('delega al monitor summary service', async () => {
+      const user = { tenantId: TENANT };
+      const query = Object.assign(new MonitorSummaryQueryDto(), {
+        period: 'day',
+        anchorDate: '2026-06-18',
+      });
+      const summary = { locationId: 'loc-001', metrics: { total: 1 } };
+      monitorSummaryServiceMock.getMonitorSummary.mockResolvedValue(summary);
+
+      const result = await controller.getMonitorSummary(user, '', 'loc-001', query);
+
+      expect(monitorSummaryServiceMock.getMonitorSummary).toHaveBeenCalledWith(
+        { locationId: 'loc-001', period: 'day', anchorDate: '2026-06-18' },
+        TENANT,
+      );
+      expect(result).toEqual(summary);
     });
   });
 });

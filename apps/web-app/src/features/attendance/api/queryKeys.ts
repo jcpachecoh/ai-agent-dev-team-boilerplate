@@ -1,4 +1,4 @@
-import type { AttendanceHistoryFilters } from '../types/attendance.types';
+import type { AttendanceHistoryFilters, AttendanceMonitorPeriod } from '../types/attendance.types';
 
 export const attendanceKeys = {
   all: ['attendance'] as const,
@@ -8,4 +8,6 @@ export const attendanceKeys = {
   active: (locationId: string) => [...attendanceKeys.all, 'active', locationId] as const,
   overtime: (userId: string, date?: string) =>
     [...attendanceKeys.all, 'overtime', userId, date ?? 'today'] as const,
+  monitorSummary: (locationId: string, period: AttendanceMonitorPeriod, anchorDate: string) =>
+    [...attendanceKeys.all, 'monitor-summary', locationId, period, anchorDate] as const,
 };

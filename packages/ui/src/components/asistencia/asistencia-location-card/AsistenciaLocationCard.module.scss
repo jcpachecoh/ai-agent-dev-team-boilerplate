@@ -1,0 +1,129 @@
+@use '../shared/asistencia-theme' as asistencia;
+
+.card {
+  @include asistencia.asistencia-theme-classes;
+
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+  padding: 14px 16px;
+  border: 1px solid var(--asistencia-border);
+  border-radius: 6px;
+  background: var(--asistencia-surface-raised);
+  color: var(--asistencia-text);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+
+  &:hover {
+    border-color: var(--asistencia-accent-border);
+    background: var(--asistencia-hover);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--asistencia-accent);
+    outline-offset: 2px;
+  }
+}
+
+.cardAlert {
+  border-left: 3px solid var(--asistencia-coral);
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.iconWrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: var(--asistencia-accent-soft);
+  color: var(--asistencia-accent);
+}
+
+.name {
+  flex: 1;
+  margin: 0;
+  min-width: 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--asistencia-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chevron {
+  flex-shrink: 0;
+  color: var(--asistencia-faint);
+}
+
+.city {
+  margin: 0;
+  padding-left: 36px;
+  font-size: 0.75rem;
+  color: var(--asistencia-subtle);
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.metric {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  padding: 8px 10px;
+  border-radius: 4px;
+  background: var(--asistencia-surface);
+}
+
+.metricLabel {
+  font-family: var(--font-family-mono, monospace);
+  font-size: 0.5rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--asistencia-faint);
+}
+
+.metricValue {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--asistencia-text);
+}
+
+.metricValueAccent {
+  color: var(--asistencia-accent);
+}
+
+.metricValueWarning {
+  color: var(--asistencia-amber);
+}
+
+.metricValueDanger {
+  color: var(--asistencia-coral);
+}

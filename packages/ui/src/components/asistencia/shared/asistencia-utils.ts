@@ -1,4 +1,8 @@
-import type { AsistenciaAvatarTone } from './asistencia-types';
+import type {
+  AsistenciaAvatarTone,
+  AsistenciaLocationSummary,
+  AsistenciaMonitorMetrics,
+} from './asistencia-types';
 
 const avatarTones: AsistenciaAvatarTone[] = ['sand', 'teal', 'blue', 'purple', 'coral', 'gold'];
 
@@ -22,4 +26,37 @@ export function formatWorkedDuration(totalMinutes: number): string {
 
 export function formatMetricFraction(value: number, total: number): string {
   return `${value} / ${total}`;
+}
+
+export function aggregateLocationMetrics(
+  locations: AsistenciaLocationSummary[],
+): AsistenciaMonitorMetrics {
+  return locations.reduce<AsistenciaMonitorMetrics>(
+    (acc, location) => ({
+      total: acc.total + location.metrics.total,
+      onShift: acc.onShift + location.metrics.onShift,
+      absent: acc.absent + location.metrics.absent,
+      offSchedule: acc.offSchedule + location.metrics.lateArrivals,
+      overtime: acc.overtime + location.metrics.overtime,
+      legalAlerts: acc.legalAlerts,
+    }),
+    { total: 0, onShift: 0, absent: 0, offSchedule: 0, overtime: 0, legalAlerts: 0 },
+  );
+}
+
+export function sortLocationsByActivity(
+  locations: AsistenciaLocationSummary[],
+): AsistenciaLocationSummary[] {
+  return [...locations].sort((left, right) => {
+    const onShiftDiff = right.metrics.onShift - left.metrics.onShift;
+    if (onShiftDiff !== 0) return onShiftDiff;
+
+    const absentDiff = right.metrics.absent - left.metrics.absent;
+    if (absentDiff !== 0) return absentDiff;
+
+    const totalDiff = right.metrics.total - left.metrics.total;
+    if (totalDiff !== 0) return totalDiff;
+
+    return left.name.localeCompare(right.name, 'es');
+  });
 }

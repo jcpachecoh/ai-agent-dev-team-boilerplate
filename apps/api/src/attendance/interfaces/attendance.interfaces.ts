@@ -103,6 +103,52 @@ export interface ActiveAttendanceEntry {
   shift: AttendanceShift | null;
 }
 
+export type AttendanceMonitorPeriod = 'day' | 'week' | 'month' | 'year';
+
+export interface AttendanceMonitorSummaryInput {
+  locationId: string;
+  period: AttendanceMonitorPeriod;
+  anchorDate: string;
+}
+
+export interface AttendanceMonitorEmployee {
+  employeeId: string;
+  userId: string;
+  name: string;
+  role: string;
+  status: 'on-shift' | 'absent' | 'late' | 'overtime';
+  entryLabel?: string;
+  workedMinutes?: number;
+  overtimeMinutes?: number;
+  lateMinutes?: number;
+  daysPresent?: number;
+  lastEntryAt?: string;
+}
+
+export interface AttendanceMonitorSummary {
+  locationId: string;
+  period: AttendanceMonitorPeriod;
+  anchorDate: string;
+  dateFrom: string;
+  dateTo: string;
+  isLive: boolean;
+  metrics: {
+    total: number;
+    onShift: number;
+    absent: number;
+    lateArrivals: number;
+    overtime: number;
+    offSchedule: number;
+    legalAlerts: number;
+  };
+  employees: {
+    onShift: AttendanceMonitorEmployee[];
+    absent: AttendanceMonitorEmployee[];
+    late: AttendanceMonitorEmployee[];
+    overtime: AttendanceMonitorEmployee[];
+  };
+}
+
 // ── Repository contract ─────────────────────────────────────────────────────
 
 export interface CreateAttendanceLogData {
@@ -139,6 +185,8 @@ export interface IAttendanceRepository {
   listActiveAtLocation(locationId: string, tenantId: string): Promise<AttendanceLogFull[]>;
   findById(id: string, tenantId: string): Promise<AttendanceLogFull | null>;
   findEmployeeByUserId(userId: string, tenantId: string): Promise<EmployeeWithUser | null>;
+  findLocationById(locationId: string, tenantId: string): Promise<Location | null>;
+  findEmployeesAtLocation(locationId: string, tenantId: string): Promise<EmployeeWithUser[]>;
 }
 
 // ── Service contract ────────────────────────────────────────────────────────

@@ -8,14 +8,11 @@ import {
   UnauthorizedException,
   UnprocessableEntityException,
 } from '@nestjs/common';
-import { AttendanceEventType, AttendanceLog, AttendanceShift } from '@prisma/client';
+import { AttendanceEventType, AttendanceShift } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import {
-  COLOMBIA_TZ,
   KIOSK_LOCK_DURATION_MS,
   KIOSK_MAX_ATTEMPTS,
-  NOCTURNO_START_HOUR,
-  REGULAR_DAY_MINUTES,
   SHIFT_AFTERNOON_END,
   SHIFT_AFTERNOON_START,
   SHIFT_MORNING_START,
@@ -32,9 +29,9 @@ import type {
   OvertimeSummary,
   RegisterEntryInput,
   RegisterExitInput,
-  WorkPair,
 } from '../interfaces/attendance.interfaces';
 import { AttendanceRepository, normalizeWorkDate } from '../repository/attendance.repository';
+import { calculateDaySummary, getBogotaHour } from '../utils/attendance-calculation.util';
 
 // Kiosk-auth security model:
 //   • Tenant scope: tenantId required on every call
@@ -273,56 +270,4 @@ function detectShift(ts: Date): AttendanceShift {
   return AttendanceShift.NIGHT;
 }
 
-function getBogotaHour(ts: Date): number {
-  const str = new Intl.DateTimeFormat('en', {
-    timeZone: COLOMBIA_TZ,
-    hour: 'numeric',
-    hour12: false,
-    hourCycle: 'h23',
-  }).format(ts);
-  const h = parseInt(str, 10);
-  return isNaN(h) ? 0 : h;
-}
-
-function calculateDaySummary(
-  logs: AttendanceLog[],
-  now: Date,
-): { totalMinutes: number; overtimeMinutes: number; isNocturno: boolean; pairs: WorkPair[] } {
-  const entries = logs.filter((l) => l.eventType === AttendanceEventType.ENTRY);
-  const exits = logs.filter((l) => l.eventType === AttendanceEventType.EXIT);
-
-  const pairs: WorkPair[] = [];
-  let totalMs = 0;
-  let isNocturno = false;
-
-  for (let i = 0; i < entries.length; i++) {
-    const entry = entries[i];
-    const exit = exits[i] ?? null;
-
-    const exitTime = exit?.timestamp ?? now;
-    const durationMs = exitTime.getTime() - entry.timestamp.getTime();
-    const durationMinutes = Math.max(0, Math.floor(durationMs / 60_000));
-    totalMs += durationMs;
-
-    if (!isNocturno) {
-      const entryHour = getBogotaHour(entry.timestamp);
-      const exitHour = getBogotaHour(exitTime);
-      if (entryHour >= NOCTURNO_START_HOUR || exitHour >= NOCTURNO_START_HOUR) {
-        isNocturno = true;
-      }
-    }
-
-    pairs.push({
-      entryId: entry.id,
-      exitId: exit?.id,
-      entryTimestamp: entry.timestamp,
-      exitTimestamp: exit?.timestamp,
-      durationMinutes,
-    });
-  }
-
-  const totalMinutes = Math.floor(totalMs / 60_000);
-  const overtimeMinutes = Math.max(0, totalMinutes - REGULAR_DAY_MINUTES);
-
-  return { totalMinutes, overtimeMinutes, isNocturno, pairs };
-}
+// calculateDaySummary moved to ../utils/attendance-calculation.util.ts

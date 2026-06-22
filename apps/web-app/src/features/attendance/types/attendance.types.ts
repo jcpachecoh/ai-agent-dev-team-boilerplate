@@ -100,3 +100,48 @@ export interface AttendanceExitResult {
   overtimeMinutes: number;
   isNocturno: boolean;
 }
+
+export type AttendanceMonitorPeriod = 'day' | 'week' | 'month' | 'year';
+
+export interface AttendanceMonitorEmployee {
+  employeeId: string;
+  userId: string;
+  name: string;
+  role: string;
+  status: 'on-shift' | 'absent' | 'late' | 'overtime';
+  entryLabel?: string;
+  workedMinutes?: number;
+  overtimeMinutes?: number;
+  lateMinutes?: number;
+  daysPresent?: number;
+  lastEntryAt?: string;
+}
+
+export interface AttendanceMonitorSummary {
+  locationId: string;
+  period: AttendanceMonitorPeriod;
+  anchorDate: string;
+  dateFrom: string;
+  dateTo: string;
+  isLive: boolean;
+  metrics: {
+    total: number;
+    onShift: number;
+    absent: number;
+    lateArrivals: number;
+    overtime: number;
+    offSchedule: number;
+    legalAlerts: number;
+  };
+  employees: {
+    onShift: AttendanceMonitorEmployee[];
+    absent: AttendanceMonitorEmployee[];
+    late: AttendanceMonitorEmployee[];
+    overtime: AttendanceMonitorEmployee[];
+  };
+}
+
+export interface AttendanceMonitorSummaryFilters {
+  period: AttendanceMonitorPeriod;
+  anchorDate: string;
+}
