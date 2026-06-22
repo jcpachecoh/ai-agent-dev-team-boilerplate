@@ -34,6 +34,7 @@ export interface SedeListPreviewProps {
   onSearchChange?: (value: string) => void;
   onStatusFilterChange?: (filter: SedeStatusFilter) => void;
   onCreate?: () => void;
+  onView?: (id: string) => void;
   onEdit?: (id: string) => void;
   onToggleStatus?: (id: string) => void;
   onDelete?: (id: string) => void;
@@ -104,6 +105,7 @@ export function SedeListPreview({
   onSearchChange,
   onStatusFilterChange,
   onCreate,
+  onView,
   onEdit,
   onToggleStatus,
   onDelete,
@@ -160,6 +162,7 @@ export function SedeListPreview({
               {...row}
               theme={theme}
               size={size}
+              onView={() => onView?.(row.id)}
               onEdit={() => onEdit?.(row.id)}
               onToggleStatus={() => onToggleStatus?.(row.id)}
               onDelete={() => onDelete?.(row.id)}

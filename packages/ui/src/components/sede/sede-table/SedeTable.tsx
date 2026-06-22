@@ -1,7 +1,8 @@
-import React, { type JSX, type ReactNode } from 'react';
+import React, { type CSSProperties, type JSX, type ReactNode } from 'react';
 
 import { SedePagination } from '../sede-pagination';
 import { SedeTableHeader } from '../sede-table-header';
+import { getSedeTableMinWidthPx } from '../shared/sede-columns';
 import type { SedePaginationProps } from '../sede-pagination';
 import type { SedeSize, SedeTheme } from '../shared/sede-types';
 import styles from './SedeTable.module.scss';
@@ -23,6 +24,8 @@ export function SedeTable({
   size = 'md',
   className,
 }: SedeTableProps): JSX.Element {
+  const tableMinWidthPx = getSedeTableMinWidthPx();
+
   return (
     <section
       className={[styles.table, styles[`theme--${theme}`], styles[`size--${size}`], className]
@@ -31,9 +34,20 @@ export function SedeTable({
       role="table"
       aria-label="Listado de sedes"
     >
-      <SedeTableHeader theme={theme} size={size} className={styles.desktopHeader} />
-      <div className={styles.body} role="rowgroup">
-        {children}
+      <div className={styles.scrollRegion}>
+        <div
+          className={styles.scrollContent}
+          style={
+            {
+              '--sede-table-min-width': `${tableMinWidthPx}px`,
+            } as CSSProperties
+          }
+        >
+          <SedeTableHeader theme={theme} size={size} className={styles.desktopHeader} />
+          <div className={styles.body} role="rowgroup">
+            {children}
+          </div>
+        </div>
       </div>
       {footer ?? (pagination ? <SedePagination theme={theme} size={size} {...pagination} /> : null)}
     </section>

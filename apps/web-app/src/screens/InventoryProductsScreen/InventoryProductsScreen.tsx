@@ -214,7 +214,7 @@ export function InventoryProductsScreen(): React.JSX.Element {
           }}
           theme={theme}
           size="xl"
-          className={shared.embedToolbar}
+          embedded
         />
       </section>
 

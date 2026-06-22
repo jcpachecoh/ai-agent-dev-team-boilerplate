@@ -1,6 +1,7 @@
 export * from './sede-action-button';
 export * from './sede-assigned-user-row';
 export * from './sede-assigned-users-panel';
+export * from './sede-detail-modal';
 export * from './sede-filter-segment';
 export * from './sede-form-actions';
 export * from './sede-form-card';
