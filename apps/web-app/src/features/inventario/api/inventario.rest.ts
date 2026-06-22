@@ -51,6 +51,10 @@ export function updateSupplyCategory(
   });
 }
 
+export function deleteSupplyCategory(id: string): Promise<void> {
+  return inventoryFetch<void>(`/supply-categories/${id}`, { method: 'DELETE' });
+}
+
 export function fetchNextSupplyItemCodigo(categoriaId: string): Promise<string> {
   return inventoryFetch<{ codigoInterno: string }>(
     `/supply-categories/${categoriaId}/next-codigo`,
@@ -125,12 +129,17 @@ export function resolveInventoryAlertApi(id: string, note?: string): Promise<voi
   });
 }
 
-export function fetchResolvedInventoryAlertsApi(cursor?: string, take?: number): Promise<InventoryResolvedAlert[]> {
+export function fetchResolvedInventoryAlertsApi(
+  cursor?: string,
+  take?: number,
+): Promise<InventoryResolvedAlert[]> {
   const params = new URLSearchParams();
   if (cursor) params.set('cursor', cursor);
   if (take !== undefined) params.set('take', String(take));
   const qs = params.toString();
-  return inventoryFetch<InventoryResolvedAlert[]>(`/inventory/alerts/resolved${qs ? `?${qs}` : ''}`);
+  return inventoryFetch<InventoryResolvedAlert[]>(
+    `/inventory/alerts/resolved${qs ? `?${qs}` : ''}`,
+  );
 }
 
 export function fetchInventoryReportApi(

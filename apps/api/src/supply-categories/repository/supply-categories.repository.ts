@@ -100,6 +100,16 @@ export class SupplyCategoriesRepository implements ISupplyCategoriesRepository {
     });
   }
 
+  countItemsByCategory(tenantId: string, categoriaId: string): Promise<number> {
+    return this.prisma.supplyItem.count({
+      where: { tenantId, categoriaId },
+    });
+  }
+
+  async remove(tenantId: string, id: string): Promise<void> {
+    await this.prisma.supplyCategory.deleteMany({ where: { id, tenantId } });
+  }
+
   private async allocateUniquePrefijo(
     tenantId: string,
     nombre: string,

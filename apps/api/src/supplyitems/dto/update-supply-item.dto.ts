@@ -72,6 +72,16 @@ export class UpdateSupplyItemDto {
   @IsOptional()
   aplicaLote?: boolean;
 
+  @ApiPropertyOptional({ example: '2026-12-31' })
+  @IsString()
+  @IsOptional()
+  fechaVencimiento?: string | null;
+
+  @ApiPropertyOptional({ example: 'LOTE-0001' })
+  @IsString()
+  @IsOptional()
+  lote?: string | null;
+
   @ApiPropertyOptional()
   @IsBoolean()
   @IsOptional()

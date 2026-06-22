@@ -187,11 +187,13 @@ model SupplyItem {
   stockActualBodega      Decimal   @default(0)
   aplicaVencimiento      Boolean   @default(false)
   aplicaLote             Boolean   @default(false)
+  fechaVencimiento       DateTime?
+  lote                   String?
   isActive               Boolean   @default(true)
   createdAt              DateTime  @default(now())
   updatedAt              DateTime  @updatedAt
 
-  categoria        SupplyCategory              @relation(fields: [categoriaId], references: [id])
+  categoria        SupplyCategory             @relation(fields: [categoriaId], references: [id])
   supplierProducts SupplierProduct[]
   priceHistory     SupplyItemPriceHistory[]
   orderMaterials   ProductionOrderMaterial[]
@@ -442,7 +444,7 @@ model Location {
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
-  tenant              Tenant              @relation(fields: [tenantId], references: [id])
+  tenant              Tenant               @relation(fields: [tenantId], references: [id])
   users               UserLocation[]
   employeeDetails     EmployeeDetails[]
   attendanceLogs      AttendanceLog[]

@@ -29,6 +29,8 @@ export interface SupplyItemApi {
   stockMaximoBodega: number;
   aplicaVencimiento: boolean;
   aplicaLote: boolean;
+  fechaVencimiento?: string | null;
+  lote?: string | null;
   isActive: boolean;
   proveedorPrincipal?: { supplierId: string; razonSocial: string } | null;
   stockDisponible: number | null;
@@ -71,6 +73,8 @@ export interface CreateSupplyItemInput {
   stockActualBodega?: string;
   aplicaVencimiento?: boolean;
   aplicaLote?: boolean;
+  fechaVencimiento?: string | null;
+  lote?: string | null;
   isActive?: boolean;
 }
 

@@ -17,7 +17,7 @@ export interface RecipeCategoryListRowProps {
   columnsTemplate: string;
   onEdit: () => void;
   onDelete: () => void;
-  onStatusChange: (status: RecetaStatus) => void;
+  onToggleStatus: () => void;
   toggleLoading?: boolean;
 }
 
@@ -31,11 +31,9 @@ export function RecipeCategoryListRow({
   columnsTemplate,
   onEdit,
   onDelete,
-  onStatusChange,
+  onToggleStatus,
   toggleLoading = false,
 }: RecipeCategoryListRowProps): React.JSX.Element {
-  const nextStatus: RecetaStatus = status === 'active' ? 'inactive' : 'active';
-
   const cellClassName = (columnId: string): string =>
     [
       styles.cell,
@@ -54,10 +52,21 @@ export function RecipeCategoryListRow({
       case 'descripcion':
         return <span className={styles.description}>{descripcion || '—'}</span>;
       case 'estado':
-        return <RecetaStatusButton status={status} theme={theme} size="sm" compact />;
+        return (
+          <RecetaStatusButton
+            status={status}
+            theme={theme}
+            size="sm"
+            compact
+            onClick={(event) => {
+              event.stopPropagation();
+              onToggleStatus();
+            }}
+          />
+        );
       case 'acciones':
         return (
-          <span className={styles.actions}>
+          <span className={styles.actions} onClick={(event) => event.stopPropagation()}>
             <EmpleadoRowActionButton
               variant="edit"
               theme={theme}
@@ -68,15 +77,6 @@ export function RecipeCategoryListRow({
                 onEdit();
               }}
             />
-            <InventarioIconButton
-              variant="delete"
-              theme={theme}
-              onClick={() => {
-                onDelete();
-              }}
-              disabled={toggleLoading}
-              ariaLabel="Eliminar categoría"
-            />
             <EmpleadoRowActionButton
               variant="toggle"
               active={status === 'active'}
@@ -86,8 +86,15 @@ export function RecipeCategoryListRow({
               aria-label={status === 'active' ? 'Desactivar categoría' : 'Activar categoría'}
               onClick={(event) => {
                 event.stopPropagation();
-                onStatusChange(nextStatus);
+                onToggleStatus();
               }}
+            />
+            <InventarioIconButton
+              variant="delete"
+              theme={theme}
+              onClick={onDelete}
+              disabled={toggleLoading}
+              ariaLabel="Eliminar categoría"
             />
           </span>
         );

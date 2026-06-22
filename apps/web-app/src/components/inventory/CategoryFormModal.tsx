@@ -103,6 +103,28 @@ export function CategoryFormModal({
             onChange={(e) => update({ descripcion: e.target.value })}
           />
         </InventarioFormField>
+        {mode === 'edit' ? (
+          <div className={styles.toggleField}>
+            <div className={styles.toggleCopy}>
+              <span className={styles.toggleLabel}>Estado</span>
+              <span className={styles.toggleHint}>
+                {values.isActive
+                  ? 'Activa — visible en insumos y filtros'
+                  : 'Inactiva — no aparece al crear insumos'}
+              </span>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={values.isActive}
+              aria-label="Categoría activa"
+              className={[styles.toggle, values.isActive ? styles.toggleOn : ''].join(' ')}
+              onClick={() => update({ isActive: !values.isActive })}
+            >
+              <span className={styles.toggleThumb} aria-hidden />
+            </button>
+          </div>
+        ) : null}
         {formError ? <span className={styles.errorText}>{formError}</span> : null}
       </div>
     </InventarioModal>

@@ -22,6 +22,8 @@ const mockSupplyItem = {
   stockActualBodega: 0,
   aplicaVencimiento: false,
   aplicaLote: false,
+  fechaVencimiento: null,
+  lote: null,
   isActive: true,
   createdAt: new Date(),
   updatedAt: new Date(),

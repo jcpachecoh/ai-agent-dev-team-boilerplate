@@ -28,7 +28,6 @@ export interface InventarioFilterToolbarProps {
   lowStockLabel?: string;
   theme?: InventarioTheme;
   size?: InventarioSize;
-  embedded?: boolean;
   className?: string;
 }
 
@@ -63,25 +62,15 @@ export function InventarioFilterToolbar({
   lowStockLabel = 'Stock Bajo',
   theme = 'light',
   size = 'md',
-  embedded = false,
   className,
 }: InventarioFilterToolbarProps): JSX.Element {
   const handleLowStock = (event: ChangeEvent<HTMLInputElement>) => {
     onLowStockChange?.(event.target.checked);
   };
 
-  const hasStatusFilter = Boolean(statusOptions && onStatusChange);
-
   return (
     <div
-      className={[
-        styles.toolbar,
-        hasStatusFilter ? styles.withStatus : styles.withoutStatus,
-        styles[`theme--${theme}`],
-        styles[`size--${size}`],
-        embedded ? styles.embedded : null,
-        className,
-      ]
+      className={[styles.toolbar, styles[`theme--${theme}`], styles[`size--${size}`], className]
         .filter(Boolean)
         .join(' ')}
     >

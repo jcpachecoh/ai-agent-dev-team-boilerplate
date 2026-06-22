@@ -1,5 +1,4 @@
 import {
-  ConfirmModal,
   RecetaActionButton,
   RecetaFilterSelect,
   RecetaMetricCard,
@@ -12,9 +11,10 @@ import { useMemo, useState, type JSX } from 'react';
 
 import type { PlantRecipeCategory } from '@/api/plant';
 import { RecipeCategoryFormModal } from '@/components/recetas/RecipeCategoryFormModal';
-import { CategoryStatusConfirmDialog } from '@/components/shared/CategoryStatusConfirmDialog';
 import { RecipeCategoryListCard } from '@/components/recetas/RecipeCategoryListCard';
 import { RecipeCategoryListRow } from '@/components/recetas/RecipeCategoryListRow';
+import { CategoryDeleteConfirmDialog } from '@/components/shared/CategoryDeleteConfirmDialog';
+import { CategoryStatusConfirmDialog } from '@/components/shared/CategoryStatusConfirmDialog';
 import { ResponsiveTable } from '@/components/responsive-table';
 import { RECIPE_CATEGORY_RESPONSIVE_COLUMNS } from '@/features/recetas/recipe-category-columns';
 import { recetaTableColumnsForVisible } from '@/features/recetas/recipe-list-columns';
@@ -36,7 +36,7 @@ const categoryListTableColumns: RecetaTableColumn[] = [
   { key: 'nombre', label: 'Nombre', width: 'minmax(160px, 1.2fr)' },
   { key: 'descripcion', label: 'Descripción', width: 'minmax(120px, 1fr)' },
   { key: 'estado', label: 'Estado', width: '108px', align: 'center' },
-  { key: 'acciones', label: 'Acciones', width: '112px', align: 'right' },
+  { key: 'acciones', label: 'Acciones', width: '88px', align: 'right' },
 ];
 
 const statusFilterOptions = [
@@ -73,7 +73,7 @@ export function RecipeCategoriesScreen(): JSX.Element {
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
   const [editing, setEditing] = useState<PlantRecipeCategory | undefined>();
   const [statusTarget, setStatusTarget] = useState<
-    { category: PlantRecipeCategory; next: RecetaStatus } | undefined
+    { category: PlantRecipeCategory; isActive: boolean } | undefined
   >();
   const [deleteTarget, setDeleteTarget] = useState<PlantRecipeCategory | undefined>();
 
@@ -125,42 +125,40 @@ export function RecipeCategoriesScreen(): JSX.Element {
     }
   };
 
-  const handleDeleteRequest = (category: PlantRecipeCategory) => {
+  const requestStatusChange = (category: PlantRecipeCategory) => {
+    setStatusTarget({ category, isActive: !category.isActive });
+  };
+
+  const requestDelete = (category: PlantRecipeCategory) => {
     setDeleteTarget(category);
   };
 
-  const handleDeleteConfirm = async () => {
+  const handleConfirmStatusChange = async () => {
+    if (!statusTarget) return;
+
+    try {
+      await updateMutation.mutateAsync({
+        id: statusTarget.category.id,
+        values: {
+          nombre: statusTarget.category.nombre,
+          descripcion: statusTarget.category.descripcion ?? '',
+          isActive: statusTarget.isActive,
+        },
+      });
+      toast.success(statusTarget.isActive ? 'Categoría activada' : 'Categoría desactivada');
+      setStatusTarget(undefined);
+    } catch (err) {
+      toast.error(getErrorMessage(err));
+    }
+  };
+
+  const handleConfirmDelete = async () => {
     if (!deleteTarget) return;
 
     try {
       await deleteMutation.mutateAsync(deleteTarget.id);
       toast.success('Categoría eliminada');
       setDeleteTarget(undefined);
-    } catch (err) {
-      toast.error(getErrorMessage(err));
-    }
-  };
-
-  const handleStatusChangeRequest = (category: PlantRecipeCategory, next: RecetaStatus) => {
-    setStatusTarget({ category, next });
-  };
-
-  const handleStatusChangeConfirm = async () => {
-    if (!statusTarget) return;
-
-    const { category, next } = statusTarget;
-
-    try {
-      await updateMutation.mutateAsync({
-        id: category.id,
-        values: {
-          nombre: category.nombre,
-          descripcion: category.descripcion ?? '',
-          isActive: next === 'active',
-        },
-      });
-      toast.success(next === 'active' ? 'Categoría activada' : 'Categoría desactivada');
-      setStatusTarget(undefined);
     } catch (err) {
       toast.error(getErrorMessage(err));
     }
@@ -268,8 +266,9 @@ export function RecipeCategoriesScreen(): JSX.Element {
                     visibleColumns={visibleColumns}
                     columnsTemplate={columnsTemplate}
                     onEdit={() => openEdit(category)}
-                    onDelete={() => handleDeleteRequest(category)}
-                    onStatusChange={(next) => handleStatusChangeRequest(category, next)}
+                    onDelete={() => requestDelete(category)}
+                    onToggleStatus={() => requestStatusChange(category)}
+                    toggleLoading={updateMutation.isPending || deleteMutation.isPending}
                   />
                 </div>
               )}
@@ -281,9 +280,10 @@ export function RecipeCategoriesScreen(): JSX.Element {
                   status={category.isActive ? 'active' : 'inactive'}
                   theme={theme}
                   onEdit={() => openEdit(category)}
-                  onDelete={() => handleDeleteRequest(category)}
-                  onStatusChange={(next) => handleStatusChangeRequest(category, next)}
+                  onDelete={() => requestDelete(category)}
+                  onToggleStatus={() => requestStatusChange(category)}
                   onOpen={() => openEdit(category)}
+                  toggleLoading={updateMutation.isPending || deleteMutation.isPending}
                 />
               )}
             />
@@ -302,32 +302,28 @@ export function RecipeCategoriesScreen(): JSX.Element {
       />
 
       <CategoryStatusConfirmDialog
-        open={Boolean(statusTarget)}
         categoryName={statusTarget?.category.nombre}
-        isActivating={statusTarget?.next === 'active'}
+        isActivating={statusTarget?.isActive ?? false}
+        open={Boolean(statusTarget)}
         submitting={updateMutation.isPending}
         theme={theme}
         onCancel={() => setStatusTarget(undefined)}
-        onConfirm={() => void handleStatusChangeConfirm()}
+        onConfirm={() => void handleConfirmStatusChange()}
       />
 
-      <ConfirmModal
+      <CategoryDeleteConfirmDialog
+        categoryName={deleteTarget?.nombre}
         open={Boolean(deleteTarget)}
-        onOpenChange={(open) => {
-          if (!open && !deleteMutation.isPending) {
-            setDeleteTarget(undefined);
-          }
-        }}
-        onConfirm={() => void handleDeleteConfirm()}
-        onCancel={() => setDeleteTarget(undefined)}
-        confirmVariant="danger"
+        submitting={deleteMutation.isPending}
         theme={theme}
-        title={
-          deleteTarget ? `¿Eliminar categoría "${deleteTarget.nombre}"?` : '¿Eliminar categoría?'
+        description={
+          <>
+            Vas a eliminar la categoría <strong>{deleteTarget?.nombre}</strong>. Las recetas
+            asociadas quedarán sin categoría.
+          </>
         }
-        description="Las recetas asociadas quedarán sin categoría. Esta acción no se puede deshacer."
-        confirmLabel="Eliminar"
-        cancelLabel="Cancelar"
+        onCancel={() => setDeleteTarget(undefined)}
+        onConfirm={() => void handleConfirmDelete()}
       />
     </div>
   );

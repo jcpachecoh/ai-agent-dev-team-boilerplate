@@ -23,6 +23,8 @@ const repoMock = {
   update: jest.fn(),
   findConflictingByNombre: jest.fn(),
   findConflictingByPrefijo: jest.fn(),
+  countItemsByCategory: jest.fn(),
+  remove: jest.fn(),
 };
 
 describe('SupplyCategoriesService', () => {
@@ -203,5 +205,28 @@ describe('SupplyCategoriesService', () => {
     await expect(service.create(tenantId, { nombre: 'X', prefijo: 'XX' })).rejects.toThrow(
       /nombre o el prefijo ya existe/i,
     );
+  });
+
+  it('remove throws NotFoundException when category is missing', async () => {
+    repoMock.findOne.mockResolvedValue(null);
+
+    await expect(service.remove(tenantId, 'missing')).rejects.toThrow(NotFoundException);
+  });
+
+  it('remove throws ConflictException when category has associated items', async () => {
+    repoMock.findOne.mockResolvedValue(category);
+    repoMock.countItemsByCategory.mockResolvedValue(2);
+
+    await expect(service.remove(tenantId, 'cat-1')).rejects.toThrow(ConflictException);
+    expect(repoMock.remove).not.toHaveBeenCalled();
+  });
+
+  it('remove deletes category when no items are associated', async () => {
+    repoMock.findOne.mockResolvedValue(category);
+    repoMock.countItemsByCategory.mockResolvedValue(0);
+
+    await service.remove(tenantId, 'cat-1');
+
+    expect(repoMock.remove).toHaveBeenCalledWith(tenantId, 'cat-1');
   });
 });

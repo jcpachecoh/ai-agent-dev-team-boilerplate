@@ -46,6 +46,12 @@ export const UPDATE_SUPPLY_CATEGORY_MUTATION = `
   }
 `;
 
+export const DELETE_SUPPLY_CATEGORY_MUTATION = `
+  mutation DeleteSupplyCategory($id: ID!) {
+    deleteSupplyCategory(id: $id)
+  }
+`;
+
 export async function createSupplyItemGql(input: CreateSupplyItemInput): Promise<SupplyItemApi> {
   const data = await graphqlRequest<{ createSupplyItem: SupplyItemApi }>(
     CREATE_SUPPLY_ITEM_MUTATION,
@@ -93,4 +99,12 @@ export async function updateSupplyCategoryGql(
     { id, input },
   );
   return data.updateSupplyCategory;
+}
+
+export async function deleteSupplyCategoryGql(id: string): Promise<boolean> {
+  const data = await graphqlRequest<{ deleteSupplyCategory: boolean }>(
+    DELETE_SUPPLY_CATEGORY_MUTATION,
+    { id },
+  );
+  return data.deleteSupplyCategory;
 }

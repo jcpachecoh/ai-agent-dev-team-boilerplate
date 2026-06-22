@@ -96,6 +96,8 @@ export class SupplyItemsRepository implements ISupplyitemsRepository {
         stockActualBodega: data.stockActualBodega ?? '0',
         aplicaVencimiento: data.aplicaVencimiento ?? false,
         aplicaLote: data.aplicaLote ?? false,
+        fechaVencimiento: data.fechaVencimiento ?? null,
+        lote: data.lote ?? null,
         isActive: data.isActive ?? true,
       },
       include: itemInclude,
@@ -132,6 +134,8 @@ export class SupplyItemsRepository implements ISupplyitemsRepository {
           ? { aplicaVencimiento: data.aplicaVencimiento }
           : {}),
         ...(data.aplicaLote !== undefined ? { aplicaLote: data.aplicaLote } : {}),
+        ...(data.fechaVencimiento !== undefined ? { fechaVencimiento: data.fechaVencimiento } : {}),
+        ...(data.lote !== undefined ? { lote: data.lote } : {}),
         ...(data.isActive !== undefined ? { isActive: data.isActive } : {}),
       },
       include: itemInclude,

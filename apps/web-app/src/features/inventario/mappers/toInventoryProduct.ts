@@ -25,5 +25,7 @@ export function toInventoryProduct(item: SupplyItemApi): InventoryProduct {
     unidadBase: item.unidadBase,
     aplicaVencimiento: item.aplicaVencimiento,
     aplicaLote: item.aplicaLote,
+    fechaVencimiento: item.fechaVencimiento ?? null,
+    lote: item.lote ?? null,
   };
 }

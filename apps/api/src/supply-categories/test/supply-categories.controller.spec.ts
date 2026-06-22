@@ -19,6 +19,7 @@ const serviceMock = {
   findAll: jest.fn(),
   create: jest.fn(),
   update: jest.fn(),
+  remove: jest.fn(),
 };
 
 const supplyItemsServiceMock = {
@@ -71,5 +72,12 @@ describe('SupplyCategoriesController', () => {
       ...category,
       nombre: 'Nuevo',
     });
+  });
+
+  it('remove delegates to service', async () => {
+    serviceMock.remove.mockResolvedValue(undefined);
+
+    await expect(controller.remove('cat-1', tenantId)).resolves.toBeUndefined();
+    expect(serviceMock.remove).toHaveBeenCalledWith(tenantId, 'cat-1');
   });
 });

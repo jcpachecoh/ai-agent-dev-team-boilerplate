@@ -6,14 +6,11 @@ import { getErrorMessage, isGraphqlConfigured } from '@/lib/graphql-client';
 
 import styles from '../empresa.module.scss';
 import { useRestaurantProfile } from '../hooks/useRestaurantProfile';
-import { useUploadTenantLogo } from '../hooks/useUploadTenantLogo';
 
 export default function EmpresaInformacionView(): JSX.Element {
   const theme = useUiTheme();
-  const uploadLogo = useUploadTenantLogo();
   const {
     tenantLabel,
-    logoUrl,
     values,
     metadata,
     accessBadgeLabel,
@@ -35,13 +32,6 @@ export default function EmpresaInformacionView(): JSX.Element {
     } catch (saveError) {
       toast.error(getErrorMessage(saveError));
     }
-  };
-
-  const handleLogoFileSelect = (file: File) => {
-    uploadLogo.mutate(file, {
-      onSuccess: () => toast.success('Logo del restaurante actualizado.'),
-      onError: (uploadError) => toast.error(getErrorMessage(uploadError)),
-    });
   };
 
   if (!isGraphqlConfigured()) {
@@ -69,7 +59,6 @@ export default function EmpresaInformacionView(): JSX.Element {
     <EmpresaInformacionPreview
       theme={theme}
       tenantLabel={tenantLabel}
-      logoUrl={logoUrl}
       values={values}
       metadata={metadata}
       accessBadgeLabel={accessBadgeLabel}
@@ -80,9 +69,6 @@ export default function EmpresaInformacionView(): JSX.Element {
       onSave={handleSave}
       saveLoading={isSaving}
       onFieldChange={updateField}
-      logoUploading={uploadLogo.isPending}
-      onLogoFileSelect={handleLogoFileSelect}
-      onLogoFileError={(message) => toast.error(message)}
     />
   );
 }

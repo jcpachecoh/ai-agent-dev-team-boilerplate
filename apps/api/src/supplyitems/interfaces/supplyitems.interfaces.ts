@@ -67,6 +67,8 @@ export interface CreateSupplyItemData {
   stockActualBodega?: string;
   aplicaVencimiento?: boolean;
   aplicaLote?: boolean;
+  fechaVencimiento?: string | Date | null;
+  lote?: string | null;
   isActive?: boolean;
 }
 
@@ -83,6 +85,8 @@ export interface UpdateSupplyItemData {
   stockActualBodega?: string;
   aplicaVencimiento?: boolean;
   aplicaLote?: boolean;
+  fechaVencimiento?: string | Date | null;
+  lote?: string | null;
   isActive?: boolean;
 }
 

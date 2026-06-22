@@ -63,6 +63,12 @@ export class SupplyItemResponseDto {
   @ApiProperty()
   aplicaLote!: boolean;
 
+  @ApiPropertyOptional({ nullable: true })
+  fechaVencimiento?: string | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  lote?: string | null;
+
   @ApiProperty()
   isActive!: boolean;
 

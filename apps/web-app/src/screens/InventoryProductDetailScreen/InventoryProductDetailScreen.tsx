@@ -87,7 +87,12 @@ export function InventoryProductDetailScreen(): React.JSX.Element {
             <div>
               <dt>Lote / vencimiento</dt>
               <dd>
-                {product.aplicaLote ? 'Lote' : '—'} / {product.aplicaVencimiento ? 'Vence' : '—'}
+                {product.aplicaLote ? (product.lote ?? '—') : '—'} /{' '}
+                {product.aplicaVencimiento
+                  ? product.fechaVencimiento
+                    ? formatHistoryDate(product.fechaVencimiento)
+                    : '—'
+                  : '—'}
               </dd>
             </div>
           </dl>

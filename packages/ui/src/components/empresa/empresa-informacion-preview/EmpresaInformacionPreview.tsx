@@ -32,10 +32,6 @@ export interface EmpresaInformacionPreviewProps {
   onCancel?: () => void;
   saveLoading?: boolean;
   onFieldChange?: (field: keyof EmpresaInformacionValues, value: string | EmpresaWeekday[]) => void;
-  logoUrl?: string;
-  logoUploading?: boolean;
-  onLogoFileSelect?: (file: File) => void;
-  onLogoFileError?: (message: string) => void;
   theme?: EmpresaTheme;
   size?: EmpresaSize;
   className?: string;
@@ -71,10 +67,6 @@ export function EmpresaInformacionPreview({
   onCancel,
   saveLoading = false,
   onFieldChange,
-  logoUrl,
-  logoUploading = false,
-  onLogoFileSelect,
-  onLogoFileError,
   theme = 'dark',
   size = 'md',
   className,
@@ -148,14 +140,7 @@ export function EmpresaInformacionPreview({
               title="Logo del restaurante"
               icon={<Fingerprint size={14} strokeWidth={1.75} aria-hidden />}
             >
-              <EmpresaLogoPanel
-                theme={theme}
-                size={size}
-                logoUrl={logoUrl}
-                uploading={logoUploading}
-                onFileSelect={onLogoFileSelect}
-                onFileError={onLogoFileError}
-              />
+              <EmpresaLogoPanel theme={theme} size={size} />
             </EmpresaSectionCard>
 
             <EmpresaSectionCard

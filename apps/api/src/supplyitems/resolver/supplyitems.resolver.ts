@@ -96,6 +96,12 @@ export class SupplyItemType {
   @Field()
   aplicaLote!: boolean;
 
+  @Field(() => Date, { nullable: true })
+  fechaVencimiento?: Date | null;
+
+  @Field(() => String, { nullable: true })
+  lote?: string | null;
+
   @Field()
   isActive!: boolean;
 
@@ -215,6 +221,16 @@ export class CreateSupplyItemInputDto {
   @IsOptional()
   aplicaLote?: boolean;
 
+  @Field(() => String, { nullable: true })
+  @IsString()
+  @IsOptional()
+  fechaVencimiento?: string | null;
+
+  @Field(() => String, { nullable: true })
+  @IsString()
+  @IsOptional()
+  lote?: string | null;
+
   @Field(() => Boolean, { nullable: true })
   @IsBoolean()
   @IsOptional()
@@ -286,6 +302,16 @@ export class UpdateSupplyItemInputDto {
   @IsOptional()
   aplicaLote?: boolean;
 
+  @Field(() => String, { nullable: true })
+  @IsString()
+  @IsOptional()
+  fechaVencimiento?: string | null;
+
+  @Field(() => String, { nullable: true })
+  @IsString()
+  @IsOptional()
+  lote?: string | null;
+
   @Field(() => Boolean, { nullable: true })
   @IsBoolean()
   @IsOptional()
@@ -320,6 +346,8 @@ function toSupplyItemType(item: SupplyItemWithRelations): SupplyItemType {
     stockActualBodega: decimalToNumber(item.stockActualBodega),
     aplicaVencimiento: item.aplicaVencimiento,
     aplicaLote: item.aplicaLote,
+    fechaVencimiento: item.fechaVencimiento,
+    lote: item.lote,
     isActive: item.isActive,
     proveedorPrincipal: principal
       ? {

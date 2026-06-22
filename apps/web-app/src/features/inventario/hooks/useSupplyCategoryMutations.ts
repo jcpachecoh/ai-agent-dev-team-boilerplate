@@ -1,6 +1,10 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-import { createSupplyCategory, updateSupplyCategory } from '../api/inventario.api';
+import {
+  createSupplyCategory,
+  deleteSupplyCategory,
+  updateSupplyCategory,
+} from '../api/inventario.api';
 import { inventarioKeys } from '../api/inventario.keys';
 import type { SupplyCategoryApi, SupplyCategoryFormValues } from '../types';
 
@@ -66,6 +70,17 @@ export function useDeactivateSupplyCategory() {
 
   return useMutation({
     mutationFn: (id: string) => updateSupplyCategory(id, { isActive: false }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: inventarioKeys.all });
+    },
+  });
+}
+
+export function useDeleteSupplyCategory() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => deleteSupplyCategory(id),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: inventarioKeys.all });
     },

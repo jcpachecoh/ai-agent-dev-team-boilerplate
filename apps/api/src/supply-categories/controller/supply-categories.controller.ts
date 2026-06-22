@@ -1,4 +1,15 @@
-import { Body, Controller, Get, Headers, Param, Patch, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Headers,
+  HttpCode,
+  Param,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiHeader, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsBoolean, IsOptional } from 'class-validator';
@@ -53,5 +64,13 @@ export class SupplyCategoriesController {
     @Body() body: UpdateSupplyCategoryDto,
   ) {
     return this.service.update(tenantId, id, body);
+  }
+
+  @ApiOperation({ summary: 'Delete supply category' })
+  @ApiResponse({ status: 204 })
+  @HttpCode(204)
+  @Delete(':id')
+  remove(@Param('id') id: string, @Headers('x-tenant-id') tenantId: string) {
+    return this.service.remove(tenantId, id);
   }
 }

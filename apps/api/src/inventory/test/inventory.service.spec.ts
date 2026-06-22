@@ -33,6 +33,8 @@ function buildItem(
     stockActualBodega: overrides.stockActualBodega ?? '0',
     aplicaVencimiento: false,
     aplicaLote: false,
+    fechaVencimiento: null,
+    lote: null,
     isActive: true,
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -58,7 +60,9 @@ function buildItem(
   };
 }
 
-function buildResolution(overrides: Partial<{ id: string; supplyItemId: string; resolvedAt: Date }> = {}) {
+function buildResolution(
+  overrides: Partial<{ id: string; supplyItemId: string; resolvedAt: Date }> = {},
+) {
   const supplyItemId = overrides.supplyItemId ?? 'item-1';
   return {
     id: overrides.id ?? 'res-1',
@@ -139,7 +143,11 @@ describe('InventoryService', () => {
         buildItem({ id: 'crit-2', stockMinimoBodega: '4' }),
         buildItem({ id: 'ok', stockMinimoBodega: '0' }),
       ]);
-      repositoryMock.findResolvedAlerts.mockResolvedValue({ edges: [], hasNextPage: false, endCursor: null });
+      repositoryMock.findResolvedAlerts.mockResolvedValue({
+        edges: [],
+        hasNextPage: false,
+        endCursor: null,
+      });
 
       const alerts = await service.getAlerts(tenantId);
 
@@ -152,7 +160,11 @@ describe('InventoryService', () => {
       repositoryMock.findActiveForAlerts.mockResolvedValue([
         buildItem({ id: 'solo', stockMinimoBodega: '5', supplierName: null }),
       ]);
-      repositoryMock.findResolvedAlerts.mockResolvedValue({ edges: [], hasNextPage: false, endCursor: null });
+      repositoryMock.findResolvedAlerts.mockResolvedValue({
+        edges: [],
+        hasNextPage: false,
+        endCursor: null,
+      });
 
       const alerts = await service.getAlerts(tenantId);
 
@@ -163,7 +175,11 @@ describe('InventoryService', () => {
       repositoryMock.findActiveForAlerts.mockResolvedValue([
         buildItem({ id: 'ok-stock', stockMinimoBodega: '20', stockActualBodega: '25' }),
       ]);
-      repositoryMock.findResolvedAlerts.mockResolvedValue({ edges: [], hasNextPage: false, endCursor: null });
+      repositoryMock.findResolvedAlerts.mockResolvedValue({
+        edges: [],
+        hasNextPage: false,
+        endCursor: null,
+      });
 
       const alerts = await service.getAlerts(tenantId);
 
@@ -212,7 +228,11 @@ describe('InventoryService', () => {
     it('filters by tenantId when querying resolved alerts', async () => {
       // Arrange
       repositoryMock.findActiveForAlerts.mockResolvedValue([]);
-      repositoryMock.findResolvedAlerts.mockResolvedValue({ edges: [], hasNextPage: false, endCursor: null });
+      repositoryMock.findResolvedAlerts.mockResolvedValue({
+        edges: [],
+        hasNextPage: false,
+        endCursor: null,
+      });
 
       // Act
       await service.getAlerts(tenantId);
@@ -263,7 +283,12 @@ describe('InventoryService', () => {
       repositoryMock.createAlertResolution.mockResolvedValue(buildResolution());
 
       // Act
-      await service.resolveAlert('alert-item-1', tenantId, undefined, 'Se realizó ajuste de inventario');
+      await service.resolveAlert(
+        'alert-item-1',
+        tenantId,
+        undefined,
+        'Se realizó ajuste de inventario',
+      );
 
       // Assert
       expect(repositoryMock.createAlertResolution).toHaveBeenCalledWith(
@@ -315,7 +340,9 @@ describe('InventoryService', () => {
       repositoryMock.createAlertResolution.mockResolvedValue(null);
 
       // Act & Assert
-      await expect(service.resolveAlert('alert-not-found', tenantId)).rejects.toThrow(NotFoundException);
+      await expect(service.resolveAlert('alert-not-found', tenantId)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('enforces tenant isolation — tenantId is always forwarded', async () => {
@@ -393,7 +420,11 @@ describe('InventoryService', () => {
 
     it('filters by tenantId', async () => {
       // Arrange
-      repositoryMock.findResolvedAlerts.mockResolvedValue({ edges: [], hasNextPage: false, endCursor: null });
+      repositoryMock.findResolvedAlerts.mockResolvedValue({
+        edges: [],
+        hasNextPage: false,
+        endCursor: null,
+      });
 
       // Act
       await service.getResolvedAlerts(tenantId, undefined, 10);
@@ -404,7 +435,11 @@ describe('InventoryService', () => {
 
     it('returns empty array when no resolutions exist', async () => {
       // Arrange
-      repositoryMock.findResolvedAlerts.mockResolvedValue({ edges: [], hasNextPage: false, endCursor: null });
+      repositoryMock.findResolvedAlerts.mockResolvedValue({
+        edges: [],
+        hasNextPage: false,
+        endCursor: null,
+      });
 
       // Act
       const result = await service.getResolvedAlerts(tenantId);

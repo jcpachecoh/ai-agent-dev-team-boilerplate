@@ -11,7 +11,6 @@ export interface EmpleadoModalProps {
   footer?: ReactNode;
   onClose?: () => void;
   closeLabel?: string;
-  showCloseButton?: boolean;
   theme?: EmpleadoTheme;
   size?: EmpleadoSize;
   className?: string;
@@ -25,7 +24,6 @@ export function EmpleadoModal({
   footer,
   onClose,
   closeLabel = 'Cerrar',
-  showCloseButton = true,
   theme = 'dark',
   size = 'md',
   className,
@@ -51,7 +49,7 @@ export function EmpleadoModal({
             <h2 className={styles.title}>{title}</h2>
             {subtitle ? <p className={styles.subtitle}>{subtitle}</p> : null}
           </div>
-          {onClose && showCloseButton ? (
+          {onClose ? (
             <button type="button" className={styles.closeButton} onClick={onClose}>
               {closeLabel}
             </button>

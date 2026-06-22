@@ -25,7 +25,6 @@ export function PayrollEmployeeCreateModal({
       subtitle="Registro base de empleado en employeeDetails"
       theme={theme}
       onClose={onClose}
-      showCloseButton={false}
     >
       <PayrollEmployeeForm
         mode="create"

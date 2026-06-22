@@ -23,7 +23,6 @@ export const ModoEdicion: Story = {
   args: {
     editing: true,
     onFieldChange: () => undefined,
-    onLogoFileSelect: () => undefined,
   },
 };
 

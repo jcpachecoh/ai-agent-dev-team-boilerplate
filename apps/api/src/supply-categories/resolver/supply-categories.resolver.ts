@@ -116,6 +116,14 @@ export class SupplyCategoriesResolver {
     return this.service.update(this.getTenantId(context.req), id, input);
   }
 
+  @Mutation(() => Boolean)
+  deleteSupplyCategory(
+    @Context() context: { req: Request },
+    @Args('id', { type: () => ID }) id: string,
+  ): Promise<boolean> {
+    return this.service.remove(this.getTenantId(context.req), id).then(() => true);
+  }
+
   private getTenantId(req: Request): string {
     const tenantId = req.headers['x-tenant-id'];
     if (!tenantId || Array.isArray(tenantId)) {

@@ -14,7 +14,7 @@ export interface RecipeCategoryListCardProps {
   theme: UiTheme;
   onEdit: () => void;
   onDelete: () => void;
-  onStatusChange: (status: RecetaStatus) => void;
+  onToggleStatus: () => void;
   onOpen: () => void;
   toggleLoading?: boolean;
 }
@@ -27,12 +27,10 @@ export function RecipeCategoryListCard({
   theme,
   onEdit,
   onDelete,
-  onStatusChange,
+  onToggleStatus,
   onOpen,
   toggleLoading = false,
 }: RecipeCategoryListCardProps): React.JSX.Element {
-  const nextStatus: RecetaStatus = status === 'active' ? 'inactive' : 'active';
-
   return (
     <ResponsiveTableCard
       className={styles.card}
@@ -42,7 +40,17 @@ export function RecipeCategoryListCard({
           <span className={styles.name}>{nombre}</span>
         </span>
       }
-      badge={<RecetaStatusButton status={status} theme={theme} size="sm" />}
+      badge={
+        <RecetaStatusButton
+          status={status}
+          theme={theme}
+          size="sm"
+          onClick={(event) => {
+            event.stopPropagation();
+            onToggleStatus();
+          }}
+        />
+      }
       fields={[{ label: 'Descripción', value: descripcion || '—' }]}
       footer={
         <>
@@ -56,13 +64,6 @@ export function RecipeCategoryListCard({
               onEdit();
             }}
           />
-          <InventarioIconButton
-            variant="delete"
-            theme={theme}
-            onClick={() => onDelete()}
-            disabled={toggleLoading}
-            ariaLabel="Eliminar categoría"
-          />
           <EmpleadoRowActionButton
             variant="toggle"
             active={status === 'active'}
@@ -72,8 +73,15 @@ export function RecipeCategoryListCard({
             aria-label={status === 'active' ? 'Desactivar categoría' : 'Activar categoría'}
             onClick={(event) => {
               event.stopPropagation();
-              onStatusChange(nextStatus);
+              onToggleStatus();
             }}
+          />
+          <InventarioIconButton
+            variant="delete"
+            theme={theme}
+            onClick={() => onDelete()}
+            disabled={toggleLoading}
+            ariaLabel="Eliminar categoría"
           />
         </>
       }

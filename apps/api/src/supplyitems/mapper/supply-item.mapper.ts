@@ -31,6 +31,8 @@ export function toSupplyItemResponse(item: SupplyItemWithRelations): SupplyItemR
     stockActualBodega: decimalToNumber(item.stockActualBodega),
     aplicaVencimiento: item.aplicaVencimiento,
     aplicaLote: item.aplicaLote,
+    fechaVencimiento: item.fechaVencimiento?.toISOString() ?? null,
+    lote: item.lote,
     isActive: item.isActive,
     proveedorPrincipal: principal
       ? {

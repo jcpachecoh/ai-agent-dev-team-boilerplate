@@ -21,6 +21,8 @@ const mockSupplyItem = {
   stockActualBodega: '0',
   aplicaVencimiento: false,
   aplicaLote: false,
+  fechaVencimiento: null,
+  lote: null,
   isActive: true,
   createdAt: new Date(),
   updatedAt: new Date(),
@@ -149,6 +151,37 @@ describe('SupplyItemsService', () => {
       await expect(
         service.create(tenantId, { ...createInput, stockActualBodega: '-1' }),
       ).rejects.toThrow(BadRequestException);
+    });
+
+    it('throws BadRequestException when aplicaVencimiento is true without fechaVencimiento', async () => {
+      repoMock.categoryExists.mockResolvedValue(true);
+      repoMock.findByCodigoInterno.mockResolvedValue(null);
+
+      await expect(
+        service.create(tenantId, { ...createInput, aplicaVencimiento: true }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('persists tracking fields when aplicaVencimiento and aplicaLote are enabled', async () => {
+      repoMock.categoryExists.mockResolvedValue(true);
+      repoMock.findByCodigoInterno.mockResolvedValue(null);
+      repoMock.create.mockResolvedValue(mockSupplyItem);
+
+      await service.create(tenantId, {
+        ...createInput,
+        aplicaVencimiento: true,
+        aplicaLote: true,
+        fechaVencimiento: '2026-12-31',
+        lote: 'LOTE-0001',
+      });
+
+      expect(repoMock.create).toHaveBeenCalledWith(
+        tenantId,
+        expect.objectContaining({
+          fechaVencimiento: expect.any(Date),
+          lote: 'LOTE-0001',
+        }),
+      );
     });
 
     it('accepts BOX as unidadBase', async () => {

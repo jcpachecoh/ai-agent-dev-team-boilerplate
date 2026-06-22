@@ -45,8 +45,14 @@ export class SupplyItemsService implements ISupplyitemsService {
       this.assertNonNegativeStockActual(data.stockActualBodega);
     }
 
+    const tracking = this.resolveTrackingFields(data);
+
     try {
-      return await this.supplyItemsRepository.create(tenantId, { ...data, codigoInterno });
+      return await this.supplyItemsRepository.create(tenantId, {
+        ...data,
+        codigoInterno,
+        ...tracking,
+      });
     } catch (error) {
       this.rethrowUniqueConflict(error);
       throw error;
@@ -75,8 +81,18 @@ export class SupplyItemsService implements ISupplyitemsService {
       this.assertNonNegativeStockActual(data.stockActualBodega);
     }
 
+    const tracking = this.resolveTrackingFields({
+      aplicaVencimiento: data.aplicaVencimiento ?? existing.aplicaVencimiento,
+      aplicaLote: data.aplicaLote ?? existing.aplicaLote,
+      fechaVencimiento:
+        data.fechaVencimiento !== undefined
+          ? data.fechaVencimiento
+          : (existing.fechaVencimiento?.toISOString().slice(0, 10) ?? null),
+      lote: data.lote !== undefined ? data.lote : existing.lote,
+    });
+
     try {
-      return await this.supplyItemsRepository.update(tenantId, id, data);
+      return await this.supplyItemsRepository.update(tenantId, id, { ...data, ...tracking });
     } catch (error) {
       this.rethrowUniqueConflict(error);
       throw error;
@@ -159,6 +175,58 @@ export class SupplyItemsService implements ISupplyitemsService {
     if (Number(value) < 0) {
       throw new BadRequestException('stockActualBodega cannot be negative');
     }
+  }
+
+  private resolveTrackingFields(data: {
+    aplicaVencimiento?: boolean;
+    aplicaLote?: boolean;
+    fechaVencimiento?: string | Date | null;
+    lote?: string | null;
+  }): { fechaVencimiento: Date | null; lote: string | null } {
+    const aplicaVencimiento = data.aplicaVencimiento ?? false;
+    const aplicaLote = data.aplicaLote ?? false;
+    const fechaVencimiento = this.normalizeFechaVencimientoInput(data.fechaVencimiento);
+
+    if (aplicaVencimiento && !fechaVencimiento?.trim()) {
+      throw new BadRequestException(
+        'La fecha de vencimiento es obligatoria cuando aplica vencimiento.',
+      );
+    }
+
+    if (aplicaLote && !data.lote?.trim()) {
+      throw new BadRequestException('El lote es obligatorio cuando aplica lote.');
+    }
+
+    return {
+      fechaVencimiento: aplicaVencimiento
+        ? this.parseFechaVencimiento(fechaVencimiento!.trim())
+        : null,
+      lote: aplicaLote ? data.lote!.trim() : null,
+    };
+  }
+
+  private normalizeFechaVencimientoInput(value?: string | Date | null): string | null | undefined {
+    if (value === undefined) {
+      return undefined;
+    }
+
+    if (value === null) {
+      return null;
+    }
+
+    if (value instanceof Date) {
+      return value.toISOString().slice(0, 10);
+    }
+
+    return value;
+  }
+
+  private parseFechaVencimiento(value: string): Date {
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) {
+      throw new BadRequestException('fechaVencimiento is invalid');
+    }
+    return parsed;
   }
 
   private rethrowUniqueConflict(error: unknown): void {

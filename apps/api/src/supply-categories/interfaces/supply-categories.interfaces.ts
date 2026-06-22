@@ -22,6 +22,8 @@ export interface ISupplyCategoriesRepository {
     prefijo: string,
     excludeId?: string,
   ): Promise<SupplyCategory | null>;
+  countItemsByCategory(tenantId: string, categoriaId: string): Promise<number>;
+  remove(tenantId: string, id: string): Promise<void>;
 }
 
 export interface ISupplyCategoriesService {
@@ -35,4 +37,5 @@ export interface ISupplyCategoriesService {
     id: string,
     data: { nombre?: string; prefijo?: string; descripcion?: string; isActive?: boolean },
   ): Promise<SupplyCategory>;
+  remove(tenantId: string, id: string): Promise<void>;
 }

@@ -12,14 +12,16 @@ import {
   InventarioCategoryCard,
   InventarioCategoryRow,
 } from '@/components/inventario/inventario-responsive';
+import { CategoryDeleteConfirmDialog } from '@/components/shared/CategoryDeleteConfirmDialog';
+import { CategoryStatusConfirmDialog } from '@/components/shared/CategoryStatusConfirmDialog';
 import { ResponsiveTable } from '@/components/responsive-table';
 import { CategoryFormModal } from '@/components/inventory/CategoryFormModal';
 import { InventoryScreenState } from '@/components/inventory/InventoryScreenState';
-import { CategoryStatusConfirmDialog } from '@/components/shared/CategoryStatusConfirmDialog';
 import { INVENTARIO_CATEGORY_RESPONSIVE_COLUMNS } from '@/features/inventario/responsive-columns';
 import { headerColumnsFromResponsive } from '@/lib/responsive-columns';
 import {
   useCreateSupplyCategory,
+  useDeleteSupplyCategory,
   useUpdateSupplyCategory,
 } from '@/features/inventario/hooks/useSupplyCategoryMutations';
 import { useSupplyCategories } from '@/features/inventario/hooks/useSupplyCategories';
@@ -53,20 +55,12 @@ function filterCategories(
   });
 }
 
-function categoryToFormValues(category: SupplyCategoryApi): SupplyCategoryFormValues {
-  return {
-    nombre: category.nombre,
-    prefijo: category.prefijo ?? '',
-    descripcion: category.descripcion ?? '',
-    isActive: category.isActive,
-  };
-}
-
 export function InventoryCategoriesScreen(): React.JSX.Element {
   const theme = useUiTheme();
   const categoriesQuery = useSupplyCategories('all');
   const createMutation = useCreateSupplyCategory();
   const updateMutation = useUpdateSupplyCategory();
+  const deleteMutation = useDeleteSupplyCategory();
 
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<'all' | 'active' | 'inactive'>('all');
@@ -77,6 +71,7 @@ export function InventoryCategoriesScreen(): React.JSX.Element {
   const [statusTarget, setStatusTarget] = useState<
     { category: SupplyCategoryApi; isActive: boolean } | undefined
   >();
+  const [deleteTarget, setDeleteTarget] = useState<SupplyCategoryApi | undefined>();
 
   const categories = categoriesQuery.data ?? [];
 
@@ -115,8 +110,12 @@ export function InventoryCategoriesScreen(): React.JSX.Element {
     }
   };
 
-  const requestStatusChange = (category: SupplyCategoryApi, isActive: boolean) => {
-    setStatusTarget({ category, isActive });
+  const requestStatusChange = (category: SupplyCategoryApi) => {
+    setStatusTarget({ category, isActive: !category.isActive });
+  };
+
+  const requestDelete = (category: SupplyCategoryApi) => {
+    setDeleteTarget(category);
   };
 
   const handleConfirmStatusChange = async () => {
@@ -126,7 +125,9 @@ export function InventoryCategoriesScreen(): React.JSX.Element {
       await updateMutation.mutateAsync({
         id: statusTarget.category.id,
         values: {
-          ...categoryToFormValues(statusTarget.category),
+          nombre: statusTarget.category.nombre,
+          prefijo: statusTarget.category.prefijo ?? '',
+          descripcion: statusTarget.category.descripcion ?? '',
           isActive: statusTarget.isActive,
         },
         original: statusTarget.category,
@@ -138,7 +139,19 @@ export function InventoryCategoriesScreen(): React.JSX.Element {
     }
   };
 
-  const saving = createMutation.isPending || updateMutation.isPending;
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+
+    try {
+      await deleteMutation.mutateAsync(deleteTarget.id);
+      toast.success('Categoría eliminada');
+      setDeleteTarget(undefined);
+    } catch (err) {
+      toast.error(getErrorMessage(err));
+    }
+  };
+
+  const saving = createMutation.isPending || updateMutation.isPending || deleteMutation.isPending;
 
   const pageToolbar = (
     <InventarioPageToolbar
@@ -241,9 +254,9 @@ export function InventoryCategoriesScreen(): React.JSX.Element {
                     visibleColumns={visibleColumns}
                     columnsTemplate={columnsTemplate}
                     onEdit={() => openEdit(category)}
-                    onDelete={() => requestStatusChange(category, false)}
-                    onToggleStatus={() => requestStatusChange(category, !category.isActive)}
-                    toggleLoading={updateMutation.isPending}
+                    onDelete={() => requestDelete(category)}
+                    onToggleStatus={() => requestStatusChange(category)}
+                    toggleLoading={updateMutation.isPending || deleteMutation.isPending}
                   />
                 )}
                 renderCard={(category) => (
@@ -251,9 +264,9 @@ export function InventoryCategoriesScreen(): React.JSX.Element {
                     category={category}
                     theme={theme}
                     onEdit={() => openEdit(category)}
-                    onDelete={() => requestStatusChange(category, false)}
-                    onToggleStatus={() => requestStatusChange(category, !category.isActive)}
-                    toggleLoading={updateMutation.isPending}
+                    onDelete={() => requestDelete(category)}
+                    onToggleStatus={() => requestStatusChange(category)}
+                    toggleLoading={updateMutation.isPending || deleteMutation.isPending}
                   />
                 )}
               />
@@ -282,13 +295,28 @@ export function InventoryCategoriesScreen(): React.JSX.Element {
           />
 
           <CategoryStatusConfirmDialog
-            open={Boolean(statusTarget)}
             categoryName={statusTarget?.category.nombre}
-            isActivating={Boolean(statusTarget?.isActive)}
+            isActivating={statusTarget?.isActive ?? false}
+            open={Boolean(statusTarget)}
             submitting={updateMutation.isPending}
             theme={theme}
             onCancel={() => setStatusTarget(undefined)}
             onConfirm={() => void handleConfirmStatusChange()}
+          />
+
+          <CategoryDeleteConfirmDialog
+            categoryName={deleteTarget?.nombre}
+            open={Boolean(deleteTarget)}
+            submitting={deleteMutation.isPending}
+            theme={theme}
+            description={
+              <>
+                Vas a eliminar permanentemente la categoría <strong>{deleteTarget?.nombre}</strong>.
+                Si tiene insumos asociados, la eliminación no será posible.
+              </>
+            }
+            onCancel={() => setDeleteTarget(undefined)}
+            onConfirm={() => void handleConfirmDelete()}
           />
         </>
       ) : null}

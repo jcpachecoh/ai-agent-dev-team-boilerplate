@@ -87,6 +87,22 @@ export class SupplyCategoriesService implements ISupplyCategoriesService {
     }
   }
 
+  async remove(tenantId: string, id: string): Promise<void> {
+    const existing = await this.repository.findOne(tenantId, id);
+    if (!existing) {
+      throw new NotFoundException(`SupplyCategory ${id} not found`);
+    }
+
+    const itemCount = await this.repository.countItemsByCategory(tenantId, id);
+    if (itemCount > 0) {
+      throw new ConflictException(
+        `No se puede eliminar la categoría "${existing.nombre}" porque tiene ${itemCount} insumo(s) asociado(s).`,
+      );
+    }
+
+    await this.repository.remove(tenantId, id);
+  }
+
   private async assertNombreAvailable(
     tenantId: string,
     nombre: string,

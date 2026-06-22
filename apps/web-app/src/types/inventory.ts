@@ -28,6 +28,8 @@ export interface InventoryProduct {
   unidadBase?: StockUnit;
   aplicaVencimiento?: boolean;
   aplicaLote?: boolean;
+  fechaVencimiento?: string | null;
+  lote?: string | null;
 }
 
 export interface InventoryProductFormValues {
@@ -43,6 +45,8 @@ export interface InventoryProductFormValues {
   factorConversion: string;
   aplicaVencimiento: boolean;
   aplicaLote: boolean;
+  fechaVencimiento: string;
+  lote: string;
   isActive: boolean;
 }
 

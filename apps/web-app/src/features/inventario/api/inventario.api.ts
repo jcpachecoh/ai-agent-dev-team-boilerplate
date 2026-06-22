@@ -21,6 +21,7 @@ import {
 import {
   createSupplyCategoryGql,
   createSupplyItemGql,
+  deleteSupplyCategoryGql,
   deleteSupplyItemGql,
   updateSupplyCategoryGql,
   updateSupplyItemGql,
@@ -30,6 +31,7 @@ import {
   createSupplyItem as createSupplyItemRest,
   deactivateSupplyItem as deactivateSupplyItemRest,
   createSupplyCategory as createSupplyCategoryRest,
+  deleteSupplyCategory as deleteSupplyCategoryRest,
   fetchSupplyCategories as fetchSupplyCategoriesRest,
   updateSupplyCategory as updateSupplyCategoryRest,
   fetchSupplyItem as fetchSupplyItemRest,
@@ -64,6 +66,11 @@ export function updateSupplyCategory(
 ): Promise<SupplyCategoryApi> {
   if (isGraphqlConfigured()) return updateSupplyCategoryGql(id, input);
   return updateSupplyCategoryRest(id, input);
+}
+
+export function deleteSupplyCategory(id: string): Promise<void> {
+  if (isGraphqlConfigured()) return deleteSupplyCategoryGql(id).then(() => undefined);
+  return deleteSupplyCategoryRest(id);
 }
 
 export function fetchNextSupplyItemCodigo(categoriaId: string): Promise<string> {

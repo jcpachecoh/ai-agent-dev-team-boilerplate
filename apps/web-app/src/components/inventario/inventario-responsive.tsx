@@ -289,13 +289,6 @@ export function InventarioCategoryRow({
             return (
               <span className={styles.actions}>
                 <EmpleadoRowActionButton variant="edit" theme={theme} size="sm" onClick={onEdit} />
-                <InventarioIconButton
-                  variant="delete"
-                  theme={theme}
-                  onClick={onDelete}
-                  disabled={toggleLoading || !category.isActive}
-                  ariaLabel={`Desactivar ${category.nombre}`}
-                />
                 <EmpleadoRowActionButton
                   variant="toggle"
                   active={category.isActive}
@@ -308,6 +301,13 @@ export function InventarioCategoryRow({
                       ? `Desactivar ${category.nombre}`
                       : `Activar ${category.nombre}`
                   }
+                />
+                <InventarioIconButton
+                  variant="delete"
+                  theme={theme}
+                  onClick={onDelete}
+                  disabled={toggleLoading}
+                  ariaLabel={`Desactivar ${category.nombre}`}
                 />
               </span>
             );
@@ -347,13 +347,6 @@ export function InventarioCategoryCard({
       footer={
         <>
           <EmpleadoRowActionButton variant="edit" theme={theme} size="sm" onClick={onEdit} />
-          <InventarioIconButton
-            variant="delete"
-            theme={theme}
-            onClick={onDelete}
-            disabled={toggleLoading || !category.isActive}
-            ariaLabel={`Desactivar ${category.nombre}`}
-          />
           <EmpleadoRowActionButton
             variant="toggle"
             active={category.isActive}
@@ -364,6 +357,13 @@ export function InventarioCategoryCard({
             aria-label={
               category.isActive ? `Desactivar ${category.nombre}` : `Activar ${category.nombre}`
             }
+          />
+          <InventarioIconButton
+            variant="delete"
+            theme={theme}
+            onClick={onDelete}
+            disabled={toggleLoading}
+            ariaLabel={`Desactivar ${category.nombre}`}
           />
         </>
       }

@@ -5,7 +5,6 @@ import { useMe } from '@/features/auth/hooks/useMe';
 
 import { mapProfileValuesToUpdateInput, mapTenantToProfile } from '../mappers/api';
 import { formatAccessBadge } from '../mappers/display';
-import { resolveTenantLogoUrl } from '../api/empresa.upload';
 import { readTenantSchedule, writeTenantSchedule } from '../storage/tenant-schedule.storage';
 import { useTenant } from './useTenant';
 import { useUpdateTenant } from './useUpdateTenant';
@@ -29,14 +28,6 @@ export function useRestaurantProfile() {
     const storedSchedule = schedule ?? readTenantSchedule(tenantQuery.data.id);
     return mapTenantToProfile(tenantQuery.data, storedSchedule ?? undefined);
   }, [schedule, tenantQuery.data]);
-
-  const logoUrl = useMemo(() => {
-    if (!tenantQuery.data?.logoUrl) {
-      return profile?.logoUrl;
-    }
-
-    return resolveTenantLogoUrl(tenantQuery.data.logoUrl);
-  }, [profile?.logoUrl, tenantQuery.data?.logoUrl]);
 
   const values = editing && draft ? draft : profile?.values;
 
@@ -94,7 +85,6 @@ export function useRestaurantProfile() {
 
   return {
     tenantLabel: profile?.tenantLabel ?? '',
-    logoUrl,
     values,
     metadata: profile?.metadata ?? [],
     accessBadgeLabel: formatAccessBadge(me?.roleCode),

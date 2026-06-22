@@ -45,6 +45,8 @@ const emptyForm: InventoryProductFormValues = {
   factorConversion: '1',
   aplicaVencimiento: false,
   aplicaLote: false,
+  fechaVencimiento: '',
+  lote: '',
   isActive: true,
 };
 
@@ -122,6 +124,14 @@ export function ProductFormModal({
     }
     if (Number.isNaN(min) || Number.isNaN(max) || min > max) {
       setFormError('Revise stock mínimo y máximo (mínimo ≤ máximo).');
+      return;
+    }
+    if (values.aplicaVencimiento && !values.fechaVencimiento.trim()) {
+      setFormError('Ingrese la fecha de vencimiento.');
+      return;
+    }
+    if (values.aplicaLote && !values.lote.trim()) {
+      setFormError('Ingrese el lote asignado al producto.');
       return;
     }
     setFormError(null);
@@ -214,14 +224,51 @@ export function ProductFormModal({
           <FormToggle
             label="Aplica vencimiento"
             checked={values.aplicaVencimiento}
-            onChange={(checked) => update({ aplicaVencimiento: checked })}
+            onChange={(checked) =>
+              update({
+                aplicaVencimiento: checked,
+                fechaVencimiento: checked ? values.fechaVencimiento : '',
+              })
+            }
           />
           <FormToggle
             label="Aplica lote"
             checked={values.aplicaLote}
-            onChange={(checked) => update({ aplicaLote: checked })}
+            onChange={(checked) =>
+              update({
+                aplicaLote: checked,
+                lote: checked ? values.lote : '',
+              })
+            }
           />
         </div>
+        {values.aplicaVencimiento || values.aplicaLote ? (
+          <div className={styles.conditionalFields}>
+            {values.aplicaVencimiento ? (
+              <InventarioFormField label="Fecha de vencimiento *" theme={theme} size="md">
+                <input
+                  id="insumo-fecha-vencimiento"
+                  className={styles.input}
+                  type="date"
+                  value={values.fechaVencimiento}
+                  onChange={(e) => update({ fechaVencimiento: e.target.value })}
+                />
+              </InventarioFormField>
+            ) : null}
+            {values.aplicaLote ? (
+              <InventarioFormField label="Lote *" theme={theme} size="md">
+                <input
+                  id="insumo-lote"
+                  className={styles.input}
+                  type="text"
+                  value={values.lote}
+                  placeholder="Ej. LOTE-0001"
+                  onChange={(e) => update({ lote: e.target.value })}
+                />
+              </InventarioFormField>
+            ) : null}
+          </div>
+        ) : null}
         {formError ? (
           <span className={[styles.errorText, styles.fullWidthField].join(' ')}>{formError}</span>
         ) : null}

@@ -42,8 +42,8 @@ export function CategoryStatusConfirmDialog({
           </>
         ) : (
           <>
-            Vas a desactivar la categoría <strong>{categoryName}</strong>. Dejará de aparecer al
-            crear nuevos registros asociados.
+            Vas a desactivar la categoría <strong>{categoryName}</strong>. Dejará de aparecer en el
+            listado por defecto.
           </>
         )
       }

@@ -22,6 +22,8 @@ export const SUPPLY_ITEM_FIELDS = `
   stockMaximoBodega
   aplicaVencimiento
   aplicaLote
+  fechaVencimiento
+  lote
   isActive
   proveedorPrincipal {
     supplierId
