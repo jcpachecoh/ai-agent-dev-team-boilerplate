@@ -1,10 +1,9 @@
-import { Building2, MapPin, Phone } from 'lucide-react';
+import { Building2, MapPin, Phone, Users } from 'lucide-react';
 import React, { type CSSProperties, type JSX } from 'react';
 
 import { EmpleadoRowActionButton } from '../../empleado/empleado-row-action-button';
 import { SedeRowActionButton } from '../sede-row-action-button';
 import { SedeStatusBadge } from '../sede-status-badge';
-import { SedeUserAvatarGroup } from '../sede-user-avatar-group';
 import { sedeGridTemplate } from '../shared/sede-columns';
 import type { SedeAssignedUser, SedeSize, SedeTheme } from '../shared/sede-types';
 import styles from './SedeTableRow.module.scss';
@@ -18,6 +17,7 @@ export interface SedeTableRowProps {
   phone?: string;
   isActive?: boolean;
   assignedUsers?: SedeAssignedUser[];
+  onView?: () => void;
   onEdit?: () => void;
   onToggleStatus?: () => void;
   onDelete?: () => void;
@@ -37,6 +37,7 @@ export function SedeTableRow({
   phone = '+57 605 901 2345',
   isActive = true,
   assignedUsers = [],
+  onView,
   onEdit,
   onToggleStatus,
   onDelete,
@@ -46,6 +47,8 @@ export function SedeTableRow({
   size = 'md',
   className,
 }: SedeTableRowProps): JSX.Element {
+  const userCount = assignedUsers.length;
+
   return (
     <div
       className={[styles.row, styles[`theme--${theme}`], styles[`size--${size}`], className]
@@ -75,13 +78,15 @@ export function SedeTableRow({
         <Phone aria-hidden />
         <span>{phone}</span>
       </div>
-      <div className={styles.usersCell} role="cell">
-        <SedeUserAvatarGroup users={assignedUsers} theme={theme} size="sm" />
+      <div className={styles.usersCell} role="cell" aria-label={`${userCount} usuarios asignados`}>
+        <Users aria-hidden />
+        <span className={styles.userCount}>{userCount}</span>
       </div>
       <div className={styles.statusCell} role="cell">
         <SedeStatusBadge status={isActive ? 'active' : 'inactive'} theme={theme} size="sm" />
       </div>
       <div className={styles.actionsCell} role="cell">
+        <SedeRowActionButton variant="view" theme={theme} size="sm" onClick={onView} />
         <EmpleadoRowActionButton variant="edit" theme={theme} size="sm" onClick={onEdit} />
         <EmpleadoRowActionButton
           variant="toggle"

@@ -14,6 +14,8 @@ type Story = StoryObj<typeof SedeTableRow>;
 
 export const Activa: Story = {
   args: {
+    name: 'Sede Bocagrande',
+    isActive: true,
     assignedUsers: [
       {
         id: '1',
@@ -39,6 +41,5 @@ export const Inactiva: Story = {
   args: {
     isActive: false,
     name: 'Sede Centro',
-    assignedUsers: [],
   },
 };

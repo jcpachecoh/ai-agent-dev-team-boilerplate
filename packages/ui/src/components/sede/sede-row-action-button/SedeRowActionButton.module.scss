@@ -38,6 +38,12 @@
   }
 }
 
+.variant--view {
+  background: var(--sede-hover);
+  border-color: var(--sede-border);
+  color: var(--sede-muted);
+}
+
 .variant--edit {
   background: rgba(sede.$sede-primary, 0.06);
   border-color: rgba(sede.$sede-primary, 0.19);

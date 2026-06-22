@@ -91,7 +91,27 @@
   color: var(--sede-text-secondary);
 }
 
-.usersCell,
+.usersCell {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.75rem;
+  color: var(--sede-muted);
+
+  svg {
+    flex-shrink: 0;
+    width: 11px;
+    height: 11px;
+  }
+}
+
+.userCount {
+  font-family: $font-family-mono;
+  font-size: 0.75rem;
+  font-weight: $font-weight-semibold;
+  color: var(--sede-text-secondary);
+}
+
 .statusCell,
 .actionsCell {
   display: flex;

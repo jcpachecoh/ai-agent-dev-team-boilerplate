@@ -4,7 +4,6 @@ import React, { type JSX } from 'react';
 import { EmpleadoRowActionButton } from '../../empleado/empleado-row-action-button';
 import { SedeRowActionButton } from '../sede-row-action-button';
 import { SedeStatusBadge } from '../sede-status-badge';
-import { SedeUserAvatarGroup } from '../sede-user-avatar-group';
 import type { SedeAssignedUser, SedeSize, SedeTheme } from '../shared/sede-types';
 import styles from './SedeTableCard.module.scss';
 
@@ -17,6 +16,7 @@ export interface SedeTableCardProps {
   phone?: string;
   isActive?: boolean;
   assignedUsers?: SedeAssignedUser[];
+  onView?: () => void;
   onEdit?: () => void;
   onToggleStatus?: () => void;
   onDelete?: () => void;
@@ -36,6 +36,7 @@ export function SedeTableCard({
   phone = '+57 605 901 2345',
   isActive = true,
   assignedUsers = [],
+  onView,
   onEdit,
   onToggleStatus,
   onDelete,
@@ -45,6 +46,8 @@ export function SedeTableCard({
   size = 'md',
   className,
 }: SedeTableCardProps): JSX.Element {
+  const userCount = assignedUsers.length;
+
   return (
     <article
       className={[styles.card, styles[`theme--${theme}`], styles[`size--${size}`], className]
@@ -86,13 +89,12 @@ export function SedeTableCard({
         </div>
         <div className={styles.detailRow}>
           <dt>Usuarios</dt>
-          <dd>
-            <SedeUserAvatarGroup users={assignedUsers} theme={theme} size="sm" />
-          </dd>
+          <dd>{userCount}</dd>
         </div>
       </dl>
 
       <footer className={styles.footer}>
+        <SedeRowActionButton variant="view" theme={theme} onClick={onView} />
         <EmpleadoRowActionButton variant="edit" theme={theme} size="sm" onClick={onEdit} />
         <EmpleadoRowActionButton
           variant="toggle"

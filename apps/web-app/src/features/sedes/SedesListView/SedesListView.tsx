@@ -1,6 +1,7 @@
 import {
   ConfirmModal,
   SedeActionButton,
+  SedeDetailModal,
   SedeKpiCard,
   SedeKpiGrid,
   SedeListToolbar,
@@ -15,11 +16,13 @@ import {
 import { useMemo, useState, type JSX } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import { useAdminUsers } from '@/features/usuarios/hooks/useAdminUsers';
 import { useUiTheme } from '@/hooks/useUiTheme';
 import { getErrorMessage, isGraphqlConfigured } from '@/lib/graphql-client';
 
-import { useLocationMetrics } from '../hooks/useLocations';
+import { useLocation, useLocationMetrics, useLocationUsers } from '../hooks/useLocations';
 import { useDeleteLocation, useToggleLocationStatus } from '../hooks/useLocationMutations';
+import { enrichAssignedUsers } from '../mappers/api';
 import styles from '../sedes.module.scss';
 
 export default function SedesListView(): JSX.Element {
@@ -34,6 +37,31 @@ export default function SedesListView(): JSX.Element {
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [pendingToggleId, setPendingToggleId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+  const [viewTargetId, setViewTargetId] = useState<string | null>(null);
+  const [viewUserSearch, setViewUserSearch] = useState('');
+
+  const viewLocationQuery = useLocation(viewTargetId ?? undefined);
+  const viewUsersQuery = useLocationUsers(viewTargetId ?? undefined);
+  const { data: adminUsers } = useAdminUsers(false);
+
+  const viewAssignedUsers = useMemo(() => {
+    const assigned = viewUsersQuery.data ?? [];
+    return enrichAssignedUsers(assigned, adminUsers);
+  }, [viewUsersQuery.data, adminUsers]);
+
+  const filteredViewUsers = useMemo(() => {
+    const query = viewUserSearch.trim().toLowerCase();
+    if (!query) return viewAssignedUsers;
+    return viewAssignedUsers.filter(
+      (user) =>
+        user.name.toLowerCase().includes(query) ||
+        user.email.toLowerCase().includes(query) ||
+        user.roleLabel.toLowerCase().includes(query),
+    );
+  }, [viewAssignedUsers, viewUserSearch]);
+
+  const viewTargetName =
+    viewLocationQuery.data?.name ?? rows.find((row) => row.id === viewTargetId)?.name ?? 'Sede';
 
   const filteredRows = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -154,6 +182,10 @@ export default function SedesListView(): JSX.Element {
                   key={row.id}
                   {...row}
                   theme={theme}
+                  onView={() => {
+                    setViewUserSearch('');
+                    setViewTargetId(row.id);
+                  }}
                   onEdit={() => navigate(`/empresa/sedes/${row.id}/editar`)}
                   onToggleStatus={() => handleToggleStatus(row.id)}
                   onDelete={() => handleDeleteRequest(row.id, row.name)}
@@ -181,6 +213,34 @@ export default function SedesListView(): JSX.Element {
         description="Esta acción no se puede deshacer."
         confirmLabel="Eliminar"
         cancelLabel="Cancelar"
+      />
+
+      <SedeDetailModal
+        open={viewTargetId !== null}
+        title={`Consultar: ${viewTargetName}`}
+        locationId={viewTargetId ?? undefined}
+        values={viewLocationQuery.data}
+        assignedUsers={filteredViewUsers}
+        userSearchValue={viewUserSearch}
+        onUserSearchChange={setViewUserSearch}
+        loading={viewLocationQuery.isPending || viewUsersQuery.isPending}
+        loadError={
+          viewLocationQuery.isError
+            ? getErrorMessage(viewLocationQuery.error)
+            : viewUsersQuery.isError
+              ? getErrorMessage(viewUsersQuery.error)
+              : undefined
+        }
+        onClose={() => setViewTargetId(null)}
+        onEdit={
+          viewTargetId
+            ? () => {
+                setViewTargetId(null);
+                navigate(`/empresa/sedes/${viewTargetId}/editar`);
+              }
+            : undefined
+        }
+        theme={theme}
       />
     </>
   );

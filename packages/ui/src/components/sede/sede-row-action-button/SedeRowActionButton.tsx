@@ -1,10 +1,10 @@
-import { Pencil, ToggleRight, Trash2 } from 'lucide-react';
+import { Eye, Pencil, ToggleRight, Trash2 } from 'lucide-react';
 import React, { type ButtonHTMLAttributes, type JSX, type ReactNode } from 'react';
 
 import type { SedeSize, SedeTheme } from '../shared/sede-types';
 import styles from './SedeRowActionButton.module.scss';
 
-export type SedeRowActionVariant = 'edit' | 'toggle' | 'delete';
+export type SedeRowActionVariant = 'view' | 'edit' | 'toggle' | 'delete';
 
 export interface SedeRowActionButtonProps extends Omit<
   ButtonHTMLAttributes<HTMLButtonElement>,
@@ -18,6 +18,7 @@ export interface SedeRowActionButtonProps extends Omit<
 }
 
 const defaultIcons: Record<SedeRowActionVariant, ReactNode> = {
+  view: <Eye aria-hidden />,
   edit: <Pencil aria-hidden />,
   toggle: <ToggleRight aria-hidden />,
   delete: <Trash2 aria-hidden />,
@@ -35,13 +36,15 @@ export function SedeRowActionButton({
 }: SedeRowActionButtonProps): JSX.Element {
   const resolvedAriaLabel =
     ariaLabel ??
-    (variant === 'edit'
-      ? 'Editar sede'
-      : variant === 'delete'
-        ? 'Eliminar sede'
-        : active
-          ? 'Desactivar sede'
-          : 'Activar sede');
+    (variant === 'view'
+      ? 'Consultar sede'
+      : variant === 'edit'
+        ? 'Editar sede'
+        : variant === 'delete'
+          ? 'Eliminar sede'
+          : active
+            ? 'Desactivar sede'
+            : 'Activar sede');
 
   return (
     <button

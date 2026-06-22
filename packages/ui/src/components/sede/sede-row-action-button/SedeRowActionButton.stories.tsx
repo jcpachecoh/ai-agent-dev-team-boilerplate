@@ -12,6 +12,7 @@ const meta: Meta<typeof SedeRowActionButton> = {
 export default meta;
 type Story = StoryObj<typeof SedeRowActionButton>;
 
+export const View: Story = { args: { variant: 'view' } };
 export const Edit: Story = { args: { variant: 'edit' } };
 export const ToggleOff: Story = { args: { variant: 'toggle', active: false } };
 export const ToggleOn: Story = { args: { variant: 'toggle', active: true } };

@@ -8,10 +8,23 @@ $mobile-breakpoint: 768px;
   display: flex;
   flex-direction: column;
   width: 100%;
+  min-width: 0;
   border: 1px solid var(--sede-border);
   border-radius: 4px;
   background: var(--sede-surface);
   overflow: hidden;
+}
+
+.scrollRegion {
+  overflow-x: auto;
+  overflow-y: hidden;
+  min-width: 0;
+  -webkit-overflow-scrolling: touch;
+}
+
+.scrollContent {
+  width: 100%;
+  min-width: var(--sede-table-min-width, 900px);
 }
 
 .body {
@@ -25,6 +38,14 @@ $mobile-breakpoint: 768px;
     border-radius: 0;
     background: transparent;
     gap: 10px;
+  }
+
+  .scrollRegion {
+    overflow-x: visible;
+  }
+
+  .scrollContent {
+    min-width: 0;
   }
 
   .body {
