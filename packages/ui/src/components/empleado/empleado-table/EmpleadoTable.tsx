@@ -2,7 +2,12 @@ import type { CSSProperties, JSX, ReactNode } from 'react';
 
 import { EmpleadoPagination, type EmpleadoPaginationProps } from '../empleado-pagination';
 import { EmpleadoTableHeader } from '../empleado-table-header';
-import { getEmpleadoColumns, getEmpleadoTableMinWidthPx } from '../shared/empleado-columns';
+import {
+  buildEmpleadoHeaderColumns,
+  getEmpleadoTableMinWidthPx,
+  type EmpleadoSortColumnKey,
+  type EmpleadoSortDirection,
+} from '../shared/empleado-columns';
 import type { EmpleadoSize, EmpleadoTheme } from '../shared/empleado-types';
 import styles from './EmpleadoTable.module.scss';
 
@@ -11,6 +16,9 @@ export interface EmpleadoTableProps {
   footer?: ReactNode;
   pagination?: EmpleadoPaginationProps;
   showActions?: boolean;
+  sortColumn?: EmpleadoSortColumnKey | null;
+  sortDirection?: EmpleadoSortDirection;
+  onSortColumn?: (column: EmpleadoSortColumnKey) => void;
   theme?: EmpleadoTheme;
   size?: EmpleadoSize;
   className?: string;
@@ -21,11 +29,14 @@ export function EmpleadoTable({
   footer,
   pagination,
   showActions = true,
+  sortColumn = null,
+  sortDirection = 'asc',
+  onSortColumn,
   theme = 'dark',
   size = 'md',
   className,
 }: EmpleadoTableProps): JSX.Element {
-  const columns = getEmpleadoColumns(showActions);
+  const columns = buildEmpleadoHeaderColumns(showActions, sortColumn, sortDirection, onSortColumn);
   const tableMinWidthPx = getEmpleadoTableMinWidthPx(showActions);
 
   return (

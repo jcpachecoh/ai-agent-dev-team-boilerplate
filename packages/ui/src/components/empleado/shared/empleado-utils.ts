@@ -1,4 +1,5 @@
 import type { EmpleadoAvatarTone } from './empleado-types';
+import type { EmpleadoSortColumnKey, EmpleadoSortDirection } from './empleado-columns';
 
 const AVATAR_TONES: EmpleadoAvatarTone[] = ['teal', 'cyan', 'amber', 'blue', 'coral', 'purple'];
 
@@ -35,4 +36,22 @@ export function formatEmpleadoHireDate(dateString?: string): string {
   const date = new Date(dateString);
   if (Number.isNaN(date.getTime())) return dateString;
   return date.toISOString().slice(0, 10);
+}
+
+export function toggleEmpleadoSort(
+  currentColumn: EmpleadoSortColumnKey | null,
+  currentDirection: EmpleadoSortDirection,
+  nextColumn: EmpleadoSortColumnKey,
+): { column: EmpleadoSortColumnKey; direction: EmpleadoSortDirection } {
+  if (currentColumn === nextColumn) {
+    return {
+      column: nextColumn,
+      direction: currentDirection === 'asc' ? 'desc' : 'asc',
+    };
+  }
+
+  return {
+    column: nextColumn,
+    direction: 'asc',
+  };
 }

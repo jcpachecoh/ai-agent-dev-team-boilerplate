@@ -4,6 +4,18 @@
 .header {
   @include emp.empleado-theme-classes;
 
+  &.theme--light {
+    --empleado-header-text: #{$color-gray-800};
+    --empleado-header-sort-inactive: #{$color-gray-600};
+    --empleado-header-hover: #{$color-gray-900};
+  }
+
+  &.theme--dark {
+    --empleado-header-text: #e8e8e3;
+    --empleado-header-sort-inactive: #b8b8b2;
+    --empleado-header-hover: #f5f5f0;
+  }
+
   display: grid;
   grid-template-columns: var(--empleado-columns);
   column-gap: 16px;
@@ -18,19 +30,49 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
   font-family: 'IBM Plex Mono', $font-family-mono, monospace;
   font-size: 0.56rem;
   font-weight: $font-weight-bold;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--empleado-dim);
+  color: var(--empleado-header-text);
+}
 
-  svg {
-    width: 9px;
-    height: 9px;
+.label {
+  min-width: 0;
+}
+
+.sortable {
+  cursor: pointer;
+
+  &:hover {
+    color: var(--empleado-header-hover);
+  }
+
+  &:focus-visible {
+    @include emp.empleado-focus-ring;
   }
 }
 
-.accent {
+.cellActive {
   color: var(--empleado-accent);
+}
+
+.sortIcon {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.sortIconMuted {
+  color: var(--empleado-header-sort-inactive);
+  opacity: 0.85;
+}
+
+.sortIcon svg {
+  width: 9px;
+  height: 9px;
 }

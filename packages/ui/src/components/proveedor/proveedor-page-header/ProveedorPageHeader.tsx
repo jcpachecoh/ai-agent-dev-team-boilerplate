@@ -15,7 +15,7 @@ export interface ProveedorPageHeaderProps {
 
 export function ProveedorPageHeader({
   title = 'Proveedores',
-  subtitle = 'Gestión de proveedores del tenant',
+  subtitle = 'Gestión de proveedores',
   icon,
   actions,
   theme = 'light',

@@ -89,24 +89,16 @@ export default function ProveedoresListView(): React.JSX.Element {
       <section className={styles.pageHeaderSection}>
         <ProveedorPageHeader
           title="Proveedores"
-          subtitle="Gestión de proveedores del tenant"
+          subtitle="Gestión de proveedores"
           theme={theme}
           size={PROVEEDOR_TABLE_SIZE}
           actions={
-            <>
-              <ProveedorActionButton
-                variant="export"
-                theme={theme}
-                size="md"
-                onClick={() => window.alert('Exportar — próximamente')}
-              />
-              <ProveedorActionButton
-                variant="primary"
-                theme={theme}
-                size="md"
-                onClick={() => navigate('/proveedores/nuevo')}
-              />
-            </>
+            <ProveedorActionButton
+              variant="export"
+              theme={theme}
+              size="md"
+              onClick={() => window.alert('Exportar — próximamente')}
+            />
           }
         />
       </section>

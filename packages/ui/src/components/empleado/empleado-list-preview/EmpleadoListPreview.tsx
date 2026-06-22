@@ -1,4 +1,6 @@
 import type { JSX } from 'react';
+import { Users } from 'lucide-react';
+import { useMemo, useState } from 'react';
 
 import { RecetaMetricCard } from '../../receta/receta-metric-card';
 import { EmpleadoActionButton } from '../empleado-action-button';
@@ -13,7 +15,9 @@ import type {
   EmpleadoStatusFilterValue,
   EmpleadoTheme,
 } from '../shared/empleado-types';
+import type { EmpleadoSortColumnKey, EmpleadoSortDirection } from '../shared/empleado-columns';
 import type { EmpleadoTableRowProps } from '../empleado-table-row';
+import { toggleEmpleadoSort } from '../shared/empleado-utils';
 import styles from './EmpleadoListPreview.module.scss';
 
 export interface EmpleadoListPreviewProps {
@@ -84,8 +88,42 @@ export function EmpleadoListPreview({
   size = 'md',
   className,
 }: EmpleadoListPreviewProps): JSX.Element {
+  const [sortColumn, setSortColumn] = useState<EmpleadoSortColumnKey | null>(null);
+  const [sortDirection, setSortDirection] = useState<EmpleadoSortDirection>('asc');
+
   const resolvedSubtitle =
     subtitle ?? `Todos los empleados del tenant · ${activeCount} activos de ${totalCount}`;
+
+  const sortedRows = useMemo(() => {
+    if (!sortColumn) return rows;
+
+    const sorted = [...rows];
+    sorted.sort((left, right) => {
+      let result = 0;
+
+      if (sortColumn === 'employee') {
+        result = (left.name ?? '').localeCompare(right.name ?? '', 'es', { sensitivity: 'base' });
+      } else if (sortColumn === 'role') {
+        const leftRole = `${left.position ?? ''} ${left.area ?? ''}`.trim();
+        const rightRole = `${right.position ?? ''} ${right.area ?? ''}`.trim();
+        result = leftRole.localeCompare(rightRole, 'es', { sensitivity: 'base' });
+      } else if (sortColumn === 'hireDate') {
+        result = (left.hireDate ?? '').localeCompare(right.hireDate ?? '', 'es', {
+          sensitivity: 'base',
+        });
+      }
+
+      return sortDirection === 'asc' ? result : -result;
+    });
+
+    return sorted;
+  }, [rows, sortColumn, sortDirection]);
+
+  const handleSortColumn = (column: EmpleadoSortColumnKey) => {
+    const next = toggleEmpleadoSort(sortColumn, sortDirection, column);
+    setSortColumn(next.column);
+    setSortDirection(next.direction);
+  };
 
   return (
     <EmpleadoPage theme={theme} size={size} className={className}>
@@ -151,13 +189,16 @@ export function EmpleadoListPreview({
         <EmpleadoTable
           theme={theme}
           size={size}
+          sortColumn={sortColumn}
+          sortDirection={sortDirection}
+          onSortColumn={handleSortColumn}
           pagination={{
             page: 1,
             totalPages: 3,
-            summary: `1-${rows.length} de ${filteredCount}`,
+            summary: `1-${sortedRows.length} de ${filteredCount}`,
           }}
         >
-          {rows.map((row) => (
+          {sortedRows.map((row) => (
             <EmpleadoTableItem
               key={row.id}
               {...row}
