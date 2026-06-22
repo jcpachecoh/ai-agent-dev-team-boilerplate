@@ -45,6 +45,28 @@ export function getEmpleadoGridTemplate(showActions = true): string {
     .join(' ');
 }
 
+function getColumnMinWidthPx(width?: string): number {
+  if (!width) return 80;
+
+  const minmaxMatch = width.match(/minmax\((\d+)px/i);
+  if (minmaxMatch) return Number(minmaxMatch[1]);
+
+  const pxMatch = width.match(/^(\d+)px$/i);
+  if (pxMatch) return Number(pxMatch[1]);
+
+  if (width === 'max-content') return 96;
+
+  return 80;
+}
+
+export function getEmpleadoTableMinWidthPx(showActions = true): number {
+  const columns = getEmpleadoColumns(showActions);
+  const columnsWidth = columns.reduce((sum, column) => sum + getColumnMinWidthPx(column.width), 0);
+  const gaps = Math.max(columns.length - 1, 0) * EMPLEADO_TABLE_COLUMN_GAP_PX;
+
+  return columnsWidth + gaps + 24;
+}
+
 export function buildEmpleadoHeaderColumns(
   showActions: boolean,
   sortColumn: EmpleadoSortColumnKey | null,

@@ -4,6 +4,7 @@ import { EmpleadoPagination, type EmpleadoPaginationProps } from '../empleado-pa
 import { EmpleadoTableHeader } from '../empleado-table-header';
 import {
   buildEmpleadoHeaderColumns,
+  getEmpleadoTableMinWidthPx,
   type EmpleadoSortColumnKey,
   type EmpleadoSortDirection,
 } from '../shared/empleado-columns';
@@ -36,6 +37,7 @@ export function EmpleadoTable({
   className,
 }: EmpleadoTableProps): JSX.Element {
   const columns = buildEmpleadoHeaderColumns(showActions, sortColumn, sortDirection, onSortColumn);
+  const tableMinWidthPx = getEmpleadoTableMinWidthPx(showActions);
 
   return (
     <section
