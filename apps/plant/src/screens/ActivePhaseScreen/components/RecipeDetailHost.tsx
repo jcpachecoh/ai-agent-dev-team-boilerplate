@@ -13,7 +13,7 @@ export interface RecipeDetailHostProps {
   cellIndex: number | null;
   operatorName: string;
   onBack: () => void;
-  onReportIssue?: () => void;
+  onReportIssue?: (cellIndex: number) => void;
 }
 
 function createIdempotencyKey(action: string, orderId: string): string {
@@ -202,7 +202,9 @@ export function RecipeDetailHost({
         onResume={displayStatus === 'completed' ? undefined : () => void handleResume()}
         onNextStep={displayStatus === 'completed' ? undefined : () => void handleNextStep()}
         onFinishOrder={displayStatus === 'completed' ? undefined : handleFinishRequest}
-        onReportIssue={onReportIssue}
+        onReportIssue={
+          onReportIssue && cellIndex !== null ? () => onReportIssue(cellIndex) : undefined
+        }
       />
 
       {showFinishConfirm ? (

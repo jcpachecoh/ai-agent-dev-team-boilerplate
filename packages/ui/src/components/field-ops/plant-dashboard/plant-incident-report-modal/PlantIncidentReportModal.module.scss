@@ -1,0 +1,157 @@
+@use '../shared/plant-modal-shell' as shell;
+
+.overlay {
+  @include shell.overlay;
+}
+
+.theme--dark {
+  @include shell.theme-dark;
+}
+
+.theme--light {
+  @include shell.theme-light;
+}
+
+.size--sm {
+  @include shell.size-sm;
+}
+
+.size--md {
+  @include shell.size-md;
+}
+
+.size--xl {
+  @include shell.size-xl;
+}
+
+.dialog {
+  @include shell.dialog(#e05a44);
+}
+
+.header {
+  @include shell.header;
+}
+
+.eyebrow {
+  @include shell.eyebrow;
+}
+
+.title {
+  @include shell.title;
+}
+
+.subtitle {
+  @include shell.subtitle;
+}
+
+.closeBtn {
+  @include shell.close-btn;
+}
+
+.body {
+  @include shell.body;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+}
+
+.fieldLabel {
+  @include shell.field-label;
+}
+
+.textarea {
+  @include shell.text-input;
+  resize: vertical;
+  min-height: 5.5rem;
+}
+
+.select {
+  @include shell.select-input;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem;
+}
+
+.photoSection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding: 0.65rem;
+  border: 1px dashed var(--pd-border-strong);
+  border-radius: 3px;
+  background: rgb(224 90 68 / 4%);
+}
+
+.photoHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.captureBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid rgb(224 90 68 / 35%);
+  border-radius: 3px;
+  padding: 0.35rem 0.55rem;
+  background: rgb(224 90 68 / 12%);
+  color: var(--pd-title);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.captureBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.preview {
+  width: 100%;
+  max-height: 10rem;
+  object-fit: cover;
+  border: 1px solid var(--pd-border-strong);
+  border-radius: 3px;
+}
+
+.photoHint {
+  @include shell.hint;
+}
+
+.error {
+  @include shell.error-banner;
+}
+
+.footer {
+  @include shell.footer;
+}
+
+.ghostBtn {
+  @include shell.ghost-btn;
+}
+
+.ghostBtn:disabled,
+.primaryBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.primaryBtn {
+  @include shell.primary-btn(224, 90, 68);
+}
+
+.primaryBtn:hover:not(:disabled) {
+  background: rgb(224 90 68 / 28%);
+}

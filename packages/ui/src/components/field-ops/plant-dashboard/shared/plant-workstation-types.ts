@@ -141,3 +141,35 @@ export function layoutModeCellCount(mode: PlantLayoutMode): number {
   if (mode === '1x2') return 2;
   return 4;
 }
+
+export type PlantIncidentType = 'QUALITY' | 'SAFETY' | 'EQUIPMENT' | 'OTHER';
+
+export type PlantAlarmSeverity = 'INFO' | 'WARNING' | 'CRITICAL';
+
+export interface PlantSelectOption<T extends string = string> {
+  value: T;
+  label: string;
+}
+
+export const PLANT_INCIDENT_TYPE_OPTIONS: PlantSelectOption<PlantIncidentType>[] = [
+  { value: 'QUALITY', label: 'Calidad' },
+  { value: 'SAFETY', label: 'Seguridad' },
+  { value: 'EQUIPMENT', label: 'Equipo' },
+  { value: 'OTHER', label: 'Otro' },
+];
+
+export const PLANT_ALARM_SEVERITY_OPTIONS: PlantSelectOption<PlantAlarmSeverity>[] = [
+  { value: 'INFO', label: 'Info' },
+  { value: 'WARNING', label: 'Advertencia' },
+  { value: 'CRITICAL', label: 'Crítica' },
+];
+
+export interface PlantBleDeviceSummary {
+  deviceId: string;
+  name?: string;
+  rssi?: number;
+}
+
+export const PLANT_INCIDENT_ACCENT = '#e05a44';
+
+export const PLANT_BLE_ACCENT = '#4dabf7';

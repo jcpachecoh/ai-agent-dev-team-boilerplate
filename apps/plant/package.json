@@ -16,9 +16,13 @@
     "clean": "rm -rf dist",
     "cap:sync": "cap sync",
     "build:android": "pnpm run build && cap sync android",
+    "build:ios": "pnpm run build && cap sync ios",
+    "cap:add:android": "cap add android",
+    "cap:add:ios": "cap add ios",
     "report:bundle": "node scripts/report-bundle-size.mjs"
   },
   "dependencies": {
+    "@capacitor-community/bluetooth-le": "^6.0.0",
     "@capacitor-community/keep-awake": "^5.0.1",
     "@capacitor/camera": "^6.1.0",
     "@capacitor/core": "^6.2.0",

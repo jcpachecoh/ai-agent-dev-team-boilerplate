@@ -12,6 +12,14 @@ const config: CapacitorConfig = {
       autoUpdate: false,
       statsUrl: '',
     },
+    BluetoothLe: {
+      displayStrings: {
+        scanning: 'Escaneando dispositivos…',
+        cancel: 'Cancelar',
+        availableDevices: 'Dispositivos disponibles',
+        noDeviceFound: 'No se encontraron dispositivos',
+      },
+    },
   },
   server: {
     androidScheme: 'https',

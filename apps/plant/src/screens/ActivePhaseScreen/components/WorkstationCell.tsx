@@ -16,7 +16,7 @@ export interface WorkstationCellProps {
   onAssign: (cellIndex: number) => void;
   onChangeOrder: (cellIndex: number) => void;
   onViewRecipe: (cellIndex: number) => void;
-  onReportIssue?: () => void;
+  onReportIssue?: (cellIndex: number) => void;
 }
 
 function resolveDensity(layoutMode: PlantLayoutMode): PlantWorkstationDensity {
@@ -77,7 +77,7 @@ export function WorkstationCellView({
       onFinish={isPending ? undefined : () => void handleFinish()}
       onChangeOrder={() => onChangeOrder(cell.cellIndex)}
       onViewRecipe={() => onViewRecipe(cell.cellIndex)}
-      onReportIssue={onReportIssue}
+      onReportIssue={onReportIssue ? () => onReportIssue(cell.cellIndex) : undefined}
     />
   );
 }

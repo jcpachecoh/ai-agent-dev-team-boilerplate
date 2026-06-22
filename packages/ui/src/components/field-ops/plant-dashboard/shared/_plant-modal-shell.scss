@@ -1,0 +1,258 @@
+@use './plant-dashboard-theme' as pd;
+
+@mixin overlay {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: max(1rem, env(safe-area-inset-top, 0px)) max(1rem, env(safe-area-inset-right, 0px))
+    max(1rem, env(safe-area-inset-bottom, 0px)) max(1rem, env(safe-area-inset-left, 0px));
+  background: var(--pd-overlay, rgb(0 0 0 / 78%));
+  overscroll-behavior: contain;
+  isolation: isolate;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}
+
+@mixin theme-dark {
+  @include pd.plant-dashboard-theme-dark;
+}
+
+@mixin theme-light {
+  @include pd.plant-dashboard-theme-light;
+}
+
+@mixin dialog($accent: var(--pd-border-strong)) {
+  width: min(100%, 32rem);
+  max-height: min(90vh, 36rem);
+  max-height: min(90dvh, 36rem);
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--pd-border-strong);
+  border-top: 3px solid $accent;
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--pd-bg-elevated, #111);
+  box-shadow: 0 12px 48px rgb(0 0 0 / 45%);
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}
+
+@mixin header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.85rem 1.1rem;
+  background: var(--pd-bg-muted, #161616);
+  border-bottom: 1px solid var(--pd-border-strong);
+}
+
+@mixin eyebrow {
+  margin: 0;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--pd-muted);
+}
+
+@mixin title {
+  margin: 0.2rem 0 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--pd-title);
+}
+
+@mixin subtitle {
+  margin: 0.35rem 0 0;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--pd-muted);
+}
+
+@mixin close-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  border: 1px solid var(--pd-border-strong);
+  border-radius: 3px;
+  background: transparent;
+  color: var(--fo-text-secondary, #aaa);
+  cursor: pointer;
+  flex-shrink: 0;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+@mixin body {
+  overflow: auto;
+  padding: 1rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+@mixin footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.55rem;
+  padding: 0.75rem 1.1rem;
+  border-top: 1px solid var(--pd-border-strong);
+  background: var(--pd-bg-muted, #161616);
+}
+
+@mixin ghost-btn {
+  border: 1px solid var(--pd-border-strong);
+  border-radius: 3px;
+  padding: 0.5rem 0.85rem;
+  background: transparent;
+  color: var(--pd-text);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+@mixin primary-btn($accent-r, $accent-g, $accent-b) {
+  border: 1px solid rgba($accent-r, $accent-g, $accent-b, 0.45);
+  border-radius: 3px;
+  padding: 0.5rem 0.95rem;
+  background: rgba($accent-r, $accent-g, $accent-b, 0.18);
+  color: var(--pd-title);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+@mixin field-label {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--pd-muted);
+}
+
+@mixin text-input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--pd-border-strong);
+  border-radius: 3px;
+  padding: 0.55rem 0.65rem;
+  background: var(--pd-bg, #0c0c0c);
+  color: var(--pd-title);
+  font: inherit;
+  font-size: 16px;
+  line-height: 1.45;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+@mixin select-input {
+  @include text-input;
+  cursor: pointer;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--pd-muted) 50%),
+    linear-gradient(135deg, var(--pd-muted) 50%, transparent 50%);
+  background-position:
+    calc(100% - 16px) calc(50% - 2px),
+    calc(100% - 11px) calc(50% - 2px);
+  background-size:
+    5px 5px,
+    5px 5px;
+  background-repeat: no-repeat;
+  padding-right: 1.75rem;
+}
+
+@mixin error-banner {
+  margin: 0;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid rgb(224 90 68 / 35%);
+  border-radius: 3px;
+  background: rgb(224 90 68 / 10%);
+  color: #ffb4a2;
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+@mixin hint {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--pd-muted);
+}
+
+@mixin size-sm {
+  .dialog {
+    width: min(100%, 28rem);
+  }
+
+  .title {
+    font-size: 1rem;
+  }
+
+  .body {
+    padding: 0.85rem;
+    gap: 0.7rem;
+  }
+}
+
+@mixin size-md {
+  /* default */
+}
+
+@mixin size-xl {
+  .dialog {
+    width: min(100%, 42rem);
+    max-height: min(92vh, 44rem);
+    max-height: min(92dvh, 44rem);
+  }
+
+  .title {
+    font-size: 1.2rem;
+  }
+
+  .body {
+    padding: 1.15rem 1.25rem;
+    gap: 1rem;
+  }
+
+  .footer {
+    padding: 0.85rem 1.25rem;
+  }
+
+  .ghostBtn,
+  .primaryBtn,
+  .captureBtn,
+  .scanBtn,
+  .connectBtn {
+    min-height: 2.75rem;
+    padding-inline: 1rem;
+    font-size: 0.68rem;
+  }
+
+  .closeBtn {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+}
