@@ -1,4 +1,3 @@
-import { Users } from 'lucide-react';
 import type { JSX } from 'react';
 
 import { defaultUsuarioDemoRows } from '../shared/usuario-demo-data';
@@ -47,13 +46,7 @@ export function UsuarioListPreview({
   return (
     <UsuarioPage theme={theme} size={size} className={className}>
       <UsuarioPageSection theme={theme} divider variant="header">
-        <UsuarioPageHeader
-          title={title}
-          subtitle={subtitle}
-          icon={<Users />}
-          theme={theme}
-          size={size}
-        />
+        <UsuarioPageHeader title={title} subtitle={subtitle} theme={theme} size={size} />
       </UsuarioPageSection>
 
       <UsuarioPageSection theme={theme} divider variant="toolbar">

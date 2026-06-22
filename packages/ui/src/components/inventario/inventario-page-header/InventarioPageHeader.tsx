@@ -12,8 +12,8 @@ export interface InventarioPageHeaderProps {
 }
 
 export function InventarioPageHeader({
-  title = 'Dashboard de Inventario',
-  subtitle = 'Resumen operacional en tiempo real • Actualización automática cada 30s',
+  title = 'Dashboard de inventario',
+  subtitle = 'Resumen operacional en tiempo real · Actualización automática cada 30 s',
   theme = 'light',
   size = 'md',
   className,

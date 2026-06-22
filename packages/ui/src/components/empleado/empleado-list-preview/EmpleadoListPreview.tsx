@@ -131,7 +131,6 @@ export function EmpleadoListPreview({
         <EmpleadoPageHeader
           title={title}
           subtitle={resolvedSubtitle}
-          icon={<Users />}
           theme={theme}
           size={size}
           primaryAction={<EmpleadoActionButton theme={theme} size={size} onClick={onCreate} />}

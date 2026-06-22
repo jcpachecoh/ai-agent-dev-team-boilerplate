@@ -4,8 +4,6 @@ import { useEffect, useMemo, type JSX } from 'react';
 import { useAvailableProductionOrders } from '@/hooks/useAvailableProductionOrders';
 import { useDashboardLayoutStore } from '@/stores/dashboard-layout.store';
 
-import styles from './OrderAssignModalHost.module.scss';
-
 export interface OrderAssignModalHostProps {
   open: boolean;
   cellIndex: number | null;
@@ -21,7 +19,7 @@ export function OrderAssignModalHost({
   const assignOrderToCell = useDashboardLayoutStore((s) => s.assignOrderToCell);
   const setAvailableOrders = useDashboardLayoutStore((s) => s.setAvailableOrders);
 
-  const { data, isLoading, isError, refetch, isFetching } = useAvailableProductionOrders(open);
+  const { data, isLoading, isError, refetch } = useAvailableProductionOrders(open);
 
   useEffect(() => {
     if (data) {
@@ -41,38 +39,28 @@ export function OrderAssignModalHost({
     return data.filter((order) => !assignedElsewhere.has(order.orderId));
   }, [cellIndex, cells, data]);
 
+  const showLoading = open && (isLoading || data === undefined);
+
   if (cellIndex === null) return null;
 
   return (
-    <>
-      <PlantOrderAssignModal
-        open={open}
-        cellIndex={cellIndex}
-        orders={orders}
-        onClose={onClose}
-        onSelectOrder={(orderId) => {
-          const order = orders.find((item) => item.orderId === orderId);
-          if (!order) return;
-          assignOrderToCell(cellIndex, order);
-          onClose();
-        }}
-      />
-
-      {open && (isLoading || isFetching) ? (
-        <div className={styles.loadingOverlay} data-testid="order-assign-loading">
-          Cargando órdenes…
-        </div>
-      ) : null}
-
-      {open && isError && !isLoading ? (
-        <div className={styles.errorBanner} data-testid="order-assign-error">
-          <span>No se pudieron cargar las órdenes.</span>
-          <button type="button" onClick={() => void refetch()}>
-            Reintentar
-          </button>
-        </div>
-      ) : null}
-    </>
+    <PlantOrderAssignModal
+      open={open}
+      cellIndex={cellIndex}
+      orders={orders}
+      isLoading={showLoading}
+      theme="dark"
+      size="xl"
+      errorMessage={open && isError && !showLoading ? 'No se pudieron cargar las órdenes.' : null}
+      onRetry={isError ? () => void refetch() : undefined}
+      onClose={onClose}
+      onSelectOrder={(orderId) => {
+        const order = orders.find((item) => item.orderId === orderId);
+        if (!order) return;
+        assignOrderToCell(cellIndex, order);
+        onClose();
+      }}
+    />
   );
 }
 

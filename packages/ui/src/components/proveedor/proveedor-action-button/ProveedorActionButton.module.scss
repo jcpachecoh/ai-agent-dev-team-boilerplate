@@ -1,4 +1,5 @@
 @use '../../../styles/abstracts/variables' as *;
+@use '../../../styles/abstracts/page-header-action' as pha;
 @use '../shared/proveedor-theme' as proveedor;
 
 .button {
@@ -45,11 +46,12 @@
 }
 
 .size--md {
-  --action-height: 36px;
-  --action-padding-x: 16px;
-  --action-gap: 8px;
-  --action-font-size: 0.6875rem;
-  --action-min-width: 118px;
+  @include pha.page-header-action-size-md;
+  --action-min-width: 0;
+}
+
+.size--md .icon svg {
+  @include pha.page-header-action-icon-md;
 }
 
 .size--xl {

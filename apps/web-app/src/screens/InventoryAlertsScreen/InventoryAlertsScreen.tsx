@@ -144,19 +144,22 @@ export function InventoryAlertsScreen(): React.JSX.Element {
 
       <section className={shared.pageHeader}>
         <InventarioPageHeader
-          title="Alertas de Stock Bajo"
+          title="Alertas de stock bajo"
           subtitle={
             tab === 'active'
               ? `${alerts.length} alertas pendientes de resolución`
               : `${resolvedAlerts.length} alertas resueltas`
           }
           theme={theme}
-          size="xl"
+          size="md"
           className={shared.pageHeaderHost}
         />
       </section>
 
-      <section className={shared.metricsSection} style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}>
+      <section
+        className={shared.metricsSection}
+        style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}
+      >
         <InventarioMetricCard
           label="Crítico"
           value={String(summary.critical)}
@@ -208,8 +211,8 @@ export function InventoryAlertsScreen(): React.JSX.Element {
         </div>
       </section>
 
-      {tab === 'active' && (
-        alerts.length === 0 ? (
+      {tab === 'active' &&
+        (alerts.length === 0 ? (
           <section className={shared.stateSection}>
             <InventoryScreenState variant="empty" message="No hay alertas pendientes." />
           </section>
@@ -254,11 +257,10 @@ export function InventoryAlertsScreen(): React.JSX.Element {
               )}
             />
           </section>
-        )
-      )}
+        ))}
 
-      {tab === 'resolved' && (
-        resolvedAlerts.length === 0 ? (
+      {tab === 'resolved' &&
+        (resolvedAlerts.length === 0 ? (
           <section className={shared.stateSection}>
             <InventoryScreenState variant="empty" message="No hay alertas resueltas." />
           </section>
@@ -290,13 +292,10 @@ export function InventoryAlertsScreen(): React.JSX.Element {
                   columnsTemplate={columnsTemplate}
                 />
               )}
-              renderCard={(alert) => (
-                <InventarioResolvedAlertCard alert={alert} theme={theme} />
-              )}
+              renderCard={(alert) => <InventarioResolvedAlertCard alert={alert} theme={theme} />}
             />
           </section>
-        )
-      )}
+        ))}
     </div>
   );
 }

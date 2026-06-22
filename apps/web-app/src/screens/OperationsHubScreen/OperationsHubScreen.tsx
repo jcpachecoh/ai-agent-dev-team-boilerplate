@@ -119,8 +119,8 @@ export function OperationsHubScreen({
         <div className={styles.grid}>
           <OperationsEntryCard
             category="Production"
-            title="Gestion de Recetas"
-            description="Control de recetas de produccion, fases operacionales, validaciones y trazabilidad de ejecucion en planta."
+            title="Gestión de recetas"
+            description="Control de recetas de producción, fases operacionales, validaciones y trazabilidad de ejecución en planta."
             tags={['MES', 'Quality']}
             icon={<ChefHat size={24} aria-hidden />}
             accent="purple"

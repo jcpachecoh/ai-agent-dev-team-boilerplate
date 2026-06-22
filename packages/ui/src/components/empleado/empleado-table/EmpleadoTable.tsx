@@ -1,4 +1,4 @@
-import type { JSX, ReactNode } from 'react';
+import type { CSSProperties, JSX, ReactNode } from 'react';
 
 import { EmpleadoPagination, type EmpleadoPaginationProps } from '../empleado-pagination';
 import { EmpleadoTableHeader } from '../empleado-table-header';
@@ -45,14 +45,25 @@ export function EmpleadoTable({
       role="table"
       aria-label="Listado de empleados"
     >
-      <EmpleadoTableHeader
-        columns={columns}
-        theme={theme}
-        size={size}
-        className={styles.desktopHeader}
-      />
-      <div className={styles.body} role="rowgroup">
-        {children}
+      <div className={styles.scrollRegion}>
+        <div
+          className={styles.scrollContent}
+          style={
+            {
+              '--empleado-table-min-width': `${tableMinWidthPx}px`,
+            } as CSSProperties
+          }
+        >
+          <EmpleadoTableHeader
+            columns={columns}
+            theme={theme}
+            size={size}
+            className={styles.desktopHeader}
+          />
+          <div className={styles.body} role="rowgroup">
+            {children}
+          </div>
+        </div>
       </div>
       {footer ??
         (pagination ? <EmpleadoPagination theme={theme} size={size} {...pagination} /> : null)}

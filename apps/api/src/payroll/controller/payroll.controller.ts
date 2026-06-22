@@ -96,9 +96,10 @@ export class PayrollController {
     @CurrentUser() user: any,
     @Headers('x-tenant-id') headerTenantId: string,
     @Param('userId') userId: string,
-  ) {
+  ): Promise<boolean> {
     const tenantId = this.resolveTenantId(user, headerTenantId);
-    return this.payrollService.remove(tenantId, userId);
+    await this.payrollService.remove(tenantId, userId);
+    return true;
   }
 
   @ApiOperation({ summary: 'List employees by location' })

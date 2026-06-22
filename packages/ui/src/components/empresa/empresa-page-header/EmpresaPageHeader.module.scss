@@ -1,16 +1,12 @@
+@use '../../../styles/abstracts/page-header-title' as ph;
 @use '../../sede/shared/sede-theme' as sede;
 
 $mobile-breakpoint: 768px;
 
 .header {
   @include sede.sede-theme-classes;
-
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
+  @include ph.page-header-shell;
   margin-bottom: 16px;
-  min-width: 0;
 }
 
 .leading {
@@ -34,24 +30,16 @@ $mobile-breakpoint: 768px;
 }
 
 .text {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
+  @include ph.page-header-titles-stack;
 }
 
 .title {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 700;
-  line-height: 1.2;
+  @include ph.page-header-title;
   color: var(--sede-text);
 }
 
 .subtitle {
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.4;
+  @include ph.page-header-subtitle;
   color: var(--sede-muted);
 }
 

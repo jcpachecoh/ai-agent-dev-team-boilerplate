@@ -1,19 +1,15 @@
 @use '@/styles/tokens' as *;
 
 .row {
-  --row-height: 44px;
-
   display: grid;
   grid-template-columns: var(
     --receta-columns,
-    120px minmax(0, 2fr) minmax(140px, 1.5fr) 150px 130px
+    112px minmax(160px, 1.2fr) minmax(120px, 1fr) 108px 88px
   );
   align-items: center;
   width: 100%;
-  height: var(--row-height);
-  min-height: var(--row-height);
-  max-height: var(--row-height);
-  padding: 0 1rem;
+  min-height: 52px;
+  padding: 0 14px;
   border-bottom: 1px solid var(--color-border);
   background: var(--color-bg-surface);
   color: var(--color-text-primary);
@@ -28,8 +24,8 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   font-family: $font-family-mono;
-  font-size: 0.6875rem;
-  line-height: 1.2;
+  font-size: 0.75rem;
+  line-height: 1.4;
   color: var(--color-text-muted);
   font-variant-numeric: tabular-nums;
 }
@@ -46,7 +42,7 @@
   white-space: nowrap;
   font-size: 0.8125rem;
   font-weight: 600;
-  line-height: 1.2;
+  line-height: 1.4;
 }
 
 .status {
@@ -57,14 +53,9 @@
 }
 
 .actions {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 0.35rem;
+  gap: 5px;
   min-width: 0;
-}
-
-.deleteAction {
-  display: inline-flex;
-  flex-shrink: 0;
 }

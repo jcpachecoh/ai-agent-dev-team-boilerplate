@@ -1,6 +1,6 @@
 import React, { type CSSProperties, type JSX } from 'react';
 
-import { RecetaEditButton } from '../receta-edit-button';
+import { EmpleadoRowActionButton } from '../../empleado/empleado-row-action-button';
 import { RecetaStatusButton } from '../receta-status-button';
 import type { RecetaSize, RecetaStatus, RecetaTheme } from '../shared/receta-types';
 import styles from './RecetaTableRow.module.scss';
@@ -14,6 +14,8 @@ export interface RecetaTableRowProps {
   updatedAt?: string;
   status?: RecetaStatus;
   onEdit?: () => void;
+  onToggleStatus?: () => void;
+  toggleLoading?: boolean;
   onStatusChange?: (status: RecetaStatus) => void;
   theme?: RecetaTheme;
   size?: RecetaSize;
@@ -33,6 +35,8 @@ export function RecetaTableRow({
   updatedAt,
   status = 'active',
   onEdit,
+  onToggleStatus,
+  toggleLoading = false,
   onStatusChange,
   theme = 'light',
   size = 'md',
@@ -91,15 +95,30 @@ export function RecetaTableRow({
         />
       </span>
       <span className={styles.actions} role="cell">
-        <RecetaEditButton
+        <EmpleadoRowActionButton
+          variant="edit"
           theme={theme}
           size="sm"
-          compact={density === 'compact'}
+          aria-label="Editar receta"
           onClick={(event) => {
             event.stopPropagation();
             onEdit?.();
           }}
         />
+        {onToggleStatus ? (
+          <EmpleadoRowActionButton
+            variant="toggle"
+            active={status === 'active'}
+            theme={theme}
+            size="sm"
+            disabled={toggleLoading}
+            aria-label={status === 'active' ? 'Desactivar receta' : 'Activar receta'}
+            onClick={(event) => {
+              event.stopPropagation();
+              onToggleStatus();
+            }}
+          />
+        ) : null}
       </span>
     </div>
   );

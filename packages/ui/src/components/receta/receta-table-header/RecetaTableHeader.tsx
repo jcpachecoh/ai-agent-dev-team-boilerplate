@@ -39,7 +39,7 @@ export const RECETA_RECIPE_LIST_COLUMNS: RecetaTableColumn[] = [
   { key: 'fases', label: 'Fases', width: '72px', align: 'center', sortable: true },
   { key: 'version', label: 'Versión', width: '72px' },
   { key: 'estado', label: 'Estado', width: '108px', align: 'center' },
-  { key: 'acciones', label: 'Acciones', width: '88px', align: 'right' },
+  { key: 'acciones', label: 'Acciones', width: '72px', align: 'right' },
 ];
 
 const defaultColumns: RecetaTableColumn[] = RECETA_RECIPE_LIST_COLUMNS;

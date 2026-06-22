@@ -6,6 +6,7 @@
 
   display: grid;
   grid-template-columns: var(--empleado-columns);
+  column-gap: 16px;
   align-items: center;
   min-height: 58px;
   padding: 0 12px;
@@ -56,6 +57,15 @@
   min-width: 0;
 }
 
+.contractCell,
+.statusCell {
+  display: flex;
+  align-items: center;
+  width: fit-content;
+  max-width: 100%;
+  min-width: 0;
+}
+
 .position,
 .locationName {
   font-size: 0.75rem;
@@ -73,10 +83,13 @@
   font-family: 'IBM Plex Mono', $font-family-mono, monospace;
   font-size: 0.625rem;
   color: var(--empleado-subtle);
+  min-width: 0;
 }
 
 .actionsCell {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 0;
 }

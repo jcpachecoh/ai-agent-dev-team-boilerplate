@@ -1,20 +1,15 @@
 @use '../../../styles/abstracts/variables' as *;
+@use '../../../styles/abstracts/page-header-title' as ph;
 @use '../shared/nomina-theme' as nomina;
 
 .root {
   @include nomina.nomina-theme-classes;
-
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: $spacing-lg;
+  @include ph.page-header-shell;
   flex-wrap: wrap;
 }
 
 .copy {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+  @include ph.page-header-titles-stack;
 }
 
 .eyebrow {
@@ -29,16 +24,12 @@
 }
 
 .title {
-  margin: 0;
-  font-size: 1.5rem;
-  font-weight: $font-weight-bold;
-  line-height: 1.2;
+  @include ph.page-header-title;
   color: var(--asistencia-text);
 }
 
 .subtitle {
-  margin: 0;
-  font-size: 0.8125rem;
+  @include ph.page-header-subtitle;
   color: var(--asistencia-muted);
 }
 

@@ -76,3 +76,26 @@ export const Empty: Story = {
     onSelectOrder: () => undefined,
   },
 };
+
+export const Loading: Story = {
+  args: {
+    open: true,
+    cellIndex: 0,
+    orders: [],
+    isLoading: true,
+    onClose: () => undefined,
+    onSelectOrder: () => undefined,
+  },
+};
+
+export const ErrorState: Story = {
+  args: {
+    open: true,
+    cellIndex: 2,
+    orders: [],
+    errorMessage: 'No se pudieron cargar las órdenes.',
+    onRetry: () => undefined,
+    onClose: () => undefined,
+    onSelectOrder: () => undefined,
+  },
+};

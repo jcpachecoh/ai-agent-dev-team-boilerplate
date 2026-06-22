@@ -6,8 +6,11 @@ import { useAvailableProductionOrders } from '@/hooks/useAvailableProductionOrde
 import type { PhaseStatusChangedPayload } from '@/services/plant-socket.service';
 import { computeStatusCounts, useDashboardLayoutStore } from '@/stores/dashboard-layout.store';
 import { useSessionStore } from '@/stores/session.store';
+import { isNativePlatform } from '@/utils/platform';
 
 import styles from './ActivePhaseScreen.module.scss';
+import { BluetoothDiagnosticModal } from './components/BluetoothDiagnosticModal';
+import { IncidentReportModalHost } from './components/IncidentReportModalHost';
 import { OrderAssignModalHost } from './components/OrderAssignModalHost';
 import { RecipeDetailHost } from './components/RecipeDetailHost';
 import { WorkstationCellView } from './components/WorkstationCell';
@@ -15,7 +18,7 @@ import { WorkstationGrid } from './components/WorkstationGrid';
 
 export interface ActivePhaseScreenProps {
   onCompletePhase?: () => void;
-  onReportIssue?: () => void;
+  onReportIssue?: (cellIndex: number) => void;
   onLogout?: () => void;
   isLoggingOut?: boolean;
   onChangeLocation?: () => void;
@@ -49,8 +52,8 @@ function mapSocketStatus(status: string): 'in_progress' | 'paused' | 'pending' |
 }
 
 export function ActivePhaseScreen({
-  onCompletePhase,
-  onReportIssue,
+  onCompletePhase: _onCompletePhase,
+  onReportIssue: externalOnReportIssue,
   onLogout,
   isLoggingOut = false,
   onChangeLocation,
@@ -66,6 +69,8 @@ export function ActivePhaseScreen({
   const [clock, setClock] = useState(() => new Date());
   const [assignModalCell, setAssignModalCell] = useState<number | null>(null);
   const [recipeDetailCell, setRecipeDetailCell] = useState<number | null>(null);
+  const [incidentModalCell, setIncidentModalCell] = useState<number | null>(null);
+  const [bleDiagnosticOpen, setBleDiagnosticOpen] = useState(false);
 
   useAvailableProductionOrders(true);
 
@@ -107,6 +112,26 @@ export function ActivePhaseScreen({
     setRecipeDetailCell(null);
   }, []);
 
+  const openIncidentModal = useCallback(
+    (cellIndex: number) => {
+      setIncidentModalCell(cellIndex);
+      externalOnReportIssue?.(cellIndex);
+    },
+    [externalOnReportIssue],
+  );
+
+  const closeIncidentModal = useCallback(() => {
+    setIncidentModalCell(null);
+  }, []);
+
+  const handleIncidentSubmitted = useCallback(() => {
+    if (incidentModalCell === null) return;
+    const cell = cells.find((item) => item.cellIndex === incidentModalCell);
+    if (cell?.orderId) {
+      updateCellStatus(cell.orderId, 'incident');
+    }
+  }, [cells, incidentModalCell, updateCellStatus]);
+
   if (recipeDetailCell !== null) {
     return (
       <div className={styles.recipeScreen} data-testid="recipe-detail-screen">
@@ -114,7 +139,13 @@ export function ActivePhaseScreen({
           cellIndex={recipeDetailCell}
           operatorName={operatorName ?? 'Operador'}
           onBack={closeRecipeDetail}
-          onReportIssue={onReportIssue}
+          onReportIssue={openIncidentModal}
+        />
+        <IncidentReportModalHost
+          open={incidentModalCell !== null}
+          cellIndex={incidentModalCell}
+          onClose={closeIncidentModal}
+          onSubmitted={handleIncidentSubmitted}
         />
       </div>
     );
@@ -134,6 +165,19 @@ export function ActivePhaseScreen({
         isLoggingOut={isLoggingOut}
       />
 
+      {isNativePlatform() ? (
+        <div className={styles.nativeTools}>
+          <button
+            type="button"
+            className={styles.nativeToolButton}
+            onClick={() => setBleDiagnosticOpen(true)}
+            data-testid="ble-diagnostic-button"
+          >
+            Bluetooth
+          </button>
+        </div>
+      ) : null}
+
       <WorkstationGrid layoutMode={layoutMode}>
         {cells.map((cell) => (
           <WorkstationCellView
@@ -143,7 +187,7 @@ export function ActivePhaseScreen({
             onAssign={openAssignModal}
             onChangeOrder={openAssignModal}
             onViewRecipe={openRecipeDetail}
-            onReportIssue={onReportIssue}
+            onReportIssue={openIncidentModal}
           />
         ))}
       </WorkstationGrid>
@@ -154,6 +198,18 @@ export function ActivePhaseScreen({
         open={assignModalCell !== null}
         cellIndex={assignModalCell}
         onClose={closeAssignModal}
+      />
+
+      <IncidentReportModalHost
+        open={incidentModalCell !== null}
+        cellIndex={incidentModalCell}
+        onClose={closeIncidentModal}
+        onSubmitted={handleIncidentSubmitted}
+      />
+
+      <BluetoothDiagnosticModal
+        open={bleDiagnosticOpen}
+        onClose={() => setBleDiagnosticOpen(false)}
       />
     </div>
   );

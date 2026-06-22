@@ -1,4 +1,4 @@
-import { RecetaEditButton, RecetaStatusButton } from '@restopsiq/ui';
+import { EmpleadoRowActionButton, RecetaStatusButton } from '@restopsiq/ui';
 
 import { ResponsiveTableCard } from '@/components/responsive-table';
 import type { UiTheme } from '@/constants/theme';
@@ -11,6 +11,8 @@ export interface RecipeListCardProps {
   theme: UiTheme;
   onEdit: () => void;
   onOpen: () => void;
+  onToggleStatus?: () => void;
+  toggleLoading?: boolean;
 }
 
 export function RecipeListCard({
@@ -18,6 +20,8 @@ export function RecipeListCard({
   theme,
   onEdit,
   onOpen,
+  onToggleStatus,
+  toggleLoading = false,
 }: RecipeListCardProps): React.JSX.Element {
   return (
     <ResponsiveTableCard
@@ -35,14 +39,32 @@ export function RecipeListCard({
         { label: 'Fases', value: String(recipe.phases) },
       ]}
       footer={
-        <RecetaEditButton
-          theme={theme}
-          size="sm"
-          onClick={(event) => {
-            event.stopPropagation();
-            onEdit();
-          }}
-        />
+        <>
+          <EmpleadoRowActionButton
+            variant="edit"
+            theme={theme}
+            size="sm"
+            aria-label="Editar receta"
+            onClick={(event) => {
+              event.stopPropagation();
+              onEdit();
+            }}
+          />
+          {onToggleStatus ? (
+            <EmpleadoRowActionButton
+              variant="toggle"
+              active={recipe.status === 'active'}
+              theme={theme}
+              size="sm"
+              disabled={toggleLoading}
+              aria-label={recipe.status === 'active' ? 'Desactivar receta' : 'Activar receta'}
+              onClick={(event) => {
+                event.stopPropagation();
+                onToggleStatus();
+              }}
+            />
+          ) : null}
+        </>
       }
       onClick={onOpen}
     />

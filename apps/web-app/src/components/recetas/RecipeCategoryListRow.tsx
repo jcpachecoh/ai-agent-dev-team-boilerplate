@@ -1,4 +1,4 @@
-import { InventarioIconButton, RecetaEditButton, RecetaStatusButton } from '@restopsiq/ui';
+import { EmpleadoRowActionButton, RecetaStatusButton } from '@restopsiq/ui';
 import type { CSSProperties } from 'react';
 
 import type { UiTheme } from '@/constants/theme';
@@ -16,8 +16,8 @@ export interface RecipeCategoryListRowProps {
   visibleColumns: ResponsiveColumnDef[];
   columnsTemplate: string;
   onEdit: () => void;
-  onDelete: () => void;
   onStatusChange: (status: RecetaStatus) => void;
+  toggleLoading?: boolean;
 }
 
 export function RecipeCategoryListRow({
@@ -29,10 +29,19 @@ export function RecipeCategoryListRow({
   visibleColumns,
   columnsTemplate,
   onEdit,
-  onDelete,
   onStatusChange,
+  toggleLoading = false,
 }: RecipeCategoryListRowProps): React.JSX.Element {
   const nextStatus: RecetaStatus = status === 'active' ? 'inactive' : 'active';
+
+  const cellClassName = (columnId: string): string =>
+    [
+      styles.cell,
+      columnId === 'estado' ? styles.cellCenter : null,
+      columnId === 'acciones' ? styles.cellRight : null,
+    ]
+      .filter(Boolean)
+      .join(' ');
 
   const renderCell = (columnId: string): React.ReactNode => {
     switch (columnId) {
@@ -48,6 +57,7 @@ export function RecipeCategoryListRow({
             status={status}
             theme={theme}
             size="sm"
+            compact
             onClick={(event) => {
               event.stopPropagation();
               onStatusChange(nextStatus);
@@ -57,22 +67,28 @@ export function RecipeCategoryListRow({
       case 'acciones':
         return (
           <span className={styles.actions}>
-            <RecetaEditButton
+            <EmpleadoRowActionButton
+              variant="edit"
               theme={theme}
               size="sm"
+              aria-label="Editar categoría"
               onClick={(event) => {
                 event.stopPropagation();
                 onEdit();
               }}
             />
-            <span role="presentation" onClick={(event) => event.stopPropagation()}>
-              <InventarioIconButton
-                variant="delete"
-                theme={theme}
-                ariaLabel="Eliminar categoría"
-                onClick={onDelete}
-              />
-            </span>
+            <EmpleadoRowActionButton
+              variant="toggle"
+              active={status === 'active'}
+              theme={theme}
+              size="sm"
+              disabled={toggleLoading}
+              aria-label={status === 'active' ? 'Desactivar categoría' : 'Activar categoría'}
+              onClick={(event) => {
+                event.stopPropagation();
+                onStatusChange(nextStatus);
+              }}
+            />
           </span>
         );
       default:
@@ -87,7 +103,7 @@ export function RecipeCategoryListRow({
       style={{ '--receta-columns': columnsTemplate } as CSSProperties}
     >
       {visibleColumns.map((column) => (
-        <span key={column.id} className={styles.cell} role="cell">
+        <span key={column.id} className={cellClassName(column.id)} role="cell">
           {renderCell(column.id)}
         </span>
       ))}

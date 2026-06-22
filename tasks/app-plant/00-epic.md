@@ -34,6 +34,8 @@ Deliver an offline-first industrial KDS as a static SPA packaged for Android tab
 | 14  | Android APK + kiosk + wake lock  | 07, 11         | ✅ Done (hook + docs; APK on device)      |
 | 15  | E2E + acceptance validation      | 01–14          | ⏸ Deferred (UI)                           |
 
+**Epic ampliado (cámara + Bluetooth nativo):** [`capacitor-native/00-epic-and-decisions.md`](./capacitor-native/00-epic-and-decisions.md) — tasks 01–06.
+
 ---
 
 ## Global acceptance criteria (epic)

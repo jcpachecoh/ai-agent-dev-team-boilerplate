@@ -30,6 +30,10 @@
   flex-shrink: 0;
   padding: 1.1rem 1.25rem 1rem;
   border-bottom: 1px solid var(--color-border);
+
+  :global(header) {
+    width: 100%;
+  }
 }
 
 .topRow {
@@ -116,21 +120,6 @@
   display: flex;
   width: 100%;
   min-width: 0;
-}
-
-.searchGrow,
-.filterSelect {
-  min-width: 0;
-  max-width: 100%;
-  width: 100%;
-}
-
-.actionsStack {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 0.6rem;
-  width: 100%;
-  min-width: 0;
 
   :global(button) {
     width: 100%;
@@ -138,14 +127,11 @@
   }
 }
 
-.exportAction {
+.searchGrow,
+.filterSelect {
+  min-width: 0;
+  max-width: 100%;
   width: 100%;
-}
-
-@container proveedores (min-width: 480px) {
-  .actionsStack {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 
 @container proveedores (min-width: 560px) {
@@ -183,22 +169,10 @@
   .toolbarActions {
     flex: 0 0 auto;
     width: auto;
-  }
-
-  .actionsStack {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 0.6rem;
-    width: auto;
 
     :global(button) {
       width: auto;
     }
-  }
-
-  .exportAction {
-    width: auto;
   }
 }
 

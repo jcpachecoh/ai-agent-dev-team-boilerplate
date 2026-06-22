@@ -12,6 +12,10 @@ import {
   RecetaUtilityButton,
 } from '@restopsiq/ui';
 import { useEffect, useMemo, useState } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+
+import { updatePlantRecipe } from '@/api/plant/plant.api';
+import { plantKeys } from '@/api/plant/plant.keys';
 
 import { HistoryResponsiveList } from '@/components/recetas/HistoryResponsiveList';
 import { ProcessListCard } from '@/components/recetas/ProcessListCard';
@@ -252,7 +256,7 @@ const recipeListTableColumns: RecetaTableColumn[] = [
   { key: 'fases', label: 'Fases', width: '72px', align: 'center', sortable: true },
   { key: 'version', label: 'Versión', width: '72px' },
   { key: 'estado', label: 'Estado', width: '108px', align: 'center' },
-  { key: 'acciones', label: 'Acciones', width: '88px', align: 'right' },
+  { key: 'acciones', label: 'Acciones', width: '72px', align: 'right' },
 ];
 
 const processTableColumns: RecetaTableColumn[] = [
@@ -328,6 +332,9 @@ export function RecipesManagementScreen({
   const [phases, setPhases] = useState<RecipePhase[]>([]);
   const [finishedProductId, setFinishedProductId] = useState('');
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [togglingRecipeId, setTogglingRecipeId] = useState<string | null>(null);
+
+  const queryClient = useQueryClient();
 
   const [phaseModalOpen, setPhaseModalOpen] = useState(false);
   const [editingPhaseId, setEditingPhaseId] = useState<string | null>(null);
@@ -358,6 +365,17 @@ export function RecipesManagementScreen({
   const recipeDetailQuery = usePlantRecipeDetail(editingRecipeId);
   const saveRecipeMutation = useSavePlantRecipe();
   const saving = saveRecipeMutation.isPending;
+  const toggleRecipeMutation = useMutation({
+    mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) =>
+      updatePlantRecipe(id, { isActive }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: plantKeys.all });
+      setTogglingRecipeId(null);
+    },
+    onError: () => {
+      setTogglingRecipeId(null);
+    },
+  });
 
   const recipes = recipesQuery.data ?? [];
   const processRows = processQuery.data?.rows ?? [];
@@ -618,6 +636,14 @@ export function RecipesManagementScreen({
     resetWizardNavigation();
     setEditingRecipeId(recipeId);
     setRecipeEditorOpen(true);
+  };
+
+  const handleToggleRecipeStatus = (recipe: RecipeListItem): void => {
+    setTogglingRecipeId(recipe.id);
+    toggleRecipeMutation.mutate({
+      id: recipe.id,
+      isActive: recipe.status !== 'active',
+    });
   };
 
   const handleDiscardEditor = (): void => {
@@ -960,8 +986,10 @@ export function RecipesManagementScreen({
       return (
         <>
           <header className={styles.pageHeader}>
-            <h1>Control de Procesos</h1>
-            <p>Monitoreo de estado y validacion de recetas</p>
+            <div className={styles.pageHeaderMain}>
+              <h1>Control de procesos</h1>
+              <p>Monitoreo de estado y validación de recetas</p>
+            </div>
           </header>
           <section className={[styles.metricsRow, styles.metricsRowFive].join(' ')}>
             <RecetaMetricCard
@@ -1050,8 +1078,10 @@ export function RecipesManagementScreen({
       return (
         <>
           <header className={styles.pageHeader}>
-            <h1>Historial de Ejecucion</h1>
-            <p>Trazabilidad de produccion y validaciones</p>
+            <div className={styles.pageHeaderMain}>
+              <h1>Historial de ejecución</h1>
+              <p>Trazabilidad de producción y validaciones</p>
+            </div>
           </header>
           <section className={[styles.metricsRow, styles.metricsRowFour].join(' ')}>
             <RecetaMetricCard
@@ -1111,8 +1141,17 @@ export function RecipesManagementScreen({
     return (
       <>
         <header className={styles.pageHeader}>
-          <h1>Administracion de Recetas</h1>
-          <p>Gestion y control de recetas de produccion</p>
+          <div className={styles.pageHeaderMain}>
+            <h1>Administración de recetas</h1>
+            <p>Gestión y control de recetas de producción</p>
+          </div>
+          <RecetaActionButton
+            theme={theme}
+            size="md"
+            label="Nueva Receta"
+            className={styles.pageHeaderAction}
+            onClick={openNewRecipeEditor}
+          />
         </header>
         <section className={[styles.metricsRow, styles.metricsRowThree].join(' ')}>
           <RecetaMetricCard
@@ -1161,13 +1200,6 @@ export function RecipesManagementScreen({
             options={recipeStatusOptions}
             onChange={(value) => setStatusFilter(value as 'all' | RecetaStatus)}
           />
-          <RecetaActionButton
-            theme={theme}
-            size="md"
-            label="Nueva Receta"
-            className={[styles.toolbarAction, styles.toolbarActionList].join(' ')}
-            onClick={openNewRecipeEditor}
-          />
         </section>
         <section className={[styles.tableWrap, styles.tableWrapList].join(' ')}>
           <ResponsiveTable<RecipeListItem>
@@ -1204,6 +1236,8 @@ export function RecipesManagementScreen({
                   columnsTemplate={columnsTemplate}
                   maxDurationMin={Math.max(120, ...filteredRecipes.map((item) => item.durationMin))}
                   onEdit={() => openEditRecipeEditor(recipe.id)}
+                  onToggleStatus={() => handleToggleRecipeStatus(recipe)}
+                  toggleLoading={togglingRecipeId === recipe.id}
                 />
               </div>
             )}
@@ -1213,6 +1247,8 @@ export function RecipesManagementScreen({
                 theme={theme}
                 onEdit={() => openEditRecipeEditor(recipe.id)}
                 onOpen={() => openEditRecipeEditor(recipe.id)}
+                onToggleStatus={() => handleToggleRecipeStatus(recipe)}
+                toggleLoading={togglingRecipeId === recipe.id}
               />
             )}
           />

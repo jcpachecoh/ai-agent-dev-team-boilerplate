@@ -1,8 +1,7 @@
 import type { CSSProperties, JSX } from 'react';
 
+import { EmpleadoRowActionButton } from '../../empleado/empleado-row-action-button';
 import { RecetaCategoryChip } from '../receta-category-chip';
-import { RecetaCopyButton } from '../receta-copy-button';
-import { RecetaEditButton } from '../receta-edit-button';
 import { RecetaPhasesCount } from '../receta-phases-count';
 import { RecetaStatusButton } from '../receta-status-button';
 import { RecetaTimeProgress } from '../receta-time-progress';
@@ -20,7 +19,8 @@ export interface RecetaRecipeListTableRowProps {
   versionLabel?: string;
   status?: RecetaStatus;
   onEdit?: () => void;
-  onCopy?: () => void;
+  onToggleStatus?: () => void;
+  toggleLoading?: boolean;
   theme?: RecetaTheme;
   size?: RecetaSize;
   className?: string;
@@ -50,7 +50,8 @@ export function RecetaRecipeListTableRow({
   versionLabel = 'v1.2',
   status = 'active',
   onEdit,
-  onCopy,
+  onToggleStatus,
+  toggleLoading = false,
   theme = 'dark',
   size = 'md',
   className,
@@ -112,23 +113,30 @@ export function RecetaRecipeListTableRow({
       case 'acciones':
         return (
           <span className={styles.actionsCell} role="cell">
-            <RecetaEditButton
+            <EmpleadoRowActionButton
+              variant="edit"
               theme={theme}
               size="sm"
-              iconOnly
+              aria-label="Editar receta"
               onClick={(event) => {
                 event.stopPropagation();
                 onEdit?.();
               }}
             />
-            <RecetaCopyButton
-              theme={theme}
-              size="sm"
-              onClick={(event) => {
-                event.stopPropagation();
-                onCopy?.();
-              }}
-            />
+            {onToggleStatus ? (
+              <EmpleadoRowActionButton
+                variant="toggle"
+                active={status === 'active'}
+                theme={theme}
+                size="sm"
+                disabled={toggleLoading}
+                aria-label={status === 'active' ? 'Desactivar receta' : 'Activar receta'}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onToggleStatus();
+                }}
+              />
+            ) : null}
           </span>
         );
       default:
