@@ -1,5 +1,5 @@
 import { NotFoundException } from '@nestjs/common';
-import { AttendanceEventType, AttendanceShift } from '@prisma/client';
+import { AttendanceEventType, AttendanceShift, DocumentType } from '@prisma/client';
 import { AttendanceMonitorSummaryService } from '../service/attendance-monitor-summary.service';
 import type { EmployeeWithUser } from '../interfaces/attendance.interfaces';
 
@@ -38,14 +38,21 @@ const employee: EmployeeWithUser = {
     id: 'user-1',
     email: 'carlos@example.com',
     cedula: '123',
+    documentType: DocumentType.CC,
     tenantId,
     isActive: true,
+    emailVerified: false,
+    loginAttempts: 0,
+    lockedUntil: null,
+    lastLoginAt: null,
+    passwordChangedAt: null,
+    refreshToken: null,
+    createdBy: null,
     createdAt: new Date(),
     updatedAt: new Date(),
     deletedAt: null,
     passwordHash: 'hash',
     roleId: 'role-1',
-    globalUserId: null,
   },
 };
 
