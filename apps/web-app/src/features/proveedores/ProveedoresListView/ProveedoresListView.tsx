@@ -87,7 +87,20 @@ export default function ProveedoresListView(): React.JSX.Element {
       )}
 
       <section className={styles.pageHeaderSection}>
-        <ProveedorPageHeader theme={theme} size={PROVEEDOR_TABLE_SIZE} />
+        <ProveedorPageHeader
+          title="Proveedores"
+          subtitle="Gestión de proveedores del tenant"
+          theme={theme}
+          size={PROVEEDOR_TABLE_SIZE}
+          actions={
+            <ProveedorActionButton
+              variant="export"
+              theme={theme}
+              size="md"
+              onClick={() => window.alert('Exportar — próximamente')}
+            />
+          }
+        />
       </section>
 
       <section className={styles.metricsRow} aria-label="Indicadores de proveedores">
@@ -168,21 +181,12 @@ export default function ProveedoresListView(): React.JSX.Element {
           />
         </div>
         <div className={styles.toolbarActions}>
-          <div className={styles.actionsStack}>
-            <ProveedorActionButton
-              variant="primary"
-              theme={theme}
-              size="md"
-              onClick={() => navigate('/proveedores/nuevo')}
-            />
-            <ProveedorActionButton
-              variant="export"
-              theme={theme}
-              size="md"
-              className={styles.exportAction}
-              onClick={() => window.alert('Exportar — próximamente')}
-            />
-          </div>
+          <ProveedorActionButton
+            variant="primary"
+            theme={theme}
+            size="md"
+            onClick={() => navigate('/proveedores/nuevo')}
+          />
         </div>
       </section>
 

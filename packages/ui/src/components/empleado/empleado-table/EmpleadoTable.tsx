@@ -1,8 +1,8 @@
-import type { JSX, ReactNode } from 'react';
+import type { CSSProperties, JSX, ReactNode } from 'react';
 
 import { EmpleadoPagination, type EmpleadoPaginationProps } from '../empleado-pagination';
 import { EmpleadoTableHeader } from '../empleado-table-header';
-import { getEmpleadoColumns } from '../shared/empleado-columns';
+import { getEmpleadoColumns, getEmpleadoTableMinWidthPx } from '../shared/empleado-columns';
 import type { EmpleadoSize, EmpleadoTheme } from '../shared/empleado-types';
 import styles from './EmpleadoTable.module.scss';
 
@@ -26,6 +26,7 @@ export function EmpleadoTable({
   className,
 }: EmpleadoTableProps): JSX.Element {
   const columns = getEmpleadoColumns(showActions);
+  const tableMinWidthPx = getEmpleadoTableMinWidthPx(showActions);
 
   return (
     <section
@@ -35,14 +36,25 @@ export function EmpleadoTable({
       role="table"
       aria-label="Listado de empleados"
     >
-      <EmpleadoTableHeader
-        columns={columns}
-        theme={theme}
-        size={size}
-        className={styles.desktopHeader}
-      />
-      <div className={styles.body} role="rowgroup">
-        {children}
+      <div className={styles.scrollRegion}>
+        <div
+          className={styles.scrollContent}
+          style={
+            {
+              '--empleado-table-min-width': `${tableMinWidthPx}px`,
+            } as CSSProperties
+          }
+        >
+          <EmpleadoTableHeader
+            columns={columns}
+            theme={theme}
+            size={size}
+            className={styles.desktopHeader}
+          />
+          <div className={styles.body} role="rowgroup">
+            {children}
+          </div>
+        </div>
       </div>
       {footer ??
         (pagination ? <EmpleadoPagination theme={theme} size={size} {...pagination} /> : null)}

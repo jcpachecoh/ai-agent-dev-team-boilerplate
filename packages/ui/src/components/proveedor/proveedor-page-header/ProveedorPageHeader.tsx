@@ -6,18 +6,18 @@ import styles from './ProveedorPageHeader.module.scss';
 export interface ProveedorPageHeaderProps {
   title?: string;
   subtitle?: string;
-  brandInitial?: string;
   icon?: ReactNode;
+  actions?: ReactNode;
   theme?: ProveedorTheme;
   size?: ProveedorSize;
   className?: string;
 }
 
 export function ProveedorPageHeader({
-  title = 'SUPPLIER MANAGEMENT',
-  subtitle = 'PROCUREMENT · RESTOPSIQ ENTERPRISE',
-  brandInitial = 'S',
+  title = 'Proveedores',
+  subtitle = 'Gestión de proveedores del tenant',
   icon,
+  actions,
   theme = 'light',
   size = 'md',
   className,
@@ -28,13 +28,18 @@ export function ProveedorPageHeader({
         .filter(Boolean)
         .join(' ')}
     >
-      <div className={styles.brand} aria-hidden={icon ? undefined : true}>
-        {icon ?? <span className={styles.initial}>{brandInitial}</span>}
+      <div className={styles.leading}>
+        {icon ? (
+          <div className={styles.iconWrap} aria-hidden>
+            {icon}
+          </div>
+        ) : null}
+        <div className={styles.titles}>
+          <h1 className={styles.title}>{title}</h1>
+          <p className={styles.subtitle}>{subtitle}</p>
+        </div>
       </div>
-      <div className={styles.titles}>
-        <h1 className={styles.title}>{title}</h1>
-        <p className={styles.subtitle}>{subtitle}</p>
-      </div>
+      {actions ? <div className={styles.actions}>{actions}</div> : null}
     </header>
   );
 }

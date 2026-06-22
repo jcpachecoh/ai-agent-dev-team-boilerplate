@@ -27,4 +27,28 @@ export function getEmpleadoGridTemplate(showActions = true): string {
     .join(' ');
 }
 
+function parseColumnMinWidthPx(width: string): number {
+  const minmaxMatch = width.match(/minmax\((\d+)px/i);
+  if (minmaxMatch) {
+    return Number(minmaxMatch[1]);
+  }
+
+  const fixedMatch = width.match(/^(\d+)px$/i);
+  if (fixedMatch) {
+    return Number(fixedMatch[1]);
+  }
+
+  return 100;
+}
+
+/** Minimum table width (px) before horizontal scroll — sum of column mins + row padding. */
+export function getEmpleadoTableMinWidthPx(showActions = true): number {
+  const columnSum = getEmpleadoColumns(showActions).reduce(
+    (total, column) => total + parseColumnMinWidthPx(column.width ?? '1fr'),
+    0,
+  );
+
+  return columnSum + 24;
+}
+
 export const empleadoGridTemplate = getEmpleadoGridTemplate(true);

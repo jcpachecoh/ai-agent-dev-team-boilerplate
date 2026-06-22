@@ -1,82 +1,100 @@
 @use '../../../styles/abstracts/variables' as *;
 @use '../shared/proveedor-theme' as proveedor;
 
+$mobile-breakpoint: 768px;
+
 .header {
   @include proveedor.proveedor-theme-classes;
-  @include proveedor.proveedor-size-vars;
 
   display: flex;
   align-items: center;
-  gap: var(--header-gap);
-  width: min(100%, var(--control-width));
+  justify-content: space-between;
+  gap: $spacing-lg;
+  width: 100%;
+  min-width: 0;
 }
 
-.brand {
+.leading {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  width: var(--brand-size);
-  height: var(--brand-size);
-  border-radius: $border-radius-sm;
-  border: $border-width solid var(--proveedor-border);
-  background: var(--proveedor-surface-raised);
-  color: proveedor.$proveedor-enterprise;
-  flex-shrink: 0;
+  flex-direction: column;
+  gap: 0;
+  min-width: 0;
 }
 
-.initial {
-  font-family: $font-family-mono;
-  font-size: var(--brand-font-size);
-  font-weight: $font-weight-bold;
+.iconWrap {
+  display: none;
 }
 
 .titles {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 0;
   min-width: 0;
 }
 
 .title {
   margin: 0;
-  font-family: $font-family-mono;
-  font-size: var(--title-size);
+  font-family: $font-family-base;
+  font-size: 1.9rem;
   font-weight: $font-weight-bold;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: proveedor.$proveedor-enterprise;
+  line-height: 1.15;
+  color: var(--proveedor-text);
 }
 
 .subtitle {
-  margin: 0;
-  font-family: $font-family-mono;
-  font-size: var(--subtitle-size);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--proveedor-muted);
+  margin: 0.25rem 0 0;
+  font-family: $font-family-base;
+  font-size: 0.85rem;
+  font-weight: $font-weight-regular;
+  line-height: 1.45;
+  color: var(--proveedor-text-secondary);
+}
+
+.theme--dark .subtitle {
+  color: var(--proveedor-subtle);
+}
+
+.theme--light .subtitle {
+  color: var(--proveedor-text);
+  opacity: 0.72;
+}
+
+.actions {
+  flex-shrink: 0;
 }
 
 .size--sm {
-  --brand-size: 28px;
-  --brand-font-size: 0.75rem;
-  --title-size: 0.75rem;
-  --subtitle-size: 0.625rem;
-  --header-gap: #{$spacing-sm};
-}
+  .title {
+    font-size: 1.6rem;
+  }
 
-.size--md {
-  --brand-size: 36px;
-  --brand-font-size: 0.875rem;
-  --title-size: 0.875rem;
-  --subtitle-size: 0.6875rem;
-  --header-gap: 16px;
+  .subtitle {
+    font-size: 0.8rem;
+  }
 }
 
 .size--xl {
-  --control-width: 100%;
-  --brand-size: 36px;
-  --brand-font-size: 0.875rem;
-  --title-size: 1rem;
-  --subtitle-size: 0.6875rem;
-  --header-gap: 16px;
+  .title {
+    font-size: 2rem;
+  }
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .header {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .title {
+    font-size: 1.6rem;
+  }
+
+  .actions {
+    width: 100%;
+
+    > * {
+      width: 100%;
+    }
+  }
 }
