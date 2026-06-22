@@ -340,15 +340,17 @@ export function PayrollEmployeeForm({
           </p>
         ) : null}
         <div className={styles.formGrid}>
-          <label className={styles.field}>
-            <span className={styles.fieldLabel}>Nombre *</span>
-            <input
-              aria-label="Nombre"
-              className={styles.input}
-              value={values.name}
-              onChange={(event) => update({ name: event.target.value })}
+          <div className={styles.field}>
+            <span className={styles.fieldLabel}>Tipo de documento</span>
+            <RecetaFilterSelect
+              aria-label="Tipo de documento"
+              options={DOCUMENT_TYPE_OPTIONS}
+              value={values.documentType}
+              onChange={(value) => update({ documentType: value as DocumentType })}
+              theme={theme}
+              size="md"
             />
-          </label>
+          </div>
           <label className={styles.field}>
             <span className={styles.fieldLabel}>Cédula *</span>
             <input
@@ -379,17 +381,15 @@ export function PayrollEmployeeForm({
               placeholder={mode === 'edit' ? 'Opcional al editar' : ''}
             />
           </label>
-          <div className={styles.field}>
-            <span className={styles.fieldLabel}>Tipo de documento</span>
-            <RecetaFilterSelect
-              aria-label="Tipo de documento"
-              options={DOCUMENT_TYPE_OPTIONS}
-              value={values.documentType}
-              onChange={(value) => update({ documentType: value as DocumentType })}
-              theme={theme}
-              size="md"
+          <label className={styles.field}>
+            <span className={styles.fieldLabel}>Nombre *</span>
+            <input
+              aria-label="Nombre"
+              className={styles.input}
+              value={values.name}
+              onChange={(event) => update({ name: event.target.value })}
             />
-          </div>
+          </label>
           <div className={styles.field}>
             <span className={styles.fieldLabel}>Rol *</span>
             <RecetaFilterSelect

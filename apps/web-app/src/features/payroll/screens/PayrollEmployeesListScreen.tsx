@@ -8,6 +8,9 @@ import {
   EmpleadoTableItem,
   RecetaMetricCard,
   toast,
+  toggleEmpleadoSort,
+  type EmpleadoSortColumnKey,
+  type EmpleadoSortDirection,
 } from '@restopsiq/ui';
 import { Users } from 'lucide-react';
 import { useMemo, useState } from 'react';
@@ -33,6 +36,7 @@ import { PayrollDeactivateEmployeeDialog } from '../components/PayrollDeactivate
 import { PayrollEmployeeCreateModal } from '../components/PayrollEmployeeCreateModal';
 import { PayrollEmployeeEditDrawer } from '../components/PayrollEmployeeEditDrawer';
 import { PayrollApiError } from '../api/payroll.client';
+import { sortPayrollEmployees } from '../utils/sortPayrollEmployees';
 import styles from './PayrollEmployeesListScreen.module.scss';
 
 function toCreateInput(values: PayrollEmployeeFormValues): CreatePayrollEmployeeInput {
@@ -97,6 +101,8 @@ export function PayrollEmployeesListScreen(): React.JSX.Element {
   const [createOpen, setCreateOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<PayrollEmployee | undefined>();
   const [deactivatingEmployee, setDeactivatingEmployee] = useState<PayrollEmployee | undefined>();
+  const [sortColumn, setSortColumn] = useState<EmpleadoSortColumnKey | null>(null);
+  const [sortDirection, setSortDirection] = useState<EmpleadoSortDirection>('asc');
 
   const employees = employeesQuery.data ?? [];
 
@@ -120,6 +126,17 @@ export function PayrollEmployeesListScreen(): React.JSX.Element {
       return matchesSearch && matchesStatus;
     });
   }, [employees, state.search, state.statusFilter]);
+
+  const sortedEmployees = useMemo(
+    () => sortPayrollEmployees(filteredEmployees, sortColumn, sortDirection),
+    [filteredEmployees, sortColumn, sortDirection],
+  );
+
+  const handleSortColumn = (column: EmpleadoSortColumnKey) => {
+    const next = toggleEmpleadoSort(sortColumn, sortDirection, column);
+    setSortColumn(next.column);
+    setSortDirection(next.direction);
+  };
 
   const totalCount = employees.length;
   const activeCount = employees.filter((employee) => employee.isActive).length;
@@ -255,10 +272,13 @@ export function PayrollEmployeesListScreen(): React.JSX.Element {
           <div className={styles.state}>No hay empleados para los filtros seleccionados.</div>
         ) : null}
 
-        {!employeesQuery.isLoading && !employeesQuery.isError && filteredEmployees.length > 0 ? (
+        {!employeesQuery.isLoading && !employeesQuery.isError && sortedEmployees.length > 0 ? (
           <EmpleadoTable
             theme={empleadoTheme}
             showActions={!readOnly}
+            sortColumn={sortColumn}
+            sortDirection={sortDirection}
+            onSortColumn={handleSortColumn}
             pagination={{
               page: state.page,
               totalPages,
@@ -267,7 +287,7 @@ export function PayrollEmployeesListScreen(): React.JSX.Element {
               onNext: () => setPage(state.page + 1),
             }}
           >
-            {filteredEmployees.map((employee) => (
+            {sortedEmployees.map((employee) => (
               <EmpleadoTableItem
                 key={employee.id}
                 id={employee.id}

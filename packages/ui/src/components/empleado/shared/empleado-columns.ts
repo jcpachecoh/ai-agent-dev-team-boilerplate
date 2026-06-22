@@ -3,6 +3,22 @@ export interface EmpleadoColumnDef {
   label: string;
   sortable?: boolean;
   width?: string;
+  sortDirection?: EmpleadoSortDirection | null;
+  active?: boolean;
+  onSort?: () => void;
+}
+
+export type EmpleadoSortColumnKey = 'employee' | 'role' | 'hireDate';
+export type EmpleadoSortDirection = 'asc' | 'desc';
+
+export const EMPLEADO_SORTABLE_COLUMN_KEYS: EmpleadoSortColumnKey[] = [
+  'employee',
+  'role',
+  'hireDate',
+];
+
+export function isEmpleadoSortColumnKey(key: string): key is EmpleadoSortColumnKey {
+  return EMPLEADO_SORTABLE_COLUMN_KEYS.includes(key as EmpleadoSortColumnKey);
 }
 
 export const defaultEmpleadoColumns: EmpleadoColumnDef[] = [
@@ -25,6 +41,30 @@ export function getEmpleadoGridTemplate(showActions = true): string {
   return getEmpleadoColumns(showActions)
     .map((column) => column.width ?? '1fr')
     .join(' ');
+}
+
+export function buildEmpleadoHeaderColumns(
+  showActions: boolean,
+  sortColumn: EmpleadoSortColumnKey | null,
+  sortDirection: EmpleadoSortDirection,
+  onSortColumn?: (column: EmpleadoSortColumnKey) => void,
+): EmpleadoColumnDef[] {
+  return getEmpleadoColumns(showActions).map((column) => {
+    const sortKey = column.key;
+
+    if (!column.sortable || !onSortColumn || !isEmpleadoSortColumnKey(sortKey)) {
+      return column;
+    }
+
+    const isActive = sortColumn === sortKey;
+
+    return {
+      ...column,
+      active: isActive,
+      sortDirection: isActive ? sortDirection : null,
+      onSort: () => onSortColumn(sortKey),
+    };
+  });
 }
 
 export const empleadoGridTemplate = getEmpleadoGridTemplate(true);
