@@ -1,8 +1,13 @@
+export type SedeSortDirection = 'asc' | 'desc';
+
 export interface SedeColumnDef {
   key: string;
   label: string;
   sortable?: boolean;
   width?: string;
+  sortDirection?: SedeSortDirection | null;
+  active?: boolean;
+  onSort?: () => void;
 }
 
 export const defaultSedeColumns: SedeColumnDef[] = [

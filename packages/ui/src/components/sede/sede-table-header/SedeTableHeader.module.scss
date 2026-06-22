@@ -20,6 +20,11 @@
   align-items: center;
   gap: 4px;
   min-width: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font: inherit;
+  text-align: left;
 
   svg {
     width: 10px;
@@ -28,10 +33,29 @@
   }
 }
 
+.label {
+  min-width: 0;
+}
+
+.sortIcon {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
 .sortable {
+  cursor: pointer;
   color: var(--sede-primary);
 
   svg {
     color: var(--sede-primary);
   }
+
+  &:focus-visible {
+    outline: 2px solid var(--sede-primary);
+    outline-offset: 2px;
+  }
+}
+
+.cellActive {
+  color: var(--sede-primary);
 }

@@ -13,7 +13,7 @@ import {
   type SedeStatusFilter,
   toast,
 } from '@restopsiq/ui';
-import { useMemo, useState, type JSX } from 'react';
+import { useCallback, useMemo, useState, type JSX } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { useAdminUsers } from '@/features/usuarios/hooks/useAdminUsers';
@@ -30,6 +30,20 @@ export default function SedesListView(): JSX.Element {
   const theme = useUiTheme();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<SedeStatusFilter>('all');
+  const [sort, setSort] = useState<{ key: 'name' | 'city'; direction: 'asc' | 'desc' } | null>(
+    null,
+  );
+
+  const handleSortChange = useCallback((columnKey: string) => {
+    if (columnKey !== 'name' && columnKey !== 'city') return;
+    const key = columnKey as 'name' | 'city';
+    setSort((current) => {
+      if (current?.key === key) {
+        return { key, direction: current.direction === 'asc' ? 'desc' : 'asc' };
+      }
+      return { key, direction: 'asc' };
+    });
+  }, []);
 
   const { data: rows = [], metrics, isPending, isError, error } = useLocationMetrics();
   const toggleStatus = useToggleLocationStatus();
@@ -65,7 +79,7 @@ export default function SedesListView(): JSX.Element {
 
   const filteredRows = useMemo(() => {
     const query = search.trim().toLowerCase();
-    return rows.filter((row) => {
+    const filtered = rows.filter((row) => {
       const matchesStatus =
         statusFilter === 'all' ||
         (statusFilter === 'active' && row.isActive) ||
@@ -76,7 +90,18 @@ export default function SedesListView(): JSX.Element {
         .filter(Boolean)
         .some((value) => value!.toLowerCase().includes(query));
     });
-  }, [rows, search, statusFilter]);
+
+    const result = sort
+      ? [...filtered].sort((left, right) => {
+          const leftValue = (left[sort.key] ?? '').toLocaleLowerCase('es');
+          const rightValue = (right[sort.key] ?? '').toLocaleLowerCase('es');
+          const comparison = leftValue.localeCompare(rightValue, 'es', { sensitivity: 'base' });
+          return sort.direction === 'asc' ? comparison : -comparison;
+        })
+      : filtered;
+
+    return result;
+  }, [rows, search, statusFilter, sort]);
 
   const handleToggleStatus = (id: string) => {
     setPendingToggleId(id);
@@ -169,6 +194,9 @@ export default function SedesListView(): JSX.Element {
           ) : (
             <SedeTable
               theme={theme}
+              sortKey={sort?.key ?? null}
+              sortDirection={sort?.direction ?? 'asc'}
+              onSortChange={handleSortChange}
               pagination={{
                 page: 1,
                 totalPages: 1,
