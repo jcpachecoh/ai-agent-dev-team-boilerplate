@@ -178,6 +178,10 @@ export class PayrollRepository implements IPayrollRepository {
       patch.contractEnd = data.contractEnd ? new Date(data.contractEnd) : null;
     }
 
+    if (data.isActive === true) {
+      patch.deletedAt = null;
+    }
+
     return patch;
   }
 
