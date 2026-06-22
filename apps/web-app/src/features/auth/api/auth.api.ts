@@ -1,5 +1,4 @@
 import { GraphqlRequestError, graphqlRequest } from '@/lib/graphql-client';
-import { getGraphqlAuthToken } from '@/lib/auth-token';
 import type {
   AssignedLocationSummary,
   AuthUserProfile,
@@ -87,22 +86,6 @@ export async function fetchMyLocations(): Promise<AssignedLocationSummary[]> {
 
 export async function selectUserLocation(locationId: string): Promise<LoginResponse> {
   try {
-    const hasToken = Boolean(getGraphqlAuthToken());
-    // #region agent log
-    fetch('http://127.0.0.1:7828/ingest/355d2ecf-3818-453c-8510-c7b3fe83712b', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '6b229d' },
-      body: JSON.stringify({
-        sessionId: '6b229d',
-        runId: 'post-fix',
-        hypothesisId: 'H2',
-        location: 'auth.api.ts:selectUserLocation',
-        message: 'selectUserLocation request',
-        data: { hasToken, locationId },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
     const data = await graphqlRequest<{ selectUserLocation: LoginResponse }>(
       SELECT_USER_LOCATION_MUTATION,
       { input: { locationId } },

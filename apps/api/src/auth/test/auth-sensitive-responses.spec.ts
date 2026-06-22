@@ -8,6 +8,7 @@ import { AuthRepository } from '../repository/auth.repository';
 import { AuthEmailRepository } from '../repository/auth-email.repository';
 import { AuthEmailService } from '../service/auth-email.service';
 import { AuditService } from '../../audit/service/audit.service';
+import { UserLocationsService } from '../../locations/service/user-locations.service';
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
 
@@ -86,6 +87,13 @@ const authEmailRepoMock = {
 const auditServiceMock = { logLogin: jest.fn() };
 const jwtMock = { signAsync: jest.fn() };
 const authEmailServiceMock = { sendVerifyEmail: jest.fn() };
+const userLocationsServiceMock = { getActiveUserLocations: jest.fn() };
+
+const emptySessionMeta = {
+  locations: [] as const,
+  locationId: null,
+  requiresLocationSelection: false,
+};
 
 describe('AuthService sensitive response shapes (AUTH-03)', () => {
   let service: AuthService;
@@ -99,10 +107,12 @@ describe('AuthService sensitive response shapes (AUTH-03)', () => {
         { provide: AuthEmailService, useValue: authEmailServiceMock },
         { provide: JwtService, useValue: jwtMock },
         { provide: AuditService, useValue: auditServiceMock },
+        { provide: UserLocationsService, useValue: userLocationsServiceMock },
       ],
     }).compile();
     service = module.get(AuthService);
     jest.clearAllMocks();
+    userLocationsServiceMock.getActiveUserLocations.mockResolvedValue([]);
     (bcrypt.hash as jest.Mock).mockResolvedValue('hashed');
     (bcrypt.compare as jest.Mock).mockResolvedValue(true);
     jwtMock.signAsync.mockResolvedValue('jwt-token');
@@ -129,7 +139,11 @@ describe('AuthService sensitive response shapes (AUTH-03)', () => {
       password: 'validpass9',
     });
 
-    expect(result).toEqual({ accessToken: 'jwt-token', refreshToken: 'jwt-token' });
+    expect(result).toEqual({
+      accessToken: 'jwt-token',
+      refreshToken: 'jwt-token',
+      ...emptySessionMeta,
+    });
     expectNoStoredSecrets(result as unknown as Record<string, unknown>);
   });
 

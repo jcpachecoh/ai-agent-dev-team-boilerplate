@@ -15,6 +15,7 @@ import { AuthEmailService } from '../service/auth-email.service';
 import { AuthRepository } from '../repository/auth.repository';
 import { AuthEmailRepository } from '../repository/auth-email.repository';
 import type { AuthUserWithPassword } from '../interfaces/auth.interfaces';
+import { UserLocationsService } from '../../locations/service/user-locations.service';
 
 jest.mock('bcrypt');
 const bcryptMock = bcrypt as jest.Mocked<typeof bcrypt>;
@@ -79,6 +80,7 @@ describe('AuthService LoginAudit integration (AUTH-10)', () => {
   };
 
   const jwtMock = { signAsync: jest.fn() };
+  const userLocationsServiceMock = { getActiveUserLocations: jest.fn() };
 
   beforeEach(async () => {
     captured.length = 0;
@@ -107,6 +109,7 @@ describe('AuthService LoginAudit integration (AUTH-10)', () => {
     (bcryptMock.hash as jest.Mock).mockResolvedValue('hashed-refresh');
     auditRepositoryMock.createLoginAudit.mockClear();
     auditRepositoryMock.create.mockClear();
+    userLocationsServiceMock.getActiveUserLocations.mockResolvedValue([]);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -119,6 +122,7 @@ describe('AuthService LoginAudit integration (AUTH-10)', () => {
         { provide: AuthEmailRepository, useValue: {} },
         { provide: AuthEmailService, useValue: { sendVerifyEmail: jest.fn() } },
         { provide: JwtService, useValue: jwtMock },
+        { provide: UserLocationsService, useValue: userLocationsServiceMock },
       ],
     }).compile();
 

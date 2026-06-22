@@ -135,6 +135,7 @@ describe('AuthController', () => {
         'raw-refresh',
         '1.2.3.4',
         undefined,
+        null,
       );
     });
   });
@@ -159,7 +160,7 @@ describe('AuthController', () => {
 
       const result = await controller.me(req);
 
-      expect(serviceMock.me).toHaveBeenCalledWith('user-1');
+      expect(serviceMock.me).toHaveBeenCalledWith('user-1', null);
       expect(result).toEqual(mockUserProfile);
       expect(result).not.toHaveProperty('passwordHash');
       expect(result).not.toHaveProperty('refreshToken');

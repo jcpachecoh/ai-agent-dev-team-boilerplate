@@ -15,6 +15,7 @@ import { MesAuthService } from '../../mes/auth/service/mes-auth.service';
 import { MesAuthRepository } from '../../mes/auth/repository/mes-auth.repository';
 import { MesAuthRedisService } from '../../mes/auth/service/mes-auth-redis.service';
 import { MesJwtStrategy } from '../../mes/auth/strategies/mes-jwt.strategy';
+import { UserLocationsService } from '../../locations/service/user-locations.service';
 import { OperationalRole } from '@prisma/client';
 
 jest.mock('bcrypt');
@@ -41,6 +42,7 @@ describe('Global auth logout chain (AUTH-10)', () => {
     resetLoginAttempts: jest.fn(),
   };
   const jwtMock = { signAsync: jest.fn() };
+  const userLocationsServiceMock = { getActiveUserLocations: jest.fn() };
   let service: AuthService;
 
   const mockUser = {
@@ -73,12 +75,14 @@ describe('Global auth logout chain (AUTH-10)', () => {
         { provide: AuthEmailRepository, useValue: {} },
         { provide: AuthEmailService, useValue: { sendVerifyEmail: jest.fn() } },
         { provide: JwtService, useValue: jwtMock },
+        { provide: UserLocationsService, useValue: userLocationsServiceMock },
       ],
     }).compile();
     service = module.get(AuthService);
     jest.clearAllMocks();
     auditServiceMock.logLogin.mockResolvedValue(undefined);
     repoMock.saveRefreshToken.mockResolvedValue(undefined);
+    userLocationsServiceMock.getActiveUserLocations.mockResolvedValue([]);
   });
 
   it('clears refresh token on logout so refresh fails afterward', async () => {

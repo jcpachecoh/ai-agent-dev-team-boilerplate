@@ -8,6 +8,7 @@ import { AuthRepository } from '../repository/auth.repository';
 import { AuthEmailRepository } from '../repository/auth-email.repository';
 import { AuthEmailService } from '../service/auth-email.service';
 import { AuditService } from '../../audit/service/audit.service';
+import { UserLocationsService } from '../../locations/service/user-locations.service';
 
 jest.mock('bcrypt');
 const bcryptMock = bcrypt as jest.Mocked<typeof bcrypt>;
@@ -69,6 +70,18 @@ const authEmailServiceMock = {
   sendVerifyEmail: jest.fn(),
 };
 
+const userLocationsServiceMock = {
+  getActiveUserLocations: jest.fn(),
+};
+
+const seededLocation = {
+  id: 'loc-owner-1',
+  name: 'Sede Palos de Leña 1',
+  code: 'PL-01',
+  city: 'Bogotá',
+  address: 'Calle 1',
+};
+
 describe('AuthService — global User email login regression (USR-01 Task 09)', () => {
   let service: AuthService;
 
@@ -81,12 +94,14 @@ describe('AuthService — global User email login regression (USR-01 Task 09)', 
         { provide: AuthEmailService, useValue: authEmailServiceMock },
         { provide: JwtService, useValue: jwtMock },
         { provide: AuditService, useValue: auditServiceMock },
+        { provide: UserLocationsService, useValue: userLocationsServiceMock },
       ],
     }).compile();
 
     service = module.get<AuthService>(AuthService);
     jest.clearAllMocks();
     auditServiceMock.logLogin.mockResolvedValue(undefined);
+    userLocationsServiceMock.getActiveUserLocations.mockResolvedValue([seededLocation]);
   });
 
   it('logs in seeded mes-owner@palos-de-lena.dev with x-tenant-id palos-de-lena', async () => {
@@ -115,7 +130,21 @@ describe('AuthService — global User email login regression (USR-01 Task 09)', 
     );
     expect(repoMock.findJwtClaimsByUserId).toHaveBeenCalledWith(seededGlobalUser.id);
     expect(repoMock.resetLoginAttempts).toHaveBeenCalledWith(seededGlobalUser.id);
-    expect(result).toEqual({ accessToken: 'access', refreshToken: 'refresh' });
+    expect(result).toEqual({
+      accessToken: 'access',
+      refreshToken: 'refresh',
+      locations: [
+        {
+          id: seededLocation.id,
+          name: seededLocation.name,
+          code: seededLocation.code,
+          city: seededLocation.city,
+          address: seededLocation.address,
+        },
+      ],
+      locationId: seededLocation.id,
+      requiresLocationSelection: false,
+    });
     expect(result).not.toHaveProperty('passwordHash');
     expect(jwtMock.signAsync).toHaveBeenCalledWith(
       expect.objectContaining({

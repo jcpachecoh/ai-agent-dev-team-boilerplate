@@ -16,6 +16,7 @@ import { AuthRepository } from '../repository/auth.repository';
 import { AuthEmailRepository } from '../repository/auth-email.repository';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../../audit/service/audit.service';
+import { UserLocationsService } from '../../locations/service/user-locations.service';
 import { EmailService } from '@restopsiq/email';
 
 const TENANT_ID = 'palos-de-lena';
@@ -85,6 +86,10 @@ const jwtServiceMock = {
   verifyAsync: jest.fn(),
 };
 
+const userLocationsServiceMock = {
+  getActiveUserLocations: jest.fn(),
+};
+
 describe('Auth Email Integration — G4 wiring (AuthController → AuthEmailService → EmailService)', () => {
   let controller: AuthController;
   let redisMock: {
@@ -106,12 +111,14 @@ describe('Auth Email Integration — G4 wiring (AuthController → AuthEmailServ
         { provide: EmailService, useValue: emailServiceMock },
         { provide: AuditService, useValue: auditServiceMock },
         { provide: JwtService, useValue: jwtServiceMock },
+        { provide: UserLocationsService, useValue: userLocationsServiceMock },
       ],
     }).compile();
 
     controller = module.get<AuthController>(AuthController);
 
     jest.clearAllMocks();
+    userLocationsServiceMock.getActiveUserLocations.mockResolvedValue([]);
 
     redisMock = {
       set: jest.fn().mockResolvedValue('OK'),
@@ -315,13 +322,34 @@ describe('Auth Email Integration — G4 wiring (AuthController → AuthEmailServ
       }),
       { expiresIn: '60m' },
     );
-    expect(result).toEqual({ accessToken: 'access', refreshToken: 'refresh' });
+    expect(result).toEqual({
+      accessToken: 'access',
+      refreshToken: 'refresh',
+      locations: [],
+      locationId: null,
+      requiresLocationSelection: false,
+    });
     expect(result).not.toHaveProperty('passwordHash');
     expect(auditServiceMock.logLogin).toHaveBeenCalled();
   });
 
   it('signup enqueues verify-email with OTP payload containing userId, email, tenantId', async () => {
-    prismaMock.user.findUnique.mockResolvedValue(null);
+    prismaMock.user.findUnique.mockImplementation(
+      ({ where, select }: { where?: { id?: string }; select?: { role?: unknown } }) => {
+        if (where?.id === 'user-signup-001' && select && 'role' in select) {
+          return Promise.resolve({
+            id: 'user-signup-001',
+            email: 'newuser@example.com',
+            tenantId: TENANT_ID,
+            roleId: 'role-1',
+            isActive: true,
+            deletedAt: null,
+            role: { code: 'OPERATOR' },
+          });
+        }
+        return Promise.resolve(null);
+      },
+    );
     prismaMock.user.create.mockResolvedValue({
       ...mockUserSafe,
       id: 'user-signup-001',
@@ -345,7 +373,13 @@ describe('Auth Email Integration — G4 wiring (AuthController → AuthEmailServ
       TENANT_ID,
     );
 
-    expect(result).toEqual({ accessToken: 'mock-token', refreshToken: 'mock-token' });
+    expect(result).toEqual({
+      accessToken: 'mock-token',
+      refreshToken: 'mock-token',
+      locations: [],
+      locationId: null,
+      requiresLocationSelection: false,
+    });
     expect(emailServiceMock.send).toHaveBeenCalledWith(
       expect.objectContaining({
         to: 'newuser@example.com',
