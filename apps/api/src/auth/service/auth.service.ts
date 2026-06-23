@@ -338,7 +338,8 @@ export class AuthService implements IAuthService {
 
     await this.authEmailRepository.markResetTokenUsed(record.id);
     const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
-    await this.authRepository.updatePassword(record.userId, passwordHash);
+    await this.authRepository.updatePassword(record.userId, passwordHash, true);
+    await this.authRepository.markEmailVerified(record.userId);
   }
 
   /**

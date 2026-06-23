@@ -58,6 +58,7 @@ class CreateAdminUserInput {
   @IsEmail() @Field() email!: string;
   @IsString() @IsNotEmpty() @Field() roleId!: string;
   @IsString() @IsOptional() @Field({ nullable: true }) locationId?: string;
+  @IsString() @IsOptional() @Field({ nullable: true }) password?: string;
 }
 
 @InputType()

@@ -1,5 +1,5 @@
 import { RecetaFilterSelect, RecetaFormButton } from '@restopsiq/ui';
-import { X } from 'lucide-react';
+import { Copy, RefreshCw, X } from 'lucide-react';
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type JSX } from 'react';
 
 import { useTheme } from '@/providers/ThemeProvider';
@@ -15,6 +15,7 @@ import type {
   UserFormValues,
   UserUpdateFormValues,
 } from '../../types';
+import { generatePasswordForRole } from '../../utils/generate-password';
 
 export interface LocationOption {
   id: string;
@@ -59,6 +60,7 @@ const emptyCreate: UserFormValues = {
   documentType: 'CC',
   email: '',
   roleId: '',
+  password: '',
 };
 
 export function UserFormModal({
@@ -78,6 +80,7 @@ export function UserFormModal({
   const [documentType, setDocumentType] = useState<DocumentType>('CC');
   const [email, setEmail] = useState('');
   const [roleId, setRoleId] = useState('');
+  const [password, setPassword] = useState('');
   const [locationId, setLocationId] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [lookupHint, setLookupHint] = useState<string | null>(null);
@@ -87,6 +90,10 @@ export function UserFormModal({
 
   const selectedRole = roles.find((r) => r.id === roleId);
   const isOperator = selectedRole?.code === 'OPERATOR';
+
+  const regeneratePassword = useCallback(() => {
+    setPassword(generatePasswordForRole(selectedRole?.code));
+  }, [selectedRole?.code]);
 
   useEffect(() => {
     if (!open) {
@@ -105,6 +112,7 @@ export function UserFormModal({
       setDocumentType(emptyCreate.documentType);
       setEmail(emptyCreate.email);
       setRoleId(roles[0]?.id ?? '');
+      setPassword(generatePasswordForRole(roles[0]?.code));
       setLocationId('');
       resetEmployeeDocumentLookupCache();
     }
@@ -198,6 +206,10 @@ export function UserFormModal({
         setError('Selecciona una sede para el operador de planta.');
         return;
       }
+      if (!password.trim()) {
+        setError('Genera una contraseña temporal antes de continuar.');
+        return;
+      }
     }
     setError(null);
     if (isEdit) {
@@ -209,6 +221,7 @@ export function UserFormModal({
         documentType,
         email: email.trim(),
         roleId,
+        password: password.trim(),
         ...(isOperator && locationId ? { locationId } : {}),
       });
     }
@@ -231,7 +244,7 @@ export function UserFormModal({
             <p className={styles.subtitle}>
               {isEdit
                 ? 'Actualiza email o rol del usuario'
-                : 'Crea un usuario con contraseña temporal'}
+                : 'Se enviará un correo para que el usuario configure su contraseña'}
             </p>
           </div>
           <button
@@ -313,6 +326,43 @@ export function UserFormModal({
             />
           </label>
 
+          {!isEdit ? (
+            <div className={styles.field}>
+              <span className={styles.fieldLabel}>Contraseña temporal *</span>
+              <div className={styles.passwordRow}>
+                <input
+                  className={styles.passwordInput}
+                  type="text"
+                  readOnly
+                  value={password}
+                  aria-label="Contraseña temporal generada"
+                />
+                <button
+                  type="button"
+                  className={styles.iconButton}
+                  onClick={regeneratePassword}
+                  aria-label="Regenerar contraseña"
+                  title="Regenerar"
+                >
+                  <RefreshCw size={16} aria-hidden />
+                </button>
+                <button
+                  type="button"
+                  className={styles.iconButton}
+                  onClick={() => void navigator.clipboard.writeText(password)}
+                  aria-label="Copiar contraseña"
+                  title="Copiar"
+                >
+                  <Copy size={16} aria-hidden />
+                </button>
+              </div>
+              <p className={styles.hintText}>
+                Se genera automáticamente. El usuario recibirá un correo para confirmar su cuenta y
+                configurar su contraseña definitiva.
+              </p>
+            </div>
+          ) : null}
+
           <label className={styles.field}>
             <span className={styles.fieldLabel}>Rol *</span>
             <RecetaFilterSelect
@@ -321,8 +371,10 @@ export function UserFormModal({
               options={roleOptions}
               value={roleId}
               onChange={(value) => {
+                const nextRole = roles.find((role) => role.id === value);
                 setRoleId(value);
                 setLocationId('');
+                setPassword(generatePasswordForRole(nextRole?.code));
               }}
               placeholder="-- Seleccionar rol --"
               theme={theme}

@@ -164,4 +164,9 @@ export interface IAuthEmailService {
     role: string,
     workspaceName: string,
   ): Promise<void>;
+
+  sendAccountConfirmation(
+    user: { id: string; email: string; name: string },
+    tenant: TenantContext,
+  ): Promise<void>;
 }

@@ -9,6 +9,7 @@ import type { ValidationError } from 'class-validator';
 import request from 'supertest';
 import { AppModule } from '../../app.module';
 import { PrismaService } from '../../prisma/prisma.service';
+import { DocumentType } from '@prisma/client';
 
 describe('EmployeesController (e2e)', () => {
   let app: INestApplication;
@@ -59,15 +60,29 @@ describe('EmployeesController (e2e)', () => {
     const location = await prisma.location.findFirst({ where: { tenantId: mockTenantId } });
     const role = await prisma.role.findFirst({ where: { tenantId: mockTenantId } });
 
-    // 2. POST
+    // 2. Create user in Usuarios (required before linking as employee)
     const timestamp = Date.now();
+    const cedula = '123' + timestamp;
+    const email = 'test-' + timestamp + '@test.com';
+    await prisma.user.create({
+      data: {
+        tenantId: mockTenantId,
+        cedula,
+        documentType: DocumentType.CC,
+        email,
+        passwordHash: '$2b$12$Elo.kWNs5.bh93LOaBPH7OtQ23EuF38MBKm4XUL2mH1WnpBhOsXiS',
+        roleId: role!.id,
+      },
+    });
+
+    // 3. POST employee (links existing user)
     const employeeData = {
-      cedula: '123' + timestamp,
+      cedula,
       documentType: 'CC',
-      email: 'test-' + timestamp + '@test.com',
-      password: 'Password123!',
+      email,
       roleId: role!.id,
       locationId: location!.id,
+      name: 'Empleado de prueba',
       position: 'Operario',
       area: 'Producción',
       department: 'Cocina',
@@ -93,7 +108,7 @@ describe('EmployeesController (e2e)', () => {
     expect(postRes.status).toBe(201);
     const userId = postRes.body.userId;
 
-    // 3. GET all
+    // 4. GET all
     const listRes = await request(app.getHttpServer())
       .get('/api/employees')
       .set('Authorization', 'Bearer ' + accessToken)
@@ -101,7 +116,7 @@ describe('EmployeesController (e2e)', () => {
     expect(listRes.status).toBe(200);
     expect(Array.isArray(listRes.body)).toBe(true);
 
-    // 4. GET one
+    // 5. GET one
     const getOneRes = await request(app.getHttpServer())
       .get('/api/employees/' + userId)
       .set('Authorization', 'Bearer ' + accessToken)
@@ -109,7 +124,7 @@ describe('EmployeesController (e2e)', () => {
     expect(getOneRes.status).toBe(200);
     expect(getOneRes.body.userId).toBe(userId);
 
-    // 5. PATCH
+    // 6. PATCH
     const patchRes = await request(app.getHttpServer())
       .patch('/api/employees/' + userId)
       .set('Authorization', 'Bearer ' + accessToken)
@@ -118,21 +133,21 @@ describe('EmployeesController (e2e)', () => {
     expect(patchRes.status).toBe(200);
     expect(patchRes.body.position).toBe('Senior');
 
-    // 6. GET by location
+    // 7. GET by location
     const locRes = await request(app.getHttpServer())
       .get('/api/employees/location/' + location!.id)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('x-tenant-id', mockTenantId);
     expect(locRes.status).toBe(200);
 
-    // 7. GET by contract type
+    // 8. GET by contract type
     const contractRes = await request(app.getHttpServer())
       .get('/api/employees/contract-type/FIJO')
       .set('Authorization', 'Bearer ' + accessToken)
       .set('x-tenant-id', mockTenantId);
     expect(contractRes.status).toBe(200);
 
-    // 8. DELETE
+    // 9. DELETE
     const delRes = await request(app.getHttpServer())
       .delete('/api/employees/' + userId)
       .set('Authorization', 'Bearer ' + accessToken)

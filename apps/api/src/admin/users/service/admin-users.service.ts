@@ -1,6 +1,7 @@
 import * as crypto from 'crypto';
 
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
@@ -8,11 +9,9 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import type { DocumentType } from '@prisma/client';
-import { EmailService } from '@restopsiq/email';
 import * as bcrypt from 'bcrypt';
 
-const PIN_PATTERN = /^\d{4,6}$/;
-
+import { AuthEmailService } from '../../../auth/service/auth-email.service';
 import type {
   AdminUserDetail,
   AdminUserListItem,
@@ -22,8 +21,8 @@ import type {
 } from '../interfaces/admin-users.interfaces';
 import { AdminUsersRepository } from '../repository/admin-users.repository';
 
+const PIN_PATTERN = /^\d{4,6}$/;
 const SALT_ROUNDS = 10;
-const APP_URL = process.env.APP_URL ?? 'http://localhost:3000';
 const TENANT_NAME = process.env.TENANT_NAME ?? 'RestopsIQ';
 
 @Injectable()
@@ -32,7 +31,7 @@ export class AdminUsersService implements IAdminUsersService {
 
   constructor(
     private readonly repo: AdminUsersRepository,
-    private readonly emailService: EmailService,
+    private readonly authEmailService: AuthEmailService,
   ) {}
 
   findAll(tenantId: string, includeInactive = false): Promise<AdminUserListItem[]> {
@@ -56,6 +55,7 @@ export class AdminUsersService implements IAdminUsersService {
       email: string;
       roleId: string;
       locationId?: string;
+      password?: string;
     },
     requesterId: string,
   ): Promise<AdminUserListItem> {
@@ -73,19 +73,11 @@ export class AdminUsersService implements IAdminUsersService {
 
     const roleCode = await this.repo.findRoleCode(data.roleId);
 
-    const operatorTempPassword = process.env.OPERATOR_TEMP_PASSWORD;
-    if (roleCode === 'OPERATOR' && !operatorTempPassword) {
-      throw new Error('OPERATOR_TEMP_PASSWORD is not set');
-    }
-    if (roleCode === 'OPERATOR' && operatorTempPassword && !PIN_PATTERN.test(operatorTempPassword)) {
-      throw new Error('OPERATOR_TEMP_PASSWORD must be 4–6 numeric digits to be a valid MES PIN');
-    }
     if (roleCode === 'OPERATOR' && !data.locationId?.trim()) {
       throw new Error('locationId is required for OPERATOR users');
     }
 
-    const temporaryPassword =
-      roleCode === 'OPERATOR' ? operatorTempPassword! : crypto.randomBytes(9).toString('base64url');
+    const temporaryPassword = this.resolveTemporaryPassword(roleCode, data.password);
     const passwordHash = await bcrypt.hash(temporaryPassword, SALT_ROUNDS);
 
     let operationalUser: { cedulaHash: string; pinHash: string } | undefined;
@@ -105,13 +97,16 @@ export class AdminUsersService implements IAdminUsersService {
       operationalUser,
     });
 
-    this.sendWelcomeEmail(user.email, user.role.name, temporaryPassword, tenantId).catch(
-      (err: unknown) => {
+    this.authEmailService
+      .sendAccountConfirmation(
+        { id: user.id, email: user.email, name: user.name },
+        { tenantId, tenantName: TENANT_NAME },
+      )
+      .catch((err: unknown) => {
         this.logger.warn(
-          `[admin-users] Welcome email failed for userId="${user.id}": ${String(err)}`,
+          `[admin-users] Account confirmation email failed for userId="${user.id}": ${String(err)}`,
         );
-      },
-    );
+      });
 
     return user;
   }
@@ -160,41 +155,37 @@ export class AdminUsersService implements IAdminUsersService {
     await this.repo.setUserPermissionOverrides(userId, overrides);
   }
 
+  private resolveTemporaryPassword(roleCode: string | null, password?: string): string {
+    const trimmed = password?.trim();
+
+    if (roleCode === 'OPERATOR') {
+      const operatorTempPassword = trimmed || process.env.OPERATOR_TEMP_PASSWORD;
+      if (!operatorTempPassword) {
+        throw new Error('OPERATOR_TEMP_PASSWORD is not set');
+      }
+      if (!PIN_PATTERN.test(operatorTempPassword)) {
+        throw new BadRequestException(
+          'La contraseña del operador debe ser un PIN de 4 a 6 dígitos',
+        );
+      }
+      return operatorTempPassword;
+    }
+
+    if (trimmed) {
+      if (trimmed.length < 8) {
+        throw new BadRequestException('La contraseña debe tener al menos 8 caracteres');
+      }
+      return trimmed;
+    }
+
+    return crypto.randomBytes(9).toString('base64url');
+  }
+
   private hashCedula(cedula: string): string {
     const hmacSecret = process.env.CEDULA_HMAC_SECRET;
     if (hmacSecret) {
       return crypto.createHmac('sha256', hmacSecret).update(cedula).digest('hex');
     }
     return crypto.createHash('sha256').update(cedula).digest('hex');
-  }
-
-  private async sendWelcomeEmail(
-    email: string,
-    roleName: string,
-    temporaryPassword: string,
-    tenantId: string,
-  ): Promise<void> {
-    const roleMap: Record<string, 'owner' | 'manager' | 'cashier' | 'accountant'> = {
-      OWNER: 'owner',
-      MANAGER: 'manager',
-      SUPERVISOR: 'manager',
-    };
-    const mappedRole = roleMap[roleName.toUpperCase()] ?? 'cashier';
-
-    await this.emailService.send({
-      to: email,
-      subject: `Bienvenido a ${TENANT_NAME}`,
-      tenantId,
-      tenantName: TENANT_NAME,
-      template: {
-        type: 'welcome',
-        props: {
-          userName: email,
-          role: mappedRole,
-          loginUrl: `${APP_URL}/login`,
-          temporaryPassword,
-        },
-      },
-    });
   }
 }

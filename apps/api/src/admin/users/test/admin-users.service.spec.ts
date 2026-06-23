@@ -1,7 +1,13 @@
-import { ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { DocumentType, PermissionEffect } from '@prisma/client';
-import { EmailService } from '@restopsiq/email';
+
+import { AuthEmailService } from '../../../auth/service/auth-email.service';
 
 import type { AdminUserDetail, AdminUserListItem } from '../interfaces/admin-users.interfaces';
 import { AdminUsersRepository } from '../repository/admin-users.repository';
@@ -20,8 +26,8 @@ const mockRepo = {
   setUserPermissionOverrides: jest.fn(),
 };
 
-const mockEmailService = {
-  send: jest.fn().mockResolvedValue({ jobId: 'test-job' }),
+const mockAuthEmailService = {
+  sendAccountConfirmation: jest.fn().mockResolvedValue(undefined),
 };
 
 const baseUser: AdminUserListItem = {
@@ -56,7 +62,7 @@ describe('AdminUsersService', () => {
       providers: [
         AdminUsersService,
         { provide: AdminUsersRepository, useValue: mockRepo },
-        { provide: EmailService, useValue: mockEmailService },
+        { provide: AuthEmailService, useValue: mockAuthEmailService },
       ],
     }).compile();
 
@@ -95,6 +101,7 @@ describe('AdminUsersService', () => {
           createdBy: 'requester-1',
         }),
       );
+      expect(mockAuthEmailService.sendAccountConfirmation).toHaveBeenCalled();
     });
 
     it('pasa operationalUser con cedulaHash y pinHash cuando roleCode es OPERATOR', async () => {
@@ -180,14 +187,11 @@ describe('AdminUsersService', () => {
       ).rejects.toThrow('locationId is required for OPERATOR users');
     });
 
-    it('lanza Error cuando OPERATOR_TEMP_PASSWORD no es PIN válido (no numérico)', async () => {
-      // Arrange
-      process.env.OPERATOR_TEMP_PASSWORD = 'abc123';
+    it('lanza BadRequestException cuando el PIN del operador no es válido', async () => {
       mockRepo.findByEmail.mockResolvedValue(null);
       mockRepo.findByCedula.mockResolvedValue(null);
       mockRepo.findRoleCode.mockResolvedValue('OPERATOR');
 
-      // Act & Assert
       await expect(
         service.createUser(
           'tenant-1',
@@ -197,13 +201,39 @@ describe('AdminUsersService', () => {
             documentType: DocumentType.CC,
             email: 'op@test.com',
             roleId: 'role-op',
+            locationId: 'sede-1',
+            password: 'abc123',
           },
           'req',
         ),
-      ).rejects.toThrow('OPERATOR_TEMP_PASSWORD must be 4–6 numeric digits');
+      ).rejects.toThrow(BadRequestException);
+    });
 
-      // Cleanup
-      process.env.OPERATOR_TEMP_PASSWORD = '1234';
+    it('uses provided password when supplied for non-operator roles', async () => {
+      mockRepo.findByEmail.mockResolvedValue(null);
+      mockRepo.findByCedula.mockResolvedValue(null);
+      mockRepo.findRoleCode.mockResolvedValue('OWNER');
+      mockRepo.createWithEmployeeDetails.mockResolvedValue({
+        ...baseUser,
+        role: { id: 'role-owner', code: 'OWNER', name: 'Owner' },
+      });
+
+      await service.createUser(
+        'tenant-1',
+        {
+          name: 'Owner User',
+          cedula: '99887766',
+          documentType: DocumentType.CC,
+          email: 'owner2@test.com',
+          roleId: 'role-owner',
+          password: 'CustomPass123',
+        },
+        'req',
+      );
+
+      const callArg = mockRepo.createWithEmployeeDetails.mock.calls[0][1];
+      expect(callArg.passwordHash).toBeDefined();
+      expect(callArg.passwordHash).not.toBe('CustomPass123');
     });
 
     it('throws ConflictException on duplicate email', async () => {

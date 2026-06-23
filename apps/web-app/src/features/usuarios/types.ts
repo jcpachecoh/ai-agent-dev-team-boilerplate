@@ -33,6 +33,7 @@ export interface UserFormValues {
   documentType: DocumentType;
   email: string;
   roleId: string;
+  password: string;
   locationId?: string;
 }
 

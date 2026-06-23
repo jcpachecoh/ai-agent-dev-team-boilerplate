@@ -42,6 +42,6 @@ import { PermissionsModule } from '../permissions/permissions.module';
     PermissionsGuard,
     RolesGuard,
   ],
-  exports: [AuthService, PermissionsGuard, RolesGuard, PermissionsModule],
+  exports: [AuthService, AuthEmailService, PermissionsGuard, RolesGuard, PermissionsModule],
 })
 export class AuthModule {}

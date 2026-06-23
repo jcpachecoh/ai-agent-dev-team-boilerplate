@@ -1,6 +1,6 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { DocumentType } from '@prisma/client';
-import { IsEmail, IsEnum, IsNotEmpty, IsString } from 'class-validator';
+import { IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CreateAdminUserDto {
   @ApiProperty({ example: 'Juan Carlos Pérez' })
@@ -25,4 +25,12 @@ export class CreateAdminUserDto {
   @IsString()
   @IsNotEmpty()
   roleId!: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Contraseña temporal generada en el formulario. Si se omite, el servidor genera una.',
+  })
+  @IsOptional()
+  @IsString()
+  password?: string;
 }

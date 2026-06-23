@@ -36,7 +36,6 @@ const EMPTY_VALUES: PayrollEmployeeFormValues = {
   cedula: '',
   documentType: 'CC',
   email: '',
-  password: '',
   roleId: '',
   locationId: '',
   name: '',
@@ -91,7 +90,6 @@ function employeeToFormValues(employee: PayrollEmployee): PayrollEmployeeFormVal
     cedula: employee.user?.cedula ?? '',
     documentType: (employee.user?.documentType as DocumentType) ?? 'CC',
     email: employee.user?.email ?? '',
-    password: '',
     roleId: employee.user?.roleId ?? '',
     locationId: employee.locationId,
     name: employee.name,
@@ -297,11 +295,6 @@ export function PayrollEmployeeForm({
       return;
     }
 
-    if (mode === 'create' && !values.password.trim()) {
-      setError('La contraseña es obligatoria para crear.');
-      return;
-    }
-
     const salary = Number(values.salaryAmount);
     if (!Number.isFinite(salary) || salary <= 0) {
       setError('El salario debe ser un número mayor que 0.');
@@ -368,17 +361,6 @@ export function PayrollEmployeeForm({
               type="email"
               value={values.email}
               onChange={(event) => update({ email: event.target.value })}
-            />
-          </label>
-          <label className={styles.field}>
-            <span className={styles.fieldLabel}>Contraseña {mode === 'create' ? '*' : ''}</span>
-            <input
-              aria-label="Contraseña"
-              className={styles.input}
-              type="password"
-              value={values.password}
-              onChange={(event) => update({ password: event.target.value })}
-              placeholder={mode === 'edit' ? 'Opcional al editar' : ''}
             />
           </label>
           <label className={styles.field}>

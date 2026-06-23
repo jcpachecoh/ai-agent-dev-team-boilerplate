@@ -1,4 +1,4 @@
-import { EmployeeContractType, SalaryType, ArlRiskLevel, DocumentType } from '@prisma/client';
+import { EmployeeContractType, SalaryType, ArlRiskLevel } from '@prisma/client';
 import { PayrollRepository } from '../repository/payroll.repository';
 import { PrismaService } from '../../prisma/prisma.service';
 
@@ -8,7 +8,7 @@ const employeeInclude = {
 } as const;
 
 describe('PayrollRepository', () => {
-  const userCreate = jest.fn();
+  const userUpdate = jest.fn();
   const employeeDetailsCreate = jest.fn();
 
   const prisma = {
@@ -32,12 +32,34 @@ describe('PayrollRepository', () => {
 
   const repository = new PayrollRepository(prisma);
 
+  const baseCreateData = {
+    tenantId: 'tenant-1',
+    userId: 'user-1',
+    roleId: 'role-1',
+    locationId: 'loc-1',
+    name: 'Test User',
+    position: 'Operator',
+    area: 'Production',
+    department: 'Plant',
+    contractType: EmployeeContractType.INDEFINIDO,
+    hireDate: new Date('2026-01-01'),
+    contractStart: new Date('2026-01-01'),
+    salaryType: SalaryType.ORDINARIO,
+    salaryAmount: 2500000,
+    epsName: 'EPS',
+    pensionFundName: 'Pension',
+    cesantiasFundName: 'Cesantias',
+    arlName: 'ARL',
+    arlRiskLevel: ArlRiskLevel.RIESGO_I,
+    cajaCompensacion: 'Caja',
+  };
+
   beforeEach(() => {
     jest.clearAllMocks();
 
     (prisma.$transaction as jest.Mock).mockImplementation(async (callback: unknown) => {
       const tx = {
-        user: { create: userCreate },
+        user: { update: userUpdate },
         employeeDetails: { create: employeeDetailsCreate },
       };
 
@@ -45,8 +67,8 @@ describe('PayrollRepository', () => {
     });
   });
 
-  it('creates employee with null contractEnd when omitted', async () => {
-    userCreate.mockResolvedValue({ id: 'user-1' });
+  it('links an existing user and creates employee with null contractEnd when omitted', async () => {
+    userUpdate.mockResolvedValue({ id: 'user-1' });
     employeeDetailsCreate.mockResolvedValue({
       id: 'emp-1',
       userId: 'user-1',
@@ -54,33 +76,15 @@ describe('PayrollRepository', () => {
     });
 
     await repository.create({
-      tenantId: 'tenant-1',
-      cedula: '123456',
-      documentType: DocumentType.CC,
-      email: 'employee@example.com',
-      passwordHash: 'hash',
-      roleId: 'role-1',
-      locationId: 'loc-1',
-      name: 'Test User',
-      position: 'Operator',
-      area: 'Production',
-      department: 'Plant',
-      contractType: EmployeeContractType.INDEFINIDO,
-      hireDate: new Date('2026-01-01'),
-      contractStart: new Date('2026-01-01'),
+      ...baseCreateData,
       contractEnd: null,
-      salaryType: SalaryType.ORDINARIO,
-      salaryAmount: 2500000,
       hasTransportSubsidy: true,
-      epsName: 'EPS',
-      pensionFundName: 'Pension',
-      cesantiasFundName: 'Cesantias',
-      arlName: 'ARL',
-      arlRiskLevel: ArlRiskLevel.RIESGO_I,
-      cajaCompensacion: 'Caja',
     });
 
-    expect(userCreate).toHaveBeenCalledTimes(1);
+    expect(userUpdate).toHaveBeenCalledWith({
+      where: { id: 'user-1' },
+      data: { roleId: 'role-1' },
+    });
     expect(employeeDetailsCreate).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
@@ -93,7 +97,7 @@ describe('PayrollRepository', () => {
   });
 
   it('creates employee with a Date contractEnd when provided', async () => {
-    userCreate.mockResolvedValue({ id: 'user-2' });
+    userUpdate.mockResolvedValue({ id: 'user-2' });
     employeeDetailsCreate.mockResolvedValue({
       id: 'emp-2',
       userId: 'user-2',
@@ -101,30 +105,14 @@ describe('PayrollRepository', () => {
     });
 
     await repository.create({
-      tenantId: 'tenant-1',
-      cedula: '654321',
-      documentType: DocumentType.CC,
-      email: 'employee2@example.com',
-      passwordHash: 'hash',
-      roleId: 'role-1',
-      locationId: 'loc-1',
-      name: 'Test User 2',
-      position: 'Supervisor',
-      area: 'Production',
-      department: 'Plant',
+      ...baseCreateData,
+      userId: 'user-2',
       contractType: EmployeeContractType.FIJO,
-      hireDate: new Date('2026-01-01'),
-      contractStart: new Date('2026-01-01'),
       contractEnd: new Date('2026-12-31'),
-      salaryType: SalaryType.ORDINARIO,
-      salaryAmount: 3200000,
       hasTransportSubsidy: false,
-      epsName: 'EPS',
-      pensionFundName: 'Pension',
-      cesantiasFundName: 'Cesantias',
-      arlName: 'ARL',
       arlRiskLevel: ArlRiskLevel.RIESGO_II,
-      cajaCompensacion: 'Caja',
+      salaryAmount: 3200000,
+      position: 'Supervisor',
     });
 
     const createArg = employeeDetailsCreate.mock.calls[0][0];
@@ -314,7 +302,9 @@ describe('PayrollRepository', () => {
   });
 
   it('delegates lookup helpers to prisma with expected query shape', async () => {
-    (prisma.user.findFirst as jest.Mock).mockResolvedValue({ id: 'user-1' });
+    (prisma.user.findFirst as jest.Mock)
+      .mockResolvedValueOnce({ id: 'user-1' })
+      .mockResolvedValueOnce({ id: 'user-1', email: 'employee@example.com', cedula: '123456' });
     (prisma.location.findUnique as jest.Mock).mockResolvedValue({
       id: 'loc-1',
       tenantId: 'tenant-1',
@@ -325,15 +315,26 @@ describe('PayrollRepository', () => {
     });
 
     await repository.findExistingUser('tenant-1', 'employee@example.com', '123456');
+    await repository.findUserByEmailAndCedula('tenant-1', 'employee@example.com', '123456');
     await repository.findLocationById('loc-1');
     await repository.findRoleById('role-1');
 
-    expect(prisma.user.findFirst).toHaveBeenCalledWith({
+    expect(prisma.user.findFirst).toHaveBeenNthCalledWith(1, {
       where: {
         tenantId: 'tenant-1',
         OR: [{ email: 'employee@example.com' }, { cedula: '123456' }],
       },
       select: { id: true },
+    });
+
+    expect(prisma.user.findFirst).toHaveBeenNthCalledWith(2, {
+      where: {
+        tenantId: 'tenant-1',
+        email: 'employee@example.com',
+        cedula: '123456',
+        deletedAt: null,
+      },
+      select: { id: true, email: true, cedula: true },
     });
 
     expect(prisma.location.findUnique).toHaveBeenCalledWith({

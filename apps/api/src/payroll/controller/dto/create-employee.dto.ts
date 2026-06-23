@@ -30,11 +30,6 @@ export class CreateEmployeeDto {
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
-  password!: string;
-
-  @ApiProperty()
-  @IsString()
-  @IsNotEmpty()
   roleId!: string;
 
   @ApiProperty()

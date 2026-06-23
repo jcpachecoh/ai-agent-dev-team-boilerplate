@@ -78,7 +78,7 @@ export interface IAdminUsersService {
   findById(tenantId: string, userId: string): Promise<AdminUserDetail>;
   createUser(
     tenantId: string,
-    data: Omit<CreateAdminUserData, 'passwordHash' | 'createdBy'>,
+    data: Omit<CreateAdminUserData, 'passwordHash' | 'createdBy'> & { password?: string },
     requesterId: string,
   ): Promise<AdminUserListItem>;
   updateUser(

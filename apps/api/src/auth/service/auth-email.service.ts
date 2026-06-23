@@ -14,6 +14,7 @@ import { AuthEmailRepository } from '../repository/auth-email.repository';
 import type { IAuthEmailService, TenantContext } from '../interfaces/auth.interfaces';
 
 const RESET_TOKEN_TTL_SECONDS = 3600;
+const ACCOUNT_SETUP_TOKEN_TTL_SECONDS = 172_800;
 const OTP_TTL_SECONDS = 900;
 const OTP_EXPIRES_IN_MINUTES = 15;
 const INVITE_TOKEN_TTL_SECONDS = 172_800; // 48 hours
@@ -183,6 +184,57 @@ export class AuthEmailService implements IAuthEmailService, OnModuleInit, OnModu
 
     this.logger.log(
       `[verify-email] OTP verified and emailVerified set for userId="${payload.userId}"`,
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Account confirmation (admin-created users)
+  // ---------------------------------------------------------------------------
+
+  async sendAccountConfirmation(
+    user: { id: string; email: string; name: string },
+    tenant: TenantContext,
+  ): Promise<void> {
+    this.logger.log(
+      `[account-confirmation] Request received for userId="${user.id}" email="${user.email}"`,
+    );
+
+    await this.authEmailRepository.deleteExpiredResetTokens(user.id);
+
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+    const expiresAt = new Date(Date.now() + ACCOUNT_SETUP_TOKEN_TTL_SECONDS * 1000);
+
+    await this.authEmailRepository.createResetToken({
+      tenantId: tenant.tenantId,
+      userId: user.id,
+      tokenHash,
+      expiresAt,
+    });
+
+    const confirmUrl = `${APP_URL}/auth/activate-account?token=${rawToken}`;
+    const expiresAtFormatted = expiresAt.toLocaleString('es-CO', { timeZone: 'America/Bogota' });
+
+    const { jobId } = await this.emailService.send({
+      to: user.email,
+      subject: `Confirma tu cuenta en ${tenant.tenantName}`,
+      tenantId: tenant.tenantId,
+      tenantName: tenant.tenantName,
+      tenantLogoUrl: tenant.tenantLogoUrl,
+      primaryColor: tenant.primaryColor,
+      template: {
+        type: 'account-confirmation',
+        props: {
+          userName: user.name,
+          confirmUrl,
+          expiresAt: expiresAtFormatted,
+        },
+      },
+      priority: 'urgent',
+    });
+
+    this.logger.log(
+      `[account-confirmation] Email job enqueued — jobId="${jobId}" to="${user.email}"`,
     );
   }
 

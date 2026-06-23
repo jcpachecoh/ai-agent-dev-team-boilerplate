@@ -3,6 +3,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import {
   CreateEmployeeData,
   IPayrollRepository,
+  LinkedUserRecord,
   ListEmployeesFilters,
   UpdateEmployeeData,
   UpdateEmployeePayload,
@@ -17,21 +18,14 @@ export class PayrollRepository implements IPayrollRepository {
     data: CreateEmployeeData & { hasTransportSubsidy: boolean },
   ): Promise<EmployeeDetails & { user: User }> {
     return this.prisma.$transaction(async (tx) => {
-      const user = await tx.user.create({
-        data: {
-          tenantId: data.tenantId,
-          cedula: data.cedula,
-          documentType: data.documentType,
-          email: data.email,
-          passwordHash: data.passwordHash,
-          roleId: data.roleId,
-          isActive: true,
-        },
+      await tx.user.update({
+        where: { id: data.userId },
+        data: { roleId: data.roleId },
       });
 
       const employeeDetails = await tx.employeeDetails.create({
         data: {
-          userId: user.id,
+          userId: data.userId,
           tenantId: data.tenantId,
           name: data.name,
           locationId: data.locationId,
@@ -224,6 +218,17 @@ export class PayrollRepository implements IPayrollRepository {
     return this.prisma.user.findFirst({
       where: { tenantId, OR: [{ email }, { cedula }] },
       select: { id: true },
+    });
+  }
+
+  async findUserByEmailAndCedula(
+    tenantId: string,
+    email: string,
+    cedula: string,
+  ): Promise<LinkedUserRecord | null> {
+    return this.prisma.user.findFirst({
+      where: { tenantId, email, cedula, deletedAt: null },
+      select: { id: true, email: true, cedula: true },
     });
   }
 

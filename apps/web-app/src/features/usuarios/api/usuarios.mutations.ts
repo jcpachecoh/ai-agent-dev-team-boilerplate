@@ -45,6 +45,7 @@ export interface AdminCreateUserInput {
   email: string;
   roleId: string;
   locationId?: string;
+  password?: string;
 }
 
 export interface AdminUpdateUserInput {

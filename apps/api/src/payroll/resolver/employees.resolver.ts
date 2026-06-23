@@ -106,11 +106,6 @@ export class CreateEmployeeInput {
   @Field()
   @IsString()
   @IsNotEmpty()
-  password!: string;
-
-  @Field()
-  @IsString()
-  @IsNotEmpty()
   roleId!: string;
 
   @Field()

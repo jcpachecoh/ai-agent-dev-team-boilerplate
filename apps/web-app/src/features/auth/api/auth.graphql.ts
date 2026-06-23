@@ -68,6 +68,14 @@ export const MY_LOCATIONS_QUERY = `
   }
 `;
 
+export const RESET_PASSWORD_MUTATION = `
+  mutation ResetPassword($input: ResetPasswordInput!) {
+    resetPassword(input: $input) {
+      message
+    }
+  }
+`;
+
 export const SELECT_USER_LOCATION_MUTATION = `
   mutation SelectUserLocation($input: SelectUserLocationInput!) {
     selectUserLocation(input: $input) {

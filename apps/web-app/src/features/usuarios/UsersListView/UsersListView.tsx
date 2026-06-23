@@ -81,7 +81,9 @@ export default function UsersListView(): JSX.Element {
   const handleCreate = async (values: Parameters<typeof createMutation.mutateAsync>[0]) => {
     try {
       const created = await createMutation.mutateAsync(values);
-      toast.success(`Usuario ${created.email} creado. Contraseña temporal enviada por correo.`);
+      toast.success(
+        `Usuario ${created.email} creado. Se envió un correo de confirmación para configurar la contraseña.`,
+      );
       setFormOpen(false);
     } catch (err) {
       toast.error(getErrorMessage(err));

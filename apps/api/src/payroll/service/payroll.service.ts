@@ -7,14 +7,11 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { EmployeeContractType, SalaryType, EmployeeDetails, User, Prisma } from '@prisma/client';
-import * as bcrypt from 'bcrypt';
 import { SMLV_2025, TRANSPORT_SUBSIDY_THRESHOLD } from '../payroll.constants';
 import { PayrollRepository } from '../repository/payroll.repository';
 import { IPayrollService } from '../interfaces/payroll.interfaces';
 import type { UpdateEmployeePayload } from '../interfaces/payroll.interfaces';
 import { decimalToNumber } from '../../common/utils/decimal.util';
-
-const SALT_ROUNDS = 12;
 
 @Injectable()
 export class PayrollService implements IPayrollService {
@@ -25,16 +22,20 @@ export class PayrollService implements IPayrollService {
   async create(tenantId: string, data: any): Promise<EmployeeDetails & { user: User }> {
     this.validateColombiaLaw(tenantId, data);
 
-    const existingUser = await this.payrollRepository.findExistingUser(
+    const linkedUser = await this.payrollRepository.findUserByEmailAndCedula(
       tenantId,
       data.email,
       data.cedula,
     );
-    if (existingUser) {
-      this.logger.warn(
-        `Validation error: User already exists (tenantId=${tenantId}, email=${data.email}, cedula=${data.cedula})`,
+    if (!linkedUser) {
+      throw new BadRequestException(
+        'Debe registrar el usuario en el módulo Usuarios antes de vincularlo como empleado.',
       );
-      throw new ConflictException('Email or Cédula already registered');
+    }
+
+    const existingEmployee = await this.payrollRepository.findByUserId(linkedUser.id);
+    if (existingEmployee) {
+      throw new ConflictException('Este usuario ya está registrado como empleado');
     }
 
     const location = await this.payrollRepository.findLocationById(data.locationId);
@@ -47,14 +48,30 @@ export class PayrollService implements IPayrollService {
       throw new BadRequestException('Invalid role for this tenant');
     }
 
-    const passwordHash = await bcrypt.hash(data.password, SALT_ROUNDS);
     const hasTransportSubsidy = this.calculateTransportSubsidy(data.salaryAmount);
 
     try {
       return await this.payrollRepository.create({
-        ...data,
         tenantId,
-        passwordHash,
+        userId: linkedUser.id,
+        roleId: data.roleId,
+        locationId: data.locationId,
+        name: data.name,
+        position: data.position,
+        area: data.area,
+        department: data.department,
+        contractType: data.contractType,
+        hireDate: new Date(data.hireDate),
+        contractStart: new Date(data.contractStart),
+        contractEnd: data.contractEnd ? new Date(data.contractEnd) : null,
+        salaryType: data.salaryType,
+        salaryAmount: data.salaryAmount,
+        epsName: data.epsName,
+        pensionFundName: data.pensionFundName,
+        cesantiasFundName: data.cesantiasFundName,
+        arlName: data.arlName,
+        arlRiskLevel: data.arlRiskLevel,
+        cajaCompensacion: data.cajaCompensacion,
         hasTransportSubsidy,
       });
     } catch (error) {
@@ -123,13 +140,6 @@ export class PayrollService implements IPayrollService {
     }
 
     const payload = this.buildUpdatePayload(data);
-
-    if (data.password) {
-      payload.user = {
-        ...payload.user,
-        passwordHash: await bcrypt.hash(data.password, SALT_ROUNDS),
-      };
-    }
 
     try {
       return await this.payrollRepository.update(userId, payload);

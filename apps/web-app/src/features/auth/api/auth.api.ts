@@ -13,6 +13,7 @@ import {
   ME_QUERY,
   MY_LOCATIONS_QUERY,
   SELECT_USER_LOCATION_MUTATION,
+  RESET_PASSWORD_MUTATION,
   SIGNUP_MUTATION,
 } from './auth.graphql';
 
@@ -84,6 +85,23 @@ export async function fetchMyLocations(): Promise<AssignedLocationSummary[]> {
   }
 }
 
+export async function resetPasswordWithToken(
+  token: string,
+  newPassword: string,
+): Promise<{ message: string }> {
+  try {
+    const data = await graphqlRequest<{ resetPassword: { message: string } }>(
+      RESET_PASSWORD_MUTATION,
+      {
+        input: { token, newPassword },
+      },
+    );
+    return data.resetPassword;
+  } catch (error) {
+    throw toAuthApiError(error, 'resetPassword');
+  }
+}
+
 export async function selectUserLocation(locationId: string): Promise<LoginResponse> {
   try {
     const data = await graphqlRequest<{ selectUserLocation: LoginResponse }>(
@@ -96,7 +114,14 @@ export async function selectUserLocation(locationId: string): Promise<LoginRespo
   }
 }
 
-type AuthOperation = 'login' | 'signup' | 'logout' | 'me' | 'myLocations' | 'selectLocation';
+type AuthOperation =
+  | 'login'
+  | 'signup'
+  | 'logout'
+  | 'me'
+  | 'myLocations'
+  | 'selectLocation'
+  | 'resetPassword';
 
 function toAuthApiError(error: unknown, operation: AuthOperation): AuthApiError {
   if (error instanceof GraphqlRequestError) {
@@ -158,6 +183,9 @@ function mapGraphqlMessage(
   if (operation === 'signup' && status === 400) {
     return error.message || 'Datos de registro inválidos. Revisa los campos e intenta de nuevo.';
   }
+  if (operation === 'resetPassword' && status === 400) {
+    return error.message || 'El enlace de confirmación no es válido o expiró.';
+  }
   if (operation === 'me' && (status === 401 || error.code === 'UNAUTHENTICATED')) {
     return 'Sesión expirada. Inicia sesión de nuevo.';
   }
@@ -172,7 +200,9 @@ function mapGraphqlMessage(
   }
   return operation === 'signup'
     ? 'No pudimos crear la cuenta. Intente nuevamente.'
-    : operation === 'me'
-      ? 'No pudimos cargar tu perfil. Intente nuevamente.'
-      : 'No pudimos iniciar sesión. Intente nuevamente.';
+    : operation === 'resetPassword'
+      ? 'No pudimos configurar la contraseña. Intente nuevamente.'
+      : operation === 'me'
+        ? 'No pudimos cargar tu perfil. Intente nuevamente.'
+        : 'No pudimos iniciar sesión. Intente nuevamente.';
 }

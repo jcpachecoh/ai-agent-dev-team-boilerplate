@@ -18,4 +18,8 @@ export const JOB_PRIORITY = {
   NORMAL: 10,
 } as const;
 
-export const URGENT_TEMPLATE_TYPES = new Set<string>(['reset-password', 'verify-email']);
+export const URGENT_TEMPLATE_TYPES = new Set<string>([
+  'reset-password',
+  'verify-email',
+  'account-confirmation',
+]);

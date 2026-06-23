@@ -84,6 +84,7 @@ const repoMock = {
   resetLoginAttempts: jest.fn(),
   saveRefreshToken: jest.fn(),
   updatePassword: jest.fn(),
+  markEmailVerified: jest.fn(),
 };
 
 const authEmailRepoMock = {
@@ -819,11 +820,13 @@ describe('AuthService', () => {
       authEmailRepoMock.markResetTokenUsed.mockResolvedValue(undefined);
       (bcryptMock.hash as jest.Mock).mockResolvedValue('hashed-new-pw');
       repoMock.updatePassword.mockResolvedValue(undefined);
+      repoMock.markEmailVerified.mockResolvedValue(true);
 
       await service.resetPassword('rawtoken', 'newpass123');
 
       expect(bcryptMock.hash).toHaveBeenCalledWith('newpass123', 12);
-      expect(repoMock.updatePassword).toHaveBeenCalledWith('user-1', 'hashed-new-pw');
+      expect(repoMock.updatePassword).toHaveBeenCalledWith('user-1', 'hashed-new-pw', true);
+      expect(repoMock.markEmailVerified).toHaveBeenCalledWith('user-1');
     });
   });
 

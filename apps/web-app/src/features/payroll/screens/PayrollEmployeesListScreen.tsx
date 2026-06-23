@@ -43,7 +43,6 @@ function toCreateInput(values: PayrollEmployeeFormValues): CreatePayrollEmployee
     cedula: values.cedula.trim(),
     documentType: values.documentType,
     email: values.email.trim(),
-    password: values.password,
     roleId: values.roleId.trim(),
     locationId: values.locationId.trim(),
     name: values.name.trim(),
@@ -66,11 +65,7 @@ function toCreateInput(values: PayrollEmployeeFormValues): CreatePayrollEmployee
 }
 
 function toUpdateInput(values: PayrollEmployeeFormValues): UpdatePayrollEmployeeInput {
-  const base = toCreateInput(values);
-  return {
-    ...base,
-    password: values.password.trim() || undefined,
-  };
+  return toCreateInput(values);
 }
 
 function getErrorMessage(error: unknown): string {

@@ -6,6 +6,7 @@ import { WelcomeEmail } from './welcome';
 import { ResetPasswordEmail } from './reset-password';
 import { VerifyEmailEmail } from './verify-email';
 import { InviteUserEmail } from './invite-user';
+import { AccountConfirmationEmail } from './account-confirmation';
 import type { EmailTemplate } from '../types';
 
 const DEFAULT_PRIMARY_COLOR = '#E8943A';
@@ -62,6 +63,16 @@ export function renderTemplateElement(
     case 'invite-user':
       return (
         <InviteUserEmail
+          {...template.props}
+          tenantName={layoutProps.tenantName}
+          tenantLogoUrl={layoutProps.tenantLogoUrl}
+          primaryColor={color}
+        />
+      );
+
+    case 'account-confirmation':
+      return (
+        <AccountConfirmationEmail
           {...template.props}
           tenantName={layoutProps.tenantName}
           tenantLogoUrl={layoutProps.tenantLogoUrl}

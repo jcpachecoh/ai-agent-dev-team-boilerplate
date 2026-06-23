@@ -14,6 +14,7 @@ import InventoryMovementsPage from '@/pages/InventoryMovementsPage';
 import InventoryProductDetailPage from '@/pages/InventoryProductDetailPage';
 import InventoryProductsPage from '@/pages/InventoryProductsPage';
 import InventoryReportsPage from '@/pages/InventoryReportsPage';
+import ActivateAccountPage from '@/pages/ActivateAccountPage/ActivateAccountPage';
 import LoginPage from '@/pages/LoginPage';
 import NotFoundPage from '@/pages/NotFoundPage';
 import PayrollPage from '@/pages/PayrollPage';
@@ -39,6 +40,7 @@ export default function App(): React.JSX.Element {
         {/* Public */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
+        <Route path="/auth/activate-account" element={<ActivateAccountPage />} />
 
         {/* Protected — all routes require authentication */}
         <Route element={<RequireAuth />}>

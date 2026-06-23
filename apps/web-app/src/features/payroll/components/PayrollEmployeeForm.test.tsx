@@ -78,7 +78,6 @@ describe('PayrollEmployeeForm', () => {
     await user.type(screen.getByLabelText('Nombre'), 'Carlos Perez');
     await user.type(screen.getByLabelText('Cédula'), '12345678');
     await user.type(screen.getByLabelText('Correo'), 'carlos@test.com');
-    await user.type(screen.getByLabelText('Contraseña'), 'SecurePass123!');
     await user.click(screen.getByRole('button', { name: 'Rol' }));
     await user.click(screen.getByRole('option', { name: 'Manager' }));
     await user.click(screen.getByRole('button', { name: 'Sede' }));

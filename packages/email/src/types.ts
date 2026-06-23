@@ -43,6 +43,12 @@ export interface InviteUserProps {
   expiresAt: string;
 }
 
+export interface AccountConfirmationProps {
+  userName: string;
+  confirmUrl: string;
+  expiresAt: string;
+}
+
 export interface DianInvoiceProps {
   invoiceNumber: string;
   customerName: string;
@@ -73,6 +79,7 @@ export type EmailTemplate =
   | { type: 'reset-password'; props: ResetPasswordProps }
   | { type: 'verify-email'; props: VerifyEmailProps }
   | { type: 'invite-user'; props: InviteUserProps }
+  | { type: 'account-confirmation'; props: AccountConfirmationProps }
   | { type: 'dian-invoice'; props: DianInvoiceProps }
   | { type: 'stock-alert'; props: StockAlertProps }
   | { type: 'shift-summary'; props: ShiftSummaryProps };
