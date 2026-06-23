@@ -41,3 +41,7 @@ export interface UserUpdateFormValues {
   email: string;
   roleId: string;
 }
+
+export interface UserEditInitialValues extends UserUpdateFormValues {
+  name: string;
+}

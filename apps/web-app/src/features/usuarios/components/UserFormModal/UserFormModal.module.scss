@@ -120,6 +120,17 @@
   }
 }
 
+.readOnlyInput {
+  cursor: default;
+  background: var(--color-bg-surface, var(--color-bg-primary));
+  color: var(--color-text-secondary);
+
+  &:focus {
+    border-color: var(--color-border);
+    box-shadow: none;
+  }
+}
+
 .errorText {
   margin: 0;
   font-size: 0.8rem;

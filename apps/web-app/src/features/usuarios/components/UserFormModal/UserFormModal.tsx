@@ -14,6 +14,7 @@ import type {
   DocumentType,
   UserFormValues,
   UserUpdateFormValues,
+  UserEditInitialValues,
 } from '../../types';
 import { generatePasswordForRole } from '../../utils/generate-password';
 
@@ -40,7 +41,7 @@ interface CreateProps {
 
 interface EditProps {
   mode: 'edit';
-  initialValues: UserUpdateFormValues;
+  initialValues: UserEditInitialValues;
   onSave: (values: UserUpdateFormValues) => void;
 }
 
@@ -104,6 +105,7 @@ export function UserFormModal({
     setLookingUpEmployee(false);
     lookupRequestIdRef.current += 1;
     if (isEdit && initialValues) {
+      setName(initialValues.name);
       setEmail(initialValues.email);
       setRoleId(initialValues.roleId);
     } else {
@@ -195,7 +197,9 @@ export function UserFormModal({
     }
     if (!isEdit) {
       if (!name.trim()) {
-        setError('El nombre es obligatorio.');
+        setError(
+          'No se encontró un empleado con esa cédula. Regístralo primero en Nómina/Empleados.',
+        );
         return;
       }
       if (!cedula.trim()) {
@@ -271,6 +275,7 @@ export function UserFormModal({
                     const nextDocumentType = value as DocumentType;
                     setDocumentType(nextDocumentType);
                     setLookupHint(null);
+                    setName('');
                     if (cedula.trim()) {
                       void lookupEmployeeName(cedula, nextDocumentType);
                     }
@@ -289,6 +294,7 @@ export function UserFormModal({
                   onChange={(e) => {
                     setCedula(e.target.value);
                     setLookupHint(null);
+                    setName('');
                   }}
                   onBlur={() => void lookupEmployeeName(cedula, documentType)}
                   placeholder="Ej: 1023456789"
@@ -297,23 +303,29 @@ export function UserFormModal({
             </div>
           ) : null}
 
-          {!isEdit ? (
-            <label className={styles.field}>
-              <span className={styles.fieldLabel}>Nombre completo *</span>
-              <input
-                className={styles.input}
-                type="text"
-                value={name}
-                onChange={(e) => {
-                  setName(e.target.value);
-                  setLookupHint(null);
-                }}
-                placeholder="Ej: Juan Carlos Pérez"
-                disabled={lookingUpEmployee}
-              />
-              {lookupHint ? <p className={styles.hintText}>{lookupHint}</p> : null}
-            </label>
-          ) : null}
+          <label className={styles.field}>
+            <span className={styles.fieldLabel}>Nombre completo {!isEdit ? '*' : ''}</span>
+            <input
+              className={`${styles.input} ${styles.readOnlyInput}`}
+              type="text"
+              readOnly
+              value={name}
+              aria-label="Nombre completo"
+              placeholder={
+                isEdit
+                  ? undefined
+                  : lookingUpEmployee
+                    ? 'Consultando empleado...'
+                    : 'Se completa al ingresar la cédula de un empleado'
+              }
+            />
+            {!isEdit && lookupHint ? <p className={styles.hintText}>{lookupHint}</p> : null}
+            {!isEdit && !lookupHint && !name.trim() ? (
+              <p className={styles.hintText}>
+                El nombre se obtiene del módulo Empleados y no se puede editar aquí.
+              </p>
+            ) : null}
+          </label>
 
           <label className={styles.field}>
             <span className={styles.fieldLabel}>Correo electrónico *</span>

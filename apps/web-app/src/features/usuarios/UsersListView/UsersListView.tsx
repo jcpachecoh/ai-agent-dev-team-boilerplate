@@ -178,7 +178,7 @@ export default function UsersListView(): JSX.Element {
         <UserFormModal
           open={formOpen}
           mode="edit"
-          initialValues={{ email: editing.email, roleId: editing.role.id }}
+          initialValues={{ name: editing.name, email: editing.email, roleId: editing.role.id }}
           roles={roles}
           saving={isSaving}
           onClose={() => {
