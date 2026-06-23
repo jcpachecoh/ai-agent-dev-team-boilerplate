@@ -4,6 +4,7 @@ import {
   EmployeeContractType,
   IncidentType,
   PhaseExecutionStatus,
+  PlantAlarmType,
   PrismaClient,
   ProductionCommitteeStatus,
   ProductionOrderStatus,
@@ -93,6 +94,16 @@ const INCIDENT_4 = 'iiiiiiii-0000-0000-0000-000000000004';
 const COMMITTEE_ACTIVE = 'c0000001-0000-0000-0000-000000000001';
 const COMMITTEE_DRAFT = 'c0000002-0000-0000-0000-000000000001';
 
+// ── MES-08 QA alarm fixtures ──────────────────────────────────────────────────
+const ORDER_QA_NO_OP = 'oooooooo-0000-0000-0000-000000000020';
+const ORDER_QA_DELAYED = 'oooooooo-0000-0000-0000-000000000021';
+const EXEC_QA_NO_OP = 'eeeeeeee-0000-0000-0000-000000000020';
+const SESSION_QA_HIST = 'ssssssss-0000-0000-0000-000000000010';
+// PlantAlarmDispatch IDs for dedup fixtures
+const DISPATCH_QA_RECENT = 'dddddddd-0001-0000-0000-000000000001';
+const DISPATCH_QA_EXPIRED = 'dddddddd-0001-0000-0000-000000000002';
+const INCIDENT_QA_SAFETY = 'iiiiiiii-0000-0000-0000-000000000005';
+
 function minutesAgo(minutes: number): Date {
   return new Date(Date.now() - minutes * 60_000);
 }
@@ -103,6 +114,10 @@ function hoursFromNow(hours: number): Date {
 
 function daysFromNow(days: number): Date {
   return new Date(Date.now() + days * 86_400_000);
+}
+
+function minutesFromNow(minutes: number): Date {
+  return new Date(Date.now() + minutes * 60_000);
 }
 
 export async function seedPlantSupervisor(prisma: PrismaClient): Promise<void> {
@@ -986,5 +1001,258 @@ export async function seedPlantSupervisor(prisma: PrismaClient): Promise<void> {
 
   console.log(
     '✅ Plant supervisor seed: 5 estaciones, 5 recetas, 7 órdenes (5 IN_PROCESS + 1 DRAFT + 1 PLANNED), 2 comités, 4 incidentes',
+  );
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // MES-08 QA alarm fixtures
+  // ─────────────────────────────────────────────────────────────────────────────
+  console.log('\n── MES-08 QA alarm fixtures ──');
+
+  // Fetch PL-01 locationId for incidents (created by seedLocations in seed.ts)
+  const pl01Location = await prisma.location.findFirst({
+    where: { tenantId: TENANT_ID, code: 'PL-01' },
+    select: { id: true },
+  });
+  const pl01Id = pl01Location?.id ?? null;
+
+  // ── Fixture A: FASE_SIN_OPERARIO ─────────────────────────────────────────────
+  //
+  // ProductionOrder dedicated for QA — plannedEndAt 4h ahead so OP_RETRASADA
+  // does NOT fire for this order.
+  await prisma.productionOrder.upsert({
+    where: { id: ORDER_QA_NO_OP },
+    update: {
+      tenantId: TENANT_ID,
+      number: 'ALARM-NO-OP',
+      recipeId: RECIPE_COSTILLAS,
+      recipeVersion: 1,
+      status: ProductionOrderStatus.IN_PROCESS,
+      priority: ProductionPriority.NORMAL,
+      shift: ProductionShift.MORNING,
+      batchCount: 1,
+      plannedQuantity: 10,
+      unit: StockUnit.KILOGRAMS,
+      plannedStartAt: minutesAgo(30),
+      plannedEndAt: hoursFromNow(4),
+      actualStartAt: minutesAgo(25),
+    },
+    create: {
+      id: ORDER_QA_NO_OP,
+      tenantId: TENANT_ID,
+      number: 'ALARM-NO-OP',
+      recipeId: RECIPE_COSTILLAS,
+      recipeVersion: 1,
+      status: ProductionOrderStatus.IN_PROCESS,
+      priority: ProductionPriority.NORMAL,
+      shift: ProductionShift.MORNING,
+      batchCount: 1,
+      plannedQuantity: 10,
+      unit: StockUnit.KILOGRAMS,
+      plannedStartAt: minutesAgo(30),
+      plannedEndAt: hoursFromNow(4),
+      actualStartAt: minutesAgo(25),
+    },
+  });
+
+  // PhaseExecution without an active session.
+  // phase = PHASE_COST_3 (standardMinutes=30 → threshold=36min)
+  // startedAt = minutesAgo(20) → elapsed 20min < 36min → TIEMPO_EXCEDIDO does NOT fire.
+  // No active OperatorSession (endedAt IS NULL) → activeSessionStartedAt = null → FASE_SIN_OPERARIO fires.
+  await prisma.phaseExecution.upsert({
+    where: { id: EXEC_QA_NO_OP },
+    update: {
+      tenantId: TENANT_ID,
+      orderId: ORDER_QA_NO_OP,
+      phaseId: PHASE_COST_3,
+      workStationId: WS_EST03,
+      status: PhaseExecutionStatus.IN_PROCESS,
+      plannedMinutes: 30,
+      startedAt: minutesAgo(20),
+    },
+    create: {
+      id: EXEC_QA_NO_OP,
+      tenantId: TENANT_ID,
+      orderId: ORDER_QA_NO_OP,
+      phaseId: PHASE_COST_3,
+      workStationId: WS_EST03,
+      status: PhaseExecutionStatus.IN_PROCESS,
+      plannedMinutes: 30,
+      startedAt: minutesAgo(20),
+    },
+  });
+
+  // Historical (closed) session — simulates operator who left 3 minutes ago.
+  // endedAt IS NOT NULL → alarm repository's `where: { endedAt: null }` filter
+  // excludes it → activeSessionStartedAt = null → FASE_SIN_OPERARIO condition met.
+  await prisma.operatorSession.upsert({
+    where: { id: SESSION_QA_HIST },
+    update: {
+      tenantId: TENANT_ID,
+      workStationId: WS_EST03,
+      operatorUserId: PLANT_SEED_OPERATOR_ID,
+      phaseExecutionId: EXEC_QA_NO_OP,
+      startedAt: minutesAgo(30),
+      endedAt: minutesAgo(3),
+    },
+    create: {
+      id: SESSION_QA_HIST,
+      tenantId: TENANT_ID,
+      workStationId: WS_EST03,
+      operatorUserId: PLANT_SEED_OPERATOR_ID,
+      phaseExecutionId: EXEC_QA_NO_OP,
+      startedAt: minutesAgo(30),
+      endedAt: minutesAgo(3),
+    },
+  });
+  console.log(
+    'Fixture A (FASE_SIN_OPERARIO): ORDER ALARM-NO-OP — EXEC_QA_NO_OP (sin sesión activa, startedAt −20min)',
+  );
+
+  // ── Fixture B: OP_RETRASADA ───────────────────────────────────────────────────
+  //
+  // plannedEndAt = now + 15min → within the 30min alarm window →
+  // findDelayedOrdersForAlarmScan returns this order → OP_RETRASADA fires.
+  // After 15min it changes to "superó la fecha planificada".
+  // Re-running the seed resets plannedEndAt to now+15min (idempotent refresh).
+  await prisma.productionOrder.upsert({
+    where: { id: ORDER_QA_DELAYED },
+    update: {
+      tenantId: TENANT_ID,
+      number: 'ALARM-DELAYED',
+      recipeId: RECIPE_PAPAS,
+      recipeVersion: 1,
+      status: ProductionOrderStatus.IN_PROCESS,
+      priority: ProductionPriority.HIGH,
+      shift: ProductionShift.MORNING,
+      batchCount: 1,
+      plannedQuantity: 15,
+      unit: StockUnit.KILOGRAMS,
+      plannedStartAt: minutesAgo(60),
+      plannedEndAt: minutesFromNow(15),
+      actualStartAt: minutesAgo(55),
+    },
+    create: {
+      id: ORDER_QA_DELAYED,
+      tenantId: TENANT_ID,
+      number: 'ALARM-DELAYED',
+      recipeId: RECIPE_PAPAS,
+      recipeVersion: 1,
+      status: ProductionOrderStatus.IN_PROCESS,
+      priority: ProductionPriority.HIGH,
+      shift: ProductionShift.MORNING,
+      batchCount: 1,
+      plannedQuantity: 15,
+      unit: StockUnit.KILOGRAMS,
+      plannedStartAt: minutesAgo(60),
+      plannedEndAt: minutesFromNow(15),
+      actualStartAt: minutesAgo(55),
+    },
+  });
+  console.log('Fixture B (OP_RETRASADA): ORDER ALARM-DELAYED — plannedEndAt = now +15min');
+
+  // ── Fixture C: Deduplicación ──────────────────────────────────────────────────
+  //
+  // Recent dispatch (−10min, inside 30min window) for EXEC_015_1:
+  //   findRecentDispatch finds this → cron BLOCKS a new dispatch → QA verifies
+  //   that plant_alarm_dispatches does NOT get a second row for EXEC_015_1.
+  await prisma.plantAlarmDispatch.upsert({
+    where: { id: DISPATCH_QA_RECENT },
+    update: {
+      tenantId: TENANT_ID,
+      alarmType: PlantAlarmType.TIEMPO_EXCEDIDO,
+      executionId: EXEC_015_1,
+      orderId: ORDER_015,
+      severity: AlarmSeverity.WARNING,
+      message: '[QA dedup] TIEMPO_EXCEDIDO reciente — debe ser bloqueado por el cron',
+      dispatchedAt: minutesAgo(10),
+    },
+    create: {
+      id: DISPATCH_QA_RECENT,
+      tenantId: TENANT_ID,
+      alarmType: PlantAlarmType.TIEMPO_EXCEDIDO,
+      executionId: EXEC_015_1,
+      orderId: ORDER_015,
+      severity: AlarmSeverity.WARNING,
+      message: '[QA dedup] TIEMPO_EXCEDIDO reciente — debe ser bloqueado por el cron',
+      dispatchedAt: minutesAgo(10),
+    },
+  });
+
+  // Expired dispatch (−35min, outside 30min window) for EXEC_014_2:
+  //   findRecentDispatch does NOT find it (dispatchedAt < since) → cron ALLOWS
+  //   a new dispatch when EXEC_014_2 crosses its threshold (≈2min after seed).
+  await prisma.plantAlarmDispatch.upsert({
+    where: { id: DISPATCH_QA_EXPIRED },
+    update: {
+      tenantId: TENANT_ID,
+      alarmType: PlantAlarmType.TIEMPO_EXCEDIDO,
+      executionId: EXEC_014_2,
+      orderId: ORDER_014,
+      severity: AlarmSeverity.WARNING,
+      message: '[QA dedup] TIEMPO_EXCEDIDO expirado — debe generar nuevo dispatch',
+      dispatchedAt: minutesAgo(35),
+    },
+    create: {
+      id: DISPATCH_QA_EXPIRED,
+      tenantId: TENANT_ID,
+      alarmType: PlantAlarmType.TIEMPO_EXCEDIDO,
+      executionId: EXEC_014_2,
+      orderId: ORDER_014,
+      severity: AlarmSeverity.WARNING,
+      message: '[QA dedup] TIEMPO_EXCEDIDO expirado — debe generar nuevo dispatch',
+      dispatchedAt: minutesAgo(35),
+    },
+  });
+  console.log(
+    'Fixture C (dedup): EXEC_015_1 dispatch −10min (bloqueado) | EXEC_014_2 dispatch −35min (permitido)',
+  );
+
+  // ── Fixture D + E: Incidente SAFETY con locationId ───────────────────────────
+  //
+  // Covers D (type SAFETY — único tipo no seeded hasta ahora) y
+  // E (locationId poblado con PL-01 — todos los incidentes anteriores tienen locationId=null).
+  await prisma.productionIncident.upsert({
+    where: { id: INCIDENT_QA_SAFETY },
+    update: {
+      tenantId: TENANT_ID,
+      workStationId: WS_EST02,
+      orderId: ORDER_013,
+      executionId: EXEC_013_2,
+      operatorUserId: PLANT_SEED_OPERATOR_ID,
+      locationId: pl01Id,
+      type: IncidentType.SAFETY,
+      severity: AlarmSeverity.CRITICAL,
+      description: 'Incidente de seguridad — QA MES-08',
+      createdAt: minutesAgo(7),
+      resolvedAt: null,
+    },
+    create: {
+      id: INCIDENT_QA_SAFETY,
+      tenantId: TENANT_ID,
+      workStationId: WS_EST02,
+      orderId: ORDER_013,
+      executionId: EXEC_013_2,
+      operatorUserId: PLANT_SEED_OPERATOR_ID,
+      locationId: pl01Id,
+      type: IncidentType.SAFETY,
+      severity: AlarmSeverity.CRITICAL,
+      description: 'Incidente de seguridad — QA MES-08',
+      createdAt: minutesAgo(7),
+      resolvedAt: null,
+    },
+  });
+  console.log(
+    `Fixture D+E (SAFETY incident, locationId=${pl01Id ?? 'null — PL-01 not found'}): INCIDENT_QA_SAFETY`,
+  );
+
+  console.log('\n✅ MES-08 alarm fixtures:');
+  console.log(
+    '  FASE_SIN_OPERARIO : ORDER ALARM-NO-OP  — EXEC_QA_NO_OP (sin sesión activa, startedAt −20min)',
+  );
+  console.log('  OP_RETRASADA      : ORDER ALARM-DELAYED — plannedEndAt = now +15min');
+  console.log('  Dedup reciente    : EXEC_015_1 dispatch −10min → cron bloqueado');
+  console.log('  Dedup expirado    : EXEC_014_2 dispatch −35min → cron permitido');
+  console.log(
+    `  Incidente SAFETY  : INCIDENT_QA_SAFETY (CRITICAL, locationId=${pl01Id ?? 'null'})`,
   );
 }
