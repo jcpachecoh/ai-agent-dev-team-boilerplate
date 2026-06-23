@@ -1,4 +1,12 @@
-import { Global, Inject, Module, OnModuleDestroy, OnModuleInit, Logger, Optional } from '@nestjs/common';
+import {
+  Global,
+  Inject,
+  Logger,
+  Module,
+  OnModuleDestroy,
+  OnModuleInit,
+  Optional,
+} from '@nestjs/common';
 import { EmailService, EmailWorker } from '@restopsiq/email';
 
 const EMAIL_WORKER_TOKEN = 'EMAIL_WORKER';

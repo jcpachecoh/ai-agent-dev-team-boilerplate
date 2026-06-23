@@ -82,6 +82,9 @@ class AuthUserProfileType {
   @Field()
   email!: string;
 
+  @Field(() => String, { nullable: true })
+  name?: string | null;
+
   @Field()
   cedula!: string;
 

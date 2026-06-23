@@ -1,10 +1,33 @@
 import { describe, expect, it } from 'vitest';
 
-import { formatRoleCode, formatUserDisplayName, mapAuthUserToViewModel } from './display';
+import {
+  formatRoleCode,
+  formatUserDisplayName,
+  mapAuthUserToViewModel,
+  resolveUserDisplayName,
+} from './display';
 
 describe('auth display mappers', () => {
   it('formats display name from email local part', () => {
     expect(formatUserDisplayName('mes-owner@palos-de-lena.dev')).toBe('Mes Owner');
+  });
+
+  it('prefers API name over email fallback', () => {
+    expect(
+      resolveUserDisplayName({
+        name: 'Propietario Principal',
+        email: 'signup.1781213262141@example.com',
+      }),
+    ).toBe('Propietario Principal');
+  });
+
+  it('falls back to generic label when name is missing', () => {
+    expect(
+      resolveUserDisplayName({
+        name: null,
+        email: 'signup.1781213262141@example.com',
+      }),
+    ).toBe('Usuario');
   });
 
   it('maps role code to Spanish label', () => {
@@ -17,6 +40,7 @@ describe('auth display mappers', () => {
         id: 'user-1',
         tenantId: 'palos-de-lena',
         email: 'admin@example.com',
+        name: 'Patricia Álvarez',
         cedula: '1',
         documentType: 'CC',
         emailVerified: true,
@@ -28,7 +52,7 @@ describe('auth display mappers', () => {
       id: 'user-1',
       tenantId: 'palos-de-lena',
       email: 'admin@example.com',
-      displayName: 'Admin',
+      displayName: 'Patricia Álvarez',
       displayRole: 'Administrador',
       roleCode: 'ADMIN',
     });

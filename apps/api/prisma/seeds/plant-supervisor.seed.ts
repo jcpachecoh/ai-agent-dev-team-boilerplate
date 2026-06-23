@@ -942,7 +942,7 @@ export async function seedPlantSupervisor(prisma: PrismaClient): Promise<void> {
 
   await prisma.employeeDetails.upsert({
     where: { userId: GLOBAL_MES_OPERATOR2_USER_ID },
-    update: { isActive: true, pinHash: operator2PinHashEmployee },
+    update: { isActive: true, pinHash: operator2PinHashEmployee, name: 'Carlos Mendoza' },
     create: {
       userId: GLOBAL_MES_OPERATOR2_USER_ID,
       tenantId: TENANT_ID,
@@ -971,7 +971,7 @@ export async function seedPlantSupervisor(prisma: PrismaClient): Promise<void> {
 
   await prisma.employeeDetails.upsert({
     where: { userId: GLOBAL_MES_OPERATIONS_ADMIN_USER_ID },
-    update: { isActive: true, pinHash: opsAdminPinHashEmployee },
+    update: { isActive: true, pinHash: opsAdminPinHashEmployee, name: 'Admin de Operaciones' },
     create: {
       userId: GLOBAL_MES_OPERATIONS_ADMIN_USER_ID,
       tenantId: TENANT_ID,

@@ -3,6 +3,10 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 
 import AppLayout from './AppLayout';
 
+vi.mock('@/components/LocationTabsBar', () => ({
+  LocationTabsBar: () => null,
+}));
+
 describe('AppLayout', () => {
   beforeEach(() => {
     window.matchMedia = vi.fn().mockImplementation((query: string) => ({

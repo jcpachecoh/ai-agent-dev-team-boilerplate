@@ -23,6 +23,7 @@ const mockProfile = {
   id: 'user-1',
   tenantId: 'palos-de-lena',
   email: 'mes-owner@palos-de-lena.dev',
+  name: 'Propietario Principal',
   cedula: '1234567890',
   documentType: 'CC' as const,
   emailVerified: true,
@@ -49,7 +50,7 @@ describe('useMe', () => {
       id: 'user-1',
       tenantId: 'palos-de-lena',
       email: 'mes-owner@palos-de-lena.dev',
-      displayName: 'Mes Owner',
+      displayName: 'Propietario Principal',
       displayRole: 'Operador',
       roleCode: 'OPERATOR',
     });

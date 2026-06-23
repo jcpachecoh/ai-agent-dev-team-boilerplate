@@ -707,6 +707,7 @@ describe('AuthService', () => {
       id: mockUserSafe.id,
       tenantId: mockUserSafe.tenantId,
       email: mockUserSafe.email,
+      name: null,
       cedula: mockUserSafe.cedula,
       documentType: mockUserSafe.documentType,
       emailVerified: mockUserSafe.emailVerified,

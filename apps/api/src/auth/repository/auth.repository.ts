@@ -114,15 +114,19 @@ export class AuthRepository implements IAuthRepository {
         createdAt: true,
         deletedAt: true,
         role: { select: { code: true } },
+        employeeDetails: { select: { name: true } },
       },
     });
 
     if (!user || user.deletedAt) return null;
 
+    const name = user.employeeDetails?.name?.trim() || null;
+
     return {
       id: user.id,
       tenantId: user.tenantId,
       email: user.email,
+      name,
       cedula: user.cedula,
       documentType: user.documentType,
       emailVerified: user.emailVerified,

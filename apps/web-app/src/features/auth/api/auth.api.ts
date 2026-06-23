@@ -8,9 +8,11 @@ import type {
   SignupResponse,
 } from '../types';
 import {
+  ADMIN_USER_NAME_QUERY,
   LOGIN_MUTATION,
   LOGOUT_MUTATION,
   ME_QUERY,
+  ME_QUERY_LEGACY,
   MY_LOCATIONS_QUERY,
   SELECT_USER_LOCATION_MUTATION,
   RESET_PASSWORD_MUTATION,
@@ -70,8 +72,33 @@ export async function fetchCurrentUser(): Promise<AuthUserProfile> {
     const data = await graphqlRequest<{ me: AuthUserProfile }>(ME_QUERY);
     return data.me;
   } catch (error) {
-    throw toAuthApiError(error, 'me');
+    if (!isMissingGraphqlFieldError(error, 'name')) {
+      throw toAuthApiError(error, 'me');
+    }
+
+    const data = await graphqlRequest<{ me: AuthUserProfile }>(ME_QUERY_LEGACY);
+    const name = await fetchAdminUserName(data.me.id);
+    return { ...data.me, name };
   }
+}
+
+async function fetchAdminUserName(userId: string): Promise<string | null> {
+  try {
+    const data = await graphqlRequest<{ adminUser: { name: string } | null }>(
+      ADMIN_USER_NAME_QUERY,
+      { id: userId },
+    );
+    const name = data.adminUser?.name?.trim();
+    return name ? name : null;
+  } catch {
+    return null;
+  }
+}
+
+function isMissingGraphqlFieldError(error: unknown, fieldName: string): boolean {
+  if (!(error instanceof GraphqlRequestError)) return false;
+  if (error.code !== 'GRAPHQL_VALIDATION_FAILED') return false;
+  return error.message.includes(`Cannot query field "${fieldName}"`);
 }
 
 export async function fetchMyLocations(): Promise<AssignedLocationSummary[]> {

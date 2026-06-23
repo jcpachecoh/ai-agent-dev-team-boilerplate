@@ -176,12 +176,14 @@ describe('AuthRepository', () => {
         createdAt: mockUserSafe.createdAt,
         deletedAt: null,
         role: { code: 'OPERATOR' },
+        employeeDetails: { name: 'Operario de Planta' },
       });
 
       await expect(repository.findByIdWithRoleCode('user-1')).resolves.toEqual({
         id: 'user-1',
         tenantId: 'palos-de-lena',
         email: 'test@example.com',
+        name: 'Operario de Planta',
         cedula: '12345678',
         documentType: DocumentType.CC,
         emailVerified: false,

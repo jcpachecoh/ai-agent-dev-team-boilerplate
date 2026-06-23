@@ -115,6 +115,7 @@ describe('fetchCurrentUser', () => {
       id: 'user-1',
       tenantId: 'palos-de-lena',
       email: 'mes-owner@palos-de-lena.dev',
+      name: 'Propietario Principal',
       cedula: '1234567890',
       documentType: 'CC' as const,
       emailVerified: true,
@@ -128,6 +129,41 @@ describe('fetchCurrentUser', () => {
 
     expect(graphqlRequestMock).toHaveBeenCalledWith(expect.stringContaining('query Me'));
     expect(result).toEqual(profile);
+  });
+
+  it('falls back to legacy me + adminUser when name field is unavailable', async () => {
+    const baseProfile = {
+      id: 'user-1',
+      tenantId: 'palos-de-lena',
+      email: 'mes-owner@palos-de-lena.dev',
+      cedula: '1234567890',
+      documentType: 'CC' as const,
+      emailVerified: true,
+      isActive: true,
+      roleCode: 'OWNER',
+      createdAt: '2024-01-01T00:00:00.000Z',
+    };
+
+    graphqlRequestMock
+      .mockRejectedValueOnce(
+        new GraphqlRequestError(
+          'Cannot query field "name" on type "AuthUserProfile".',
+          'GRAPHQL_VALIDATION_FAILED',
+        ),
+      )
+      .mockResolvedValueOnce({ me: baseProfile })
+      .mockResolvedValueOnce({ adminUser: { name: 'Nombre 1' } });
+
+    const result = await fetchCurrentUser();
+
+    expect(graphqlRequestMock).toHaveBeenNthCalledWith(1, expect.stringContaining('name'));
+    expect(graphqlRequestMock).toHaveBeenNthCalledWith(2, expect.not.stringContaining('name'));
+    expect(graphqlRequestMock).toHaveBeenNthCalledWith(
+      3,
+      expect.stringContaining('query AdminUserName'),
+      { id: 'user-1' },
+    );
+    expect(result).toEqual({ ...baseProfile, name: 'Nombre 1' });
   });
 
   it('throws AuthApiError on UNAUTHENTICATED', async () => {

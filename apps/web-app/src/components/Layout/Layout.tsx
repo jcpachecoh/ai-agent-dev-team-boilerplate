@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 
 import Header from '@/components/Header';
+import { LocationTabsBar } from '@/components/LocationTabsBar';
 import Sidebar from '@/components/Sidebar';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 
@@ -57,6 +58,7 @@ export default function Layout({ children }: LayoutProps): React.JSX.Element {
 
       <div className={styles.mainColumn}>
         <Header showMenuButton={!isDesktop} onMenuClick={() => setMobileOpen((value) => !value)} />
+        <LocationTabsBar />
         <main className={styles.content}>{children}</main>
       </div>
     </div>

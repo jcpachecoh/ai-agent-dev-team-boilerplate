@@ -40,18 +40,40 @@ export const LOGOUT_MUTATION = `
   }
 `;
 
+const ME_PROFILE_FIELDS = `
+  id
+  tenantId
+  email
+  cedula
+  documentType
+  emailVerified
+  isActive
+  roleCode
+  createdAt
+`;
+
 export const ME_QUERY = `
   query Me {
     me {
-      id
-      tenantId
-      email
-      cedula
-      documentType
-      emailVerified
-      isActive
-      roleCode
-      createdAt
+      ${ME_PROFILE_FIELDS}
+      name
+    }
+  }
+`;
+
+/** Compatible con APIs que aún no exponen AuthUserProfile.name en GraphQL. */
+export const ME_QUERY_LEGACY = `
+  query Me {
+    me {
+      ${ME_PROFILE_FIELDS}
+    }
+  }
+`;
+
+export const ADMIN_USER_NAME_QUERY = `
+  query AdminUserName($id: ID!) {
+    adminUser(id: $id) {
+      name
     }
   }
 `;

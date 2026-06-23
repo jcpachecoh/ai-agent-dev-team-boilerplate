@@ -23,12 +23,18 @@ export function formatUserDisplayName(email: string): string {
     .join(' ');
 }
 
+export function resolveUserDisplayName(profile: Pick<AuthUserProfile, 'name' | 'email'>): string {
+  const name = profile.name?.trim();
+  if (name) return name;
+  return 'Usuario';
+}
+
 export function mapAuthUserToViewModel(profile: AuthUserProfile): AuthUserViewModel {
   return {
     id: profile.id,
     tenantId: profile.tenantId,
     email: profile.email,
-    displayName: formatUserDisplayName(profile.email),
+    displayName: resolveUserDisplayName(profile),
     displayRole: formatRoleCode(profile.roleCode),
     roleCode: profile.roleCode,
   };

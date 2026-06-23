@@ -176,6 +176,7 @@ describe('AuthService sensitive response shapes (AUTH-03)', () => {
       id: mockUserSafe.id,
       tenantId: mockUserSafe.tenantId,
       email: mockUserSafe.email,
+      name: null,
       cedula: mockUserSafe.cedula,
       documentType: mockUserSafe.documentType,
       emailVerified: mockUserSafe.emailVerified,

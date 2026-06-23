@@ -541,7 +541,7 @@ async function seedEmployeeDetails(
   const ownerPinHashEmployee = await bcrypt.hash('1234', SALT_ROUNDS);
   await prisma.employeeDetails.upsert({
     where: { userId: ownerUserId },
-    update: { isActive: true, pinHash: ownerPinHashEmployee },
+    update: { isActive: true, pinHash: ownerPinHashEmployee, name: 'Propietario Principal' },
     create: {
       userId: ownerUserId,
       tenantId: OPERATIONAL_TENANT_ID,
@@ -573,7 +573,7 @@ async function seedEmployeeDetails(
   const operatorPinHashEmployee = await bcrypt.hash('4321', SALT_ROUNDS);
   await prisma.employeeDetails.upsert({
     where: { userId: operatorUserId },
-    update: { isActive: true, pinHash: operatorPinHashEmployee },
+    update: { isActive: true, pinHash: operatorPinHashEmployee, name: 'Operario de Planta' },
     create: {
       userId: operatorUserId,
       tenantId: OPERATIONAL_TENANT_ID,

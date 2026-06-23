@@ -26,6 +26,7 @@ export interface AuthUserProfile {
   id: string;
   tenantId: string;
   email: string;
+  name: string | null;
   cedula: string;
   documentType: DocumentType;
   emailVerified: boolean;

@@ -1,9 +1,8 @@
-import { Bell, Building2, Menu } from 'lucide-react';
+import { Bell, Menu } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import UserMenu from '@/components/UserMenu';
 import ThemeSwitch from '@/components/ThemeSwitch';
-import { useLocationSession } from '@/features/auth/context/LocationSessionContext';
 import { useLogout } from '@/features/auth/hooks/useLogout';
 
 import styles from './Header.module.scss';
@@ -18,7 +17,6 @@ export default function Header({
   showMenuButton = false,
 }: HeaderProps): React.JSX.Element {
   const handleLogout = useLogout();
-  const { activeLocation, assignedLocations, openLocationPicker } = useLocationSession();
   const [clock, setClock] = useState(() => formatClock(new Date()));
   const [dateLabel, setDateLabel] = useState(() => formatDate(new Date()));
 
@@ -43,17 +41,6 @@ export default function Header({
             onClick={onMenuClick}
           >
             <Menu size={16} />
-          </button>
-        ) : null}
-        {assignedLocations.length > 0 ? (
-          <button
-            type="button"
-            className={styles.pill}
-            onClick={openLocationPicker}
-            aria-label="Cambiar sede activa"
-          >
-            <Building2 size={14} aria-hidden />
-            <span>{activeLocation?.name ?? 'Seleccionar sede'}</span>
           </button>
         ) : null}
       </div>
