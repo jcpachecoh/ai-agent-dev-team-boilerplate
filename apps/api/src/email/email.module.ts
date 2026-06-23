@@ -1,6 +1,8 @@
 import { Global, Inject, Module, OnModuleDestroy, OnModuleInit, Logger, Optional } from '@nestjs/common';
 import { EmailService, EmailWorker } from '@restopsiq/email';
 
+const EMAIL_WORKER_TOKEN = 'EMAIL_WORKER';
+
 @Global()
 @Module({
   providers: [
@@ -12,7 +14,7 @@ import { EmailService, EmailWorker } from '@restopsiq/email';
         }),
     },
     {
-      provide: EmailWorker,
+      provide: EMAIL_WORKER_TOKEN,
       useFactory: () => {
         const resendApiKey = process.env.RESEND_API_KEY ?? '';
         const fromAddress = process.env.EMAIL_FROM ?? '';
@@ -32,7 +34,7 @@ import { EmailService, EmailWorker } from '@restopsiq/email';
 export class EmailModule implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(EmailModule.name);
 
-  constructor(@Optional() @Inject(EmailWorker) private readonly emailWorker: EmailWorker | null) {}
+  constructor(@Optional() @Inject(EMAIL_WORKER_TOKEN) private readonly emailWorker: EmailWorker | null) {}
 
   onModuleInit() {
     if (!process.env.RESEND_API_KEY || !process.env.EMAIL_FROM) {
