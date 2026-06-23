@@ -79,6 +79,23 @@ describe('IncidentRepository', () => {
         data: expect.objectContaining({ locationId: 'loc-1' }),
       });
     });
+
+    it('persists photoUrl when provided', async () => {
+      const created = { id: incidentId, tenantId, photoUrl: 'https://cdn.example/photo.jpg' };
+      prismaMock.productionIncident.create.mockResolvedValue(created);
+
+      await repository.createIncident(tenantId, 'op-1', {
+        workStationId: 'ws-1',
+        type: IncidentType.QUALITY,
+        severity: AlarmSeverity.WARNING,
+        description: 'Con evidencia',
+        photoUrl: 'https://cdn.example/photo.jpg',
+      });
+
+      expect(prismaMock.productionIncident.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ photoUrl: 'https://cdn.example/photo.jpg' }),
+      });
+    });
   });
 
   describe('findIncidents', () => {

@@ -213,7 +213,7 @@ describe('AttendanceRepository', () => {
       expect(call.where).not.toHaveProperty('employeeId');
       expect(call.where).not.toHaveProperty('locationId');
       expect(call.where).not.toHaveProperty('workDate');
-      expect(call.take).toBe(50);
+      expect(call.take).toBe(500);
       expect(call.skip).toBe(0);
     });
 
