@@ -153,16 +153,29 @@ describe('SupplyItemsService', () => {
       ).rejects.toThrow(BadRequestException);
     });
 
-    it('throws BadRequestException when aplicaVencimiento is true without fechaVencimiento', async () => {
+    it('allows aplicaVencimiento and aplicaLote without fechaVencimiento or lote', async () => {
       repoMock.categoryExists.mockResolvedValue(true);
       repoMock.findByCodigoInterno.mockResolvedValue(null);
+      repoMock.create.mockResolvedValue(mockSupplyItem);
 
-      await expect(
-        service.create(tenantId, { ...createInput, aplicaVencimiento: true }),
-      ).rejects.toThrow(BadRequestException);
+      await service.create(tenantId, {
+        ...createInput,
+        aplicaVencimiento: true,
+        aplicaLote: true,
+      });
+
+      expect(repoMock.create).toHaveBeenCalledWith(
+        tenantId,
+        expect.objectContaining({
+          aplicaVencimiento: true,
+          aplicaLote: true,
+          fechaVencimiento: null,
+          lote: null,
+        }),
+      );
     });
 
-    it('persists tracking fields when aplicaVencimiento and aplicaLote are enabled', async () => {
+    it('persists tracking fields when fechaVencimiento and lote are provided', async () => {
       repoMock.categoryExists.mockResolvedValue(true);
       repoMock.findByCodigoInterno.mockResolvedValue(null);
       repoMock.create.mockResolvedValue(mockSupplyItem);

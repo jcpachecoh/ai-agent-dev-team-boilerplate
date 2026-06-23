@@ -187,21 +187,12 @@ export class SupplyItemsService implements ISupplyitemsService {
     const aplicaLote = data.aplicaLote ?? false;
     const fechaVencimiento = this.normalizeFechaVencimientoInput(data.fechaVencimiento);
 
-    if (aplicaVencimiento && !fechaVencimiento?.trim()) {
-      throw new BadRequestException(
-        'La fecha de vencimiento es obligatoria cuando aplica vencimiento.',
-      );
-    }
-
-    if (aplicaLote && !data.lote?.trim()) {
-      throw new BadRequestException('El lote es obligatorio cuando aplica lote.');
-    }
-
     return {
-      fechaVencimiento: aplicaVencimiento
-        ? this.parseFechaVencimiento(fechaVencimiento!.trim())
-        : null,
-      lote: aplicaLote ? data.lote!.trim() : null,
+      fechaVencimiento:
+        aplicaVencimiento && fechaVencimiento?.trim()
+          ? this.parseFechaVencimiento(fechaVencimiento.trim())
+          : null,
+      lote: aplicaLote && data.lote?.trim() ? data.lote.trim() : null,
     };
   }
 

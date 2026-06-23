@@ -2,20 +2,6 @@ import type { InventoryProduct, InventoryProductFormValues } from '@/types/inven
 
 import type { CreateSupplyItemInput, UpdateSupplyItemInput } from '../types';
 
-function isoToDateInput(iso?: string | null): string {
-  if (!iso) return '';
-  return iso.slice(0, 10);
-}
-
-function trackingFieldsFromForm(
-  values: InventoryProductFormValues,
-): Pick<CreateSupplyItemInput, 'fechaVencimiento' | 'lote'> {
-  return {
-    fechaVencimiento: values.aplicaVencimiento ? values.fechaVencimiento.trim() : null,
-    lote: values.aplicaLote ? values.lote.trim() : null,
-  };
-}
-
 export function formValuesToCreateInput(values: InventoryProductFormValues): CreateSupplyItemInput {
   return {
     nombre: values.name.trim(),
@@ -30,7 +16,6 @@ export function formValuesToCreateInput(values: InventoryProductFormValues): Cre
     stockActualBodega: values.currentStock || '0',
     aplicaVencimiento: values.aplicaVencimiento,
     aplicaLote: values.aplicaLote,
-    ...trackingFieldsFromForm(values),
     isActive: true,
   };
 }
@@ -56,8 +41,6 @@ export function productToFormValues(product: InventoryProduct): InventoryProduct
     factorConversion: '1',
     aplicaVencimiento: product.aplicaVencimiento ?? false,
     aplicaLote: product.aplicaLote ?? false,
-    fechaVencimiento: isoToDateInput(product.fechaVencimiento),
-    lote: product.lote ?? '',
     isActive: product.isActive,
   };
 }
