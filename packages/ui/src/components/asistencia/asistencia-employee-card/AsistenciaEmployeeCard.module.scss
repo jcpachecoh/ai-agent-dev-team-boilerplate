@@ -19,6 +19,20 @@
   border-color: var(--asistencia-amber-border);
 }
 
+.clickable {
+  cursor: pointer;
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: var(--asistencia-surface-raised);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--asistencia-accent);
+    outline-offset: 2px;
+  }
+}
+
 .header {
   display: flex;
   align-items: center;

@@ -54,6 +54,8 @@
 
 .title {
   margin: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
   font-family: $font-family-mono;
   font-size: 0.625rem;
   font-weight: $font-weight-bold;
@@ -74,6 +76,8 @@
 
 .value {
   margin: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
   font-family: $font-family-mono;
   font-size: var(--metric-value-size);
   font-weight: $font-weight-bold;

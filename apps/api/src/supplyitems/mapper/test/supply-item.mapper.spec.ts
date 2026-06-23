@@ -25,6 +25,7 @@ const mockSupplier: Supplier = {
 const baseItem = {
   id: 'item-1',
   tenantId: 'tenant-1',
+  locationId: null,
   nombre: 'Harina',
   codigoInterno: 'SKU-1',
   categoriaId: 'cat-1',

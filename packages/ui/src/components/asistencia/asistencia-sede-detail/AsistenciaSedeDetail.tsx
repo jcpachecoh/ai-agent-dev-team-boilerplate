@@ -42,6 +42,7 @@ export interface AsistenciaSedeDetailProps {
   emptyMessage?: string;
   theme?: AsistenciaTheme;
   className?: string;
+  onEmployeeClick?: (employee: AsistenciaEmployeeCardData) => void;
 }
 
 const defaultMetrics: AsistenciaMonitorMetrics = {
@@ -64,12 +65,18 @@ function renderEmployees(
   items: AsistenciaEmployeeCardData[],
   viewMode: AsistenciaViewMode,
   theme: AsistenciaTheme,
+  onEmployeeClick?: (employee: AsistenciaEmployeeCardData) => void,
 ): JSX.Element {
   if (viewMode === 'grid') {
     return (
       <div className={styles.categoryGrid}>
         {items.map((employee) => (
-          <AsistenciaEmployeeCard key={employee.id} {...employee} theme={theme} />
+          <AsistenciaEmployeeCard
+            key={employee.id}
+            {...employee}
+            theme={theme}
+            onClick={onEmployeeClick ? () => onEmployeeClick(employee) : undefined}
+          />
         ))}
       </div>
     );
@@ -78,7 +85,12 @@ function renderEmployees(
   return (
     <AsistenciaEmployeeList>
       {items.map((employee) => (
-        <AsistenciaEmployeeListRow key={employee.id} {...employee} theme={theme} />
+        <AsistenciaEmployeeListRow
+          key={employee.id}
+          {...employee}
+          theme={theme}
+          onClick={onEmployeeClick ? () => onEmployeeClick(employee) : undefined}
+        />
       ))}
     </AsistenciaEmployeeList>
   );
@@ -106,6 +118,7 @@ export function AsistenciaSedeDetail({
   emptyMessage,
   theme = 'dark',
   className,
+  onEmployeeClick,
 }: AsistenciaSedeDetailProps): JSX.Element {
   const resolvedSubtitle = lastSyncLabel ? `${subtitle} · Última sync: ${lastSyncLabel}` : subtitle;
   const totalEmployees =
@@ -227,7 +240,7 @@ export function AsistenciaSedeDetail({
               theme={theme}
             >
               {employees.onShift.length > 0
-                ? renderEmployees(employees.onShift, viewMode, theme)
+                ? renderEmployees(employees.onShift, viewMode, theme, onEmployeeClick)
                 : null}
             </AsistenciaCategorySection>
             <AsistenciaCategorySection
@@ -236,7 +249,7 @@ export function AsistenciaSedeDetail({
               theme={theme}
             >
               {employees.absent.length > 0
-                ? renderEmployees(employees.absent, viewMode, theme)
+                ? renderEmployees(employees.absent, viewMode, theme, onEmployeeClick)
                 : null}
             </AsistenciaCategorySection>
             <AsistenciaCategorySection
@@ -244,7 +257,9 @@ export function AsistenciaSedeDetail({
               count={employees.late.length}
               theme={theme}
             >
-              {employees.late.length > 0 ? renderEmployees(employees.late, viewMode, theme) : null}
+              {employees.late.length > 0
+                ? renderEmployees(employees.late, viewMode, theme, onEmployeeClick)
+                : null}
             </AsistenciaCategorySection>
             <AsistenciaCategorySection
               title="Horas extra"
@@ -252,7 +267,7 @@ export function AsistenciaSedeDetail({
               theme={theme}
             >
               {employees.overtime.length > 0
-                ? renderEmployees(employees.overtime, viewMode, theme)
+                ? renderEmployees(employees.overtime, viewMode, theme, onEmployeeClick)
                 : null}
             </AsistenciaCategorySection>
           </div>

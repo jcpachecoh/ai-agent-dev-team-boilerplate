@@ -46,6 +46,11 @@ $asistencia-dark-muted: #888888;
   --asistencia-coral-soft: #{rgba($asistencia-coral, 0.1)};
   --asistencia-coral-border: #{rgba($asistencia-coral, 0.19)};
   --asistencia-progress-track: #1c1c1c;
+  --asistencia-rest-soft: #{mix($asistencia-dark-surface, $asistencia-teal, 86%)};
+  --asistencia-absence-soft: #{mix($asistencia-dark-surface, $asistencia-coral, 88%)};
+  --asistencia-festive-soft: #{mix($asistencia-dark-surface, $asistencia-amber, 90%)};
+  --asistencia-table-header: #9a9a9a;
+  --asistencia-table-muted: #c8c8c8;
 }
 
 @mixin asistencia-theme-light {
@@ -76,6 +81,11 @@ $asistencia-dark-muted: #888888;
   --asistencia-coral-soft: #{rgba($asistencia-coral, 0.1)};
   --asistencia-coral-border: #{rgba($asistencia-coral, 0.25)};
   --asistencia-progress-track: #{rgba($color-black, 0.08)};
+  --asistencia-rest-soft: #{rgba($asistencia-teal, 0.12)};
+  --asistencia-absence-soft: #{rgba($asistencia-coral, 0.1)};
+  --asistencia-festive-soft: #{rgba($asistencia-amber, 0.12)};
+  --asistencia-table-header: #{$color-gray-600};
+  --asistencia-table-muted: #{$color-gray-700};
 }
 
 @mixin asistencia-focus-ring {

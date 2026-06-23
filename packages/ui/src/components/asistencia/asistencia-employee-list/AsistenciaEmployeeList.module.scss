@@ -54,6 +54,20 @@ $list-columns: minmax(180px, 1.4fr) 110px 150px 90px 120px minmax(100px, 1fr);
   background: var(--asistencia-amber-soft);
 }
 
+.clickable {
+  cursor: pointer;
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: var(--asistencia-surface-raised);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--asistencia-accent);
+    outline-offset: -2px;
+  }
+}
+
 .employee {
   display: flex;
   align-items: center;
