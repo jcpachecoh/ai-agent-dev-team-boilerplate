@@ -181,12 +181,20 @@ describe('Auth Email Integration — G4 wiring (AuthController → AuthEmailServ
 
   it('reset-password with a valid token calls user.update (password changed on global User)', async () => {
     prismaMock.passwordResetToken.findUnique.mockResolvedValue(mockTokenRecord);
+    prismaMock.user.updateMany.mockResolvedValue({ count: 1 });
 
     await controller.resetPassword({ token: 'raw-valid-token', newPassword: 'newpassword123' });
 
     expect(prismaMock.user.update).toHaveBeenCalledWith({
       where: { id: mockTokenRecord.userId },
-      data: { passwordHash: 'hashed-value' },
+      data: {
+        passwordHash: 'hashed-value',
+        passwordChangedAt: expect.any(Date),
+      },
+    });
+    expect(prismaMock.user.updateMany).toHaveBeenCalledWith({
+      where: { id: mockTokenRecord.userId, deletedAt: null },
+      data: { emailVerified: true },
     });
   });
 
