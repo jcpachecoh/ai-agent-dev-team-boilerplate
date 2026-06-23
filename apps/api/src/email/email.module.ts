@@ -1,4 +1,4 @@
-import { Global, Module, OnModuleDestroy, OnModuleInit, Logger } from '@nestjs/common';
+import { Global, Inject, Module, OnModuleDestroy, OnModuleInit, Logger, Optional } from '@nestjs/common';
 import { EmailService, EmailWorker } from '@restopsiq/email';
 
 @Global()
@@ -32,7 +32,7 @@ import { EmailService, EmailWorker } from '@restopsiq/email';
 export class EmailModule implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(EmailModule.name);
 
-  constructor(private readonly emailWorker: EmailWorker | null) {}
+  constructor(@Optional() @Inject(EmailWorker) private readonly emailWorker: EmailWorker | null) {}
 
   onModuleInit() {
     if (!process.env.RESEND_API_KEY || !process.env.EMAIL_FROM) {
