@@ -7,6 +7,8 @@ import {
 import { useMutation } from '@tanstack/react-query';
 import { useCallback, useMemo, useState } from 'react';
 
+import { toFieldOpsTheme } from '@/constants/theme';
+import { useTheme } from '@/providers/ThemeProvider';
 import { selectActiveLocation } from '@/services/location.service';
 import type { AssignedLocation } from '@/stores/session.store';
 import { useSessionStore } from '@/stores/session.store';
@@ -29,6 +31,8 @@ export function LocationSelectScreen({
   onSelected,
   onCancel,
 }: LocationSelectScreenProps): React.JSX.Element {
+  const { theme } = useTheme();
+  const fieldOpsTheme = toFieldOpsTheme(theme);
   const sessionOperator = useSessionStore((s) => s.operator);
   const setActiveLocation = useSessionStore((s) => s.setActiveLocation);
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(
@@ -64,6 +68,7 @@ export function LocationSelectScreen({
       <div className={styles.glow} aria-hidden />
 
       <PlantLocationSelectHeader
+        theme={fieldOpsTheme}
         operatorName={resolvedOperatorName}
         operatorRole={resolvedOperatorRole}
         className={styles.header}
@@ -88,6 +93,7 @@ export function LocationSelectScreen({
           {locations.map((location) => (
             <PlantLocationCard
               key={location.id}
+              theme={fieldOpsTheme}
               location={location}
               selected={selectedLocationId === location.id}
               disabled={selectMutation.isPending}
@@ -98,6 +104,7 @@ export function LocationSelectScreen({
       </section>
 
       <PlantLocationSelectFooter
+        theme={fieldOpsTheme}
         className={styles.footer}
         canContinue={Boolean(selectedLocationId)}
         isSubmitting={selectMutation.isPending}

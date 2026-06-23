@@ -1,5 +1,7 @@
 import { type JSX } from 'react';
 
+import type { PlantUiTheme } from '@/constants/theme';
+
 import { useDashboardLayoutStore } from '@/stores/dashboard-layout.store';
 
 import { IncidentReportModal } from './IncidentReportModal';
@@ -7,6 +9,7 @@ import { IncidentReportModal } from './IncidentReportModal';
 export interface IncidentReportModalHostProps {
   open: boolean;
   cellIndex: number | null;
+  theme?: PlantUiTheme;
   onClose: () => void;
   onSubmitted?: () => void;
 }
@@ -14,6 +17,7 @@ export interface IncidentReportModalHostProps {
 export function IncidentReportModalHost({
   open,
   cellIndex,
+  theme = 'dark',
   onClose,
   onSubmitted,
 }: IncidentReportModalHostProps): JSX.Element | null {
@@ -34,6 +38,7 @@ export function IncidentReportModalHost({
   return (
     <IncidentReportModal
       open={open}
+      theme={theme}
       workStationId={workStationId}
       orderId={cell.orderId ?? undefined}
       executionId={undefined}

@@ -1,12 +1,15 @@
 import { PlantIncidentReportModal } from '@restopsiq/ui';
 import { useCallback, useEffect, useState, type JSX } from 'react';
 
+import type { PlantUiTheme } from '@/constants/theme';
+
 import { takeIncidentPhoto, IncidentPhotoError } from '@/services/camera.service';
 import { reportIncident, type AlarmSeverity, type IncidentType } from '@/services/incident.service';
 import { useSessionStore } from '@/stores/session.store';
 
 export interface IncidentReportModalProps {
   open: boolean;
+  theme?: PlantUiTheme;
   workStationId: string;
   orderId?: string;
   executionId?: string;
@@ -17,6 +20,7 @@ export interface IncidentReportModalProps {
 
 export function IncidentReportModal({
   open,
+  theme = 'dark',
   workStationId,
   orderId,
   executionId,
@@ -109,7 +113,7 @@ export function IncidentReportModal({
   return (
     <PlantIncidentReportModal
       open={open}
-      theme="dark"
+      theme={theme}
       size="xl"
       subtitle={orderLabel}
       description={description}

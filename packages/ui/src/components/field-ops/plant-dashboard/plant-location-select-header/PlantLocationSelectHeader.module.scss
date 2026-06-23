@@ -25,17 +25,16 @@
   gap: 0.45rem;
 }
 
-.brandMark {
-  color: var(--pd-recipe-gold);
-  font-size: 0.7rem;
-}
+.brandLogo {
+  width: auto !important;
+  justify-content: flex-start !important;
 
-.brandPrimary {
-  font-family: 'IBM Plex Mono', $font-family-mono, monospace;
-  font-size: 0.79rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  color: var(--pd-recipe-gold);
+  img {
+    width: auto !important;
+    max-width: 118px;
+    max-height: 28px;
+    object-fit: contain;
+  }
 }
 
 .brandSecondary {
@@ -80,7 +79,7 @@
   font-family: 'IBM Plex Sans', $font-family-base, sans-serif;
   font-size: 0.79rem;
   font-weight: 600;
-  color: #ddd;
+  color: var(--pd-title);
 }
 
 .operatorRole {

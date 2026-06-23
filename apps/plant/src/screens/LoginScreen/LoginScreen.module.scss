@@ -402,3 +402,61 @@ $color-error: #e05252;
   font-weight: 700;
   color: $color-operator-text;
 }
+
+:global(html[data-theme='light']) {
+  .screen {
+    background: #f2f0ea;
+  }
+
+  .areaTitleDisplay {
+    color: #1a1816;
+    text-shadow: none;
+  }
+
+  .instruction,
+  .cedulaLabel,
+  .statusText,
+  .demoHint,
+  .backLink,
+  .setupMessage {
+    color: #3a3632;
+  }
+
+  .cedulaText {
+    color: #1a1816;
+  }
+
+  .cedulaPlaceholder {
+    color: rgb(26 24 22 / 28%);
+  }
+
+  .cedulaDisplay {
+    border-bottom-color: rgb(26 24 22 / 22%);
+  }
+
+  .dot {
+    border-color: rgb(26 24 22 / 35%);
+  }
+
+  .dotFilled {
+    background: #1a1816;
+    border-color: #1a1816;
+  }
+
+  .backLink:hover {
+    color: #1a1816;
+  }
+
+  .setupCard {
+    background: #ffffff;
+    border-color: rgb(26 24 22 / 10%);
+  }
+
+  .successOverlay {
+    background: rgb(242 240 234 / 92%);
+  }
+
+  .successName {
+    color: #1a1816;
+  }
+}

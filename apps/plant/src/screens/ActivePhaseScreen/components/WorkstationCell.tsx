@@ -6,6 +6,8 @@ import {
 } from '@restopsiq/ui';
 import { type JSX } from 'react';
 
+import type { PlantUiTheme } from '@/constants/theme';
+
 import { useOrderLiveStatus } from '@/hooks/useOrderLiveStatus';
 import { useWorkstationOrderRuntime } from '@/hooks/useWorkstationOrderRuntime';
 import type { WorkstationCell } from '@/stores/dashboard-layout.store';
@@ -13,6 +15,7 @@ import type { WorkstationCell } from '@/stores/dashboard-layout.store';
 export interface WorkstationCellProps {
   cell: WorkstationCell;
   layoutMode: PlantLayoutMode;
+  theme?: PlantUiTheme;
   onAssign: (cellIndex: number) => void;
   onChangeOrder: (cellIndex: number) => void;
   onViewRecipe: (cellIndex: number) => void;
@@ -26,6 +29,7 @@ function resolveDensity(layoutMode: PlantLayoutMode): PlantWorkstationDensity {
 export function WorkstationCellView({
   cell,
   layoutMode,
+  theme = 'dark',
   onAssign,
   onChangeOrder,
   onViewRecipe,
@@ -59,12 +63,17 @@ export function WorkstationCellView({
 
   if (cell.status === 'empty' || !cell.snapshot) {
     return (
-      <PlantWorkstationEmptySlot density={density} onAssign={() => onAssign(cell.cellIndex)} />
+      <PlantWorkstationEmptySlot
+        density={density}
+        theme={theme}
+        onAssign={() => onAssign(cell.cellIndex)}
+      />
     );
   }
 
   return (
     <PlantWorkstationCard
+      theme={theme}
       status={displayStatus}
       snapshot={cell.snapshot}
       density={density}

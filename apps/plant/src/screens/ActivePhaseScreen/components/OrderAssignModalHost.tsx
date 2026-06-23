@@ -1,18 +1,22 @@
 import { PlantOrderAssignModal } from '@restopsiq/ui';
 import { useEffect, useMemo, type JSX } from 'react';
 
+import type { PlantUiTheme } from '@/constants/theme';
+
 import { useAvailableProductionOrders } from '@/hooks/useAvailableProductionOrders';
 import { useDashboardLayoutStore } from '@/stores/dashboard-layout.store';
 
 export interface OrderAssignModalHostProps {
   open: boolean;
   cellIndex: number | null;
+  theme?: PlantUiTheme;
   onClose: () => void;
 }
 
 export function OrderAssignModalHost({
   open,
   cellIndex,
+  theme = 'dark',
   onClose,
 }: OrderAssignModalHostProps): JSX.Element | null {
   const cells = useDashboardLayoutStore((s) => s.cells);
@@ -49,7 +53,7 @@ export function OrderAssignModalHost({
       cellIndex={cellIndex}
       orders={orders}
       isLoading={showLoading}
-      theme="dark"
+      theme={theme}
       size="xl"
       errorMessage={open && isError && !showLoading ? 'No se pudieron cargar las órdenes.' : null}
       onRetry={isError ? () => void refetch() : undefined}

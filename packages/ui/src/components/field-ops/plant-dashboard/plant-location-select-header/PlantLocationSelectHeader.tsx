@@ -1,5 +1,6 @@
 import type { JSX } from 'react';
 
+import { WebLoginBrandLogo } from '../../../web-login/web-login-brand-logo';
 import type { PlantDashboardThemeProps } from '../shared/plant-workstation-types';
 import styles from './PlantLocationSelectHeader.module.scss';
 
@@ -31,10 +32,7 @@ export function PlantLocationSelectHeader({
       data-testid="plant-location-select-header"
     >
       <div className={styles.brand}>
-        <span className={styles.brandMark} aria-hidden>
-          ◆
-        </span>
-        <span className={styles.brandPrimary}>RESTOPSIQ</span>
+        <WebLoginBrandLogo theme={theme} size="sm" className={styles.brandLogo} />
         <span className={styles.brandSecondary}>PLANT</span>
       </div>
 

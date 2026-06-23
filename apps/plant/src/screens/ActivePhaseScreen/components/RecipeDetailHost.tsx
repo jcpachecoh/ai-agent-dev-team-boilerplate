@@ -2,6 +2,7 @@ import { PlantRecipeDetailScreen } from '@restopsiq/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useState, type JSX } from 'react';
 
+import type { PlantUiTheme } from '@/constants/theme';
 import { fetchFreshOrderRecipeView, useOrderRecipe } from '@/hooks/useOrderRecipe';
 import { useOrderRuntimeActions } from '@/hooks/useOrderRuntimeActions';
 import { useDashboardLayoutStore } from '@/stores/dashboard-layout.store';
@@ -12,6 +13,7 @@ import styles from './RecipeDetailHost.module.scss';
 export interface RecipeDetailHostProps {
   cellIndex: number | null;
   operatorName: string;
+  theme?: PlantUiTheme;
   onBack: () => void;
   onReportIssue?: (cellIndex: number) => void;
 }
@@ -23,6 +25,7 @@ function createIdempotencyKey(action: string, orderId: string): string {
 export function RecipeDetailHost({
   cellIndex,
   operatorName,
+  theme = 'dark',
   onBack,
   onReportIssue,
 }: RecipeDetailHostProps): JSX.Element | null {
@@ -66,7 +69,9 @@ export function RecipeDetailHost({
   const [showFinishConfirm, setShowFinishConfirm] = useState(false);
 
   const displayStatus: 'pending' | 'in_progress' | 'paused' | 'incident' | 'completed' =
-    apiStatus ?? (cell == null || cell.status === 'empty' ? 'pending' : cell.status);
+    cell?.status === 'incident'
+      ? 'incident'
+      : (apiStatus ?? (cell == null || cell.status === 'empty' ? 'pending' : cell.status));
 
   useEffect(() => {
     if (apiStatus === 'completed' && orderId) {
@@ -188,6 +193,7 @@ export function RecipeDetailHost({
   return (
     <>
       <PlantRecipeDetailScreen
+        theme={theme}
         orderId={cell.snapshot.orderNumber ?? cell.snapshot.orderId}
         productName={productName ?? cell.snapshot.productName}
         operatorName={cell.snapshot.operatorName ?? operatorName}

@@ -3,7 +3,12 @@
   min-height: 0;
   display: grid;
   width: 100%;
+  gap: 2px;
   background: #0a0a0a;
+}
+
+:global(html[data-theme='light']) .grid {
+  background: #fafafa;
 }
 
 .mode--1x1 {
@@ -24,23 +29,5 @@
 .cell {
   min-width: 0;
   min-height: 0;
-  padding: 2px;
   box-sizing: border-box;
-}
-
-.mode--1x2 .cell + .cell,
-.mode--2x2 .cell:nth-child(odd) {
-  border-left: none;
-}
-
-.mode--2x2 .cell:nth-child(n + 3) {
-  border-top: 1.5px dashed #2a2a2a;
-}
-
-.mode--1x2 .cell:nth-child(2) {
-  border-left: 1.5px dashed #2a2a2a;
-}
-
-.mode--2x2 .cell:nth-child(even) {
-  border-left: 1.5px dashed #2a2a2a;
 }

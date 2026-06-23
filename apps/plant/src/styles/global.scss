@@ -30,6 +30,12 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+html[data-theme='light'] body,
+html[data-theme='light'] .screen-operator {
+  background: #f2f0ea;
+  color: #2f2b27;
+}
+
 .screen-operator {
   min-height: 100vh;
   background: $color-operator-bg;

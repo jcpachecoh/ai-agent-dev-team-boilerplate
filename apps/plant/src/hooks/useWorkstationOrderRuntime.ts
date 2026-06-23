@@ -89,6 +89,10 @@ export function useWorkstationOrderRuntime({
 
   useEffect(() => {
     if (!orderId || apiStatus === undefined) return;
+
+    const cell = useDashboardLayoutStore.getState().cells.find((item) => item.orderId === orderId);
+    if (cell?.status === 'incident') return;
+
     if (apiStatus === 'completed') {
       updateCellStatus(orderId, 'completed');
       return;

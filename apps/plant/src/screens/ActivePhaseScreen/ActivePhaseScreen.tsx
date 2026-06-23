@@ -3,8 +3,11 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { usePlantSocket } from '@/hooks/usePlantSocket';
 import { useAvailableProductionOrders } from '@/hooks/useAvailableProductionOrders';
+import { toFieldOpsTheme } from '@/constants/theme';
+import { useTheme } from '@/providers/ThemeProvider';
 import type { PhaseStatusChangedPayload } from '@/services/plant-socket.service';
 import { computeStatusCounts, useDashboardLayoutStore } from '@/stores/dashboard-layout.store';
+import { useConnectivityStore } from '@/stores/connectivity.store';
 import { useSessionStore } from '@/stores/session.store';
 import { isNativePlatform } from '@/utils/platform';
 
@@ -59,11 +62,16 @@ export function ActivePhaseScreen({
   onChangeLocation,
   activeLocationName,
 }: ActivePhaseScreenProps): React.JSX.Element {
+  const { theme, toggleTheme } = useTheme();
+  const fieldOpsTheme = toFieldOpsTheme(theme);
   const operatorName = useSessionStore((s) => s.operator?.operatorName);
+  const operatorRole = useSessionStore((s) => s.operator?.role ?? 'OPERATOR');
+  const isOnline = useConnectivityStore((s) => s.isOnline);
   const layoutMode = useDashboardLayoutStore((s) => s.layoutMode);
   const cells = useDashboardLayoutStore((s) => s.cells);
   const setLayoutMode = useDashboardLayoutStore((s) => s.setLayoutMode);
   const updateCellStatus = useDashboardLayoutStore((s) => s.updateCellStatus);
+  const updateCellStatusByIndex = useDashboardLayoutStore((s) => s.updateCellStatusByIndex);
   const hydrateFromPreferences = useDashboardLayoutStore((s) => s.hydrateFromPreferences);
 
   const [clock, setClock] = useState(() => new Date());
@@ -129,8 +137,10 @@ export function ActivePhaseScreen({
     const cell = cells.find((item) => item.cellIndex === incidentModalCell);
     if (cell?.orderId) {
       updateCellStatus(cell.orderId, 'incident');
+      return;
     }
-  }, [cells, incidentModalCell, updateCellStatus]);
+    updateCellStatusByIndex(incidentModalCell, 'incident');
+  }, [cells, incidentModalCell, updateCellStatus, updateCellStatusByIndex]);
 
   if (recipeDetailCell !== null) {
     return (
@@ -138,6 +148,7 @@ export function ActivePhaseScreen({
         <RecipeDetailHost
           cellIndex={recipeDetailCell}
           operatorName={operatorName ?? 'Operador'}
+          theme={fieldOpsTheme}
           onBack={closeRecipeDetail}
           onReportIssue={openIncidentModal}
         />
@@ -154,13 +165,16 @@ export function ActivePhaseScreen({
   return (
     <div className={styles.screen} data-testid="active-phase-screen">
       <PlantDashboardHeader
+        theme={fieldOpsTheme}
         statusCounts={statusCounts}
         operatorName={operatorName ?? 'Operador'}
+        operatorRole={operatorRole}
         locationName={activeLocationName}
         onChangeLocation={onChangeLocation}
         clockTime={formatClockTime(clock)}
         clockSeconds={formatClockSeconds(clock)}
-        isOnline
+        isOnline={isOnline}
+        onToggleTheme={toggleTheme}
         onLogout={onLogout}
         isLoggingOut={isLoggingOut}
       />
@@ -184,6 +198,7 @@ export function ActivePhaseScreen({
             key={cell.cellIndex}
             cell={cell}
             layoutMode={layoutMode}
+            theme={fieldOpsTheme}
             onAssign={openAssignModal}
             onChangeOrder={openAssignModal}
             onViewRecipe={openRecipeDetail}
@@ -192,17 +207,23 @@ export function ActivePhaseScreen({
         ))}
       </WorkstationGrid>
 
-      <PlantLayoutModeFab layoutMode={layoutMode} onLayoutModeChange={setLayoutMode} />
+      <PlantLayoutModeFab
+        theme={fieldOpsTheme}
+        layoutMode={layoutMode}
+        onLayoutModeChange={setLayoutMode}
+      />
 
       <OrderAssignModalHost
         open={assignModalCell !== null}
         cellIndex={assignModalCell}
+        theme={fieldOpsTheme}
         onClose={closeAssignModal}
       />
 
       <IncidentReportModalHost
         open={incidentModalCell !== null}
         cellIndex={incidentModalCell}
+        theme={fieldOpsTheme}
         onClose={closeIncidentModal}
         onSubmitted={handleIncidentSubmitted}
       />

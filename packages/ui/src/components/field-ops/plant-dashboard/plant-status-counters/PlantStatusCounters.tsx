@@ -14,11 +14,32 @@ const COUNTER_ITEMS: Array<{
   key: keyof PlantStatusCounts;
   label: string;
   tone: string;
+  hint: string;
 }> = [
-  { key: 'inProgress', label: 'EN PROCESO', tone: 'teal' },
-  { key: 'paused', label: 'PAUSADAS', tone: 'amber' },
-  { key: 'incidents', label: 'NOVEDADES', tone: 'red' },
-  { key: 'pending', label: 'PENDIENTES', tone: 'blue' },
+  {
+    key: 'inProgress',
+    label: 'EN PROCESO',
+    tone: 'teal',
+    hint: 'Estaciones con orden en ejecución',
+  },
+  {
+    key: 'paused',
+    label: 'PAUSADAS',
+    tone: 'amber',
+    hint: 'Estaciones con proceso pausado',
+  },
+  {
+    key: 'incidents',
+    label: 'NOVEDADES',
+    tone: 'red',
+    hint: 'Estaciones con novedad reportada',
+  },
+  {
+    key: 'pending',
+    label: 'SIN INICIAR',
+    tone: 'blue',
+    hint: 'Órdenes asignadas que aún no se han iniciado',
+  },
 ];
 
 export function PlantStatusCounters({
@@ -34,8 +55,8 @@ export function PlantStatusCounters({
         .join(' ')}
       aria-label="Resumen de estaciones"
     >
-      {COUNTER_ITEMS.map(({ key, label, tone }) => (
-        <div key={key} className={styles.item}>
+      {COUNTER_ITEMS.map(({ key, label, tone, hint }) => (
+        <div key={key} className={styles.item} title={hint}>
           <span className={[styles.value, styles[`tone--${tone}`]].join(' ')}>{counts[key]}</span>
           <span className={styles.label}>{label}</span>
         </div>

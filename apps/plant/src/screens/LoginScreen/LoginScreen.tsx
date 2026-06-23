@@ -2,6 +2,9 @@ import { Button, FieldAlertBanner, Input, PinKeypad, WebLoginBrandLogo } from '@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { toFieldOpsTheme } from '@/constants/theme';
+import { useTheme } from '@/providers/ThemeProvider';
+
 import {
   getDemoPinHint,
   loginOperator,
@@ -75,6 +78,8 @@ export function LoginScreen({
   statusLine = 'Sistema operativo · Turno 1 · 06:00-14:00 · Bogotá',
   onLoginSuccess,
 }: LoginScreenProps): React.JSX.Element {
+  const { theme } = useTheme();
+  const fieldOpsTheme = toFieldOpsTheme(theme);
   const headingTitle =
     welcomeTitle ??
     areaName ??
@@ -245,7 +250,7 @@ export function LoginScreen({
           <form onSubmit={handleStationSubmit} className={styles.setupForm} noValidate>
             <Input
               ref={inputRef}
-              theme="dark"
+              theme={fieldOpsTheme}
               size="md"
               inputMode="text"
               autoCapitalize="characters"
@@ -285,7 +290,12 @@ export function LoginScreen({
     <div className={`screen-operator ${styles.screen}`}>
       <div className={styles.content}>
         <header className={styles.brandHeader}>
-          <WebLoginBrandLogo theme="dark" size="xl" alt={logoAlt} className={styles.brandLogo} />
+          <WebLoginBrandLogo
+            theme={fieldOpsTheme}
+            size="xl"
+            alt={logoAlt}
+            className={styles.brandLogo}
+          />
         </header>
 
         <LoginHeading title={headingTitle} />
@@ -308,7 +318,7 @@ export function LoginScreen({
 
             {error && (
               <div className={styles.errorBanner}>
-                <FieldAlertBanner variant="danger" theme="dark" size="md">
+                <FieldAlertBanner variant="danger" theme={fieldOpsTheme} size="md">
                   {error}
                 </FieldAlertBanner>
               </div>
@@ -326,7 +336,7 @@ export function LoginScreen({
                 .join(' ')}
             >
               <PinKeypad
-                theme="dark"
+                theme={fieldOpsTheme}
                 size="sm"
                 confirmLabel="OK"
                 onKeyPress={handleKeyPress}
@@ -355,7 +365,7 @@ export function LoginScreen({
 
             {error && (
               <div className={styles.errorBanner}>
-                <FieldAlertBanner variant="danger" theme="dark" size="md">
+                <FieldAlertBanner variant="danger" theme={fieldOpsTheme} size="md">
                   {error}
                 </FieldAlertBanner>
               </div>
@@ -373,7 +383,7 @@ export function LoginScreen({
                 .join(' ')}
             >
               <PinKeypad
-                theme="dark"
+                theme={fieldOpsTheme}
                 size="sm"
                 confirmLabel="OK"
                 onKeyPress={handleKeyPress}

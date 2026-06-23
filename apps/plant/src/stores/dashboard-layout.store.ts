@@ -136,6 +136,10 @@ interface DashboardLayoutState {
   assignOrderToCell: (cellIndex: number, order: PlantAvailableOrder) => void;
   clearCell: (cellIndex: number) => void;
   updateCellStatus: (orderId: string, status: Exclude<PlantWorkstationStatus, 'empty'>) => void;
+  updateCellStatusByIndex: (
+    cellIndex: number,
+    status: Exclude<PlantWorkstationStatus, 'empty'>,
+  ) => void;
   updateCellSnapshot: (orderId: string, patch: Partial<PlantWorkstationSnapshot>) => void;
   hydrateFromPreferences: () => Promise<void>;
   hydrateDemoAssignments: () => void;
@@ -184,6 +188,12 @@ export const useDashboardLayoutStore = create<DashboardLayoutState>((set, get) =
   updateCellStatus: (orderId, status) => {
     set((state) => ({
       cells: state.cells.map((cell) => (cell.orderId === orderId ? { ...cell, status } : cell)),
+    }));
+  },
+
+  updateCellStatusByIndex: (cellIndex, status) => {
+    set((state) => ({
+      cells: state.cells.map((cell) => (cell.cellIndex === cellIndex ? { ...cell, status } : cell)),
     }));
   },
 

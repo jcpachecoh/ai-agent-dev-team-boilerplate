@@ -293,8 +293,17 @@
   font-family: 'IBM Plex Mono', $font-family-mono, monospace;
   font-size: 0.65rem;
   letter-spacing: 0.1em;
-  color: #f0c040;
-  opacity: 0.36;
+  color: var(--pd-muted);
+}
+
+.theme--light {
+  .tabs {
+    border-bottom-color: transparent;
+  }
+
+  .ingredientItem {
+    border-bottom-color: transparent;
+  }
 }
 
 .operatorRow {
