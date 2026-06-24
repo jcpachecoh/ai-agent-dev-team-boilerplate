@@ -28,6 +28,7 @@ export function AsistenciaEmployeeListRow({
   theme = 'dark',
   size = 'sm',
   className,
+  onClick,
 }: AsistenciaEmployeeListRowProps): JSX.Element {
   const resolvedInitials = initials ?? getInitials(name);
   const resolvedTone = avatarTone ?? getAvatarToneFromName(name);
@@ -40,10 +41,24 @@ export function AsistenciaEmployeeListRow({
         styles.row,
         styles[`theme--${theme}`],
         highlight === 'overtime' && styles['highlight--overtime'],
+        onClick ? styles.clickable : '',
         className,
       ]
         .filter(Boolean)
         .join(' ')}
+      onClick={onClick}
+      onKeyDown={
+        onClick
+          ? (event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                onClick();
+              }
+            }
+          : undefined
+      }
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
     >
       <div className={styles.employee}>
         <AsistenciaAvatar

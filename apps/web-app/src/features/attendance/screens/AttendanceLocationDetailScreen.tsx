@@ -135,6 +135,12 @@ export function AttendanceLocationDetailScreen(): React.JSX.Element {
       onSync={handleSync}
       onQuickEntry={registerQuickEntry}
       onQuickExit={registerQuickExit}
+      onEmployeeClick={(employee) => {
+        const targetUserId = employee.userId ?? employee.id;
+        navigate(`/payroll/attendance/${locationId}/employees/${targetUserId}/card`, {
+          state: { employeeId: employee.id, employeeName: employee.name },
+        });
+      }}
       showQuickActions={summary?.isLive ?? false}
       live={summary?.isLive ?? false}
       loading={summaryQuery.isPending || locationQuery.isPending}

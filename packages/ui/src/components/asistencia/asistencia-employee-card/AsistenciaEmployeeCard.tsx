@@ -18,6 +18,7 @@ import styles from './AsistenciaEmployeeCard.module.scss';
 
 export interface AsistenciaEmployeeCardProps {
   id?: string;
+  userId?: string;
   name: string;
   role: string;
   initials?: string;
@@ -33,6 +34,7 @@ export interface AsistenciaEmployeeCardProps {
   theme?: AsistenciaTheme;
   size?: AsistenciaSize;
   className?: string;
+  onClick?: () => void;
 }
 
 export function AsistenciaEmployeeCard({
@@ -51,6 +53,7 @@ export function AsistenciaEmployeeCard({
   theme = 'dark',
   size = 'sm',
   className,
+  onClick,
 }: AsistenciaEmployeeCardProps): JSX.Element {
   const resolvedInitials = initials ?? getInitials(name);
   const resolvedTone = avatarTone ?? getAvatarToneFromName(name);
@@ -63,10 +66,24 @@ export function AsistenciaEmployeeCard({
         styles.card,
         styles[`theme--${theme}`],
         highlight === 'overtime' && styles['highlight--overtime'],
+        onClick ? styles.clickable : '',
         className,
       ]
         .filter(Boolean)
         .join(' ')}
+      onClick={onClick}
+      onKeyDown={
+        onClick
+          ? (event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                onClick();
+              }
+            }
+          : undefined
+      }
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
     >
       <div className={styles.header}>
         <AsistenciaAvatar

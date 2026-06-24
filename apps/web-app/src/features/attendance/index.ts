@@ -1,5 +1,6 @@
 export * from './screens/AttendanceMonitorScreen';
 export * from './screens/AttendanceLocationDetailScreen';
+export * from './screens/AttendanceCardScreen';
 export * from './api/attendance.client';
 export * from './api/queryKeys';
 export * from './hooks/useAttendanceActiveQuery';

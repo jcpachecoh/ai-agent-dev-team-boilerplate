@@ -36,6 +36,7 @@ function mapEmployeeToCard(employee: AttendanceMonitorEmployee): AsistenciaEmplo
 
   return {
     id: employee.employeeId,
+    userId: employee.userId,
     name: employee.name,
     role: employee.role,
     status,

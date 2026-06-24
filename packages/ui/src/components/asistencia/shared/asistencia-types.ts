@@ -59,6 +59,7 @@ export interface AsistenciaCategoryEmployees {
 
 export interface AsistenciaEmployeeCardData {
   id: string;
+  userId?: string;
   name: string;
   role: string;
   status?: AsistenciaEmployeeStatus;
@@ -70,3 +71,92 @@ export interface AsistenciaEmployeeCardData {
   progressTone?: 'accent' | 'amber' | 'muted';
   highlight?: AsistenciaCardHighlight;
 }
+
+export type AsistenciaTarjetaRowVariant = 'default' | 'absence' | 'rest' | 'festive';
+
+export interface AsistenciaTarjetaHeaderData {
+  fullName: string;
+  position: string;
+  cedula: string;
+  employer: string;
+  contractType: string;
+  hireDate: string;
+}
+
+export type AsistenciaTarjetaSummaryVariant =
+  | 'ordinary'
+  | 'unworked'
+  | 'overtime'
+  | 'permission'
+  | 'absence';
+
+export interface AsistenciaTarjetaMetricData {
+  id: string;
+  label: string;
+  value: string;
+  variant: AsistenciaTarjetaSummaryVariant;
+}
+
+export interface AsistenciaTarjetaDayRow {
+  id: string;
+  dayShort: string;
+  dateLabel: string;
+  shiftName: string;
+  shiftRange: string;
+  entryTime: string;
+  exitTime: string;
+  ordinaryHours: string;
+  unworkedHours: string;
+  overtimeHours: string;
+  approvedOvertimeHours: string;
+  targetHours: string;
+  permissions: string;
+  variant: AsistenciaTarjetaRowVariant;
+  hasObservation?: boolean;
+  hasManualMarking?: boolean;
+  isAutomaticEntry?: boolean;
+  isAutomaticExit?: boolean;
+}
+
+export type AsistenciaTarjetaSortKey =
+  | 'dayShort'
+  | 'dateLabel'
+  | 'shiftName'
+  | 'shiftRange'
+  | 'entryTime'
+  | 'exitTime'
+  | 'ordinaryHours'
+  | 'unworkedHours'
+  | 'overtimeHours'
+  | 'approvedOvertimeHours'
+  | 'targetHours'
+  | 'permissions';
+
+export type AsistenciaTarjetaSortDirection = 'asc' | 'desc';
+
+export type AsistenciaTarjetaExportAction = 'excel' | 'pdf' | 'email';
+
+export type AsistenciaTarjetaRowAction = 'observation' | 'marking';
+
+export type AsistenciaTarjetaMarkType = 'ENTRY' | 'EXIT';
+
+export interface AsistenciaTarjetaMarkDraft {
+  id: string;
+  type: AsistenciaTarjetaMarkType;
+  /** Value for datetime-local input (YYYY-MM-DDTHH:mm:ss) */
+  datetimeLocal: string;
+}
+
+export interface AsistenciaTarjetaMarkReasonOption {
+  value: string;
+  label: string;
+}
+
+export const ASISTENCIA_TARJETA_MARK_REASONS: AsistenciaTarjetaMarkReasonOption[] = [
+  { value: '', label: 'Seleccione…' },
+  { value: 'FORGOT', label: 'Olvido de marcación' },
+  { value: 'DEVICE_FAILURE', label: 'Falla de dispositivo' },
+  { value: 'SUPERVISOR_CORRECTION', label: 'Corrección de supervisor' },
+  { value: 'SYSTEM_ERROR', label: 'Error del sistema' },
+  { value: 'OTHER', label: 'Otro' },
+];
