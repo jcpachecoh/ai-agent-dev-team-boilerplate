@@ -21,10 +21,15 @@
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--permiso-muted);
+  overflow: hidden; /* prevent header row from expanding panel */
 }
 
 .moduleName {
   flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .count {

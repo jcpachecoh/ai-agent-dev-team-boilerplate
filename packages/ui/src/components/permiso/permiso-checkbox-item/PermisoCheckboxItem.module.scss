@@ -10,6 +10,7 @@
   padding: 0.35rem 1.25rem;
   cursor: pointer;
   transition: background 160ms ease;
+  overflow: hidden; /* prevent row from expanding beyond panel width */
 
   &:hover {
     background: var(--permiso-hover);
@@ -45,8 +46,11 @@
 }
 
 .name {
-  flex-shrink: 0;
+  flex-shrink: 1;
+  min-width: 0;
   font-size: 0.75rem;
   color: var(--permiso-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
