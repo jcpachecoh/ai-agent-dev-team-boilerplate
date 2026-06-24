@@ -1,6 +1,7 @@
 import { AsistenciaLocationTabs } from '@restopsiq/ui';
 import type { AsistenciaLocationTab } from '@restopsiq/ui';
 import { useMemo } from 'react';
+import { useLocation } from 'react-router-dom';
 
 import { useUiTheme } from '@/hooks/useUiTheme';
 
@@ -9,10 +10,15 @@ import { useLocationSession } from '@/features/auth/context/LocationSessionConte
 
 import styles from './LocationTabsBar.module.scss';
 
+const DASHBOARD_PATH = '/';
+
 export function LocationTabsBar(): React.JSX.Element | null {
+  const { pathname } = useLocation();
   const theme = useUiTheme();
   const { assignedLocations, activeTabId, isSelecting, showLocationTabs, selectTab } =
     useLocationSession();
+
+  const isDashboard = pathname === DASHBOARD_PATH;
 
   const tabs = useMemo<AsistenciaLocationTab[]>(() => {
     const generalTab: AsistenciaLocationTab = {
@@ -30,7 +36,7 @@ export function LocationTabsBar(): React.JSX.Element | null {
     return [generalTab, ...locationTabs];
   }, [assignedLocations]);
 
-  if (!showLocationTabs) {
+  if (!showLocationTabs || !isDashboard) {
     return null;
   }
 
