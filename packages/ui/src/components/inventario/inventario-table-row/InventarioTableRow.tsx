@@ -2,6 +2,7 @@ import { AlertTriangle } from 'lucide-react';
 import React, { type CSSProperties, type JSX } from 'react';
 
 import { EmpleadoRowActionButton } from '../../empleado/empleado-row-action-button';
+import { ActiveInactiveStatusBadge } from '../../active-inactive-status-badge';
 import { InventarioIconButton } from '../inventario-icon-button';
 import { InventarioStatusBadge } from '../inventario-status-badge';
 import {
@@ -134,13 +135,7 @@ function CategoryCells({
         {descripcion?.trim() ? descripcion : '—'}
       </span>
       <span className={styles.badgeCell} role="cell">
-        <InventarioStatusBadge
-          domain="severity"
-          status={isActive ? 'resolved' : 'warning'}
-          label={isActive ? 'ACTIVO' : 'INACTIVO'}
-          theme={theme}
-          size="sm"
-        />
+        <ActiveInactiveStatusBadge active={isActive} theme={theme} size="sm" />
       </span>
       <span className={styles.actions} role="cell">
         <EmpleadoRowActionButton variant="edit" theme={theme} size="sm" onClick={onEdit} />

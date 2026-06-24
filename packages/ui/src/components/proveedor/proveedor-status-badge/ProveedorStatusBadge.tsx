@@ -1,5 +1,6 @@
 import React, { type JSX } from 'react';
 
+import { ActiveInactiveStatusBadge } from '../../active-inactive-status-badge';
 import type {
   ProveedorCatalogStatus,
   ProveedorOcHistoryStatus,
@@ -91,6 +92,18 @@ export function ProveedorStatusBadge({
   className,
 }: ProveedorStatusBadgeProps): JSX.Element {
   const resolvedLabel = resolveLabel(domain, status, label);
+
+  if (domain === 'supplier' && (status === 'active' || status === 'inactive')) {
+    return (
+      <ActiveInactiveStatusBadge
+        status={status}
+        label={resolvedLabel}
+        theme={theme}
+        size={size === 'sm' ? 'sm' : 'md'}
+        className={className}
+      />
+    );
+  }
 
   return (
     <span

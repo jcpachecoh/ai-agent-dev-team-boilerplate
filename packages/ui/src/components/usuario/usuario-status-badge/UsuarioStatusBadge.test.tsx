@@ -4,13 +4,13 @@ import { describe, expect, it } from 'vitest';
 import { UsuarioStatusBadge } from './UsuarioStatusBadge';
 
 describe('UsuarioStatusBadge', () => {
-  it('renders Activo label when active', () => {
+  it('renders ACTIVO label when active', () => {
     render(<UsuarioStatusBadge active />);
-    expect(screen.getByText('Activo')).toBeTruthy();
+    expect(screen.getByText('ACTIVO')).toBeTruthy();
   });
 
-  it('renders Inactivo label when inactive', () => {
+  it('renders INACTIVO label when inactive', () => {
     render(<UsuarioStatusBadge active={false} />);
-    expect(screen.getByText('Inactivo')).toBeTruthy();
+    expect(screen.getByText('INACTIVO')).toBeTruthy();
   });
 });

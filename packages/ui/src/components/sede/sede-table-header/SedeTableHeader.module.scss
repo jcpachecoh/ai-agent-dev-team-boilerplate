@@ -1,20 +1,27 @@
 @use '../../../styles/abstracts/variables' as *;
+@use '../../../styles/abstracts/mixins' as *;
 @use '../shared/sede-theme' as sede;
 
 .header {
   @include sede.sede-theme-classes;
+  @include module-table-header-theme-colors;
 
   display: grid;
   grid-template-columns: var(--sede-columns);
   align-items: center;
-  min-height: 34px;
-  padding: 0 14px;
+  min-height: 40px;
+  padding: 0 16px;
   border-bottom: $border-width solid var(--sede-border);
   background: var(--sede-input);
 }
 
 .cell {
-  @include sede.sede-mono-label;
+  font-family: $font-family-mono;
+  font-size: 0.6875rem;
+  font-weight: $font-weight-bold;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  @include module-table-header-text-color;
 
   display: inline-flex;
   align-items: center;
@@ -23,7 +30,6 @@
   padding: 0;
   border: none;
   background: transparent;
-  font: inherit;
   text-align: left;
 
   svg {
@@ -42,13 +48,27 @@
   flex-shrink: 0;
 }
 
+.sortIconMuted {
+  opacity: 0.6;
+}
+
+.alignLeft {
+  justify-self: start;
+  text-align: left;
+}
+
+.alignCenter {
+  justify-self: center;
+  text-align: center;
+}
+
+.alignRight {
+  justify-self: end;
+  text-align: right;
+}
+
 .sortable {
   cursor: pointer;
-  color: var(--sede-primary);
-
-  svg {
-    color: var(--sede-primary);
-  }
 
   &:focus-visible {
     outline: 2px solid var(--sede-primary);
@@ -58,4 +78,8 @@
 
 .cellActive {
   color: var(--sede-primary);
+
+  svg {
+    color: var(--sede-primary);
+  }
 }

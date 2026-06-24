@@ -11,7 +11,7 @@ import {
   type RecetaTableColumn,
   RecetaUtilityButton,
 } from '@restopsiq/ui';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { updatePlantRecipe } from '@/api/plant/plant.api';
@@ -48,6 +48,7 @@ import styles from './RecipesManagementScreen.module.scss';
 import { useUiTheme } from '@/hooks/useUiTheme';
 
 type RecipesView = 'list' | 'process' | 'history';
+type RecipeListSortKey = 'nombre' | 'tiempo' | 'fases';
 type ResponsibleRole = 'Operario' | 'Supervisor' | 'Manager';
 
 const WIZARD_STEP_ORDER: RecetaRecipeWizardStepId[] = ['general', 'phases', 'review'];
@@ -248,8 +249,6 @@ const recipeListTableColumns: RecetaTableColumn[] = [
     label: 'Nombre',
     width: 'minmax(180px, 1.35fr)',
     sortable: true,
-    active: true,
-    sortDirection: 'asc',
   },
   { key: 'categoria', label: 'Categoría', width: 'minmax(120px, 0.9fr)' },
   { key: 'tiempo', label: 'Tiempo Est.', width: '112px', sortable: true },
@@ -315,6 +314,10 @@ export function RecipesManagementScreen({
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState<'all' | RecetaStatus>('all');
+  const [recipeSort, setRecipeSort] = useState<{
+    key: RecipeListSortKey;
+    direction: 'asc' | 'desc';
+  }>({ key: 'nombre', direction: 'asc' });
 
   const [editingRecipeId, setEditingRecipeId] = useState<string | null>(null);
   const [recipeEditorOpen, setRecipeEditorOpen] = useState(false);
@@ -467,6 +470,36 @@ export function RecipesManagementScreen({
     );
   }, [isEditor, supplyItemsQuery.error, workstationsQuery.error]);
 
+  const handleRecipeSortChange = useCallback((columnKey: string) => {
+    if (columnKey !== 'nombre' && columnKey !== 'tiempo' && columnKey !== 'fases') {
+      return;
+    }
+    const key = columnKey as RecipeListSortKey;
+    setRecipeSort((current) => {
+      if (current.key === key) {
+        return { key, direction: current.direction === 'asc' ? 'desc' : 'asc' };
+      }
+      return { key, direction: 'asc' };
+    });
+  }, []);
+
+  const recipeListTableColumnsWithSort = useMemo(
+    () =>
+      recipeListTableColumns.map((column) => {
+        if (!column.sortable) {
+          return column;
+        }
+        const active = recipeSort.key === column.key;
+        return {
+          ...column,
+          active,
+          sortDirection: active ? recipeSort.direction : null,
+          onSort: () => handleRecipeSortChange(column.key),
+        };
+      }),
+    [handleRecipeSortChange, recipeSort],
+  );
+
   const filteredRecipes = useMemo(() => {
     return recipes.filter((recipe) => {
       const matchSearch = recipe.name.toLowerCase().includes(search.toLowerCase());
@@ -475,6 +508,28 @@ export function RecipesManagementScreen({
       return matchSearch && matchCategory && matchStatus;
     });
   }, [recipes, search, categoryFilter, statusFilter]);
+
+  const sortedFilteredRecipes = useMemo(() => {
+    const sorted = [...filteredRecipes];
+    sorted.sort((left, right) => {
+      let comparison = 0;
+      switch (recipeSort.key) {
+        case 'nombre':
+          comparison = left.name.localeCompare(right.name, 'es', { sensitivity: 'base' });
+          break;
+        case 'tiempo':
+          comparison = left.durationMin - right.durationMin;
+          break;
+        case 'fases':
+          comparison = left.phases - right.phases;
+          break;
+        default:
+          return 0;
+      }
+      return recipeSort.direction === 'asc' ? comparison : -comparison;
+    });
+    return sorted;
+  }, [filteredRecipes, recipeSort]);
 
   const filteredProcessRows = useMemo(() => {
     return processRows.filter((row) => {
@@ -1204,7 +1259,7 @@ export function RecipesManagementScreen({
         <section className={[styles.tableWrap, styles.tableWrapList].join(' ')}>
           <ResponsiveTable<RecipeListItem>
             columns={RECIPE_LIST_RESPONSIVE_COLUMNS}
-            rows={filteredRecipes}
+            rows={sortedFilteredRecipes}
             keyExtractor={(recipe) => recipe.id}
             className={styles.recipeListTable}
             renderTableHeader={({ visibleColumns }) => (
@@ -1212,7 +1267,10 @@ export function RecipesManagementScreen({
                 theme={theme}
                 size="md"
                 className={[styles.tableHead, styles.listTableHead].join(' ')}
-                columns={recetaTableColumnsForVisible(recipeListTableColumns, visibleColumns)}
+                columns={recetaTableColumnsForVisible(
+                  recipeListTableColumnsWithSort,
+                  visibleColumns,
+                )}
               />
             )}
             renderTableRow={(recipe, { visibleColumns, columnsTemplate }) => (
@@ -1234,7 +1292,10 @@ export function RecipesManagementScreen({
                   theme={theme}
                   visibleColumns={visibleColumns}
                   columnsTemplate={columnsTemplate}
-                  maxDurationMin={Math.max(120, ...filteredRecipes.map((item) => item.durationMin))}
+                  maxDurationMin={Math.max(
+                    120,
+                    ...sortedFilteredRecipes.map((item) => item.durationMin),
+                  )}
                   onEdit={() => openEditRecipeEditor(recipe.id)}
                   onToggleStatus={() => handleToggleRecipeStatus(recipe)}
                   toggleLoading={togglingRecipeId === recipe.id}

@@ -5,6 +5,7 @@ export interface SedeColumnDef {
   label: string;
   sortable?: boolean;
   width?: string;
+  align?: 'left' | 'center' | 'right';
   sortDirection?: SedeSortDirection | null;
   active?: boolean;
   onSort?: () => void;
@@ -16,8 +17,8 @@ export const defaultSedeColumns: SedeColumnDef[] = [
   { key: 'city', label: 'Ciudad', sortable: true, width: 'minmax(100px, 0.7fr)' },
   { key: 'phone', label: 'Teléfono', width: 'minmax(120px, 0.9fr)' },
   { key: 'users', label: 'Usuarios', width: 'minmax(72px, 0.45fr)' },
-  { key: 'status', label: 'Estado', width: '100px' },
-  { key: 'actions', label: 'Acciones', width: '120px' },
+  { key: 'status', label: 'Estado', width: '100px', align: 'center' },
+  { key: 'actions', label: 'Acciones', width: '120px', align: 'right' },
 ];
 
 function parseColumnMinWidthPx(width: string): number {

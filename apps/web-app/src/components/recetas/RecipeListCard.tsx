@@ -1,4 +1,4 @@
-import { EmpleadoRowActionButton, RecetaStatusButton } from '@restopsiq/ui';
+import { EmpleadoRowActionButton, ActiveInactiveStatusBadge } from '@restopsiq/ui';
 
 import { ResponsiveTableCard } from '@/components/responsive-table';
 import type { UiTheme } from '@/constants/theme';
@@ -32,7 +32,7 @@ export function RecipeListCard({
           <span className={styles.name}>{recipe.name}</span>
         </span>
       }
-      badge={<RecetaStatusButton status={recipe.status} theme={theme} size="sm" />}
+      badge={<ActiveInactiveStatusBadge status={recipe.status} theme={theme} size="sm" />}
       fields={[
         { label: 'Categoría', value: recipe.category },
         { label: 'Tiempo est.', value: `${recipe.durationMin} min` },

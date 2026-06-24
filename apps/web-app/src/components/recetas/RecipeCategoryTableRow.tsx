@@ -1,4 +1,8 @@
-import { EmpleadoRowActionButton, InventarioIconButton, RecetaStatusButton } from '@restopsiq/ui';
+import {
+  EmpleadoRowActionButton,
+  InventarioIconButton,
+  ActiveInactiveStatusBadge,
+} from '@restopsiq/ui';
 import type { CSSProperties, JSX } from 'react';
 
 import type { UiTheme } from '@/constants/theme';
@@ -47,16 +51,7 @@ export function RecipeCategoryTableRow({
         {descripcion || '—'}
       </span>
       <span className={styles.status} role="cell">
-        <RecetaStatusButton
-          status={status}
-          theme={theme}
-          size="sm"
-          compact
-          onClick={(event) => {
-            event.stopPropagation();
-            onToggleStatus?.();
-          }}
-        />
+        <ActiveInactiveStatusBadge status={status} theme={theme} size="sm" />
       </span>
       <span className={styles.actions} role="cell">
         <EmpleadoRowActionButton

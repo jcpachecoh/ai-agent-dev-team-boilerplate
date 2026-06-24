@@ -7,8 +7,10 @@ import {
   UsuarioPageSection,
   UsuarioTable,
   UsuarioTableItem,
+  type UsuarioSortColumnKey,
+  type UsuarioSortDirection,
 } from '@restopsiq/ui';
-import { useMemo, useState, type JSX } from 'react';
+import { useCallback, useMemo, useState, type JSX } from 'react';
 
 import { useMe } from '@/features/auth/hooks/useMe';
 import { useTheme } from '@/providers/ThemeProvider';
@@ -41,6 +43,10 @@ export default function UsersListView(): JSX.Element {
   const deactivateMutation = useAdminDeactivateUser();
 
   const [search, setSearch] = useState('');
+  const [userSort, setUserSort] = useState<{
+    key: UsuarioSortColumnKey;
+    direction: UsuarioSortDirection;
+  }>({ key: 'name', direction: 'asc' });
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<AdminUserApi | undefined>();
   const [deactivating, setDeactivating] = useState<AdminUserApi | undefined>();
@@ -53,6 +59,15 @@ export default function UsersListView(): JSX.Element {
   const locationOptions = (locationsQuery.data ?? [])
     .filter((l) => l.isActive)
     .map((l) => ({ id: l.id, name: l.name }));
+
+  const handleSortColumn = useCallback((column: UsuarioSortColumnKey) => {
+    setUserSort((current) => {
+      if (current.key === column) {
+        return { key: column, direction: current.direction === 'asc' ? 'desc' : 'asc' };
+      }
+      return { key: column, direction: 'asc' };
+    });
+  }, []);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -67,6 +82,19 @@ export default function UsersListView(): JSX.Element {
         u.role.name.toLowerCase().includes(q),
     );
   }, [users, search]);
+
+  const sortedFiltered = useMemo(() => {
+    const sorted = [...filtered];
+    sorted.sort((left, right) => {
+      const leftValue = (userSort.key === 'name' ? left.name : left.email).toLocaleLowerCase('es');
+      const rightValue = (userSort.key === 'name' ? right.name : right.email).toLocaleLowerCase(
+        'es',
+      );
+      const comparison = leftValue.localeCompare(rightValue, 'es', { sensitivity: 'base' });
+      return userSort.direction === 'asc' ? comparison : -comparison;
+    });
+    return sorted;
+  }, [filtered, userSort]);
 
   const openCreate = () => {
     setEditing(undefined);
@@ -136,7 +164,7 @@ export default function UsersListView(): JSX.Element {
 
       <UsuarioPageSection theme={usuarioTheme} divider variant="toolbar">
         <UsuarioListToolbar
-          count={filtered.length}
+          count={sortedFiltered.length}
           searchValue={search}
           onSearchChange={setSearch}
           theme={usuarioTheme}
@@ -148,11 +176,17 @@ export default function UsersListView(): JSX.Element {
           <div className={styles.state}>Cargando usuarios…</div>
         ) : usersQuery.isError ? (
           <div className={styles.state}>Error al cargar usuarios.</div>
-        ) : filtered.length === 0 ? (
+        ) : sortedFiltered.length === 0 ? (
           <div className={styles.state}>No hay usuarios que coincidan con la búsqueda.</div>
         ) : (
-          <UsuarioTable theme={usuarioTheme} showActions={canManage}>
-            {filtered.map((user) => (
+          <UsuarioTable
+            theme={usuarioTheme}
+            showActions={canManage}
+            sortColumn={userSort.key}
+            sortDirection={userSort.direction}
+            onSortColumn={handleSortColumn}
+          >
+            {sortedFiltered.map((user) => (
               <UsuarioTableItem
                 key={user.id}
                 id={user.id}

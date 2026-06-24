@@ -1,8 +1,10 @@
 @use '../../../styles/abstracts/variables' as *;
+@use '../../../styles/abstracts/mixins' as *;
 @use '../shared/inventario-theme' as inventario;
 
 .header {
   @include inventario.inventario-theme-classes;
+  @include module-table-header-theme-colors;
 
   display: grid;
   grid-template-columns: var(--inventario-columns);
@@ -43,7 +45,7 @@
   font-weight: $font-weight-bold;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--inventario-muted);
+  @include module-table-header-text-color;
 }
 
 .alignCenter {

@@ -1,4 +1,8 @@
-import { EmpleadoRowActionButton, InventarioIconButton, RecetaStatusButton } from '@restopsiq/ui';
+import {
+  EmpleadoRowActionButton,
+  InventarioIconButton,
+  ActiveInactiveStatusBadge,
+} from '@restopsiq/ui';
 import type { CSSProperties } from 'react';
 
 import type { UiTheme } from '@/constants/theme';
@@ -52,18 +56,7 @@ export function RecipeCategoryListRow({
       case 'descripcion':
         return <span className={styles.description}>{descripcion || '—'}</span>;
       case 'estado':
-        return (
-          <RecetaStatusButton
-            status={status}
-            theme={theme}
-            size="sm"
-            compact
-            onClick={(event) => {
-              event.stopPropagation();
-              onToggleStatus();
-            }}
-          />
-        );
+        return <ActiveInactiveStatusBadge status={status} theme={theme} size="sm" />;
       case 'acciones':
         return (
           <span className={styles.actions} onClick={(event) => event.stopPropagation()}>

@@ -1,7 +1,7 @@
 import type { JSX } from 'react';
 
+import { ActiveInactiveStatusBadge } from '../../active-inactive-status-badge';
 import type { EmpleadoSize, EmpleadoTheme } from '../shared/empleado-types';
-import styles from './EmpleadoStatusBadge.module.scss';
 
 export interface EmpleadoStatusBadgeProps {
   active?: boolean;
@@ -17,20 +17,12 @@ export function EmpleadoStatusBadge({
   className,
 }: EmpleadoStatusBadgeProps): JSX.Element {
   return (
-    <span
-      className={[
-        styles.badge,
-        styles[`theme--${theme}`],
-        styles[`size--${size}`],
-        active ? styles.active : styles.inactive,
-        className,
-      ]
-        .filter(Boolean)
-        .join(' ')}
-    >
-      <span className={styles.dot} aria-hidden />
-      {active ? 'ACTIVO' : 'INACTIVO'}
-    </span>
+    <ActiveInactiveStatusBadge
+      active={active}
+      theme={theme}
+      size={size === 'sm' ? 'sm' : 'md'}
+      className={className}
+    />
   );
 }
 

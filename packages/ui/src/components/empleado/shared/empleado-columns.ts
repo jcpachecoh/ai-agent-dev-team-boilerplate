@@ -3,6 +3,7 @@ export interface EmpleadoColumnDef {
   label: string;
   sortable?: boolean;
   width?: string;
+  align?: 'left' | 'center' | 'right';
   sortDirection?: EmpleadoSortDirection | null;
   active?: boolean;
   onSort?: () => void;
@@ -21,17 +22,23 @@ export function isEmpleadoSortColumnKey(key: string): key is EmpleadoSortColumnK
   return EMPLEADO_SORTABLE_COLUMN_KEYS.includes(key as EmpleadoSortColumnKey);
 }
 
-export const EMPLEADO_TABLE_COLUMN_GAP_PX = 16;
+export const EMPLEADO_TABLE_COLUMN_GAP_PX = 20;
 
 export const defaultEmpleadoColumns: EmpleadoColumnDef[] = [
   { key: 'employee', label: 'Empleado', sortable: true, width: 'minmax(220px, 1.5fr)' },
-  { key: 'cedula', label: 'Cédula', width: 'minmax(120px, 0.9fr)' },
+  { key: 'cedula', label: 'Cédula', width: 'minmax(112px, 0.7fr)', align: 'center' },
   { key: 'role', label: 'Cargo / Área', sortable: true, width: 'minmax(160px, 1.1fr)' },
-  { key: 'contract', label: 'Contrato', width: 'max-content' },
-  { key: 'location', label: 'Sede', width: 'minmax(140px, 0.9fr)' },
-  { key: 'hireDate', label: 'Ingreso', sortable: true, width: 'minmax(100px, 0.7fr)' },
-  { key: 'status', label: 'Estado', width: 'max-content' },
-  { key: 'actions', label: 'Acciones', width: '72px' },
+  { key: 'contract', label: 'Contrato', width: 'minmax(124px, 0.85fr)', align: 'center' },
+  { key: 'location', label: 'Sede', width: 'minmax(168px, 1.05fr)' },
+  {
+    key: 'hireDate',
+    label: 'Ingreso',
+    sortable: true,
+    width: 'minmax(100px, 0.65fr)',
+    align: 'center',
+  },
+  { key: 'status', label: 'Estado', width: 'minmax(108px, max-content)', align: 'center' },
+  { key: 'actions', label: 'Acciones', width: '72px', align: 'right' },
 ];
 
 export function getEmpleadoColumns(showActions = true): EmpleadoColumnDef[] {
@@ -55,6 +62,9 @@ function getColumnMinWidthPx(width?: string): number {
   if (pxMatch) return Number(pxMatch[1]);
 
   if (width === 'max-content') return 96;
+
+  const minmaxMaxContentMatch = width.match(/minmax\((\d+)px,\s*max-content\)/i);
+  if (minmaxMaxContentMatch) return Number(minmaxMaxContentMatch[1]);
 
   return 80;
 }

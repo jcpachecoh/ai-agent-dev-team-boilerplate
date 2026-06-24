@@ -1,16 +1,27 @@
-import React, { type JSX } from 'react';
+import type { JSX } from 'react';
 
 import styles from './ProduccionStationTableHeader.module.scss';
-import { produccionStationColumns } from '../shared/produccion-columns';
+import {
+  produccionStationColumnDefs,
+  type ProduccionStationColumnDef,
+} from '../shared/produccion-columns';
 import type { ProduccionSize, ProduccionTheme } from '../shared/produccion-types';
+
 export interface ProduccionStationTableHeaderProps {
-  columns?: string[];
+  columns?: ProduccionStationColumnDef[];
   theme?: ProduccionTheme;
   size?: ProduccionSize;
   className?: string;
 }
+
+const alignClasses = {
+  left: styles.alignLeft,
+  center: styles.alignCenter,
+  right: styles.alignRight,
+} as const;
+
 export function ProduccionStationTableHeader({
-  columns = produccionStationColumns,
+  columns = produccionStationColumnDefs,
   theme = 'dark',
   size = 'xl',
   className,
@@ -24,12 +35,17 @@ export function ProduccionStationTableHeader({
     >
       <div className={styles.row} role="row">
         {columns.map((column) => (
-          <span key={column} className={styles.cell} role="columnheader">
-            {column}
+          <span
+            key={column.label}
+            className={[styles.cell, alignClasses[column.align ?? 'left']].join(' ')}
+            role="columnheader"
+          >
+            {column.label}
           </span>
         ))}
       </div>
     </div>
   );
 }
+
 export default ProduccionStationTableHeader;

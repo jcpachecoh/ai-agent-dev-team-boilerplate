@@ -58,13 +58,17 @@ export function ProduccionStationTableRow({
         <span className={styles.mono} data-label="Capac." role="cell">
           {capacityLabel}
         </span>
-        <span data-label="Estado" role="cell">
+        <span className={styles.cellCenter} data-label="Estado" role="cell">
           <ProduccionStatusBadge status={status} theme={theme} size="sm" />
         </span>
         <span className={styles.subtle} data-label="Recetas" role="cell">
           {recipeCountLabel ?? '—'}
         </span>
-        <span className={styles.actions} data-label="Acciones" role="cell">
+        <span
+          className={[styles.actions, styles.cellRight].join(' ')}
+          data-label="Acciones"
+          role="cell"
+        >
           <button
             type="button"
             className={styles.actionButton}

@@ -76,13 +76,13 @@ export function RolTableRow({
       <span className={styles.cell} role="cell">
         {name}
       </span>
-      <span role="cell">
+      <span className={[styles.cell, styles.metricCell].join(' ')} role="cell">
         <RolMetricCell value={userCount} theme={theme} size={size} />
       </span>
-      <span role="cell">
+      <span className={[styles.cell, styles.metricCell].join(' ')} role="cell">
         <RolMetricCell value={permissionCount} theme={theme} size={size} />
       </span>
-      <span className={styles.cell} role="cell">
+      <span className={[styles.cell, styles.statusCell].join(' ')} role="cell">
         <RolStatusBadge active={isActive} theme={theme} size="sm" />
       </span>
       {showActions ? (

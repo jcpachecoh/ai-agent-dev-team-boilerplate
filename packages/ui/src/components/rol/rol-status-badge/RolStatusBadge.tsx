@@ -1,7 +1,7 @@
 import type { JSX } from 'react';
 
+import { ActiveInactiveStatusBadge } from '../../active-inactive-status-badge';
 import type { RolSize, RolTheme } from '../shared/rol-types';
-import styles from './RolStatusBadge.module.scss';
 
 export interface RolStatusBadgeProps {
   active?: boolean;
@@ -17,19 +17,12 @@ export function RolStatusBadge({
   className,
 }: RolStatusBadgeProps): JSX.Element {
   return (
-    <span
-      className={[
-        styles.badge,
-        styles[`theme--${theme}`],
-        styles[`size--${size}`],
-        active ? styles.active : styles.inactive,
-        className,
-      ]
-        .filter(Boolean)
-        .join(' ')}
-    >
-      {active ? 'Activo' : 'Inactivo'}
-    </span>
+    <ActiveInactiveStatusBadge
+      active={active}
+      theme={theme}
+      size={size === 'sm' ? 'sm' : 'md'}
+      className={className}
+    />
   );
 }
 

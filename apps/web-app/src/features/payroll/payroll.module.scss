@@ -80,9 +80,13 @@
 }
 
 .table th {
-  color: var(--color-text-secondary);
+  color: t.$table-header-text-color-dark;
   font-weight: 600;
   background: var(--color-bg-surface-raised);
+}
+
+:global([data-theme='light']) .table th {
+  color: t.$table-header-text-color-light;
 }
 
 .statusBadge {

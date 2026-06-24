@@ -1,10 +1,16 @@
-import { ArrowDownUp, ChevronDown, ChevronUp } from 'lucide-react';
-import React, { type CSSProperties, type JSX } from 'react';
+import type { CSSProperties, JSX } from 'react';
 
+import { TableSortIcon } from '../../table-sort-icon';
 import { defaultSedeColumns, sedeGridTemplate } from '../shared/sede-columns';
 import type { SedeColumnDef } from '../shared/sede-columns';
 import type { SedeSize, SedeTheme } from '../shared/sede-types';
 import styles from './SedeTableHeader.module.scss';
+
+const alignClasses = {
+  left: styles.alignLeft,
+  center: styles.alignCenter,
+  right: styles.alignRight,
+} as const;
 
 export interface SedeTableHeaderProps {
   columns?: SedeColumnDef[];
@@ -29,19 +35,19 @@ export function SedeTableHeader({
     >
       {columns.map((column) => {
         const isSortable = Boolean(column.sortable);
-        const sortIcon =
-          column.sortDirection === 'asc' ? (
-            <ChevronUp aria-hidden />
-          ) : column.sortDirection === 'desc' ? (
-            <ChevronDown aria-hidden />
-          ) : (
-            <ArrowDownUp aria-hidden />
-          );
+        const alignClass = alignClasses[column.align ?? 'left'];
 
         const content = (
           <>
             <span className={styles.label}>{column.label}</span>
-            {isSortable ? <span className={styles.sortIcon}>{sortIcon}</span> : null}
+            {isSortable ? (
+              <span className={styles.sortIcon}>
+                <TableSortIcon
+                  direction={column.sortDirection}
+                  inactiveClassName={styles.sortIconMuted}
+                />
+              </span>
+            ) : null}
           </>
         );
 
@@ -50,7 +56,12 @@ export function SedeTableHeader({
             <button
               key={column.key}
               type="button"
-              className={[styles.cell, styles.sortable, column.active && styles.cellActive]
+              className={[
+                styles.cell,
+                alignClass,
+                styles.sortable,
+                column.active && styles.cellActive,
+              ]
                 .filter(Boolean)
                 .join(' ')}
               role="columnheader"
@@ -69,7 +80,11 @@ export function SedeTableHeader({
         }
 
         return (
-          <span key={column.key} className={styles.cell} role="columnheader">
+          <span
+            key={column.key}
+            className={[styles.cell, alignClass].join(' ')}
+            role="columnheader"
+          >
             {content}
           </span>
         );

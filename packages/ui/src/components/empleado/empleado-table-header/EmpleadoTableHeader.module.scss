@@ -1,24 +1,14 @@
 @use '../../../styles/abstracts/variables' as *;
+@use '../../../styles/abstracts/mixins' as *;
 @use '../shared/empleado-theme' as emp;
 
 .header {
   @include emp.empleado-theme-classes;
-
-  &.theme--light {
-    --empleado-header-text: #{$color-gray-800};
-    --empleado-header-sort-inactive: #{$color-gray-600};
-    --empleado-header-hover: #{$color-gray-900};
-  }
-
-  &.theme--dark {
-    --empleado-header-text: #e8e8e3;
-    --empleado-header-sort-inactive: #b8b8b2;
-    --empleado-header-hover: #f5f5f0;
-  }
+  @include module-table-header-theme-colors;
 
   display: grid;
   grid-template-columns: var(--empleado-columns);
-  column-gap: 16px;
+  column-gap: 20px;
   align-items: center;
   min-height: 32px;
   padding: 0 12px;
@@ -39,7 +29,7 @@
   font-weight: $font-weight-bold;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--empleado-header-text);
+  @include module-table-header-text-color;
 }
 
 .label {
@@ -50,7 +40,7 @@
   cursor: pointer;
 
   &:hover {
-    color: var(--empleado-header-hover);
+    opacity: 0.85;
   }
 
   &:focus-visible {
@@ -68,11 +58,25 @@
 }
 
 .sortIconMuted {
-  color: var(--empleado-header-sort-inactive);
-  opacity: 0.85;
+  opacity: 0.6;
 }
 
 .sortIcon svg {
   width: 9px;
   height: 9px;
+}
+
+.alignLeft {
+  justify-self: start;
+  text-align: left;
+}
+
+.alignCenter {
+  justify-self: center;
+  text-align: center;
+}
+
+.alignRight {
+  justify-self: end;
+  text-align: right;
 }

@@ -364,7 +364,7 @@
 
   th {
     background: var(--color-bg-surface-raised, var(--color-bg-surface));
-    color: var(--color-text-secondary);
+    color: $table-header-text-color-dark;
     font-size: 0.6875rem;
     font-weight: 600;
     letter-spacing: 0.04em;
@@ -438,6 +438,10 @@
 :global([data-theme='light']) {
   .tableInput {
     color-scheme: light;
+  }
+
+  .documentTable th {
+    color: $table-header-text-color-light;
   }
 }
 

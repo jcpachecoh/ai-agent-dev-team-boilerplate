@@ -62,6 +62,20 @@
   align-items: center;
 }
 
+.cellCenter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: center;
+}
+
+.cellRight {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  justify-self: end;
+}
+
 .location {
   display: inline-flex;
   align-items: center;

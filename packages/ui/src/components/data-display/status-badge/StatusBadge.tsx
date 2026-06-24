@@ -1,5 +1,7 @@
 import type { JSX } from 'react';
 
+import { ActiveInactiveStatusBadge } from '../../active-inactive-status-badge';
+
 import styles from './StatusBadge.module.scss';
 
 export type StatusType =
@@ -58,6 +60,17 @@ export function StatusBadge({
   theme = 'dark',
   size = 'md',
 }: StatusBadgeProps): JSX.Element {
+  if (status === 'ACTIVE' || status === 'INACTIVE') {
+    return (
+      <ActiveInactiveStatusBadge
+        active={status === 'ACTIVE'}
+        theme={theme}
+        size={size === 'sm' ? 'sm' : 'md'}
+        className={className}
+      />
+    );
+  }
+
   const config = statusMap[status] || { color: 'gray', label: status };
   const themeClass = theme === 'light' ? styles['theme--light'] : styles['theme--dark'];
   const sizeClass = styles[`size--${size}`];

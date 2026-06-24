@@ -52,6 +52,24 @@
   line-height: $line-height;
 }
 
+@mixin module-table-header-theme-colors {
+  --module-table-header-color: #{$table-header-text-color-dark};
+
+  &.theme--light,
+  &.themeLight {
+    --module-table-header-color: #{$table-header-text-color-light};
+  }
+
+  &.theme--dark,
+  &.themeDark {
+    --module-table-header-color: #{$table-header-text-color-dark};
+  }
+}
+
+@mixin module-table-header-text-color {
+  color: var(--module-table-header-color);
+}
+
 // --------------------------------------------------------------------------
 // Layout
 // --------------------------------------------------------------------------

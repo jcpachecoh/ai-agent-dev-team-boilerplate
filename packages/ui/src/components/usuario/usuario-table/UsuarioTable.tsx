@@ -1,6 +1,11 @@
 import type { JSX, ReactNode } from 'react';
 
 import { UsuarioTableHeader } from '../usuario-table-header';
+import {
+  buildUsuarioHeaderColumns,
+  type UsuarioSortColumnKey,
+  type UsuarioSortDirection,
+} from '../shared/usuario-columns';
 import type { UsuarioSize, UsuarioTheme } from '../shared/usuario-types';
 import styles from './UsuarioTable.module.scss';
 
@@ -8,6 +13,9 @@ export interface UsuarioTableProps {
   children?: ReactNode;
   emptyState?: ReactNode;
   showActions?: boolean;
+  sortColumn?: UsuarioSortColumnKey | null;
+  sortDirection?: UsuarioSortDirection;
+  onSortColumn?: (column: UsuarioSortColumnKey) => void;
   theme?: UsuarioTheme;
   size?: UsuarioSize;
   className?: string;
@@ -17,10 +25,15 @@ export function UsuarioTable({
   children,
   emptyState,
   showActions = true,
+  sortColumn = null,
+  sortDirection = 'asc',
+  onSortColumn,
   theme = 'dark',
   size = 'md',
   className,
 }: UsuarioTableProps): JSX.Element {
+  const columns = buildUsuarioHeaderColumns(showActions, sortColumn, sortDirection, onSortColumn);
+
   return (
     <section
       className={[styles.table, styles[`theme--${theme}`], styles[`size--${size}`], className]
@@ -30,6 +43,7 @@ export function UsuarioTable({
       aria-label="Listado de usuarios"
     >
       <UsuarioTableHeader
+        columns={columns}
         theme={theme}
         size={size}
         showActions={showActions}

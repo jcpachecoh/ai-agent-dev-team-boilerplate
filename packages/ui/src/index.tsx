@@ -34,6 +34,7 @@ export * from './components/data-display/data-table';
 export * from './components/data-display/kpi-card';
 export * from './components/data-display/status-badge';
 export * from './components/data-display/timeline';
+export * from './components/active-inactive-status-badge';
 
 export * from './components/field-ops/field-status-card';
 export * from './components/field-ops/trip-progress-strip';

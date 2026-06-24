@@ -1,6 +1,6 @@
-import { ChevronDown, ChevronUp } from 'lucide-react';
 import type { CSSProperties, JSX } from 'react';
 
+import { TableSortIcon } from '../../table-sort-icon';
 import {
   defaultEmpleadoColumns,
   getEmpleadoGridTemplate,
@@ -10,6 +10,12 @@ import type { EmpleadoSize, EmpleadoTheme } from '../shared/empleado-types';
 import styles from './EmpleadoTableHeader.module.scss';
 
 export type { EmpleadoSortColumnKey, EmpleadoSortDirection } from '../shared/empleado-columns';
+
+const alignClasses = {
+  left: styles.alignLeft,
+  center: styles.alignCenter,
+  right: styles.alignRight,
+} as const;
 
 export interface EmpleadoTableHeaderProps {
   columns?: EmpleadoColumnDef[];
@@ -36,18 +42,16 @@ export function EmpleadoTableHeader({
     >
       {columns.map((column) => {
         const isSortable = Boolean(column.sortable && column.onSort);
+        const alignClass = alignClasses[column.align ?? 'left'];
         const content = (
           <>
             <span className={styles.label}>{column.label}</span>
             {column.sortable ? (
-              <span className={styles.sortIcon} aria-hidden>
-                {column.sortDirection === 'asc' ? (
-                  <ChevronUp size={10} />
-                ) : column.sortDirection === 'desc' ? (
-                  <ChevronDown size={10} />
-                ) : (
-                  <ChevronDown size={10} className={styles.sortIconMuted} />
-                )}
+              <span className={styles.sortIcon}>
+                <TableSortIcon
+                  direction={column.sortDirection}
+                  inactiveClassName={styles.sortIconMuted}
+                />
               </span>
             ) : null}
           </>
@@ -58,7 +62,12 @@ export function EmpleadoTableHeader({
             <button
               key={column.key}
               type="button"
-              className={[styles.cell, styles.sortable, column.active && styles.cellActive]
+              className={[
+                styles.cell,
+                alignClass,
+                styles.sortable,
+                column.active && styles.cellActive,
+              ]
                 .filter(Boolean)
                 .join(' ')}
               role="columnheader"
@@ -77,7 +86,7 @@ export function EmpleadoTableHeader({
         }
 
         return (
-          <div key={column.key} className={styles.cell} role="columnheader">
+          <div key={column.key} className={[styles.cell, alignClass].join(' ')} role="columnheader">
             {content}
           </div>
         );

@@ -5,6 +5,12 @@ import type { RolColumnDef } from '../shared/rol-columns';
 import type { RolSize, RolTheme } from '../shared/rol-types';
 import styles from './RolTableHeader.module.scss';
 
+const alignClasses = {
+  left: styles.alignLeft,
+  center: styles.alignCenter,
+  right: styles.alignRight,
+} as const;
+
 export interface RolTableHeaderProps {
   columns?: RolColumnDef[];
   showActions?: boolean;
@@ -31,7 +37,11 @@ export function RolTableHeader({
       style={{ '--rol-columns': getRolGridTemplate(showActions) } as CSSProperties}
     >
       {resolvedColumns.map((column) => (
-        <span key={column.key} className={styles.cell} role="columnheader">
+        <span
+          key={column.key}
+          className={[styles.cell, alignClasses[column.align ?? 'left']].join(' ')}
+          role="columnheader"
+        >
           {column.label}
         </span>
       ))}

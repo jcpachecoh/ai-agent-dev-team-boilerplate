@@ -1,9 +1,9 @@
 import type { CSSProperties, JSX } from 'react';
 
 import { EmpleadoRowActionButton } from '../../empleado/empleado-row-action-button';
+import { ActiveInactiveStatusBadge } from '../../active-inactive-status-badge';
 import { RecetaCategoryChip } from '../receta-category-chip';
 import { RecetaPhasesCount } from '../receta-phases-count';
-import { RecetaStatusButton } from '../receta-status-button';
 import { RecetaTimeProgress } from '../receta-time-progress';
 import type { RecetaSize, RecetaStatus, RecetaTheme } from '../shared/receta-types';
 import styles from './RecetaRecipeListTableRow.module.scss';
@@ -107,7 +107,7 @@ export function RecetaRecipeListTableRow({
       case 'estado':
         return (
           <span className={styles.statusCell} role="cell">
-            <RecetaStatusButton status={status} theme={theme} size="sm" compact />
+            <ActiveInactiveStatusBadge status={status} theme={theme} size="sm" />
           </span>
         );
       case 'acciones':

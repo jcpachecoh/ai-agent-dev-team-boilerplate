@@ -1,6 +1,6 @@
-import { ChevronDown, ChevronUp } from 'lucide-react';
 import type { CSSProperties, JSX } from 'react';
 
+import { TableSortIcon } from '../../table-sort-icon';
 import type { RecetaSize, RecetaTheme } from '../shared/receta-types';
 import styles from './RecetaTableHeader.module.scss';
 
@@ -83,14 +83,11 @@ export function RecetaTableHeader({
           <>
             <span className={styles.label}>{column.label}</span>
             {isSortable ? (
-              <span className={styles.sortIcon} aria-hidden>
-                {column.sortDirection === 'asc' ? (
-                  <ChevronUp size={10} />
-                ) : column.sortDirection === 'desc' ? (
-                  <ChevronDown size={10} />
-                ) : (
-                  <ChevronDown size={10} className={styles.sortIconMuted} />
-                )}
+              <span className={styles.sortIcon}>
+                <TableSortIcon
+                  direction={column.sortDirection}
+                  inactiveClassName={styles.sortIconMuted}
+                />
               </span>
             ) : null}
           </>

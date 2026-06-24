@@ -1,8 +1,10 @@
 @use '../../../styles/abstracts/variables' as *;
+@use '../../../styles/abstracts/mixins' as *;
 @use '../shared/proveedor-theme' as proveedor;
 
 .header {
   @include proveedor.proveedor-theme-classes;
+  @include module-table-header-theme-colors;
 
   display: grid;
   grid-template-columns: var(--proveedor-columns);
@@ -47,7 +49,7 @@
   font-weight: $font-weight-bold;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--proveedor-muted);
+  @include module-table-header-text-color;
 }
 
 .alignCenter {

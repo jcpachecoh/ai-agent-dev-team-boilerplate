@@ -1,7 +1,7 @@
 import type { JSX } from 'react';
 
+import { ActiveInactiveStatusBadge } from '../../active-inactive-status-badge';
 import type { UsuarioSize, UsuarioTheme } from '../shared/usuario-types';
-import styles from './UsuarioStatusBadge.module.scss';
 
 export interface UsuarioStatusBadgeProps {
   active?: boolean;
@@ -17,20 +17,12 @@ export function UsuarioStatusBadge({
   className,
 }: UsuarioStatusBadgeProps): JSX.Element {
   return (
-    <span
-      className={[
-        styles.badge,
-        styles[`theme--${theme}`],
-        styles[`size--${size}`],
-        active ? styles.active : styles.inactive,
-        className,
-      ]
-        .filter(Boolean)
-        .join(' ')}
-    >
-      <span className={styles.dot} aria-hidden />
-      {active ? 'Activo' : 'Inactivo'}
-    </span>
+    <ActiveInactiveStatusBadge
+      active={active}
+      theme={theme}
+      size={size === 'sm' ? 'sm' : 'md'}
+      className={className}
+    />
   );
 }
 

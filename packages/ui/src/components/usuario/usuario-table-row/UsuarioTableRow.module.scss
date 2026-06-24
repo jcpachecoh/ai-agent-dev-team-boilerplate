@@ -36,16 +36,24 @@
 }
 
 .cedulaCell {
+  justify-self: center;
+  text-align: center;
   font-family: 'IBM Plex Mono', $font-family-mono, monospace;
   font-size: 0.6875rem;
   color: var(--usuario-muted);
 }
 
 .documentCell,
-.roleCell,
+.roleCell {
+  display: flex;
+  align-items: center;
+}
+
 .statusCell {
   display: flex;
   align-items: center;
+  justify-content: center;
+  justify-self: center;
 }
 
 .lastLoginCell {
@@ -57,5 +65,7 @@
 .actionsCell {
   display: inline-flex;
   align-items: center;
+  justify-content: flex-end;
+  justify-self: end;
   gap: 5px;
 }

@@ -1,11 +1,10 @@
-import React, { type JSX } from 'react';
+import type { JSX } from 'react';
 
+import { ActiveInactiveStatusBadge } from '../../active-inactive-status-badge';
 import styles from './ProduccionStatusBadge.module.scss';
 import type { ProduccionSize, ProduccionStatus, ProduccionTheme } from '../shared/produccion-types';
 
-const labels: Record<ProduccionStatus, string> = {
-  active: 'ACTIVA',
-  inactive: 'INACTIVA',
+const labels: Record<Exclude<ProduccionStatus, 'active' | 'inactive'>, string> = {
   maintenance: 'MANTENIMIENTO',
   published: 'PUBLICADA',
   draft: 'BORRADOR',
@@ -27,6 +26,18 @@ export function ProduccionStatusBadge({
   size = 'md',
   className,
 }: ProduccionStatusBadgeProps): JSX.Element {
+  if (status === 'active' || status === 'inactive') {
+    return (
+      <ActiveInactiveStatusBadge
+        status={status}
+        label={label}
+        theme={theme}
+        size={size === 'sm' ? 'sm' : 'md'}
+        className={className}
+      />
+    );
+  }
+
   return (
     <span
       className={[

@@ -1,7 +1,7 @@
 import React, { type CSSProperties, type JSX } from 'react';
 
 import { EmpleadoRowActionButton } from '../../empleado/empleado-row-action-button';
-import { RecetaStatusButton } from '../receta-status-button';
+import { ActiveInactiveStatusBadge } from '../../active-inactive-status-badge';
 import type { RecetaSize, RecetaStatus, RecetaTheme } from '../shared/receta-types';
 import styles from './RecetaTableRow.module.scss';
 
@@ -44,8 +44,6 @@ export function RecetaTableRow({
   columnsTemplate,
   density = 'default',
 }: RecetaTableRowProps): JSX.Element {
-  const nextStatus: RecetaStatus = status === 'active' ? 'inactive' : 'active';
-
   return (
     <div
       className={[
@@ -83,16 +81,7 @@ export function RecetaTableRow({
         </span>
       )}
       <span className={styles.status} role="cell">
-        <RecetaStatusButton
-          status={status}
-          theme={theme}
-          size="sm"
-          compact={density === 'compact'}
-          onClick={(event) => {
-            event.stopPropagation();
-            onStatusChange?.(nextStatus);
-          }}
-        />
+        <ActiveInactiveStatusBadge status={status} theme={theme} size="sm" />
       </span>
       <span className={styles.actions} role="cell">
         <EmpleadoRowActionButton

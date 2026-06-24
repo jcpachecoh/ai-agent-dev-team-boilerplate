@@ -1,4 +1,5 @@
 import {
+  ActiveInactiveStatusBadge,
   EmpleadoRowActionButton,
   InventarioIconButton,
   InventarioStatusBadge,
@@ -124,15 +125,7 @@ export function InventarioProductRow({
               </span>
             );
           case 'estado':
-            return (
-              <InventarioStatusBadge
-                domain="severity"
-                status={product.isActive ? 'resolved' : 'warning'}
-                label={product.isActive ? 'ACTIVO' : 'INACTIVO'}
-                theme={theme}
-                size="sm"
-              />
-            );
+            return <ActiveInactiveStatusBadge active={product.isActive} theme={theme} size="sm" />;
           case 'lastMovement':
             return <span className={styles.muted}>{product.lastMovement}</span>;
           case 'actions':
@@ -193,15 +186,7 @@ export function InventarioProductCard({
           </span>
         </span>
       }
-      badge={
-        <InventarioStatusBadge
-          domain="severity"
-          status={product.isActive ? 'resolved' : 'warning'}
-          label={product.isActive ? 'ACTIVO' : 'INACTIVO'}
-          theme={theme}
-          size="sm"
-        />
-      }
+      badge={<ActiveInactiveStatusBadge active={product.isActive} theme={theme} size="sm" />}
       fields={[
         {
           label: 'Stock actual',
@@ -276,15 +261,7 @@ export function InventarioCategoryRow({
           case 'descripcion':
             return <span className={styles.muted}>{category.descripcion?.trim() || '—'}</span>;
           case 'estado':
-            return (
-              <InventarioStatusBadge
-                domain="severity"
-                status={category.isActive ? 'resolved' : 'warning'}
-                label={category.isActive ? 'ACTIVO' : 'INACTIVO'}
-                theme={theme}
-                size="sm"
-              />
-            );
+            return <ActiveInactiveStatusBadge active={category.isActive} theme={theme} size="sm" />;
           case 'actions':
             return (
               <span className={styles.actions}>
@@ -331,15 +308,7 @@ export function InventarioCategoryCard({
     <ResponsiveTableCard
       className={styles.card}
       title={<span className={styles.name}>{category.nombre}</span>}
-      badge={
-        <InventarioStatusBadge
-          domain="severity"
-          status={category.isActive ? 'resolved' : 'warning'}
-          label={category.isActive ? 'ACTIVO' : 'INACTIVO'}
-          theme={theme}
-          size="sm"
-        />
-      }
+      badge={<ActiveInactiveStatusBadge active={category.isActive} theme={theme} size="sm" />}
       fields={[
         { label: 'Prefijo', value: category.prefijo },
         { label: 'Descripción', value: category.descripcion?.trim() || '—' },
