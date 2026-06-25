@@ -12,6 +12,64 @@ datasource db {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// STORAGE
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum StorageProviderType {
+  CLOUDFLARE_R2
+  LOCAL
+}
+
+enum StorageVisibility {
+  PUBLIC
+  PRIVATE
+}
+
+enum StorageDomain {
+  BRANDING
+  INVENTORY
+  PRODUCTION
+  RECIPES
+  PAYROLL
+  USERS
+}
+
+enum StorageObjectStatus {
+  ACTIVE
+  DELETED
+}
+
+model StorageObject {
+  id           String              @id @default(cuid())
+  tenantId     String
+  provider     StorageProviderType
+  bucket       String
+  key          String              @unique
+  mimeType     String
+  size         Int
+  checksum     String
+  etag         String?
+  originalName String
+  domain       StorageDomain
+  entityType   String?
+  entityId     String?
+  uploadedBy   String
+  visibility   StorageVisibility   @default(PUBLIC)
+  status       StorageObjectStatus @default(ACTIVE)
+  metadata     Json?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  deletedAt    DateTime?
+
+  @@index([tenantId])
+  @@index([tenantId, domain])
+  @@index([tenantId, status])
+  @@index([entityType, entityId])
+  @@index([deletedAt])
+  @@map("storage_objects")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // AUDIT LOG
 // ─────────────────────────────────────────────────────────────────────────────
 

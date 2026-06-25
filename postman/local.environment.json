@@ -115,6 +115,18 @@
       "description": "Supply item id — seed or 04 — Supply Items / Create; used by Plant phase inputs"
     },
     {
+      "key": "storageIdPublic",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "storageIdPrivate",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
       "key": "supplyItemCode",
       "value": "SEED-ACEITE",
       "type": "default",

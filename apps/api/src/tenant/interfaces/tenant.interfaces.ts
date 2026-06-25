@@ -38,6 +38,8 @@ export interface ITenantRepository {
 export interface TenantLogoUpload {
   mimetype: string;
   buffer: Buffer;
+  originalname: string;
+  size: number;
 }
 
 export interface ITenantService {
@@ -45,6 +47,5 @@ export interface ITenantService {
   findAll(): Promise<Tenant[]>;
   update(tenantId: string, data: UpdateTenantData): Promise<Tenant>;
   assertTenantAccess(jwtTenantId: string, requestedTenantId: string): void;
-  uploadLogo(tenantId: string, file: TenantLogoUpload): Promise<Tenant>;
-  resolveLogoFilePath(tenantId: string): Promise<string | null>;
+  uploadLogo(tenantId: string, uploadedBy: string, file: TenantLogoUpload): Promise<Tenant>;
 }

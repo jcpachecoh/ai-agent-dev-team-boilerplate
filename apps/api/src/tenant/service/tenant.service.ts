@@ -1,11 +1,6 @@
-import {
-  BadRequestException,
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
-import { promises as fs } from 'node:fs';
-import path from 'node:path';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { ImageProfile, StorageDomain, StorageVisibility } from '../../storage/enums/storage.enums';
+import { StorageService } from '../../storage/service/storage.service';
 import { TenantRepository } from '../repository/tenant.repository';
 import type {
   ITenantService,
@@ -14,12 +9,12 @@ import type {
   UpdateTenantData,
 } from '../interfaces/tenant.interfaces';
 
-const MAX_LOGO_BYTES = 2 * 1024 * 1024;
-const ALLOWED_LOGO_MIME_TYPES = new Set(['image/png', 'image/jpeg', 'image/jpg']);
-
 @Injectable()
 export class TenantService implements ITenantService {
-  constructor(private readonly tenantRepository: TenantRepository) {}
+  constructor(
+    private readonly tenantRepository: TenantRepository,
+    private readonly storageService: StorageService,
+  ) {}
 
   assertTenantAccess(jwtTenantId: string, requestedTenantId: string): void {
     if (jwtTenantId !== requestedTenantId) {
@@ -49,45 +44,21 @@ export class TenantService implements ITenantService {
     return updated;
   }
 
-  async uploadLogo(tenantId: string, file: TenantLogoUpload): Promise<Tenant> {
-    if (!ALLOWED_LOGO_MIME_TYPES.has(file.mimetype)) {
-      throw new BadRequestException('Solo se permiten archivos PNG o JPG');
-    }
-
-    if (file.buffer.byteLength > MAX_LOGO_BYTES) {
-      throw new BadRequestException('El logo no puede superar 2 MB');
-    }
-
+  async uploadLogo(tenantId: string, uploadedBy: string, file: TenantLogoUpload): Promise<Tenant> {
     await this.findById(tenantId);
 
-    const extension = file.mimetype === 'image/png' ? 'png' : 'jpg';
-    const tenantDir = path.join(process.cwd(), 'uploads', 'tenants', tenantId);
-    await fs.mkdir(tenantDir, { recursive: true });
+    const result = await this.storageService.uploadFile({
+      tenantId,
+      uploadedBy,
+      domain: StorageDomain.BRANDING,
+      imageProfile: ImageProfile.LOGO,
+      visibility: StorageVisibility.PUBLIC,
+      entityType: 'tenant',
+      entityId: tenantId,
+      file,
+    });
 
-    const filePath = path.join(tenantDir, `logo.${extension}`);
-    await fs.writeFile(filePath, file.buffer);
-
-    const alternateExtension = extension === 'png' ? 'jpg' : 'png';
-    const alternatePath = path.join(tenantDir, `logo.${alternateExtension}`);
-    await fs.rm(alternatePath, { force: true });
-
-    const logoUrl = `/api/tenant/logo/${tenantId}`;
+    const logoUrl = result.publicUrl ?? this.storageService.buildPublicUrl(result.key);
     return this.update(tenantId, { logoUrl });
-  }
-
-  async resolveLogoFilePath(tenantId: string): Promise<string | null> {
-    const tenantDir = path.join(process.cwd(), 'uploads', 'tenants', tenantId);
-
-    for (const extension of ['png', 'jpg'] as const) {
-      const filePath = path.join(tenantDir, `logo.${extension}`);
-      try {
-        await fs.access(filePath);
-        return filePath;
-      } catch {
-        // try next extension
-      }
-    }
-
-    return null;
   }
 }

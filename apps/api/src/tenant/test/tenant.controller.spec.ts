@@ -1,11 +1,12 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { TenantController } from '../controller/tenant.controller';
 import { TenantService } from '../service/tenant.service';
+import type { ValidatedFile } from '../../storage/pipes/file-validation.pipe';
 
 const serviceMock = {
   uploadLogo: jest.fn(),
-  resolveLogoFilePath: jest.fn(),
+  findById: jest.fn(),
 };
 
 const user = {
@@ -14,6 +15,13 @@ const user = {
   email: 'owner@test.com',
   roleCode: 'OWNER',
   roleId: 'role-owner',
+};
+
+const validFile: ValidatedFile = {
+  buffer: Buffer.from('logo'),
+  mimetype: 'image/png',
+  originalname: 'logo.png',
+  size: 4,
 };
 
 describe('TenantController', () => {
@@ -34,42 +42,21 @@ describe('TenantController', () => {
   });
 
   it('uploadLogo throws when file is missing', async () => {
-    await expect(controller.uploadLogo(user, undefined)).rejects.toThrow(BadRequestException);
+    await expect(
+      controller.uploadLogo(user, undefined as unknown as ValidatedFile),
+    ).rejects.toThrow(BadRequestException);
   });
 
-  it('uploadLogo delegates to service', async () => {
+  it('uploadLogo delegates to service and returns logoUrl', async () => {
+    const cdnUrl = 'https://cdn.opssynk.com/tenants/palos-de-lena/branding/uuid.webp';
     serviceMock.uploadLogo.mockResolvedValue({
       id: 'palos-de-lena',
-      logoUrl: '/api/tenant/logo/palos-de-lena',
+      logoUrl: cdnUrl,
     });
 
-    const result = await controller.uploadLogo(user, {
-      mimetype: 'image/png',
-      buffer: Buffer.from('logo'),
-    });
+    const result = await controller.uploadLogo(user, validFile);
 
-    expect(result).toEqual({ logoUrl: '/api/tenant/logo/palos-de-lena' });
-    expect(serviceMock.uploadLogo).toHaveBeenCalledWith('palos-de-lena', {
-      mimetype: 'image/png',
-      buffer: expect.any(Buffer),
-    });
-  });
-
-  it('serveLogo throws when logo file is missing', async () => {
-    serviceMock.resolveLogoFilePath.mockResolvedValue(null);
-    const res = { sendFile: jest.fn() };
-
-    await expect(controller.serveLogo('palos-de-lena', res as never)).rejects.toThrow(
-      NotFoundException,
-    );
-  });
-
-  it('serveLogo sends file when logo exists', async () => {
-    serviceMock.resolveLogoFilePath.mockResolvedValue('/tmp/logo.png');
-    const res = { sendFile: jest.fn() };
-
-    await controller.serveLogo('palos-de-lena', res as never);
-
-    expect(res.sendFile).toHaveBeenCalledWith('/tmp/logo.png');
+    expect(result).toEqual({ logoUrl: cdnUrl });
+    expect(serviceMock.uploadLogo).toHaveBeenCalledWith('palos-de-lena', 'user-1', validFile);
   });
 });

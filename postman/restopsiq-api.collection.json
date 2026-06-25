@@ -525,9 +525,7 @@
               "listen": "test",
               "script": {
                 "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
-                ]
+                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]
               }
             }
           ],
@@ -780,9 +778,7 @@
                   "listen": "test",
                   "script": {
                     "type": "text/javascript",
-                    "exec": [
-                      "pm.test('Status 200', () => pm.response.to.have.status(200));"
-                    ]
+                    "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]
                   }
                 }
               ],
@@ -1189,9 +1185,7 @@
                   "listen": "test",
                   "script": {
                     "type": "text/javascript",
-                    "exec": [
-                      "pm.test('Status 401', () => pm.response.to.have.status(401));"
-                    ]
+                    "exec": ["pm.test('Status 401', () => pm.response.to.have.status(401));"]
                   }
                 }
               ],
@@ -1231,9 +1225,7 @@
                   "listen": "test",
                   "script": {
                     "type": "text/javascript",
-                    "exec": [
-                      "pm.test('Status 401', () => pm.response.to.have.status(401));"
-                    ]
+                    "exec": ["pm.test('Status 401', () => pm.response.to.have.status(401));"]
                   }
                 }
               ],
@@ -1613,9 +1605,7 @@
                   "listen": "test",
                   "script": {
                     "type": "text/javascript",
-                    "exec": [
-                      "pm.test('Status 401', () => pm.response.to.have.status(401));"
-                    ]
+                    "exec": ["pm.test('Status 401', () => pm.response.to.have.status(401));"]
                   }
                 }
               ]
@@ -1654,9 +1644,7 @@
                   "listen": "test",
                   "script": {
                     "type": "text/javascript",
-                    "exec": [
-                      "pm.test('Status 401', () => pm.response.to.have.status(401));"
-                    ]
+                    "exec": ["pm.test('Status 401', () => pm.response.to.have.status(401));"]
                   }
                 }
               ]
@@ -1695,9 +1683,7 @@
                   "listen": "test",
                   "script": {
                     "type": "text/javascript",
-                    "exec": [
-                      "pm.test('Status 401', () => pm.response.to.have.status(401));"
-                    ]
+                    "exec": ["pm.test('Status 401', () => pm.response.to.have.status(401));"]
                   }
                 }
               ]
@@ -1736,9 +1722,7 @@
                   "listen": "test",
                   "script": {
                     "type": "text/javascript",
-                    "exec": [
-                      "pm.test('Status 401', () => pm.response.to.have.status(401));"
-                    ]
+                    "exec": ["pm.test('Status 401', () => pm.response.to.have.status(401));"]
                   }
                 }
               ]
@@ -2190,9 +2174,7 @@
                   "listen": "test",
                   "script": {
                     "type": "text/javascript",
-                    "exec": [
-                      "pm.test('Status 400', () => pm.response.to.have.status(400));"
-                    ]
+                    "exec": ["pm.test('Status 400', () => pm.response.to.have.status(400));"]
                   }
                 }
               ],
@@ -2228,9 +2210,7 @@
                   "listen": "test",
                   "script": {
                     "type": "text/javascript",
-                    "exec": [
-                      "pm.test('Status 403', () => pm.response.to.have.status(403));"
-                    ]
+                    "exec": ["pm.test('Status 403', () => pm.response.to.have.status(403));"]
                   }
                 }
               ],
@@ -2322,9 +2302,7 @@
                   "listen": "test",
                   "script": {
                     "type": "text/javascript",
-                    "exec": [
-                      "pm.test('Status 404', () => pm.response.to.have.status(404));"
-                    ]
+                    "exec": ["pm.test('Status 404', () => pm.response.to.have.status(404));"]
                   }
                 }
               ],
@@ -2482,9 +2460,7 @@
               "listen": "prerequest",
               "script": {
                 "type": "text/javascript",
-                "exec": [
-                  "pm.collectionVariables.set('supplyItemCode', 'SI-BOX-' + Date.now());"
-                ]
+                "exec": ["pm.collectionVariables.set('supplyItemCode', 'SI-BOX-' + Date.now());"]
               }
             },
             {
@@ -2903,9 +2879,7 @@
               "listen": "test",
               "script": {
                 "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status 401', () => pm.response.to.have.status(401));"
-                ]
+                "exec": ["pm.test('Status 401', () => pm.response.to.have.status(401));"]
               }
             }
           ],
@@ -3199,9 +3173,7 @@
               "listen": "test",
               "script": {
                 "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
-                ]
+                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]
               }
             }
           ],
@@ -3272,9 +3244,7 @@
               "listen": "test",
               "script": {
                 "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status 204', () => pm.response.to.have.status(204));"
-                ]
+                "exec": ["pm.test('Status 204', () => pm.response.to.have.status(204));"]
               }
             }
           ],
@@ -3353,9 +3323,7 @@
               "listen": "test",
               "script": {
                 "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
-                ]
+                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]
               }
             }
           ],
@@ -3446,9 +3414,7 @@
               "listen": "test",
               "script": {
                 "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status 404', () => pm.response.to.have.status(404));"
-                ]
+                "exec": ["pm.test('Status 404', () => pm.response.to.have.status(404));"]
               }
             }
           ],
@@ -3585,9 +3551,7 @@
               "listen": "test",
               "script": {
                 "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
-                ]
+                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]
               }
             }
           ],
@@ -3616,9 +3580,7 @@
               "listen": "test",
               "script": {
                 "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
-                ]
+                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]
               }
             }
           ],
@@ -3647,9 +3609,7 @@
               "listen": "test",
               "script": {
                 "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
-                ]
+                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]
               }
             }
           ],
@@ -3948,14 +3908,8 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/plant/orders?status=DRAFT&shift=MORNING",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "plant",
-                "orders"
-              ],
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "plant", "orders"],
               "query": [
                 {
                   "key": "status",
@@ -4243,7 +4197,13 @@
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [{ "key": "token", "value": "{{mesAccessToken}}", "type": "string" }]
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{mesAccessToken}}",
+                  "type": "string"
+                }
+              ]
             },
             "method": "GET",
             "header": [],
@@ -4268,18 +4228,34 @@
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [{ "key": "token", "value": "{{mesAccessToken}}", "type": "string" }]
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{mesAccessToken}}",
+                  "type": "string"
+                }
+              ]
             },
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Idempotency-Key", "value": "mes11-start-{{orderId}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "mes11-start-{{orderId}}"
+              }
             ],
             "url": "{{baseUrl}}/api/plant/orders/{{orderId}}/start",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"workStationId\": \"{{workstationId}}\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             }
           },
           "response": []
@@ -4301,18 +4277,34 @@
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [{ "key": "token", "value": "{{mesAccessToken}}", "type": "string" }]
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{mesAccessToken}}",
+                  "type": "string"
+                }
+              ]
             },
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Idempotency-Key", "value": "mes11-pause-{{orderId}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "mes11-pause-{{orderId}}"
+              }
             ],
             "url": "{{baseUrl}}/api/plant/orders/{{orderId}}/operator/pause",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"notes\": \"Pausa operario Postman\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             }
           },
           "response": []
@@ -4334,10 +4326,21 @@
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [{ "key": "token", "value": "{{mesAccessToken}}", "type": "string" }]
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{mesAccessToken}}",
+                  "type": "string"
+                }
+              ]
             },
             "method": "POST",
-            "header": [{ "key": "Idempotency-Key", "value": "mes11-resume-{{orderId}}" }],
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "mes11-resume-{{orderId}}"
+              }
+            ],
             "url": "{{baseUrl}}/api/plant/orders/{{orderId}}/operator/resume"
           },
           "response": []
@@ -4359,18 +4362,34 @@
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [{ "key": "token", "value": "{{mesAccessToken}}", "type": "string" }]
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{mesAccessToken}}",
+                  "type": "string"
+                }
+              ]
             },
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Idempotency-Key", "value": "mes11-step-{{stepId}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "mes11-step-{{stepId}}"
+              }
             ],
             "url": "{{baseUrl}}/api/plant/orders/{{orderId}}/complete-step",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"stepId\": \"{{stepId}}\",\n  \"actualMinutes\": 5\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             }
           },
           "response": []
@@ -4392,18 +4411,34 @@
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [{ "key": "token", "value": "{{mesAccessToken}}", "type": "string" }]
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{mesAccessToken}}",
+                  "type": "string"
+                }
+              ]
             },
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Idempotency-Key", "value": "mes11-finish-{{orderId}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "mes11-finish-{{orderId}}"
+              }
             ],
             "url": "{{baseUrl}}/api/plant/orders/{{orderId}}/finish",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"notes\": \"Cierre operario Postman\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             }
           },
           "response": []
@@ -4476,9 +4511,7 @@
               "listen": "test",
               "script": {
                 "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status 403', () => pm.response.to.have.status(403));"
-                ]
+                "exec": ["pm.test('Status 403', () => pm.response.to.have.status(403));"]
               }
             }
           ],
@@ -4536,14 +4569,8 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/plant/incidents?orderId={{orderId}}&workStationId={{workStationId}}&type=QUALITY&severity=WARNING&resolved=false",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "plant",
-                "incidents"
-              ],
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "plant", "incidents"],
               "query": [
                 {
                   "key": "orderId",
@@ -4627,9 +4654,7 @@
               "listen": "test",
               "script": {
                 "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status 403', () => pm.response.to.have.status(403));"
-                ]
+                "exec": ["pm.test('Status 403', () => pm.response.to.have.status(403));"]
               }
             }
           ],
@@ -6353,15 +6378,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/inventory/alerts/resolved",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "inventory",
-                "alerts",
-                "resolved"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "inventory", "alerts", "resolved"]
             },
             "description": "Devuelve el historial completo de resoluciones del tenant (orden descendente por `resolvedAt`).\n\nCampos por registro:\n- `id` — ID de la resolución\n- `supplyItemId` — ID del insumo\n- `product` — nombre del insumo\n- `currentStock` / `threshold` — valores actuales del ítem\n- `supplier` — proveedor principal\n- `resolvedAt` — ISO timestamp de cuándo se resolvió\n- `resolvedById` — `null` (sin JWT) — cuando se implemente auth, traerá el ID del usuario\n- `note` — razón de resolución (`undefined` si no se ingresó)\n\nDeben aparecer al menos 2 registros: uno sin nota (paso 04) y uno con nota (paso 06)."
           },
@@ -6401,15 +6419,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/inventory/alerts/resolved?take=1",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "inventory",
-                "alerts",
-                "resolved"
-              ],
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "inventory", "alerts", "resolved"],
               "query": [
                 {
                   "key": "take",
@@ -7031,6 +7042,632 @@
       ]
     },
     {
+      "name": "OS-493 — Storage",
+      "description": "Storage centralizado con Cloudflare R2 (OS-493).\n\nFlujo recomendado:\n1. Asegúrate de haber hecho Login (01 — Global Auth → Login) para que `accessToken` esté activo.\n2. Ejecuta en orden: Assets Públicos → Assets Privados → Tenant Logo → Seguridad.",
+      "item": [
+        {
+          "name": "Assets Públicos",
+          "item": [
+            {
+              "name": "Upload — imagen branding (LOGO)",
+              "description": "Sube una imagen al dominio BRANDING con perfil LOGO.\n\nSharp transforma automáticamente:\n- Redimensiona a máx 512×512 (fit inside, no agranda)\n- Convierte a WebP quality 85\n- Genera checksum SHA-256\n\nEl `id` resultante se guarda automáticamente en `storageIdPublic`.",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "function setVar(key, val) {",
+                      "  pm.collectionVariables.set(key, val);",
+                      "  try { pm.environment.set(key, val); } catch (e) { /* no env selected */ }",
+                      "}",
+                      "const res = pm.response.json();",
+                      "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                      "pm.test('key con prefijo correcto', () => {",
+                      "  pm.expect(res.key).to.match(/^tenants\\/.+\\/branding\\/.+\\.webp$/);",
+                      "});",
+                      "pm.test('mimeType es image/webp (convertido por sharp)', () => {",
+                      "  pm.expect(res.mimeType).to.equal('image/webp');",
+                      "});",
+                      "pm.test('publicUrl tiene protocolo https', () => {",
+                      "  pm.expect(res.publicUrl).to.match(/^https:\\/\\//);",
+                      "});",
+                      "pm.test('checksum es sha256 (64 hex chars)', () => {",
+                      "  pm.expect(res.checksum).to.match(/^[a-f0-9]{64}$/);",
+                      "});",
+                      "pm.test('visibility PUBLIC', () => {",
+                      "  pm.expect(res.visibility).to.equal('PUBLIC');",
+                      "});",
+                      "if (res.id) {",
+                      "  setVar('storageIdPublic', res.id);",
+                      "  console.log('storageIdPublic =', res.id);",
+                      "  console.log('publicUrl =', res.publicUrl);",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "file",
+                      "type": "file",
+                      "src": [],
+                      "description": "Selecciona una imagen PNG o JPG real (máx 20MB). Se convierte a WebP automáticamente."
+                    },
+                    {
+                      "key": "domain",
+                      "value": "BRANDING",
+                      "type": "text"
+                    },
+                    {
+                      "key": "imageProfile",
+                      "value": "LOGO",
+                      "type": "text",
+                      "description": "LOGO → max 512×512 WebP"
+                    },
+                    {
+                      "key": "visibility",
+                      "value": "PUBLIC",
+                      "type": "text"
+                    },
+                    {
+                      "key": "entityType",
+                      "value": "tenant",
+                      "type": "text"
+                    },
+                    {
+                      "key": "entityId",
+                      "value": "{{tenantId}}",
+                      "type": "text"
+                    }
+                  ]
+                },
+                "url": "{{baseUrl}}/api/storage/upload"
+              }
+            },
+            {
+              "name": "Upload — imagen inventario (PRODUCT)",
+              "description": "Imagen de insumo — dominio INVENTORY, perfil PRODUCT (máx 800×800 WebP).",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const res = pm.response.json();",
+                      "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                      "pm.test('key contiene /inventory/', () => {",
+                      "  pm.expect(res.key).to.include('/inventory/');",
+                      "});",
+                      "pm.test('mimeType es image/webp', () => {",
+                      "  pm.expect(res.mimeType).to.equal('image/webp');",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "file",
+                      "type": "file",
+                      "src": [],
+                      "description": "Selecciona una imagen PNG, JPG o WEBP."
+                    },
+                    {
+                      "key": "domain",
+                      "value": "INVENTORY",
+                      "type": "text"
+                    },
+                    {
+                      "key": "imageProfile",
+                      "value": "PRODUCT",
+                      "type": "text",
+                      "description": "PRODUCT → max 800×800 WebP"
+                    },
+                    {
+                      "key": "visibility",
+                      "value": "PUBLIC",
+                      "type": "text"
+                    },
+                    {
+                      "key": "entityType",
+                      "value": "supply_item",
+                      "type": "text"
+                    },
+                    {
+                      "key": "entityId",
+                      "value": "{{supplyItemId}}",
+                      "type": "text"
+                    }
+                  ]
+                },
+                "url": "{{baseUrl}}/api/storage/upload"
+              }
+            },
+            {
+              "name": "Delete — archivo público",
+              "description": "Soft-delete en DB + borrado físico en R2.\n\nUsa `storageIdPublic` capturado por el upload anterior.\n\nSi el borrado en R2 falla, el DB queda con `metadata.providerDeletePending = true` y se loguea `[STORAGE_DELETE_PENDING]` en el server (recuperable por job).",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "if (!pm.collectionVariables.get('storageIdPublic')) {",
+                      "  console.warn('storageIdPublic vacío — ejecuta Upload primero.');",
+                      "}"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 204 No Content', () => pm.response.to.have.status(204));",
+                      "console.log('Archivo eliminado. Verificar en R2 Dashboard que ya no existe.');"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{baseUrl}}/api/storage/{{storageIdPublic}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Assets Privados",
+          "description": "Assets PRIVATE no retornan publicUrl — solo accesibles via presigned URL con TTL.",
+          "item": [
+            {
+              "name": "Upload — PDF privado (payroll)",
+              "description": "Sube un PDF de nómina como asset PRIVATE.\n\nResultado esperado:\n- `publicUrl: null` (nunca se expone la URL directa)\n- `mimeType: application/pdf` (PDFs no se procesan con sharp)\n- `key` bajo `tenants/{id}/payroll/`\n\nEl `id` se guarda en `storageIdPrivate`.",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "function setVar(key, val) {",
+                      "  pm.collectionVariables.set(key, val);",
+                      "  try { pm.environment.set(key, val); } catch (e) { /* no env selected */ }",
+                      "}",
+                      "const res = pm.response.json();",
+                      "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                      "pm.test('visibility PRIVATE', () => {",
+                      "  pm.expect(res.visibility).to.equal('PRIVATE');",
+                      "});",
+                      "pm.test('publicUrl es null para PRIVATE', () => {",
+                      "  pm.expect(res.publicUrl).to.be.null;",
+                      "});",
+                      "pm.test('mimeType es application/pdf (sin transformación)', () => {",
+                      "  pm.expect(res.mimeType).to.equal('application/pdf');",
+                      "});",
+                      "pm.test('key contiene /payroll/', () => {",
+                      "  pm.expect(res.key).to.include('/payroll/');",
+                      "});",
+                      "if (res.id) {",
+                      "  setVar('storageIdPrivate', res.id);",
+                      "  console.log('storageIdPrivate =', res.id);",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "file",
+                      "type": "file",
+                      "src": [],
+                      "description": "Selecciona un archivo PDF real. Los PDFs no se transforman con sharp."
+                    },
+                    {
+                      "key": "domain",
+                      "value": "PAYROLL",
+                      "type": "text"
+                    },
+                    {
+                      "key": "visibility",
+                      "value": "PRIVATE",
+                      "type": "text",
+                      "description": "PRIVATE → publicUrl=null, solo por presigned URL"
+                    },
+                    {
+                      "key": "entityType",
+                      "value": "employee",
+                      "type": "text"
+                    },
+                    {
+                      "key": "entityId",
+                      "value": "emp-001",
+                      "type": "text"
+                    }
+                  ]
+                },
+                "url": "{{baseUrl}}/api/storage/upload"
+              }
+            },
+            {
+              "name": "Presigned URL — asset privado (TTL 15 min)",
+              "description": "Genera URL firmada con TTL 900s para descargar el PDF privado.\n\nCopia la URL del response y pégala en el browser — debe abrir el PDF directamente desde R2.\n\nPara PUBLIC assets, este endpoint retorna la publicUrl sin firmar.",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "if (!pm.collectionVariables.get('storageIdPrivate')) {",
+                      "  console.warn('storageIdPrivate vacío — ejecuta Upload PDF primero.');",
+                      "}"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const res = pm.response.json();",
+                      "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('Tiene url firmada', () => pm.expect(res).to.have.property('url'));",
+                      "pm.test('expiresInSeconds 900', () => pm.expect(res.expiresInSeconds).to.equal(900));",
+                      "pm.test('url no vacía', () => pm.expect(res.url).to.be.a('string').and.not.empty);",
+                      "console.log('Presigned URL:', res.url);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/storage/{{storageIdPrivate}}/presigned?ttl=900",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "storage", "{{storageIdPrivate}}", "presigned"],
+                  "query": [
+                    {
+                      "key": "ttl",
+                      "value": "900",
+                      "description": "Segundos de validez (máx 86400)"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Delete — PDF privado",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 204 No Content', () => pm.response.to.have.status(204));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{baseUrl}}/api/storage/{{storageIdPrivate}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Tenant Logo — Integración",
+          "description": "El endpoint /tenant/logo es el punto de integración original migrado a StorageService.\n\nFlujo interno:\n1. FileValidationPipe valida magic number + MIME\n2. Sharp convierte a WebP max 512×512\n3. Sube a R2 bajo tenants/{tenantId}/branding/{uuid}.webp\n4. Persiste StorageObject en DB\n5. Actualiza Tenant.logoUrl con la URL CDN",
+          "item": [
+            {
+              "name": "Upload logo de tenant",
+              "description": "POST /api/tenant/logo — endpoint original migrado a StorageService.\n\nAhora `logoUrl` retorna URL CDN (`https://assets.opssynk.com/...`) en lugar del path local `/api/tenant/logo/{id}`.",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const res = pm.response.json();",
+                      "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                      "pm.test('logoUrl apunta al CDN (https://)', () => {",
+                      "  pm.expect(res.logoUrl).to.match(/^https:\\/\\//);",
+                      "});",
+                      "pm.test('logoUrl contiene /branding/', () => {",
+                      "  pm.expect(res.logoUrl).to.include('/branding/');",
+                      "});",
+                      "pm.test('logoUrl termina en .webp', () => {",
+                      "  pm.expect(res.logoUrl).to.match(/\\.webp$/);",
+                      "});",
+                      "console.log('logoUrl CDN:', res.logoUrl);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "file",
+                      "type": "file",
+                      "src": [],
+                      "description": "Logo PNG o JPG, máx 5MB. Se convierte a WebP 512×512."
+                    }
+                  ]
+                },
+                "url": "{{baseUrl}}/api/tenant/logo"
+              }
+            },
+            {
+              "name": "GET logo deprecated → redirect 301 al CDN",
+              "description": "Endpoint legacy de compatibilidad.\n\nComportamiento actual:\n- Si Tenant.logoUrl empieza con https:// → redirect 301 a URL CDN\n- Si hay logo local en filesystem (pre-migración) → sirve desde disco\n- Si no hay nada → 404\n\nPara ver el 301 real: desactiva Follow Redirects en ⚙️ Settings de esta request.",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "// Postman sigue redirects automáticamente. Para ver el 301 real:",
+                      "// desactiva 'Follow Redirects' en Settings (ícono ⚙️) de esta request.",
+                      "pm.test('Status 200 (Postman siguió redirect 301 al CDN)', () => {",
+                      "  pm.response.to.have.status(200);",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/api/tenant/logo/{{tenantId}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Seguridad — Rechazos",
+          "description": "Todos deben retornar 400 o 401. Verifica que el pipeline de validación funciona correctamente.",
+          "item": [
+            {
+              "name": "❌ MIME type no permitido (text/plain)",
+              "description": "Sube un archivo .txt o .csv. Debe retornar 400 — MIME type no está en la allowlist (PNG, JPG, WEBP, PDF).\n\nPasos: crea un archivo test.txt con cualquier contenido y selecciónalo.",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 400 — MIME no permitido', () => pm.response.to.have.status(400));",
+                      "const res = pm.response.json();",
+                      "pm.test('Mensaje menciona tipo no permitido', () => {",
+                      "  const msg = JSON.stringify(res).toLowerCase();",
+                      "  pm.expect(msg).to.satisfy(s => s.includes('permitido') || s.includes('mime') || s.includes('tipo'));",
+                      "});",
+                      "console.log('Rechazado:', res.message);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "file",
+                      "type": "file",
+                      "src": [],
+                      "description": "Selecciona un archivo .txt, .csv, .xml — cualquier tipo NO imagen ni PDF."
+                    },
+                    {
+                      "key": "domain",
+                      "value": "BRANDING",
+                      "type": "text"
+                    }
+                  ]
+                },
+                "url": "{{baseUrl}}/api/storage/upload"
+              }
+            },
+            {
+              "name": "❌ Magic number falso (txt con extensión .jpg)",
+              "description": "Valida la detección de magic number.\n\nPreparación:\n```bash\necho 'esto no es una imagen' > /tmp/fake.jpg\n```\n\nEl archivo tiene extensión `.jpg` pero los primeros bytes no son `FF D8 FF` (firma real de JPEG). El servidor detecta la discrepancia y rechaza con 400.",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 400 — magic number inválido', () => pm.response.to.have.status(400));",
+                      "const res = pm.response.json();",
+                      "pm.test('Mensaje menciona contenido o magic number', () => {",
+                      "  const msg = JSON.stringify(res).toLowerCase();",
+                      "  pm.expect(msg).to.satisfy(s =>",
+                      "    s.includes('contenido') || s.includes('coincide') || s.includes('soportado')",
+                      "  );",
+                      "});",
+                      "console.log('Rechazado por magic number:', res.message);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "file",
+                      "type": "file",
+                      "src": [],
+                      "description": "Crea el archivo así:\n  echo 'esto no es una imagen' > /tmp/fake.jpg\nLuego selecciónalo aquí."
+                    },
+                    {
+                      "key": "domain",
+                      "value": "BRANDING",
+                      "type": "text"
+                    }
+                  ]
+                },
+                "url": "{{baseUrl}}/api/storage/upload"
+              }
+            },
+            {
+              "name": "❌ Sin archivo (body sin file)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 400 — archivo requerido', () => pm.response.to.have.status(400));",
+                      "const res = pm.response.json();",
+                      "pm.test('Mensaje indica archivo requerido', () => {",
+                      "  pm.expect(JSON.stringify(res).toLowerCase()).to.include('requerid');",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "domain",
+                      "value": "BRANDING",
+                      "type": "text"
+                    }
+                  ]
+                },
+                "url": "{{baseUrl}}/api/storage/upload"
+              }
+            },
+            {
+              "name": "❌ Domain inválido (valor fuera del enum)",
+              "description": "El `domain` es un enum controlado (BRANDING | INVENTORY | PRODUCTION | RECIPES | PAYROLL | USERS). Cualquier otro valor debe retornar 400 por class-validator.",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 400 — domain inválido', () => pm.response.to.have.status(400));",
+                      "console.log('Rechazado:', pm.response.json());"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "file",
+                      "type": "file",
+                      "src": [],
+                      "description": "Cualquier imagen PNG/JPG válida"
+                    },
+                    {
+                      "key": "domain",
+                      "value": "../../etc/passwd",
+                      "type": "text",
+                      "description": "Path traversal attempt — rechazado por validación enum"
+                    }
+                  ]
+                },
+                "url": "{{baseUrl}}/api/storage/upload"
+              }
+            },
+            {
+              "name": "❌ Delete de ID de otro tenant (debe ser 404)",
+              "description": "Intenta eliminar un StorageObject con un ID inventado o de otro tenant.\n\nEsperado: 404 — el sistema no revela si el objeto existe, solo que no es accesible para este tenant.",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 404 — tenant isolation', () => pm.response.to.have.status(404));",
+                      "console.log('Isolation verificado:', pm.response.json());"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{baseUrl}}/api/storage/id-de-otro-tenant-00000000"
+              }
+            },
+            {
+              "name": "❌ Sin JWT (debe ser 401)",
+              "description": "Request sin Authorization header. El JwtAuthGuard bloquea antes de llegar al controller.",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 401 Unauthorized', () => pm.response.to.have.status(401));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "domain",
+                      "value": "BRANDING",
+                      "type": "text"
+                    }
+                  ]
+                },
+                "url": "{{baseUrl}}/api/storage/upload"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "NOM-02 Employees",
       "description": "Payroll/Employees CRUD API (NOM-02). Requires Bearer {{accessToken}} (Global JWT). Requires x-tenant-id: {{tenantId}}.",
       "item": [
@@ -7058,13 +7695,8 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/employees",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "employees"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "employees"]
             }
           },
           "event": [
@@ -7101,13 +7733,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/employees",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "employees"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "employees"]
             }
           }
         },
@@ -7127,14 +7754,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/employees/{{employeeUserId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "employees",
-                "{{employeeUserId}}"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "employees", "{{employeeUserId}}"]
             }
           }
         },
@@ -7162,14 +7783,8 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/employees/{{employeeUserId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "employees",
-                "{{employeeUserId}}"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "employees", "{{employeeUserId}}"]
             }
           }
         },
@@ -7190,14 +7805,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/employees/{{employeeUserId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "employees",
-                "{{employeeUserId}}"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "employees", "{{employeeUserId}}"]
             }
           }
         },
@@ -7217,15 +7826,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/employees/location/{{locationId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "employees",
-                "location",
-                "{{locationId}}"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "employees", "location", "{{locationId}}"]
             }
           }
         },
@@ -7245,15 +7847,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/employees/contract-type/FIJO",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "employees",
-                "contract-type",
-                "FIJO"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "employees", "contract-type", "FIJO"]
             }
           }
         }
@@ -7283,14 +7878,8 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/attendance/kiosk-auth",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "attendance",
-                "kiosk-auth"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "kiosk-auth"]
             }
           },
           "event": [
@@ -7334,14 +7923,8 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/attendance/entry",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "attendance",
-                "entry"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "entry"]
             }
           },
           "event": [
@@ -7380,14 +7963,8 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/attendance/exit",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "attendance",
-                "exit"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "exit"]
             }
           },
           "event": [
@@ -7424,13 +8001,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/attendance?userId={{attendanceUserId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "attendance"
-              ],
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance"],
               "query": [
                 {
                   "key": "userId",
@@ -7456,14 +8028,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/attendance/active?locationId={{attendanceLocationId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "attendance",
-                "active"
-              ],
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "active"],
               "query": [
                 {
                   "key": "locationId",
@@ -7489,16 +8055,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/attendance/employees/{{attendanceUserId}}/overtime",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "attendance",
-                "employees",
-                "{{attendanceUserId}}",
-                "overtime"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "employees", "{{attendanceUserId}}", "overtime"]
             }
           },
           "event": [
@@ -7542,14 +8100,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/reports/payroll?period={{reportPeriod}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "reports",
-                "payroll"
-              ],
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "payroll"],
               "query": [
                 {
                   "key": "period",
@@ -7596,14 +8148,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/reports/payroll?period={{reportPeriod}}&locationId={{locationId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "reports",
-                "payroll"
-              ],
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "payroll"],
               "query": [
                 {
                   "key": "period",
@@ -7647,14 +8193,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/reports/attendance?from={{reportFrom}}&to={{reportTo}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "reports",
-                "attendance"
-              ],
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "attendance"],
               "query": [
                 {
                   "key": "from",
@@ -7711,14 +8251,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/reports/social-security?period={{reportPeriod}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "reports",
-                "social-security"
-              ],
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "social-security"],
               "query": [
                 {
                   "key": "period",
@@ -7771,15 +8305,8 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/reports/payroll/export",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "reports",
-                "payroll",
-                "export"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "payroll", "export"]
             },
             "description": "Descarga el reporte de nómina como PDF (A4 landscape).\nEn Postman: la respuesta se muestra como binario — haz clic en 'Save to file' para guardar payroll-report-{{reportPeriod}}.pdf.\nContent-Type esperado: application/pdf\nContent-Disposition: attachment; filename=\"payroll-report-{{reportPeriod}}.pdf\""
           },
@@ -7829,15 +8356,8 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/reports/payroll/export",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "reports",
-                "payroll",
-                "export"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "payroll", "export"]
             },
             "description": "Descarga el reporte de nómina como Excel (.xlsx) con hoja 'Nómina'.\nColumnas: Empleado, Cédula, Sede, Sal. Base, Aux. Transp., HH. Extra, Deducciones, Neto, Aportes Emp., Costo Total.\nEn Postman: haz clic en 'Save to file' para guardar payroll-report-{{reportPeriod}}.xlsx.\nContent-Type esperado: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
           },
@@ -7876,14 +8396,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/reports/payroll?period={{reportPeriod}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "reports",
-                "payroll"
-              ],
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "payroll"],
               "query": [
                 {
                   "key": "period",
@@ -7929,15 +8443,8 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/reports/payroll/export",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "reports",
-                "payroll",
-                "export"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "payroll", "export"]
             },
             "description": "Negativo: format=CSV no es válido → 400 Bad Request. Solo PDF y XLSX aceptados."
           },
