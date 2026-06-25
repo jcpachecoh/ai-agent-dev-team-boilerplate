@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { randomUUID } from 'node:crypto';
-import { ForbiddenException, Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ImageProfile, StorageObjectStatus, StorageVisibility } from './enums/storage.enums';
 import { processImage, extensionFromMime } from './image/image-processor';
@@ -84,10 +84,6 @@ export class StorageService {
       throw new NotFoundException(`StorageObject ${id} no encontrado`);
     }
 
-    if (record.tenantId !== tenantId) {
-      throw new ForbiddenException('Acceso denegado');
-    }
-
     // Soft delete first — DB is the source of truth.
     // providerDeletePending=true marks objects whose R2 counterpart may still exist.
     // A future cleanup job can query: WHERE status='DELETED' AND metadata->>'providerDeletePending'='true'
@@ -124,10 +120,6 @@ export class StorageService {
 
     if (!record) {
       throw new NotFoundException(`StorageObject ${id} no encontrado`);
-    }
-
-    if (record.tenantId !== tenantId) {
-      throw new ForbiddenException('Acceso denegado');
     }
 
     if (record.visibility === StorageVisibility.PUBLIC) {

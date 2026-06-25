@@ -1,4 +1,4 @@
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import { NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageDomain, StorageObjectStatus, StorageVisibility } from './enums/storage.enums';
@@ -260,6 +260,23 @@ describe('StorageService', () => {
         }),
       );
     });
+
+    it('loguea error y no lanza si el provider falla al borrar en R2', async () => {
+      const record = buildRecord();
+      mockPrisma.storageObject.findFirst.mockResolvedValue(record);
+      mockPrisma.storageObject.update.mockResolvedValue({ ...record, status: 'DELETED' });
+      jest.spyOn(provider, 'delete').mockRejectedValue(new Error('R2 connection error'));
+      const logSpy = jest
+        .spyOn((service as unknown as { logger: { error: jest.Mock } }).logger, 'error')
+        .mockImplementation(() => undefined);
+
+      // Arrange — Act: must NOT throw even when provider fails
+      await expect(service.deleteFile('obj-001', 'tenant-001')).resolves.toBeUndefined();
+
+      // Assert: soft delete happened and error was logged
+      expect(mockPrisma.storageObject.update).toHaveBeenCalledTimes(1);
+      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('[STORAGE_DELETE_PENDING]'));
+    });
   });
 
   describe('getPresignedUrl', () => {
@@ -302,6 +319,26 @@ describe('StorageService', () => {
       const url = await service.getPresignedUrl('obj-001', 'tenant-001', 900);
 
       expect(url).toMatch(/^https:\/\/mock\.storage\//);
+    });
+  });
+
+  describe('findById', () => {
+    it('retorna el StorageObjectResult cuando existe', async () => {
+      const record = buildRecord();
+      mockPrisma.storageObject.findFirst.mockResolvedValue(record);
+
+      const result = await service.findById('obj-001', 'tenant-001');
+
+      expect(result.id).toBe('obj-001');
+      expect(result.tenantId).toBe('tenant-001');
+    });
+
+    it('lanza NotFoundException si el objeto no existe', async () => {
+      mockPrisma.storageObject.findFirst.mockResolvedValue(null);
+
+      await expect(service.findById('nonexistent', 'tenant-001')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 });

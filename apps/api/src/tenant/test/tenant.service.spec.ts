@@ -82,6 +82,15 @@ describe('TenantService', () => {
     jest.clearAllMocks();
   });
 
+  it('findAll delegates to repository', async () => {
+    repoMock.findAll.mockResolvedValue([tenant]);
+
+    const result = await service.findAll();
+
+    expect(result).toEqual([tenant]);
+    expect(repoMock.findAll).toHaveBeenCalledTimes(1);
+  });
+
   it('findById delegates to repository', async () => {
     repoMock.findById.mockResolvedValue(tenant);
 
@@ -173,6 +182,29 @@ describe('TenantService', () => {
       );
 
       expect(storageServiceMock.uploadFile).not.toHaveBeenCalled();
+    });
+
+    it('usa buildPublicUrl como fallback cuando publicUrl es null', async () => {
+      // Arrange — storage retorna un resultado sin publicUrl (asset PRIVATE o buildPublicUrl no configurado)
+      const resultSinUrl = { ...storageResult, publicUrl: null };
+      repoMock.findById.mockResolvedValue(tenant);
+      storageServiceMock.uploadFile.mockResolvedValue(resultSinUrl);
+      storageServiceMock.buildPublicUrl.mockReturnValue(
+        'https://cdn.opssynk.com/tenants/palos-de-lena/branding/uuid.webp',
+      );
+      repoMock.update.mockResolvedValue({
+        ...tenant,
+        logoUrl: 'https://cdn.opssynk.com/tenants/palos-de-lena/branding/uuid.webp',
+      });
+
+      // Act
+      const result = await service.uploadLogo('palos-de-lena', 'user-001', file);
+
+      // Assert — buildPublicUrl fue usado como fallback
+      expect(storageServiceMock.buildPublicUrl).toHaveBeenCalledWith(resultSinUrl.key);
+      expect(result.logoUrl).toBe(
+        'https://cdn.opssynk.com/tenants/palos-de-lena/branding/uuid.webp',
+      );
     });
   });
 });
