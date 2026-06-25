@@ -1,20 +1,17 @@
 import { createHash } from 'node:crypto';
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { ImageProfile, StorageObjectStatus, StorageVisibility } from './enums/storage.enums';
-import { processImage, extensionFromMime } from './image/image-processor';
+import { ImageProfile, StorageObjectStatus, StorageVisibility } from '../enums/storage.enums';
+import { processImage } from '../image/image-processor';
 import type {
+  IStorageService,
   StorageObjectResult,
   StorageProvider,
   UploadFileOptions,
-} from './interfaces/storage.interfaces';
-import { STORAGE_PROVIDER } from './interfaces/storage.interfaces';
+} from '../interfaces/storage.interfaces';
+import { STORAGE_PROVIDER } from '../interfaces/storage.interfaces';
+import { StorageRepository } from '../repository/storage.repository';
 
-/**
- * Normalizes R2_PUBLIC_DOMAIN to a consistent https:// base URL with no trailing slash.
- * Accepts both "assets.opssynk.com" and "https://assets.opssynk.com".
- */
 function normalizePublicDomain(raw: string): string {
   const trimmed = raw.trim().replace(/\/+$/, '');
   if (!trimmed) return '';
@@ -25,12 +22,12 @@ function normalizePublicDomain(raw: string): string {
 const PUBLIC_DOMAIN = (): string => normalizePublicDomain(process.env.R2_PUBLIC_DOMAIN ?? '');
 
 @Injectable()
-export class StorageService {
+export class StorageService implements IStorageService {
   private readonly logger = new Logger(StorageService.name);
 
   constructor(
     @Inject(STORAGE_PROVIDER) private readonly provider: StorageProvider,
-    private readonly prisma: PrismaService,
+    private readonly storageRepository: StorageRepository,
   ) {}
 
   async uploadFile(options: UploadFileOptions): Promise<StorageObjectResult> {
@@ -51,24 +48,22 @@ export class StorageService {
       visibility,
     });
 
-    const record = await this.prisma.storageObject.create({
-      data: {
-        tenantId: options.tenantId,
-        provider: this.provider.providerType,
-        bucket: this.provider.bucketName,
-        key,
-        mimeType: processed.mimeType,
-        size: processed.buffer.byteLength,
-        checksum,
-        etag: etag ?? null,
-        originalName: options.file.originalname,
-        domain: options.domain,
-        entityType: options.entityType ?? null,
-        entityId: options.entityId ?? null,
-        uploadedBy: options.uploadedBy,
-        visibility,
-        status: StorageObjectStatus.ACTIVE,
-      },
+    const record = await this.storageRepository.create({
+      tenantId: options.tenantId,
+      provider: this.provider.providerType,
+      bucket: this.provider.bucketName,
+      key,
+      mimeType: processed.mimeType,
+      size: processed.buffer.byteLength,
+      checksum,
+      etag: etag ?? null,
+      originalName: options.file.originalname,
+      domain: options.domain,
+      entityType: options.entityType ?? null,
+      entityId: options.entityId ?? null,
+      uploadedBy: options.uploadedBy,
+      visibility,
+      status: StorageObjectStatus.ACTIVE,
     });
 
     this.logger.log(`StorageObject created: ${record.id} key=${key}`);
@@ -76,9 +71,7 @@ export class StorageService {
   }
 
   async deleteFile(id: string, tenantId: string): Promise<void> {
-    const record = await this.prisma.storageObject.findFirst({
-      where: { id, tenantId, status: StorageObjectStatus.ACTIVE, deletedAt: null },
-    });
+    const record = await this.storageRepository.findActive(id, tenantId);
 
     if (!record) {
       throw new NotFoundException(`StorageObject ${id} no encontrado`);
@@ -88,25 +81,18 @@ export class StorageService {
     // providerDeletePending=true marks objects whose R2 counterpart may still exist.
     // A future cleanup job can query: WHERE status='DELETED' AND metadata->>'providerDeletePending'='true'
     const existingMeta = (record.metadata as Record<string, unknown> | null) ?? {};
-    await this.prisma.storageObject.update({
-      where: { id },
-      data: {
-        status: StorageObjectStatus.DELETED,
-        deletedAt: new Date(),
-        metadata: { ...existingMeta, providerDeletePending: true },
-      },
+    await this.storageRepository.update(id, {
+      status: StorageObjectStatus.DELETED,
+      deletedAt: new Date(),
+      metadata: { ...existingMeta, providerDeletePending: true },
     });
 
     try {
       await this.provider.delete(record.key, record.bucket);
-      // R2 delete succeeded — clear the pending flag
-      await this.prisma.storageObject.update({
-        where: { id },
-        data: { metadata: { ...existingMeta, providerDeletePending: false } },
+      await this.storageRepository.update(id, {
+        metadata: { ...existingMeta, providerDeletePending: false },
       });
     } catch (err) {
-      // DB soft delete already happened — no data loss, no security exposure.
-      // The key is stored in DB; a retry job can pick this up via providerDeletePending=true.
       this.logger.error(
         `[STORAGE_DELETE_PENDING] R2 delete failed for id=${id} key=${record.key} bucket=${record.bucket}: ${String(err)}`,
       );
@@ -114,9 +100,7 @@ export class StorageService {
   }
 
   async getPresignedUrl(id: string, tenantId: string, ttlSeconds: number): Promise<string> {
-    const record = await this.prisma.storageObject.findFirst({
-      where: { id, tenantId, status: StorageObjectStatus.ACTIVE, deletedAt: null },
-    });
+    const record = await this.storageRepository.findActive(id, tenantId);
 
     if (!record) {
       throw new NotFoundException(`StorageObject ${id} no encontrado`);
@@ -130,9 +114,7 @@ export class StorageService {
   }
 
   async findById(id: string, tenantId: string): Promise<StorageObjectResult> {
-    const record = await this.prisma.storageObject.findFirst({
-      where: { id, tenantId, status: StorageObjectStatus.ACTIVE, deletedAt: null },
-    });
+    const record = await this.storageRepository.findActive(id, tenantId);
 
     if (!record) {
       throw new NotFoundException(`StorageObject ${id} no encontrado`);
@@ -145,15 +127,12 @@ export class StorageService {
     return `${PUBLIC_DOMAIN()}/${key}`;
   }
 
-  // ─── Private helpers ──────────────────────────────────────────────────────
-
   private buildKey(tenantId: string, domain: string, filename: string): string {
     return `tenants/${tenantId}/${domain.toLowerCase()}/${filename}`;
   }
 
-  private buildFilename(originalname: string, extension: string): string {
-    const uuid = randomUUID();
-    return `${uuid}.${extension}`;
+  private buildFilename(_originalname: string, extension: string): string {
+    return `${randomUUID()}.${extension}`;
   }
 
   private computeChecksum(buffer: Buffer): string {

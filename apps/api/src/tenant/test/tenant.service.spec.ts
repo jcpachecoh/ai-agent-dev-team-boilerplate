@@ -5,7 +5,7 @@ import {
   StorageObjectStatus,
   StorageVisibility,
 } from '../../storage/enums/storage.enums';
-import { StorageService } from '../../storage/storage.service';
+import { StorageService } from '../../storage/service/storage.service';
 import { TenantRepository } from '../repository/tenant.repository';
 import { TenantService } from '../service/tenant.service';
 

@@ -1,17 +1,15 @@
 import { NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { PrismaService } from '../prisma/prisma.service';
-import { StorageDomain, StorageObjectStatus, StorageVisibility } from './enums/storage.enums';
-import { STORAGE_PROVIDER } from './interfaces/storage.interfaces';
-import { MockStorageProvider } from './providers/mock/mock.storage.provider';
-import { StorageService } from './storage.service';
+import { StorageDomain, StorageObjectStatus, StorageVisibility } from '../enums/storage.enums';
+import { STORAGE_PROVIDER } from '../interfaces/storage.interfaces';
+import { MockStorageProvider } from '../providers/mock/mock.storage.provider';
+import { StorageRepository } from '../repository/storage.repository';
+import { StorageService } from '../service/storage.service';
 
-const mockPrisma = {
-  storageObject: {
-    create: jest.fn(),
-    findFirst: jest.fn(),
-    update: jest.fn(),
-  },
+const mockRepo = {
+  create: jest.fn(),
+  findActive: jest.fn(),
+  update: jest.fn(),
 };
 
 const buildFile = (): { buffer: Buffer; mimetype: string; originalname: string; size: number } => {
@@ -58,7 +56,7 @@ describe('StorageService', () => {
         StorageService,
         MockStorageProvider,
         { provide: STORAGE_PROVIDER, useExisting: MockStorageProvider },
-        { provide: PrismaService, useValue: mockPrisma },
+        { provide: StorageRepository, useValue: mockRepo },
       ],
     }).compile();
 
@@ -74,53 +72,46 @@ describe('StorageService', () => {
     it('construye URL cuando el dominio ya incluye https://', () => {
       const original = process.env.R2_PUBLIC_DOMAIN;
       process.env.R2_PUBLIC_DOMAIN = 'https://assets.opssynk.com';
-
       expect(service.buildPublicUrl(key)).toBe(
         'https://assets.opssynk.com/tenants/t1/branding/logo.webp',
       );
-
       process.env.R2_PUBLIC_DOMAIN = original;
     });
 
     it('normaliza dominio sin protocolo agregando https://', () => {
       const original = process.env.R2_PUBLIC_DOMAIN;
       process.env.R2_PUBLIC_DOMAIN = 'assets.opssynk.com';
-
       expect(service.buildPublicUrl(key)).toBe(
         'https://assets.opssynk.com/tenants/t1/branding/logo.webp',
       );
-
       process.env.R2_PUBLIC_DOMAIN = original;
     });
 
     it('elimina trailing slash del dominio', () => {
       const original = process.env.R2_PUBLIC_DOMAIN;
       process.env.R2_PUBLIC_DOMAIN = 'https://assets.opssynk.com/';
-
       expect(service.buildPublicUrl(key)).toBe(
         'https://assets.opssynk.com/tenants/t1/branding/logo.webp',
       );
-
       process.env.R2_PUBLIC_DOMAIN = original;
     });
 
     it('normaliza dominio sin protocolo con trailing slash', () => {
       const original = process.env.R2_PUBLIC_DOMAIN;
       process.env.R2_PUBLIC_DOMAIN = 'assets.opssynk.com/';
-
       expect(service.buildPublicUrl(key)).toBe(
         'https://assets.opssynk.com/tenants/t1/branding/logo.webp',
       );
-
       process.env.R2_PUBLIC_DOMAIN = original;
     });
   });
 
   describe('uploadFile', () => {
     it('no acepta tenantId del body — usa el del parámetro de opciones', async () => {
-      const record = buildRecord();
-      mockPrisma.storageObject.create.mockResolvedValue(record);
+      // Arrange
+      mockRepo.create.mockResolvedValue(buildRecord());
 
+      // Act
       await service.uploadFile({
         tenantId: 'tenant-001',
         uploadedBy: 'user-001',
@@ -128,14 +119,15 @@ describe('StorageService', () => {
         file: buildFile(),
       });
 
-      const createCall = mockPrisma.storageObject.create.mock.calls[0][0];
-      expect(createCall.data.tenantId).toBe('tenant-001');
+      // Assert
+      expect(mockRepo.create.mock.calls[0][0].tenantId).toBe('tenant-001');
     });
 
     it('construye key con formato tenants/{tenantId}/{domain}/{uuid}.ext', async () => {
-      const record = buildRecord();
-      mockPrisma.storageObject.create.mockResolvedValue(record);
+      // Arrange
+      mockRepo.create.mockResolvedValue(buildRecord());
 
+      // Act
       await service.uploadFile({
         tenantId: 'tenant-abc',
         uploadedBy: 'user-001',
@@ -143,14 +135,17 @@ describe('StorageService', () => {
         file: buildFile(),
       });
 
-      const createCall = mockPrisma.storageObject.create.mock.calls[0][0];
-      expect(createCall.data.key).toMatch(/^tenants\/tenant-abc\/inventory\/.+\.(webp|png)$/);
+      // Assert
+      expect(mockRepo.create.mock.calls[0][0].key).toMatch(
+        /^tenants\/tenant-abc\/inventory\/.+\.(webp|png)$/,
+      );
     });
 
     it('persiste checksum sha256', async () => {
-      const record = buildRecord();
-      mockPrisma.storageObject.create.mockResolvedValue(record);
+      // Arrange
+      mockRepo.create.mockResolvedValue(buildRecord());
 
+      // Act
       await service.uploadFile({
         tenantId: 'tenant-001',
         uploadedBy: 'user-001',
@@ -158,14 +153,15 @@ describe('StorageService', () => {
         file: buildFile(),
       });
 
-      const createCall = mockPrisma.storageObject.create.mock.calls[0][0];
-      expect(createCall.data.checksum).toMatch(/^[a-f0-9]{64}$/);
+      // Assert
+      expect(mockRepo.create.mock.calls[0][0].checksum).toMatch(/^[a-f0-9]{64}$/);
     });
 
     it('defaultea visibility a PUBLIC si no se especifica', async () => {
-      const record = buildRecord();
-      mockPrisma.storageObject.create.mockResolvedValue(record);
+      // Arrange
+      mockRepo.create.mockResolvedValue(buildRecord());
 
+      // Act
       await service.uploadFile({
         tenantId: 'tenant-001',
         uploadedBy: 'user-001',
@@ -173,15 +169,16 @@ describe('StorageService', () => {
         file: buildFile(),
       });
 
-      const createCall = mockPrisma.storageObject.create.mock.calls[0][0];
-      expect(createCall.data.visibility).toBe(StorageVisibility.PUBLIC);
+      // Assert
+      expect(mockRepo.create.mock.calls[0][0].visibility).toBe(StorageVisibility.PUBLIC);
     });
 
     it('MockProvider no llama a R2 real', async () => {
-      const record = buildRecord();
-      mockPrisma.storageObject.create.mockResolvedValue(record);
+      // Arrange
+      mockRepo.create.mockResolvedValue(buildRecord());
       const uploadSpy = jest.spyOn(provider, 'upload');
 
+      // Act
       await service.uploadFile({
         tenantId: 'tenant-001',
         uploadedBy: 'user-001',
@@ -189,18 +186,18 @@ describe('StorageService', () => {
         file: buildFile(),
       });
 
+      // Assert
       expect(uploadSpy).toHaveBeenCalledTimes(1);
-      // Verify it's the mock, not a real S3 client
       expect(provider.bucketName).toBe('mock-bucket');
     });
 
     it('retorna publicUrl para assets PUBLIC', async () => {
+      // Arrange
       const original = process.env.R2_PUBLIC_DOMAIN;
       process.env.R2_PUBLIC_DOMAIN = 'https://cdn.opssynk.com';
+      mockRepo.create.mockResolvedValue(buildRecord({ visibility: StorageVisibility.PUBLIC }));
 
-      const record = buildRecord({ visibility: StorageVisibility.PUBLIC });
-      mockPrisma.storageObject.create.mockResolvedValue(record);
-
+      // Act
       const result = await service.uploadFile({
         tenantId: 'tenant-001',
         uploadedBy: 'user-001',
@@ -208,15 +205,16 @@ describe('StorageService', () => {
         file: buildFile(),
       });
 
+      // Assert
       expect(result.publicUrl).toMatch(/^https:\/\/cdn\.opssynk\.com\//);
-
       process.env.R2_PUBLIC_DOMAIN = original;
     });
 
     it('retorna publicUrl null para assets PRIVATE', async () => {
-      const record = buildRecord({ visibility: StorageVisibility.PRIVATE });
-      mockPrisma.storageObject.create.mockResolvedValue(record);
+      // Arrange
+      mockRepo.create.mockResolvedValue(buildRecord({ visibility: StorageVisibility.PRIVATE }));
 
+      // Act
       const result = await service.uploadFile({
         tenantId: 'tenant-001',
         uploadedBy: 'user-001',
@@ -225,117 +223,131 @@ describe('StorageService', () => {
         file: buildFile(),
       });
 
+      // Assert
       expect(result.publicUrl).toBeNull();
     });
   });
 
   describe('deleteFile', () => {
     it('lanza NotFoundException si el objeto no existe', async () => {
-      mockPrisma.storageObject.findFirst.mockResolvedValue(null);
+      // Arrange
+      mockRepo.findActive.mockResolvedValue(null);
 
+      // Act & Assert
       await expect(service.deleteFile('nonexistent', 'tenant-001')).rejects.toThrow(
         NotFoundException,
       );
     });
 
     it('verifica tenantId — no borra archivos de otro tenant', async () => {
-      mockPrisma.storageObject.findFirst.mockResolvedValue(null);
+      // Arrange
+      mockRepo.findActive.mockResolvedValue(null);
 
+      // Act & Assert
       await expect(service.deleteFile('obj-001', 'otro-tenant')).rejects.toThrow(NotFoundException);
-
-      expect(mockPrisma.storageObject.update).not.toHaveBeenCalled();
+      expect(mockRepo.update).not.toHaveBeenCalled();
     });
 
     it('soft delete en DB antes de borrar en provider', async () => {
-      const record = buildRecord();
-      mockPrisma.storageObject.findFirst.mockResolvedValue(record);
-      mockPrisma.storageObject.update.mockResolvedValue({ ...record, status: 'DELETED' });
+      // Arrange
+      mockRepo.findActive.mockResolvedValue(buildRecord());
+      mockRepo.update.mockResolvedValue({ ...buildRecord(), status: 'DELETED' });
 
+      // Act
       await service.deleteFile('obj-001', 'tenant-001');
 
-      expect(mockPrisma.storageObject.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { id: 'obj-001' },
-          data: expect.objectContaining({ status: StorageObjectStatus.DELETED }),
-        }),
+      // Assert
+      expect(mockRepo.update).toHaveBeenCalledWith(
+        'obj-001',
+        expect.objectContaining({ status: StorageObjectStatus.DELETED }),
       );
     });
 
     it('loguea error y no lanza si el provider falla al borrar en R2', async () => {
-      const record = buildRecord();
-      mockPrisma.storageObject.findFirst.mockResolvedValue(record);
-      mockPrisma.storageObject.update.mockResolvedValue({ ...record, status: 'DELETED' });
+      // Arrange
+      mockRepo.findActive.mockResolvedValue(buildRecord());
+      mockRepo.update.mockResolvedValue({ ...buildRecord(), status: 'DELETED' });
       jest.spyOn(provider, 'delete').mockRejectedValue(new Error('R2 connection error'));
       const logSpy = jest
         .spyOn((service as unknown as { logger: { error: jest.Mock } }).logger, 'error')
         .mockImplementation(() => undefined);
 
-      // Arrange — Act: must NOT throw even when provider fails
+      // Act
       await expect(service.deleteFile('obj-001', 'tenant-001')).resolves.toBeUndefined();
 
-      // Assert: soft delete happened and error was logged
-      expect(mockPrisma.storageObject.update).toHaveBeenCalledTimes(1);
+      // Assert
+      expect(mockRepo.update).toHaveBeenCalledTimes(1);
       expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('[STORAGE_DELETE_PENDING]'));
     });
   });
 
   describe('getPresignedUrl', () => {
     it('lanza NotFoundException si el objeto no existe', async () => {
-      mockPrisma.storageObject.findFirst.mockResolvedValue(null);
+      // Arrange
+      mockRepo.findActive.mockResolvedValue(null);
 
+      // Act & Assert
       await expect(service.getPresignedUrl('nonexistent', 'tenant-001', 900)).rejects.toThrow(
         NotFoundException,
       );
     });
 
     it('verifica tenantId para presigned URL', async () => {
-      mockPrisma.storageObject.findFirst.mockResolvedValue(null);
+      // Arrange
+      mockRepo.findActive.mockResolvedValue(null);
 
+      // Act & Assert
       await expect(service.getPresignedUrl('obj-001', 'otro-tenant', 900)).rejects.toThrow(
         NotFoundException,
       );
     });
 
     it('retorna publicUrl directamente para assets PUBLIC', async () => {
+      // Arrange
       const original = process.env.R2_PUBLIC_DOMAIN;
       process.env.R2_PUBLIC_DOMAIN = 'https://cdn.opssynk.com';
-
-      const record = buildRecord({ visibility: StorageVisibility.PUBLIC });
-      mockPrisma.storageObject.findFirst.mockResolvedValue(record);
+      mockRepo.findActive.mockResolvedValue(buildRecord({ visibility: StorageVisibility.PUBLIC }));
       const presignedSpy = jest.spyOn(provider, 'getPresignedUrl');
 
+      // Act
       const url = await service.getPresignedUrl('obj-001', 'tenant-001', 900);
 
+      // Assert
       expect(url).toMatch(/^https:\/\/cdn\.opssynk\.com\//);
       expect(presignedSpy).not.toHaveBeenCalled();
-
       process.env.R2_PUBLIC_DOMAIN = original;
     });
 
     it('genera presigned URL para assets PRIVATE', async () => {
-      const record = buildRecord({ visibility: StorageVisibility.PRIVATE });
-      mockPrisma.storageObject.findFirst.mockResolvedValue(record);
+      // Arrange
+      mockRepo.findActive.mockResolvedValue(buildRecord({ visibility: StorageVisibility.PRIVATE }));
 
+      // Act
       const url = await service.getPresignedUrl('obj-001', 'tenant-001', 900);
 
+      // Assert
       expect(url).toMatch(/^https:\/\/mock\.storage\//);
     });
   });
 
   describe('findById', () => {
     it('retorna el StorageObjectResult cuando existe', async () => {
-      const record = buildRecord();
-      mockPrisma.storageObject.findFirst.mockResolvedValue(record);
+      // Arrange
+      mockRepo.findActive.mockResolvedValue(buildRecord());
 
+      // Act
       const result = await service.findById('obj-001', 'tenant-001');
 
+      // Assert
       expect(result.id).toBe('obj-001');
       expect(result.tenantId).toBe('tenant-001');
     });
 
     it('lanza NotFoundException si el objeto no existe', async () => {
-      mockPrisma.storageObject.findFirst.mockResolvedValue(null);
+      // Arrange
+      mockRepo.findActive.mockResolvedValue(null);
 
+      // Act & Assert
       await expect(service.findById('nonexistent', 'tenant-001')).rejects.toThrow(
         NotFoundException,
       );

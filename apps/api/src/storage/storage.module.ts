@@ -3,7 +3,8 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { StorageController } from './controller/storage.controller';
 import type { StorageModuleOptions } from './interfaces/storage.interfaces';
 import { STORAGE_PROVIDER } from './interfaces/storage.interfaces';
-import { StorageService } from './storage.service';
+import { StorageRepository } from './repository/storage.repository';
+import { StorageService } from './service/storage.service';
 
 @Module({})
 export class StorageModule {
@@ -18,6 +19,7 @@ export class StorageModule {
           provide: STORAGE_PROVIDER,
           useClass: options.provider,
         },
+        StorageRepository,
         StorageService,
       ],
       exports: [StorageService],

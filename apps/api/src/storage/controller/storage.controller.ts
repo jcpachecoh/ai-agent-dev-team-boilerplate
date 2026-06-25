@@ -16,7 +16,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { JwtPayload } from '../../auth/interfaces/auth.interfaces';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { StorageService } from '../storage.service';
+import { StorageService } from '../service/storage.service';
 import { PresignedUrlResponseDto } from './dto/presigned-url.dto';
 import { UploadFileDto } from './dto/upload-file.dto';
 import { UploadResultDto } from './dto/upload-result.dto';

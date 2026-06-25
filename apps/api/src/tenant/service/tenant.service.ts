@@ -1,6 +1,6 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { ImageProfile, StorageDomain, StorageVisibility } from '../../storage/enums/storage.enums';
-import { StorageService } from '../../storage/storage.service';
+import { StorageService } from '../../storage/service/storage.service';
 import { TenantRepository } from '../repository/tenant.repository';
 import type {
   ITenantService,
