@@ -20,7 +20,7 @@ describe('image-processor', () => {
     };
     instance.resize.mockReturnValue(instance);
     instance.webp.mockReturnValue(instance);
-    (sharp as jest.Mock).mockReturnValue(instance);
+    (sharp as unknown as jest.Mock).mockReturnValue(instance);
   });
 
   afterEach(() => jest.clearAllMocks());

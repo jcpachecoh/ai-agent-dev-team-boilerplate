@@ -130,7 +130,7 @@ export interface CreateStorageObjectData {
 export interface UpdateStorageObjectData {
   status?: StorageObjectStatus;
   deletedAt?: Date;
-  metadata?: unknown;
+  metadata?: Record<string, unknown>;
 }
 
 export interface IStorageRepository {

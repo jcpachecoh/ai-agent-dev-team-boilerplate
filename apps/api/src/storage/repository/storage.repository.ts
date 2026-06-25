@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { StorageObjectStatus } from '../enums/storage.enums';
 import type {
@@ -23,9 +24,13 @@ export class StorageRepository implements IStorageRepository {
   }
 
   async update(id: string, data: UpdateStorageObjectData): Promise<StorageRecord> {
+    const { metadata, ...rest } = data;
     return this.prisma.storageObject.update({
       where: { id },
-      data,
+      data: {
+        ...rest,
+        ...(metadata !== undefined && { metadata: metadata as Prisma.InputJsonValue }),
+      },
     }) as Promise<StorageRecord>;
   }
 }
