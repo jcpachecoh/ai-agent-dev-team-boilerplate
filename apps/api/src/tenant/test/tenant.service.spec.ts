@@ -1,5 +1,11 @@
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import {
+  StorageDomain,
+  StorageObjectStatus,
+  StorageVisibility,
+} from '../../storage/enums/storage.enums';
+import { StorageService } from '../../storage/storage.service';
 import { TenantRepository } from '../repository/tenant.repository';
 import { TenantService } from '../service/tenant.service';
 
@@ -7,6 +13,11 @@ const repoMock = {
   findById: jest.fn(),
   findAll: jest.fn(),
   update: jest.fn(),
+};
+
+const storageServiceMock = {
+  uploadFile: jest.fn(),
+  buildPublicUrl: jest.fn(),
 };
 
 const tenant = {
@@ -31,12 +42,40 @@ const tenant = {
   updatedAt: new Date(),
 };
 
+const storageResult = {
+  id: 'obj-001',
+  tenantId: 'palos-de-lena',
+  provider: 'CLOUDFLARE_R2',
+  bucket: 'restopsiq-assets',
+  key: 'tenants/palos-de-lena/branding/uuid.webp',
+  mimeType: 'image/webp',
+  size: 1024,
+  checksum: 'abc123',
+  etag: null,
+  originalName: 'logo.png',
+  domain: StorageDomain.BRANDING,
+  entityType: 'tenant',
+  entityId: 'palos-de-lena',
+  uploadedBy: 'user-001',
+  visibility: StorageVisibility.PUBLIC,
+  status: StorageObjectStatus.ACTIVE,
+  metadata: null,
+  publicUrl: 'https://cdn.opssynk.com/tenants/palos-de-lena/branding/uuid.webp',
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  deletedAt: null,
+};
+
 describe('TenantService', () => {
   let service: TenantService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [TenantService, { provide: TenantRepository, useValue: repoMock }],
+      providers: [
+        TenantService,
+        { provide: TenantRepository, useValue: repoMock },
+        { provide: StorageService, useValue: storageServiceMock },
+      ],
     }).compile();
 
     service = module.get<TenantService>(TenantService);
@@ -77,5 +116,63 @@ describe('TenantService', () => {
     await expect(service.update('missing', { tradeName: 'Nuevo nombre' })).rejects.toThrow(
       NotFoundException,
     );
+  });
+
+  describe('uploadLogo', () => {
+    const file = {
+      buffer: Buffer.from('fake-image'),
+      mimetype: 'image/webp',
+      originalname: 'logo.webp',
+      size: 10,
+    };
+
+    it('usa StorageService — no escribe al filesystem', async () => {
+      repoMock.findById.mockResolvedValue(tenant);
+      storageServiceMock.uploadFile.mockResolvedValue(storageResult);
+      repoMock.update.mockResolvedValue({
+        ...tenant,
+        logoUrl: storageResult.publicUrl,
+      });
+
+      await service.uploadLogo('palos-de-lena', 'user-001', file);
+
+      expect(storageServiceMock.uploadFile).toHaveBeenCalledTimes(1);
+      expect(storageServiceMock.uploadFile).toHaveBeenCalledWith(
+        expect.objectContaining({
+          tenantId: 'palos-de-lena',
+          uploadedBy: 'user-001',
+          domain: StorageDomain.BRANDING,
+          entityType: 'tenant',
+          entityId: 'palos-de-lena',
+        }),
+      );
+    });
+
+    it('persiste publicUrl del storage en Tenant.logoUrl', async () => {
+      repoMock.findById.mockResolvedValue(tenant);
+      storageServiceMock.uploadFile.mockResolvedValue(storageResult);
+      repoMock.update.mockResolvedValue({
+        ...tenant,
+        logoUrl: storageResult.publicUrl,
+      });
+
+      const result = await service.uploadLogo('palos-de-lena', 'user-001', file);
+
+      expect(repoMock.update).toHaveBeenCalledWith(
+        'palos-de-lena',
+        expect.objectContaining({ logoUrl: storageResult.publicUrl }),
+      );
+      expect(result.logoUrl).toBe(storageResult.publicUrl);
+    });
+
+    it('lanza NotFoundException si el tenant no existe', async () => {
+      repoMock.findById.mockResolvedValue(null);
+
+      await expect(service.uploadLogo('no-existe', 'user-001', file)).rejects.toThrow(
+        NotFoundException,
+      );
+
+      expect(storageServiceMock.uploadFile).not.toHaveBeenCalled();
+    });
   });
 });
