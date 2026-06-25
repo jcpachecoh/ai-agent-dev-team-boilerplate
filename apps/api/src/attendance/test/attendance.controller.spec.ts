@@ -31,6 +31,8 @@ const kioskAuthResult = {
   fullName: 'carlos',
   locationId: 'loc-001',
   employeeId: 'emp-001',
+  accessToken: 'access-token',
+  refreshToken: 'refresh-token',
 };
 
 describe('AttendanceController', () => {

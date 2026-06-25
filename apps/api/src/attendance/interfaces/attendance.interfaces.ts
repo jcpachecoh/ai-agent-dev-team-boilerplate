@@ -52,6 +52,8 @@ export interface KioskAuthResult {
   fullName: string;
   locationId: string;
   employeeId: string;
+  accessToken: string;
+  refreshToken: string;
 }
 
 export interface EntryResult {

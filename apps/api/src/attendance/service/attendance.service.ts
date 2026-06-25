@@ -32,6 +32,7 @@ import type {
 } from '../interfaces/attendance.interfaces';
 import { AttendanceRepository, normalizeWorkDate } from '../repository/attendance.repository';
 import { calculateDaySummary, getBogotaHour } from '../utils/attendance-calculation.util';
+import { AuthService } from '../../auth/service/auth.service';
 
 // Kiosk-auth security model:
 //   • Tenant scope: tenantId required on every call
@@ -48,7 +49,10 @@ const kioskLockout = new Map<string, { attempts: number; lockedUntil: Date | nul
 export class AttendanceService implements IAttendanceService {
   private readonly logger = new Logger(AttendanceService.name);
 
-  constructor(private readonly attendanceRepository: AttendanceRepository) {}
+  constructor(
+    private readonly attendanceRepository: AttendanceRepository,
+    private readonly authService: AuthService,
+  ) {}
 
   async kioskAuth(dto: KioskAuthInput, tenantId: string): Promise<KioskAuthResult> {
     const user = await this.attendanceRepository.findUserByCedula(dto.cedula, tenantId);
@@ -85,14 +89,21 @@ export class AttendanceService implements IAttendanceService {
 
     kioskLockout.delete(lockKey);
 
-    const fullName = `${user.cedula}`;
+    const fullName = user.email.split('@')[0];
+    const tokens = await this.authService.issueKioskAuthTokens(
+      user.id,
+      tenantId,
+      employee.locationId,
+    );
     this.logger.log(`Kiosk auth OK: employeeId=${employee.id} tenantId=${tenantId}`);
 
     return {
       userId: user.id,
-      fullName: user.email.split('@')[0],
+      fullName,
       locationId: employee.locationId,
       employeeId: employee.id,
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
     };
   }
 

@@ -100,6 +100,11 @@ export interface IAuthService {
   me(userId: string, activeLocationId?: string | null): Promise<AuthUserProfile>;
   myLocations(tenantId: string, userId: string): Promise<UserLocationSummary[]>;
   selectLocation(tenantId: string, userId: string, locationId: string): Promise<AuthTokens>;
+  issueKioskAuthTokens(
+    userId: string,
+    tenantId: string,
+    locationId: string,
+  ): Promise<Pick<AuthTokens, 'accessToken' | 'refreshToken'>>;
   changePassword(
     userId: string,
     currentPassword: string,
