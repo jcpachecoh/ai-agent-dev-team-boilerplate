@@ -7,11 +7,15 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { EmployeeContractType, SalaryType, EmployeeDetails, User, Prisma } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 import { SMLV_2025, TRANSPORT_SUBSIDY_THRESHOLD } from '../payroll.constants';
 import { PayrollRepository } from '../repository/payroll.repository';
 import { IPayrollService } from '../interfaces/payroll.interfaces';
 import type { UpdateEmployeePayload } from '../interfaces/payroll.interfaces';
 import { decimalToNumber } from '../../common/utils/decimal.util';
+
+const SALT_ROUNDS = 12;
 
 @Injectable()
 export class PayrollService implements IPayrollService {
@@ -22,21 +26,7 @@ export class PayrollService implements IPayrollService {
   async create(tenantId: string, data: any): Promise<EmployeeDetails & { user: User }> {
     this.validateColombiaLaw(tenantId, data);
 
-    const linkedUser = await this.payrollRepository.findUserByEmailAndCedula(
-      tenantId,
-      data.email,
-      data.cedula,
-    );
-    if (!linkedUser) {
-      throw new BadRequestException(
-        'Debe registrar el usuario en el módulo Usuarios antes de vincularlo como empleado.',
-      );
-    }
-
-    const existingEmployee = await this.payrollRepository.findByUserId(linkedUser.id);
-    if (existingEmployee) {
-      throw new ConflictException('Este usuario ya está registrado como empleado');
-    }
+    const linkedUserId = await this.resolveLinkedUserId(tenantId, data);
 
     const location = await this.payrollRepository.findLocationById(data.locationId);
     if (!location || location.tenantId !== tenantId) {
@@ -49,12 +39,20 @@ export class PayrollService implements IPayrollService {
     }
 
     const hasTransportSubsidy = this.calculateTransportSubsidy(data.salaryAmount);
+    const passwordHash =
+      linkedUserId === undefined
+        ? await bcrypt.hash(crypto.randomBytes(16).toString('hex'), SALT_ROUNDS)
+        : undefined;
 
     try {
       return await this.payrollRepository.create({
         tenantId,
-        userId: linkedUser.id,
+        userId: linkedUserId,
         roleId: data.roleId,
+        email: data.email,
+        cedula: data.cedula,
+        documentType: data.documentType,
+        passwordHash,
         locationId: data.locationId,
         name: data.name,
         position: data.position,
@@ -81,6 +79,41 @@ export class PayrollService implements IPayrollService {
 
       throw error;
     }
+  }
+
+  private async resolveLinkedUserId(tenantId: string, data: any): Promise<string | undefined> {
+    const [byEmail, byCedula] = await Promise.all([
+      this.payrollRepository.findUserByEmail(tenantId, data.email),
+      this.payrollRepository.findUserByCedula(tenantId, data.cedula),
+    ]);
+
+    if (byEmail && byCedula && byEmail.id !== byCedula.id) {
+      throw new ConflictException('El email y la cédula pertenecen a usuarios distintos');
+    }
+
+    const linkedUser = byEmail ?? byCedula;
+    if (!linkedUser) {
+      return undefined;
+    }
+
+    if (byEmail && data.cedula !== byEmail.cedula) {
+      throw new ConflictException(
+        'La cédula no coincide con el usuario registrado para este email',
+      );
+    }
+
+    if (byCedula && data.email !== byCedula.email) {
+      throw new ConflictException(
+        'El email no coincide con el usuario registrado para esta cédula',
+      );
+    }
+
+    const existingEmployee = await this.payrollRepository.findByUserId(linkedUser.id);
+    if (existingEmployee) {
+      throw new ConflictException('Este usuario ya está registrado como empleado');
+    }
+
+    return linkedUser.id;
   }
 
   async findAll(tenantId: string, filters: any): Promise<(EmployeeDetails & { user: User })[]> {

@@ -54,8 +54,9 @@ describe('PayrollService', () => {
     cedula: '123456',
   };
 
-  const setupSuccessfulCreate = () => {
-    (repository.findUserByEmailAndCedula as jest.Mock).mockResolvedValue(mockLinkedUser);
+  const setupSuccessfulCreate = (linkedUser: typeof mockLinkedUser | null = mockLinkedUser) => {
+    (repository.findUserByEmail as jest.Mock).mockResolvedValue(linkedUser);
+    (repository.findUserByCedula as jest.Mock).mockResolvedValue(linkedUser);
     (repository.findByUserId as jest.Mock).mockResolvedValue(null);
     (repository.findLocationById as jest.Mock).mockResolvedValue({
       id: mockLocationId,
@@ -80,6 +81,8 @@ describe('PayrollService', () => {
             update: jest.fn(),
             softDelete: jest.fn(),
             findExistingUser: jest.fn(),
+            findUserByEmail: jest.fn(),
+            findUserByCedula: jest.fn(),
             findUserByEmailAndCedula: jest.fn(),
             findLocationById: jest.fn(),
             findRoleById: jest.fn(),
@@ -93,7 +96,26 @@ describe('PayrollService', () => {
   });
 
   describe('create', () => {
-    it('should create an employee successfully', async () => {
+    it('should create an employee when user does not exist yet', async () => {
+      setupSuccessfulCreate(null);
+      (repository.create as jest.Mock).mockResolvedValue({ id: 'emp-1', ...mockEmployeeData });
+
+      const result = await service.create(mockTenantId, mockEmployeeData);
+
+      expect(result).toBeDefined();
+      expect(repository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          tenantId: mockTenantId,
+          userId: undefined,
+          roleId: mockRoleId,
+          email: mockEmployeeData.email,
+          cedula: mockEmployeeData.cedula,
+          passwordHash: expect.any(String),
+        }),
+      );
+    });
+
+    it('should create an employee linked to an existing user', async () => {
       setupSuccessfulCreate();
       (repository.create as jest.Mock).mockResolvedValue({ id: 'emp-1', ...mockEmployeeData });
 
@@ -109,16 +131,8 @@ describe('PayrollService', () => {
       );
     });
 
-    it('should throw BadRequestException when user is not registered in Usuarios', async () => {
-      (repository.findUserByEmailAndCedula as jest.Mock).mockResolvedValue(null);
-
-      await expect(service.create(mockTenantId, mockEmployeeData)).rejects.toThrow(
-        BadRequestException,
-      );
-    });
-
     it('should throw ConflictException if user is already an employee', async () => {
-      (repository.findUserByEmailAndCedula as jest.Mock).mockResolvedValue(mockLinkedUser);
+      setupSuccessfulCreate();
       (repository.findByUserId as jest.Mock).mockResolvedValue({ id: 'existing-emp' });
 
       await expect(service.create(mockTenantId, mockEmployeeData)).rejects.toThrow(
@@ -206,12 +220,7 @@ describe('PayrollService', () => {
     });
 
     it('should throw BadRequestException if role is invalid', async () => {
-      (repository.findUserByEmailAndCedula as jest.Mock).mockResolvedValue(mockLinkedUser);
-      (repository.findByUserId as jest.Mock).mockResolvedValue(null);
-      (repository.findLocationById as jest.Mock).mockResolvedValue({
-        id: mockLocationId,
-        tenantId: mockTenantId,
-      });
+      setupSuccessfulCreate();
       (repository.findRoleById as jest.Mock).mockResolvedValue(null);
 
       await expect(service.create(mockTenantId, mockEmployeeData)).rejects.toThrow(
@@ -220,8 +229,7 @@ describe('PayrollService', () => {
     });
 
     it('should throw BadRequestException if location is null', async () => {
-      (repository.findUserByEmailAndCedula as jest.Mock).mockResolvedValue(mockLinkedUser);
-      (repository.findByUserId as jest.Mock).mockResolvedValue(null);
+      setupSuccessfulCreate();
       (repository.findLocationById as jest.Mock).mockResolvedValue(null);
 
       await expect(service.create(mockTenantId, mockEmployeeData)).rejects.toThrow(
@@ -230,8 +238,7 @@ describe('PayrollService', () => {
     });
 
     it('should throw BadRequestException if location belongs to a different tenant', async () => {
-      (repository.findUserByEmailAndCedula as jest.Mock).mockResolvedValue(mockLinkedUser);
-      (repository.findByUserId as jest.Mock).mockResolvedValue(null);
+      setupSuccessfulCreate();
       (repository.findLocationById as jest.Mock).mockResolvedValue({
         id: mockLocationId,
         tenantId: 'other-tenant',
@@ -243,12 +250,7 @@ describe('PayrollService', () => {
     });
 
     it('should throw BadRequestException if role belongs to a different tenant', async () => {
-      (repository.findUserByEmailAndCedula as jest.Mock).mockResolvedValue(mockLinkedUser);
-      (repository.findByUserId as jest.Mock).mockResolvedValue(null);
-      (repository.findLocationById as jest.Mock).mockResolvedValue({
-        id: mockLocationId,
-        tenantId: mockTenantId,
-      });
+      setupSuccessfulCreate();
       (repository.findRoleById as jest.Mock).mockResolvedValue({
         id: mockRoleId,
         tenantId: 'other-tenant',
@@ -279,16 +281,7 @@ describe('PayrollService', () => {
         contractType: EmployeeContractType.APRENDIZAJE,
         salaryAmount: SMLV_2025 * 0.75,
       };
-      (repository.findUserByEmailAndCedula as jest.Mock).mockResolvedValue(mockLinkedUser);
-      (repository.findByUserId as jest.Mock).mockResolvedValue(null);
-      (repository.findLocationById as jest.Mock).mockResolvedValue({
-        id: mockLocationId,
-        tenantId: mockTenantId,
-      });
-      (repository.findRoleById as jest.Mock).mockResolvedValue({
-        id: mockRoleId,
-        tenantId: mockTenantId,
-      });
+      setupSuccessfulCreate();
       (repository.create as jest.Mock).mockResolvedValue({ id: 'emp-1' });
 
       await expect(service.create(mockTenantId, validData)).resolves.toBeDefined();

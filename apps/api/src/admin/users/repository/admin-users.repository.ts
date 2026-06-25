@@ -5,7 +5,9 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import type {
   AdminUserDetail,
   AdminUserListItem,
+  CompleteEmployeeUserData,
   CreateAdminUserData,
+  EmployeeProvisioningContext,
   IAdminUsersRepository,
   UpdateAdminUserData,
   UserPermissionOverrideInput,
@@ -88,6 +90,126 @@ export class AdminUsersRepository implements IAdminUsersRepository {
     });
 
     return toListItem(row);
+  }
+
+  async findEmployeeProvisioningContext(
+    tenantId: string,
+    userId: string,
+  ): Promise<EmployeeProvisioningContext | null> {
+    const row = await this.prisma.user.findFirst({
+      where: { id: userId, tenantId, deletedAt: null },
+      select: {
+        id: true,
+        email: true,
+        cedula: true,
+        createdBy: true,
+        employeeDetails: { select: { id: true, locationId: true } },
+        operationalProfile: { select: { id: true } },
+      },
+    });
+
+    if (!row?.employeeDetails) {
+      return null;
+    }
+
+    return {
+      id: row.id,
+      email: row.email,
+      cedula: row.cedula,
+      createdBy: row.createdBy,
+      employeeDetailsId: row.employeeDetails.id,
+      employeeLocationId: row.employeeDetails.locationId,
+      hasOperationalProfile: Boolean(row.operationalProfile),
+    };
+  }
+
+  async completeEmployeeUserProvisioning(
+    tenantId: string,
+    userId: string,
+    data: CompleteEmployeeUserData,
+  ): Promise<AdminUserListItem> {
+    const locationId = data.locationId?.trim() || undefined;
+
+    const row = await this.prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id: userId },
+        data: {
+          cedula: data.cedula,
+          documentType: data.documentType,
+          email: data.email,
+          passwordHash: data.passwordHash,
+          roleId: data.roleId,
+          createdBy: data.createdBy,
+          isActive: true,
+          deletedAt: null,
+          emailVerified: false,
+        },
+      });
+
+      if (locationId) {
+        await tx.employeeDetails.update({
+          where: { userId },
+          data: { locationId, name: data.name.trim() },
+        });
+      } else {
+        await tx.employeeDetails.update({
+          where: { userId },
+          data: { name: data.name.trim() },
+        });
+      }
+
+      if (data.operationalUser) {
+        if (await tx.operationalUser.findUnique({ where: { userId } })) {
+          await tx.operationalUser.update({
+            where: { userId },
+            data: {
+              cedulaHash: data.operationalUser.cedulaHash,
+              pinHash: data.operationalUser.pinHash,
+              role: OperationalRole.OPERATOR,
+              sedeId: locationId ?? null,
+              isActive: true,
+            },
+          });
+        } else {
+          await tx.operationalUser.create({
+            data: {
+              userId,
+              tenantId,
+              cedulaHash: data.operationalUser.cedulaHash,
+              pinHash: data.operationalUser.pinHash,
+              role: OperationalRole.OPERATOR,
+              sedeId: locationId ?? null,
+              isActive: true,
+              loginAttempts: 0,
+            },
+          });
+        }
+
+        if (locationId) {
+          await tx.userLocation.upsert({
+            where: {
+              userId_locationId: {
+                userId,
+                locationId,
+              },
+            },
+            update: {},
+            create: {
+              userId,
+              locationId,
+              tenantId,
+            },
+          });
+        }
+      }
+
+      return tx.user.findUniqueOrThrow({
+        where: { id: userId },
+        include: { role: ROLE_SELECT, employeeDetails: { select: { name: true } } },
+      });
+    });
+
+    return { ...toListItem(row), name: data.name.trim() };
   }
 
   async createWithEmployeeDetails(

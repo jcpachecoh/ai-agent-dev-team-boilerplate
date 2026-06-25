@@ -27,6 +27,31 @@ export interface AdminUserDetail extends AdminUserListItem {
   createdBy: string | null;
 }
 
+export interface EmployeeProvisioningContext {
+  id: string;
+  email: string;
+  cedula: string;
+  createdBy: string | null;
+  employeeDetailsId: string;
+  employeeLocationId: string;
+  hasOperationalProfile: boolean;
+}
+
+export interface CompleteEmployeeUserData {
+  name: string;
+  cedula: string;
+  documentType: DocumentType;
+  email: string;
+  roleId: string;
+  passwordHash: string;
+  createdBy: string;
+  locationId?: string;
+  operationalUser?: {
+    cedulaHash: string;
+    pinHash: string;
+  };
+}
+
 export interface CreateAdminUserData {
   name: string;
   cedula: string;
@@ -59,11 +84,20 @@ export interface IAdminUsersRepository {
   findById(tenantId: string, userId: string): Promise<AdminUserDetail | null>;
   findByEmail(tenantId: string, email: string): Promise<{ id: string } | null>;
   findByCedula(tenantId: string, cedula: string): Promise<{ id: string } | null>;
+  findEmployeeProvisioningContext(
+    tenantId: string,
+    userId: string,
+  ): Promise<EmployeeProvisioningContext | null>;
   findRoleCode(roleId: string): Promise<string | null>;
   create(tenantId: string, data: CreateAdminUserData): Promise<AdminUserListItem>;
   createWithEmployeeDetails(
     tenantId: string,
     data: CreateAdminUserData,
+  ): Promise<AdminUserListItem>;
+  completeEmployeeUserProvisioning(
+    tenantId: string,
+    userId: string,
+    data: CompleteEmployeeUserData,
   ): Promise<AdminUserListItem>;
   update(tenantId: string, userId: string, data: UpdateAdminUserData): Promise<AdminUserListItem>;
   deactivate(tenantId: string, userId: string): Promise<void>;

@@ -18,14 +18,31 @@ export class PayrollRepository implements IPayrollRepository {
     data: CreateEmployeeData & { hasTransportSubsidy: boolean },
   ): Promise<EmployeeDetails & { user: User }> {
     return this.prisma.$transaction(async (tx) => {
-      await tx.user.update({
-        where: { id: data.userId },
-        data: { roleId: data.roleId },
-      });
+      let userId = data.userId;
+
+      if (!userId) {
+        const user = await tx.user.create({
+          data: {
+            tenantId: data.tenantId,
+            email: data.email,
+            cedula: data.cedula,
+            documentType: data.documentType,
+            roleId: data.roleId,
+            passwordHash: data.passwordHash!,
+            isActive: true,
+          },
+        });
+        userId = user.id;
+      } else {
+        await tx.user.update({
+          where: { id: userId },
+          data: { roleId: data.roleId },
+        });
+      }
 
       const employeeDetails = await tx.employeeDetails.create({
         data: {
-          userId: data.userId,
+          userId,
           tenantId: data.tenantId,
           name: data.name,
           locationId: data.locationId,
@@ -218,6 +235,20 @@ export class PayrollRepository implements IPayrollRepository {
     return this.prisma.user.findFirst({
       where: { tenantId, OR: [{ email }, { cedula }] },
       select: { id: true },
+    });
+  }
+
+  async findUserByEmail(tenantId: string, email: string): Promise<LinkedUserRecord | null> {
+    return this.prisma.user.findFirst({
+      where: { tenantId, email, deletedAt: null },
+      select: { id: true, email: true, cedula: true },
+    });
+  }
+
+  async findUserByCedula(tenantId: string, cedula: string): Promise<LinkedUserRecord | null> {
+    return this.prisma.user.findFirst({
+      where: { tenantId, cedula, deletedAt: null },
+      select: { id: true, email: true, cedula: true },
     });
   }
 

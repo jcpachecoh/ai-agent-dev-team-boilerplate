@@ -10,8 +10,12 @@ import { Decimal } from '@prisma/client/runtime/library';
 
 export interface CreateEmployeeData {
   tenantId: string;
-  userId: string;
+  userId?: string;
   roleId: string;
+  email: string;
+  cedula: string;
+  documentType: DocumentType;
+  passwordHash?: string;
   locationId: string;
   name: string;
   position: string;
@@ -95,6 +99,8 @@ export interface IPayrollRepository {
   softDelete(userId: string): Promise<void>;
   count(filters: ListEmployeesFilters): Promise<number>;
   findExistingUser(tenantId: string, email: string, cedula: string): Promise<{ id: string } | null>;
+  findUserByEmail(tenantId: string, email: string): Promise<LinkedUserRecord | null>;
+  findUserByCedula(tenantId: string, cedula: string): Promise<LinkedUserRecord | null>;
   findUserByEmailAndCedula(
     tenantId: string,
     email: string,

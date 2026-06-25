@@ -9,7 +9,6 @@ import type { ValidationError } from 'class-validator';
 import request from 'supertest';
 import { AppModule } from '../../app.module';
 import { PrismaService } from '../../prisma/prisma.service';
-import { DocumentType } from '@prisma/client';
 
 describe('EmployeesController (e2e)', () => {
   let app: INestApplication;
@@ -60,22 +59,10 @@ describe('EmployeesController (e2e)', () => {
     const location = await prisma.location.findFirst({ where: { tenantId: mockTenantId } });
     const role = await prisma.role.findFirst({ where: { tenantId: mockTenantId } });
 
-    // 2. Create user in Usuarios (required before linking as employee)
+    // 2. POST employee (creates user + employeeDetails atomically when user does not exist)
     const timestamp = Date.now();
     const cedula = '123' + timestamp;
     const email = 'test-' + timestamp + '@test.com';
-    await prisma.user.create({
-      data: {
-        tenantId: mockTenantId,
-        cedula,
-        documentType: DocumentType.CC,
-        email,
-        passwordHash: '$2b$12$Elo.kWNs5.bh93LOaBPH7OtQ23EuF38MBKm4XUL2mH1WnpBhOsXiS',
-        roleId: role!.id,
-      },
-    });
-
-    // 3. POST employee (links existing user)
     const employeeData = {
       cedula,
       documentType: 'CC',

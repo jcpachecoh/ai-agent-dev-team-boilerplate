@@ -8,6 +8,7 @@ const employeeInclude = {
 } as const;
 
 describe('PayrollRepository', () => {
+  const userCreate = jest.fn();
   const userUpdate = jest.fn();
   const employeeDetailsCreate = jest.fn();
 
@@ -21,6 +22,7 @@ describe('PayrollRepository', () => {
     },
     user: {
       findFirst: jest.fn(),
+      create: userCreate,
     },
     location: {
       findUnique: jest.fn(),
@@ -36,6 +38,9 @@ describe('PayrollRepository', () => {
     tenantId: 'tenant-1',
     userId: 'user-1',
     roleId: 'role-1',
+    email: 'employee@example.com',
+    cedula: '123456',
+    documentType: 'CC' as const,
     locationId: 'loc-1',
     name: 'Test User',
     position: 'Operator',
@@ -59,12 +64,45 @@ describe('PayrollRepository', () => {
 
     (prisma.$transaction as jest.Mock).mockImplementation(async (callback: unknown) => {
       const tx = {
-        user: { update: userUpdate },
+        user: { update: userUpdate, create: userCreate },
         employeeDetails: { create: employeeDetailsCreate },
       };
 
       return (callback as (arg: typeof tx) => Promise<unknown>)(tx);
     });
+  });
+
+  it('creates user and employee atomically when userId is omitted', async () => {
+    userCreate.mockResolvedValue({ id: 'user-new' });
+    employeeDetailsCreate.mockResolvedValue({
+      id: 'emp-new',
+      userId: 'user-new',
+      user: { id: 'user-new' },
+    });
+
+    await repository.create({
+      ...baseCreateData,
+      userId: undefined,
+      passwordHash: 'hashed-password',
+      contractEnd: null,
+      hasTransportSubsidy: true,
+    });
+
+    expect(userCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        tenantId: 'tenant-1',
+        email: 'employee@example.com',
+        cedula: '123456',
+        roleId: 'role-1',
+        passwordHash: 'hashed-password',
+      }),
+    });
+    expect(userUpdate).not.toHaveBeenCalled();
+    expect(employeeDetailsCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ userId: 'user-new' }),
+      }),
+    );
   });
 
   it('links an existing user and creates employee with null contractEnd when omitted', async () => {

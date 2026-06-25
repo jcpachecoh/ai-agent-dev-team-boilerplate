@@ -1,3 +1,4 @@
+@use 'sass:color';
 @use '../../../styles/abstracts/variables' as *;
 
 $asistencia-accent: #0ea5e9;
@@ -46,9 +47,9 @@ $asistencia-dark-muted: #888888;
   --asistencia-coral-soft: #{rgba($asistencia-coral, 0.1)};
   --asistencia-coral-border: #{rgba($asistencia-coral, 0.19)};
   --asistencia-progress-track: #1c1c1c;
-  --asistencia-rest-soft: #{mix($asistencia-dark-surface, $asistencia-teal, 86%)};
-  --asistencia-absence-soft: #{mix($asistencia-dark-surface, $asistencia-coral, 88%)};
-  --asistencia-festive-soft: #{mix($asistencia-dark-surface, $asistencia-amber, 90%)};
+  --asistencia-rest-soft: #{color.mix($asistencia-dark-surface, $asistencia-teal, 14%)};
+  --asistencia-absence-soft: #{color.mix($asistencia-dark-surface, $asistencia-coral, 12%)};
+  --asistencia-festive-soft: #{color.mix($asistencia-dark-surface, $asistencia-amber, 10%)};
   --asistencia-table-header: #9a9a9a;
   --asistencia-table-muted: #c8c8c8;
 }

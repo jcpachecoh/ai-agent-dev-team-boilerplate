@@ -64,13 +64,11 @@ export class AdminUsersService implements IAdminUsersService {
       this.repo.findByCedula(tenantId, data.cedula),
     ]);
 
-    if (byEmail) {
-      throw new ConflictException('Email already registered in this tenant');
-    }
-    if (byCedula) {
-      throw new ConflictException('Cédula already registered in this tenant');
+    if (byEmail && byCedula && byEmail.id !== byCedula.id) {
+      throw new ConflictException('Email and cédula belong to different users in this tenant');
     }
 
+    const existingUserId = byEmail?.id ?? byCedula?.id;
     const roleCode = await this.repo.findRoleCode(data.roleId);
 
     if (roleCode === 'OPERATOR' && !data.locationId?.trim()) {
@@ -89,13 +87,44 @@ export class AdminUsersService implements IAdminUsersService {
       operationalUser = { cedulaHash, pinHash };
     }
 
-    const user = await this.repo.createWithEmployeeDetails(tenantId, {
+    const provisioningPayload = {
       ...data,
       locationId: data.locationId?.trim(),
       passwordHash,
       createdBy: requesterId,
       operationalUser,
-    });
+    };
+
+    let user: AdminUserListItem;
+
+    if (existingUserId) {
+      const context = await this.repo.findEmployeeProvisioningContext(tenantId, existingUserId);
+      if (!context) {
+        throw new ConflictException(
+          byEmail
+            ? 'Email already registered in this tenant'
+            : 'Cédula already registered in this tenant',
+        );
+      }
+      if (context.createdBy) {
+        throw new ConflictException('This employee already has an access account configured');
+      }
+      if (context.email !== data.email || context.cedula !== data.cedula) {
+        throw new ConflictException(
+          byEmail
+            ? 'Email already registered in this tenant'
+            : 'Cédula already registered in this tenant',
+        );
+      }
+
+      user = await this.repo.completeEmployeeUserProvisioning(
+        tenantId,
+        existingUserId,
+        provisioningPayload,
+      );
+    } else {
+      user = await this.repo.createWithEmployeeDetails(tenantId, provisioningPayload);
+    }
 
     this.authEmailService
       .sendAccountConfirmation(
