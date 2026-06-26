@@ -23,6 +23,7 @@ import { UserModule } from './user/user.module';
 import { SupplierModule } from './supplier/supplier.module';
 import { SupplierProductModule } from './supplier-product/supplier-product.module';
 import { RecipeModule } from './recipe/recipe.module';
+import { RecipeImagesModule } from './recipe-images/recipe-images.module';
 import { PurchaseOrderModule } from './purchase-order/purchase-order.module';
 import { TenantModule } from './tenant/tenant.module';
 import { PayrollModule } from './payroll/payroll.module';
@@ -53,6 +54,7 @@ import { ReportsModule } from './reports/reports.module';
     SupplierModule,
     SupplierProductModule,
     RecipeModule,
+    RecipeImagesModule,
     PurchaseOrderModule,
     TenantModule,
     PayrollModule,

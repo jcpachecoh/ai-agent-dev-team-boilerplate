@@ -1,0 +1,268 @@
+@use '@/styles/tokens' as *;
+
+.manager {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.counter {
+  margin: 0.35rem 0 0;
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+}
+
+.actionError {
+  margin: 0;
+  padding: 0.65rem 0.85rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba($color-recipes-accent, 0.35);
+  background: rgba($color-recipes-accent, 0.08);
+  color: $color-recipes-accent;
+  font-size: 0.85rem;
+}
+
+.uploadSection {
+  width: 100%;
+}
+
+.uploadZone {
+  width: 100%;
+  max-width: none;
+
+  --control-width: 100%;
+}
+
+.confirmPanel {
+  display: grid;
+  grid-template-columns: minmax(140px, 220px) 1fr;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.85rem;
+  background: var(--color-bg-secondary);
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.confirmPreview {
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: 0.65rem;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-primary);
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.confirmDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.confirmFileName {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.confirmFileMeta {
+  margin: -0.35rem 0 0;
+  color: var(--color-text-secondary);
+  font-size: 0.8rem;
+}
+
+.altField {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.confirmActions,
+.editAltActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: auto;
+}
+
+.grid,
+.skeletonGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 0.85rem;
+  background: var(--color-bg-secondary);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+
+  &:hover {
+    border-color: rgba($color-recipes-accent, 0.45);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+  }
+}
+
+.thumbnailWrap {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: var(--color-bg-primary);
+}
+
+.thumbnail {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.thumbnailOverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 0.4rem;
+  padding: 0.55rem;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.55), transparent 55%);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+
+  .card:hover & {
+    opacity: 1;
+  }
+}
+
+.overlayButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: none;
+  border-radius: 0.45rem;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition:
+    transform 0.12s ease,
+    background 0.12s ease;
+
+  &:hover {
+    transform: scale(1.05);
+  }
+}
+
+.overlayButtonDanger {
+  color: #b42318;
+
+  &:hover {
+    background: #fee4e2;
+  }
+}
+
+.cardBody {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.75rem 0.85rem 0.85rem;
+}
+
+.fileName {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.altText {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 0.78rem;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.editAlt {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.errorBox {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  background: var(--color-bg-secondary);
+
+  p {
+    margin: 0;
+  }
+}
+
+.skeletonCard {
+  aspect-ratio: 4 / 3;
+  border-radius: 0.85rem;
+  background: linear-gradient(
+    90deg,
+    var(--color-bg-secondary) 0%,
+    var(--color-bg-primary) 50%,
+    var(--color-bg-secondary) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.2s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}

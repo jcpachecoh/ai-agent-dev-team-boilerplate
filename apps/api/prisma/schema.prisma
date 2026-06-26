@@ -828,10 +828,36 @@ model ProductionRecipe {
   category RecipeCategory?   @relation(fields: [categoryId], references: [id])
   phases   ProductionPhase[]
   orders   ProductionOrder[]
+  images   RecipeImage[]
 
   @@index([tenantId, isActive])
   @@index([tenantId, categoryId])
   @@map("production_recipes")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RECIPE IMAGES
+// ─────────────────────────────────────────────────────────────────────────────
+
+model RecipeImage {
+  id              String   @id @default(cuid())
+  tenantId        String
+  recipeId        String
+  alt             String?
+  nameImage       String
+  url             String
+  storageObjectId String?
+  sortOrder       Int      @default(0)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  recipe ProductionRecipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, recipeId])
+  @@index([tenantId, recipeId, isActive])
+  @@index([tenantId, isActive])
+  @@map("recipes_images")
 }
 
 model ProductionPhase {

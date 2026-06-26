@@ -35,6 +35,7 @@ export interface RecetaRecipeWizardGeneralStepProps {
   onNotesChange: (value: string) => void;
   versionLabel?: string;
   showVersion?: boolean;
+  extraContent?: React.ReactNode;
   compact?: boolean;
   className?: string;
 }
@@ -69,6 +70,7 @@ export function RecetaRecipeWizardGeneralStep({
   onNotesChange,
   versionLabel,
   showVersion = false,
+  extraContent,
   compact = false,
   className,
 }: RecetaRecipeWizardGeneralStepProps): JSX.Element {
@@ -198,6 +200,7 @@ export function RecetaRecipeWizardGeneralStep({
           />
         </RecetaWizardField>
       </div>
+      {extraContent}
     </section>
   );
 }

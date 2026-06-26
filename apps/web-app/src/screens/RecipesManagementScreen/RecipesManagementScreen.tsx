@@ -17,6 +17,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { updatePlantRecipe } from '@/api/plant/plant.api';
 import { plantKeys } from '@/api/plant/plant.keys';
 
+import { RecipeImagesManager } from '@/components/recetas/RecipeImagesManager';
 import { HistoryResponsiveList } from '@/components/recetas/HistoryResponsiveList';
 import { ProcessListCard } from '@/components/recetas/ProcessListCard';
 import { ProcessListRow } from '@/components/recetas/ProcessListRow';
@@ -1381,6 +1382,10 @@ export function RecipesManagementScreen({
           onNotesChange: setNotes,
           showVersion: Boolean(editingRecipeId),
           versionLabel: editorCode,
+          extraContent:
+            editingRecipeId && wizardStep === 'general' ? (
+              <RecipeImagesManager recipeId={editingRecipeId} />
+            ) : null,
         }}
         phasesStep={{
           phases: phases.map((phase) => ({
