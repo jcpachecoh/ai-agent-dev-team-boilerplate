@@ -4,6 +4,7 @@ import {
   ArrowLeftRight,
   BarChart3,
   Box,
+  Briefcase,
   Building2,
   ChefHat,
   ClipboardList,
@@ -194,6 +195,12 @@ export const navigationItems: NavItem[] = [
       { id: 'payroll', label: 'Reportes', path: '/payroll', icon: Wallet },
       { id: 'payroll-employees', label: 'Empleados', path: '/payroll/employees', icon: Users },
       {
+        id: 'payroll-positions',
+        label: 'Gestión de Cargos',
+        path: '/payroll/positions',
+        icon: Briefcase,
+      },
+      {
         id: 'payroll-attendance',
         label: 'Monitor de asistencia',
         path: '/payroll/attendance',
@@ -253,6 +260,7 @@ const routeLabels: Record<string, string> = {
   '/payroll': 'Reportes de nómina',
   '/payroll/reports': 'Reportes de nómina',
   '/payroll/employees': 'Empleados',
+  '/payroll/positions': 'Gestión de Cargos',
   '/payroll/attendance': 'Monitor de asistencia',
   '/payroll/salaries': 'Salarios',
   '/empresa/informacion': 'Información del restaurante',

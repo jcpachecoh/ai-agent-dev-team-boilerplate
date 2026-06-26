@@ -60,7 +60,6 @@ const EMPTY_VALUES: PayrollEmployeeFormValues = {
 const REQUIRED_CATALOG_FIELDS: Array<{
   key: keyof Pick<
     PayrollEmployeeFormValues,
-    | 'area'
     | 'department'
     | 'epsName'
     | 'pensionFundName'
@@ -70,7 +69,6 @@ const REQUIRED_CATALOG_FIELDS: Array<{
   >;
   label: string;
 }> = [
-  { key: 'area', label: 'Área' },
   { key: 'department', label: 'Departamento' },
   { key: 'epsName', label: 'EPS' },
   { key: 'pensionFundName', label: 'Fondo de pensión' },
@@ -213,15 +211,6 @@ export function PayrollEmployeeForm({
     [roleOptions],
   );
 
-  const areaSelectOptions = useMemo(
-    () =>
-      buildCatalogSelectOptions(
-        catalogsQuery.grouped[EMPLOYEE_CATALOG_TYPES.AREA] ?? [],
-        values.area,
-      ),
-    [catalogsQuery.grouped, values.area],
-  );
-
   const departmentSelectOptions = useMemo(
     () =>
       buildCatalogSelectOptions(
@@ -328,6 +317,12 @@ export function PayrollEmployeeForm({
       return;
     }
 
+    const areaFromPosition = selectedPosition?.area?.trim() ?? '';
+    if (!areaFromPosition) {
+      setError('El cargo seleccionado no tiene área configurada.');
+      return;
+    }
+
     const salary = Number(values.salaryAmount);
     if (!Number.isFinite(salary) || salary <= 0) {
       setError('El salario debe ser un número mayor que 0.');
@@ -341,7 +336,10 @@ export function PayrollEmployeeForm({
     }
 
     setError(null);
-    onSubmit(values);
+    onSubmit({
+      ...values,
+      area: areaFromPosition,
+    });
   };
 
   const catalogsLoading = catalogsQuery.isLoading;
@@ -449,7 +447,13 @@ export function PayrollEmployeeForm({
                       ? 'No hay cargos configurados'
                       : 'Seleccionar cargo'
               }
-              onChange={(value) => update({ positionId: value })}
+              onChange={(value) => {
+                const position = (positionsQuery.data ?? []).find((item) => item.id === value);
+                update({
+                  positionId: value,
+                  area: position?.area ?? '',
+                });
+              }}
               theme={theme}
               size="md"
             />
@@ -463,19 +467,6 @@ export function PayrollEmployeeForm({
                 }).format(selectedPosition.baseSalaryRange)}
               </small>
             ) : null}
-          </div>
-          <div className={styles.field}>
-            <span className={styles.fieldLabel}>Área *</span>
-            <RecetaFilterSelect
-              aria-label="Área"
-              options={areaSelectOptions}
-              value={values.area}
-              disabled={catalogsLoading || areaSelectOptions.length === 0}
-              placeholder={catalogPlaceholder(areaSelectOptions.length > 0)}
-              onChange={(value) => update({ area: value })}
-              theme={theme}
-              size="md"
-            />
           </div>
           <div className={styles.field}>
             <span className={styles.fieldLabel}>Departamento *</span>

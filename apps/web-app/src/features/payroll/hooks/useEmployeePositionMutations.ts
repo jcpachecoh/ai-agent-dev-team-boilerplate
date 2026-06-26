@@ -11,32 +11,36 @@ import type {
   UpdateEmployeePositionInput,
 } from '../types/employee-position.types';
 
-export function useEmployeePositionMutations() {
+export function useCreateEmployeePositionMutation() {
   const queryClient = useQueryClient();
 
-  const invalidate = async () => {
-    await queryClient.invalidateQueries({ queryKey: payrollKeys.positions() });
-  };
-
-  const createMutation = useMutation({
+  return useMutation({
     mutationFn: (input: CreateEmployeePositionInput) => createEmployeePosition(input),
-    onSuccess: invalidate,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: payrollKeys.positions() });
+    },
   });
+}
 
-  const updateMutation = useMutation({
+export function useUpdateEmployeePositionMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
     mutationFn: ({ id, input }: { id: string; input: UpdateEmployeePositionInput }) =>
       updateEmployeePosition(id, input),
-    onSuccess: invalidate,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: payrollKeys.positions() });
+    },
   });
+}
 
-  const deactivateMutation = useMutation({
+export function useDeactivateEmployeePositionMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
     mutationFn: (id: string) => deactivateEmployeePosition(id),
-    onSuccess: invalidate,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: payrollKeys.positions() });
+    },
   });
-
-  return {
-    createMutation,
-    updateMutation,
-    deactivateMutation,
-  };
 }

@@ -76,7 +76,7 @@ function buildPayrollHeaders(init?: RequestInit): HeadersInit {
   return headers;
 }
 
-async function payrollFetch<T>(path: string, init?: RequestInit): Promise<T> {
+export async function payrollFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(buildPayrollUrl(path), {
     ...init,
     headers: buildPayrollHeaders(init),

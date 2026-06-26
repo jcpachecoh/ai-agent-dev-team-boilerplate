@@ -197,6 +197,7 @@ export * from './components/produccion/shared/produccion-types';
 
 export * from './components/sede';
 export * from './components/empleado';
+export * from './components/cargo';
 export * from './components/usuario';
 export * from './components/permiso';
 export * from './components/rol';

@@ -105,8 +105,6 @@ describe('PayrollEmployeeForm', () => {
     await user.click(screen.getByRole('button', { name: 'Cargo' }));
     await user.click(screen.getByRole('option', { name: 'Desarrollador — Administración' }));
     await user.type(screen.getByLabelText('Salario'), '3000000');
-    await user.click(screen.getByRole('button', { name: 'Área' }));
-    await user.click(screen.getByRole('option', { name: 'Administración' }));
     await user.click(screen.getByRole('button', { name: 'Departamento' }));
     await user.click(screen.getByRole('option', { name: 'Gerencia' }));
     await user.click(screen.getByRole('button', { name: 'EPS' }));
@@ -123,5 +121,6 @@ describe('PayrollEmployeeForm', () => {
 
     expect(onSubmit).toHaveBeenCalledTimes(1);
     expect(onSubmit.mock.calls[0][0].positionId).toBe('pos-1');
+    expect(onSubmit.mock.calls[0][0].area).toBe('Administración');
   });
 });

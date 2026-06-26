@@ -1,0 +1,51 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/cargo-theme' as emp;
+
+.search {
+  @include emp.cargo-theme-classes;
+
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  border: 1px solid var(--cargo-border);
+  border-radius: 4px;
+  background: var(--cargo-input);
+}
+
+.size--sm {
+  min-height: 32px;
+  padding: 0 10px 0 28px;
+}
+
+.size--md {
+  min-height: 34px;
+  padding: 0 11px 0 29px;
+}
+
+.icon {
+  position: absolute;
+  left: 9px;
+  width: 12px;
+  height: 12px;
+  color: var(--cargo-faint);
+  pointer-events: none;
+}
+
+.input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--cargo-text);
+  font-family: $font-family-base;
+  font-size: 0.75rem;
+
+  &::placeholder {
+    color: var(--cargo-placeholder);
+  }
+
+  &:focus {
+    outline: none;
+  }
+}

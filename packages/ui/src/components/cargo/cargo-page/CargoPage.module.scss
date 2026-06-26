@@ -1,0 +1,13 @@
+@use '../shared/cargo-theme' as emp;
+
+.page {
+  @include emp.cargo-theme-classes;
+
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  min-height: 100%;
+  background: var(--cargo-page);
+  color: var(--cargo-text);
+}

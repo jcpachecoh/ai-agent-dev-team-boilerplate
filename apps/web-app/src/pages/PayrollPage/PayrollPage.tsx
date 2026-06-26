@@ -1,11 +1,15 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 
-import { PayrollEmployeesListScreen, PayrollReportsScreen } from '@/features/payroll';
 import {
   AttendanceCardScreen,
   AttendanceLocationDetailScreen,
   AttendanceMonitorScreen,
 } from '@/features/attendance';
+import {
+  EmployeePositionsListScreen,
+  PayrollEmployeesListScreen,
+  PayrollReportsScreen,
+} from '@/features/payroll';
 import ModulePlaceholderPage from '@/pages/ModulePlaceholderPage';
 
 export default function PayrollPage(): React.JSX.Element {
@@ -14,6 +18,7 @@ export default function PayrollPage(): React.JSX.Element {
       <Route index element={<PayrollReportsScreen />} />
       <Route path="reports" element={<PayrollReportsScreen />} />
       <Route path="employees" element={<PayrollEmployeesListScreen />} />
+      <Route path="positions" element={<EmployeePositionsListScreen />} />
       <Route path="attendance" element={<AttendanceMonitorScreen />} />
       <Route path="attendance/:locationId" element={<AttendanceLocationDetailScreen />} />
       <Route
