@@ -379,8 +379,8 @@ describe('InventoryService', () => {
       const result = await service.getResolvedAlerts(tenantId);
 
       // Assert
-      expect(result).toHaveLength(1);
-      expect(result[0]).toMatchObject({
+      expect(result.edges).toHaveLength(1);
+      expect(result.edges[0]).toMatchObject({
         id: 'res-1',
         supplyItemId: 'item-1',
         product: 'Pollo',
@@ -400,7 +400,7 @@ describe('InventoryService', () => {
       const result = await service.getResolvedAlerts(tenantId);
 
       // Assert
-      expect(result[0]?.note).toBe('Se recibió compra de emergencia');
+      expect(result.edges[0]?.note).toBe('Se recibió compra de emergencia');
     });
 
     it('returns note as undefined when not set', async () => {
@@ -415,7 +415,7 @@ describe('InventoryService', () => {
       const result = await service.getResolvedAlerts(tenantId);
 
       // Assert
-      expect(result[0]?.note).toBeUndefined();
+      expect(result.edges[0]?.note).toBeUndefined();
     });
 
     it('filters by tenantId', async () => {
@@ -445,7 +445,7 @@ describe('InventoryService', () => {
       const result = await service.getResolvedAlerts(tenantId);
 
       // Assert
-      expect(result).toEqual([]);
+      expect(result.edges).toEqual([]);
     });
   });
 

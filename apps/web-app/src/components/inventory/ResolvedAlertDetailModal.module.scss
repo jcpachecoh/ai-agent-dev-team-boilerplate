@@ -1,0 +1,85 @@
+@use '@/styles/tokens' as t;
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px 28px;
+}
+
+.fullWidth {
+  grid-column: 1 / -1;
+}
+
+.value {
+  display: block;
+  padding: 10px 14px;
+  font-size: t.$font-size-md;
+  color: var(--color-text-primary);
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-weight: 600;
+}
+
+.noteField {
+  // ensures note section takes full row
+}
+
+.noteWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 14px;
+}
+
+.noteText {
+  margin: 0;
+  font-size: t.$font-size-md;
+  color: var(--color-text-primary);
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.emptyNote {
+  display: block;
+  padding: 10px 14px;
+  font-size: t.$font-size-sm;
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
+
+.copyBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  padding: 6px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: t.$border-radius-sm;
+  background: transparent;
+  font-size: t.$font-size-sm;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
+
+  &:hover {
+    color: var(--color-text-primary);
+    border-color: var(--color-text-secondary);
+  }
+}
+
+.copyIcon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 600px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}

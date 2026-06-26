@@ -2,7 +2,7 @@ import type { Prisma } from '@prisma/client';
 import type {
   InventoryAlertDto,
   InventoryAlertSummaryDto,
-  InventoryResolvedAlertDto,
+  InventoryResolvedAlertPageDto,
 } from '../controller/dto/inventory-alert.dto';
 import type { InventoryDashboardDto } from '../controller/dto/inventory-dashboard.dto';
 import type { InventoryReportDto } from '../controller/dto/inventory-report.dto';
@@ -74,7 +74,11 @@ export interface IInventoryRepository {
     tenantId: string,
     cursor?: string,
     take?: number,
-  ): Promise<{ edges: InventoryAlertResolutionWithItem[]; hasNextPage: boolean; endCursor: string | null }>;
+  ): Promise<{
+    edges: InventoryAlertResolutionWithItem[];
+    hasNextPage: boolean;
+    endCursor: string | null;
+  }>;
   countResolvedToday(tenantId: string): Promise<number>;
 }
 
@@ -82,11 +86,16 @@ export interface IInventoryService {
   getDashboard(tenantId: string): Promise<InventoryDashboardDto>;
   getAlerts(tenantId: string): Promise<InventoryAlertDto[]>;
   getAlertSummary(alerts: InventoryAlertDto[], tenantId: string): Promise<InventoryAlertSummaryDto>;
-  resolveAlert(alertId: string, tenantId: string, resolvedById?: string, note?: string): Promise<void>;
+  resolveAlert(
+    alertId: string,
+    tenantId: string,
+    resolvedById?: string,
+    note?: string,
+  ): Promise<void>;
   getResolvedAlerts(
     tenantId: string,
     cursor?: string,
     take?: number,
-  ): Promise<InventoryResolvedAlertDto[]>;
+  ): Promise<InventoryResolvedAlertPageDto>;
   getReport(tenantId: string, type: string): Promise<InventoryReportDto>;
 }

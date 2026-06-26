@@ -3,7 +3,7 @@ import { decimalToNumber } from '../../common/utils/decimal.util';
 import type {
   InventoryAlertDto,
   InventoryAlertSummaryDto,
-  InventoryResolvedAlertDto,
+  InventoryResolvedAlertPageDto,
 } from '../controller/dto/inventory-alert.dto';
 import type { InventoryDashboardDto } from '../controller/dto/inventory-dashboard.dto';
 import type { InventoryReportDto } from '../controller/dto/inventory-report.dto';
@@ -78,9 +78,7 @@ export class InventoryService implements IInventoryService {
     const startOfDay = new Date();
     startOfDay.setHours(0, 0, 0, 0);
     const resolvedTodayIds = new Set(
-      resolvedPage.edges
-        .filter((r) => r.resolvedAt >= startOfDay)
-        .map((r) => r.supplyItemId),
+      resolvedPage.edges.filter((r) => r.resolvedAt >= startOfDay).map((r) => r.supplyItemId),
     );
 
     const alerts: InventoryAlertDto[] = [];
@@ -109,7 +107,10 @@ export class InventoryService implements IInventoryService {
     return alerts;
   }
 
-  async getAlertSummary(alerts: InventoryAlertDto[], tenantId: string): Promise<InventoryAlertSummaryDto> {
+  async getAlertSummary(
+    alerts: InventoryAlertDto[],
+    tenantId: string,
+  ): Promise<InventoryAlertSummaryDto> {
     const resolvedToday = await this.inventoryRepository.countResolvedToday(tenantId);
     return {
       critical: alerts.filter((a) => a.severity === 'critical').length,
@@ -118,10 +119,20 @@ export class InventoryService implements IInventoryService {
     };
   }
 
-  async resolveAlert(alertId: string, tenantId: string, resolvedById?: string, note?: string): Promise<void> {
+  async resolveAlert(
+    alertId: string,
+    tenantId: string,
+    resolvedById?: string,
+    note?: string,
+  ): Promise<void> {
     // alertId format: "alert-<supplyItemId>"
     const supplyItemId = alertId.startsWith('alert-') ? alertId.slice(6) : alertId;
-    const result = await this.inventoryRepository.createAlertResolution({ supplyItemId, tenantId, resolvedById, note });
+    const result = await this.inventoryRepository.createAlertResolution({
+      supplyItemId,
+      tenantId,
+      resolvedById,
+      note,
+    });
     if (!result) {
       throw new NotFoundException(`Insumo ${supplyItemId} no encontrado`);
     }
@@ -131,21 +142,29 @@ export class InventoryService implements IInventoryService {
     tenantId: string,
     cursor?: string,
     take?: number,
-  ): Promise<InventoryResolvedAlertDto[]> {
-    const { edges } = await this.inventoryRepository.findResolvedAlerts(tenantId, cursor, take);
+  ): Promise<InventoryResolvedAlertPageDto> {
+    const { edges, hasNextPage, endCursor } = await this.inventoryRepository.findResolvedAlerts(
+      tenantId,
+      cursor,
+      take,
+    );
 
-    return edges.map((resolution) => ({
-      id: resolution.id,
-      supplyItemId: resolution.supplyItemId,
-      product: resolution.supplyItem.nombre,
-      currentStock: decimalToNumber(resolution.supplyItem.stockActualBodega),
-      threshold: decimalToNumber(resolution.supplyItem.stockMinimoBodega),
-      supplier:
-        resolution.supplyItem.supplierProducts[0]?.supplier.razonSocial ?? 'Sin proveedor principal',
-      resolvedAt: resolution.resolvedAt.toISOString(),
-      resolvedById: resolution.resolvedById ?? undefined,
-      note: resolution.note ?? undefined,
-    }));
+    return {
+      edges: edges.map((resolution) => ({
+        id: resolution.id,
+        supplyItemId: resolution.supplyItemId,
+        product: resolution.supplyItem.nombre,
+        currentStock: decimalToNumber(resolution.supplyItem.stockActualBodega),
+        threshold: decimalToNumber(resolution.supplyItem.stockMinimoBodega),
+        supplier:
+          resolution.supplyItem.supplierProducts[0]?.supplier.razonSocial ??
+          'Sin proveedor principal',
+        resolvedAt: resolution.resolvedAt.toISOString(),
+        resolvedById: resolution.resolvedById ?? undefined,
+        note: resolution.note ?? undefined,
+      })),
+      pageInfo: { hasNextPage, endCursor },
+    };
   }
 
   async getReport(tenantId: string, type: string): Promise<InventoryReportDto> {

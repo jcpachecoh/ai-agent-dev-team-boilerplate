@@ -1,9 +1,16 @@
 import { Body, Controller, Get, Headers, Param, Patch, Query } from '@nestjs/common';
-import { ApiBearerAuth, ApiHeader, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiHeader,
+  ApiOperation,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import type {
   InventoryAlertDto,
   InventoryAlertSummaryDto,
-  InventoryResolvedAlertDto,
+  InventoryResolvedAlertPageDto,
 } from './dto/inventory-alert.dto';
 import { ResolveInventoryAlertDto } from './dto/inventory-alert.dto';
 import { InventoryDashboardDto } from './dto/inventory-dashboard.dto';
@@ -39,7 +46,7 @@ export class InventoryController {
     return this.inventoryService.getAlertSummary(alerts, tenantId);
   }
 
-  @ApiOperation({ summary: 'Resolved alert history' })
+  @ApiOperation({ summary: 'Resolved alert history with pagination metadata' })
   @ApiQuery({ name: 'cursor', required: false })
   @ApiQuery({ name: 'take', required: false, type: Number })
   @Get('alerts/resolved')
@@ -47,8 +54,12 @@ export class InventoryController {
     @Headers('x-tenant-id') tenantId: string,
     @Query('cursor') cursor?: string,
     @Query('take') take?: string,
-  ): Promise<InventoryResolvedAlertDto[]> {
-    return this.inventoryService.getResolvedAlerts(tenantId, cursor, take ? Number(take) : undefined);
+  ): Promise<InventoryResolvedAlertPageDto> {
+    return this.inventoryService.getResolvedAlerts(
+      tenantId,
+      cursor,
+      take ? Number(take) : undefined,
+    );
   }
 
   @ApiOperation({ summary: 'Resolve alert — persists to InventoryAlertResolution' })

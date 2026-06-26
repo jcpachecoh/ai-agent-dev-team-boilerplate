@@ -56,7 +56,12 @@ describe('InventoryController', () => {
 
     // Assert
     expect(result).toEqual({ ok: true });
-    expect(serviceMock.resolveAlert).toHaveBeenCalledWith('alert-item-1', 'palos-de-lena', undefined, undefined);
+    expect(serviceMock.resolveAlert).toHaveBeenCalledWith(
+      'alert-item-1',
+      'palos-de-lena',
+      undefined,
+      undefined,
+    );
   });
 
   it('resolveAlert forwards note from body to service', async () => {
@@ -95,8 +100,11 @@ describe('InventoryController', () => {
 
   it('getResolvedAlerts delegates to service with tenantId and pagination', async () => {
     // Arrange
-    const resolved = [{ id: 'res-1', product: 'Pollo', resolvedAt: '2026-06-18T10:00:00.000Z' }];
-    serviceMock.getResolvedAlerts.mockResolvedValue(resolved);
+    const resolved = {
+      edges: [{ id: 'res-1', product: 'Pollo', resolvedAt: '2026-06-18T10:00:00.000Z' }],
+      pageInfo: { hasNextPage: false, endCursor: null },
+    };
+    serviceMock.getResolvedAlerts.mockResolvedValue(resolved as never);
 
     // Act
     const result = await controller.getResolvedAlerts('palos-de-lena', 'cursor-abc', '10');
@@ -108,13 +116,20 @@ describe('InventoryController', () => {
 
   it('getResolvedAlerts passes undefined cursor and take when not provided', async () => {
     // Arrange
-    serviceMock.getResolvedAlerts.mockResolvedValue([]);
+    serviceMock.getResolvedAlerts.mockResolvedValue({
+      edges: [],
+      pageInfo: { hasNextPage: false, endCursor: null },
+    } as never);
 
     // Act
     await controller.getResolvedAlerts('palos-de-lena');
 
     // Assert
-    expect(serviceMock.getResolvedAlerts).toHaveBeenCalledWith('palos-de-lena', undefined, undefined);
+    expect(serviceMock.getResolvedAlerts).toHaveBeenCalledWith(
+      'palos-de-lena',
+      undefined,
+      undefined,
+    );
   });
 
   it('getReport delegates type to service', async () => {

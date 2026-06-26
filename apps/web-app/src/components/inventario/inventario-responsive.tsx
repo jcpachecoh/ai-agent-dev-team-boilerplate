@@ -513,12 +513,14 @@ export function InventarioAlertCard({
 export interface InventarioResolvedAlertRowProps extends RowBaseProps {
   alert: InventoryResolvedAlert;
   theme: UiTheme;
+  onClick?: () => void;
 }
 
 export function InventarioResolvedAlertRow({
   alert,
   visibleColumns,
   columnsTemplate,
+  onClick,
 }: InventarioResolvedAlertRowProps): React.JSX.Element {
   const resolvedLabel = new Date(alert.resolvedAt).toLocaleString('es-CO', {
     day: '2-digit',
@@ -528,44 +530,70 @@ export function InventarioResolvedAlertRow({
     minute: '2-digit',
   });
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (onClick && (e.key === 'Enter' || e.key === ' ')) {
+      e.preventDefault();
+      onClick();
+    }
+  };
+
+  const renderColumn = (columnId: string): React.ReactNode => {
+    switch (columnId) {
+      case 'product':
+        return <span className={styles.name}>{alert.product}</span>;
+      case 'currentStock':
+        return (
+          <span className={[styles.cell, styles.number].join(' ')}>
+            <span className={[styles.stock, styles['stock--neutral']].join(' ')}>
+              {alert.currentStock ?? '0'}
+            </span>
+          </span>
+        );
+      case 'minStock':
+        return (
+          <span className={[styles.cell, styles.number].join(' ')}>
+            <span className={[styles.stock, styles['stock--neutral']].join(' ')}>
+              {alert.threshold ?? '—'}
+            </span>
+          </span>
+        );
+      case 'supplier':
+        return <span className={styles.muted}>{alert.supplier}</span>;
+      case 'resolvedAt':
+        return <span className={styles.muted}>{resolvedLabel}</span>;
+      case 'note':
+        return (
+          <span className={styles.muted} title={alert.note ?? undefined}>
+            {alert.note ?? '—'}
+          </span>
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
-    <ResponsiveGridRow visibleColumns={visibleColumns} columnsTemplate={columnsTemplate}>
-      {(columnId) => {
-        switch (columnId) {
-          case 'product':
-            return <span className={styles.name}>{alert.product}</span>;
-          case 'currentStock':
-            return (
-              <span className={[styles.cell, styles.number].join(' ')}>
-                <span className={[styles.stock, styles['stock--neutral']].join(' ')}>
-                  {alert.currentStock ?? '0'}
-                </span>
-              </span>
-            );
-          case 'minStock':
-            return (
-              <span className={[styles.cell, styles.number].join(' ')}>
-                <span className={[styles.stock, styles['stock--neutral']].join(' ')}>
-                  {alert.threshold ?? '—'}
-                </span>
-              </span>
-            );
-          case 'supplier':
-            return <span className={styles.muted}>{alert.supplier}</span>;
-          case 'resolvedAt':
-            return <span className={styles.muted}>{resolvedLabel}</span>;
-          case 'note':
-            return <span className={styles.muted}>{alert.note ?? '—'}</span>;
-          default:
-            return null;
-        }
-      }}
-    </ResponsiveGridRow>
+    <div
+      className={[styles.row, onClick ? styles.rowClickable : ''].filter(Boolean).join(' ')}
+      role="row"
+      style={{ '--inventario-columns': columnsTemplate } as CSSProperties}
+      onClick={onClick}
+      onKeyDown={onClick ? handleKeyDown : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      aria-label={onClick ? `Ver detalle de ${alert.product}` : undefined}
+    >
+      {visibleColumns.map((column) => (
+        <span key={column.id} className={styles.cell} role="cell">
+          {renderColumn(column.id)}
+        </span>
+      ))}
+    </div>
   );
 }
 
 export function InventarioResolvedAlertCard({
   alert,
+  onClick,
 }: Omit<InventarioResolvedAlertRowProps, 'visibleColumns' | 'columnsTemplate'>): React.JSX.Element {
   const resolvedLabel = new Date(alert.resolvedAt).toLocaleString('es-CO', {
     day: '2-digit',
@@ -586,6 +614,7 @@ export function InventarioResolvedAlertCard({
         { label: 'Resuelta el', value: resolvedLabel },
         { label: 'Razón', value: alert.note ?? '—' },
       ]}
+      onClick={onClick}
     />
   );
 }

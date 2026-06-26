@@ -84,6 +84,17 @@ export interface InventoryResolvedAlert {
   note?: string;
 }
 
+export interface InventoryResolvedAlertsPage {
+  edges: InventoryResolvedAlert[];
+  pageInfo: {
+    hasNextPage: boolean;
+    endCursor: string | null;
+  };
+}
+
+export type ResolvedAlertSortField = 'resolvedAt' | 'product' | 'supplier';
+export type SortDirection = 'asc' | 'desc';
+
 export interface InventoryStockBySite {
   site: string;
   current: number;

@@ -77,3 +77,19 @@ export class InventoryResolvedAlertDto {
   @ApiPropertyOptional()
   note?: string;
 }
+
+export class InventoryPageInfoDto {
+  @ApiProperty()
+  hasNextPage!: boolean;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  endCursor!: string | null;
+}
+
+export class InventoryResolvedAlertPageDto {
+  @ApiProperty({ type: [InventoryResolvedAlertDto] })
+  edges!: InventoryResolvedAlertDto[];
+
+  @ApiProperty({ type: InventoryPageInfoDto })
+  pageInfo!: InventoryPageInfoDto;
+}

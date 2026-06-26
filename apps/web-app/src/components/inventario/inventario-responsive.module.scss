@@ -122,3 +122,17 @@
   gap: 0.35rem;
   width: 100%;
 }
+
+.rowClickable {
+  cursor: pointer;
+
+  &:hover {
+    background: var(--color-bg-surface-hover);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-success);
+    outline-offset: -2px;
+    z-index: 1;
+  }
+}

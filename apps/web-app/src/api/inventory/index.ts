@@ -21,7 +21,7 @@ import type {
   InventoryProduct,
   InventoryProductFormValues,
   InventoryReportData,
-  InventoryResolvedAlert,
+  InventoryResolvedAlertsPage,
   InventoryStockBySite,
 } from '@/types/inventory';
 
@@ -116,8 +116,8 @@ export function fetchInventoryAlertSummary(): AlertSummary {
 export async function fetchResolvedInventoryAlerts(
   cursor?: string,
   take?: number,
-): Promise<InventoryResolvedAlert[]> {
-  if (useInventoryMock()) return [];
+): Promise<InventoryResolvedAlertsPage> {
+  if (useInventoryMock()) return { edges: [], pageInfo: { hasNextPage: false, endCursor: null } };
   return fetchResolvedInventoryAlertsApi(cursor, take);
 }
 

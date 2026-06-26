@@ -3,7 +3,7 @@ import type {
   InventoryAlert,
   InventoryDashboardData,
   InventoryReportData,
-  InventoryResolvedAlert,
+  InventoryResolvedAlertsPage,
 } from '@/types/inventory';
 
 import type {
@@ -132,12 +132,12 @@ export function resolveInventoryAlertApi(id: string, note?: string): Promise<voi
 export function fetchResolvedInventoryAlertsApi(
   cursor?: string,
   take?: number,
-): Promise<InventoryResolvedAlert[]> {
+): Promise<InventoryResolvedAlertsPage> {
   const params = new URLSearchParams();
   if (cursor) params.set('cursor', cursor);
   if (take !== undefined) params.set('take', String(take));
   const qs = params.toString();
-  return inventoryFetch<InventoryResolvedAlert[]>(
+  return inventoryFetch<InventoryResolvedAlertsPage>(
     `/inventory/alerts/resolved${qs ? `?${qs}` : ''}`,
   );
 }

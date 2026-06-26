@@ -1,11 +1,19 @@
 import {
   InventarioMetricCard,
   InventarioPageHeader,
+  InventarioSearch,
   InventarioTableHeader,
   toast,
 } from '@restopsiq/ui';
-import { AlertTriangle, CheckCircle, ShieldAlert } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import {
+  AlertTriangle,
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  CheckCircle,
+  ShieldAlert,
+} from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
   fetchInventoryAlertSummary,
@@ -20,6 +28,7 @@ import {
   InventarioResolvedAlertRow,
 } from '@/components/inventario/inventario-responsive';
 import { ResolveAlertModal } from '@/components/inventory/ResolveAlertModal';
+import { ResolvedAlertDetailModal } from '@/components/inventory/ResolvedAlertDetailModal';
 import { ResponsiveTable } from '@/components/responsive-table';
 import { InventoryScreenState } from '@/components/inventory/InventoryScreenState';
 import {
@@ -27,9 +36,15 @@ import {
   INVENTARIO_RESOLVED_ALERT_RESPONSIVE_COLUMNS,
 } from '@/features/inventario/responsive-columns';
 import { headerColumnsFromResponsive } from '@/lib/responsive-columns';
-import type { InventoryAlert, InventoryResolvedAlert } from '@/types/inventory';
+import type {
+  InventoryAlert,
+  InventoryResolvedAlert,
+  ResolvedAlertSortField,
+  SortDirection,
+} from '@/types/inventory';
 
 import shared from '../inventory/shared.module.scss';
+import styles from './InventoryAlertsScreen.module.scss';
 import { useUiTheme } from '@/hooks/useUiTheme';
 
 type AlertTab = 'active' | 'resolved';
@@ -39,16 +54,49 @@ interface PendingResolve {
   product: string;
 }
 
+const RESOLVED_PAGE_SIZE = 100;
+
+function useDebouncedValue<T>(value: T, delay = 250): T {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(t);
+  }, [value, delay]);
+  return debounced;
+}
+
 export function InventoryAlertsScreen(): React.JSX.Element {
   const theme = useUiTheme();
   const [tab, setTab] = useState<AlertTab>('active');
+
+  // Active alerts state
   const [alerts, setAlerts] = useState<InventoryAlert[]>([]);
-  const [resolvedAlerts, setResolvedAlerts] = useState<InventoryResolvedAlert[]>([]);
   const [summary, setSummary] = useState({ critical: 0, warning: 0, resolvedToday: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [pendingResolve, setPendingResolve] = useState<PendingResolve | null>(null);
   const [resolving, setResolving] = useState(false);
+
+  // Resolved alerts state
+  const [resolvedAlerts, setResolvedAlerts] = useState<InventoryResolvedAlert[]>([]);
+  const [resolvedLoading, setResolvedLoading] = useState(false);
+  const [resolvedError, setResolvedError] = useState(false);
+  const [resolvedHasNext, setResolvedHasNext] = useState(false);
+  const [resolvedCursor, setResolvedCursor] = useState<string | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
+
+  // Search / sort / filter for resolved tab
+  const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearch = useDebouncedValue(searchQuery);
+  const [sortField, setSortField] = useState<ResolvedAlertSortField>('resolvedAt');
+  const [sortDir, setSortDir] = useState<SortDirection>('desc');
+  const [filterHasNote, setFilterHasNote] = useState<boolean | null>(null);
+
+  // Detail modal
+  const [detailAlert, setDetailAlert] = useState<InventoryResolvedAlert | null>(null);
+
+  // Track initial load of resolved tab to avoid double-fetching
+  const resolvedLoadedRef = useRef(false);
 
   const loadActive = useCallback(async () => {
     const list = await fetchInventoryAlerts();
@@ -56,10 +104,37 @@ export function InventoryAlertsScreen(): React.JSX.Element {
     setSummary(fetchInventoryAlertSummary());
   }, []);
 
-  const loadResolved = useCallback(async () => {
-    const list = await fetchResolvedInventoryAlerts();
-    setResolvedAlerts(list);
-  }, []);
+  const loadResolved = useCallback(
+    async (reset = true) => {
+      if (reset) {
+        setResolvedLoading(true);
+        setResolvedError(false);
+      } else {
+        setLoadingMore(true);
+      }
+
+      try {
+        const cursor = reset ? undefined : (resolvedCursor ?? undefined);
+        const page = await fetchResolvedInventoryAlerts(cursor, RESOLVED_PAGE_SIZE);
+
+        if (reset) {
+          setResolvedAlerts(page.edges);
+        } else {
+          setResolvedAlerts((prev) => [...prev, ...page.edges]);
+        }
+        setResolvedHasNext(page.pageInfo.hasNextPage);
+        setResolvedCursor(page.pageInfo.endCursor);
+        resolvedLoadedRef.current = true;
+      } catch {
+        if (reset) setResolvedError(true);
+        toast.error('Error al cargar alertas resueltas');
+      } finally {
+        setResolvedLoading(false);
+        setLoadingMore(false);
+      }
+    },
+    [resolvedCursor],
+  );
 
   const load = useCallback(async () => {
     try {
@@ -77,14 +152,10 @@ export function InventoryAlertsScreen(): React.JSX.Element {
     void load();
   }, [load]);
 
-  const handleTabChange = async (next: AlertTab) => {
+  const handleTabChange = (next: AlertTab) => {
     setTab(next);
-    if (next === 'resolved' && resolvedAlerts.length === 0) {
-      try {
-        await loadResolved();
-      } catch {
-        toast.error('Error al cargar alertas resueltas');
-      }
+    if (next === 'resolved' && !resolvedLoadedRef.current) {
+      void loadResolved(true);
     }
   };
 
@@ -99,6 +170,8 @@ export function InventoryAlertsScreen(): React.JSX.Element {
       await resolveInventoryAlert(pendingResolve.id, note);
       toast.success('Alerta resuelta');
       setPendingResolve(null);
+      // Invalidate resolved cache so it reloads on next tab switch
+      resolvedLoadedRef.current = false;
       setResolvedAlerts([]);
       await loadActive();
     } catch {
@@ -110,6 +183,58 @@ export function InventoryAlertsScreen(): React.JSX.Element {
 
   const handleOrder = (product: string) => {
     toast.info(`Orden de compra para ${product} (módulo Proveedores — próximamente)`);
+  };
+
+  const handleSortClick = (field: ResolvedAlertSortField) => {
+    if (sortField === field) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortField(field);
+      setSortDir(field === 'resolvedAt' ? 'desc' : 'asc');
+    }
+  };
+
+  const filteredAndSortedResolved = useMemo(() => {
+    let list = resolvedAlerts;
+
+    if (debouncedSearch.trim()) {
+      const q = debouncedSearch.trim().toLowerCase();
+      list = list.filter(
+        (a) =>
+          a.product.toLowerCase().includes(q) ||
+          a.supplier.toLowerCase().includes(q) ||
+          (a.note ?? '').toLowerCase().includes(q),
+      );
+    }
+
+    if (filterHasNote === true) {
+      list = list.filter((a) => !!a.note);
+    } else if (filterHasNote === false) {
+      list = list.filter((a) => !a.note);
+    }
+
+    list = [...list].sort((a, b) => {
+      let cmp = 0;
+      if (sortField === 'resolvedAt') {
+        cmp = a.resolvedAt.localeCompare(b.resolvedAt);
+      } else if (sortField === 'product') {
+        cmp = a.product.localeCompare(b.product, 'es');
+      } else if (sortField === 'supplier') {
+        cmp = a.supplier.localeCompare(b.supplier, 'es');
+      }
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
+
+    return list;
+  }, [resolvedAlerts, debouncedSearch, sortField, sortDir, filterHasNote]);
+
+  const SortIcon = ({ field }: { field: ResolvedAlertSortField }) => {
+    if (sortField !== field) return <ArrowUpDown className={styles.sortIconInactive} aria-hidden />;
+    return sortDir === 'asc' ? (
+      <ArrowUp className={styles.sortIconActive} aria-hidden />
+    ) : (
+      <ArrowDown className={styles.sortIconActive} aria-hidden />
+    );
   };
 
   if (loading) {
@@ -142,13 +267,21 @@ export function InventoryAlertsScreen(): React.JSX.Element {
         onConfirm={(note) => void handleResolveConfirm(note)}
       />
 
+      <ResolvedAlertDetailModal
+        alert={detailAlert}
+        theme={theme}
+        onClose={() => setDetailAlert(null)}
+      />
+
       <section className={shared.pageHeader}>
         <InventarioPageHeader
           title="Alertas de stock bajo"
           subtitle={
             tab === 'active'
               ? `${alerts.length} alertas pendientes de resolución`
-              : `${resolvedAlerts.length} alertas resueltas`
+              : resolvedLoading
+                ? 'Cargando...'
+                : `${filteredAndSortedResolved.length} alertas resueltas${debouncedSearch || filterHasNote !== null ? ' (filtradas)' : ''}`
           }
           theme={theme}
           size="md"
@@ -194,7 +327,7 @@ export function InventoryAlertsScreen(): React.JSX.Element {
               shared.statusFilterBtn,
               tab === 'active' ? shared.statusFilterBtnActive : '',
             ].join(' ')}
-            onClick={() => void handleTabChange('active')}
+            onClick={() => handleTabChange('active')}
           >
             Alertas activas
           </button>
@@ -204,7 +337,7 @@ export function InventoryAlertsScreen(): React.JSX.Element {
               shared.statusFilterBtn,
               tab === 'resolved' ? shared.statusFilterBtnActive : '',
             ].join(' ')}
-            onClick={() => void handleTabChange('resolved')}
+            onClick={() => handleTabChange('resolved')}
           >
             Alertas resueltas
           </button>
@@ -259,43 +392,157 @@ export function InventoryAlertsScreen(): React.JSX.Element {
           </section>
         ))}
 
-      {tab === 'resolved' &&
-        (resolvedAlerts.length === 0 ? (
-          <section className={shared.stateSection}>
-            <InventoryScreenState variant="empty" message="No hay alertas resueltas." />
+      {tab === 'resolved' && (
+        <>
+          {/* Toolbar: búsqueda + filtros + sort */}
+          <section className={[shared.toolbarSection, styles.resolvedToolbar].join(' ')}>
+            <div className={styles.resolvedToolbarRow}>
+              <InventarioSearch
+                value={searchQuery}
+                placeholder="Buscar por insumo, proveedor o razón..."
+                onChange={setSearchQuery}
+                onClear={() => setSearchQuery('')}
+                theme={theme}
+                size="md"
+                className={styles.resolvedSearch}
+              />
+              <div className={styles.resolvedFilters}>
+                <button
+                  type="button"
+                  className={[
+                    styles.filterChip,
+                    filterHasNote === true ? styles.filterChipActive : '',
+                  ].join(' ')}
+                  onClick={() => setFilterHasNote((v) => (v === true ? null : true))}
+                >
+                  Con razón
+                </button>
+                <button
+                  type="button"
+                  className={[
+                    styles.filterChip,
+                    filterHasNote === false ? styles.filterChipActive : '',
+                  ].join(' ')}
+                  onClick={() => setFilterHasNote((v) => (v === false ? null : false))}
+                >
+                  Sin razón
+                </button>
+              </div>
+              <div className={styles.resolvedSort}>
+                <span className={styles.sortLabel}>Ordenar:</span>
+                <button
+                  type="button"
+                  className={[
+                    styles.sortBtn,
+                    sortField === 'resolvedAt' ? styles.sortBtnActive : '',
+                  ].join(' ')}
+                  onClick={() => handleSortClick('resolvedAt')}
+                >
+                  Fecha <SortIcon field="resolvedAt" />
+                </button>
+                <button
+                  type="button"
+                  className={[
+                    styles.sortBtn,
+                    sortField === 'product' ? styles.sortBtnActive : '',
+                  ].join(' ')}
+                  onClick={() => handleSortClick('product')}
+                >
+                  Insumo <SortIcon field="product" />
+                </button>
+                <button
+                  type="button"
+                  className={[
+                    styles.sortBtn,
+                    sortField === 'supplier' ? styles.sortBtnActive : '',
+                  ].join(' ')}
+                  onClick={() => handleSortClick('supplier')}
+                >
+                  Proveedor <SortIcon field="supplier" />
+                </button>
+              </div>
+            </div>
           </section>
-        ) : (
-          <section className={shared.tableWrap}>
-            <ResponsiveTable<InventoryResolvedAlert>
-              columns={INVENTARIO_RESOLVED_ALERT_RESPONSIVE_COLUMNS}
-              rows={resolvedAlerts}
-              keyExtractor={(alert) => alert.id}
-              className={shared.responsiveTable}
-              renderTableHeader={({ visibleColumns }) => (
-                <div className={shared.tableHead}>
-                  <InventarioTableHeader
-                    variant="alert"
-                    theme={theme}
-                    size="xl"
-                    columns={headerColumnsFromResponsive(visibleColumns, {
-                      currentStock: 'center',
-                      minStock: 'center',
-                    })}
-                  />
-                </div>
-              )}
-              renderTableRow={(alert, { visibleColumns, columnsTemplate }) => (
-                <InventarioResolvedAlertRow
-                  alert={alert}
-                  theme={theme}
-                  visibleColumns={visibleColumns}
-                  columnsTemplate={columnsTemplate}
+
+          {resolvedLoading ? (
+            <section className={shared.stateSection}>
+              <InventoryScreenState variant="loading" />
+            </section>
+          ) : resolvedError ? (
+            <section className={shared.stateSection}>
+              <InventoryScreenState
+                variant="error"
+                message="No se pudo cargar el historial de alertas resueltas."
+                onRetry={() => void loadResolved(true)}
+              />
+            </section>
+          ) : filteredAndSortedResolved.length === 0 ? (
+            <section className={shared.stateSection}>
+              <InventoryScreenState
+                variant="empty"
+                message={
+                  debouncedSearch || filterHasNote !== null
+                    ? 'No hay alertas que coincidan con los filtros aplicados.'
+                    : 'No hay alertas resueltas todavía.'
+                }
+              />
+            </section>
+          ) : (
+            <>
+              <section className={shared.tableWrap}>
+                <ResponsiveTable<InventoryResolvedAlert>
+                  columns={INVENTARIO_RESOLVED_ALERT_RESPONSIVE_COLUMNS}
+                  rows={filteredAndSortedResolved}
+                  keyExtractor={(alert) => alert.id}
+                  className={shared.responsiveTable}
+                  renderTableHeader={({ visibleColumns }) => (
+                    <div className={shared.tableHead}>
+                      <InventarioTableHeader
+                        variant="alert"
+                        theme={theme}
+                        size="xl"
+                        columns={headerColumnsFromResponsive(visibleColumns, {
+                          currentStock: 'center',
+                          minStock: 'center',
+                        })}
+                      />
+                    </div>
+                  )}
+                  renderTableRow={(alert, { visibleColumns, columnsTemplate }) => (
+                    <InventarioResolvedAlertRow
+                      alert={alert}
+                      theme={theme}
+                      visibleColumns={visibleColumns}
+                      columnsTemplate={columnsTemplate}
+                      onClick={() => setDetailAlert(alert)}
+                    />
+                  )}
+                  renderCard={(alert) => (
+                    <InventarioResolvedAlertCard
+                      alert={alert}
+                      theme={theme}
+                      onClick={() => setDetailAlert(alert)}
+                    />
+                  )}
                 />
+              </section>
+
+              {resolvedHasNext && (
+                <section className={shared.tableFooter}>
+                  <button
+                    type="button"
+                    className={styles.loadMoreBtn}
+                    onClick={() => void loadResolved(false)}
+                    disabled={loadingMore}
+                  >
+                    {loadingMore ? 'Cargando...' : 'Cargar más alertas'}
+                  </button>
+                </section>
               )}
-              renderCard={(alert) => <InventarioResolvedAlertCard alert={alert} theme={theme} />}
-            />
-          </section>
-        ))}
+            </>
+          )}
+        </>
+      )}
     </div>
   );
 }
