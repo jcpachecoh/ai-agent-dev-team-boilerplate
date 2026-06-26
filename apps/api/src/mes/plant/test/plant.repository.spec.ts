@@ -12,6 +12,16 @@ const txMock = {
     create: jest.fn(),
     findFirst: jest.fn(),
   },
+  recipeCategory: {
+    update: jest.fn(),
+  },
+  recipeStatusHistory: {
+    create: jest.fn(),
+  },
+  productionRecipeLocation: {
+    createMany: jest.fn(),
+    deleteMany: jest.fn(),
+  },
   productionPhase: {
     create: jest.fn(),
     findMany: jest.fn(),
@@ -205,7 +215,9 @@ describe('PlantRepository', () => {
       expect(prismaMock.productionRecipe.findFirst).toHaveBeenCalledWith({
         where: { id: 'recipe-1', tenantId },
         include: {
-          category: { select: { id: true, nombre: true } },
+          category: { select: { id: true, nombre: true, codePrefix: true } },
+          locations: { include: { location: { select: { id: true, name: true } } } },
+          statusHistory: { orderBy: { createdAt: 'desc' }, take: 20 },
           phases: {
             orderBy: { order: 'asc' },
             include: { inputs: true },
@@ -217,6 +229,8 @@ describe('PlantRepository', () => {
     it('createRecipeWithPhasesTx deactivates prior recipe and creates nested data', async () => {
       const createdRecipe = { id: 'recipe-new', tenantId, name: 'Pan' };
       txMock.productionRecipe.update.mockResolvedValue({});
+      txMock.recipeCategory.update.mockResolvedValue({ codePrefix: 'COC', codeSequence: 1 });
+      txMock.recipeStatusHistory.create.mockResolvedValue({});
       txMock.productionRecipe.create.mockResolvedValue(createdRecipe);
       txMock.productionPhase.create.mockResolvedValue({ id: 'phase-1' });
 
@@ -225,12 +239,17 @@ describe('PlantRepository', () => {
         deactivateRecipeId: 'recipe-old',
         recipe: {
           name: 'Pan',
+          categoryId: 'cat-1',
+          recipeType: 'FINAL_PRODUCT',
           finishedProductId: 'prod-1',
           batchSize: new Decimal('10'),
           batchUnit: StockUnit.UNIT,
           estimatedMinutes: 60,
+          operationCenter: 'PLANT',
+          technicalResponsible: 'CHEF',
           version: 2,
           notes: null,
+          lifecycleStatus: 'TRIAL',
         },
         phases: [
           {
@@ -256,7 +275,7 @@ describe('PlantRepository', () => {
 
       expect(txMock.productionRecipe.update).toHaveBeenCalledWith({
         where: { id: 'recipe-old' },
-        data: { isActive: false },
+        data: { isActive: false, lifecycleStatus: 'INACTIVE' },
       });
       expect(txMock.productionPhase.create).toHaveBeenCalled();
       expect(txMock.phaseInput.create).toHaveBeenCalled();
@@ -264,12 +283,46 @@ describe('PlantRepository', () => {
     });
 
     it('updateRecipe delegates to prisma.update', async () => {
-      prismaMock.productionRecipe.update.mockResolvedValue({ id: 'recipe-1' });
+      txMock.productionRecipe.update.mockResolvedValue({ id: 'recipe-1' });
       await repository.updateRecipe(tenantId, 'recipe-1', { name: 'Updated' });
-      expect(prismaMock.productionRecipe.update).toHaveBeenCalledWith({
+      expect(txMock.productionRecipe.update).toHaveBeenCalledWith({
         where: { id: 'recipe-1' },
         data: { name: 'Updated' },
       });
+    });
+
+    it('updateRecipe syncs locations when locationIds are provided', async () => {
+      txMock.productionRecipe.update.mockResolvedValue({ id: 'recipe-1' });
+      await repository.updateRecipe(tenantId, 'recipe-1', {
+        locationIds: ['loc-1', 'loc-2'],
+      });
+      expect(txMock.productionRecipeLocation.deleteMany).toHaveBeenCalledWith({
+        where: { recipeId: 'recipe-1', tenantId },
+      });
+      expect(txMock.productionRecipeLocation.createMany).toHaveBeenCalledWith({
+        data: [
+          { tenantId, recipeId: 'recipe-1', locationId: 'loc-1' },
+          { tenantId, recipeId: 'recipe-1', locationId: 'loc-2' },
+        ],
+      });
+    });
+
+    it('updateRecipe clears locations when operation center is not LOCATION', async () => {
+      txMock.productionRecipe.update.mockResolvedValue({ id: 'recipe-1' });
+      await repository.updateRecipe(tenantId, 'recipe-1', { operationCenter: 'PLANT' });
+      expect(txMock.productionRecipeLocation.deleteMany).toHaveBeenCalledWith({
+        where: { recipeId: 'recipe-1', tenantId },
+      });
+      expect(txMock.productionRecipeLocation.createMany).not.toHaveBeenCalled();
+    });
+
+    it('updateRecipe clears locationIds without recreating when empty array is provided', async () => {
+      txMock.productionRecipe.update.mockResolvedValue({ id: 'recipe-1' });
+      await repository.updateRecipe(tenantId, 'recipe-1', { locationIds: [] });
+      expect(txMock.productionRecipeLocation.deleteMany).toHaveBeenCalledWith({
+        where: { recipeId: 'recipe-1', tenantId },
+      });
+      expect(txMock.productionRecipeLocation.createMany).not.toHaveBeenCalled();
     });
 
     it('softDeleteRecipe sets isActive false', async () => {

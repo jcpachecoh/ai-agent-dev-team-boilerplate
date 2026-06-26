@@ -31,8 +31,10 @@ import {
   type ProductionPhase,
   type ProductionRecipe,
   type WorkStation,
+  StockUnit,
 } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
+import { mapBatchDisplayUnitToStockUnit } from '../utils/recipe-form.utils';
 import type { Request, Response } from 'express';
 import { Public } from '../../../common/decorators/public.decorator';
 import { Roles } from '../../auth/decorators/roles.decorator';
@@ -83,6 +85,7 @@ import { CreateIncidentDto } from './dto/create-incident.dto';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { CreatePhaseInputDto } from './dto/create-phase-input.dto';
 import { CreateRecipeDto } from './dto/create-recipe.dto';
+import { RejectRecipeDto } from './dto/reject-recipe.dto';
 import { CreateWorkstationDto } from './dto/create-workstation.dto';
 import { FinishOrderDto } from './dto/finish-order.dto';
 import { IncidentResponseDto } from './dto/incident.response';
@@ -111,6 +114,13 @@ const SUPERVISOR_ROLES = [
   OperationalRole.SUPERVISOR,
   OperationalRole.MANAGER,
   OperationalRole.OWNER,
+] as const;
+
+const RECIPE_EDITOR_ROLES = [
+  OperationalRole.OWNER,
+  OperationalRole.SUPERVISOR,
+  OperationalRole.MANAGER,
+  OperationalRole.OPERATOR,
 ] as const;
 
 /** Roles allowed for operational plant actions (pause, resume, novelties).
@@ -231,8 +241,57 @@ export class PlantController {
   @ApiCreatedResponse({ description: 'Recipe created' })
   @Post('recipes')
   @HttpCode(HttpStatus.CREATED)
+  @UseGuards(PlantAuthGuard, PlantRolesGuard)
+  @Roles(...RECIPE_EDITOR_ROLES)
   createRecipe(@Req() req: MesRequest, @Body() dto: CreateRecipeDto): Promise<ProductionRecipe> {
-    return this.plantService.createRecipe(this.resolveTenantId(req), this.toCreateRecipeInput(dto));
+    return this.plantService.createRecipe(this.resolveTenantId(req), {
+      ...this.toCreateRecipeInput(dto),
+      actorUserId: req.user?.sub ?? null,
+    });
+  }
+
+  @ApiOperation({ summary: 'Preview next recipe code for a category' })
+  @Get('recipes/next-code')
+  previewNextRecipeCode(
+    @Req() req: MesRequest,
+    @Query('categoryId') categoryId: string,
+  ): Promise<{ code: string }> {
+    return this.plantService
+      .previewNextRecipeCode(this.resolveTenantId(req), categoryId)
+      .then((code) => ({ code }));
+  }
+
+  @ApiOperation({ summary: 'Approve a recipe (supervisor)' })
+  @Patch('recipes/:id/approve')
+  @UseGuards(PlantAuthGuard, PlantRolesGuard)
+  @Roles(...SUPERVISOR_ROLES)
+  approveRecipe(@Req() req: MesRequest, @Param('id') id: string): Promise<ProductionRecipe> {
+    return this.plantService.approveRecipe(this.resolveTenantId(req), id, req.user?.sub ?? null);
+  }
+
+  @ApiOperation({ summary: 'Reject a recipe (supervisor)' })
+  @Patch('recipes/:id/reject')
+  @UseGuards(PlantAuthGuard, PlantRolesGuard)
+  @Roles(...SUPERVISOR_ROLES)
+  rejectRecipe(
+    @Req() req: MesRequest,
+    @Param('id') id: string,
+    @Body() dto: RejectRecipeDto,
+  ): Promise<ProductionRecipe> {
+    return this.plantService.rejectRecipe(
+      this.resolveTenantId(req),
+      id,
+      dto.reason,
+      req.user?.sub ?? null,
+    );
+  }
+
+  @ApiOperation({ summary: 'Recipe lifecycle status history' })
+  @Get('recipes/:id/status-history')
+  @UseGuards(PlantAuthGuard, PlantRolesGuard)
+  @Roles(...SUPERVISOR_ROLES)
+  getRecipeStatusHistory(@Req() req: MesRequest, @Param('id') id: string) {
+    return this.plantService.getRecipeStatusHistory(this.resolveTenantId(req), id);
   }
 
   @ApiOperation({ summary: 'List production recipes' })
@@ -788,20 +847,38 @@ export class PlantController {
   // ── DTO mappers (decimal strings → Prisma Decimal) ───────────────────────────
 
   private toCreateRecipeInput(dto: CreateRecipeDto): CreateRecipeWithPhasesInput {
+    const batchUnit =
+      dto.batchUnit ??
+      (dto.batchDisplayUnit
+        ? mapBatchDisplayUnitToStockUnit(dto.batchDisplayUnit)
+        : StockUnit.UNIT);
+
     return {
       name: dto.name,
       categoryId: dto.categoryId,
-      finishedProductId: dto.finishedProductId,
-      batchSize: new Decimal(dto.batchSize),
-      batchUnit: dto.batchUnit,
+      recipeType: dto.recipeType ?? 'FINAL_PRODUCT',
+      finishedProductId: dto.finishedProductId ?? null,
+      batchSize: dto.batchSize ? new Decimal(dto.batchSize) : new Decimal(1),
+      batchUnit,
+      batchDisplayUnit: dto.batchDisplayUnit ?? null,
       packageWeight:
         dto.packageWeight != null && dto.packageWeight !== ''
           ? new Decimal(dto.packageWeight)
           : null,
-      estimatedMinutes: dto.estimatedMinutes,
+      packageWeightGrams: dto.packageWeightGrams ?? null,
+      expectedYield:
+        dto.expectedYield != null && dto.expectedYield !== ''
+          ? new Decimal(dto.expectedYield)
+          : null,
+      expectedYieldUnit: dto.expectedYieldUnit ?? null,
+      estimatedMinutes: dto.estimatedMinutes ?? 0,
+      operationCenter: dto.operationCenter ?? 'PLANT',
+      locationIds: dto.locationIds,
+      technicalResponsible: dto.technicalResponsible ?? 'CHEF',
+      allergens: dto.allergens ?? [],
       notes: dto.notes ?? null,
-      isActive: dto.isActive,
-      phases: dto.phases.map((phase) => this.toCreatePhaseNestedInput(phase)),
+      isDraft: dto.isDraft ?? false,
+      phases: (dto.phases ?? []).map((phase) => this.toCreatePhaseNestedInput(phase)),
     };
   }
 
@@ -844,21 +921,40 @@ export class PlantController {
   }
 
   private toUpdateRecipeInput(dto: UpdateRecipeDto): UpdateRecipeInput {
+    const batchUnit =
+      dto.batchUnit ??
+      (dto.batchDisplayUnit ? mapBatchDisplayUnitToStockUnit(dto.batchDisplayUnit) : undefined);
+
     return {
       name: dto.name,
       categoryId: dto.categoryId,
+      recipeType: dto.recipeType,
       finishedProductId: dto.finishedProductId,
       batchSize: dto.batchSize !== undefined ? new Decimal(dto.batchSize) : undefined,
-      batchUnit: dto.batchUnit,
+      batchUnit,
+      batchDisplayUnit: dto.batchDisplayUnit,
       packageWeight:
         dto.packageWeight === undefined
           ? undefined
           : dto.packageWeight === null || dto.packageWeight === ''
             ? null
             : new Decimal(dto.packageWeight),
+      packageWeightGrams: dto.packageWeightGrams,
+      expectedYield:
+        dto.expectedYield === undefined
+          ? undefined
+          : dto.expectedYield === ''
+            ? null
+            : new Decimal(dto.expectedYield),
+      expectedYieldUnit: dto.expectedYieldUnit,
       estimatedMinutes: dto.estimatedMinutes,
+      operationCenter: dto.operationCenter,
+      locationIds: dto.locationIds,
+      technicalResponsible: dto.technicalResponsible,
+      allergens: dto.allergens,
       notes: dto.notes,
       isActive: dto.isActive,
+      isDraft: dto.isDraft,
     };
   }
 

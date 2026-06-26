@@ -118,11 +118,53 @@ export class PlantRepository implements IPlantRepository {
     });
   }
 
+  findRecipeByCategoryAndName(
+    tenantId: string,
+    categoryId: string,
+    name: string,
+  ): Promise<ProductionRecipe | null> {
+    return this.prisma.productionRecipe.findFirst({
+      where: { tenantId, categoryId, name },
+    });
+  }
+
+  async previewNextRecipeCode(tenantId: string, categoryId: string): Promise<string> {
+    const category = await this.prisma.recipeCategory.findFirst({
+      where: { id: categoryId, tenantId, isActive: true },
+      select: { codePrefix: true, codeSequence: true },
+    });
+    if (!category) {
+      return '';
+    }
+    const next = category.codeSequence + 1;
+    return `${category.codePrefix}-${String(next).padStart(4, '0')}`;
+  }
+
+  findRecipeStatusHistory(tenantId: string, recipeId: string) {
+    return this.prisma.recipeStatusHistory.findMany({
+      where: { tenantId, recipeId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  createRecipeStatusHistory(data: {
+    tenantId: string;
+    recipeId: string;
+    fromStatus: import('@prisma/client').RecipeLifecycleStatus | null;
+    toStatus: import('@prisma/client').RecipeLifecycleStatus;
+    changedByUserId?: string | null;
+    reason?: string | null;
+  }) {
+    return this.prisma.recipeStatusHistory.create({ data });
+  }
+
   findRecipeDetailById(tenantId: string, id: string): Promise<RecipeWithPhasesAndInputs | null> {
     return this.prisma.productionRecipe.findFirst({
       where: { id, tenantId },
       include: {
-        category: { select: { id: true, nombre: true } },
+        category: { select: { id: true, nombre: true, codePrefix: true } },
+        locations: { include: { location: { select: { id: true, name: true } } } },
+        statusHistory: { orderBy: { createdAt: 'desc' }, take: 20 },
         phases: {
           orderBy: { order: 'asc' },
           include: { inputs: true },
@@ -136,25 +178,64 @@ export class PlantRepository implements IPlantRepository {
       if (input.deactivateRecipeId) {
         await tx.productionRecipe.update({
           where: { id: input.deactivateRecipeId },
-          data: { isActive: false },
+          data: { isActive: false, lifecycleStatus: 'INACTIVE' },
         });
       }
+
+      const category = await tx.recipeCategory.update({
+        where: { id: input.recipe.categoryId, tenantId: input.tenantId },
+        data: { codeSequence: { increment: 1 } },
+      });
+      const code =
+        input.recipe.code ??
+        `${category.codePrefix}-${String(category.codeSequence).padStart(4, '0')}`;
 
       const recipe = await tx.productionRecipe.create({
         data: {
           tenantId: input.tenantId,
           name: input.recipe.name,
-          categoryId: input.recipe.categoryId ?? null,
-          finishedProductId: input.recipe.finishedProductId,
+          code,
+          categoryId: input.recipe.categoryId,
+          recipeType: input.recipe.recipeType,
+          finishedProductId: input.recipe.finishedProductId ?? null,
           batchSize: input.recipe.batchSize,
           batchUnit: input.recipe.batchUnit,
+          batchDisplayUnit: input.recipe.batchDisplayUnit ?? null,
           packageWeight: input.recipe.packageWeight ?? null,
+          packageWeightGrams: input.recipe.packageWeightGrams ?? null,
+          expectedYield: input.recipe.expectedYield ?? null,
+          expectedYieldUnit: input.recipe.expectedYieldUnit ?? null,
           estimatedMinutes: input.recipe.estimatedMinutes,
+          operationCenter: input.recipe.operationCenter,
+          technicalResponsible: input.recipe.technicalResponsible,
+          allergens: input.recipe.allergens ?? [],
           version: input.recipe.version,
           notes: input.recipe.notes ?? null,
-          isActive: input.recipe.isActive ?? true,
+          isDraft: input.recipe.isDraft ?? false,
+          lifecycleStatus: input.recipe.lifecycleStatus ?? 'TRIAL',
+          isActive: input.recipe.isActive ?? false,
         },
       });
+
+      await tx.recipeStatusHistory.create({
+        data: {
+          tenantId: input.tenantId,
+          recipeId: recipe.id,
+          fromStatus: null,
+          toStatus: input.recipe.lifecycleStatus ?? 'TRIAL',
+          changedByUserId: input.actorUserId ?? null,
+        },
+      });
+
+      if (input.locationIds?.length) {
+        await tx.productionRecipeLocation.createMany({
+          data: input.locationIds.map((locationId) => ({
+            tenantId: input.tenantId,
+            recipeId: recipe.id,
+            locationId,
+          })),
+        });
+      }
 
       for (const phase of input.phases) {
         const createdPhase = await tx.productionPhase.create({
@@ -191,9 +272,38 @@ export class PlantRepository implements IPlantRepository {
   }
 
   updateRecipe(tenantId: string, id: string, data: UpdateRecipeInput): Promise<ProductionRecipe> {
-    return this.prisma.productionRecipe.update({
-      where: { id },
-      data,
+    const { locationIds, ...recipeData } = data;
+
+    return this.prisma.$transaction(async (tx) => {
+      const recipe = await tx.productionRecipe.update({
+        where: { id },
+        data: recipeData,
+      });
+
+      if (locationIds !== undefined) {
+        await tx.productionRecipeLocation.deleteMany({
+          where: { recipeId: id, tenantId },
+        });
+
+        if (locationIds.length > 0) {
+          await tx.productionRecipeLocation.createMany({
+            data: locationIds.map((locationId) => ({
+              tenantId,
+              recipeId: id,
+              locationId,
+            })),
+          });
+        }
+      } else if (
+        recipeData.operationCenter !== undefined &&
+        recipeData.operationCenter !== 'LOCATION'
+      ) {
+        await tx.productionRecipeLocation.deleteMany({
+          where: { recipeId: id, tenantId },
+        });
+      }
+
+      return recipe;
     });
   }
 
@@ -234,18 +344,40 @@ export class PlantRepository implements IPlantRepository {
         throw new Error(`Source recipe not found: ${sourceRecipeId}`);
       }
 
+      const categoryId = newRecipeData.categoryId ?? source.categoryId;
+      let code = source.code ? `${source.code}-COPY` : null;
+      if (categoryId) {
+        const category = await tx.recipeCategory.update({
+          where: { id: categoryId, tenantId },
+          data: { codeSequence: { increment: 1 } },
+        });
+        code = `${category.codePrefix}-${String(category.codeSequence).padStart(4, '0')}`;
+      }
+
       const recipe = await tx.productionRecipe.create({
         data: {
           tenantId,
           name: newRecipeData.name,
-          categoryId: newRecipeData.categoryId ?? source.categoryId,
+          code,
+          categoryId,
+          recipeType: source.recipeType,
           finishedProductId: newRecipeData.finishedProductId,
           batchSize: newRecipeData.batchSize,
           batchUnit: newRecipeData.batchUnit,
+          batchDisplayUnit: source.batchDisplayUnit,
           packageWeight: newRecipeData.packageWeight ?? source.packageWeight,
+          packageWeightGrams: source.packageWeightGrams,
+          expectedYield: source.expectedYield,
+          expectedYieldUnit: source.expectedYieldUnit,
           estimatedMinutes: newRecipeData.estimatedMinutes,
+          operationCenter: source.operationCenter,
+          technicalResponsible: source.technicalResponsible,
+          allergens: source.allergens,
           version: newRecipeData.version,
           notes: newRecipeData.notes ?? null,
+          lifecycleStatus: 'TRIAL',
+          isActive: false,
+          isDraft: false,
         },
       });
 

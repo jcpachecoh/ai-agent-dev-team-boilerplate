@@ -7,6 +7,7 @@ import type {
   PlantProductionRecipe,
   PlantRecipeCategory,
   PlantRecipeDetail,
+  PlantRecipeStatusHistoryEntry,
   PlantWorkStation,
   UpdatePlantRecipePhaseInput,
 } from './types';
@@ -100,6 +101,33 @@ export async function updatePlantWorkstation(
   });
 }
 
+export async function previewNextRecipeCode(categoryId: string): Promise<{ code: string }> {
+  const query = new URLSearchParams({ categoryId });
+  return plantFetch<{ code: string }>(`/plant/recipes/next-code?${query.toString()}`);
+}
+
+export async function approvePlantRecipe(id: string): Promise<PlantProductionRecipe> {
+  return plantFetch<PlantProductionRecipe>(`/plant/recipes/${id}/approve`, {
+    method: 'PATCH',
+  });
+}
+
+export async function rejectPlantRecipe(
+  id: string,
+  reason: string,
+): Promise<PlantProductionRecipe> {
+  return plantFetch<PlantProductionRecipe>(`/plant/recipes/${id}/reject`, {
+    method: 'PATCH',
+    body: JSON.stringify({ reason }),
+  });
+}
+
+export async function getRecipeStatusHistory(
+  recipeId: string,
+): Promise<PlantRecipeStatusHistoryEntry[]> {
+  return plantFetch<PlantRecipeStatusHistoryEntry[]>(`/plant/recipes/${recipeId}/status-history`);
+}
+
 export async function createPlantRecipe(
   input: CreatePlantRecipeInput,
 ): Promise<PlantProductionRecipe> {
@@ -115,13 +143,24 @@ export async function updatePlantRecipe(
     Pick<
       CreatePlantRecipeInput,
       | 'name'
+      | 'categoryId'
+      | 'recipeType'
       | 'finishedProductId'
       | 'batchSize'
       | 'batchUnit'
+      | 'batchDisplayUnit'
       | 'packageWeight'
+      | 'packageWeightGrams'
+      | 'expectedYield'
+      | 'expectedYieldUnit'
       | 'estimatedMinutes'
+      | 'operationCenter'
+      | 'locationIds'
+      | 'technicalResponsible'
+      | 'allergens'
       | 'notes'
       | 'isActive'
+      | 'isDraft'
     >
   >,
 ): Promise<PlantProductionRecipe> {

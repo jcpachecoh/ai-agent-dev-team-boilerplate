@@ -2,6 +2,7 @@ import type { PlantProductionOrder, PlantProductionRecipe, PlantRecipeCategory }
 import { formatRecetaListDate, formatRecetaVersionLabel } from '@restopsiq/ui';
 
 import type { ProcessRow, ProcessViewData, RecipeListItem, RecetaResult } from '../types';
+import { LIFECYCLE_STATUS_LABELS, mapLifecycleToRecetaStatus } from '../types';
 
 const DATE_FORMATTER = new Intl.DateTimeFormat('es-CO', {
   day: 'numeric',
@@ -12,6 +13,9 @@ const DATE_FORMATTER = new Intl.DateTimeFormat('es-CO', {
 });
 
 export function formatRecipeCode(recipe: PlantProductionRecipe): string {
+  if (recipe.code?.trim()) {
+    return recipe.code.trim();
+  }
   return `RC-${String(recipe.version).padStart(3, '0')}`;
 }
 
@@ -27,6 +31,7 @@ export function mapPlantRecipeToListItem(
   recipe: PlantProductionRecipe,
   phaseCount = 0,
 ): RecipeListItem {
+  const lifecycleStatus = recipe.lifecycleStatus ?? (recipe.isActive ? 'ACTIVE' : 'INACTIVE');
   return {
     id: recipe.id,
     code: formatRecipeCode(recipe),
@@ -37,7 +42,9 @@ export function mapPlantRecipeToListItem(
     version: recipe.version,
     versionLabel: formatRecetaVersionLabel(recipe.version),
     updatedAt: formatRecetaListDate(recipe.updatedAt),
-    status: recipe.isActive ? 'active' : 'inactive',
+    status: mapLifecycleToRecetaStatus(lifecycleStatus),
+    lifecycleStatus,
+    statusLabel: LIFECYCLE_STATUS_LABELS[lifecycleStatus],
   };
 }
 

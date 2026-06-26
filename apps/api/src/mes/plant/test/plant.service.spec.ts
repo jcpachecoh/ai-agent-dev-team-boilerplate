@@ -11,6 +11,7 @@ import {
 import { Decimal } from '@prisma/client/runtime/library';
 import { RecipeCategoriesService } from '../../../recipe-categories/service/recipe-categories.service';
 import { SupplyItemsService } from '../../../supplyitems/service/supplyitems.service';
+import { AuditService } from '../../../audit/service/audit.service';
 import { PlantRepository } from '../repository/plant.repository';
 import { CommitteeService } from '../service/committee.service';
 import { PlantEventsService } from '../service/plant-events.service';
@@ -48,10 +49,18 @@ const mockRecipe = {
 
 const createRecipeInput: CreateRecipeWithPhasesInput = {
   name: 'Pan integral',
+  categoryId: 'cat-1',
+  recipeType: 'FINAL_PRODUCT',
   finishedProductId: 'prod-1',
   batchSize: new Decimal('10'),
   batchUnit: StockUnit.UNIT,
+  batchDisplayUnit: 'UNIT',
+  packageWeightGrams: 500,
+  expectedYield: new Decimal('10'),
+  expectedYieldUnit: 'porciones',
   estimatedMinutes: 60,
+  operationCenter: 'PLANT',
+  technicalResponsible: 'CHEF',
   phases: [
     {
       order: 1,
@@ -74,6 +83,10 @@ const repoMock = {
   findAllRecipes: jest.fn(),
   findRecipeById: jest.fn(),
   findActiveRecipeByName: jest.fn(),
+  findRecipeByCategoryAndName: jest.fn(),
+  previewNextRecipeCode: jest.fn(),
+  findRecipeStatusHistory: jest.fn(),
+  createRecipeStatusHistory: jest.fn(),
   findRecipeDetailById: jest.fn(),
   createRecipeWithPhasesTx: jest.fn(),
   updateRecipe: jest.fn(),
@@ -107,6 +120,8 @@ const plantEventsServiceMock = {
   emitPhaseStatusChanged: jest.fn(),
 };
 
+const auditServiceMock = { log: jest.fn().mockResolvedValue(undefined) };
+
 const recipeCategoriesServiceMock = {
   findOne: jest.fn(),
 };
@@ -128,6 +143,7 @@ describe('PlantService', () => {
         { provide: RecipeCategoriesService, useValue: recipeCategoriesServiceMock },
         { provide: SupplyItemsService, useValue: supplyItemsServiceMock },
         { provide: PlantEventsService, useValue: plantEventsServiceMock },
+        { provide: AuditService, useValue: auditServiceMock },
       ],
     }).compile();
 
@@ -139,43 +155,7 @@ describe('PlantService', () => {
     beforeEach(() => {
       repoMock.findWorkStationById.mockResolvedValue(mockWorkStation);
       repoMock.createRecipeWithPhasesTx.mockResolvedValue(mockRecipe);
-    });
-
-    it('calls createRecipeWithPhasesTx once when no prior active recipe exists', async () => {
-      repoMock.findActiveRecipeByName.mockResolvedValue(null);
-
-      const result = await service.createRecipe(tenantId, createRecipeInput);
-
-      expect(result).toEqual(mockRecipe);
-      expect(repoMock.createRecipeWithPhasesTx).toHaveBeenCalledTimes(1);
-      expect(repoMock.createRecipeWithPhasesTx).toHaveBeenCalledWith(
-        expect.objectContaining({
-          tenantId,
-          deactivateRecipeId: undefined,
-          recipe: expect.objectContaining({ version: 1 }),
-        }),
-      );
-    });
-
-    it('deactivates prior active recipe and increments version when name exists', async () => {
-      repoMock.findActiveRecipeByName.mockResolvedValue({
-        ...mockRecipe,
-        id: 'recipe-old',
-        version: 2,
-      });
-
-      await service.createRecipe(tenantId, createRecipeInput);
-
-      expect(repoMock.createRecipeWithPhasesTx).toHaveBeenCalledWith(
-        expect.objectContaining({
-          deactivateRecipeId: 'recipe-old',
-          recipe: expect.objectContaining({ version: 3 }),
-        }),
-      );
-    });
-
-    it('resolves categoryId via RecipeCategoriesService when provided', async () => {
-      repoMock.findActiveRecipeByName.mockResolvedValue(null);
+      repoMock.findRecipeByCategoryAndName.mockResolvedValue(null);
       recipeCategoriesServiceMock.findOne.mockResolvedValue({
         id: 'cat-1',
         tenantId,
@@ -185,7 +165,31 @@ describe('PlantService', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       });
+    });
 
+    it('calls createRecipeWithPhasesTx once when no duplicate name exists in category', async () => {
+      const result = await service.createRecipe(tenantId, createRecipeInput);
+
+      expect(result).toEqual(mockRecipe);
+      expect(repoMock.createRecipeWithPhasesTx).toHaveBeenCalledTimes(1);
+      expect(repoMock.createRecipeWithPhasesTx).toHaveBeenCalledWith(
+        expect.objectContaining({
+          tenantId,
+          recipe: expect.objectContaining({ version: 1, lifecycleStatus: 'TRIAL' }),
+        }),
+      );
+      expect(auditServiceMock.log).toHaveBeenCalled();
+    });
+
+    it('throws ConflictException when recipe name exists in category', async () => {
+      repoMock.findRecipeByCategoryAndName.mockResolvedValue(mockRecipe);
+
+      await expect(service.createRecipe(tenantId, createRecipeInput)).rejects.toThrow(
+        ConflictException,
+      );
+    });
+
+    it('resolves categoryId via RecipeCategoriesService when provided', async () => {
       await service.createRecipe(tenantId, { ...createRecipeInput, categoryId: 'cat-1' });
 
       expect(recipeCategoriesServiceMock.findOne).toHaveBeenCalledWith(tenantId, 'cat-1');
@@ -196,21 +200,7 @@ describe('PlantService', () => {
       );
     });
 
-    it('clears categoryId when omitted on create', async () => {
-      repoMock.findActiveRecipeByName.mockResolvedValue(null);
-
-      await service.createRecipe(tenantId, createRecipeInput);
-
-      expect(recipeCategoriesServiceMock.findOne).not.toHaveBeenCalled();
-      expect(repoMock.createRecipeWithPhasesTx).toHaveBeenCalledWith(
-        expect.objectContaining({
-          recipe: expect.objectContaining({ categoryId: null }),
-        }),
-      );
-    });
-
     it('validates phase inputs and maps optional recipe and phase fields', async () => {
-      repoMock.findActiveRecipeByName.mockResolvedValue(null);
       supplyItemsServiceMock.findOne.mockResolvedValue({ id: 'supply-1' });
 
       await service.createRecipe(tenantId, {
@@ -519,6 +509,182 @@ describe('PlantService', () => {
         expect.objectContaining({ categoryId: null }),
       );
     });
+
+    it('maps batchDisplayUnit to batchUnit when batchUnit is omitted', async () => {
+      repoMock.findRecipeById.mockResolvedValue(mockRecipe);
+      repoMock.updateRecipe.mockResolvedValue(mockRecipe);
+
+      await service.updateRecipe(tenantId, 'recipe-1', { batchDisplayUnit: 'KILOGRAM' });
+
+      expect(repoMock.updateRecipe).toHaveBeenCalledWith(
+        tenantId,
+        'recipe-1',
+        expect.objectContaining({ batchUnit: StockUnit.KILOGRAMS }),
+      );
+    });
+
+    it('derives packageWeight from packageWeightGrams when packageWeight is omitted', async () => {
+      repoMock.findRecipeById.mockResolvedValue(mockRecipe);
+      repoMock.updateRecipe.mockResolvedValue(mockRecipe);
+
+      await service.updateRecipe(tenantId, 'recipe-1', { packageWeightGrams: 500 });
+
+      expect(repoMock.updateRecipe).toHaveBeenCalledWith(
+        tenantId,
+        'recipe-1',
+        expect.objectContaining({
+          packageWeightGrams: 500,
+          packageWeight: expect.any(Decimal),
+        }),
+      );
+    });
+
+    it('clears locationIds when operation center changes away from LOCATION', async () => {
+      repoMock.findRecipeById.mockResolvedValue({
+        ...mockRecipe,
+        operationCenter: 'LOCATION',
+      });
+      repoMock.updateRecipe.mockResolvedValue(mockRecipe);
+
+      await service.updateRecipe(tenantId, 'recipe-1', { operationCenter: 'PLANT' });
+
+      expect(repoMock.updateRecipe).toHaveBeenCalledWith(
+        tenantId,
+        'recipe-1',
+        expect.objectContaining({ operationCenter: 'PLANT', locationIds: [] }),
+      );
+    });
+
+    it('throws when operation center is LOCATION without locations', async () => {
+      repoMock.findRecipeById.mockResolvedValue({
+        ...mockRecipe,
+        operationCenter: 'PLANT',
+      });
+
+      await expect(
+        service.updateRecipe(tenantId, 'recipe-1', {
+          operationCenter: 'LOCATION',
+          locationIds: [],
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('throws when locations are sent for a non-LOCATION operation center', async () => {
+      repoMock.findRecipeById.mockResolvedValue({
+        ...mockRecipe,
+        operationCenter: 'PLANT',
+      });
+
+      await expect(
+        service.updateRecipe(tenantId, 'recipe-1', { locationIds: ['loc-1'] }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('throws when notes exceed 500 characters', async () => {
+      repoMock.findRecipeById.mockResolvedValue(mockRecipe);
+
+      await expect(
+        service.updateRecipe(tenantId, 'recipe-1', { notes: 'x'.repeat(501) }),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('approveRecipe', () => {
+    it('approves a trial recipe and records history and audit', async () => {
+      repoMock.findRecipeById.mockResolvedValue({
+        ...mockRecipe,
+        lifecycleStatus: 'TRIAL',
+      });
+      repoMock.updateRecipe.mockResolvedValue({
+        ...mockRecipe,
+        lifecycleStatus: 'ACTIVE',
+        isActive: true,
+      });
+
+      const result = await service.approveRecipe(tenantId, 'recipe-1', 'user-1');
+
+      expect(result.lifecycleStatus).toBe('ACTIVE');
+      expect(repoMock.updateRecipe).toHaveBeenCalledWith(
+        tenantId,
+        'recipe-1',
+        expect.objectContaining({ lifecycleStatus: 'ACTIVE', isActive: true }),
+      );
+      expect(repoMock.createRecipeStatusHistory).toHaveBeenCalledWith(
+        expect.objectContaining({ fromStatus: 'TRIAL', toStatus: 'ACTIVE' }),
+      );
+      expect(auditServiceMock.log).toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'APPROVE', entityId: 'recipe-1' }),
+      );
+    });
+
+    it('returns recipe unchanged when already active', async () => {
+      const activeRecipe = { ...mockRecipe, lifecycleStatus: 'ACTIVE' as const };
+      repoMock.findRecipeById.mockResolvedValue(activeRecipe);
+
+      const result = await service.approveRecipe(tenantId, 'recipe-1');
+
+      expect(result).toEqual(activeRecipe);
+      expect(repoMock.updateRecipe).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('rejectRecipe', () => {
+    it('rejects a recipe with reason and records history and audit', async () => {
+      repoMock.findRecipeById.mockResolvedValue({
+        ...mockRecipe,
+        lifecycleStatus: 'TRIAL',
+      });
+      repoMock.updateRecipe.mockResolvedValue({
+        ...mockRecipe,
+        lifecycleStatus: 'INACTIVE',
+        isActive: false,
+      });
+
+      const result = await service.rejectRecipe(tenantId, 'recipe-1', '  Falta documentación  ');
+
+      expect(result.lifecycleStatus).toBe('INACTIVE');
+      expect(repoMock.updateRecipe).toHaveBeenCalledWith(
+        tenantId,
+        'recipe-1',
+        expect.objectContaining({
+          lifecycleStatus: 'INACTIVE',
+          rejectionReason: 'Falta documentación',
+        }),
+      );
+      expect(repoMock.createRecipeStatusHistory).toHaveBeenCalledWith(
+        expect.objectContaining({ toStatus: 'INACTIVE', reason: 'Falta documentación' }),
+      );
+      expect(auditServiceMock.log).toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'REJECT' }),
+      );
+    });
+
+    it('throws when rejection reason is empty', async () => {
+      repoMock.findRecipeById.mockResolvedValue(mockRecipe);
+
+      await expect(service.rejectRecipe(tenantId, 'recipe-1', '   ')).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+  });
+
+  describe('previewNextRecipeCode', () => {
+    it('delegates to repository', async () => {
+      repoMock.previewNextRecipeCode.mockResolvedValue('COC-0002');
+
+      await expect(service.previewNextRecipeCode(tenantId, 'cat-1')).resolves.toBe('COC-0002');
+      expect(repoMock.previewNextRecipeCode).toHaveBeenCalledWith(tenantId, 'cat-1');
+    });
+  });
+
+  describe('getRecipeStatusHistory', () => {
+    it('delegates to repository', async () => {
+      const history = [{ id: 'hist-1' }];
+      repoMock.findRecipeStatusHistory.mockResolvedValue(history);
+
+      await expect(service.getRecipeStatusHistory(tenantId, 'recipe-1')).resolves.toEqual(history);
+      expect(repoMock.findRecipeStatusHistory).toHaveBeenCalledWith(tenantId, 'recipe-1');
+    });
   });
 
   describe('cloneRecipe', () => {
@@ -626,6 +792,104 @@ describe('PlantService', () => {
   });
 
   describe('createRecipe validation', () => {
+    beforeEach(() => {
+      repoMock.findRecipeByCategoryAndName.mockResolvedValue(null);
+      recipeCategoriesServiceMock.findOne.mockResolvedValue({
+        id: 'cat-1',
+        tenantId,
+        nombre: 'Platos',
+        descripcion: null,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      repoMock.createRecipeWithPhasesTx.mockResolvedValue(mockRecipe);
+    });
+
+    it('throws when name is empty', async () => {
+      await expect(
+        service.createRecipe(tenantId, { ...createRecipeInput, name: '   ' }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('throws when name exceeds 150 characters', async () => {
+      await expect(
+        service.createRecipe(tenantId, { ...createRecipeInput, name: 'x'.repeat(151) }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('throws when categoryId is missing', async () => {
+      await expect(
+        service.createRecipe(tenantId, { ...createRecipeInput, categoryId: '' }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('throws when finished product is missing for non-draft recipes', async () => {
+      await expect(
+        service.createRecipe(tenantId, { ...createRecipeInput, finishedProductId: '  ' }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('throws when non-draft recipe has no phases', async () => {
+      await expect(
+        service.createRecipe(tenantId, { ...createRecipeInput, phases: [] }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('creates draft recipe without phases or finished product', async () => {
+      await service.createRecipe(tenantId, {
+        ...createRecipeInput,
+        name: 'Borrador',
+        isDraft: true,
+        finishedProductId: null,
+        phases: [],
+      });
+
+      expect(repoMock.createRecipeWithPhasesTx).toHaveBeenCalledWith(
+        expect.objectContaining({
+          recipe: expect.objectContaining({ isDraft: true }),
+        }),
+      );
+    });
+
+    it('throws when batch unit is missing on draft recipe', async () => {
+      const {
+        batchUnit: _batchUnit,
+        batchDisplayUnit: _batchDisplayUnit,
+        ...draftInput
+      } = {
+        ...createRecipeInput,
+        name: 'Borrador',
+        isDraft: true,
+        finishedProductId: null,
+        phases: [],
+      };
+
+      await expect(
+        service.createRecipe(tenantId, draftInput as unknown as CreateRecipeWithPhasesInput),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('throws when operation center is LOCATION without locations', async () => {
+      await expect(
+        service.createRecipe(tenantId, {
+          ...createRecipeInput,
+          operationCenter: 'LOCATION',
+          locationIds: [],
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('throws when locations are provided without LOCATION operation center', async () => {
+      await expect(
+        service.createRecipe(tenantId, {
+          ...createRecipeInput,
+          operationCenter: 'PLANT',
+          locationIds: ['loc-1'],
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
     it('throws when phase orders are duplicated', async () => {
       await expect(
         service.createRecipe(tenantId, {

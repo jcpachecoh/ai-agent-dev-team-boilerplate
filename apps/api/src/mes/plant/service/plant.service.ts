@@ -8,6 +8,7 @@ import {
   PhaseExecutionStatus,
   ProductionOrderStatus,
   ProductionPriority,
+  StockUnit,
   type PhaseInput,
   type ProductionPhase,
   type ProductionRecipe,
@@ -16,6 +17,7 @@ import {
 import { Decimal } from '@prisma/client/runtime/library';
 import { RecipeCategoriesService } from '../../../recipe-categories/service/recipe-categories.service';
 import { SupplyItemsService } from '../../../supplyitems/service/supplyitems.service';
+import { AuditService } from '../../../audit/service/audit.service';
 import { PlantRepository } from '../repository/plant.repository';
 import type {
   CancelOrderInput,
@@ -44,6 +46,10 @@ import type {
 import { ConsumedInputsAction } from '../interfaces/plant.interfaces';
 import { CommitteeService } from './committee.service';
 import { PlantEventsService } from './plant-events.service';
+import {
+  gramsToLegacyPackageWeightKg,
+  mapBatchDisplayUnitToStockUnit,
+} from '../utils/recipe-form.utils';
 
 @Injectable()
 export class PlantService implements IPlantService {
@@ -53,6 +59,7 @@ export class PlantService implements IPlantService {
     private readonly recipeCategoriesService: RecipeCategoriesService,
     private readonly supplyItemsService: SupplyItemsService,
     private readonly plantEventsService: PlantEventsService,
+    private readonly auditService: AuditService,
   ) {}
 
   // ── Workstations ───────────────────────────────────────────────────────────
@@ -112,14 +119,179 @@ export class PlantService implements IPlantService {
     tenantId: string,
     input: CreateRecipeWithPhasesInput,
   ): Promise<ProductionRecipe> {
-    await this.validateNestedPhases(tenantId, input.phases);
-    input.categoryId = await this.resolveCategoryId(tenantId, input.categoryId);
+    const isDraft = input.isDraft ?? false;
+    const trimmedName = input.name.trim();
 
-    const activeByName = await this.plantRepository.findActiveRecipeByName(tenantId, input.name);
-    const version = activeByName ? activeByName.version + 1 : 1;
+    if (!trimmedName) {
+      throw new BadRequestException('Recipe name is required');
+    }
+    if (trimmedName.length > 150) {
+      throw new BadRequestException('Recipe name must be at most 150 characters');
+    }
+    if (!input.categoryId) {
+      throw new BadRequestException('Recipe category is required');
+    }
 
-    const txInput = this.buildCreateRecipeTxInput(tenantId, input, version, activeByName?.id);
-    return this.plantRepository.createRecipeWithPhasesTx(txInput);
+    const categoryId = await this.resolveCategoryId(tenantId, input.categoryId);
+    if (!categoryId) {
+      throw new BadRequestException('Recipe category is required');
+    }
+
+    const duplicate = await this.plantRepository.findRecipeByCategoryAndName(
+      tenantId,
+      categoryId,
+      trimmedName,
+    );
+    if (duplicate) {
+      throw new ConflictException(
+        `Ya existe una receta con el nombre "${trimmedName}" en esta categoría`,
+      );
+    }
+
+    this.validateRecipeFormMetadata(input, isDraft);
+
+    if (!isDraft) {
+      if (!input.finishedProductId?.trim()) {
+        throw new BadRequestException('Finished product is required');
+      }
+      if (input.phases.length === 0) {
+        throw new BadRequestException('At least one phase is required');
+      }
+      await this.validateNestedPhases(tenantId, input.phases);
+    } else if (input.phases.length > 0) {
+      await this.validateNestedPhases(tenantId, input.phases);
+    }
+
+    const batchUnit =
+      input.batchUnit ??
+      (input.batchDisplayUnit ? mapBatchDisplayUnitToStockUnit(input.batchDisplayUnit) : undefined);
+
+    if (!batchUnit) {
+      throw new BadRequestException('Batch unit is required');
+    }
+
+    const packageWeightGrams = input.packageWeightGrams ?? null;
+    const packageWeight =
+      input.packageWeight ??
+      (packageWeightGrams != null
+        ? new Decimal(gramsToLegacyPackageWeightKg(packageWeightGrams))
+        : null);
+
+    const txInput = this.buildCreateRecipeTxInput(
+      tenantId,
+      {
+        ...input,
+        name: trimmedName,
+        categoryId,
+        batchUnit,
+        packageWeight,
+        packageWeightGrams,
+      },
+      1,
+    );
+
+    const recipe = await this.plantRepository.createRecipeWithPhasesTx(txInput);
+
+    await this.auditService.log({
+      tenantId,
+      action: 'CREATE',
+      entityType: 'ProductionRecipe',
+      entityId: recipe.id,
+      actorUserId: input.actorUserId ?? null,
+      newValue: {
+        code: recipe.code,
+        name: recipe.name,
+        lifecycleStatus: recipe.lifecycleStatus,
+        isDraft: recipe.isDraft,
+      },
+    });
+
+    return recipe;
+  }
+
+  previewNextRecipeCode(tenantId: string, categoryId: string): Promise<string> {
+    return this.plantRepository.previewNextRecipeCode(tenantId, categoryId);
+  }
+
+  async approveRecipe(
+    tenantId: string,
+    id: string,
+    actorUserId?: string | null,
+  ): Promise<ProductionRecipe> {
+    const recipe = await this.requireRecipe(tenantId, id);
+    if (recipe.lifecycleStatus === 'ACTIVE') {
+      return recipe;
+    }
+
+    const updated = await this.plantRepository.updateRecipe(tenantId, id, {
+      lifecycleStatus: 'ACTIVE',
+      isActive: true,
+      rejectionReason: null,
+    });
+
+    await this.plantRepository.createRecipeStatusHistory({
+      tenantId,
+      recipeId: id,
+      fromStatus: recipe.lifecycleStatus,
+      toStatus: 'ACTIVE',
+      changedByUserId: actorUserId ?? null,
+    });
+
+    await this.auditService.log({
+      tenantId,
+      action: 'APPROVE',
+      entityType: 'ProductionRecipe',
+      entityId: id,
+      actorUserId: actorUserId ?? null,
+      oldValue: { lifecycleStatus: recipe.lifecycleStatus },
+      newValue: { lifecycleStatus: 'ACTIVE' },
+    });
+
+    return updated;
+  }
+
+  async rejectRecipe(
+    tenantId: string,
+    id: string,
+    reason: string,
+    actorUserId?: string | null,
+  ): Promise<ProductionRecipe> {
+    const recipe = await this.requireRecipe(tenantId, id);
+    const trimmedReason = reason.trim();
+    if (!trimmedReason) {
+      throw new BadRequestException('Rejection reason is required');
+    }
+
+    const updated = await this.plantRepository.updateRecipe(tenantId, id, {
+      lifecycleStatus: 'INACTIVE',
+      isActive: false,
+      rejectionReason: trimmedReason,
+    });
+
+    await this.plantRepository.createRecipeStatusHistory({
+      tenantId,
+      recipeId: id,
+      fromStatus: recipe.lifecycleStatus,
+      toStatus: 'INACTIVE',
+      changedByUserId: actorUserId ?? null,
+      reason: trimmedReason,
+    });
+
+    await this.auditService.log({
+      tenantId,
+      action: 'REJECT',
+      entityType: 'ProductionRecipe',
+      entityId: id,
+      actorUserId: actorUserId ?? null,
+      oldValue: { lifecycleStatus: recipe.lifecycleStatus },
+      newValue: { lifecycleStatus: 'INACTIVE', rejectionReason: trimmedReason },
+    });
+
+    return updated;
+  }
+
+  getRecipeStatusHistory(tenantId: string, recipeId: string) {
+    return this.plantRepository.findRecipeStatusHistory(tenantId, recipeId);
   }
 
   findAllRecipes(tenantId: string): Promise<ProductionRecipe[]> {
@@ -157,6 +329,40 @@ export class PlantService implements IPlantService {
       updateData.categoryId = await this.resolveCategoryId(tenantId, input.categoryId);
     }
 
+    if (
+      input.batchDisplayUnit !== undefined &&
+      input.batchDisplayUnit != null &&
+      input.batchUnit === undefined
+    ) {
+      updateData.batchUnit = mapBatchDisplayUnitToStockUnit(input.batchDisplayUnit);
+    }
+
+    if (input.packageWeightGrams !== undefined && input.packageWeight === undefined) {
+      updateData.packageWeight =
+        input.packageWeightGrams != null
+          ? new Decimal(gramsToLegacyPackageWeightKg(input.packageWeightGrams))
+          : null;
+    }
+
+    const operationCenter = input.operationCenter ?? recipe.operationCenter;
+    if (input.operationCenter !== undefined || input.locationIds !== undefined) {
+      if (operationCenter === 'LOCATION') {
+        if (input.locationIds !== undefined && !input.locationIds.length) {
+          throw new BadRequestException(
+            'At least one location is required when operation center is Sede',
+          );
+        }
+      } else if (input.locationIds?.length) {
+        throw new BadRequestException('Locations are only allowed when operation center is Sede');
+      } else if (input.operationCenter !== undefined) {
+        updateData.locationIds = [];
+      }
+    }
+
+    if (input.notes !== undefined && input.notes != null && input.notes.length > 500) {
+      throw new BadRequestException('Notes must be at most 500 characters');
+    }
+
     if (input.name !== undefined && input.name !== recipe.name) {
       const conflict = await this.plantRepository.findActiveRecipeByName(tenantId, input.name);
       if (conflict && conflict.id !== id) {
@@ -181,6 +387,10 @@ export class PlantService implements IPlantService {
 
     if (activeByName) {
       await this.plantRepository.updateRecipe(tenantId, activeByName.id, { isActive: false });
+    }
+
+    if (!source.finishedProductId) {
+      throw new BadRequestException('Cannot clone a recipe without finished product');
     }
 
     return this.plantRepository.cloneRecipeTx(tenantId, id, {
@@ -930,26 +1140,91 @@ export class PlantService implements IPlantService {
     }
   }
 
+  private validateRecipeFormMetadata(input: CreateRecipeWithPhasesInput, isDraft: boolean): void {
+    if (!isDraft) {
+      if (!input.recipeType) {
+        throw new BadRequestException('Recipe type is required');
+      }
+      if (input.batchSize == null || input.batchSize.lte(0)) {
+        throw new BadRequestException('Batch size must be greater than 0');
+      }
+      if (!input.batchDisplayUnit && !input.batchUnit) {
+        throw new BadRequestException('Batch unit is required');
+      }
+      if (input.packageWeightGrams == null || input.packageWeightGrams <= 0) {
+        throw new BadRequestException('Package weight in grams must be greater than 0');
+      }
+      if (input.expectedYield == null || input.expectedYield.lte(0)) {
+        throw new BadRequestException('Expected yield must be greater than 0');
+      }
+      if (!input.expectedYieldUnit?.trim()) {
+        throw new BadRequestException('Expected yield unit is required');
+      }
+      if (!input.estimatedMinutes || input.estimatedMinutes <= 0) {
+        throw new BadRequestException('Estimated minutes must be greater than 0');
+      }
+      if (!input.operationCenter) {
+        throw new BadRequestException('Operation center is required');
+      }
+      if (!input.technicalResponsible) {
+        throw new BadRequestException('Technical responsible is required');
+      }
+    }
+
+    if (input.notes && input.notes.length > 500) {
+      throw new BadRequestException('Notes must be at most 500 characters');
+    }
+
+    if (input.operationCenter === 'LOCATION') {
+      if (!input.locationIds?.length) {
+        throw new BadRequestException(
+          'At least one location is required when operation center is Sede',
+        );
+      }
+    } else if (input.locationIds?.length) {
+      throw new BadRequestException('Locations are only allowed when operation center is Sede');
+    }
+  }
+
   private buildCreateRecipeTxInput(
     tenantId: string,
     input: CreateRecipeWithPhasesInput,
     version: number,
     deactivateRecipeId?: string,
   ): CreateRecipeWithPhasesTxInput {
+    const isDraft = input.isDraft ?? false;
+    const batchUnit =
+      input.batchUnit ??
+      (input.batchDisplayUnit
+        ? mapBatchDisplayUnitToStockUnit(input.batchDisplayUnit)
+        : StockUnit.UNIT);
+
     return {
       tenantId,
       deactivateRecipeId,
+      actorUserId: input.actorUserId ?? null,
+      locationIds: input.locationIds,
       recipe: {
         name: input.name,
-        categoryId: input.categoryId ?? null,
-        finishedProductId: input.finishedProductId,
+        categoryId: input.categoryId,
+        recipeType: input.recipeType ?? 'FINAL_PRODUCT',
+        finishedProductId: input.finishedProductId ?? null,
         batchSize: input.batchSize,
-        batchUnit: input.batchUnit,
+        batchUnit,
+        batchDisplayUnit: input.batchDisplayUnit ?? null,
         packageWeight: input.packageWeight ?? null,
-        estimatedMinutes: input.estimatedMinutes,
+        packageWeightGrams: input.packageWeightGrams ?? null,
+        expectedYield: input.expectedYield ?? null,
+        expectedYieldUnit: input.expectedYieldUnit ?? null,
+        estimatedMinutes: input.estimatedMinutes ?? 0,
+        operationCenter: input.operationCenter ?? 'PLANT',
+        technicalResponsible: input.technicalResponsible ?? 'CHEF',
+        allergens: input.allergens ?? [],
         version,
         notes: input.notes ?? null,
-        isActive: input.isActive ?? true,
+        isDraft,
+        lifecycleStatus: 'TRIAL',
+        isActive: false,
       },
       phases: input.phases.map((phase) => ({
         order: phase.order,

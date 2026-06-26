@@ -15,6 +15,14 @@
   @include receta.receta-theme-dark;
 }
 
+.headerRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: $spacing-md;
+  margin-bottom: $spacing-xs;
+}
+
 .title {
   margin: 0;
   font-family: $font-family-mono;
@@ -33,10 +41,117 @@
   color: var(--receta-muted);
 }
 
+.headerRow .hint {
+  margin-bottom: 0;
+}
+
+.draftButton {
+  flex-shrink: 0;
+  padding: 0.45rem 0.75rem;
+  border: 1px solid var(--receta-border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--receta-text);
+  font-size: $font-size-xs;
+  font-weight: $font-weight-semibold;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.catalogError {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-md;
+  padding: $spacing-sm $spacing-md;
+  border-radius: 6px;
+  border: 1px solid rgba(receta.$receta-failed, 0.35);
+  background: rgba(receta.$receta-failed, 0.08);
+  color: var(--receta-text);
+
+  p {
+    margin: 0;
+    font-size: $font-size-sm;
+  }
+}
+
+.retryButton {
+  border: 0;
+  background: transparent;
+  color: receta.$receta-teal;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+  cursor: pointer;
+}
+
 .grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: $spacing-md;
+}
+
+.inlinePair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: $spacing-sm;
+}
+
+.statusBadgeWrap {
+  display: flex;
+  align-items: center;
+  min-height: 38px;
+}
+
+.checkboxList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-sm $spacing-md;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.checkboxItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: $font-size-sm;
+  color: var(--receta-text);
+  cursor: pointer;
+
+  input {
+    accent-color: receta.$receta-teal;
+  }
+}
+
+.fieldError {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: $font-size-xs;
+  color: receta.$receta-failed;
+}
+
+.emptyHint {
+  margin: 0;
+  font-size: $font-size-sm;
+  color: var(--receta-muted);
+}
+
+.skeleton {
+  height: 38px;
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.04) 25%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0.04) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.2s infinite;
 }
 
 .panelCompact {
@@ -52,8 +167,23 @@
   }
 }
 
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
 @media (width <= 720px) {
-  .grid {
+  .grid,
+  .inlinePair {
     grid-template-columns: 1fr;
+  }
+
+  .headerRow {
+    flex-direction: column;
   }
 }

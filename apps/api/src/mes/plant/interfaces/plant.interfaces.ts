@@ -1,6 +1,8 @@
 import type {
   AlarmSeverity,
+  BatchDisplayUnit,
   IncidentType,
+  OperationCenter,
   PhaseExecution,
   PhaseExecutionStatus,
   PhaseInput,
@@ -15,7 +17,11 @@ import type {
   ProductionQualityCheckType,
   ProductionRecipe,
   ProductionShift,
+  RecipeAllergen,
+  RecipeLifecycleStatus,
+  RecipeType,
   StockUnit,
+  TechnicalResponsible,
   WorkStation,
 } from '@prisma/client';
 import type { Decimal } from '@prisma/client/runtime/library';
@@ -70,27 +76,50 @@ export interface CreatePhaseNestedInput {
 
 export interface CreateRecipeWithPhasesInput {
   name: string;
-  categoryId?: string | null;
-  finishedProductId: string;
+  categoryId: string;
+  recipeType: RecipeType;
+  finishedProductId?: string | null;
   batchSize: Decimal;
   batchUnit: StockUnit;
+  batchDisplayUnit?: BatchDisplayUnit | null;
   packageWeight?: Decimal | null;
+  packageWeightGrams?: number | null;
+  expectedYield?: Decimal | null;
+  expectedYieldUnit?: string | null;
   estimatedMinutes: number;
+  operationCenter: OperationCenter;
+  locationIds?: string[];
+  technicalResponsible: TechnicalResponsible;
+  allergens?: RecipeAllergen[];
   notes?: string | null;
+  isDraft?: boolean;
   isActive?: boolean;
   phases: CreatePhaseNestedInput[];
+  actorUserId?: string | null;
 }
 
 export interface UpdateRecipeInput {
   name?: string;
   categoryId?: string | null;
+  recipeType?: RecipeType;
   finishedProductId?: string;
   batchSize?: Decimal;
   batchUnit?: StockUnit;
+  batchDisplayUnit?: BatchDisplayUnit | null;
   packageWeight?: Decimal | null;
+  packageWeightGrams?: number | null;
+  expectedYield?: Decimal | null;
+  expectedYieldUnit?: string | null;
   estimatedMinutes?: number;
+  operationCenter?: OperationCenter;
+  locationIds?: string[];
+  technicalResponsible?: TechnicalResponsible;
+  allergens?: RecipeAllergen[];
   notes?: string | null;
   isActive?: boolean;
+  lifecycleStatus?: RecipeLifecycleStatus;
+  isDraft?: boolean;
+  rejectionReason?: string | null;
 }
 
 /** Payload for repository transactional recipe + phases + inputs create. */
@@ -98,16 +127,29 @@ export interface CreateRecipeWithPhasesTxInput {
   tenantId: string;
   recipe: {
     name: string;
-    categoryId?: string | null;
-    finishedProductId: string;
+    categoryId: string;
+    code?: string;
+    recipeType: RecipeType;
+    finishedProductId?: string | null;
     batchSize: Decimal;
     batchUnit: StockUnit;
+    batchDisplayUnit?: BatchDisplayUnit | null;
     packageWeight?: Decimal | null;
+    packageWeightGrams?: number | null;
+    expectedYield?: Decimal | null;
+    expectedYieldUnit?: string | null;
     estimatedMinutes: number;
+    operationCenter: OperationCenter;
+    technicalResponsible: TechnicalResponsible;
+    allergens?: RecipeAllergen[];
     version: number;
     notes?: string | null;
+    isDraft?: boolean;
+    lifecycleStatus?: RecipeLifecycleStatus;
     isActive?: boolean;
   };
+  locationIds?: string[];
+  actorUserId?: string | null;
   phases: Array<{
     order: number;
     name: string;
@@ -624,6 +666,31 @@ export interface IPlantService {
 
   // Recipes — POST/GET/PATCH/DELETE /plant/recipes, GET :id, POST :id/clone
   createRecipe(tenantId: string, input: CreateRecipeWithPhasesInput): Promise<ProductionRecipe>;
+  previewNextRecipeCode(tenantId: string, categoryId: string): Promise<string>;
+  approveRecipe(
+    tenantId: string,
+    id: string,
+    actorUserId?: string | null,
+  ): Promise<ProductionRecipe>;
+  rejectRecipe(
+    tenantId: string,
+    id: string,
+    reason: string,
+    actorUserId?: string | null,
+  ): Promise<ProductionRecipe>;
+  getRecipeStatusHistory(
+    tenantId: string,
+    recipeId: string,
+  ): Promise<
+    Array<{
+      id: string;
+      fromStatus: RecipeLifecycleStatus | null;
+      toStatus: RecipeLifecycleStatus;
+      changedByUserId: string | null;
+      reason: string | null;
+      createdAt: Date;
+    }>
+  >;
   findAllRecipes(tenantId: string): Promise<ProductionRecipe[]>;
   findRecipeById(tenantId: string, id: string): Promise<RecipeDetailResponse>;
   updateRecipe(tenantId: string, id: string, input: UpdateRecipeInput): Promise<ProductionRecipe>;

@@ -520,6 +520,7 @@ model Location {
   attendanceLogs      AttendanceLog[]
   productionIncidents ProductionIncident[]
   supplyItems         SupplyItem[]
+  productionRecipes   ProductionRecipeLocation[]
 
   @@unique([tenantId, name])
   @@unique([tenantId, code])
@@ -797,46 +798,140 @@ model WorkStation {
   @@map("work_stations")
 }
 
+enum RecipeType {
+  FINAL_PRODUCT
+  SUB_RECIPE
+  BASE_PRODUCTION
+  COMBO
+  SIDE
+}
+
+enum RecipeLifecycleStatus {
+  TRIAL
+  ACTIVE
+  INACTIVE
+}
+
+enum OperationCenter {
+  PLANT
+  LOCATION
+  ALL
+}
+
+enum TechnicalResponsible {
+  CHEF
+  PRODUCTION
+  QUALITY
+}
+
+enum RecipeAllergen {
+  GLUTEN
+  DAIRY
+  EGG
+  NUTS
+}
+
+enum BatchDisplayUnit {
+  UNIT
+  PORTION
+  KILOGRAM
+  LITER
+  TRAY
+  BATCH
+}
+
 model RecipeCategory {
-  id          String   @id @default(cuid())
-  tenantId    String
-  nombre      String
-  descripcion String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           String   @id @default(cuid())
+  tenantId     String
+  nombre       String
+  descripcion  String?
+  codePrefix   String   @default("REC")
+  codeSequence Int      @default(0)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   recipes ProductionRecipe[]
 
   @@unique([tenantId, nombre])
+  @@unique([tenantId, codePrefix])
   @@index([tenantId, isActive])
   @@map("recipe_categories")
 }
 
 model ProductionRecipe {
-  id                String    @id @default(cuid())
-  tenantId          String
-  categoryId        String?
-  name              String
-  finishedProductId String
-  batchSize         Decimal   @db.Decimal(10, 3)
-  batchUnit         StockUnit
-  packageWeight     Decimal?  @db.Decimal(10, 3)
-  estimatedMinutes  Int
-  version           Int       @default(1)
-  isActive          Boolean   @default(true)
-  notes             String?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  id                   String                @id @default(cuid())
+  tenantId             String
+  categoryId           String?
+  code                 String?
+  name                 String
+  recipeType           RecipeType?
+  finishedProductId    String?
+  batchSize            Decimal               @db.Decimal(10, 3)
+  batchUnit            StockUnit
+  batchDisplayUnit     BatchDisplayUnit?
+  packageWeight        Decimal?              @db.Decimal(10, 3)
+  packageWeightGrams   Int?
+  expectedYield        Decimal?              @db.Decimal(10, 2)
+  expectedYieldUnit    String?
+  estimatedMinutes     Int
+  version              Int                   @default(1)
+  lifecycleStatus      RecipeLifecycleStatus @default(TRIAL)
+  isActive             Boolean               @default(true)
+  isDraft              Boolean               @default(false)
+  operationCenter      OperationCenter?
+  technicalResponsible TechnicalResponsible?
+  allergens            RecipeAllergen[]
+  rejectionReason      String?
+  notes                String?
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
 
-  category RecipeCategory?   @relation(fields: [categoryId], references: [id])
-  phases   ProductionPhase[]
-  orders   ProductionOrder[]
-  images   RecipeImage[]
+  category       RecipeCategory?            @relation(fields: [categoryId], references: [id])
+  phases         ProductionPhase[]
+  orders         ProductionOrder[]
+  images         RecipeImage[]
+  locations      ProductionRecipeLocation[]
+  statusHistory  RecipeStatusHistory[]
 
+  @@unique([tenantId, code])
+  @@unique([tenantId, categoryId, name])
   @@index([tenantId, isActive])
+  @@index([tenantId, lifecycleStatus])
   @@index([tenantId, categoryId])
   @@map("production_recipes")
+}
+
+model ProductionRecipeLocation {
+  id         String @id @default(cuid())
+  tenantId   String
+  recipeId   String
+  locationId String
+
+  recipe   ProductionRecipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  location Location         @relation(fields: [locationId], references: [id])
+
+  @@unique([recipeId, locationId])
+  @@index([tenantId])
+  @@index([locationId])
+  @@map("production_recipe_locations")
+}
+
+model RecipeStatusHistory {
+  id              String                 @id @default(cuid())
+  tenantId        String
+  recipeId        String
+  fromStatus      RecipeLifecycleStatus?
+  toStatus        RecipeLifecycleStatus
+  changedByUserId String?
+  reason          String?
+  createdAt       DateTime               @default(now())
+
+  recipe ProductionRecipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, recipeId])
+  @@index([recipeId, createdAt])
+  @@map("recipe_status_history")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

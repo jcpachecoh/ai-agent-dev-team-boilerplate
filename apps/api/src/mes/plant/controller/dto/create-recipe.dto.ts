@@ -1,5 +1,12 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { StockUnit } from '@prisma/client';
+import {
+  BatchDisplayUnit,
+  OperationCenter,
+  RecipeAllergen,
+  RecipeType,
+  StockUnit,
+  TechnicalResponsible,
+} from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
   ArrayMinSize,
@@ -11,7 +18,9 @@ import {
   IsNumberString,
   IsOptional,
   IsString,
+  MaxLength,
   Min,
+  ValidateIf,
   ValidateNested,
 } from 'class-validator';
 
@@ -93,57 +102,117 @@ export class CreateRecipeDto {
   @ApiProperty({ example: 'Pan integral 500g' })
   @IsString()
   @IsNotEmpty()
+  @MaxLength(150)
   name!: string;
 
-  @ApiPropertyOptional({ example: 'recipe-category-uuid', nullable: true })
-  @IsString()
-  @IsOptional()
-  categoryId?: string | null;
-
-  @ApiProperty({ example: 'finished-product-uuid' })
+  @ApiProperty({ example: 'recipe-category-uuid' })
   @IsString()
   @IsNotEmpty()
-  finishedProductId!: string;
+  categoryId!: string;
+
+  @ApiProperty({ enum: RecipeType, example: RecipeType.FINAL_PRODUCT })
+  @ValidateIf((dto: CreateRecipeDto) => !dto.isDraft)
+  @IsEnum(RecipeType)
+  @IsNotEmpty()
+  recipeType?: RecipeType;
+
+  @ApiPropertyOptional({ example: 'finished-product-uuid', nullable: true })
+  @ValidateIf((dto: CreateRecipeDto) => !dto.isDraft)
+  @IsString()
+  @IsNotEmpty()
+  finishedProductId?: string;
 
   @ApiProperty({
     description: 'Batch size (decimal string, up to 3 fractional digits)',
     example: '10.000',
   })
+  @ValidateIf((dto: CreateRecipeDto) => !dto.isDraft)
   @IsNumberString()
-  batchSize!: string;
+  batchSize?: string;
 
-  @ApiProperty({ enum: StockUnit, example: StockUnit.UNIT })
+  @ApiPropertyOptional({ enum: StockUnit, example: StockUnit.UNIT })
   @IsEnum(StockUnit)
-  batchUnit!: StockUnit;
+  @IsOptional()
+  batchUnit?: StockUnit;
+
+  @ApiPropertyOptional({ enum: BatchDisplayUnit, example: BatchDisplayUnit.UNIT })
+  @ValidateIf((dto: CreateRecipeDto) => !dto.isDraft)
+  @IsEnum(BatchDisplayUnit)
+  batchDisplayUnit?: BatchDisplayUnit;
 
   @ApiPropertyOptional({
-    description: 'Approximate weight per package in kg (decimal string)',
-    example: '440.000',
+    description: 'Legacy approximate weight per package in kg (decimal string)',
+    example: '0.440',
     nullable: true,
   })
   @IsNumberString()
   @IsOptional()
   packageWeight?: string | null;
 
-  @ApiProperty({ example: 120 })
+  @ApiPropertyOptional({
+    description: 'Approximate weight per batch in grams',
+    example: 440,
+  })
+  @ValidateIf((dto: CreateRecipeDto) => !dto.isDraft)
   @IsInt()
   @Min(1)
-  estimatedMinutes!: number;
+  packageWeightGrams?: number;
+
+  @ApiPropertyOptional({ description: 'Expected yield quantity', example: '10.00' })
+  @ValidateIf((dto: CreateRecipeDto) => !dto.isDraft)
+  @IsNumberString()
+  expectedYield?: string;
+
+  @ApiPropertyOptional({ description: 'Expected yield unit label', example: 'porciones' })
+  @ValidateIf((dto: CreateRecipeDto) => !dto.isDraft)
+  @IsString()
+  @IsNotEmpty()
+  expectedYieldUnit?: string;
+
+  @ApiPropertyOptional({ example: 120 })
+  @ValidateIf((dto: CreateRecipeDto) => !dto.isDraft)
+  @IsInt()
+  @Min(1)
+  estimatedMinutes?: number;
+
+  @ApiPropertyOptional({ enum: OperationCenter, example: OperationCenter.PLANT })
+  @ValidateIf((dto: CreateRecipeDto) => !dto.isDraft)
+  @IsEnum(OperationCenter)
+  operationCenter?: OperationCenter;
+
+  @ApiPropertyOptional({ type: [String], example: ['location-uuid'] })
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  locationIds?: string[];
+
+  @ApiPropertyOptional({ enum: TechnicalResponsible, example: TechnicalResponsible.CHEF })
+  @ValidateIf((dto: CreateRecipeDto) => !dto.isDraft)
+  @IsEnum(TechnicalResponsible)
+  technicalResponsible?: TechnicalResponsible;
+
+  @ApiPropertyOptional({ enum: RecipeAllergen, isArray: true })
+  @IsArray()
+  @IsEnum(RecipeAllergen, { each: true })
+  @IsOptional()
+  allergens?: RecipeAllergen[];
 
   @ApiPropertyOptional({ example: 'Receta estándar de producción' })
   @IsString()
+  @MaxLength(500)
   @IsOptional()
   notes?: string;
 
-  @ApiPropertyOptional({ example: true, default: true })
+  @ApiPropertyOptional({ example: false, default: false })
   @IsBoolean()
   @IsOptional()
-  isActive?: boolean;
+  isDraft?: boolean;
 
-  @ApiProperty({ type: [CreatePhaseDto] })
+  @ApiPropertyOptional({ type: [CreatePhaseDto], default: [] })
+  @ValidateIf((dto: CreateRecipeDto) => !dto.isDraft)
   @IsArray()
   @ArrayMinSize(1)
   @ValidateNested({ each: true })
   @Type(() => CreatePhaseDto)
-  phases!: CreatePhaseDto[];
+  phases?: CreatePhaseDto[];
 }

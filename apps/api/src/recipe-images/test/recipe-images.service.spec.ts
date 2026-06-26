@@ -107,6 +107,38 @@ describe('RecipeImagesService', () => {
     ).rejects.toThrow(BadRequestException);
   });
 
+  it('add throws BadRequestException when nameImage is empty', async () => {
+    mockRepo.recipeExists.mockResolvedValue(true);
+
+    await expect(
+      service.add('tenant-1', {
+        recipeId: 'recipe-1',
+        nameImage: '   ',
+        url: 'https://cdn.example.com/harina.jpg',
+      }),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('add throws BadRequestException when url is not http(s)', async () => {
+    mockRepo.recipeExists.mockResolvedValue(true);
+
+    await expect(
+      service.add('tenant-1', {
+        recipeId: 'recipe-1',
+        nameImage: 'harina.jpg',
+        url: 'ftp://cdn.example.com/harina.jpg',
+      }),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('update throws BadRequestException when reactivating an inactive image', async () => {
+    mockRepo.findById.mockResolvedValue({ ...baseImage, isActive: false });
+
+    await expect(service.update('tenant-1', 'img-1', { isActive: true })).rejects.toThrow(
+      BadRequestException,
+    );
+  });
+
   it('update updates alt and nameImage', async () => {
     mockRepo.findById.mockResolvedValue(baseImage);
     mockRepo.update.mockResolvedValue({ ...baseImage, alt: 'Nuevo alt' });

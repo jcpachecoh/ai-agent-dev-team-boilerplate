@@ -6,6 +6,7 @@ import { PrismaModule } from '../../prisma/prisma.module';
 import { RecipeCategoriesModule } from '../../recipe-categories/recipe-categories.module';
 import { SupplyItemsModule } from '../../supplyitems/supplyitems.module';
 import { AuthModule } from '../../auth/auth.module';
+import { AuditModule } from '../../audit/audit.module';
 import { MesAuthModule } from '../auth/mes-auth.module';
 import { PlantAuthGuard } from './guards/plant-auth.guard';
 import { PlantRolesGuard } from './guards/plant-roles.guard';
@@ -57,6 +58,7 @@ function createPlantAlarmEventsPort(plantEventsService: PlantEventsService): IPl
     RecipeCategoriesModule,
     SupplyItemsModule,
     AuthModule,
+    AuditModule,
     MesAuthModule,
     JwtModule.register({
       secret:

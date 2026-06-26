@@ -10,14 +10,21 @@ import styles from './RecetaRecipeWizardReviewStep.module.scss';
 export interface RecetaRecipeWizardReviewStepProps {
   theme?: RecetaTheme;
   name: string;
+  codeLabel?: string;
   categoryLabel?: string;
+  recipeTypeLabel?: string;
   finishedProductLabel?: string;
   batchLabel: string;
-  packageWeightLabel?: string;
+  packageWeightGramsLabel?: string;
+  expectedYieldLabel?: string;
   estimatedMinutes: number;
-  isActive: boolean;
+  lifecycleStatusLabel: string;
+  operationCenterLabel?: string;
+  locationsLabel?: string;
+  technicalResponsibleLabel?: string;
+  allergensLabel?: string;
+  createdAtLabel?: string;
   notes?: string;
-  versionLabel?: string;
   phases: RecetaRecipeWizardPhaseItem[];
   compact?: boolean;
   className?: string;
@@ -40,14 +47,21 @@ function ReviewRow({ label, value }: { label: string; value: string }): JSX.Elem
 export function RecetaRecipeWizardReviewStep({
   theme = 'dark',
   name,
+  codeLabel,
   categoryLabel,
+  recipeTypeLabel,
   finishedProductLabel,
   batchLabel,
-  packageWeightLabel,
+  packageWeightGramsLabel,
+  expectedYieldLabel,
   estimatedMinutes,
-  isActive,
+  lifecycleStatusLabel,
+  operationCenterLabel,
+  locationsLabel,
+  technicalResponsibleLabel,
+  allergensLabel,
+  createdAtLabel,
   notes,
-  versionLabel,
   phases,
   compact = false,
   className,
@@ -68,12 +82,12 @@ export function RecetaRecipeWizardReviewStep({
         <div className={styles.summaryHeader}>
           <div>
             <h3 className={styles.recipeName}>{name}</h3>
-            {versionLabel ? <p className={styles.version}>{versionLabel}</p> : null}
+            {codeLabel ? <p className={styles.version}>{codeLabel}</p> : null}
           </div>
           <RecetaStatusButton
             theme={theme}
-            status={isActive ? 'active' : 'inactive'}
-            label={isActive ? 'Activa' : 'Inactiva'}
+            status="inactive"
+            label={lifecycleStatusLabel}
             disabled
             tabIndex={-1}
           />
@@ -86,15 +100,28 @@ export function RecetaRecipeWizardReviewStep({
               <RecetaCategoryChip theme={theme} label={categoryLabel} />
             </div>
           ) : null}
+          {recipeTypeLabel ? <ReviewRow label="Tipo de receta" value={recipeTypeLabel} /> : null}
           {finishedProductLabel ? (
             <ReviewRow label="Producto terminado" value={finishedProductLabel} />
           ) : null}
           <ReviewRow label="Lote" value={batchLabel} />
-          {packageWeightLabel ? (
-            <ReviewRow label="Peso por paquete" value={packageWeightLabel} />
+          {packageWeightGramsLabel ? (
+            <ReviewRow label="Peso por lote" value={packageWeightGramsLabel} />
+          ) : null}
+          {expectedYieldLabel ? (
+            <ReviewRow label="Rendimiento esperado" value={expectedYieldLabel} />
           ) : null}
           <ReviewRow label="Tiempo estimado" value={`${estimatedMinutes} min`} />
           <ReviewRow label="Suma de fases" value={`${totalPhaseMinutes} min`} />
+          {operationCenterLabel ? (
+            <ReviewRow label="Centro de operación" value={operationCenterLabel} />
+          ) : null}
+          {locationsLabel ? <ReviewRow label="Sedes" value={locationsLabel} /> : null}
+          {technicalResponsibleLabel ? (
+            <ReviewRow label="Responsable técnico" value={technicalResponsibleLabel} />
+          ) : null}
+          {allergensLabel ? <ReviewRow label="Alérgenos" value={allergensLabel} /> : null}
+          {createdAtLabel ? <ReviewRow label="Fecha de creación" value={createdAtLabel} /> : null}
           {notes?.trim() ? <ReviewRow label="Notas" value={notes.trim()} /> : null}
         </div>
       </div>

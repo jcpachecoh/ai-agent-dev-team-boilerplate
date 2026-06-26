@@ -88,6 +88,11 @@ describe('RecipeImagesRepository', () => {
     mockPrisma.productionRecipe.findFirst.mockResolvedValue({ id: 'recipe-1' });
 
     await expect(repo.recipeExists('tenant-1', 'recipe-1')).resolves.toBe(true);
+
+    expect(mockPrisma.productionRecipe.findFirst).toHaveBeenCalledWith({
+      where: { id: 'recipe-1', tenantId: 'tenant-1' },
+      select: { id: true },
+    });
   });
 
   it('recipeExists returns false when recipe is missing', async () => {

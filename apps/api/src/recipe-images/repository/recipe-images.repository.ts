@@ -42,7 +42,7 @@ export class RecipeImagesRepository implements IRecipeImagesRepository {
   recipeExists(tenantId: string, recipeId: string): Promise<boolean> {
     return this.prisma.productionRecipe
       .findFirst({
-        where: { id: recipeId, tenantId, isActive: true },
+        where: { id: recipeId, tenantId },
         select: { id: true },
       })
       .then((row) => Boolean(row));

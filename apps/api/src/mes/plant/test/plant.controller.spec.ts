@@ -163,10 +163,18 @@ describe('PlantController', () => {
   describe('recipes', () => {
     const createRecipeDto = {
       name: 'Pan integral',
+      categoryId: 'cat-1',
+      recipeType: 'FINAL_PRODUCT' as const,
       finishedProductId: 'prod-1',
       batchSize: '10.000',
       batchUnit: StockUnit.UNIT,
+      batchDisplayUnit: 'UNIT' as const,
+      packageWeightGrams: 500,
+      expectedYield: '10',
+      expectedYieldUnit: 'porciones',
       estimatedMinutes: 60,
+      operationCenter: 'PLANT' as const,
+      technicalResponsible: 'CHEF' as const,
       phases: [
         {
           order: 1,
@@ -243,6 +251,39 @@ describe('PlantController', () => {
         tenantId,
         'recipe-1',
         expect.objectContaining({ batchSize: expect.any(Decimal) }),
+      );
+    });
+
+    it('updateRecipe maps extended recipe metadata fields', async () => {
+      const dto = {
+        recipeType: 'FINAL_PRODUCT' as const,
+        batchDisplayUnit: 'PORTION' as const,
+        packageWeightGrams: 440,
+        expectedYield: '10.00',
+        expectedYieldUnit: 'porciones',
+        operationCenter: 'LOCATION' as const,
+        locationIds: ['loc-1'],
+        technicalResponsible: 'CHEF' as const,
+        allergens: ['GLUTEN' as const],
+      };
+      serviceMock.updateRecipe.mockResolvedValue({ id: 'recipe-1' });
+
+      await controller.updateRecipe(buildReq(), 'recipe-1', dto);
+
+      expect(serviceMock.updateRecipe).toHaveBeenCalledWith(
+        tenantId,
+        'recipe-1',
+        expect.objectContaining({
+          recipeType: 'FINAL_PRODUCT',
+          batchDisplayUnit: 'PORTION',
+          packageWeightGrams: 440,
+          expectedYield: expect.any(Decimal),
+          expectedYieldUnit: 'porciones',
+          operationCenter: 'LOCATION',
+          locationIds: ['loc-1'],
+          technicalResponsible: 'CHEF',
+          allergens: ['GLUTEN'],
+        }),
       );
     });
 

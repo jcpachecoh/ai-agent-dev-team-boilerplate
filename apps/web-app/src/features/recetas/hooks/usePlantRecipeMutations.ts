@@ -14,13 +14,23 @@ export type UpdatePlantRecipePayload = Partial<
     CreatePlantRecipeInput,
     | 'name'
     | 'categoryId'
+    | 'recipeType'
     | 'finishedProductId'
     | 'batchSize'
     | 'batchUnit'
+    | 'batchDisplayUnit'
     | 'packageWeight'
+    | 'packageWeightGrams'
+    | 'expectedYield'
+    | 'expectedYieldUnit'
     | 'estimatedMinutes'
+    | 'operationCenter'
+    | 'locationIds'
+    | 'technicalResponsible'
+    | 'allergens'
     | 'notes'
     | 'isActive'
+    | 'isDraft'
   >
 >;
 

@@ -10,14 +10,30 @@ import {
   RecetaTableHeader,
   type RecetaTableColumn,
   RecetaUtilityButton,
+  toast,
 } from '@restopsiq/ui';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { updatePlantRecipe } from '@/api/plant/plant.api';
+import {
+  approvePlantRecipe,
+  getRecipeStatusHistory,
+  previewNextRecipeCode,
+  rejectPlantRecipe,
+  updatePlantRecipe,
+} from '@/api/plant/plant.api';
 import { plantKeys } from '@/api/plant/plant.keys';
+import type {
+  BatchDisplayUnit,
+  OperationCenter,
+  RecipeAllergen,
+  RecipeLifecycleStatus,
+  RecipeType,
+  TechnicalResponsible,
+} from '@/api/plant/types';
 
 import { RecipeImagesManager } from '@/components/recetas/RecipeImagesManager';
+import { RecipeReferencePhotoField } from '@/components/recetas/RecipeReferencePhotoField';
 import { HistoryResponsiveList } from '@/components/recetas/HistoryResponsiveList';
 import { ProcessListCard } from '@/components/recetas/ProcessListCard';
 import { ProcessListRow } from '@/components/recetas/ProcessListRow';
@@ -30,7 +46,36 @@ import {
   RECIPE_LIST_RESPONSIVE_COLUMNS,
   recetaTableColumnsForVisible,
 } from '@/features/recetas/recipe-list-columns';
-import type { ProcessRow, RecipeListItem } from '@/features/recetas/types';
+import type {
+  ProcessRow,
+  RecipeFormGeneralValues,
+  RecipeListItem,
+  RecipeListStatusFilter,
+} from '@/features/recetas/types';
+import {
+  BATCH_DISPLAY_UNIT_OPTIONS,
+  getAllergenLabels,
+  getBatchDisplayUnitLabel,
+  getOperationCenterLabel,
+  getRecipeTypeLabel,
+  getTechnicalResponsibleLabel,
+  LIFECYCLE_STATUS_LABELS,
+  OPERATION_CENTER_OPTIONS,
+  parseEstimatedTotalMinutes,
+  RECIPE_ALLERGEN_OPTIONS,
+  RECIPE_TYPE_OPTIONS,
+  splitEstimatedMinutes,
+  TECHNICAL_RESPONSIBLE_OPTIONS,
+} from '@/features/recetas/types';
+import {
+  formatBatchSizeForApi,
+  formatExpectedYieldForApi,
+  mapBatchDisplayUnitToStockUnit,
+  validateRecipeFormDraft,
+  validateRecipeFormGeneral,
+} from '@/features/recetas/validation/recipeForm.schema';
+import { addRecipeImage, uploadRecipeImageFile } from '@/features/recetas/api/recipe-images.api';
+import { useLocations } from '@/features/sedes/hooks/useLocations';
 import {
   useEditorSupplyItems,
   usePlantProcess,
@@ -271,38 +316,6 @@ const processTableColumns: RecetaTableColumn[] = [
   { key: 'acciones', label: 'Acciones', width: '128px', align: 'right' },
 ];
 
-function parseEstimatedMinutes(value: string, fallback: number): number {
-  const parsed = Number.parseInt(value.trim(), 10);
-  if (Number.isNaN(parsed) || parsed < 1) {
-    return Math.max(1, fallback);
-  }
-  return parsed;
-}
-
-function parseBatchSize(yieldText: string): string {
-  const match = yieldText.replace(',', '.').match(/(\d+(?:\.\d+)?)/);
-  if (!match) {
-    return '1.000';
-  }
-  const value = Number.parseFloat(match[1]);
-  if (Number.isNaN(value) || value <= 0) {
-    return '1.000';
-  }
-  return value.toFixed(3);
-}
-
-function formatOptionalPackageWeight(value: string): string | null {
-  const trimmed = value.trim();
-  if (!trimmed) {
-    return null;
-  }
-  const parsed = Number.parseFloat(trimmed.replace(',', '.'));
-  if (Number.isNaN(parsed) || parsed <= 0) {
-    return null;
-  }
-  return parsed.toFixed(3);
-}
-
 interface RecipesManagementScreenProps {
   view?: RecipesView;
 }
@@ -314,7 +327,7 @@ export function RecipesManagementScreen({
   const [currentView, setCurrentView] = useState<RecipesView>(view);
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState<'all' | RecetaStatus>('all');
+  const [statusFilter, setStatusFilter] = useState<RecipeListStatusFilter>('all');
   const [recipeSort, setRecipeSort] = useState<{
     key: RecipeListSortKey;
     direction: 'asc' | 'desc';
@@ -328,10 +341,25 @@ export function RecipesManagementScreen({
   const [name, setName] = useState('');
   const [notes, setNotes] = useState('');
   const [batchSize, setBatchSize] = useState('1');
-  const [batchUnit, setBatchUnit] = useState<StockUnit>('KILOGRAMS');
-  const [packageWeight, setPackageWeight] = useState('');
-  const [recipeActive, setRecipeActive] = useState(true);
+  const [batchDisplayUnit, setBatchDisplayUnit] = useState<BatchDisplayUnit | ''>('KILOGRAM');
+  const [packageWeightGrams, setPackageWeightGrams] = useState('');
+  const [expectedYield, setExpectedYield] = useState('');
+  const [expectedYieldUnit, setExpectedYieldUnit] = useState('porciones');
+  const [estimatedHours, setEstimatedHours] = useState('0');
   const [categoryId, setCategoryId] = useState('');
+  const [recipeType, setRecipeType] = useState<RecipeType | ''>('FINAL_PRODUCT');
+  const [operationCenter, setOperationCenter] = useState<OperationCenter | ''>('PLANT');
+  const [locationIds, setLocationIds] = useState<string[]>([]);
+  const [technicalResponsible, setTechnicalResponsible] = useState<TechnicalResponsible | ''>(
+    'CHEF',
+  );
+  const [allergens, setAllergens] = useState<RecipeAllergen[]>([]);
+  const [lifecycleStatus, setLifecycleStatus] = useState<RecipeLifecycleStatus>('TRIAL');
+  const [createdAtLabel, setCreatedAtLabel] = useState('Se asignará al guardar');
+  const [previewCode, setPreviewCode] = useState('');
+  const [referencePhotoFile, setReferencePhotoFile] = useState<File | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<string, string>>>({});
+  const [rejectReason, setRejectReason] = useState('');
   const [estimatedMinutes, setEstimatedMinutes] = useState('30');
   const [phases, setPhases] = useState<RecipePhase[]>([]);
   const [finishedProductId, setFinishedProductId] = useState('');
@@ -366,9 +394,43 @@ export function RecipesManagementScreen({
   const supplyItemsQuery = useEditorSupplyItems(isEditor);
   const recipeCategoriesQuery = useRecipeCategories('active', isEditor);
   const workstationsQuery = usePlantWorkstations(isEditor);
+  const locationsQuery = useLocations();
   const recipeDetailQuery = usePlantRecipeDetail(editingRecipeId);
+  const previewCodeQuery = useQuery({
+    queryKey: [...plantKeys.all, 'recipe-next-code', categoryId],
+    queryFn: () => previewNextRecipeCode(categoryId),
+    enabled: isEditor && !editingRecipeId && Boolean(categoryId),
+  });
+  const statusHistoryQuery = useQuery({
+    queryKey: [...plantKeys.all, 'recipe-status-history', editingRecipeId],
+    queryFn: () => getRecipeStatusHistory(editingRecipeId!),
+    enabled: Boolean(editingRecipeId) && recipeEditorOpen,
+  });
   const saveRecipeMutation = useSavePlantRecipe();
   const saving = saveRecipeMutation.isPending;
+  const approveRecipeMutation = useMutation({
+    mutationFn: (id: string) => approvePlantRecipe(id),
+    onSuccess: (recipe) => {
+      setLifecycleStatus(recipe.lifecycleStatus);
+      void queryClient.invalidateQueries({ queryKey: plantKeys.all });
+      toast.success(`Receta aprobada. Estado: ${LIFECYCLE_STATUS_LABELS[recipe.lifecycleStatus]}`);
+    },
+    onError: (error) => {
+      setSaveError(error instanceof Error ? error.message : 'No se pudo aprobar la receta');
+    },
+  });
+  const rejectRecipeMutation = useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason: string }) => rejectPlantRecipe(id, reason),
+    onSuccess: (recipe) => {
+      setLifecycleStatus(recipe.lifecycleStatus);
+      setRejectReason('');
+      void queryClient.invalidateQueries({ queryKey: plantKeys.all });
+      toast.success('Receta rechazada correctamente');
+    },
+    onError: (error) => {
+      setSaveError(error instanceof Error ? error.message : 'No se pudo rechazar la receta');
+    },
+  });
   const toggleRecipeMutation = useMutation({
     mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) =>
       updatePlantRecipe(id, { isActive }),
@@ -387,6 +449,21 @@ export function RecipesManagementScreen({
   const supplyItems = supplyItemsQuery.data ?? [];
   const recipeCategories = recipeCategoriesQuery.data ?? [];
   const workStations = workstationsQuery.data ?? [];
+  const locations = useMemo(
+    () => (locationsQuery.data ?? []).filter((location) => location.isActive),
+    [locationsQuery.data],
+  );
+
+  useEffect(() => {
+    if (!isEditor || editingRecipeId) {
+      return;
+    }
+    if (previewCodeQuery.data?.code) {
+      setPreviewCode(previewCodeQuery.data.code);
+    } else if (!categoryId) {
+      setPreviewCode('');
+    }
+  }, [isEditor, editingRecipeId, previewCodeQuery.data, categoryId]);
 
   const loadError = useMemo(() => {
     const activeError = currentView === 'process' ? processQuery.error : recipesQuery.error;
@@ -401,6 +478,7 @@ export function RecipesManagementScreen({
     (supplyItemsQuery.isLoading ||
       recipeCategoriesQuery.isLoading ||
       workstationsQuery.isLoading ||
+      locationsQuery.isLoading ||
       (Boolean(editingRecipeId) && recipeDetailQuery.isLoading));
 
   const totalMinutes = useMemo(
@@ -419,10 +497,13 @@ export function RecipesManagementScreen({
     if (supplyItems.length > 0) {
       setFinishedProductId((prev) => prev || supplyItems[0]?.id || '');
     }
-    if (recipeCategories.length > 0) {
-      setCategoryId((prev) => prev || recipeCategories[0]?.id || '');
+  }, [isEditor, editingRecipeId, supplyItems]);
+
+  useEffect(() => {
+    if (operationCenter !== 'LOCATION' && locationIds.length > 0) {
+      setLocationIds([]);
     }
-  }, [isEditor, editingRecipeId, supplyItems, recipeCategories]);
+  }, [operationCenter, locationIds.length]);
 
   useEffect(() => {
     if (!editingRecipeId || !recipeDetailQuery.data) {
@@ -432,13 +513,32 @@ export function RecipesManagementScreen({
     const detail = recipeDetailQuery.data;
     setName(detail.name);
     setNotes(detail.notes ?? '');
-    setFinishedProductId(detail.finishedProductId);
+    setFinishedProductId(detail.finishedProductId ?? '');
     setBatchSize(String(detail.batchSize));
-    setBatchUnit(detail.batchUnit as StockUnit);
-    setPackageWeight(detail.packageWeight ?? '');
-    setRecipeActive(detail.isActive);
+    setBatchDisplayUnit(detail.batchDisplayUnit ?? 'KILOGRAM');
+    setPackageWeightGrams(detail.packageWeightGrams ? String(detail.packageWeightGrams) : '');
+    setExpectedYield(detail.expectedYield ?? '');
+    setExpectedYieldUnit(detail.expectedYieldUnit ?? 'porciones');
+    const timeParts = splitEstimatedMinutes(detail.estimatedMinutes);
+    setEstimatedHours(timeParts.hours);
+    setEstimatedMinutes(timeParts.minutes);
+    setLifecycleStatus(detail.lifecycleStatus ?? 'TRIAL');
     setCategoryId(detail.categoryId ?? '');
-    setEstimatedMinutes(String(detail.estimatedMinutes));
+    setRecipeType(detail.recipeType ?? 'FINAL_PRODUCT');
+    setOperationCenter(detail.operationCenter ?? 'PLANT');
+    setLocationIds(detail.locationIds ?? []);
+    setTechnicalResponsible(detail.technicalResponsible ?? 'CHEF');
+    setAllergens(detail.allergens ?? []);
+    setCreatedAtLabel(
+      new Intl.DateTimeFormat('es-CO', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+      }).format(new Date(detail.createdAt)),
+    );
     setPhases(detail.phases.map(mapPlantPhaseToEditor));
     setPersistedPhaseIds(detail.phases.map((phase) => phase.id));
   }, [editingRecipeId, recipeDetailQuery.data]);
@@ -505,7 +605,11 @@ export function RecipesManagementScreen({
     return recipes.filter((recipe) => {
       const matchSearch = recipe.name.toLowerCase().includes(search.toLowerCase());
       const matchCategory = categoryFilter === 'all' || recipe.category === categoryFilter;
-      const matchStatus = statusFilter === 'all' || recipe.status === statusFilter;
+      const matchStatus =
+        statusFilter === 'all' ||
+        (statusFilter === 'trial' && recipe.lifecycleStatus === 'TRIAL') ||
+        (statusFilter === 'active' && recipe.lifecycleStatus === 'ACTIVE') ||
+        (statusFilter === 'inactive' && recipe.lifecycleStatus === 'INACTIVE');
       return matchSearch && matchCategory && matchStatus;
     });
   }, [recipes, search, categoryFilter, statusFilter]);
@@ -562,11 +666,9 @@ export function RecipesManagementScreen({
 
   const totals = useMemo(() => {
     const total = filteredRecipes.length;
-    const active = filteredRecipes.filter((r) => r.status === 'active').length;
-    const avg = total
-      ? Math.round(filteredRecipes.reduce((acc, item) => acc + item.durationMin, 0) / total)
-      : 0;
-    return { total, active, avg };
+    const active = filteredRecipes.filter((r) => r.lifecycleStatus === 'ACTIVE').length;
+    const trial = filteredRecipes.filter((r) => r.lifecycleStatus === 'TRIAL').length;
+    return { total, active, trial };
   }, [filteredRecipes]);
 
   const categoryOptions = useMemo(() => {
@@ -578,6 +680,7 @@ export function RecipesManagementScreen({
   }, [recipes]);
   const recipeStatusOptions = [
     { value: 'all', label: 'Todos los estados' },
+    { value: 'trial', label: 'Prueba' },
     { value: 'active', label: 'Activa' },
     { value: 'inactive', label: 'Inactiva' },
   ];
@@ -589,10 +692,37 @@ export function RecipesManagementScreen({
 
   const handleFinishedProductChange = (productId: string): void => {
     setFinishedProductId(productId);
-    const item = supplyItems.find((entry) => entry.id === productId);
-    if (item) {
-      setBatchUnit(item.unidadBase);
-    }
+  };
+
+  const buildFormValues = (): RecipeFormGeneralValues => ({
+    categoryId,
+    recipeType,
+    name,
+    finishedProductId,
+    batchSize,
+    batchDisplayUnit,
+    packageWeightGrams,
+    expectedYield,
+    expectedYieldUnit,
+    estimatedHours,
+    estimatedMinutes,
+    operationCenter,
+    locationIds,
+    technicalResponsible,
+    allergens,
+    notes,
+  });
+
+  const handleLocationToggle = (locationId: string, checked: boolean): void => {
+    setLocationIds((prev) =>
+      checked ? [...prev, locationId] : prev.filter((id) => id !== locationId),
+    );
+  };
+
+  const handleAllergenToggle = (allergen: RecipeAllergen, checked: boolean): void => {
+    setAllergens((prev) =>
+      checked ? [...prev, allergen] : prev.filter((value) => value !== allergen),
+    );
   };
 
   const resetWizardNavigation = (): void => {
@@ -610,24 +740,13 @@ export function RecipesManagementScreen({
   };
 
   const validateGeneralStep = (): boolean => {
-    if (!name.trim()) {
-      setSaveError('El nombre de la receta es obligatorio');
+    const validation = validateRecipeFormGeneral(buildFormValues());
+    if (!validation.success) {
+      setFieldErrors(validation.fieldErrors);
+      setSaveError(validation.message);
       return false;
     }
-    if (!finishedProductId) {
-      setSaveError('Selecciona un producto terminado (insumo)');
-      return false;
-    }
-    const parsedBatch = Number.parseFloat(batchSize.replace(',', '.'));
-    if (Number.isNaN(parsedBatch) || parsedBatch <= 0) {
-      setSaveError('El tamaño de lote debe ser mayor a cero');
-      return false;
-    }
-    const parsedMinutes = Number.parseInt(estimatedMinutes, 10);
-    if (Number.isNaN(parsedMinutes) || parsedMinutes < 1) {
-      setSaveError('El tiempo estimado debe ser al menos 1 minuto');
-      return false;
-    }
+    setFieldErrors({});
     setSaveError(null);
     return true;
   };
@@ -675,11 +794,24 @@ export function RecipesManagementScreen({
     setName('');
     setNotes('');
     setBatchSize('1');
-    setBatchUnit('KILOGRAMS');
-    setPackageWeight('');
-    setRecipeActive(true);
-    setCategoryId('');
+    setBatchDisplayUnit('KILOGRAM');
+    setPackageWeightGrams('');
+    setExpectedYield('');
+    setExpectedYieldUnit('porciones');
+    setEstimatedHours('0');
     setEstimatedMinutes('30');
+    setLifecycleStatus('TRIAL');
+    setCategoryId('');
+    setRecipeType('FINAL_PRODUCT');
+    setOperationCenter('PLANT');
+    setLocationIds([]);
+    setTechnicalResponsible('CHEF');
+    setAllergens([]);
+    setCreatedAtLabel('Se asignará al guardar');
+    setPreviewCode('');
+    setReferencePhotoFile(null);
+    setFieldErrors({});
+    setRejectReason('');
     setPhases([]);
     setFinishedProductId('');
     setSaveError(null);
@@ -709,16 +841,68 @@ export function RecipesManagementScreen({
     setEditingRecipeId(null);
   };
 
+  const handleSaveDraft = (): void => {
+    const validation = validateRecipeFormDraft({ categoryId, name, notes });
+    if (!validation.success) {
+      setFieldErrors(validation.fieldErrors);
+      setSaveError(validation.message);
+      return;
+    }
+
+    setSaveError(null);
+    setFieldErrors({});
+
+    saveRecipeMutation.mutate(
+      {
+        mode: 'create',
+        payload: {
+          categoryId,
+          name: name.trim(),
+          notes: notes.trim() || undefined,
+          isDraft: true,
+        },
+      },
+      {
+        onSuccess: (recipe) => {
+          const code = 'code' in recipe ? recipe.code : null;
+          toast.success(
+            code
+              ? `Borrador guardado correctamente. Código: ${code}`
+              : 'Borrador guardado correctamente',
+          );
+          setEditingRecipeId(null);
+          resetWizardNavigation();
+          setRecipeEditorOpen(false);
+        },
+        onError: (error) => {
+          setSaveError(error instanceof Error ? error.message : 'No se pudo guardar el borrador');
+        },
+      },
+    );
+  };
+
+  const uploadReferencePhoto = async (recipeId: string, file: File): Promise<void> => {
+    const upload = await uploadRecipeImageFile(recipeId, file);
+    if (!upload.publicUrl) {
+      throw new Error('No se pudo obtener la URL pública de la imagen');
+    }
+    await addRecipeImage({
+      recipeId,
+      nameImage: upload.originalName,
+      url: upload.publicUrl,
+      storageObjectId: upload.id,
+    });
+  };
+
   const handleSaveRecipe = async (): Promise<void> => {
-    const trimmedName = name.trim();
-    if (!trimmedName) {
-      setSaveError('El nombre de la receta es obligatorio');
+    const formValues = buildFormValues();
+    const validation = validateRecipeFormGeneral(formValues);
+    if (!validation.success) {
+      setFieldErrors(validation.fieldErrors);
+      setSaveError(validation.message);
       return;
     }
-    if (!finishedProductId) {
-      setSaveError('Selecciona un producto terminado (insumo)');
-      return;
-    }
+
     if (phases.length === 0) {
       setSaveError('Agrega al menos una fase al proceso');
       return;
@@ -735,20 +919,30 @@ export function RecipesManagementScreen({
       workStationId: phase.workStationId || defaultWorkStationId,
     }));
 
-    const estimatedMinutesValue = parseEstimatedMinutes(estimatedMinutes, totalMinutes);
+    const estimatedMinutesValue = parseEstimatedTotalMinutes(estimatedHours, estimatedMinutes);
+    const trimmedName = name.trim();
+    const resolvedBatchDisplayUnit = batchDisplayUnit as BatchDisplayUnit;
 
     setSaveError(null);
+    setFieldErrors({});
 
     const recipePayload = {
       name: trimmedName,
-      categoryId: categoryId || null,
+      categoryId,
+      recipeType: recipeType as RecipeType,
       finishedProductId,
-      batchSize: parseBatchSize(batchSize),
-      batchUnit,
-      packageWeight: formatOptionalPackageWeight(packageWeight),
+      batchSize: formatBatchSizeForApi(batchSize),
+      batchUnit: mapBatchDisplayUnitToStockUnit(resolvedBatchDisplayUnit),
+      batchDisplayUnit: resolvedBatchDisplayUnit,
+      packageWeightGrams: Number.parseInt(packageWeightGrams, 10),
+      expectedYield: formatExpectedYieldForApi(expectedYield),
+      expectedYieldUnit: expectedYieldUnit.trim(),
       estimatedMinutes: estimatedMinutesValue,
+      operationCenter: operationCenter as OperationCenter,
+      locationIds: operationCenter === 'LOCATION' ? locationIds : undefined,
+      technicalResponsible: technicalResponsible as TechnicalResponsible,
+      allergens,
       notes: notes.trim() || undefined,
-      isActive: recipeActive,
     };
 
     saveRecipeMutation.mutate(
@@ -782,7 +976,34 @@ export function RecipesManagementScreen({
             },
           },
       {
-        onSuccess: () => {
+        onSuccess: async (result) => {
+          const recipeId =
+            editingRecipeId ?? ('id' in result && typeof result.id === 'string' ? result.id : null);
+
+          if (!editingRecipeId && referencePhotoFile && recipeId) {
+            try {
+              await uploadReferencePhoto(recipeId, referencePhotoFile);
+            } catch (error) {
+              toast.error(
+                error instanceof Error
+                  ? error.message
+                  : 'La receta se guardó, pero falló la foto de referencia',
+              );
+            }
+          }
+
+          if (editingRecipeId) {
+            toast.success('Receta actualizada correctamente');
+          } else {
+            const savedCode =
+              result && 'code' in result && result.code ? result.code : previewCode || '';
+            toast.success(
+              savedCode
+                ? `Receta creada correctamente. Código: ${savedCode}`
+                : 'Receta creada correctamente',
+            );
+          }
+
           setEditingRecipeId(null);
           resetWizardNavigation();
           setRecipeEditorOpen(false);
@@ -1098,7 +1319,7 @@ export function RecipesManagementScreen({
               className={styles.filterSelect}
               value={statusFilter}
               options={recipeStatusOptions}
-              onChange={(value) => setStatusFilter(value as 'all' | RecetaStatus)}
+              onChange={(value) => setStatusFilter(value as RecipeListStatusFilter)}
             />
           </section>
           <section className={[styles.tableWrap, styles.tableWrapProcess].join(' ')}>
@@ -1184,7 +1405,7 @@ export function RecipesManagementScreen({
               className={styles.filterSelect}
               value={statusFilter}
               options={historyStatusOptions}
-              onChange={(value) => setStatusFilter(value as 'all' | RecetaStatus)}
+              onChange={(value) => setStatusFilter(value as RecipeListStatusFilter)}
             />
           </section>
           <section className={styles.historyWrap}>
@@ -1220,15 +1441,15 @@ export function RecipesManagementScreen({
           <RecetaMetricCard
             theme={theme}
             variant="type-2"
-            title="Activas"
-            value={totals.active}
+            title="En prueba"
+            value={totals.trial}
             size="xl"
           />
           <RecetaMetricCard
             theme={theme}
-            variant="type-3"
-            title="Tiempo prom."
-            value={`${totals.avg} min`}
+            variant="type-4"
+            title="Activas"
+            value={totals.active}
             size="xl"
           />
         </section>
@@ -1254,7 +1475,7 @@ export function RecipesManagementScreen({
             className={[styles.filterSelect, styles.filterSelectList].join(' ')}
             value={statusFilter}
             options={recipeStatusOptions}
-            onChange={(value) => setStatusFilter(value as 'all' | RecetaStatus)}
+            onChange={(value) => setStatusFilter(value as RecipeListStatusFilter)}
           />
         </section>
         <section className={[styles.tableWrap, styles.tableWrapList].join(' ')}>
@@ -1322,12 +1543,98 @@ export function RecipesManagementScreen({
   const editorCode = editingRecipeId
     ? (recipes.find((recipe) => recipe.id === editingRecipeId)?.code ??
       (recipeDetailQuery.data ? formatRecipeCode(recipeDetailQuery.data) : '—'))
-    : 'Nueva';
+    : previewCode || 'Nueva';
   const selectedCategory = recipeCategories.find((category) => category.id === categoryId);
   const selectedProduct = supplyItems.find((item) => item.id === finishedProductId);
-  const batchUnitLabel =
-    STOCK_UNIT_OPTIONS.find((option) => option.value === batchUnit)?.label ?? batchUnit;
-  const formattedPackageWeight = formatOptionalPackageWeight(packageWeight);
+  const batchDisplayUnitLabel = getBatchDisplayUnitLabel(
+    batchDisplayUnit ? (batchDisplayUnit as BatchDisplayUnit) : null,
+  );
+  const estimatedTotalMinutes = parseEstimatedTotalMinutes(estimatedHours, estimatedMinutes);
+  const selectedLocationLabels = locations
+    .filter((location) => locationIds.includes(location.id))
+    .map((location) => location.name)
+    .join(', ');
+  const rejectionReason = recipeDetailQuery.data?.rejectionReason;
+  const statusHistory = statusHistoryQuery.data ?? [];
+
+  const supervisorPanel =
+    editingRecipeId && wizardStep === 'general' ? (
+      <section className={styles.supervisorPanel} aria-label="Aprobación de receta">
+        <h3 className={styles.supervisorTitle}>Flujo de aprobación</h3>
+        {lifecycleStatus === 'TRIAL' ? (
+          <div className={styles.supervisorActions}>
+            <button
+              type="button"
+              className={styles.approveButton}
+              disabled={approveRecipeMutation.isPending}
+              onClick={() => approveRecipeMutation.mutate(editingRecipeId)}
+            >
+              {approveRecipeMutation.isPending ? 'Aprobando...' : 'Aprobar receta'}
+            </button>
+            <div className={styles.rejectBlock}>
+              <input
+                className={styles.rejectInput}
+                type="text"
+                value={rejectReason}
+                onChange={(event) => setRejectReason(event.target.value)}
+                placeholder="Motivo de rechazo"
+                aria-label="Motivo de rechazo"
+              />
+              <button
+                type="button"
+                className={styles.rejectButton}
+                disabled={rejectRecipeMutation.isPending || !rejectReason.trim()}
+                onClick={() =>
+                  rejectRecipeMutation.mutate({
+                    id: editingRecipeId,
+                    reason: rejectReason.trim(),
+                  })
+                }
+              >
+                {rejectRecipeMutation.isPending ? 'Rechazando...' : 'Rechazar'}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <p className={styles.supervisorHint}>
+            Estado actual: <strong>{LIFECYCLE_STATUS_LABELS[lifecycleStatus]}</strong>
+            {rejectionReason ? ` · Motivo: ${rejectionReason}` : null}
+          </p>
+        )}
+        {statusHistory.length > 0 ? (
+          <ul className={styles.statusHistoryList}>
+            {statusHistory.map((entry) => (
+              <li key={entry.id}>
+                <span>
+                  {entry.fromStatus ? LIFECYCLE_STATUS_LABELS[entry.fromStatus] : '—'} →{' '}
+                  {LIFECYCLE_STATUS_LABELS[entry.toStatus]}
+                </span>
+                <span>
+                  {new Intl.DateTimeFormat('es-CO', {
+                    day: 'numeric',
+                    month: 'short',
+                    hour: 'numeric',
+                    minute: '2-digit',
+                  }).format(new Date(entry.createdAt))}
+                </span>
+                {entry.reason ? <span>{entry.reason}</span> : null}
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </section>
+    ) : null;
+
+  const generalExtraContent = (
+    <>
+      {!editingRecipeId ? (
+        <RecipeReferencePhotoField value={referencePhotoFile} onChange={setReferencePhotoFile} />
+      ) : (
+        <RecipeImagesManager recipeId={editingRecipeId} />
+      )}
+      {supervisorPanel}
+    </>
+  );
 
   return (
     <div className={styles.screen}>
@@ -1358,6 +1665,17 @@ export function RecipesManagementScreen({
             value: category.id,
             label: category.nombre,
           })),
+          categoryLoading: recipeCategoriesQuery.isLoading,
+          categoryError:
+            recipeCategoriesQuery.isError && recipeCategories.length === 0
+              ? 'No se pudieron cargar las categorías'
+              : null,
+          onRetryCategories: () => void recipeCategoriesQuery.refetch(),
+          recipeCode: editingRecipeId ? editorCode : previewCode,
+          recipeCodePlaceholder: categoryId ? 'Generando código...' : 'Se generará al guardar',
+          recipeType,
+          onRecipeTypeChange: (value) => setRecipeType(value as RecipeType | ''),
+          recipeTypeOptions: RECIPE_TYPE_OPTIONS,
           finishedProductId,
           onFinishedProductChange: handleFinishedProductChange,
           supplyItemOptions: supplyItems.map((item) => ({
@@ -1366,26 +1684,45 @@ export function RecipesManagementScreen({
           })),
           batchSize,
           onBatchSizeChange: setBatchSize,
-          batchUnit,
-          onBatchUnitChange: (value) => setBatchUnit(value as StockUnit),
-          batchUnitOptions: STOCK_UNIT_OPTIONS.map((option) => ({
-            value: option.value,
-            label: option.label,
-          })),
-          packageWeight,
-          onPackageWeightChange: setPackageWeight,
+          batchDisplayUnit,
+          onBatchDisplayUnitChange: (value) => setBatchDisplayUnit(value as BatchDisplayUnit | ''),
+          batchDisplayUnitOptions: BATCH_DISPLAY_UNIT_OPTIONS,
+          packageWeightGrams,
+          onPackageWeightGramsChange: setPackageWeightGrams,
+          expectedYield,
+          onExpectedYieldChange: setExpectedYield,
+          expectedYieldUnit,
+          onExpectedYieldUnitChange: setExpectedYieldUnit,
+          estimatedHours,
+          onEstimatedHoursChange: setEstimatedHours,
           estimatedMinutes,
           onEstimatedMinutesChange: setEstimatedMinutes,
-          isActive: recipeActive,
-          onIsActiveChange: setRecipeActive,
+          lifecycleStatusLabel: LIFECYCLE_STATUS_LABELS[lifecycleStatus],
+          operationCenter,
+          onOperationCenterChange: (value) => setOperationCenter(value as OperationCenter | ''),
+          operationCenterOptions: OPERATION_CENTER_OPTIONS,
+          locationIds,
+          onLocationToggle: handleLocationToggle,
+          locationOptions: locations.map((location) => ({
+            value: location.id,
+            label: location.name,
+          })),
+          locationsLoading: locationsQuery.isLoading,
+          technicalResponsible,
+          onTechnicalResponsibleChange: (value) =>
+            setTechnicalResponsible(value as TechnicalResponsible | ''),
+          technicalResponsibleOptions: TECHNICAL_RESPONSIBLE_OPTIONS,
+          selectedAllergens: allergens,
+          onAllergenToggle: (value, checked) =>
+            handleAllergenToggle(value as RecipeAllergen, checked),
+          allergenOptions: RECIPE_ALLERGEN_OPTIONS,
+          createdAtLabel,
           notes,
           onNotesChange: setNotes,
-          showVersion: Boolean(editingRecipeId),
-          versionLabel: editorCode,
-          extraContent:
-            editingRecipeId && wizardStep === 'general' ? (
-              <RecipeImagesManager recipeId={editingRecipeId} />
-            ) : null,
+          fieldErrors,
+          onSaveDraft: editingRecipeId ? undefined : handleSaveDraft,
+          savingDraft: saving,
+          extraContent: wizardStep === 'general' ? generalExtraContent : null,
         }}
         phasesStep={{
           phases: phases.map((phase) => ({
@@ -1409,16 +1746,30 @@ export function RecipesManagementScreen({
         }}
         reviewStep={{
           name: name.trim() || 'Sin nombre',
+          codeLabel: editorCode !== 'Nueva' ? editorCode : undefined,
           categoryLabel: selectedCategory?.nombre,
+          recipeTypeLabel: getRecipeTypeLabel(recipeType ? (recipeType as RecipeType) : null),
           finishedProductLabel: selectedProduct
             ? `${selectedProduct.nombre} (${selectedProduct.codigoInterno})`
             : undefined,
-          batchLabel: `${batchSize} ${batchUnitLabel}`,
-          packageWeightLabel: formattedPackageWeight ? `${formattedPackageWeight} kg` : undefined,
-          estimatedMinutes: parseEstimatedMinutes(estimatedMinutes, totalMinutes),
-          isActive: recipeActive,
+          batchLabel: `${batchSize} ${batchDisplayUnitLabel}`,
+          packageWeightGramsLabel: packageWeightGrams ? `${packageWeightGrams} g` : undefined,
+          expectedYieldLabel:
+            expectedYield && expectedYieldUnit
+              ? `${expectedYield} ${expectedYieldUnit}`
+              : undefined,
+          estimatedMinutes: estimatedTotalMinutes,
+          lifecycleStatusLabel: LIFECYCLE_STATUS_LABELS[lifecycleStatus],
+          operationCenterLabel: getOperationCenterLabel(
+            operationCenter ? (operationCenter as OperationCenter) : null,
+          ),
+          locationsLabel: selectedLocationLabels || undefined,
+          technicalResponsibleLabel: getTechnicalResponsibleLabel(
+            technicalResponsible ? (technicalResponsible as TechnicalResponsible) : null,
+          ),
+          allergensLabel: getAllergenLabels(allergens),
+          createdAtLabel,
           notes,
-          versionLabel: editingRecipeId ? editorCode : undefined,
           phases: phases.map((phase) => ({
             id: phase.id,
             title: phase.title,
