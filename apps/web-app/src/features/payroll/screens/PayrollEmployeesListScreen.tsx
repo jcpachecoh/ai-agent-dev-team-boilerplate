@@ -46,7 +46,7 @@ function toCreateInput(values: PayrollEmployeeFormValues): CreatePayrollEmployee
     roleId: values.roleId.trim(),
     locationId: values.locationId.trim(),
     name: values.name.trim(),
-    position: values.position.trim(),
+    positionId: values.positionId.trim(),
     area: values.area.trim(),
     department: values.department.trim(),
     contractType: values.contractType,

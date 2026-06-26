@@ -155,6 +155,7 @@ export class PayrollRepository implements IPayrollRepository {
     const scalarFields = [
       'locationId',
       'name',
+      'positionId',
       'position',
       'area',
       'department',
@@ -274,6 +275,19 @@ export class PayrollRepository implements IPayrollRepository {
     return this.prisma.role.findUnique({
       where: { id: roleId },
       select: { id: true, tenantId: true },
+    });
+  }
+
+  async updateEmployeePositionAssignment(
+    employeeDetailsId: string,
+    data: { positionId: string; position: string },
+  ): Promise<void> {
+    await this.prisma.employeeDetails.update({
+      where: { id: employeeDetailsId },
+      data: {
+        positionId: data.positionId,
+        position: data.position,
+      },
     });
   }
 }

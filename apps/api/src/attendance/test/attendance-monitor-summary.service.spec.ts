@@ -12,6 +12,7 @@ const employee: EmployeeWithUser = {
   tenantId,
   locationId,
   name: 'Carlos Mendoza',
+  positionId: null,
   position: 'Parrillero',
   area: 'Cocina',
   department: 'Operaciones',

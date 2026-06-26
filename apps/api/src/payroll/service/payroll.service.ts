@@ -11,6 +11,7 @@ import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { SMLV_2025, TRANSPORT_SUBSIDY_THRESHOLD } from '../payroll.constants';
 import { PayrollRepository } from '../repository/payroll.repository';
+import { EmployeePositionsService } from './employee-positions.service';
 import { IPayrollService } from '../interfaces/payroll.interfaces';
 import type { UpdateEmployeePayload } from '../interfaces/payroll.interfaces';
 import { decimalToNumber } from '../../common/utils/decimal.util';
@@ -21,12 +22,21 @@ const SALT_ROUNDS = 12;
 export class PayrollService implements IPayrollService {
   private readonly logger = new Logger(PayrollService.name);
 
-  constructor(private readonly payrollRepository: PayrollRepository) {}
+  constructor(
+    private readonly payrollRepository: PayrollRepository,
+    private readonly employeePositionsService: EmployeePositionsService,
+  ) {}
 
-  async create(tenantId: string, data: any): Promise<EmployeeDetails & { user: User }> {
+  async create(
+    tenantId: string,
+    data: any,
+    changedBy?: string,
+  ): Promise<EmployeeDetails & { user: User }> {
     this.validateColombiaLaw(tenantId, data);
 
     const linkedUserId = await this.resolveLinkedUserId(tenantId, data);
+    await this.resolvePositionForEmployee(tenantId, data);
+    const positionId = data.positionId as string | undefined;
 
     const location = await this.payrollRepository.findLocationById(data.locationId);
     if (!location || location.tenantId !== tenantId) {
@@ -45,7 +55,7 @@ export class PayrollService implements IPayrollService {
         : undefined;
 
     try {
-      return await this.payrollRepository.create({
+      const employee = await this.payrollRepository.create({
         tenantId,
         userId: linkedUserId,
         roleId: data.roleId,
@@ -72,6 +82,21 @@ export class PayrollService implements IPayrollService {
         cajaCompensacion: data.cajaCompensacion,
         hasTransportSubsidy,
       });
+
+      if (positionId) {
+        await this.employeePositionsService.assignPositionToEmployee(
+          tenantId,
+          employee.id,
+          positionId,
+          changedBy,
+        );
+        const refreshed = await this.payrollRepository.findByUserId(employee.userId);
+        if (refreshed) {
+          return refreshed;
+        }
+      }
+
+      return employee;
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
         throw new ConflictException('Email or Cédula already registered');
@@ -135,8 +160,17 @@ export class PayrollService implements IPayrollService {
     tenantId: string,
     userId: string,
     data: any,
+    changedBy?: string,
   ): Promise<EmployeeDetails & { user: User; location?: { id: string; name: string } }> {
     const employee = await this.findOne(tenantId, userId);
+    const nextPositionId = data.positionId as string | undefined;
+
+    if (nextPositionId !== undefined) {
+      if (!nextPositionId) {
+        throw new BadRequestException('positionId cannot be cleared');
+      }
+      await this.resolvePositionForEmployee(tenantId, data);
+    }
 
     if (data.salaryAmount !== undefined) {
       this.validateSalary(tenantId, { ...employee, ...data }, userId);
@@ -175,7 +209,22 @@ export class PayrollService implements IPayrollService {
     const payload = this.buildUpdatePayload(data);
 
     try {
-      return await this.payrollRepository.update(userId, payload);
+      const updated = await this.payrollRepository.update(userId, payload);
+
+      if (nextPositionId !== undefined && nextPositionId !== employee.positionId) {
+        await this.employeePositionsService.assignPositionToEmployee(
+          tenantId,
+          employee.id,
+          nextPositionId,
+          changedBy,
+        );
+        const refreshed = await this.payrollRepository.findByUserId(userId);
+        if (refreshed) {
+          return refreshed;
+        }
+      }
+
+      return updated;
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
         throw new ConflictException('Email or Cédula already registered');
@@ -202,6 +251,27 @@ export class PayrollService implements IPayrollService {
     contractType: EmployeeContractType,
   ): Promise<(EmployeeDetails & { user: User })[]> {
     return this.payrollRepository.findAll({ tenantId, contractType });
+  }
+
+  private async resolvePositionForEmployee(
+    tenantId: string,
+    data: Record<string, unknown>,
+  ): Promise<void> {
+    if (data.positionId) {
+      const catalogPosition = await this.employeePositionsService.findById(
+        tenantId,
+        data.positionId as string,
+      );
+      data.position = catalogPosition.title;
+      if (!data.area) {
+        data.area = catalogPosition.area;
+      }
+      return;
+    }
+
+    if (!data.position) {
+      throw new BadRequestException('position or positionId is required');
+    }
   }
 
   private validateColombiaLaw(tenantId: string, data: any, userId?: string) {

@@ -18,6 +18,7 @@ export interface CreateEmployeeData {
   passwordHash?: string;
   locationId: string;
   name: string;
+  positionId?: string;
   position: string;
   area: string;
   department: string;
@@ -38,6 +39,7 @@ export interface CreateEmployeeData {
 export interface UpdateEmployeeData {
   locationId?: string;
   name?: string;
+  positionId?: string;
   position?: string;
   area?: string;
   department?: string;
@@ -108,6 +110,10 @@ export interface IPayrollRepository {
   ): Promise<LinkedUserRecord | null>;
   findLocationById(locationId: string): Promise<{ id: string; tenantId: string } | null>;
   findRoleById(roleId: string): Promise<{ id: string; tenantId: string } | null>;
+  updateEmployeePositionAssignment(
+    employeeDetailsId: string,
+    data: { positionId: string; position: string },
+  ): Promise<void>;
 }
 
 export interface IPayrollService {

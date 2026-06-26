@@ -7,6 +7,7 @@ export class EmployeeResponseDto {
   @ApiProperty() tenantId!: string;
   @ApiProperty() name!: string;
   @ApiProperty() locationId!: string;
+  @ApiPropertyOptional() positionId?: string | null;
   @ApiPropertyOptional() position?: string | null;
   @ApiPropertyOptional() area?: string | null;
   @ApiPropertyOptional() department?: string | null;
@@ -52,6 +53,7 @@ export function toEmployeeResponse(
     tenantId: employee.tenantId,
     name: employee.name,
     locationId: employee.locationId,
+    positionId: employee.positionId ?? undefined,
     position: employee.position ?? undefined,
     area: employee.area ?? undefined,
     department: employee.department ?? undefined,

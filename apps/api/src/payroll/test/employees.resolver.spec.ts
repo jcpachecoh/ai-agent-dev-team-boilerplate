@@ -62,7 +62,7 @@ describe('EmployeesResolver', () => {
       const input = { email: 'test@test.com' } as any;
       (service.create as jest.Mock).mockResolvedValue({ id: 'emp-1', salaryAmount: '1000' });
       await resolver.createEmployee(mockUser, mockContext, input);
-      expect(service.create).toHaveBeenCalledWith(mockTenantId, input);
+      expect(service.create).toHaveBeenCalledWith(mockTenantId, input, 'user-id');
     });
   });
 
@@ -71,7 +71,7 @@ describe('EmployeesResolver', () => {
       const input = { position: 'New Position' } as any;
       (service.update as jest.Mock).mockResolvedValue({ id: 'emp-1', salaryAmount: '1000' });
       await resolver.updateEmployee(mockUser, mockContext, 'user-1', input);
-      expect(service.update).toHaveBeenCalledWith(mockTenantId, 'user-1', input);
+      expect(service.update).toHaveBeenCalledWith(mockTenantId, 'user-1', input, 'user-id');
     });
   });
 

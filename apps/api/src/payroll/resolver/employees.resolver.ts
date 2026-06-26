@@ -53,6 +53,7 @@ export class EmployeeDetailsType {
   @Field() tenantId!: string;
   @Field() name!: string;
   @Field() locationId!: string;
+  @Field(() => ID, { nullable: true }) positionId?: string | null;
   @Field() position!: string;
   @Field() area!: string;
   @Field() department!: string;
@@ -118,10 +119,15 @@ export class CreateEmployeeInput {
   @IsNotEmpty()
   name!: string;
 
-  @Field()
+  @Field(() => ID, { nullable: true })
   @IsString()
-  @IsNotEmpty()
-  position!: string;
+  @IsOptional()
+  positionId?: string;
+
+  @Field({ nullable: true })
+  @IsString()
+  @IsOptional()
+  position?: string;
 
   @Field()
   @IsString()
@@ -255,7 +261,7 @@ export class EmployeesResolver {
     @Args('input') input: CreateEmployeeInput,
   ): Promise<EmployeeDetailsType> {
     const tenantId = this.resolveTenantId(user, context);
-    const employee = await this.employeesService.create(tenantId, input);
+    const employee = await this.employeesService.create(tenantId, input, user?.sub);
     return toEmployeeResponse(employee) as any;
   }
 
@@ -268,7 +274,7 @@ export class EmployeesResolver {
     @Args('input') input: UpdateEmployeeInput,
   ): Promise<EmployeeDetailsType> {
     const tenantId = this.resolveTenantId(user, context);
-    const employee = await this.employeesService.update(tenantId, userId, input);
+    const employee = await this.employeesService.update(tenantId, userId, input, user?.sub);
     return toEmployeeResponse(employee) as any;
   }
 

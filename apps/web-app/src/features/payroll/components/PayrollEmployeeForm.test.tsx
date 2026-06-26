@@ -20,6 +20,18 @@ const TEST_CATALOGS = {
   DEPARTMENT: [{ id: 'dep-1', type: 'DEPARTMENT' as const, name: 'Gerencia' }],
 };
 
+const TEST_POSITIONS = [
+  {
+    id: 'pos-1',
+    title: 'Desarrollador',
+    area: 'Administración',
+    baseSalaryRange: 4500000,
+    isActive: true,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+  },
+];
+
 vi.mock('../hooks/useEmployeeCatalogOptions', () => ({
   useEmployeeCatalogsGrouped: () => ({
     isLoading: false,
@@ -37,6 +49,14 @@ vi.mock('../hooks/useEmployeeCatalogOptions', () => ({
     if (!hasOptions) return 'No hay opciones configuradas';
     return 'Seleccionar';
   },
+}));
+
+vi.mock('../hooks/useEmployeePositions', () => ({
+  useEmployeePositions: () => ({
+    isLoading: false,
+    isError: false,
+    data: TEST_POSITIONS,
+  }),
 }));
 
 function renderForm(
@@ -82,6 +102,8 @@ describe('PayrollEmployeeForm', () => {
     await user.click(screen.getByRole('option', { name: 'Manager' }));
     await user.click(screen.getByRole('button', { name: 'Sede' }));
     await user.click(screen.getByRole('option', { name: 'Sede Palos de Leña 1' }));
+    await user.click(screen.getByRole('button', { name: 'Cargo' }));
+    await user.click(screen.getByRole('option', { name: 'Desarrollador — Administración' }));
     await user.type(screen.getByLabelText('Salario'), '3000000');
     await user.click(screen.getByRole('button', { name: 'Área' }));
     await user.click(screen.getByRole('option', { name: 'Administración' }));
@@ -100,5 +122,6 @@ describe('PayrollEmployeeForm', () => {
     await user.click(screen.getByRole('button', { name: 'Crear empleado' }));
 
     expect(onSubmit).toHaveBeenCalledTimes(1);
+    expect(onSubmit.mock.calls[0][0].positionId).toBe('pos-1');
   });
 });

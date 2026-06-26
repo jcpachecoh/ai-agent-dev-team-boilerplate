@@ -542,6 +542,7 @@ model EmployeeDetails {
   tenantId            String
   name                String
   locationId          String
+  positionId          String?
   position            String
   area                String
   department          String
@@ -565,16 +566,65 @@ model EmployeeDetails {
   updatedAt           DateTime             @updatedAt
   deletedAt           DateTime?
 
-  user           User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  location       Location               @relation(fields: [locationId], references: [id])
-  attendanceLogs AttendanceLog[]
+  user            User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  location        Location                  @relation(fields: [locationId], references: [id])
+  positionRef     EmployeePosition?         @relation(fields: [positionId], references: [id], onDelete: SetNull)
+  positionHistory EmployeePositionHistory[]
+  attendanceLogs  AttendanceLog[]
   socialProfiles EmployeeSocialProfile[]
 
   @@index([tenantId])
   @@index([locationId])
+  @@index([positionId])
   @@index([contractType])
   @@index([isActive])
   @@map("employee_details")
+}
+
+model EmployeePosition {
+  id              String   @id @default(cuid())
+  tenantId        String
+  title           String
+  area            String
+  baseSalaryRange Decimal  @db.Decimal(12, 2)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  employees EmployeeDetails[]
+  history   EmployeePositionHistory[]
+
+  @@unique([tenantId, title])
+  @@index([tenantId, isActive])
+  @@index([tenantId, area])
+  @@map("employee_positions")
+}
+
+model EmployeePositionHistory {
+  id                String    @id @default(cuid())
+  tenantId          String
+  employeeDetailsId String
+  positionId        String
+  effectiveFrom     DateTime  @default(now())
+  effectiveTo       DateTime?
+  changedBy         String?
+  createdAt         DateTime  @default(now())
+
+  employee EmployeeDetails  @relation(fields: [employeeDetailsId], references: [id], onDelete: Cascade)
+  position EmployeePosition @relation(fields: [positionId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId, employeeDetailsId])
+  @@index([tenantId, positionId])
+  @@index([employeeDetailsId, effectiveFrom])
+  @@map("employee_position_history")
+}
+
+enum EmployeeRelationshipType {
+  SPOUSE
+  CHILD
+  FATHER
+  MOTHER
+  OTHER
 }
 
 model EmployeeSocialProfile {
@@ -595,14 +645,6 @@ model EmployeeSocialProfile {
   @@index([tenantId, employeeDetailsId])
   @@index([deletedAt])
   @@map("employee_social_profiles")
-}
-
-enum EmployeeRelationshipType {
-  SPOUSE
-  CHILD
-  FATHER
-  MOTHER
-  OTHER
 }
 
 model EmployeeCatalogOption {

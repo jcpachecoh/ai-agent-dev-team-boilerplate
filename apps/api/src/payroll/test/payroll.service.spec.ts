@@ -14,11 +14,13 @@ import {
 } from '@prisma/client';
 import { PayrollService } from '../service/payroll.service';
 import { PayrollRepository } from '../repository/payroll.repository';
+import { EmployeePositionsService } from '../service/employee-positions.service';
 import { SMLV_2025 } from '../payroll.constants';
 
 describe('PayrollService', () => {
   let service: PayrollService;
   let repository: PayrollRepository;
+  let employeePositionsService: EmployeePositionsService;
 
   const mockTenantId = 'tenant-1';
   const mockLocationId = 'loc-1';
@@ -86,6 +88,14 @@ describe('PayrollService', () => {
             findUserByEmailAndCedula: jest.fn(),
             findLocationById: jest.fn(),
             findRoleById: jest.fn(),
+            findById: jest.fn(),
+          },
+        },
+        {
+          provide: EmployeePositionsService,
+          useValue: {
+            findById: jest.fn(),
+            assignPositionToEmployee: jest.fn(),
           },
         },
       ],
@@ -93,6 +103,7 @@ describe('PayrollService', () => {
 
     service = module.get<PayrollService>(PayrollService);
     repository = module.get<PayrollRepository>(PayrollRepository);
+    employeePositionsService = module.get<EmployeePositionsService>(EmployeePositionsService);
   });
 
   describe('create', () => {
@@ -566,6 +577,93 @@ describe('PayrollService', () => {
         tenantId: mockTenantId,
         contractType: EmployeeContractType.OBRA,
       });
+    });
+  });
+
+  describe('positionId integration', () => {
+    it('assigns catalog position on create when positionId is provided', async () => {
+      setupSuccessfulCreate(null);
+      (employeePositionsService.findById as jest.Mock).mockResolvedValue({
+        id: 'pos-1',
+        title: 'Contador',
+        area: 'Finanzas',
+      });
+      (repository.create as jest.Mock).mockResolvedValue({
+        id: 'emp-details-1',
+        userId: 'user-new',
+        tenantId: mockTenantId,
+      });
+      (repository.findByUserId as jest.Mock).mockResolvedValue({
+        id: 'emp-details-1',
+        userId: 'user-new',
+        tenantId: mockTenantId,
+        positionId: 'pos-1',
+        position: 'Contador',
+      });
+
+      await service.create(
+        mockTenantId,
+        { ...mockEmployeeData, positionId: 'pos-1' },
+        'requester-1',
+      );
+
+      expect(employeePositionsService.assignPositionToEmployee).toHaveBeenCalledWith(
+        mockTenantId,
+        'emp-details-1',
+        'pos-1',
+        'requester-1',
+      );
+    });
+
+    it('assigns catalog position on update when positionId changes', async () => {
+      (repository.findByUserId as jest.Mock).mockResolvedValue({
+        id: 'emp-details-1',
+        userId: 'user-1',
+        tenantId: mockTenantId,
+        positionId: 'pos-old',
+        user: { email: 'test@example.com', cedula: '123456' },
+      });
+      (employeePositionsService.findById as jest.Mock).mockResolvedValue({
+        id: 'pos-1',
+        title: 'Contador',
+        area: 'Finanzas',
+      });
+      (repository.update as jest.Mock).mockResolvedValue({
+        id: 'emp-details-1',
+        userId: 'user-1',
+        tenantId: mockTenantId,
+      });
+      (repository.findByUserId as jest.Mock)
+        .mockResolvedValueOnce({
+          id: 'emp-details-1',
+          userId: 'user-1',
+          tenantId: mockTenantId,
+          positionId: 'pos-old',
+          user: { email: 'test@example.com', cedula: '123456' },
+        })
+        .mockResolvedValueOnce({
+          id: 'emp-details-1',
+          userId: 'user-1',
+          tenantId: mockTenantId,
+          positionId: 'pos-1',
+        });
+
+      await service.update(mockTenantId, 'user-1', { positionId: 'pos-1' }, 'requester-1');
+
+      expect(employeePositionsService.assignPositionToEmployee).toHaveBeenCalledWith(
+        mockTenantId,
+        'emp-details-1',
+        'pos-1',
+        'requester-1',
+      );
+    });
+
+    it('rejects create without position or positionId', async () => {
+      setupSuccessfulCreate(null);
+
+      await expect(
+        service.create(mockTenantId, { ...mockEmployeeData, position: '' }),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 });

@@ -20,6 +20,7 @@ import {
   catalogSelectPlaceholder,
   useEmployeeCatalogsGrouped,
 } from '../hooks/useEmployeeCatalogOptions';
+import { useEmployeePositions } from '../hooks/useEmployeePositions';
 import styles from '../payroll.module.scss';
 
 export interface PayrollEmployeeFormProps {
@@ -39,7 +40,7 @@ const EMPTY_VALUES: PayrollEmployeeFormValues = {
   roleId: '',
   locationId: '',
   name: '',
-  position: '',
+  positionId: '',
   area: '',
   department: '',
   contractType: 'INDEFINIDO',
@@ -93,7 +94,7 @@ function employeeToFormValues(employee: PayrollEmployee): PayrollEmployeeFormVal
     roleId: employee.user?.roleId ?? '',
     locationId: employee.locationId,
     name: employee.name,
-    position: employee.position,
+    positionId: employee.positionId ?? '',
     area: employee.area,
     department: employee.department,
     contractType: employee.contractType,
@@ -156,6 +157,7 @@ export function PayrollEmployeeForm({
   const locationsQuery = useLocations();
   const rolesQuery = useAdminRolesForSelect();
   const catalogsQuery = useEmployeeCatalogsGrouped();
+  const positionsQuery = useEmployeePositions({ includeInactive: false });
   const locationRows = locations ?? locationsQuery.data ?? [];
   const roleRows = roles ?? rolesQuery.data ?? [];
   const [values, setValues] = useState<PayrollEmployeeFormValues>(
@@ -274,6 +276,32 @@ export function PayrollEmployeeForm({
     [catalogsQuery.grouped, values.cajaCompensacion],
   );
 
+  const positionSelectOptions = useMemo(() => {
+    const options = (positionsQuery.data ?? [])
+      .filter((position) => position.isActive)
+      .map((position) => ({
+        value: position.id,
+        label: `${position.title} — ${position.area}`,
+      }));
+
+    if (values.positionId && !options.some((option) => option.value === values.positionId)) {
+      const current = positionsQuery.data?.find((position) => position.id === values.positionId);
+      if (current) {
+        options.unshift({
+          value: current.id,
+          label: `${current.title} — ${current.area}`,
+        });
+      }
+    }
+
+    return options;
+  }, [positionsQuery.data, values.positionId]);
+
+  const selectedPosition = useMemo(
+    () => (positionsQuery.data ?? []).find((position) => position.id === values.positionId),
+    [positionsQuery.data, values.positionId],
+  );
+
   useEffect(() => {
     setValues(initialValues ? employeeToFormValues(initialValues) : EMPTY_VALUES);
     setError(null);
@@ -292,6 +320,11 @@ export function PayrollEmployeeForm({
 
     if (!values.locationId.trim() || !values.roleId.trim()) {
       setError('Sede y rol son obligatorios.');
+      return;
+    }
+
+    if (!values.positionId.trim()) {
+      setError('Cargo es obligatorio.');
       return;
     }
 
@@ -400,14 +433,37 @@ export function PayrollEmployeeForm({
               size="md"
             />
           </div>
-          <label className={styles.field}>
-            <span className={styles.fieldLabel}>Cargo</span>
-            <input
-              className={styles.input}
-              value={values.position}
-              onChange={(event) => update({ position: event.target.value })}
+          <div className={styles.field}>
+            <span className={styles.fieldLabel}>Cargo *</span>
+            <RecetaFilterSelect
+              aria-label="Cargo"
+              options={positionSelectOptions}
+              value={values.positionId}
+              disabled={positionsQuery.isLoading}
+              placeholder={
+                positionsQuery.isLoading
+                  ? 'Cargando cargos...'
+                  : positionsQuery.isError
+                    ? 'Error al cargar cargos'
+                    : positionSelectOptions.length === 0
+                      ? 'No hay cargos configurados'
+                      : 'Seleccionar cargo'
+              }
+              onChange={(value) => update({ positionId: value })}
+              theme={theme}
+              size="md"
             />
-          </label>
+            {selectedPosition ? (
+              <small>
+                Rango salarial de referencia:{' '}
+                {new Intl.NumberFormat('es-CO', {
+                  style: 'currency',
+                  currency: 'COP',
+                  maximumFractionDigits: 0,
+                }).format(selectedPosition.baseSalaryRange)}
+              </small>
+            ) : null}
+          </div>
           <div className={styles.field}>
             <span className={styles.fieldLabel}>Área *</span>
             <RecetaFilterSelect

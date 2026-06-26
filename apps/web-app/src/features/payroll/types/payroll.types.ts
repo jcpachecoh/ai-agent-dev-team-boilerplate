@@ -19,6 +19,7 @@ export interface PayrollEmployee {
   tenantId: string;
   name: string;
   locationId: string;
+  positionId?: string | null;
   position: string;
   area: string;
   department: string;
@@ -62,7 +63,8 @@ export interface CreatePayrollEmployeeInput {
   roleId: string;
   locationId: string;
   name: string;
-  position: string;
+  positionId?: string;
+  position?: string;
   area: string;
   department: string;
   contractType: EmployeeContractType;
@@ -90,7 +92,7 @@ export interface PayrollEmployeeFormValues {
   roleId: string;
   locationId: string;
   name: string;
-  position: string;
+  positionId: string;
   area: string;
   department: string;
   contractType: EmployeeContractType;

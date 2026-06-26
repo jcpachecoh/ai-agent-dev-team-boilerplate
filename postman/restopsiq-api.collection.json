@@ -7855,6 +7855,147 @@
       ]
     },
     {
+      "name": "Employee Positions",
+      "description": "Employee positions catalog (EMP-POS-01). Requires Bearer {{accessToken}} and x-tenant-id: {{tenantId}}.",
+      "item": [
+        {
+          "name": "List Employee Positions",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/employee-positions?includeInactive=false",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "employee-positions"],
+              "query": [{ "key": "includeInactive", "value": "false" }]
+            }
+          }
+        },
+        {
+          "name": "Get Employee Position by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/employee-positions/{{positionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "employee-positions", "{{positionId}}"]
+            }
+          }
+        },
+        {
+          "name": "Create Employee Position",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201 || pm.response.code === 200) {",
+                  "  const body = pm.response.json();",
+                  "  pm.environment.set('positionId', body.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Contador\",\n  \"area\": \"Finanzas\",\n  \"baseSalaryRange\": 4500000\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/employee-positions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "employee-positions"]
+            }
+          }
+        },
+        {
+          "name": "Update Employee Position",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"baseSalaryRange\": 4800000\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/employee-positions/{{positionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "employee-positions", "{{positionId}}"]
+            }
+          }
+        },
+        {
+          "name": "Deactivate Employee Position",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/employee-positions/{{positionId}}/deactivate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "employee-positions", "{{positionId}}", "deactivate"]
+            }
+          }
+        },
+        {
+          "name": "Get Employee Position History",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/employee-positions/employees/{{employeeDetailsId}}/history",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "employee-positions", "employees", "{{employeeDetailsId}}", "history"]
+            }
+          }
+        },
+        {
+          "name": "Create Employee with positionId",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cedula\": \"987654321\",\n  \"documentType\": \"CC\",\n  \"email\": \"contador@test.com\",\n  \"roleId\": \"{{roleId}}\",\n  \"locationId\": \"{{locationId}}\",\n  \"name\": \"Ana Contadora\",\n  \"positionId\": \"{{positionId}}\",\n  \"area\": \"Finanzas\",\n  \"department\": \"Administración\",\n  \"contractType\": \"INDEFINIDO\",\n  \"hireDate\": \"2025-01-01\",\n  \"contractStart\": \"2025-01-01\",\n  \"salaryType\": \"ORDINARIO\",\n  \"salaryAmount\": 4500000,\n  \"epsName\": \"EPS\",\n  \"pensionFundName\": \"Pension\",\n  \"cesantiasFundName\": \"Cesantias\",\n  \"arlName\": \"ARL\",\n  \"arlRiskLevel\": \"RIESGO_I\",\n  \"cajaCompensacion\": \"Caja\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/employees",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "employees"]
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "NOM-03 Attendance",
       "description": "Attendance Kiosk API (NOM-03). Public endpoints (kiosk-auth, entry, exit) requieren x-tenant-id header. Protected endpoints (history, active, overtime) requieren Bearer {{accessToken}} + x-tenant-id.",
       "item": [
