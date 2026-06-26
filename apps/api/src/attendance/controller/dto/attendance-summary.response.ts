@@ -14,6 +14,8 @@ export class KioskAuthResponseDto implements KioskAuthResult {
   @ApiProperty() fullName!: string;
   @ApiProperty() locationId!: string;
   @ApiProperty() employeeId!: string;
+  @ApiProperty() accessToken!: string;
+  @ApiProperty() refreshToken!: string;
 }
 
 export class EntryResponseDto implements EntryResult {

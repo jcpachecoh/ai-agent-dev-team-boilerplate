@@ -85,6 +85,8 @@ describe('AttendanceController (e2e)', () => {
     expect(authRes.body.locationId).toBe(locationId);
     expect(typeof authRes.body.employeeId).toBe('string');
     expect(typeof authRes.body.fullName).toBe('string');
+    expect(typeof authRes.body.accessToken).toBe('string');
+    expect(typeof authRes.body.refreshToken).toBe('string');
 
     const { userId } = authRes.body;
 

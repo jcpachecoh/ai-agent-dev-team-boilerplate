@@ -308,6 +308,26 @@ export class AuthService implements IAuthService {
     );
   }
 
+  async issueKioskAuthTokens(
+    userId: string,
+    tenantId: string,
+    locationId: string,
+  ): Promise<Pick<AuthTokens, 'accessToken' | 'refreshToken'>> {
+    const resolvedTenantId = this.requireTenantId(tenantId);
+    const trimmedLocationId = locationId.trim();
+    const claims = await this.resolveJwtPayload(userId);
+    const session = await this.issueSessionTokens(
+      claims,
+      resolvedTenantId,
+      undefined,
+      trimmedLocationId,
+    );
+    return {
+      accessToken: session.accessToken,
+      refreshToken: session.refreshToken,
+    };
+  }
+
   async changePassword(
     userId: string,
     currentPassword: string,

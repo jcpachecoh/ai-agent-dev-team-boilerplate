@@ -11,6 +11,7 @@ import { AttendanceEventType, AttendanceShift } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { AttendanceService } from '../service/attendance.service';
 import { AttendanceRepository } from '../repository/attendance.repository';
+import { AuthService } from '../../auth/service/auth.service';
 
 jest.mock('bcrypt', () => ({
   compare: jest.fn(),
@@ -99,16 +100,28 @@ const repoMock = {
   findById: jest.fn(),
 };
 
+const authServiceMock = {
+  issueKioskAuthTokens: jest.fn(),
+};
+
 describe('AttendanceService', () => {
   let service: AttendanceService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [AttendanceService, { provide: AttendanceRepository, useValue: repoMock }],
+      providers: [
+        AttendanceService,
+        { provide: AttendanceRepository, useValue: repoMock },
+        { provide: AuthService, useValue: authServiceMock },
+      ],
     }).compile();
 
     service = module.get<AttendanceService>(AttendanceService);
     jest.clearAllMocks();
+    authServiceMock.issueKioskAuthTokens.mockResolvedValue({
+      accessToken: 'access-token',
+      refreshToken: 'refresh-token',
+    });
   });
 
   // ── kioskAuth ──────────────────────────────────────────────────────────────
@@ -128,6 +141,13 @@ describe('AttendanceService', () => {
       expect(result.employeeId).toBe('emp-kiosk-ok');
       expect(result.locationId).toBe(LOCATION_ID);
       expect(typeof result.fullName).toBe('string');
+      expect(result.accessToken).toBe('access-token');
+      expect(result.refreshToken).toBe('refresh-token');
+      expect(authServiceMock.issueKioskAuthTokens).toHaveBeenCalledWith(
+        'user-001',
+        TENANT,
+        LOCATION_ID,
+      );
     });
 
     it('lanza UnauthorizedException cuando el PIN es incorrecto', async () => {

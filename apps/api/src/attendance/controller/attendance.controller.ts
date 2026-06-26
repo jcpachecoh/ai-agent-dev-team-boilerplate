@@ -65,7 +65,7 @@ export class AttendanceController {
   @Public()
   @Post('kiosk-auth')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Autenticación kiosko: cédula + PIN → userId sin JWT' })
+  @ApiOperation({ summary: 'Autenticación kiosko: cédula + PIN → userId + JWT' })
   @ApiResponse({ status: 200, type: KioskAuthResponseDto })
   @ApiResponse({ status: 401, description: 'Cédula o PIN incorrecto' })
   @ApiResponse({ status: 403, description: 'Cuenta bloqueada o empleado no en esta sede' })
