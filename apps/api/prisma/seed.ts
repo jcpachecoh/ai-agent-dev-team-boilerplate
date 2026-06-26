@@ -41,6 +41,7 @@ import {
   CondicionPago,
   DocumentType,
   EmployeeContractType,
+  EmployeeRelationshipType,
   Location,
   OperationalRole,
   PrismaClient,
@@ -304,6 +305,43 @@ const PERMISSION_SEEDS = [
     resource: 'roles.permissions',
     action: 'assign',
   },
+  // OS-560 — Employee Social Profile (familiares directos)
+  {
+    id: 'cccccccc-0000-0000-0000-000000000023',
+    code: 'payroll.social_profile.read',
+    name: 'Read employee social profiles',
+    description: 'List and view family members registered for an employee',
+    module: 'payroll',
+    resource: 'social_profile',
+    action: 'read',
+  },
+  {
+    id: 'cccccccc-0000-0000-0000-000000000024',
+    code: 'payroll.social_profile.create',
+    name: 'Create employee social profile',
+    description: 'Register a new family member for an employee',
+    module: 'payroll',
+    resource: 'social_profile',
+    action: 'create',
+  },
+  {
+    id: 'cccccccc-0000-0000-0000-000000000025',
+    code: 'payroll.social_profile.update',
+    name: 'Update employee social profile',
+    description: 'Update a family member record for an employee',
+    module: 'payroll',
+    resource: 'social_profile',
+    action: 'update',
+  },
+  {
+    id: 'cccccccc-0000-0000-0000-000000000026',
+    code: 'payroll.social_profile.delete',
+    name: 'Delete employee social profile',
+    description: 'Soft-delete a family member record for an employee',
+    module: 'payroll',
+    resource: 'social_profile',
+    action: 'delete',
+  },
 ] as const;
 
 const MANAGER_SUPERVISOR_PERMISSION_CODES = [
@@ -339,16 +377,24 @@ const OPERATOR_PERMISSION_CODES = ['plant.orders.read', 'supply.items.read'] as 
 
 const OPERATIONS_ADMIN_PERMISSION_CODES = ['plant.orders.read', 'plant.committees.read'] as const;
 
+// OS-560 — todos los roles de nómina gestionan perfiles sociales
+const SOCIAL_PROFILE_PERMISSION_CODES = [
+  'payroll.social_profile.read',
+  'payroll.social_profile.create',
+  'payroll.social_profile.update',
+  'payroll.social_profile.delete',
+] as const;
+
 const ALL_PERMISSION_CODES = PERMISSION_SEEDS.map((permissionSeed) => permissionSeed.code);
 
 const ROLE_PERMISSION_MATRIX: Record<string, readonly string[]> = {
   OWNER: ALL_PERMISSION_CODES,
   SUPER_ADMIN: ALL_PERMISSION_CODES,
-  SUPERVISOR: SUPERVISOR_PERMISSION_CODES,
-  MANAGER: MANAGER_PERMISSION_CODES,
+  SUPERVISOR: [...SUPERVISOR_PERMISSION_CODES, ...SOCIAL_PROFILE_PERMISSION_CODES],
+  MANAGER: [...MANAGER_PERMISSION_CODES, ...SOCIAL_PROFILE_PERMISSION_CODES],
   OPERATOR: OPERATOR_PERMISSION_CODES,
   OPERATIONS_ADMIN: OPERATIONS_ADMIN_PERMISSION_CODES,
-  NOMINA: [],
+  NOMINA: [...SOCIAL_PROFILE_PERMISSION_CODES],
 };
 
 /** Matches MesAuthService cédula hashing (HMAC-SHA256 or SHA-256 fallback). */
@@ -602,6 +648,106 @@ async function seedEmployeeDetails(
   });
 
   console.log('EmployeeDetails: Seeded for owner and operator');
+}
+
+async function seedEmployeeSocialProfiles(ownerUserId: string, operatorUserId: string) {
+  const ownerEmployee = await prisma.employeeDetails.findUnique({
+    where: { userId: ownerUserId },
+    select: { id: true, tenantId: true },
+  });
+
+  const operatorEmployee = await prisma.employeeDetails.findUnique({
+    where: { userId: operatorUserId },
+    select: { id: true, tenantId: true },
+  });
+
+  if (!ownerEmployee || !operatorEmployee) {
+    console.warn('⚠️  Employee details not found — skipping social profile seed');
+    return;
+  }
+
+  const ownerProfiles = [
+    {
+      fullName: 'María Gómez',
+      relationshipType: EmployeeRelationshipType.SPOUSE,
+      birthDate: new Date('1985-03-22'),
+      isDependent: false,
+    },
+    {
+      fullName: 'Carlos Ramírez',
+      relationshipType: EmployeeRelationshipType.CHILD,
+      birthDate: new Date('2010-07-15'),
+      isDependent: true,
+    },
+    {
+      fullName: 'Alberto Ramírez',
+      relationshipType: EmployeeRelationshipType.FATHER,
+      birthDate: new Date('1955-11-08'),
+      isDependent: false,
+    },
+    {
+      fullName: 'Laura Sánchez',
+      relationshipType: EmployeeRelationshipType.OTHER,
+      birthDate: new Date('1990-01-30'),
+      isDependent: false,
+    },
+  ];
+
+  for (const profile of ownerProfiles) {
+    await prisma.employeeSocialProfile.upsert({
+      where: {
+        employeeDetailsId_fullName_relationshipType_birthDate: {
+          employeeDetailsId: ownerEmployee.id,
+          fullName: profile.fullName,
+          relationshipType: profile.relationshipType,
+          birthDate: profile.birthDate,
+        },
+      },
+      update: {},
+      create: {
+        tenantId: ownerEmployee.tenantId,
+        employeeDetailsId: ownerEmployee.id,
+        ...profile,
+      },
+    });
+  }
+
+  // Operario: cónyuge dependiente + hijo dependiente
+  const operatorProfiles = [
+    {
+      fullName: 'Sofía Torres',
+      relationshipType: EmployeeRelationshipType.SPOUSE,
+      birthDate: new Date('1992-05-10'),
+      isDependent: true,
+    },
+    {
+      fullName: 'Mateo Herrera',
+      relationshipType: EmployeeRelationshipType.CHILD,
+      birthDate: new Date('2018-09-03'),
+      isDependent: true,
+    },
+  ];
+
+  for (const profile of operatorProfiles) {
+    await prisma.employeeSocialProfile.upsert({
+      where: {
+        employeeDetailsId_fullName_relationshipType_birthDate: {
+          employeeDetailsId: operatorEmployee.id,
+          fullName: profile.fullName,
+          relationshipType: profile.relationshipType,
+          birthDate: profile.birthDate,
+        },
+      },
+      update: {},
+      create: {
+        tenantId: operatorEmployee.tenantId,
+        employeeDetailsId: operatorEmployee.id,
+        ...profile,
+      },
+    });
+  }
+
+  console.log('EmployeeSocialProfiles: Seeded for owner (4) and operator (2)');
 }
 
 /**
@@ -1207,6 +1353,7 @@ async function main() {
   const { seedEmployeeCatalogOptions } = await import('./seeds/employee-catalog.seed');
   await seedEmployeeCatalogOptions(prisma, OPERATIONAL_TENANT_ID);
   await seedEmployeeDetails(ownerGlobalUser.id, operatorGlobalUser.id, firstLocationId);
+  await seedEmployeeSocialProfiles(ownerGlobalUser.id, operatorGlobalUser.id);
   await seedUserLocationAssignments([
     { userId: ownerGlobalUser.id, locationIds: [firstLocationId] },
     {

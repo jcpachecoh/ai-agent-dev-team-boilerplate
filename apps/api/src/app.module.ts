@@ -26,6 +26,7 @@ import { RecipeModule } from './recipe/recipe.module';
 import { PurchaseOrderModule } from './purchase-order/purchase-order.module';
 import { TenantModule } from './tenant/tenant.module';
 import { PayrollModule } from './payroll/payroll.module';
+import { EmployeeSocialProfileModule } from './employee-social-profile/employee-social-profile.module';
 import { AdminModule } from './admin/admin.module';
 import { LocationsModule } from './locations/locations.module';
 import { AttendanceModule } from './attendance/attendance.module';
@@ -55,6 +56,7 @@ import { ReportsModule } from './reports/reports.module';
     PurchaseOrderModule,
     TenantModule,
     PayrollModule,
+    EmployeeSocialProfileModule,
     AdminModule,
     LocationsModule,
     AttendanceModule,
