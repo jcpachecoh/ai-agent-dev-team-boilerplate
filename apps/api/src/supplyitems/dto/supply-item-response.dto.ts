@@ -69,6 +69,14 @@ export class SupplyItemResponseDto {
   @ApiPropertyOptional({ nullable: true })
   lote?: string | null;
 
+  @ApiPropertyOptional({ nullable: true, description: 'Location (sede/planta) id' })
+  locationId?: string | null;
+
+  @ApiPropertyOptional({
+    nullable: true,
+    description: 'Location display name (sede o planta)',
+  })
+  ubicacion?: string | null;
   @ApiPropertyOptional({ nullable: true })
   subcategoria?: string | null;
 

@@ -44,6 +44,9 @@ export class SupplyItemsService implements ISupplyitemsService {
 
   async create(tenantId: string, data: CreateSupplyItemData): Promise<SupplyItemWithRelations> {
     await this.assertCategory(tenantId, data.categoriaId);
+    if (data.locationId) {
+      await this.assertLocation(tenantId, data.locationId);
+    }
     const codigoInterno =
       data.codigoInterno?.trim() || (await this.getNextCodigoInterno(tenantId, data.categoriaId));
     await this.assertCodigoUnique(tenantId, codigoInterno);
@@ -76,6 +79,10 @@ export class SupplyItemsService implements ISupplyitemsService {
 
     if (data.categoriaId) {
       await this.assertCategory(tenantId, data.categoriaId);
+    }
+
+    if (data.locationId !== undefined && data.locationId !== null) {
+      await this.assertLocation(tenantId, data.locationId);
     }
 
     if (data.codigoInterno && data.codigoInterno !== existing.codigoInterno) {
@@ -209,6 +216,13 @@ export class SupplyItemsService implements ISupplyitemsService {
     const exists = await this.supplyItemsRepository.categoryExists(tenantId, categoriaId);
     if (!exists) {
       throw new NotFoundException(`SupplyCategory ${categoriaId} not found`);
+    }
+  }
+
+  private async assertLocation(tenantId: string, locationId: string): Promise<void> {
+    const exists = await this.supplyItemsRepository.locationExists(tenantId, locationId);
+    if (!exists) {
+      throw new NotFoundException(`Location ${locationId} not found`);
     }
   }
 

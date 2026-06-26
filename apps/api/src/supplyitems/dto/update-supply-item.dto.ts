@@ -101,4 +101,9 @@ export class UpdateSupplyItemDto {
   @IsBoolean()
   @IsOptional()
   isActive?: boolean;
+
+  @ApiPropertyOptional({ description: 'Location (sede/planta) id; null clears assignment' })
+  @IsString()
+  @IsOptional()
+  locationId?: string | null;
 }

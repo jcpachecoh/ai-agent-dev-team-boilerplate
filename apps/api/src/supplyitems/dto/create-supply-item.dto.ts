@@ -100,4 +100,9 @@ export class CreateSupplyItemDto {
   @IsBoolean()
   @IsOptional()
   isActive?: boolean;
+
+  @ApiPropertyOptional({ description: 'Location (sede/planta) id' })
+  @IsString()
+  @IsOptional()
+  locationId?: string;
 }

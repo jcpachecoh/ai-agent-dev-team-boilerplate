@@ -16,6 +16,14 @@
   align-items: center;
 }
 
+.cellCenter {
+  justify-content: center;
+}
+
+.cellRight {
+  justify-content: flex-end;
+}
+
 .card {
   background: var(--color-bg-surface);
 }

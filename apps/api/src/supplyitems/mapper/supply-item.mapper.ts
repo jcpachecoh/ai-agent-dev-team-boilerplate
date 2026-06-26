@@ -1,4 +1,10 @@
-import type { SupplyCategory, Supplier, SupplierProduct, SupplyItem } from '@prisma/client';
+import type {
+  Location,
+  SupplyCategory,
+  Supplier,
+  SupplierProduct,
+  SupplyItem,
+} from '@prisma/client';
 import { decimalToNumber } from '../../common/utils/decimal.util';
 import type { SupplyItemResponseDto } from '../dto/supply-item-response.dto';
 
@@ -7,6 +13,7 @@ export type SupplyItemWithCategoria = SupplyItem & {
 };
 
 export type SupplyItemWithRelations = SupplyItemWithCategoria & {
+  location?: Location | null;
   supplierProducts?: (SupplierProduct & { supplier: Supplier })[];
 };
 
@@ -33,6 +40,8 @@ export function toSupplyItemResponse(item: SupplyItemWithRelations): SupplyItemR
     aplicaLote: item.aplicaLote,
     fechaVencimiento: item.fechaVencimiento?.toISOString() ?? null,
     lote: item.lote,
+    locationId: item.locationId ?? null,
+    ubicacion: item.location?.name ?? null,
     subcategoria: item.subcategoria,
     genero: item.genero,
     talla: item.talla,

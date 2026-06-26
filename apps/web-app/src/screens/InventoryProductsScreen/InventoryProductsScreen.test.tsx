@@ -2,9 +2,35 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 
+import { LocationSessionProvider } from '@/features/auth/context/LocationSessionContext';
+import { seedProducts } from '@/mocks/inventory/seed';
 import { TestQueryProvider } from '@/test-utils/query-client';
 
 import { InventoryProductsScreen } from './InventoryProductsScreen';
+
+vi.mock('@/features/inventario/hooks/useSupplyItems', () => ({
+  useSupplyItems: () => ({
+    data: seedProducts,
+    isLoading: false,
+    isError: false,
+    refetch: vi.fn(),
+  }),
+}));
+
+vi.mock('@/features/inventario/hooks/useSupplyCategories', () => ({
+  useSupplyCategories: () => ({
+    data: [],
+    isLoading: false,
+    isError: false,
+    refetch: vi.fn(),
+  }),
+}));
+
+vi.mock('@/features/inventario/hooks/useSupplyItemMutations', () => ({
+  useCreateSupplyItem: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useUpdateSupplyItem: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useToggleSupplyItemStatus: () => ({ mutate: vi.fn(), isPending: false }),
+}));
 
 describe('InventoryProductsScreen', () => {
   beforeEach(() => {
@@ -23,9 +49,11 @@ describe('InventoryProductsScreen', () => {
 
     render(
       <TestQueryProvider>
-        <MemoryRouter>
-          <InventoryProductsScreen />
-        </MemoryRouter>
+        <LocationSessionProvider>
+          <MemoryRouter>
+            <InventoryProductsScreen />
+          </MemoryRouter>
+        </LocationSessionProvider>
       </TestQueryProvider>,
     );
 
@@ -34,6 +62,7 @@ describe('InventoryProductsScreen', () => {
     });
 
     expect(screen.getByText(/POLLO ENTERO/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Sede Salitre/i).length).toBeGreaterThan(0);
 
     const search = screen.getByRole('textbox', { name: /buscar/i });
     await user.clear(search);

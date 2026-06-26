@@ -27,6 +27,7 @@ import {
 } from '@/features/inventario/hooks/useSupplyItemMutations';
 import { getErrorMessage } from '@/lib/graphql-client';
 import { useSupplyItems } from '@/features/inventario/hooks/useSupplyItems';
+import { useLocationSession } from '@/features/auth/context/LocationSessionContext';
 import type { InventoryProduct, InventoryProductFormValues } from '@/types/inventory';
 import { INVENTORY_PAGE_SIZE } from '@/types/inventory';
 import { filterProducts, formatCurrency, stockToneForProduct } from '@/utils/inventory';
@@ -37,12 +38,13 @@ import { useUiTheme } from '@/hooks/useUiTheme';
 const STATUS_FILTER_OPTIONS = [
   { value: 'all', label: 'Todos' },
   { value: 'active', label: 'Activos' },
-  { value: 'inactive', label: 'Inactivos' },
+  { value: 'inactive', label: 'Descontinuados' },
 ] as const;
 
 export function InventoryProductsScreen(): React.JSX.Element {
   const theme = useUiTheme();
   const navigate = useNavigate();
+  const { activeLocation } = useLocationSession();
   const itemsQuery = useSupplyItems('all');
   const categoriesQuery = useSupplyCategories();
   const createMutation = useCreateSupplyItem();
@@ -60,7 +62,15 @@ export function InventoryProductsScreen(): React.JSX.Element {
   const [editing, setEditing] = useState<InventoryProduct | undefined>();
   const [togglingId, setTogglingId] = useState<string | null>(null);
 
-  const products = itemsQuery.data ?? [];
+  const products = useMemo(() => {
+    const items = itemsQuery.data ?? [];
+    const fallbackLocation = activeLocation?.name ?? '—';
+
+    return items.map((product) => ({
+      ...product,
+      locationName: product.locationName ?? fallbackLocation,
+    }));
+  }, [itemsQuery.data, activeLocation?.name]);
 
   const categoryOptions: InventarioSelectOption[] = useMemo(() => {
     const cats = categoriesQuery.data ?? [];
@@ -219,7 +229,7 @@ export function InventoryProductsScreen(): React.JSX.Element {
           }}
           theme={theme}
           size="xl"
-          className={shared.embedToolbar}
+          className={[shared.embedToolbar, shared.embedToolbarInline].join(' ')}
         />
       </section>
 
@@ -244,6 +254,7 @@ export function InventoryProductsScreen(): React.JSX.Element {
                   theme={theme}
                   size="xl"
                   columns={headerColumnsFromResponsive(visibleColumns, {
+                    minStock: 'center',
                     stock: 'center',
                     price: 'right',
                     estado: 'center',

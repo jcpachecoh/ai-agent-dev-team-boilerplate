@@ -26,7 +26,6 @@ const mockSupplier: Supplier = {
 const baseItem = {
   id: 'item-1',
   tenantId: 'tenant-1',
-  locationId: null,
   nombre: 'Harina',
   codigoInterno: 'SKU-1',
   categoriaId: 'cat-1',
@@ -41,6 +40,7 @@ const baseItem = {
   aplicaLote: false,
   fechaVencimiento: null,
   lote: null,
+  locationId: 'loc-1',
   subcategoria: null,
   genero: null,
   talla: null,
@@ -56,6 +56,22 @@ const baseItem = {
     isActive: true,
     createdAt: new Date(),
     updatedAt: new Date(),
+  },
+  location: {
+    id: 'loc-1',
+    tenantId: 'tenant-1',
+    name: 'Sede Salitre',
+    address: 'Calle 1',
+    city: 'Bogotá',
+    phone: null,
+    code: 'PL-01',
+    latitude: null,
+    longitude: null,
+    businessHours: null,
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    deletedAt: null,
   },
 };
 
@@ -88,16 +104,21 @@ describe('toSupplyItemResponse', () => {
     });
     expect(dto.stockActualBodega).toBe(12);
     expect(dto.stockDisponible).toBe(12);
+    expect(dto.locationId).toBe('loc-1');
+    expect(dto.ubicacion).toBe('Sede Salitre');
   });
 
   it('omits category and principal supplier when absent', () => {
     const dto = toSupplyItemResponse({
       ...baseItem,
+      locationId: null,
       categoria: undefined as unknown as typeof baseItem.categoria,
+      location: null,
       supplierProducts: [],
     });
 
     expect(dto.categoria).toBeUndefined();
     expect(dto.proveedorPrincipal).toBeNull();
+    expect(dto.ubicacion).toBeNull();
   });
 });

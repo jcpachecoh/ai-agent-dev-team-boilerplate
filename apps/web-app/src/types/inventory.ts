@@ -17,6 +17,8 @@ export interface InventoryProduct {
   categoryId: string;
   supplier: string;
   supplierId?: string;
+  locationName?: string;
+  locationId?: string;
   costPrice: number;
   sellingPrice: number;
   currentStock: number;

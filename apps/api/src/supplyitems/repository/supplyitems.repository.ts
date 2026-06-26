@@ -15,6 +15,7 @@ import type { SupplyItemWithRelations } from '../mapper/supply-item.mapper';
 
 const itemInclude = {
   categoria: true,
+  location: true,
   supplierProducts: {
     include: { supplier: true },
     orderBy: { esProveedorPrincipal: 'desc' as const },
@@ -98,6 +99,7 @@ export class SupplyItemsRepository implements ISupplyitemsRepository {
         aplicaLote: data.aplicaLote ?? false,
         fechaVencimiento: data.fechaVencimiento ?? null,
         lote: data.lote ?? null,
+        locationId: data.locationId ?? null,
         subcategoria: data.subcategoria ?? null,
         genero: data.genero ?? null,
         talla: data.talla ?? null,
@@ -139,6 +141,7 @@ export class SupplyItemsRepository implements ISupplyitemsRepository {
         ...(data.aplicaLote !== undefined ? { aplicaLote: data.aplicaLote } : {}),
         ...(data.fechaVencimiento !== undefined ? { fechaVencimiento: data.fechaVencimiento } : {}),
         ...(data.lote !== undefined ? { lote: data.lote } : {}),
+        ...(data.locationId !== undefined ? { locationId: data.locationId } : {}),
         ...(data.subcategoria !== undefined ? { subcategoria: data.subcategoria } : {}),
         ...(data.genero !== undefined ? { genero: data.genero } : {}),
         ...(data.talla !== undefined ? { talla: data.talla } : {}),
@@ -189,6 +192,12 @@ export class SupplyItemsRepository implements ISupplyitemsRepository {
   categoryExists(tenantId: string, categoriaId: string): Promise<boolean> {
     return this.prisma.supplyCategory
       .findFirst({ where: { id: categoriaId, tenantId } })
+      .then((row) => !!row);
+  }
+
+  locationExists(tenantId: string, locationId: string): Promise<boolean> {
+    return this.prisma.location
+      .findFirst({ where: { id: locationId, tenantId, deletedAt: null, isActive: true } })
       .then((row) => !!row);
   }
 

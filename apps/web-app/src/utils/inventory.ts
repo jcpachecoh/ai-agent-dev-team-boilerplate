@@ -2,6 +2,10 @@ import type { InventarioStockTone } from '@restopsiq/ui';
 
 import type { InventoryMovement, InventoryProduct } from '@/types/inventory';
 
+export function supplyItemStatusLabel(isActive: boolean): string {
+  return isActive ? 'ACTIVO' : 'DESCONTINUADO';
+}
+
 export function formatCurrency(value: number): string {
   return new Intl.NumberFormat('es-CO', {
     style: 'currency',

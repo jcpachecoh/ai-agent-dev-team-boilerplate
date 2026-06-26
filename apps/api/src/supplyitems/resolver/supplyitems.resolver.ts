@@ -102,6 +102,11 @@ export class SupplyItemType {
   @Field(() => String, { nullable: true })
   lote?: string | null;
 
+  @Field(() => ID, { nullable: true })
+  locationId?: string | null;
+
+  @Field(() => String, { nullable: true })
+  ubicacion?: string | null;
   @Field(() => String, { nullable: true })
   subcategoria?: string | null;
 
@@ -259,6 +264,11 @@ export class CreateSupplyItemInputDto {
   @IsBoolean()
   @IsOptional()
   isActive?: boolean;
+
+  @Field(() => ID, { nullable: true })
+  @IsString()
+  @IsOptional()
+  locationId?: string;
 }
 
 @InputType('UpdateSupplyItemInput')
@@ -355,6 +365,11 @@ export class UpdateSupplyItemInputDto {
   @IsBoolean()
   @IsOptional()
   isActive?: boolean;
+
+  @Field(() => ID, { nullable: true })
+  @IsString()
+  @IsOptional()
+  locationId?: string | null;
 }
 
 function toSupplyItemType(item: SupplyItemWithRelations): SupplyItemType {
@@ -387,6 +402,8 @@ function toSupplyItemType(item: SupplyItemWithRelations): SupplyItemType {
     aplicaLote: item.aplicaLote,
     fechaVencimiento: item.fechaVencimiento,
     lote: item.lote,
+    locationId: item.locationId ?? null,
+    ubicacion: item.location?.name ?? null,
     subcategoria: item.subcategoria,
     genero: item.genero,
     talla: item.talla,

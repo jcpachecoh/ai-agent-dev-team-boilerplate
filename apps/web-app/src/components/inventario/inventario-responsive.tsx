@@ -21,6 +21,7 @@ import {
   type InventoryProduct,
   type InventoryResolvedAlert,
 } from '@/types/inventory';
+import { supplyItemStatusLabel } from '@/utils/inventory';
 
 import styles from './inventario-responsive.module.scss';
 
@@ -29,22 +30,49 @@ interface RowBaseProps {
   columnsTemplate: string;
 }
 
+type CellAlign = 'left' | 'center' | 'right';
+
+const CELL_ALIGN_CLASS: Record<CellAlign, string | undefined> = {
+  left: undefined,
+  center: styles.cellCenter,
+  right: styles.cellRight,
+};
+
+const PRODUCT_CELL_ALIGN: Partial<Record<string, CellAlign>> = {
+  minStock: 'center',
+  stock: 'center',
+  price: 'right',
+  estado: 'center',
+  actions: 'center',
+};
+
 function ResponsiveGridRow({
   visibleColumns,
   columnsTemplate,
+  cellAlignById,
   children,
-}: RowBaseProps & { children: (columnId: string) => React.ReactNode }): React.JSX.Element {
+}: RowBaseProps & {
+  cellAlignById?: Partial<Record<string, CellAlign>>;
+  children: (columnId: string) => React.ReactNode;
+}): React.JSX.Element {
   return (
     <div
       className={styles.row}
       role="row"
       style={{ '--inventario-columns': columnsTemplate } as CSSProperties}
     >
-      {visibleColumns.map((column) => (
-        <span key={column.id} className={styles.cell} role="cell">
-          {children(column.id)}
-        </span>
-      ))}
+      {visibleColumns.map((column) => {
+        const align = cellAlignById?.[column.id] ?? 'left';
+        return (
+          <span
+            key={column.id}
+            className={[styles.cell, CELL_ALIGN_CLASS[align]].filter(Boolean).join(' ')}
+            role="cell"
+          >
+            {children(column.id)}
+          </span>
+        );
+      })}
     </div>
   );
 }
@@ -75,7 +103,11 @@ export function InventarioProductRow({
   toggleLoading = false,
 }: InventarioProductRowProps): React.JSX.Element {
   return (
-    <ResponsiveGridRow visibleColumns={visibleColumns} columnsTemplate={columnsTemplate}>
+    <ResponsiveGridRow
+      visibleColumns={visibleColumns}
+      columnsTemplate={columnsTemplate}
+      cellAlignById={PRODUCT_CELL_ALIGN}
+    >
       {(columnId) => {
         switch (columnId) {
           case 'sku':
@@ -97,37 +129,41 @@ export function InventarioProductRow({
             return <span className={styles.muted}>{product.category}</span>;
           case 'supplier':
             return <span className={styles.muted}>{product.supplier}</span>;
+          case 'location':
+            return <span className={styles.muted}>{product.locationName ?? '—'}</span>;
           case 'minStock':
             return (
-              <span className={[styles.cell, styles.number].join(' ')}>
-                <span className={[styles.stock, styles['stock--neutral']].join(' ')}>
-                  {product.minStock ?? '—'}
-                </span>
+              <span className={[styles.stock, styles['stock--neutral']].join(' ')}>
+                {product.minStock ?? '—'}
               </span>
             );
           case 'stock':
             return (
-              <span className={[styles.cell, styles.number].join(' ')}>
-                <span className={[styles.stock, styles[`stock--${stockTone}`]].join(' ')}>
-                  {product.currentStock ?? '0'}
-                </span>
+              <span className={[styles.stock, styles[`stock--${stockTone}`]].join(' ')}>
+                {product.currentStock ?? '0'}
               </span>
             );
           case 'unit': {
             const unitLabel =
               STOCK_UNIT_OPTIONS.find((o) => o.value === product.unidadBase)?.label ?? '—';
-            return <span className={styles.muted}>{unitLabel}</span>;
-          }
-          case 'price':
             return (
-              <span className={[styles.cell, styles.number].join(' ')}>
-                <span className={styles.price}>{unitPrice}</span>
+              <span className={styles.muted} title={unitLabel}>
+                {unitLabel}
               </span>
             );
+          }
+          case 'price':
+            return <span className={styles.price}>{unitPrice}</span>;
           case 'estado':
-            return <ActiveInactiveStatusBadge active={product.isActive} theme={theme} size="sm" />;
-          case 'lastMovement':
-            return <span className={styles.muted}>{product.lastMovement}</span>;
+            return (
+              <InventarioStatusBadge
+                domain="severity"
+                status={product.isActive ? 'resolved' : 'warning'}
+                label={supplyItemStatusLabel(product.isActive)}
+                theme={theme}
+                size="sm"
+              />
+            );
           case 'actions':
             return (
               <span className={styles.actions}>
@@ -186,7 +222,15 @@ export function InventarioProductCard({
           </span>
         </span>
       }
-      badge={<ActiveInactiveStatusBadge active={product.isActive} theme={theme} size="sm" />}
+      badge={
+        <InventarioStatusBadge
+          domain="severity"
+          status={product.isActive ? 'resolved' : 'warning'}
+          label={supplyItemStatusLabel(product.isActive)}
+          theme={theme}
+          size="sm"
+        />
+      }
       fields={[
         {
           label: 'Stock actual',
@@ -198,6 +242,7 @@ export function InventarioProductCard({
         },
         { label: 'Categoría', value: product.category },
         { label: 'Proveedor', value: product.supplier },
+        { label: 'Ubicación', value: product.locationName ?? '—' },
         {
           label: 'Stock mín.',
           value:
@@ -207,7 +252,6 @@ export function InventarioProductCard({
         },
         { label: 'Unidad', value: unitLabel },
         { label: 'Precio Unit.', value: unitPrice },
-        { label: 'Último mov.', value: product.lastMovement },
       ]}
       footer={
         <>

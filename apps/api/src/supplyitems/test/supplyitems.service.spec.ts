@@ -50,6 +50,7 @@ const repoMock = {
   findSuppliersForItem: jest.fn(),
   findPriceHistory: jest.fn(),
   categoryExists: jest.fn(),
+  locationExists: jest.fn(),
   findCategoryPrefijo: jest.fn(),
   findCategoryNombre: jest.fn(),
   findCodigosInternosByCategory: jest.fn(),
@@ -142,6 +143,16 @@ describe('SupplyItemsService', () => {
       repoMock.findByCodigoInterno.mockResolvedValue({ id: 'other' });
 
       await expect(service.create(tenantId, createInput)).rejects.toThrow(ConflictException);
+    });
+
+    it('throws NotFoundException when location is missing', async () => {
+      repoMock.categoryExists.mockResolvedValue(true);
+      repoMock.findByCodigoInterno.mockResolvedValue(null);
+      repoMock.locationExists.mockResolvedValue(false);
+
+      await expect(
+        service.create(tenantId, { ...createInput, locationId: 'loc-missing' }),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('throws BadRequestException when stock range is invalid', async () => {

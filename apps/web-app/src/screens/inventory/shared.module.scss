@@ -44,38 +44,68 @@ $inv-surface-hover: var(--color-bg-surface-hover);
 }
 
 .embedToolbarInline {
-  flex-wrap: nowrap;
+  flex-wrap: nowrap !important;
   align-items: center;
   gap: 12px;
   width: 100%;
 
-  .toolbarSearch {
+  .toolbarSearch,
+  > :first-child {
     flex: 1 1 auto;
     min-width: 0;
-    width: 100%;
+    max-width: none;
+    width: auto;
+    --control-width: 100%;
+  }
+
+  .toolbarSelect,
+  > div:not(:first-child) {
+    flex: 0 1 180px;
+    min-width: 130px;
+    max-width: 200px;
     --control-width: 100%;
   }
 
   .toolbarSelect {
+    margin-left: auto;
+  }
+
+  > label {
     flex: 0 0 auto;
     margin-left: auto;
-    width: 200px;
-    min-width: 160px;
-    max-width: 220px;
+    white-space: nowrap;
+  }
+
+  @media (max-width: 960px) {
+    flex-wrap: nowrap !important;
+
+    > :first-child {
+      flex: 1 1 0;
+      min-width: 96px;
+    }
+
+    > div:not(:first-child) {
+      flex: 0 1 150px;
+      min-width: 110px;
+    }
   }
 
   @media (max-width: 640px) {
-    flex-wrap: wrap;
+    flex-wrap: wrap !important;
 
-    .toolbarSearch {
+    .toolbarSearch,
+    > :first-child {
       flex: 1 1 100%;
     }
 
-    .toolbarSelect {
-      margin-left: 0;
-      flex: 1 1 100%;
-      width: 100%;
+    .toolbarSelect,
+    > div:not(:first-child) {
+      flex: 1 1 calc(50% - 6px);
       max-width: none;
+    }
+
+    > label {
+      margin-left: 0;
     }
   }
 }
@@ -196,6 +226,13 @@ $inv-surface-hover: var(--color-bg-surface-hover);
   overflow-x: auto;
   border-bottom: 1px solid $inv-divider;
   background: $inv-surface-raised;
+
+  :global([role='columnheader']) {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }
 
 .tableBody {

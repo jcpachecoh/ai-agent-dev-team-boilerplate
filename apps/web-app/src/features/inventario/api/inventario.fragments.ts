@@ -28,6 +28,8 @@ export const SUPPLY_ITEM_FIELDS = `
   genero
   talla
   isActive
+  locationId
+  ubicacion
   proveedorPrincipal {
     supplierId
     razonSocial

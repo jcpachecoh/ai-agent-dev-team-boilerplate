@@ -873,6 +873,7 @@ async function main() {
       categoriaId: SEED_CATEGORY_ID,
       nombre: 'Aceite de Cocina (seed)',
       stockActualBodega: 25,
+      locationId: firstLocationId,
       isActive: true,
     },
     create: {
@@ -888,6 +889,7 @@ async function main() {
       stockMinimoBodega: 5,
       stockMaximoBodega: 50,
       stockActualBodega: 25,
+      locationId: firstLocationId,
       aplicaVencimiento: false,
       aplicaLote: false,
       isActive: true,
@@ -963,6 +965,7 @@ async function main() {
       nombre: 'Arroz Premium (seed)',
       stockMinimoBodega: 20,
       stockActualBodega: 50,
+      locationId: locations[1]?.id ?? firstLocationId,
       isActive: true,
     },
     create: {
@@ -977,6 +980,7 @@ async function main() {
       stockMinimoBodega: 20,
       stockMaximoBodega: 200,
       stockActualBodega: 50,
+      locationId: locations[1]?.id ?? firstLocationId,
       isActive: true,
     },
   });

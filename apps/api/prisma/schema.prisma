@@ -248,6 +248,7 @@ model SupplyItem {
   aplicaLote             Boolean   @default(false)
   fechaVencimiento       DateTime?
   lote                   String?
+  locationId             String?
   subcategoria           String?
   genero                 String?
   talla                  String?
@@ -256,6 +257,7 @@ model SupplyItem {
   updatedAt              DateTime  @updatedAt
 
   categoria        SupplyCategory             @relation(fields: [categoriaId], references: [id])
+  location         Location?                  @relation(fields: [locationId], references: [id], onDelete: SetNull)
   supplierProducts SupplierProduct[]
   priceHistory     SupplyItemPriceHistory[]
   orderMaterials   ProductionOrderMaterial[]
@@ -264,6 +266,7 @@ model SupplyItem {
   @@unique([tenantId, codigoInterno])
   @@index([tenantId, categoriaId])
   @@index([tenantId, isActive])
+  @@index([tenantId, locationId])
   @@map("supply_items")
 }
 
@@ -512,6 +515,7 @@ model Location {
   employeeDetails     EmployeeDetails[]
   attendanceLogs      AttendanceLog[]
   productionIncidents ProductionIncident[]
+  supplyItems         SupplyItem[]
 
   @@unique([tenantId, name])
   @@unique([tenantId, code])

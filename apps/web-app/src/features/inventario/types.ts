@@ -37,6 +37,8 @@ export interface SupplyItemApi {
   isActive: boolean;
   proveedorPrincipal?: { supplierId: string; razonSocial: string } | null;
   stockDisponible: number | null;
+  locationId?: string | null;
+  ubicacion?: string | null;
 }
 
 export interface SupplyItemSupplierApi {
@@ -82,6 +84,7 @@ export interface CreateSupplyItemInput {
   genero?: string | null;
   talla?: string | null;
   isActive?: boolean;
+  locationId?: string;
 }
 
 export type UpdateSupplyItemInput = Partial<CreateSupplyItemInput>;

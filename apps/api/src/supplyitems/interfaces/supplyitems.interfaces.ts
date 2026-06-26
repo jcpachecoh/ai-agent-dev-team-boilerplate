@@ -22,6 +22,7 @@ export interface ISupplyitemsRepository {
     options?: { limit?: number; offset?: number },
   ): Promise<SupplyItemPriceHistory[]>;
   categoryExists(tenantId: string, categoriaId: string): Promise<boolean>;
+  locationExists(tenantId: string, locationId: string): Promise<boolean>;
   findCategoryPrefijo(tenantId: string, categoriaId: string): Promise<string | null>;
   findCategoryNombre(tenantId: string, categoriaId: string): Promise<string | null>;
   findCodigosInternosByCategory(tenantId: string, categoriaId: string): Promise<string[]>;
@@ -74,6 +75,7 @@ export interface CreateSupplyItemData {
   genero?: string | null;
   talla?: string | null;
   isActive?: boolean;
+  locationId?: string;
 }
 
 export interface UpdateSupplyItemData {
@@ -95,6 +97,7 @@ export interface UpdateSupplyItemData {
   genero?: string | null;
   talla?: string | null;
   isActive?: boolean;
+  locationId?: string | null;
 }
 
 export interface SupplyItemSupplierRow {

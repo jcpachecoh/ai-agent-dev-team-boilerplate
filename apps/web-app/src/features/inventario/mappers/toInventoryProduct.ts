@@ -14,6 +14,8 @@ export function toInventoryProduct(item: SupplyItemApi): InventoryProduct {
     categoryId: item.categoriaId,
     supplier: item.proveedorPrincipal?.razonSocial ?? '—',
     supplierId: item.proveedorPrincipal?.supplierId,
+    locationName: item.ubicacion ?? undefined,
+    locationId: item.locationId ?? undefined,
     costPrice: item.costoPromedioPonderado,
     sellingPrice: 0,
     currentStock: stock,
