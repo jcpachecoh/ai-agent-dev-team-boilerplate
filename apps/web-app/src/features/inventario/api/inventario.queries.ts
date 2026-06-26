@@ -87,7 +87,7 @@ export async function fetchSupplyItemsGql(
     search: filters.search?.trim() || undefined,
     categoriaId: filters.categoriaId || undefined,
     isActive: filters.isActive,
-    limit: 200,
+    limit: 500,
     offset: 0,
   });
   return data.supplyItems;

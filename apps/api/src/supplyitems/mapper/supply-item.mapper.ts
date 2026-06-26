@@ -33,6 +33,9 @@ export function toSupplyItemResponse(item: SupplyItemWithRelations): SupplyItemR
     aplicaLote: item.aplicaLote,
     fechaVencimiento: item.fechaVencimiento?.toISOString() ?? null,
     lote: item.lote,
+    subcategoria: item.subcategoria,
+    genero: item.genero,
+    talla: item.talla,
     isActive: item.isActive,
     proveedorPrincipal: principal
       ? {

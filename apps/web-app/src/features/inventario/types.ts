@@ -31,6 +31,9 @@ export interface SupplyItemApi {
   aplicaLote: boolean;
   fechaVencimiento?: string | null;
   lote?: string | null;
+  subcategoria?: string | null;
+  genero?: string | null;
+  talla?: string | null;
   isActive: boolean;
   proveedorPrincipal?: { supplierId: string; razonSocial: string } | null;
   stockDisponible: number | null;
@@ -75,6 +78,9 @@ export interface CreateSupplyItemInput {
   aplicaLote?: boolean;
   fechaVencimiento?: string | null;
   lote?: string | null;
+  subcategoria?: string | null;
+  genero?: string | null;
+  talla?: string | null;
   isActive?: boolean;
 }
 

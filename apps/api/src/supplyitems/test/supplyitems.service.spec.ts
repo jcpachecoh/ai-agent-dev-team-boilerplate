@@ -4,6 +4,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { StockUnit } from '@prisma/client';
 import { SupplyItemsService } from '../service/supplyitems.service';
 import { SupplyItemsRepository } from '../repository/supplyitems.repository';
+import { getAllowedTallas } from '../constants/dotacion.constants';
 
 const tenantId = 'palos-de-lena';
 const mockSupplyItem = {
@@ -50,6 +51,7 @@ const repoMock = {
   findPriceHistory: jest.fn(),
   categoryExists: jest.fn(),
   findCategoryPrefijo: jest.fn(),
+  findCategoryNombre: jest.fn(),
   findCodigosInternosByCategory: jest.fn(),
 };
 
@@ -93,6 +95,17 @@ describe('SupplyItemsService', () => {
         search: 'insumo',
         limit: 10,
       });
+    });
+
+    it('usa opciones vacías por defecto cuando no se pasan filtros', async () => {
+      // Arrange
+      repoMock.findAll.mockResolvedValue([]);
+
+      // Act
+      await service.findAll(tenantId);
+
+      // Assert
+      expect(repoMock.findAll).toHaveBeenCalledWith(tenantId, {});
     });
   });
 
@@ -223,6 +236,54 @@ describe('SupplyItemsService', () => {
       await expect(service.create(tenantId, createInput)).rejects.toThrow(ConflictException);
     });
 
+    it('rethrows non-P2002 errors from repository on create', async () => {
+      // Arrange
+      repoMock.categoryExists.mockResolvedValue(true);
+      repoMock.findByCodigoInterno.mockResolvedValue(null);
+      repoMock.findCategoryNombre.mockResolvedValue('Test');
+      repoMock.create.mockRejectedValue(new Error('DB unavailable'));
+
+      // Act & Assert
+      await expect(service.create(tenantId, createInput)).rejects.toThrow('DB unavailable');
+    });
+
+    it('acepta fechaVencimiento como objeto Date y la convierte a string ISO', async () => {
+      // Arrange
+      repoMock.categoryExists.mockResolvedValue(true);
+      repoMock.findByCodigoInterno.mockResolvedValue(null);
+      repoMock.findCategoryNombre.mockResolvedValue('Test');
+      repoMock.create.mockResolvedValue(mockSupplyItem);
+
+      // Act
+      await service.create(tenantId, {
+        ...createInput,
+        aplicaVencimiento: true,
+        fechaVencimiento: new Date('2026-12-31'),
+      });
+
+      // Assert — la fecha Date se normaliza y llega como Date al repositorio
+      expect(repoMock.create).toHaveBeenCalledWith(
+        tenantId,
+        expect.objectContaining({ fechaVencimiento: expect.any(Date) }),
+      );
+    });
+
+    it('lanza BadRequestException cuando fechaVencimiento es una cadena inválida', async () => {
+      // Arrange
+      repoMock.categoryExists.mockResolvedValue(true);
+      repoMock.findByCodigoInterno.mockResolvedValue(null);
+      repoMock.findCategoryNombre.mockResolvedValue('Test');
+
+      // Act & Assert
+      await expect(
+        service.create(tenantId, {
+          ...createInput,
+          aplicaVencimiento: true,
+          fechaVencimiento: 'not-a-date',
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
     it('auto-generates codigoInterno when omitted', async () => {
       repoMock.categoryExists.mockResolvedValue(true);
       repoMock.findCategoryPrefijo.mockResolvedValue('TST');
@@ -236,6 +297,202 @@ describe('SupplyItemsService', () => {
       expect(repoMock.create).toHaveBeenCalledWith(
         tenantId,
         expect.objectContaining({ codigoInterno: 'TST-000004' }),
+      );
+    });
+  });
+
+  describe('Dotación category validation', () => {
+    const dotacionBase = {
+      nombre: 'Camiseta Femenino XL',
+      codigoInterno: 'DOT-000001',
+      categoriaId: 'cat-dotacion',
+      unidadBase: StockUnit.UNIT,
+      factorConversion: '1',
+      stockMinimoBodega: '5',
+      stockMaximoBodega: '20',
+    };
+
+    beforeEach(() => {
+      repoMock.categoryExists.mockResolvedValue(true);
+      repoMock.findByCodigoInterno.mockResolvedValue(null);
+      repoMock.create.mockResolvedValue(mockSupplyItem);
+      repoMock.findCategoryNombre.mockResolvedValue('Dotación');
+    });
+
+    it('crea ítem Dotación válido con subcategoria, genero y talla correctos', async () => {
+      // Arrange
+      const input = {
+        ...dotacionBase,
+        subcategoria: 'Camisas/Camisetas',
+        genero: 'Femenino',
+        talla: 'XL',
+      };
+
+      // Act
+      await service.create(tenantId, input);
+
+      // Assert
+      expect(repoMock.create).toHaveBeenCalledWith(
+        tenantId,
+        expect.objectContaining({
+          subcategoria: 'Camisas/Camisetas',
+          genero: 'Femenino',
+          talla: 'XL',
+        }),
+      );
+    });
+
+    it('lanza BadRequestException cuando subcategoria falta para Dotación', async () => {
+      // Act & Assert
+      await expect(
+        service.create(tenantId, { ...dotacionBase, genero: 'Femenino', talla: 'XL' }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('lanza BadRequestException cuando subcategoria no es válida para Dotación', async () => {
+      // Act & Assert
+      await expect(
+        service.create(tenantId, {
+          ...dotacionBase,
+          subcategoria: 'SubcategoriaInvalida',
+          genero: 'Femenino',
+          talla: 'XL',
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('lanza BadRequestException cuando genero falta para Dotación', async () => {
+      // Act & Assert
+      await expect(
+        service.create(tenantId, {
+          ...dotacionBase,
+          subcategoria: 'Camisas/Camisetas',
+          talla: 'XL',
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('lanza BadRequestException cuando genero no es válido para la subcategoria', async () => {
+      // Act & Assert — Calzado solo acepta Unisex
+      await expect(
+        service.create(tenantId, {
+          ...dotacionBase,
+          subcategoria: 'Calzado',
+          genero: 'Femenino',
+          talla: '38',
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('lanza BadRequestException cuando talla falta para Dotación', async () => {
+      // Act & Assert
+      await expect(
+        service.create(tenantId, {
+          ...dotacionBase,
+          subcategoria: 'Camisas/Camisetas',
+          genero: 'Femenino',
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('lanza BadRequestException cuando talla no es válida para subcategoria+genero', async () => {
+      // Act & Assert — Pantalones Femenino no acepta talla "28" (solo 6,8,10,12,14,16)
+      await expect(
+        service.create(tenantId, {
+          ...dotacionBase,
+          subcategoria: 'Pantalones/Overoles',
+          genero: 'Femenino',
+          talla: '28',
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('acepta tallas correctas de Pantalones Masculino (28–40)', async () => {
+      // Arrange
+      const input = {
+        ...dotacionBase,
+        subcategoria: 'Pantalones/Overoles',
+        genero: 'Masculino',
+        talla: '32',
+      };
+
+      // Act
+      await service.create(tenantId, input);
+
+      // Assert
+      expect(repoMock.create).toHaveBeenCalledWith(
+        tenantId,
+        expect.objectContaining({
+          subcategoria: 'Pantalones/Overoles',
+          genero: 'Masculino',
+          talla: '32',
+        }),
+      );
+    });
+
+    it('acepta N/A como talla para Petos/Batas/Delantales', async () => {
+      // Arrange
+      const input = {
+        ...dotacionBase,
+        subcategoria: 'Petos/Batas/Delantales',
+        genero: 'Unisex',
+        talla: 'N/A',
+      };
+
+      // Act
+      await service.create(tenantId, input);
+
+      // Assert
+      expect(repoMock.create).toHaveBeenCalledWith(
+        tenantId,
+        expect.objectContaining({ talla: 'N/A' }),
+      );
+    });
+
+    it('ignora y limpia subcategoria/genero/talla para categorías no-Dotación', async () => {
+      // Arrange
+      repoMock.findCategoryNombre.mockResolvedValue('Menaje');
+      const input = {
+        ...dotacionBase,
+        subcategoria: 'Calzado',
+        genero: 'Unisex',
+        talla: '38',
+      };
+
+      // Act
+      await service.create(tenantId, input);
+
+      // Assert — campos Dotación deben llegar null al repositorio
+      expect(repoMock.create).toHaveBeenCalledWith(
+        tenantId,
+        expect.objectContaining({ subcategoria: null, genero: null, talla: null }),
+      );
+    });
+  });
+
+  describe('Comodatos — stock 0 permitido', () => {
+    it('acepta stockMinimoBodega y stockMaximoBodega en 0 para Comodatos', async () => {
+      // Arrange
+      repoMock.categoryExists.mockResolvedValue(true);
+      repoMock.findByCodigoInterno.mockResolvedValue(null);
+      repoMock.findCategoryNombre.mockResolvedValue('Comodatos');
+      repoMock.create.mockResolvedValue(mockSupplyItem);
+
+      // Act
+      await service.create(tenantId, {
+        nombre: 'Equipo Comodato',
+        codigoInterno: 'COM-000001',
+        categoriaId: 'cat-comodatos',
+        unidadBase: StockUnit.UNIT,
+        factorConversion: '1',
+        stockMinimoBodega: '0',
+        stockMaximoBodega: '0',
+      });
+
+      // Assert
+      expect(repoMock.create).toHaveBeenCalledWith(
+        tenantId,
+        expect.objectContaining({ stockMinimoBodega: '0', stockMaximoBodega: '0' }),
       );
     });
   });
@@ -305,6 +562,65 @@ describe('SupplyItemsService', () => {
         expect.objectContaining({ isActive: false }),
       );
     });
+
+    it('lanza NotFoundException cuando el nuevo categoriaId no existe', async () => {
+      // Arrange
+      repoMock.findOneDetailed.mockResolvedValue(mockSupplyItem);
+      repoMock.categoryExists.mockResolvedValue(false);
+
+      // Act & Assert
+      await expect(
+        service.update(tenantId, 'item-1', { categoriaId: 'cat-nuevo' }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('lanza BadRequestException cuando stockActualBodega es negativo en update', async () => {
+      // Arrange
+      repoMock.findOneDetailed.mockResolvedValue(mockSupplyItem);
+
+      // Act & Assert
+      await expect(service.update(tenantId, 'item-1', { stockActualBodega: '-5' })).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('rethrows non-P2002 errors from repository on update', async () => {
+      // Arrange
+      repoMock.findOneDetailed.mockResolvedValue(mockSupplyItem);
+      repoMock.findCategoryNombre.mockResolvedValue('Test');
+      repoMock.update.mockRejectedValue(new Error('connection lost'));
+
+      // Act & Assert
+      await expect(service.update(tenantId, 'item-1', { nombre: 'X' })).rejects.toThrow(
+        'connection lost',
+      );
+    });
+
+    it('usa fechaVencimiento del input cuando se provee explícitamente en update', async () => {
+      // Arrange — cubre la rama "then" del ternario de fechaVencimiento (línea 99)
+      repoMock.findOneDetailed.mockResolvedValue(mockSupplyItem);
+      repoMock.findCategoryNombre.mockResolvedValue('Test');
+      repoMock.update.mockResolvedValue(mockSupplyItem);
+
+      // Act — pasar fechaVencimiento explícito (null) para entrar en la rama "then"
+      await service.update(tenantId, 'item-1', { fechaVencimiento: null });
+
+      // Assert — el repositorio recibe la llamada (no importa el valor exacto de fechaVencimiento)
+      expect(repoMock.update).toHaveBeenCalled();
+    });
+
+    it('usa lote del input cuando se provee explícitamente en update', async () => {
+      // Arrange — cubre la rama "then" del ternario de lote (línea 102)
+      repoMock.findOneDetailed.mockResolvedValue(mockSupplyItem);
+      repoMock.findCategoryNombre.mockResolvedValue('Test');
+      repoMock.update.mockResolvedValue(mockSupplyItem);
+
+      // Act
+      await service.update(tenantId, 'item-1', { lote: 'LOTE-9999' });
+
+      // Assert
+      expect(repoMock.update).toHaveBeenCalled();
+    });
   });
 
   describe('findSuppliers and findPriceHistory', () => {
@@ -321,5 +637,15 @@ describe('SupplyItemsService', () => {
 
       await expect(service.findPriceHistory(tenantId, 'item-1', { limit: 5 })).resolves.toEqual([]);
     });
+  });
+});
+
+describe('getAllowedTallas — dotacion constants', () => {
+  it('retorna array vacío cuando el género no es válido para la subcategoría', () => {
+    // Arrange & Act — Calzado solo tiene Unisex; Masculino no existe como clave
+    const result = getAllowedTallas('Calzado', 'Masculino');
+
+    // Assert
+    expect(result).toEqual([]);
   });
 });

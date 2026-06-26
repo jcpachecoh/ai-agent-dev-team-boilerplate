@@ -42,7 +42,7 @@ export class SupplyItemsRepository implements ISupplyitemsRepository {
     tenantId: string,
     options: FindSupplyItemsOptions = {},
   ): Promise<SupplyItemWithRelations[]> {
-    const take = Math.min(Math.max(1, options.limit ?? 50), 100);
+    const take = Math.min(Math.max(1, options.limit ?? 50), 500);
     const skip = Math.max(0, options.offset ?? 0);
 
     const where: Prisma.SupplyItemWhereInput = {
@@ -66,7 +66,7 @@ export class SupplyItemsRepository implements ISupplyitemsRepository {
       where,
       take,
       skip,
-      orderBy: { nombre: 'asc' },
+      orderBy: { createdAt: 'desc' },
       include: itemInclude,
     });
   }
@@ -98,6 +98,9 @@ export class SupplyItemsRepository implements ISupplyitemsRepository {
         aplicaLote: data.aplicaLote ?? false,
         fechaVencimiento: data.fechaVencimiento ?? null,
         lote: data.lote ?? null,
+        subcategoria: data.subcategoria ?? null,
+        genero: data.genero ?? null,
+        talla: data.talla ?? null,
         isActive: data.isActive ?? true,
       },
       include: itemInclude,
@@ -136,6 +139,9 @@ export class SupplyItemsRepository implements ISupplyitemsRepository {
         ...(data.aplicaLote !== undefined ? { aplicaLote: data.aplicaLote } : {}),
         ...(data.fechaVencimiento !== undefined ? { fechaVencimiento: data.fechaVencimiento } : {}),
         ...(data.lote !== undefined ? { lote: data.lote } : {}),
+        ...(data.subcategoria !== undefined ? { subcategoria: data.subcategoria } : {}),
+        ...(data.genero !== undefined ? { genero: data.genero } : {}),
+        ...(data.talla !== undefined ? { talla: data.talla } : {}),
         ...(data.isActive !== undefined ? { isActive: data.isActive } : {}),
       },
       include: itemInclude,
@@ -169,7 +175,7 @@ export class SupplyItemsRepository implements ISupplyitemsRepository {
     supplyItemId: string,
     options: { limit?: number; offset?: number } = {},
   ): Promise<SupplyItemPriceHistory[]> {
-    const take = Math.min(Math.max(1, options.limit ?? 50), 100);
+    const take = Math.min(Math.max(1, options.limit ?? 50), 500);
     const skip = Math.max(0, options.offset ?? 0);
 
     return this.prisma.supplyItemPriceHistory.findMany({
@@ -193,6 +199,14 @@ export class SupplyItemsRepository implements ISupplyitemsRepository {
     });
     if (!category) return null;
     return resolveCategoryPrefijo(category.nombre, category.prefijo);
+  }
+
+  async findCategoryNombre(tenantId: string, categoriaId: string): Promise<string | null> {
+    const category = await this.prisma.supplyCategory.findFirst({
+      where: { id: categoriaId, tenantId },
+      select: { nombre: true },
+    });
+    return category?.nombre ?? null;
   }
 
   findCodigosInternosByCategory(tenantId: string, categoriaId: string): Promise<string[]> {

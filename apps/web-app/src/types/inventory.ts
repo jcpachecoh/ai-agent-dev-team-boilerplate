@@ -30,6 +30,9 @@ export interface InventoryProduct {
   aplicaLote?: boolean;
   fechaVencimiento?: string | null;
   lote?: string | null;
+  subcategoria?: string | null;
+  genero?: string | null;
+  talla?: string | null;
 }
 
 export interface InventoryProductFormValues {
@@ -46,6 +49,9 @@ export interface InventoryProductFormValues {
   aplicaVencimiento: boolean;
   aplicaLote: boolean;
   isActive: boolean;
+  subcategoria: string;
+  genero: string;
+  talla: string;
 }
 
 export interface InventoryMovement {

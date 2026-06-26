@@ -104,16 +104,21 @@ export function InventoryProductsScreen(): React.JSX.Element {
   };
 
   const handleSave = async (values: InventoryProductFormValues) => {
-    const skuTaken = await checkSkuExists(values.sku, editing?.id);
-    if (skuTaken) {
-      toast.error('El código interno ya existe. Use un código único.');
-      return;
+    try {
+      const skuTaken = await checkSkuExists(values.sku, editing?.id);
+      if (skuTaken) {
+        toast.error('El código interno ya existe. Use un código único.');
+        return;
+      }
+    } catch {
+      // SKU check failure is non-blocking; backend enforces uniqueness
     }
 
     try {
       if (modalMode === 'create') {
         await createMutation.mutateAsync(values);
         toast.success('Insumo creado correctamente');
+        setPage(1);
       } else if (editing) {
         await updateMutation.mutateAsync({ id: editing.id, values });
         toast.success('Insumo actualizado');

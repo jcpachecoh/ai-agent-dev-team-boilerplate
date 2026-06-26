@@ -15,6 +15,13 @@ import type {
 } from '../interfaces/supplyitems.interfaces';
 import type { SupplyItemWithRelations } from '../mapper/supply-item.mapper';
 import { SupplyItemsRepository } from '../repository/supplyitems.repository';
+import {
+  DOTACION_CATEGORY_NOMBRE,
+  DOTACION_SUBCATEGORIAS,
+  getAllowedGeneros,
+  getAllowedTallas,
+  type DotacionSubcategoria,
+} from '../constants/dotacion.constants';
 
 @Injectable()
 export class SupplyItemsService implements ISupplyitemsService {
@@ -45,11 +52,12 @@ export class SupplyItemsService implements ISupplyitemsService {
       this.assertNonNegativeStockActual(data.stockActualBodega);
     }
 
-    const tracking = this.resolveTrackingFields(data);
+    const normalizedData = await this.normalizeDotacionFields(tenantId, data.categoriaId, data);
+    const tracking = this.resolveTrackingFields(normalizedData);
 
     try {
       return await this.supplyItemsRepository.create(tenantId, {
-        ...data,
+        ...normalizedData,
         codigoInterno,
         ...tracking,
       });
@@ -81,18 +89,24 @@ export class SupplyItemsService implements ISupplyitemsService {
       this.assertNonNegativeStockActual(data.stockActualBodega);
     }
 
+    const effectiveCategoriaId = data.categoriaId ?? existing.categoriaId;
+    const normalizedData = await this.normalizeDotacionFields(tenantId, effectiveCategoriaId, data);
+
     const tracking = this.resolveTrackingFields({
-      aplicaVencimiento: data.aplicaVencimiento ?? existing.aplicaVencimiento,
-      aplicaLote: data.aplicaLote ?? existing.aplicaLote,
+      aplicaVencimiento: normalizedData.aplicaVencimiento ?? existing.aplicaVencimiento,
+      aplicaLote: normalizedData.aplicaLote ?? existing.aplicaLote,
       fechaVencimiento:
-        data.fechaVencimiento !== undefined
-          ? data.fechaVencimiento
+        normalizedData.fechaVencimiento !== undefined
+          ? normalizedData.fechaVencimiento
           : (existing.fechaVencimiento?.toISOString().slice(0, 10) ?? null),
-      lote: data.lote !== undefined ? data.lote : existing.lote,
+      lote: normalizedData.lote !== undefined ? normalizedData.lote : existing.lote,
     });
 
     try {
-      return await this.supplyItemsRepository.update(tenantId, id, { ...data, ...tracking });
+      return await this.supplyItemsRepository.update(tenantId, id, {
+        ...normalizedData,
+        ...tracking,
+      });
     } catch (error) {
       this.rethrowUniqueConflict(error);
       throw error;
@@ -145,6 +159,50 @@ export class SupplyItemsService implements ISupplyitemsService {
     }
 
     return `${prefijo}-${String(nextSequence).padStart(6, '0')}`;
+  }
+
+  private async normalizeDotacionFields<
+    T extends { subcategoria?: string | null; genero?: string | null; talla?: string | null },
+  >(tenantId: string, categoriaId: string, data: T): Promise<T> {
+    const nombre = await this.supplyItemsRepository.findCategoryNombre(tenantId, categoriaId);
+
+    if (nombre !== DOTACION_CATEGORY_NOMBRE) {
+      return { ...data, subcategoria: null, genero: null, talla: null };
+    }
+
+    if (!data.subcategoria) {
+      throw new BadRequestException('subcategoria es requerida para la categoría Dotación');
+    }
+    if (!(DOTACION_SUBCATEGORIAS as readonly string[]).includes(data.subcategoria)) {
+      throw new BadRequestException(
+        `subcategoria '${data.subcategoria}' no es válida para Dotación`,
+      );
+    }
+
+    const subcatKey = data.subcategoria as DotacionSubcategoria;
+    const allowedGeneros = getAllowedGeneros(subcatKey);
+
+    if (!data.genero) {
+      throw new BadRequestException('genero es requerido para la categoría Dotación');
+    }
+    if (!allowedGeneros.includes(data.genero)) {
+      throw new BadRequestException(
+        `genero '${data.genero}' no es válido para subcategoria '${data.subcategoria}'. Valores permitidos: ${allowedGeneros.join(', ')}`,
+      );
+    }
+
+    const allowedTallas = getAllowedTallas(subcatKey, data.genero);
+
+    if (!data.talla) {
+      throw new BadRequestException('talla es requerida para la categoría Dotación');
+    }
+    if (!allowedTallas.includes(data.talla)) {
+      throw new BadRequestException(
+        `talla '${data.talla}' no es válida para subcategoria '${data.subcategoria}' y genero '${data.genero}'. Valores permitidos: ${allowedTallas.join(', ')}`,
+      );
+    }
+
+    return data;
   }
 
   private async assertCategory(tenantId: string, categoriaId: string): Promise<void> {

@@ -24,6 +24,9 @@ export const SUPPLY_ITEM_FIELDS = `
   aplicaLote
   fechaVencimiento
   lote
+  subcategoria
+  genero
+  talla
   isActive
   proveedorPrincipal {
     supplierId

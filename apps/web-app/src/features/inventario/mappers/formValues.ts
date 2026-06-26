@@ -16,6 +16,9 @@ export function formValuesToCreateInput(values: InventoryProductFormValues): Cre
     stockActualBodega: values.currentStock || '0',
     aplicaVencimiento: values.aplicaVencimiento,
     aplicaLote: values.aplicaLote,
+    subcategoria: values.subcategoria || null,
+    genero: values.genero || null,
+    talla: values.talla || null,
     isActive: true,
   };
 }
@@ -42,5 +45,8 @@ export function productToFormValues(product: InventoryProduct): InventoryProduct
     aplicaVencimiento: product.aplicaVencimiento ?? false,
     aplicaLote: product.aplicaLote ?? false,
     isActive: product.isActive,
+    subcategoria: product.subcategoria ?? '',
+    genero: product.genero ?? '',
+    talla: product.talla ?? '',
   };
 }

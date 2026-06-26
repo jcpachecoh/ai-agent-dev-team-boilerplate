@@ -69,6 +69,15 @@ export class SupplyItemResponseDto {
   @ApiPropertyOptional({ nullable: true })
   lote?: string | null;
 
+  @ApiPropertyOptional({ nullable: true })
+  subcategoria?: string | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  genero?: string | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  talla?: string | null;
+
   @ApiProperty()
   isActive!: boolean;
 

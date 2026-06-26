@@ -102,6 +102,15 @@ export class SupplyItemType {
   @Field(() => String, { nullable: true })
   lote?: string | null;
 
+  @Field(() => String, { nullable: true })
+  subcategoria?: string | null;
+
+  @Field(() => String, { nullable: true })
+  genero?: string | null;
+
+  @Field(() => String, { nullable: true })
+  talla?: string | null;
+
   @Field()
   isActive!: boolean;
 
@@ -231,6 +240,21 @@ export class CreateSupplyItemInputDto {
   @IsOptional()
   lote?: string | null;
 
+  @Field(() => String, { nullable: true })
+  @IsString()
+  @IsOptional()
+  subcategoria?: string;
+
+  @Field(() => String, { nullable: true })
+  @IsString()
+  @IsOptional()
+  genero?: string;
+
+  @Field(() => String, { nullable: true })
+  @IsString()
+  @IsOptional()
+  talla?: string;
+
   @Field(() => Boolean, { nullable: true })
   @IsBoolean()
   @IsOptional()
@@ -312,6 +336,21 @@ export class UpdateSupplyItemInputDto {
   @IsOptional()
   lote?: string | null;
 
+  @Field(() => String, { nullable: true })
+  @IsString()
+  @IsOptional()
+  subcategoria?: string;
+
+  @Field(() => String, { nullable: true })
+  @IsString()
+  @IsOptional()
+  genero?: string;
+
+  @Field(() => String, { nullable: true })
+  @IsString()
+  @IsOptional()
+  talla?: string;
+
   @Field(() => Boolean, { nullable: true })
   @IsBoolean()
   @IsOptional()
@@ -348,6 +387,9 @@ function toSupplyItemType(item: SupplyItemWithRelations): SupplyItemType {
     aplicaLote: item.aplicaLote,
     fechaVencimiento: item.fechaVencimiento,
     lote: item.lote,
+    subcategoria: item.subcategoria,
+    genero: item.genero,
+    talla: item.talla,
     isActive: item.isActive,
     proveedorPrincipal: principal
       ? {

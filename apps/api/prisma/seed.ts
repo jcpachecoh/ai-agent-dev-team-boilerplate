@@ -784,6 +784,11 @@ async function main() {
     { id: 'bbbbbbbb-0000-0000-0000-000000000022', nombre: 'Adición Cocina', prefijo: 'ADC' },
     { id: 'bbbbbbbb-0000-0000-0000-000000000023', nombre: 'Adición Parrilla', prefijo: 'ADP' },
     { id: 'bbbbbbbb-0000-0000-0000-000000000024', nombre: 'Decoraciones Venta', prefijo: 'DCV' },
+    { id: 'bbbbbbbb-0000-0000-0000-000000000025', nombre: 'Dotación', prefijo: 'DOT' },
+    { id: 'bbbbbbbb-0000-0000-0000-000000000026', nombre: 'Menaje', prefijo: 'MEN' },
+    { id: 'bbbbbbbb-0000-0000-0000-000000000027', nombre: 'Activos menores', prefijo: 'AME' },
+    { id: 'bbbbbbbb-0000-0000-0000-000000000028', nombre: 'Activos fijos', prefijo: 'AFI' },
+    { id: 'bbbbbbbb-0000-0000-0000-000000000029', nombre: 'Comodatos', prefijo: 'COM' },
   ] as const;
   for (const cat of canonicalCategories) {
     const row = await prisma.supplyCategory.upsert({

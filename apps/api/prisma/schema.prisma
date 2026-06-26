@@ -247,6 +247,9 @@ model SupplyItem {
   aplicaLote             Boolean   @default(false)
   fechaVencimiento       DateTime?
   lote                   String?
+  subcategoria           String?
+  genero                 String?
+  talla                  String?
   isActive               Boolean   @default(true)
   createdAt              DateTime  @default(now())
   updatedAt              DateTime  @updatedAt

@@ -82,7 +82,7 @@ describe('SupplyItemsRepository', () => {
           codigoInterno: { equals: 'TOM-1', mode: 'insensitive' },
           OR: expect.any(Array),
         }),
-        take: 100,
+        take: 200,
         skip: 0,
       }),
     );
@@ -198,7 +198,7 @@ describe('SupplyItemsRepository', () => {
     await repository.findPriceHistory(tenantId, 'item-1', { limit: 500, offset: -2 });
 
     expect(prismaMock.supplyItemPriceHistory.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ take: 100, skip: 0 }),
+      expect.objectContaining({ take: 500, skip: 0 }),
     );
   });
 
@@ -212,5 +212,48 @@ describe('SupplyItemsRepository', () => {
     prismaMock.supplyCategory.findFirst.mockResolvedValue(null);
 
     await expect(repository.categoryExists(tenantId, 'missing')).resolves.toBe(false);
+  });
+
+  it('findCategoryPrefijo returns prefijo when category exists', async () => {
+    prismaMock.supplyCategory.findFirst.mockResolvedValue({ nombre: 'Bebidas', prefijo: 'BE' });
+
+    const result = await repository.findCategoryPrefijo(tenantId, 'cat-1');
+
+    expect(result).toBe('BE');
+  });
+
+  it('findCategoryPrefijo returns null when category is missing', async () => {
+    prismaMock.supplyCategory.findFirst.mockResolvedValue(null);
+
+    const result = await repository.findCategoryPrefijo(tenantId, 'missing');
+
+    expect(result).toBeNull();
+  });
+
+  it('findCategoryNombre returns nombre when category exists', async () => {
+    prismaMock.supplyCategory.findFirst.mockResolvedValue({ nombre: 'Dotación' });
+
+    const result = await repository.findCategoryNombre(tenantId, 'cat-dot');
+
+    expect(result).toBe('Dotación');
+  });
+
+  it('findCategoryNombre returns null when category is missing', async () => {
+    prismaMock.supplyCategory.findFirst.mockResolvedValue(null);
+
+    const result = await repository.findCategoryNombre(tenantId, 'missing');
+
+    expect(result).toBeNull();
+  });
+
+  it('findCodigosInternosByCategory maps codigoInterno from rows', async () => {
+    prismaMock.supplyItem.findMany.mockResolvedValue([
+      { codigoInterno: 'TST-000001' },
+      { codigoInterno: 'TST-000002' },
+    ]);
+
+    const result = await repository.findCodigosInternosByCategory(tenantId, 'cat-1');
+
+    expect(result).toEqual(['TST-000001', 'TST-000002']);
   });
 });

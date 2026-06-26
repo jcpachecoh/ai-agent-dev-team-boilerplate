@@ -23,6 +23,7 @@ export interface ISupplyitemsRepository {
   ): Promise<SupplyItemPriceHistory[]>;
   categoryExists(tenantId: string, categoriaId: string): Promise<boolean>;
   findCategoryPrefijo(tenantId: string, categoriaId: string): Promise<string | null>;
+  findCategoryNombre(tenantId: string, categoriaId: string): Promise<string | null>;
   findCodigosInternosByCategory(tenantId: string, categoriaId: string): Promise<string[]>;
 }
 
@@ -69,6 +70,9 @@ export interface CreateSupplyItemData {
   aplicaLote?: boolean;
   fechaVencimiento?: string | Date | null;
   lote?: string | null;
+  subcategoria?: string | null;
+  genero?: string | null;
+  talla?: string | null;
   isActive?: boolean;
 }
 
@@ -87,6 +91,9 @@ export interface UpdateSupplyItemData {
   aplicaLote?: boolean;
   fechaVencimiento?: string | Date | null;
   lote?: string | null;
+  subcategoria?: string | null;
+  genero?: string | null;
+  talla?: string | null;
   isActive?: boolean;
 }
 

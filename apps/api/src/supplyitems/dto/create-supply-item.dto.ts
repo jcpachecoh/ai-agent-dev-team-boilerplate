@@ -81,6 +81,21 @@ export class CreateSupplyItemDto {
   @IsOptional()
   lote?: string | null;
 
+  @ApiPropertyOptional({ description: 'Required for Dotación category' })
+  @IsString()
+  @IsOptional()
+  subcategoria?: string;
+
+  @ApiPropertyOptional({ description: 'Required for Dotación category' })
+  @IsString()
+  @IsOptional()
+  genero?: string;
+
+  @ApiPropertyOptional({ description: 'Required for Dotación category' })
+  @IsString()
+  @IsOptional()
+  talla?: string;
+
   @ApiPropertyOptional({ default: true })
   @IsBoolean()
   @IsOptional()
