@@ -25,6 +25,7 @@ export interface SupplierApiModel {
   dv?: string | null;
   tipo: SupplierTipo;
   direccion?: string | null;
+  departamento?: string | null;
   ciudad?: string | null;
   telefono?: string | null;
   email?: string | null;
@@ -86,6 +87,7 @@ export interface SupplierViewModel {
   dv?: string;
   tipo: SupplierTipo;
   direccion?: string;
+  departamento?: string;
   ciudad?: string;
   telefono?: string;
   email?: string;

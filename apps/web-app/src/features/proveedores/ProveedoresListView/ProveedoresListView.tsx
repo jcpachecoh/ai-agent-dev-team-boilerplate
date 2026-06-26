@@ -93,12 +93,20 @@ export default function ProveedoresListView(): React.JSX.Element {
           theme={theme}
           size={PROVEEDOR_TABLE_SIZE}
           actions={
-            <ProveedorActionButton
-              variant="export"
-              theme={theme}
-              size="md"
-              onClick={() => window.alert('Exportar — próximamente')}
-            />
+            <>
+              <ProveedorActionButton
+                variant="primary"
+                theme={theme}
+                size="md"
+                onClick={() => navigate('/proveedores/nuevo')}
+              />
+              <ProveedorActionButton
+                variant="export"
+                theme={theme}
+                size="md"
+                onClick={() => window.alert('Exportar — próximamente')}
+              />
+            </>
           }
         />
       </section>

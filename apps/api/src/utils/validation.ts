@@ -7,6 +7,7 @@ export const CreateSupplierSchema = z.object({
   dv: z.string().max(2).optional(),
   tipo: z.enum(['PERSONA_NATURAL', 'PERSONA_JURIDICA']),
   direccion: z.string().max(300).optional(),
+  departamento: z.string().max(100).optional(),
   ciudad: z.string().max(100).optional(),
   telefono: z.string().max(30).optional(),
   email: z.string().email().optional(),

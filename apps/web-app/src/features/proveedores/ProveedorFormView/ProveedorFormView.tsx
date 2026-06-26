@@ -13,7 +13,14 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 import { getErrorMessage } from '@/lib/graphql-client';
 
-import { CONDICION_PAGO_OPTIONS, PROVEEDOR_TABLE_SIZE, TIPO_OPTIONS } from '../constants';
+import {
+  CIUDADES_POR_DEPARTAMENTO,
+  CONDICION_PAGO_OPTIONS,
+  DEPARTAMENTO_OPTIONS,
+  PROVEEDOR_TABLE_SIZE,
+  TIPO_OPTIONS,
+  getDepartamentoFromCiudad,
+} from '../constants';
 import { useSupplier } from '../hooks/useSupplier';
 import { useCreateSupplier, useUpdateSupplier } from '../hooks/useSupplierMutations';
 import styles from '../proveedores.module.scss';
@@ -26,6 +33,7 @@ const EMPTY_FORM: SupplierFormValues = {
   dv: '',
   tipo: 'PERSONA_JURIDICA',
   direccion: '',
+  departamento: '',
   ciudad: '',
   telefono: '',
   email: '',
@@ -53,13 +61,16 @@ export default function ProveedorFormView({ mode }: ProveedorFormViewProps): Rea
 
   useEffect(() => {
     if (!existing) return;
+    const ciudadActual = existing.ciudad ?? '';
+    const depDerivado = existing.departamento ?? getDepartamentoFromCiudad(ciudadActual);
     setForm({
       razonSocial: existing.razonSocial,
       nit: existing.nit,
       dv: existing.dv ?? '',
       tipo: existing.tipo,
       direccion: existing.direccion ?? '',
-      ciudad: existing.ciudad ?? '',
+      departamento: depDerivado,
+      ciudad: ciudadActual,
       telefono: existing.telefono ?? '',
       email: existing.email ?? '',
       contactoNombre: existing.contactoNombre ?? '',
@@ -68,6 +79,16 @@ export default function ProveedorFormView({ mode }: ProveedorFormViewProps): Rea
       isActive: existing.isActive,
     });
   }, [existing]);
+
+  const ciudadOptions = useMemo(() => {
+    const depKey = form.departamento ?? '';
+    const options = depKey ? (CIUDADES_POR_DEPARTAMENTO[depKey] ?? []) : [];
+    // Preserve existing city value even if not in catalog
+    if (form.ciudad && !options.find((o) => o.value === form.ciudad)) {
+      return [{ value: form.ciudad, label: form.ciudad }, ...options];
+    }
+    return options;
+  }, [form.departamento, form.ciudad]);
 
   const isValid = form.razonSocial.trim().length > 0 && form.nit.trim().length > 0;
 
@@ -78,6 +99,16 @@ export default function ProveedorFormView({ mode }: ProveedorFormViewProps): Rea
     value: SupplierFormValues[K],
   ): void => {
     setForm((current) => ({ ...current, [key]: value }));
+  };
+
+  const handleDepartamentoChange = (value: string): void => {
+    const citiesForDep = CIUDADES_POR_DEPARTAMENTO[value] ?? [];
+    const ciudadSigueValida = citiesForDep.some((c) => c.value === form.ciudad);
+    setForm((current) => ({
+      ...current,
+      departamento: value,
+      ciudad: ciudadSigueValida ? current.ciudad : '',
+    }));
   };
 
   const handleCancel = (): void => {
@@ -97,6 +128,7 @@ export default function ProveedorFormView({ mode }: ProveedorFormViewProps): Rea
       nit: form.nit.trim(),
       dv: form.dv?.trim() || undefined,
       direccion: form.direccion?.trim() || undefined,
+      departamento: form.departamento?.trim() || undefined,
       ciudad: form.ciudad?.trim() || undefined,
       telefono: form.telefono?.trim() || undefined,
       email: form.email?.trim() || undefined,
@@ -190,6 +222,26 @@ export default function ProveedorFormView({ mode }: ProveedorFormViewProps): Rea
                   onChange={(event) => updateField('direccion', event.target.value)}
                 />
               </ProveedorProductModalField>
+              <ProveedorProductModalField label="Departamento" htmlFor="departamento">
+                <RecetaFilterSelect
+                  id="departamento"
+                  options={DEPARTAMENTO_OPTIONS}
+                  value={form.departamento ?? ''}
+                  onChange={handleDepartamentoChange}
+                  theme={theme}
+                  size={PROVEEDOR_TABLE_SIZE}
+                />
+              </ProveedorProductModalField>
+              <ProveedorProductModalField label="Ciudad" htmlFor="ciudad">
+                <RecetaFilterSelect
+                  id="ciudad"
+                  options={ciudadOptions}
+                  value={form.ciudad ?? ''}
+                  onChange={(value) => updateField('ciudad', value)}
+                  theme={theme}
+                  size={PROVEEDOR_TABLE_SIZE}
+                />
+              </ProveedorProductModalField>
             </ProveedorProductModalFields>
           </div>
         </ProveedorFormSection>
@@ -197,37 +249,30 @@ export default function ProveedorFormView({ mode }: ProveedorFormViewProps): Rea
         <ProveedorFormSection title="Contacto" theme={theme} size={PROVEEDOR_TABLE_SIZE}>
           <div className={styles.formSectionFields}>
             <ProveedorProductModalFields>
-              <ProveedorProductModalField label="Email" htmlFor="email">
-                <RecetaTextInput
-                  id="email"
-                  type="email"
-                  theme={theme}
-                  value={form.email}
-                  onChange={(event) => updateField('email', event.target.value)}
-                />
-              </ProveedorProductModalField>
-              <ProveedorProductModalField label="Teléfono" htmlFor="telefono">
-                <RecetaTextInput
-                  id="telefono"
-                  theme={theme}
-                  value={form.telefono}
-                  onChange={(event) => updateField('telefono', event.target.value)}
-                />
-              </ProveedorProductModalField>
-              <ProveedorProductModalField label="Ciudad" htmlFor="ciudad">
-                <RecetaTextInput
-                  id="ciudad"
-                  theme={theme}
-                  value={form.ciudad}
-                  onChange={(event) => updateField('ciudad', event.target.value)}
-                />
-              </ProveedorProductModalField>
               <ProveedorProductModalField label="Nombre contacto" htmlFor="contactoNombre">
                 <RecetaTextInput
                   id="contactoNombre"
                   theme={theme}
                   value={form.contactoNombre}
                   onChange={(event) => updateField('contactoNombre', event.target.value)}
+                />
+              </ProveedorProductModalField>
+              <ProveedorProductModalField label="Teléfono del contacto" htmlFor="telefono">
+                <RecetaTextInput
+                  id="telefono"
+                  type="tel"
+                  theme={theme}
+                  value={form.telefono}
+                  onChange={(event) => updateField('telefono', event.target.value)}
+                />
+              </ProveedorProductModalField>
+              <ProveedorProductModalField label="Correo del contacto" htmlFor="email">
+                <RecetaTextInput
+                  id="email"
+                  type="email"
+                  theme={theme}
+                  value={form.email}
+                  onChange={(event) => updateField('email', event.target.value)}
                 />
               </ProveedorProductModalField>
             </ProveedorProductModalFields>

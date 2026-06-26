@@ -5,6 +5,7 @@ export const SUPPLIER_FIELDS = `
   dv
   tipo
   direccion
+  departamento
   ciudad
   telefono
   email

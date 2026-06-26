@@ -13,6 +13,7 @@ const mockSupplier: Supplier = {
   dv: null,
   tipo: 'PERSONA_JURIDICA' as any,
   direccion: null,
+  departamento: null,
   ciudad: null,
   telefono: null,
   email: null,
@@ -111,5 +112,61 @@ describe('SupplierService', () => {
       ...mockSupplier,
       ciudad: 'Medellin',
     });
+  });
+
+  it('creates a supplier with departamento', async () => {
+    // Arrange
+    repoMock.findByNit.mockResolvedValue(null);
+    repoMock.create.mockResolvedValue({
+      ...mockSupplier,
+      departamento: 'Antioquia',
+      ciudad: 'Medellín',
+    });
+
+    // Act
+    const result = await service.create(tenantId, {
+      razonSocial: 'Test Supplier',
+      nit: '987654321',
+      tipo: 'PERSONA_JURIDICA',
+      condicionPago: 'CONTADO',
+      departamento: 'Antioquia',
+      ciudad: 'Medellín',
+    });
+
+    // Assert
+    expect(result.departamento).toBe('Antioquia');
+    expect(result.ciudad).toBe('Medellín');
+  });
+
+  it('updates supplier with departamento', async () => {
+    // Arrange
+    repoMock.findById.mockResolvedValue(mockSupplier);
+    repoMock.update.mockResolvedValue({
+      ...mockSupplier,
+      departamento: 'Valle del Cauca',
+      ciudad: 'Cali',
+    });
+
+    // Act
+    const result = await service.update('sup-1', tenantId, {
+      departamento: 'Valle del Cauca',
+      ciudad: 'Cali',
+    });
+
+    // Assert
+    expect(result.departamento).toBe('Valle del Cauca');
+    expect(result.ciudad).toBe('Cali');
+  });
+
+  it('supplier response includes departamento field', async () => {
+    // Arrange
+    const supplierWithDep = { ...mockSupplier, departamento: 'Bogotá D.C.', ciudad: 'Bogotá' };
+    repoMock.findById.mockResolvedValue(supplierWithDep);
+
+    // Act
+    const result = await service.findById('sup-1', tenantId);
+
+    // Assert
+    expect(result).toHaveProperty('departamento', 'Bogotá D.C.');
   });
 });

@@ -10,6 +10,7 @@ const mockSupplier: Supplier = {
   dv: null,
   tipo: SupplierTipo.PERSONA_JURIDICA,
   direccion: null,
+  departamento: null,
   ciudad: null,
   telefono: null,
   email: null,

@@ -14,6 +14,7 @@ export interface CreateSupplierInput {
   dv?: string;
   tipo: string;
   direccion?: string;
+  departamento?: string;
   ciudad?: string;
   telefono?: string;
   email?: string;

@@ -177,6 +177,7 @@ model Supplier {
   dv             String?
   tipo           SupplierTipo
   direccion      String?
+  departamento   String?
   ciudad         String?
   telefono       String?
   email          String?

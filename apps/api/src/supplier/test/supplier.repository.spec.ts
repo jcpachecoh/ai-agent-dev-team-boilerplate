@@ -11,6 +11,7 @@ const supplier = {
   dv: null,
   tipo: 'PERSONA_JURIDICA',
   direccion: null,
+  departamento: null,
   ciudad: null,
   telefono: null,
   email: null,

@@ -10,6 +10,8 @@ const mockSupplier = {
   razonSocial: 'Test Supplier',
   nit: '123456789',
   tipo: 'PERSONA_JURIDICA',
+  departamento: null,
+  ciudad: null,
   condicionPago: 'CONTADO',
   cupoCredito: 0,
   calificacion: 3,

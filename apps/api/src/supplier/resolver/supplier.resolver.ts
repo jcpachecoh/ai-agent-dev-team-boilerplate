@@ -47,6 +47,8 @@ export class SupplierType {
 
   @Field(() => String, { nullable: true }) direccion?: string;
 
+  @Field(() => String, { nullable: true }) departamento?: string;
+
   @Field(() => String, { nullable: true }) ciudad?: string;
 
   @Field(() => String, { nullable: true }) telefono?: string;
@@ -99,6 +101,11 @@ export class CreateSupplierInputDto {
   @IsString()
   @IsOptional()
   direccion?: string;
+
+  @Field(() => String, { nullable: true })
+  @IsString()
+  @IsOptional()
+  departamento?: string;
 
   @Field(() => String, { nullable: true })
   @IsString()
@@ -165,6 +172,11 @@ export class UpdateSupplierInputDto {
   @IsString()
   @IsOptional()
   direccion?: string;
+
+  @Field(() => String, { nullable: true })
+  @IsString()
+  @IsOptional()
+  departamento?: string;
 
   @Field(() => String, { nullable: true })
   @IsString()

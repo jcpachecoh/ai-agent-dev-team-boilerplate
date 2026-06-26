@@ -24,6 +24,7 @@ export function mapSupplierToViewModel(supplier: SupplierApiModel): SupplierView
     dv: supplier.dv ?? undefined,
     tipo: supplier.tipo,
     direccion: supplier.direccion ?? undefined,
+    departamento: supplier.departamento ?? undefined,
     ciudad: supplier.ciudad ?? undefined,
     telefono: supplier.telefono ?? undefined,
     email: supplier.email ?? undefined,

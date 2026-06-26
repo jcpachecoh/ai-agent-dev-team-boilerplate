@@ -11,6 +11,7 @@ function formToCreateInput(values: SupplierFormValues): CreateSupplierInput {
     dv: values.dv?.trim() || undefined,
     tipo: values.tipo,
     direccion: values.direccion?.trim() || undefined,
+    departamento: values.departamento?.trim() || undefined,
     ciudad: values.ciudad?.trim() || undefined,
     telefono: values.telefono?.trim() || undefined,
     email: values.email?.trim() || undefined,

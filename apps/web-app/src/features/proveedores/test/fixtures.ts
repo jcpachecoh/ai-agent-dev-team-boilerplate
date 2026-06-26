@@ -7,6 +7,7 @@ export const mockSupplierApi: SupplierApiModel = {
   dv: '1',
   tipo: 'PERSONA_JURIDICA',
   direccion: 'Calle 1',
+  departamento: 'Bogotá D.C.',
   ciudad: 'Bogotá',
   telefono: '3001234567',
   email: 'carnes@example.com',
