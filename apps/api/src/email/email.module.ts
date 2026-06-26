@@ -42,7 +42,9 @@ const EMAIL_WORKER_TOKEN = 'EMAIL_WORKER';
 export class EmailModule implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(EmailModule.name);
 
-  constructor(@Optional() @Inject(EMAIL_WORKER_TOKEN) private readonly emailWorker: EmailWorker | null) {}
+  constructor(
+    @Optional() @Inject(EMAIL_WORKER_TOKEN) private readonly emailWorker: EmailWorker | null,
+  ) {}
 
   onModuleInit() {
     if (!process.env.RESEND_API_KEY || !process.env.EMAIL_FROM) {

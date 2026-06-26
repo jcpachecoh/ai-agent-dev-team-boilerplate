@@ -150,6 +150,16 @@ export class AdminUsersService implements IAdminUsersService {
       throw new ForbiddenException('Cannot change your own role');
     }
 
+    if (data.roleId !== undefined) {
+      const role = await this.repo.findRoleForTenant(tenantId, data.roleId);
+      if (!role) {
+        throw new NotFoundException(`Role "${data.roleId}" not found in this tenant`);
+      }
+      if (!role.isActive) {
+        throw new BadRequestException(`Role "${data.roleId}" is not active`);
+      }
+    }
+
     const existing = await this.repo.findById(tenantId, userId);
     if (!existing) {
       throw new NotFoundException(`User "${userId}" not found`);

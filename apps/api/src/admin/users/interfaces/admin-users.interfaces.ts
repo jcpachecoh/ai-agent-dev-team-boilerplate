@@ -79,6 +79,12 @@ export interface UserPermissionOverrideInput {
   effect: PermissionEffect;
 }
 
+export interface AdminRoleRef {
+  id: string;
+  code: string;
+  isActive: boolean;
+}
+
 export interface IAdminUsersRepository {
   findAll(tenantId: string, includeInactive?: boolean): Promise<AdminUserListItem[]>;
   findById(tenantId: string, userId: string): Promise<AdminUserDetail | null>;
@@ -89,6 +95,7 @@ export interface IAdminUsersRepository {
     userId: string,
   ): Promise<EmployeeProvisioningContext | null>;
   findRoleCode(roleId: string): Promise<string | null>;
+  findRoleForTenant(tenantId: string, roleId: string): Promise<AdminRoleRef | null>;
   create(tenantId: string, data: CreateAdminUserData): Promise<AdminUserListItem>;
   createWithEmployeeDetails(
     tenantId: string,

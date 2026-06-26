@@ -44,16 +44,18 @@
 }
 
 .documentCell,
-.roleCell {
-  display: flex;
-  align-items: center;
-}
-
 .statusCell {
   display: flex;
   align-items: center;
   justify-content: center;
   justify-self: center;
+}
+
+.roleCell {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .lastLoginCell {

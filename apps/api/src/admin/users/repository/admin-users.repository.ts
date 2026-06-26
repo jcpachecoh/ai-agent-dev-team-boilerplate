@@ -3,6 +3,7 @@ import { ArlRiskLevel, EmployeeContractType, OperationalRole, SalaryType } from 
 
 import { PrismaService } from '../../../prisma/prisma.service';
 import type {
+  AdminRoleRef,
   AdminUserDetail,
   AdminUserListItem,
   CompleteEmployeeUserData,
@@ -71,6 +72,14 @@ export class AdminUsersRepository implements IAdminUsersRepository {
       select: { code: true },
     });
     return role?.code ?? null;
+  }
+
+  async findRoleForTenant(tenantId: string, roleId: string): Promise<AdminRoleRef | null> {
+    const role = await this.prisma.role.findFirst({
+      where: { id: roleId, tenantId },
+      select: { id: true, code: true, isActive: true },
+    });
+    return role ?? null;
   }
 
   async create(tenantId: string, data: CreateAdminUserData): Promise<AdminUserListItem> {

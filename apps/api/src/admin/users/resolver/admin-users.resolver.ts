@@ -62,7 +62,7 @@ class CreateAdminUserInput {
 }
 
 @InputType()
-class UpdateAdminUserInput {
+class AdminUpdateUserInput {
   @IsEmail() @IsOptional() @Field({ nullable: true }) email?: string;
   @IsString() @IsOptional() @Field({ nullable: true }) roleId?: string;
   @IsBoolean() @IsOptional() @Field({ nullable: true }) isActive?: boolean;
@@ -114,7 +114,7 @@ export class AdminUsersResolver {
   updateUser(
     @CurrentUser() user: JwtPayload,
     @Args('id', { type: () => ID }) id: string,
-    @Args('input') input: UpdateAdminUserInput,
+    @Args('input') input: AdminUpdateUserInput,
   ) {
     return this.service.updateUser(user.tenantId, id, input, user.sub);
   }

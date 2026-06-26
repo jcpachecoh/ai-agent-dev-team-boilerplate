@@ -4,15 +4,17 @@
 .badge {
   @include usr.usuario-theme-classes;
 
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  display: inline-block;
+  vertical-align: middle;
   border-radius: 3px;
   border: 1px solid transparent;
   font-family: 'IBM Plex Mono', $font-family-mono, monospace;
   font-weight: $font-weight-bold;
   letter-spacing: 0.04em;
   white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .size--sm {

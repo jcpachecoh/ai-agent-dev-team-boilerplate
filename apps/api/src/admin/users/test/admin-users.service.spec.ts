@@ -20,6 +20,7 @@ const mockRepo = {
   findByCedula: jest.fn(),
   findEmployeeProvisioningContext: jest.fn(),
   findRoleCode: jest.fn(),
+  findRoleForTenant: jest.fn(),
   create: jest.fn(),
   createWithEmployeeDetails: jest.fn(),
   completeEmployeeUserProvisioning: jest.fn(),
@@ -560,23 +561,80 @@ describe('AdminUsersService', () => {
 
   describe('updateUser', () => {
     it('throws ForbiddenException when changing own role', async () => {
+      // Arrange — no repo calls needed; guard fires first
+      // Act & Assert
       await expect(
         service.updateUser('tenant-1', 'self', { roleId: 'new-role' }, 'self'),
       ).rejects.toThrow(ForbiddenException);
     });
 
-    it('updates user successfully', async () => {
+    it('actualiza email correctamente sin validar roleId', async () => {
+      // Arrange
       const updated = { ...baseUser, email: 'new@test.com' };
       mockRepo.findById.mockResolvedValue(baseUserDetail);
       mockRepo.update.mockResolvedValue(updated);
 
+      // Act
       const result = await service.updateUser(
         'tenant-1',
         'user-1',
         { email: 'new@test.com' },
         'other',
       );
+
+      // Assert
       expect(result.email).toBe('new@test.com');
+      expect(mockRepo.findRoleForTenant).not.toHaveBeenCalled();
+    });
+
+    it('actualiza roleId correctamente cuando role existe y está activo', async () => {
+      // Arrange
+      const activeRole = { id: 'role-2', code: 'MANAGER', isActive: true };
+      const updated = { ...baseUser, role: { id: 'role-2', code: 'MANAGER', name: 'Manager' } };
+      mockRepo.findRoleForTenant.mockResolvedValue(activeRole);
+      mockRepo.findById.mockResolvedValue(baseUserDetail);
+      mockRepo.update.mockResolvedValue(updated);
+
+      // Act
+      const result = await service.updateUser('tenant-1', 'user-1', { roleId: 'role-2' }, 'other');
+
+      // Assert
+      expect(mockRepo.findRoleForTenant).toHaveBeenCalledWith('tenant-1', 'role-2');
+      expect(result.role.code).toBe('MANAGER');
+    });
+
+    it('rechaza roleId inexistente o de otro tenant con NotFoundException', async () => {
+      // Arrange — findRoleForTenant devuelve null (no existe o pertenece a otro tenant)
+      mockRepo.findRoleForTenant.mockResolvedValue(null);
+
+      // Act & Assert
+      await expect(
+        service.updateUser('tenant-1', 'user-1', { roleId: 'ghost-role' }, 'other'),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('rechaza role inactivo con BadRequestException', async () => {
+      // Arrange
+      mockRepo.findRoleForTenant.mockResolvedValue({
+        id: 'role-inactive',
+        code: 'OLD_ROLE',
+        isActive: false,
+      });
+
+      // Act & Assert
+      await expect(
+        service.updateUser('tenant-1', 'user-1', { roleId: 'role-inactive' }, 'other'),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('lanza NotFoundException cuando el usuario no existe', async () => {
+      // Arrange — sin roleId para ir directo a la comprobación del usuario
+      mockRepo.findById.mockResolvedValue(null);
+
+      // Act & Assert
+      await expect(
+        service.updateUser('tenant-1', 'ghost-user', { email: 'x@x.com' }, 'other'),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('throws NotFoundException when user not found', async () => {

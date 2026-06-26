@@ -67,7 +67,7 @@ export function UsuarioTableRow({
       <div className={styles.documentCell} role="cell">
         <UsuarioDocumentTypeBadge documentType={documentType} theme={theme} size="sm" />
       </div>
-      <div className={styles.roleCell} role="cell">
+      <div className={styles.roleCell} role="cell" title={roleName}>
         <UsuarioRoleBadge label={roleName} variant={roleVariant} theme={theme} size="sm" />
       </div>
       <div className={styles.statusCell} role="cell">
