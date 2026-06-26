@@ -21,6 +21,8 @@ function toTenant(row: PrismaTenant): Tenant {
     country: row.country,
     taxRegime: row.taxRegime,
     logoUrl: row.logoUrl,
+    openingTime: row.openingTime,
+    closingTime: row.closingTime,
     isActive: row.isActive,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
@@ -63,6 +65,8 @@ export class TenantRepository implements ITenantRepository {
         phone: data.phone,
         address: data.address,
         logoUrl: data.logoUrl,
+        ...(data.openingTime !== undefined && { openingTime: data.openingTime }),
+        ...(data.closingTime !== undefined && { closingTime: data.closingTime }),
       },
     });
 

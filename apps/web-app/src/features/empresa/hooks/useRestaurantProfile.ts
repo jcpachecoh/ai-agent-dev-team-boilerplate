@@ -73,6 +73,7 @@ export function useRestaurantProfile() {
     const nextValues = draft ?? values;
     await updateTenantMutation.mutateAsync(mapProfileValuesToUpdateInput(nextValues));
 
+    // persist operatingDays in localStorage (not yet in DB)
     const nextSchedule = writeTenantSchedule(tenantQuery.data.id, {
       openTime: nextValues.openTime,
       closeTime: nextValues.closeTime,

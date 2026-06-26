@@ -51,6 +51,12 @@ export class TenantType {
   @Field(() => String, { nullable: true })
   logoUrl?: string | null;
 
+  @Field(() => String, { nullable: true })
+  openingTime?: string | null;
+
+  @Field(() => String, { nullable: true })
+  closingTime?: string | null;
+
   @Field()
   isActive!: boolean;
 
@@ -79,6 +85,8 @@ export function toTenantType(tenant: Tenant): TenantType {
     country: tenant.country,
     taxRegime: tenant.taxRegime,
     logoUrl: tenant.logoUrl,
+    openingTime: tenant.openingTime,
+    closingTime: tenant.closingTime,
     isActive: tenant.isActive,
     createdAt: tenant.createdAt,
     updatedAt: tenant.updatedAt,

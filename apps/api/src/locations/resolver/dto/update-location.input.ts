@@ -1,5 +1,5 @@
 import { Field, InputType } from '@nestjs/graphql';
-import { IsBoolean, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsNotEmpty, IsOptional, IsString, Matches } from 'class-validator';
 
 @InputType('UpdateLocationInput')
 export class UpdateLocationInput {
@@ -35,4 +35,16 @@ export class UpdateLocationInput {
   @IsString()
   @IsOptional()
   businessHours?: string;
+
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsString()
+  @Matches(/^([01]\d|2[0-3]):([0-5]\d)$/, { message: 'openingTime debe estar en formato HH:mm' })
+  openingTime?: string | null;
+
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsString()
+  @Matches(/^([01]\d|2[0-3]):([0-5]\d)$/, { message: 'closingTime debe estar en formato HH:mm' })
+  closingTime?: string | null;
 }

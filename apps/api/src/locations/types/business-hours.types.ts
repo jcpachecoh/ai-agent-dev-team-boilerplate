@@ -18,7 +18,12 @@ export const VALID_DAYS: DayOfWeek[] = [
 ];
 
 /** Regex for HH:mm 24-hour format */
-const TIME_RE = /^([01]\d|2[0-3]):([0-5]\d)$/;
+export const TIME_RE = /^([01]\d|2[0-3]):([0-5]\d)$/;
+
+/** Returns true when value is a valid HH:mm string */
+export function isValidTime(value: string): boolean {
+  return TIME_RE.test(value);
+}
 
 export interface BusinessHoursDay {
   dayOfWeek: DayOfWeek;

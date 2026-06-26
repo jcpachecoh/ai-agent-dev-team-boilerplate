@@ -68,6 +68,8 @@ const baseItem = {
     latitude: null,
     longitude: null,
     businessHours: null,
+    openingTime: null,
+    closingTime: null,
     isActive: true,
     createdAt: new Date(),
     updatedAt: new Date(),

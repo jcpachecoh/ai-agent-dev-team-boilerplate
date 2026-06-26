@@ -48,6 +48,8 @@ export class TenantResolver {
       address: input.address,
       phone: input.phone,
       email: input.email,
+      openingTime: input.openingTime,
+      closingTime: input.closingTime,
     });
 
     return toTenantType(result);

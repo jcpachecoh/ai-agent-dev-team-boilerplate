@@ -31,6 +31,8 @@ function formToCreateInput(
     city: values.city?.trim() || undefined,
     phone: values.phone?.trim() || undefined,
     businessHours: serializeBusinessHours(businessHours),
+    openingTime: values.openingTime || null,
+    closingTime: values.closingTime || null,
   };
 }
 
@@ -45,6 +47,8 @@ function formToUpdateInput(
     phone: values.phone?.trim() || undefined,
     isActive: values.isActive ?? true,
     businessHours: serializeBusinessHours(businessHours),
+    openingTime: values.openingTime || null,
+    closingTime: values.closingTime || null,
   };
 }
 

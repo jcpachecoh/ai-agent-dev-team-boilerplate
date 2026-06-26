@@ -15,6 +15,8 @@ export interface Tenant {
   country: string;
   taxRegime: string | null;
   logoUrl: string | null;
+  openingTime: string | null;
+  closingTime: string | null;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -27,6 +29,8 @@ export interface UpdateTenantData {
   phone?: string;
   address?: string;
   logoUrl?: string;
+  openingTime?: string | null;
+  closingTime?: string | null;
 }
 
 export interface ITenantRepository {

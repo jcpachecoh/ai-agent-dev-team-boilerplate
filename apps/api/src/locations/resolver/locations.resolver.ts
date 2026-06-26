@@ -63,6 +63,8 @@ export class LocationsResolver {
       city: input.city,
       phone: input.phone,
       businessHours,
+      openingTime: input.openingTime,
+      closingTime: input.closingTime,
     });
     return toLocationType(result);
   }
@@ -84,6 +86,8 @@ export class LocationsResolver {
       phone: input.phone,
       isActive: input.isActive,
       ...(businessHours !== undefined && { businessHours }),
+      ...(input.openingTime !== undefined && { openingTime: input.openingTime }),
+      ...(input.closingTime !== undefined && { closingTime: input.closingTime }),
     });
     return toLocationType(result);
   }

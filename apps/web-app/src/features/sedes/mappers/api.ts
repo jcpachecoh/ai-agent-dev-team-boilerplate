@@ -106,6 +106,8 @@ export function mapLocationToFormValues(location: LocationApiModel): SedeFormVal
     city: location.city ?? '',
     phone: location.phone ?? '',
     isActive: location.isActive,
+    openingTime: location.openingTime ?? null,
+    closingTime: location.closingTime ?? null,
   };
 }
 

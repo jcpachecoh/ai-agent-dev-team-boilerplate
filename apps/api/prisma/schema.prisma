@@ -392,6 +392,8 @@ model Tenant {
   country                           String        @default("CO")
   taxRegime                         String?
   logoUrl                           String?
+  openingTime                       String?
+  closingTime                       String?
   isActive                          Boolean       @default(true)
   createdAt                         DateTime      @default(now())
   updatedAt                         DateTime      @updatedAt
@@ -505,6 +507,8 @@ model Location {
   latitude      String?
   longitude     String?
   businessHours Json?
+  openingTime   String?
+  closingTime   String?
   isActive      Boolean   @default(true)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt

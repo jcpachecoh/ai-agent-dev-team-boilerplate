@@ -538,7 +538,16 @@ async function seedLocations() {
       where: {
         tenantId_code: { tenantId: OPERATIONAL_TENANT_ID, code },
       },
-      update: { name, address, city, phone, isActive: true, businessHours: DEFAULT_BUSINESS_HOURS },
+      update: {
+        name,
+        address,
+        city,
+        phone,
+        isActive: true,
+        businessHours: DEFAULT_BUSINESS_HOURS,
+        openingTime: '08:00',
+        closingTime: '22:00',
+      },
       create: {
         tenantId: OPERATIONAL_TENANT_ID,
         name,
@@ -548,6 +557,8 @@ async function seedLocations() {
         phone,
         isActive: true,
         businessHours: DEFAULT_BUSINESS_HOURS,
+        openingTime: '08:00',
+        closingTime: '22:00',
       },
     });
     locations.push(location);
@@ -816,6 +827,8 @@ async function main() {
       department: 'Cundinamarca',
       country: 'CO',
       taxRegime: 'RESPONSABLE_IVA',
+      openingTime: '08:00',
+      closingTime: '22:00',
       isActive: true,
     },
     create: {
@@ -834,6 +847,8 @@ async function main() {
       department: 'Cundinamarca',
       country: 'CO',
       taxRegime: 'RESPONSABLE_IVA',
+      openingTime: '08:00',
+      closingTime: '22:00',
       isActive: true,
     },
   });

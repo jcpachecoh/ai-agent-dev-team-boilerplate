@@ -28,6 +28,12 @@ export class LocationType {
   @Field(() => String, { nullable: true })
   businessHours?: string | null;
 
+  @Field(() => String, { nullable: true })
+  openingTime?: string | null;
+
+  @Field(() => String, { nullable: true })
+  closingTime?: string | null;
+
   @Field()
   isActive!: boolean;
 
@@ -48,6 +54,8 @@ export function toLocationType(location: Location): LocationType {
     phone: location.phone,
     code: location.code,
     businessHours: location.businessHours != null ? JSON.stringify(location.businessHours) : null,
+    openingTime: location.openingTime,
+    closingTime: location.closingTime,
     isActive: location.isActive,
     createdAt: location.createdAt,
     updatedAt: location.updatedAt,

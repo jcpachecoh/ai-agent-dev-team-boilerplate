@@ -17,6 +17,8 @@ export interface TenantApiModel {
   country: string;
   taxRegime?: string | null;
   logoUrl?: string | null;
+  openingTime?: string | null;
+  closingTime?: string | null;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -39,6 +41,8 @@ export const TENANT_FIELDS = `
   country
   taxRegime
   logoUrl
+  openingTime
+  closingTime
   isActive
   createdAt
   updatedAt

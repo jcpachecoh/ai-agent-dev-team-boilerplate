@@ -56,8 +56,8 @@ export function mapTenantToProfile(
     address: tenant.address ?? '',
     phone: tenant.phone ?? '',
     email: tenant.email ?? '',
-    openTime: schedule?.openTime ?? '08:00',
-    closeTime: schedule?.closeTime ?? '22:00',
+    openTime: tenant.openingTime ?? schedule?.openTime ?? '08:00',
+    closeTime: tenant.closingTime ?? schedule?.closeTime ?? '22:00',
     operatingDays: schedule?.operatingDays ?? ['mon', 'tue', 'wed', 'thu', 'fri'],
   };
 
@@ -80,6 +80,8 @@ export function mapProfileValuesToUpdateInput(values: Required<EmpresaInformacio
   address?: string;
   phone?: string;
   email?: string;
+  openingTime?: string | null;
+  closingTime?: string | null;
 } {
   return {
     tradeName: values.restaurantName.trim(),
@@ -87,5 +89,7 @@ export function mapProfileValuesToUpdateInput(values: Required<EmpresaInformacio
     address: values.address.trim() || undefined,
     phone: values.phone.trim() || undefined,
     email: values.email.trim() || undefined,
+    openingTime: values.openTime || null,
+    closingTime: values.closeTime || null,
   };
 }

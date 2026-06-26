@@ -38,6 +38,8 @@ export class LocationsRepository implements ILocationsRepository {
           data.businessHours != null
             ? (data.businessHours as unknown as Prisma.InputJsonValue)
             : Prisma.JsonNull,
+        openingTime: data.openingTime,
+        closingTime: data.closingTime,
       },
     });
   }
@@ -58,6 +60,8 @@ export class LocationsRepository implements ILocationsRepository {
               ? (data.businessHours as unknown as Prisma.InputJsonValue)
               : Prisma.JsonNull,
         }),
+        ...(data.openingTime !== undefined && { openingTime: data.openingTime }),
+        ...(data.closingTime !== undefined && { closingTime: data.closingTime }),
       },
     });
   }

@@ -24,6 +24,8 @@ export interface SedeFormPreviewValues {
   city?: string;
   phone?: string;
   isActive?: boolean;
+  openingTime?: string | null;
+  closingTime?: string | null;
 }
 
 export interface SedeFormPreviewProps {

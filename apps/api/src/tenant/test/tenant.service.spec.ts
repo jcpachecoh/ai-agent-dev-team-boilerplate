@@ -1,4 +1,4 @@
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import {
   StorageDomain,
@@ -37,6 +37,8 @@ const tenant = {
   country: 'CO',
   taxRegime: 'RESPONSABLE_IVA',
   logoUrl: null,
+  openingTime: null,
+  closingTime: null,
   isActive: true,
   createdAt: new Date(),
   updatedAt: new Date(),
@@ -125,6 +127,54 @@ describe('TenantService', () => {
     await expect(service.update('missing', { tradeName: 'Nuevo nombre' })).rejects.toThrow(
       NotFoundException,
     );
+  });
+
+  describe('update — validación de horario', () => {
+    it('guarda openingTime y closingTime válidos', async () => {
+      // Arrange
+      repoMock.update.mockResolvedValue({ ...tenant, openingTime: '08:00', closingTime: '22:00' });
+
+      // Act
+      const result = await service.update('palos-de-lena', {
+        openingTime: '08:00',
+        closingTime: '22:00',
+      });
+
+      // Assert
+      expect(result.openingTime).toBe('08:00');
+      expect(result.closingTime).toBe('22:00');
+    });
+
+    it('lanza BadRequestException si openingTime tiene formato inválido', async () => {
+      // Act & Assert
+      await expect(service.update('palos-de-lena', { openingTime: '25:00' })).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('lanza BadRequestException si closingTime tiene formato inválido', async () => {
+      // Act & Assert
+      await expect(service.update('palos-de-lena', { closingTime: 'abc' })).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('lanza BadRequestException si openingTime >= closingTime', async () => {
+      // Act & Assert
+      await expect(
+        service.update('palos-de-lena', { openingTime: '22:00', closingTime: '08:00' }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('permite closingTime nulo sin validar orden', async () => {
+      // Arrange
+      repoMock.update.mockResolvedValue({ ...tenant, openingTime: '08:00', closingTime: null });
+
+      // Act & Assert
+      await expect(
+        service.update('palos-de-lena', { openingTime: '08:00', closingTime: null }),
+      ).resolves.toBeDefined();
+    });
   });
 
   describe('uploadLogo', () => {

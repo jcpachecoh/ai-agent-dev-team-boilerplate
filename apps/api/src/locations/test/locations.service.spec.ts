@@ -15,6 +15,8 @@ const baseLocation = {
   latitude: null,
   longitude: null,
   businessHours: null,
+  openingTime: null,
+  closingTime: null,
   isActive: true,
   createdAt: new Date(),
   updatedAt: new Date(),
@@ -129,6 +131,36 @@ describe('LocationsService', () => {
     await expect(service.toggleStatus('tenant-1', 'loc-1')).resolves.toEqual({
       ...baseLocation,
       isActive: false,
+    });
+  });
+
+  describe('validateTimeFields', () => {
+    it('no lanza error cuando ambos campos son nulos', () => {
+      expect(() => service.validateTimeFields(null, null)).not.toThrow();
+    });
+
+    it('no lanza error con formato HH:mm válido y orden correcto', () => {
+      expect(() => service.validateTimeFields('08:00', '22:00')).not.toThrow();
+    });
+
+    it('lanza BadRequestException si openingTime tiene formato inválido', () => {
+      expect(() => service.validateTimeFields('8:00', '22:00')).toThrow(BadRequestException);
+    });
+
+    it('lanza BadRequestException si closingTime tiene formato inválido', () => {
+      expect(() => service.validateTimeFields('08:00', '10pm')).toThrow(BadRequestException);
+    });
+
+    it('lanza BadRequestException si openingTime >= closingTime', () => {
+      expect(() => service.validateTimeFields('22:00', '08:00')).toThrow(BadRequestException);
+    });
+
+    it('lanza BadRequestException si openingTime === closingTime', () => {
+      expect(() => service.validateTimeFields('08:00', '08:00')).toThrow(BadRequestException);
+    });
+
+    it('permite solo openingTime sin closingTime', () => {
+      expect(() => service.validateTimeFields('08:00', null)).not.toThrow();
     });
   });
 

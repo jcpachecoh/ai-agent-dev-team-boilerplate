@@ -8,6 +8,8 @@ export interface UpdateTenantInput {
   address?: string;
   phone?: string;
   email?: string;
+  openingTime?: string | null;
+  closingTime?: string | null;
 }
 
 export const UPDATE_TENANT_MUTATION = `

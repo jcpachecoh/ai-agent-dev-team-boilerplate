@@ -54,6 +54,8 @@ export interface LocationApiModel {
   code?: string | null;
   /** Serialized JSON string of LocationBusinessHoursInput */
   businessHours?: string | null;
+  openingTime?: string | null;
+  closingTime?: string | null;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -82,6 +84,8 @@ export interface CreateLocationInput {
   city?: string;
   phone?: string;
   businessHours?: string;
+  openingTime?: string | null;
+  closingTime?: string | null;
 }
 
 export interface UpdateLocationInput {
@@ -91,6 +95,8 @@ export interface UpdateLocationInput {
   phone?: string;
   isActive?: boolean;
   businessHours?: string;
+  openingTime?: string | null;
+  closingTime?: string | null;
 }
 
 export type SedeFormValues = SedeFormPreviewValues;

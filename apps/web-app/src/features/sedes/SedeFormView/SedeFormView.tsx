@@ -46,6 +46,8 @@ const EMPTY_VALUES: SedeFormPreviewValues = {
   city: '',
   phone: '',
   isActive: true,
+  openingTime: null,
+  closingTime: null,
 };
 
 export default function SedeFormView({ mode }: SedeFormViewProps): JSX.Element {
@@ -248,6 +250,24 @@ export default function SedeFormView({ mode }: SedeFormViewProps): JSX.Element {
         </SedeFormCard>
 
         <SedeFormCard title="Horario de atención" theme={theme}>
+          <div className={styles.timeRow}>
+            <SedeFormField
+              label="Apertura"
+              type="time"
+              value={values.openingTime ?? ''}
+              onChange={(event) => handleFieldChange('openingTime', event.target.value || '')}
+              theme={theme}
+              disabled={loadingEdit}
+            />
+            <SedeFormField
+              label="Cierre"
+              type="time"
+              value={values.closingTime ?? ''}
+              onChange={(event) => handleFieldChange('closingTime', event.target.value || '')}
+              theme={theme}
+              disabled={loadingEdit}
+            />
+          </div>
           <SedeBusinessHoursPanel
             hoursPerDay={businessHoursInput}
             onChange={setBusinessHoursInput}

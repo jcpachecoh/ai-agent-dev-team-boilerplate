@@ -13,6 +13,8 @@ export interface CreateLocationData {
   city?: string | null;
   phone?: string | null;
   businessHours?: LocationBusinessHours | null;
+  openingTime?: string | null;
+  closingTime?: string | null;
 }
 
 export interface UpdateLocationData {
@@ -22,6 +24,8 @@ export interface UpdateLocationData {
   phone?: string | null;
   isActive?: boolean;
   businessHours?: LocationBusinessHours | null;
+  openingTime?: string | null;
+  closingTime?: string | null;
 }
 
 export interface ILocationsRepository {

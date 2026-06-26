@@ -22,3 +22,9 @@
 .stateMessageError {
   color: $color-recipes-accent;
 }
+
+.timeRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}

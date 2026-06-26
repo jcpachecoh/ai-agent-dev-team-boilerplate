@@ -12,7 +12,11 @@ import type {
   UpdateLocationData,
 } from '../interfaces/locations.interfaces';
 import { LocationsRepository } from '../repository/locations.repository';
-import { parseBusinessHoursInput, type LocationBusinessHours } from '../types/business-hours.types';
+import {
+  isValidTime,
+  parseBusinessHoursInput,
+  type LocationBusinessHours,
+} from '../types/business-hours.types';
 
 @Injectable()
 export class LocationsService implements ILocationsService {
@@ -30,6 +34,24 @@ export class LocationsService implements ILocationsService {
     } catch (error) {
       const message = error instanceof Error ? error.message : 'businessHours inválido';
       throw new BadRequestException(message);
+    }
+  }
+
+  validateTimeFields(openingTime?: string | null, closingTime?: string | null): void {
+    if (openingTime !== null && openingTime !== undefined && !isValidTime(openingTime)) {
+      throw new BadRequestException('openingTime debe estar en formato HH:mm');
+    }
+    if (closingTime !== null && closingTime !== undefined && !isValidTime(closingTime)) {
+      throw new BadRequestException('closingTime debe estar en formato HH:mm');
+    }
+    if (
+      openingTime !== null &&
+      openingTime !== undefined &&
+      closingTime !== null &&
+      closingTime !== undefined &&
+      openingTime >= closingTime
+    ) {
+      throw new BadRequestException('openingTime debe ser anterior a closingTime');
     }
   }
 
@@ -60,12 +82,14 @@ export class LocationsService implements ILocationsService {
     if (!data.address?.trim()) {
       throw new BadRequestException('La dirección es requerida');
     }
+    this.validateTimeFields(data.openingTime, data.closingTime);
 
     return this.repository.create(tenantId, data);
   }
 
   async update(tenantId: string, id: string, data: UpdateLocationData): Promise<Location> {
     await this.findOne(tenantId, id);
+    this.validateTimeFields(data.openingTime, data.closingTime);
     return this.repository.update(tenantId, id, data);
   }
 
