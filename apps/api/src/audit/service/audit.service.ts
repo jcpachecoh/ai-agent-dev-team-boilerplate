@@ -14,6 +14,11 @@ const SENSITIVE_FIELDS = new Set([
   'token',
   'tokenHash',
   'secret',
+  // OS-559 — financial profile encrypted fields
+  'accountNumber',
+  'accountNumberEncrypted',
+  'taxId',
+  'taxIdEncrypted',
 ]);
 
 const SENSITIVE_PATTERNS = [/Hash$/, /Token$/, /Secret$/];

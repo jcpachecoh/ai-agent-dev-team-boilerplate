@@ -575,12 +575,13 @@ model EmployeeDetails {
   updatedAt           DateTime             @updatedAt
   deletedAt           DateTime?
 
-  user            User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  location        Location                  @relation(fields: [locationId], references: [id])
-  positionRef     EmployeePosition?         @relation(fields: [positionId], references: [id], onDelete: SetNull)
-  positionHistory EmployeePositionHistory[]
-  attendanceLogs  AttendanceLog[]
-  socialProfiles EmployeeSocialProfile[]
+  user              User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  location          Location                  @relation(fields: [locationId], references: [id])
+  positionRef       EmployeePosition?         @relation(fields: [positionId], references: [id], onDelete: SetNull)
+  positionHistory   EmployeePositionHistory[]
+  attendanceLogs    AttendanceLog[]
+  socialProfiles    EmployeeSocialProfile[]
+  financialProfile  EmployeeFinancialProfile?
 
   @@index([tenantId])
   @@index([locationId])
@@ -668,6 +669,120 @@ model EmployeeCatalogOption {
   @@unique([tenantId, type, name])
   @@index([tenantId, type, isActive])
   @@map("employee_catalog_options")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// NÓMINA — PERFIL FINANCIERO DEL EMPLEADO (OS-559)
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
+  CHECK
+}
+
+enum BankAccountType {
+  SAVINGS
+  CHECKING
+}
+
+enum FinancialPaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  CANCELLED
+}
+
+model EmployeeFinancialProfile {
+  id                   String        @id @default(cuid())
+  tenantId             String
+  employeeDetailsId    String        @unique
+  paymentMethod        PaymentMethod @default(BANK_TRANSFER)
+  // Plain reference (no FK constraint) to avoid circular dependency with EmployeeBankAccount.
+  // Application layer enforces that this ID belongs to the same profile.
+  primaryBankAccountId String?
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+  deletedAt            DateTime?
+
+  employeeDetails EmployeeDetails         @relation(fields: [employeeDetailsId], references: [id], onDelete: Cascade)
+  bankAccounts    EmployeeBankAccount[]
+  taxInformation  EmployeeTaxInformation?
+  paymentHistory  EmployeePaymentHistory[]
+
+  @@index([tenantId])
+  @@index([deletedAt])
+  @@map("employee_financial_profiles")
+}
+
+model EmployeeBankAccount {
+  id                     String          @id @default(cuid())
+  tenantId               String
+  financialProfileId     String
+  bankName               String
+  bankCode               String?
+  accountType            BankAccountType
+  accountNumberEncrypted String
+  accountLast4           String          @db.Char(4)
+  isPrimary              Boolean         @default(false)
+  isActive               Boolean         @default(true)
+  createdAt              DateTime        @default(now())
+  updatedAt              DateTime        @updatedAt
+  deletedAt              DateTime?
+
+  financialProfile EmployeeFinancialProfile @relation(fields: [financialProfileId], references: [id], onDelete: Cascade)
+  paymentHistory   EmployeePaymentHistory[]
+
+  @@index([tenantId, financialProfileId])
+  @@index([tenantId, isActive])
+  @@index([deletedAt])
+  @@map("employee_bank_accounts")
+}
+
+model EmployeeTaxInformation {
+  id                    String   @id @default(cuid())
+  tenantId              String
+  financialProfileId    String   @unique
+  taxIdEncrypted        String
+  taxIdLast4            String   @db.Char(4)
+  taxRegime             String?
+  withholdingApplicable Boolean  @default(false)
+  withholdingRate       Decimal? @db.Decimal(5, 4)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  financialProfile EmployeeFinancialProfile @relation(fields: [financialProfileId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, financialProfileId])
+  @@map("employee_tax_information")
+}
+
+model EmployeePaymentHistory {
+  id                   String                 @id @default(cuid())
+  tenantId             String
+  financialProfileId   String
+  bankAccountId        String?
+  periodYear           Int
+  periodMonth          Int
+  grossAmount          Decimal                @db.Decimal(12, 2)
+  totalDeductions      Decimal                @db.Decimal(12, 2)
+  netAmount            Decimal                @db.Decimal(12, 2)
+  deductionBreakdown   Json?
+  paymentDate          DateTime?
+  paymentMethod        PaymentMethod
+  status               FinancialPaymentStatus @default(PENDING)
+  transactionReference String?
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+
+  financialProfile EmployeeFinancialProfile @relation(fields: [financialProfileId], references: [id], onDelete: Cascade)
+  bankAccount      EmployeeBankAccount?     @relation(fields: [bankAccountId], references: [id], onDelete: SetNull)
+
+  @@unique([financialProfileId, periodYear, periodMonth])
+  @@index([tenantId, financialProfileId])
+  @@index([tenantId, periodYear, periodMonth])
+  @@index([tenantId, status])
+  @@map("employee_payment_history")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

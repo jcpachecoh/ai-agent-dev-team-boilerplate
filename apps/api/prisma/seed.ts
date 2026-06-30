@@ -305,6 +305,52 @@ const PERMISSION_SEEDS = [
     resource: 'roles.permissions',
     action: 'assign',
   },
+  // OS-559 — Employee Financial Profile
+  {
+    id: 'cccccccc-0000-0000-0000-000000000027',
+    code: 'nomina.financial.read',
+    name: 'Read employee financial profile',
+    description: 'View financial profile and bank accounts of an employee',
+    module: 'nomina',
+    resource: 'financial',
+    action: 'read',
+  },
+  {
+    id: 'cccccccc-0000-0000-0000-000000000028',
+    code: 'nomina.financial.write',
+    name: 'Write employee financial profile',
+    description: 'Create and update financial profile and bank accounts of an employee',
+    module: 'nomina',
+    resource: 'financial',
+    action: 'write',
+  },
+  {
+    id: 'cccccccc-0000-0000-0000-000000000029',
+    code: 'nomina.financial.tax.read',
+    name: 'Read employee tax information',
+    description: 'View tax withholding configuration of an employee',
+    module: 'nomina',
+    resource: 'financial.tax',
+    action: 'read',
+  },
+  {
+    id: 'cccccccc-0000-0000-0000-000000000030',
+    code: 'nomina.financial.tax.write',
+    name: 'Write employee tax information',
+    description: 'Create or update tax withholding configuration of an employee',
+    module: 'nomina',
+    resource: 'financial.tax',
+    action: 'write',
+  },
+  {
+    id: 'cccccccc-0000-0000-0000-000000000031',
+    code: 'nomina.financial.history.read',
+    name: 'Read employee payment history',
+    description: 'View payment history ledger of an employee',
+    module: 'nomina',
+    resource: 'financial.history',
+    action: 'read',
+  },
   // OS-560 — Employee Social Profile (familiares directos)
   {
     id: 'cccccccc-0000-0000-0000-000000000023',
@@ -385,16 +431,40 @@ const SOCIAL_PROFILE_PERMISSION_CODES = [
   'payroll.social_profile.delete',
 ] as const;
 
+// OS-559 — permisos de perfil financiero por nivel de rol
+const FINANCIAL_READ_PERMISSION_CODES = [
+  'nomina.financial.read',
+  'nomina.financial.history.read',
+] as const;
+
+const FINANCIAL_TAX_READ_PERMISSION_CODES = ['nomina.financial.tax.read'] as const;
+
+const FINANCIAL_WRITE_PERMISSION_CODES = [
+  'nomina.financial.write',
+  'nomina.financial.tax.write',
+] as const;
+
 const ALL_PERMISSION_CODES = PERMISSION_SEEDS.map((permissionSeed) => permissionSeed.code);
 
 const ROLE_PERMISSION_MATRIX: Record<string, readonly string[]> = {
   OWNER: ALL_PERMISSION_CODES,
   SUPER_ADMIN: ALL_PERMISSION_CODES,
-  SUPERVISOR: [...SUPERVISOR_PERMISSION_CODES, ...SOCIAL_PROFILE_PERMISSION_CODES],
-  MANAGER: [...MANAGER_PERMISSION_CODES, ...SOCIAL_PROFILE_PERMISSION_CODES],
+  SUPERVISOR: [
+    ...SUPERVISOR_PERMISSION_CODES,
+    ...SOCIAL_PROFILE_PERMISSION_CODES,
+    ...FINANCIAL_READ_PERMISSION_CODES,
+    ...FINANCIAL_TAX_READ_PERMISSION_CODES,
+  ],
+  MANAGER: [
+    ...MANAGER_PERMISSION_CODES,
+    ...SOCIAL_PROFILE_PERMISSION_CODES,
+    ...FINANCIAL_READ_PERMISSION_CODES,
+    ...FINANCIAL_TAX_READ_PERMISSION_CODES,
+    ...FINANCIAL_WRITE_PERMISSION_CODES,
+  ],
   OPERATOR: OPERATOR_PERMISSION_CODES,
   OPERATIONS_ADMIN: OPERATIONS_ADMIN_PERMISSION_CODES,
-  NOMINA: [...SOCIAL_PROFILE_PERMISSION_CODES],
+  NOMINA: [...SOCIAL_PROFILE_PERMISSION_CODES, ...FINANCIAL_READ_PERMISSION_CODES],
 };
 
 /** Matches MesAuthService cédula hashing (HMAC-SHA256 or SHA-256 fallback). */

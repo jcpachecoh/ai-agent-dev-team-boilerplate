@@ -28,6 +28,7 @@ import { PurchaseOrderModule } from './purchase-order/purchase-order.module';
 import { TenantModule } from './tenant/tenant.module';
 import { PayrollModule } from './payroll/payroll.module';
 import { EmployeeSocialProfileModule } from './employee-social-profile/employee-social-profile.module';
+import { EmployeeFinancialProfileModule } from './employee-financial-profile/employee-financial-profile.module';
 import { AdminModule } from './admin/admin.module';
 import { LocationsModule } from './locations/locations.module';
 import { AttendanceModule } from './attendance/attendance.module';
@@ -59,6 +60,7 @@ import { ReportsModule } from './reports/reports.module';
     TenantModule,
     PayrollModule,
     EmployeeSocialProfileModule,
+    EmployeeFinancialProfileModule,
     AdminModule,
     LocationsModule,
     AttendanceModule,
