@@ -78,7 +78,7 @@ export class EmployeeBankAccountType {
   @Field() tenantId!: string;
   @Field(() => ID) financialProfileId!: string;
   @Field() bankName!: string;
-  @Field({ nullable: true }) bankCode?: string | null;
+  @Field(() => String, { nullable: true }) bankCode?: string | null;
   @Field(() => BankAccountType) accountType!: BankAccountType;
   /** Never expose the encrypted value — only the masked display. */
   @Field() maskedAccountNumber!: string;
@@ -98,7 +98,7 @@ export class EmployeeTaxInformationType {
   /** Never expose the encrypted value — only the masked display. */
   @Field() maskedTaxId!: string;
   @Field() taxIdLast4!: string;
-  @Field({ nullable: true }) taxRegime?: string | null;
+  @Field(() => String, { nullable: true }) taxRegime?: string | null;
   @Field() withholdingApplicable!: boolean;
   @Field(() => Float, { nullable: true }) withholdingRate?: number | null;
   @Field() createdAt!: Date;
@@ -119,7 +119,7 @@ export class EmployeePaymentHistoryType {
   @Field(() => Date, { nullable: true }) paymentDate?: Date | null;
   @Field(() => PaymentMethod) paymentMethod!: PaymentMethod;
   @Field(() => FinancialPaymentStatus) status!: FinancialPaymentStatus;
-  @Field({ nullable: true }) transactionReference?: string | null;
+  @Field(() => String, { nullable: true }) transactionReference?: string | null;
   @Field() createdAt!: Date;
   @Field() updatedAt!: Date;
 }
@@ -161,7 +161,7 @@ export class CreateBankAccountInput {
   @IsNotEmpty()
   bankName!: string;
 
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   @IsString()
   @IsOptional()
   bankCode?: string;
@@ -185,12 +185,12 @@ export class CreateBankAccountInput {
 
 @InputType()
 export class UpdateBankAccountInput {
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   @IsString()
   @IsOptional()
   bankName?: string;
 
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   @IsString()
   @IsOptional()
   bankCode?: string;
@@ -208,7 +208,7 @@ export class UpsertTaxInformationInput {
   @IsNotEmpty()
   taxId!: string;
 
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   @IsString()
   @IsOptional()
   taxRegime?: string;
@@ -424,7 +424,7 @@ export class EmployeeFinancialProfileResolver {
     @CurrentUser() user: JwtPayload,
     @Context() context: GqlRequestContext,
     @Args('employeeId', { type: () => ID }) employeeId: string,
-    @Args('cursor', { nullable: true }) cursor?: string,
+    @Args('cursor', { type: () => String, nullable: true }) cursor?: string,
     @Args('take', { type: () => Int, defaultValue: 20 }) take?: number,
   ): Promise<EmployeePaymentHistoryConnectionType> {
     const tenantId = this.resolveTenantId(user, context);

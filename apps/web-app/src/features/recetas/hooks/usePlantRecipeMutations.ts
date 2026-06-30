@@ -35,6 +35,8 @@ export type UpdatePlantRecipePayload = Partial<
   >
 >;
 
+export type UpdateRecipeScope = 'general' | 'composition' | 'phases';
+
 export type SavePlantRecipeInput =
   | {
       mode: 'create';
@@ -43,9 +45,10 @@ export type SavePlantRecipeInput =
   | {
       mode: 'update';
       recipeId: string;
-      payload: UpdatePlantRecipePayload;
-      phases: SyncPlantRecipePhaseInput[];
-      originalPhaseIds: string[];
+      scope: UpdateRecipeScope;
+      payload?: UpdatePlantRecipePayload;
+      phases?: SyncPlantRecipePhaseInput[];
+      originalPhaseIds?: string[];
     };
 
 export function useSavePlantRecipe() {
@@ -57,8 +60,18 @@ export function useSavePlantRecipe() {
         return createPlantRecipe(input.payload);
       }
 
-      await updatePlantRecipe(input.recipeId, input.payload);
-      await syncPlantRecipePhases(input.recipeId, input.phases, input.originalPhaseIds);
+      if (input.scope === 'general' || input.scope === 'composition') {
+        await updatePlantRecipe(input.recipeId, input.payload ?? {});
+      }
+
+      if (input.scope === 'phases') {
+        await syncPlantRecipePhases(
+          input.recipeId,
+          input.phases ?? [],
+          input.originalPhaseIds ?? [],
+        );
+      }
+
       return { id: input.recipeId };
     },
     onSuccess: () => {

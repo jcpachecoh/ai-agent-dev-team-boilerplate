@@ -2,7 +2,6 @@ import {
   RecetaActionButton,
   RecetaFilterSelect,
   RecetaMetricCard,
-  RecetaPhaseModal,
   RecetaRecipeWizard,
   type RecetaRecipeWizardStepId,
   RecetaResultButton,
@@ -35,24 +34,20 @@ import type {
 import { RecipeImagesManager } from '@/components/recetas/RecipeImagesManager';
 import { RecipeReferencePhotoField } from '@/components/recetas/RecipeReferencePhotoField';
 import { RecipeCompositionTable } from '@/components/recetas/RecipeCompositionTable';
+import { RecipePhaseAccordion } from '@/components/recetas/RecipePhaseAccordion';
 import { HistoryResponsiveList } from '@/components/recetas/HistoryResponsiveList';
 import { ProcessListCard } from '@/components/recetas/ProcessListCard';
 import { ProcessListRow } from '@/components/recetas/ProcessListRow';
 import { RecipeListCard } from '@/components/recetas/RecipeListCard';
 import { RecipeListResponsiveRow } from '@/components/recetas/RecipeListResponsiveRow';
 import { ResponsiveTable } from '@/components/responsive-table';
-import type { PlantRecipePhase } from '@/api/plant';
-import { PROCESS_RESPONSIVE_COLUMNS } from '@/features/recetas/process-columns';
-import {
-  RECIPE_LIST_RESPONSIVE_COLUMNS,
-  recetaTableColumnsForVisible,
-} from '@/features/recetas/recipe-list-columns';
 import type {
   ProcessRow,
   RecipeCompositionRow,
   RecipeFormGeneralValues,
   RecipeListItem,
   RecipeListStatusFilter,
+  RecipePhaseFormRow,
 } from '@/features/recetas/types';
 import {
   BATCH_DISPLAY_UNIT_OPTIONS,
@@ -77,6 +72,7 @@ import {
   validateRecipeFormGeneral,
 } from '@/features/recetas/validation/recipeForm.schema';
 import { validateRecipeCompositionRows } from '@/features/recetas/validation/recipeComposition.schema';
+import { validateRecipePhaseRows } from '@/features/recetas/validation/recipePhases.schema';
 import {
   buildBatchWeightWarning,
   calculateTotalNetGrams,
@@ -86,6 +82,17 @@ import {
   mapCompositionRowsToApi,
   mapPlantCompositionToRow,
 } from '@/features/recetas/mappers/composition.mapper';
+import {
+  createEmptyPhaseRow,
+  mapFormRowsToSyncInput,
+  mapPlantPhasesToFormRows,
+  reorderPhaseRows,
+} from '@/features/recetas/mappers/phases.mapper';
+import { PROCESS_RESPONSIVE_COLUMNS } from '@/features/recetas/process-columns';
+import {
+  RECIPE_LIST_RESPONSIVE_COLUMNS,
+  recetaTableColumnsForVisible,
+} from '@/features/recetas/recipe-list-columns';
 import { addRecipeImage, uploadRecipeImageFile } from '@/features/recetas/api/recipe-images.api';
 import { useLocations } from '@/features/sedes/hooks/useLocations';
 import {
@@ -99,23 +106,14 @@ import {
 } from '@/features/recetas/hooks';
 import { formatRecipeCode } from '@/features/recetas/mappers/recipes.mapper';
 import type { RecetaResult, RecetaStatus } from '@/features/recetas/types';
-import type { StockUnit } from '@/features/inventario/types';
-import { STOCK_UNIT_OPTIONS } from '@/types/inventory';
 
 import styles from './RecipesManagementScreen.module.scss';
 import { useUiTheme } from '@/hooks/useUiTheme';
 
 type RecipesView = 'list' | 'process' | 'history';
 type RecipeListSortKey = 'nombre' | 'tiempo' | 'fases';
-type ResponsibleRole = 'Operario' | 'Supervisor' | 'Manager';
 
 const WIZARD_STEP_ORDER: RecetaRecipeWizardStepId[] = ['general', 'composition', 'phases'];
-
-const responsibleOptions = [
-  { value: 'Operario', label: 'Operario' },
-  { value: 'Supervisor', label: 'Supervisor' },
-  { value: 'Manager', label: 'Manager' },
-];
 
 const processStatsInitial = {
   total: 0,
@@ -193,113 +191,6 @@ const historyRowsSeed: HistoryRow[] = [
   },
 ];
 
-interface PhaseIngredientDraft {
-  id: string;
-  supplyItemId: string;
-  quantityPerBatch: string;
-  unit: StockUnit;
-}
-
-interface PhaseValidationDraft {
-  id: string;
-  label: string;
-}
-
-interface RecipePhase {
-  id: string;
-  title: string;
-  description: string;
-  durationMin: number;
-  workStationId: string;
-  assignee: ResponsibleRole;
-  ingredients: PhaseIngredientDraft[];
-  validations: PhaseValidationDraft[];
-}
-
-const VALIDATION_PRESETS = [
-  'Temperatura correcta',
-  'Punto de coccion',
-  'Peso correcto',
-  'Presentacion',
-] as const;
-
-function buildPhaseDescription(base: string, validations: PhaseValidationDraft[]): string {
-  const trimmed = base.trim() || 'Sin descripcion';
-  if (validations.length === 0) {
-    return trimmed;
-  }
-  const lines = validations.map((v) => `- ${v.label.trim() || 'Criterio sin nombre'}`);
-  return `${trimmed}\n\nCriterios de validacion:\n${lines.join('\n')}`;
-}
-
-function parsePhaseDescription(description: string | null | undefined): {
-  base: string;
-  validations: PhaseValidationDraft[];
-} {
-  if (!description?.trim()) {
-    return { base: '', validations: [] };
-  }
-
-  const marker = '\n\nCriterios de validacion:\n';
-  const markerIndex = description.indexOf(marker);
-  if (markerIndex === -1) {
-    const trimmed = description.trim();
-    return {
-      base: trimmed === 'Sin descripcion' ? '' : trimmed,
-      validations: [],
-    };
-  }
-
-  const base = description.slice(0, markerIndex).trim();
-  const validationBlock = description.slice(markerIndex + marker.length);
-  const validations = validationBlock
-    .split('\n')
-    .map((line) => line.replace(/^-\s*/, '').trim())
-    .filter(Boolean)
-    .map((label, index) => ({
-      id: `val-loaded-${index}`,
-      label,
-    }));
-
-  return {
-    base: base === 'Sin descripcion' ? '' : base,
-    validations,
-  };
-}
-
-function mapPlantPhaseToEditor(phase: PlantRecipePhase): RecipePhase {
-  const { base, validations } = parsePhaseDescription(phase.description);
-  return {
-    id: phase.id,
-    title: phase.name,
-    description: buildPhaseDescription(base, validations),
-    durationMin: phase.standardMinutes,
-    workStationId: phase.workStationId,
-    assignee: 'Operario',
-    ingredients: phase.inputs.map((input: PlantRecipePhase['inputs'][number]) => ({
-      id: input.id,
-      supplyItemId: input.supplyItemId,
-      quantityPerBatch: String(input.quantityPerBatch),
-      unit: input.unit as StockUnit,
-    })),
-    validations:
-      validations.length > 0
-        ? validations
-        : phase.requiresQA
-          ? [{ id: 'val-qa', label: VALIDATION_PRESETS[0] }]
-          : [],
-  };
-}
-
-function formatQuantity(value: string): string {
-  const normalized = value.replace(',', '.').trim();
-  const parsed = Number.parseFloat(normalized);
-  if (Number.isNaN(parsed) || parsed <= 0) {
-    return '1.000';
-  }
-  return parsed.toFixed(3);
-}
-
 const recipeListTableColumns: RecetaTableColumn[] = [
   { key: 'id', label: 'ID', width: '88px' },
   {
@@ -373,25 +264,17 @@ export function RecipesManagementScreen({
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<string, string>>>({});
   const [rejectReason, setRejectReason] = useState('');
   const [estimatedMinutes, setEstimatedMinutes] = useState('30');
-  const [phases, setPhases] = useState<RecipePhase[]>([]);
+  const [phases, setPhases] = useState<RecipePhaseFormRow[]>([]);
   const [compositionRows, setCompositionRows] = useState<RecipeCompositionRow[]>([]);
   const [compositionFieldErrors, setCompositionFieldErrors] = useState<Record<string, string>>({});
+  const [phaseFieldErrors, setPhaseFieldErrors] = useState<Record<string, string>>({});
   const [finishedProductId, setFinishedProductId] = useState('');
   const [saveError, setSaveError] = useState<string | null>(null);
   const [togglingRecipeId, setTogglingRecipeId] = useState<string | null>(null);
 
   const queryClient = useQueryClient();
 
-  const [phaseModalOpen, setPhaseModalOpen] = useState(false);
-  const [editingPhaseId, setEditingPhaseId] = useState<string | null>(null);
   const [persistedPhaseIds, setPersistedPhaseIds] = useState<string[]>([]);
-  const [phaseName, setPhaseName] = useState('');
-  const [phaseDescription, setPhaseDescription] = useState('');
-  const [phaseDuration, setPhaseDuration] = useState('10');
-  const [phaseResponsible, setPhaseResponsible] = useState<ResponsibleRole>('Operario');
-  const [phaseWorkStationId, setPhaseWorkStationId] = useState('');
-  const [phaseIngredients, setPhaseIngredients] = useState<PhaseIngredientDraft[]>([]);
-  const [phaseValidations, setPhaseValidations] = useState<PhaseValidationDraft[]>([]);
 
   const historyRows = historyRowsSeed;
   const historyStats = {
@@ -495,12 +378,28 @@ export function RecipesManagementScreen({
       locationsQuery.isLoading ||
       (Boolean(editingRecipeId) && recipeDetailQuery.isLoading));
 
+  const estimatedMinutesValue = useMemo(
+    () => parseEstimatedTotalMinutes(estimatedHours, estimatedMinutes),
+    [estimatedHours, estimatedMinutes],
+  );
   const totalMinutes = useMemo(
-    () => phases.reduce((sum, phase) => sum + phase.durationMin, 0),
+    () => phases.reduce((sum, phase) => sum + Math.max(0, phase.standardMinutes), 0),
     [phases],
   );
+  const phasesTimeWarning = useMemo(() => {
+    if (estimatedMinutesValue <= 0) {
+      return null;
+    }
+    const diff = Math.abs(totalMinutes - estimatedMinutesValue);
+    const threshold = Math.max(15, Math.round(estimatedMinutesValue * 0.1));
+    if (diff <= threshold) {
+      return null;
+    }
+    return `El tiempo total de fases (${totalMinutes} min) difiere del tiempo estimado del paso 1 (${estimatedMinutesValue} min).`;
+  }, [estimatedMinutesValue, totalMinutes]);
 
   const compositionReadOnly = lifecycleStatus === 'INACTIVE';
+  const phasesReadOnly = compositionReadOnly;
   const compositionTotalNetGrams = useMemo(
     () => calculateTotalNetGrams(compositionRows),
     [compositionRows],
@@ -567,14 +466,14 @@ export function RecipesManagementScreen({
         hour12: true,
       }).format(new Date(detail.createdAt)),
     );
-    setPhases(detail.phases.map(mapPlantPhaseToEditor));
+    const mappedComposition = (detail.composition ?? [])
+      .map(mapPlantCompositionToRow)
+      .sort((a, b) => a.sortOrder - b.sortOrder);
+    setCompositionRows(mappedComposition);
+    setPhases(mapPlantPhasesToFormRows(detail.phases, mappedComposition));
     setPersistedPhaseIds(detail.phases.map((phase) => phase.id));
-    setCompositionRows(
-      (detail.composition ?? [])
-        .map(mapPlantCompositionToRow)
-        .sort((a, b) => a.sortOrder - b.sortOrder),
-    );
     setCompositionFieldErrors({});
+    setPhaseFieldErrors({});
   }, [editingRecipeId, recipeDetailQuery.data]);
 
   useEffect(() => {
@@ -798,10 +697,13 @@ export function RecipesManagementScreen({
   };
 
   const validatePhasesStep = (): boolean => {
-    if (phases.length === 0) {
-      setSaveError('Agrega al menos una fase al proceso');
+    const validation = validateRecipePhaseRows(phases);
+    if (!validation.success) {
+      setPhaseFieldErrors(validation.fieldErrors ?? {});
+      setSaveError(validation.message ?? 'Revisa las fases del proceso');
       return false;
     }
+    setPhaseFieldErrors({});
     setSaveError(null);
     return true;
   };
@@ -826,6 +728,12 @@ export function RecipesManagementScreen({
   };
 
   const handleWizardStepChange = (step: RecetaRecipeWizardStepId): void => {
+    if (editingRecipeId) {
+      setSaveError(null);
+      setWizardStep(step);
+      return;
+    }
+
     const targetIndex = WIZARD_STEP_ORDER.indexOf(step);
     const maxIndex = WIZARD_STEP_ORDER.indexOf(maxReachedWizardStep);
     if (targetIndex <= maxIndex) {
@@ -861,6 +769,7 @@ export function RecipesManagementScreen({
     setPhases([]);
     setCompositionRows([]);
     setCompositionFieldErrors({});
+    setPhaseFieldErrors({});
     setFinishedProductId('');
     setSaveError(null);
     resetWizardNavigation();
@@ -869,7 +778,8 @@ export function RecipesManagementScreen({
 
   const openEditRecipeEditor = (recipeId: string): void => {
     setSaveError(null);
-    resetWizardNavigation();
+    setWizardStep('general');
+    setMaxReachedWizardStep('phases');
     setEditingRecipeId(recipeId);
     setRecipeEditorOpen(true);
   };
@@ -942,7 +852,127 @@ export function RecipesManagementScreen({
     });
   };
 
+  const buildGeneralRecipePayload = () => {
+    const estimatedMinutesValue = parseEstimatedTotalMinutes(estimatedHours, estimatedMinutes);
+    const resolvedBatchDisplayUnit = batchDisplayUnit as BatchDisplayUnit;
+
+    return {
+      name: name.trim(),
+      categoryId,
+      recipeType: recipeType as RecipeType,
+      finishedProductId,
+      batchSize: formatBatchSizeForApi(batchSize),
+      batchUnit: mapBatchDisplayUnitToStockUnit(resolvedBatchDisplayUnit),
+      batchDisplayUnit: resolvedBatchDisplayUnit,
+      packageWeightGrams: Number.parseInt(packageWeightGrams, 10),
+      expectedYield: formatExpectedYieldForApi(expectedYield),
+      expectedYieldUnit: expectedYieldUnit.trim(),
+      estimatedMinutes: estimatedMinutesValue,
+      operationCenter: operationCenter as OperationCenter,
+      locationIds: operationCenter === 'LOCATION' ? locationIds : undefined,
+      technicalResponsible: technicalResponsible as TechnicalResponsible,
+      allergens,
+      notes: notes.trim() || undefined,
+    };
+  };
+
   const handleSaveRecipe = async (): Promise<void> => {
+    if (editingRecipeId) {
+      if (wizardStep === 'general') {
+        if (!validateGeneralStep()) {
+          return;
+        }
+
+        setSaveError(null);
+        saveRecipeMutation.mutate(
+          {
+            mode: 'update',
+            recipeId: editingRecipeId,
+            scope: 'general',
+            payload: buildGeneralRecipePayload(),
+          },
+          {
+            onSuccess: () => {
+              toast.success('Datos generales actualizados');
+              handleDiscardEditor();
+            },
+            onError: (error) => {
+              setSaveError(
+                error instanceof Error
+                  ? error.message
+                  : 'No se pudieron guardar los datos generales',
+              );
+            },
+          },
+        );
+        return;
+      }
+
+      if (wizardStep === 'composition') {
+        if (!validateCompositionStep()) {
+          return;
+        }
+
+        setSaveError(null);
+        saveRecipeMutation.mutate(
+          {
+            mode: 'update',
+            recipeId: editingRecipeId,
+            scope: 'composition',
+            payload: {
+              composition: mapCompositionRowsToApi(compositionRows),
+            },
+          },
+          {
+            onSuccess: () => {
+              toast.success('Composición actualizada');
+              handleDiscardEditor();
+            },
+            onError: (error) => {
+              setSaveError(
+                error instanceof Error ? error.message : 'No se pudo guardar la composición',
+              );
+            },
+          },
+        );
+        return;
+      }
+
+      const defaultWorkStationId = workStations[0]?.id ?? '';
+      if (!defaultWorkStationId) {
+        setSaveError('No hay estaciones de trabajo configuradas. Ejecuta el seed de planta.');
+        return;
+      }
+
+      if (!validatePhasesStep()) {
+        return;
+      }
+
+      const syncPhases = mapFormRowsToSyncInput(phases, compositionRows, defaultWorkStationId);
+      setSaveError(null);
+      saveRecipeMutation.mutate(
+        {
+          mode: 'update',
+          recipeId: editingRecipeId,
+          scope: 'phases',
+          phases: syncPhases,
+          originalPhaseIds: persistedPhaseIds,
+        },
+        {
+          onSuccess: () => {
+            toast.success('Fases actualizadas');
+            handleDiscardEditor();
+          },
+          onError: (error) => {
+            setSaveError(
+              error instanceof Error ? error.message : 'No se pudieron guardar las fases',
+            );
+          },
+        },
+      );
+      return;
+    }
+
     const formValues = buildFormValues();
     const generalValidation = validateRecipeFormGeneral(formValues);
     if (!generalValidation.success) {
@@ -960,79 +990,48 @@ export function RecipesManagementScreen({
     }
 
     const defaultWorkStationId = workStations[0]?.id ?? '';
-    if (phases.some((phase) => !phase.workStationId && !defaultWorkStationId)) {
-      setSaveError('Cada fase necesita una estación de trabajo. Ejecuta el seed de planta.');
+    if (!defaultWorkStationId) {
+      setSaveError('No hay estaciones de trabajo configuradas. Ejecuta el seed de planta.');
       return;
     }
 
-    const resolvedPhases = phases.map((phase) => ({
-      ...phase,
-      workStationId: phase.workStationId || defaultWorkStationId,
-    }));
-
-    const estimatedMinutesValue = parseEstimatedTotalMinutes(estimatedHours, estimatedMinutes);
-    const trimmedName = name.trim();
-    const resolvedBatchDisplayUnit = batchDisplayUnit as BatchDisplayUnit;
+    const syncPhases = mapFormRowsToSyncInput(phases, compositionRows, defaultWorkStationId);
 
     setSaveError(null);
     setFieldErrors({});
 
     const recipePayload = {
-      name: trimmedName,
-      categoryId,
-      recipeType: recipeType as RecipeType,
-      finishedProductId,
-      batchSize: formatBatchSizeForApi(batchSize),
-      batchUnit: mapBatchDisplayUnitToStockUnit(resolvedBatchDisplayUnit),
-      batchDisplayUnit: resolvedBatchDisplayUnit,
-      packageWeightGrams: Number.parseInt(packageWeightGrams, 10),
-      expectedYield: formatExpectedYieldForApi(expectedYield),
-      expectedYieldUnit: expectedYieldUnit.trim(),
-      estimatedMinutes: estimatedMinutesValue,
-      operationCenter: operationCenter as OperationCenter,
-      locationIds: operationCenter === 'LOCATION' ? locationIds : undefined,
-      technicalResponsible: technicalResponsible as TechnicalResponsible,
-      allergens,
-      notes: notes.trim() || undefined,
+      ...buildGeneralRecipePayload(),
       composition: mapCompositionRowsToApi(compositionRows),
     };
 
     saveRecipeMutation.mutate(
-      editingRecipeId
-        ? {
-            mode: 'update',
-            recipeId: editingRecipeId,
-            payload: recipePayload,
-            phases: resolvedPhases,
-            originalPhaseIds: persistedPhaseIds,
-          }
-        : {
-            mode: 'create',
-            payload: {
-              ...recipePayload,
-              phases: resolvedPhases.map((phase, index) => ({
-                order: index + 1,
-                name: phase.title.trim() || `Fase ${index + 1}`,
-                description: phase.description.trim() || undefined,
-                workStationId: phase.workStationId,
-                standardMinutes: Math.max(1, phase.durationMin),
-                requiresQA: phase.validations.length > 0,
-                inputs: phase.ingredients
-                  .filter((ingredient) => ingredient.supplyItemId)
-                  .map((ingredient) => ({
-                    supplyItemId: ingredient.supplyItemId,
-                    quantityPerBatch: formatQuantity(ingredient.quantityPerBatch),
-                    unit: ingredient.unit,
-                  })),
+      {
+        mode: 'create',
+        payload: {
+          ...recipePayload,
+          phases: syncPhases.map((phase, index) => ({
+            order: index + 1,
+            name: phase.title.trim() || `Fase ${index + 1}`,
+            description: phase.description.trim() || undefined,
+            workStationId: phase.workStationId,
+            standardMinutes: Math.max(1, phase.durationMin),
+            requiresQA: phase.validations.length > 0,
+            inputs: phase.ingredients
+              .filter((ingredient) => ingredient.supplyItemId)
+              .map((ingredient) => ({
+                supplyItemId: ingredient.supplyItemId,
+                quantityPerBatch: ingredient.quantityPerBatch.replace(',', '.'),
+                unit: ingredient.unit,
               })),
-            },
-          },
+          })),
+        },
+      },
       {
         onSuccess: async (result) => {
-          const recipeId =
-            editingRecipeId ?? ('id' in result && typeof result.id === 'string' ? result.id : null);
+          const recipeId = 'id' in result && typeof result.id === 'string' ? result.id : null;
 
-          if (!editingRecipeId && referencePhotoFile && recipeId) {
+          if (referencePhotoFile && recipeId) {
             try {
               await uploadReferencePhoto(recipeId, referencePhotoFile);
             } catch (error) {
@@ -1044,17 +1043,13 @@ export function RecipesManagementScreen({
             }
           }
 
-          if (editingRecipeId) {
-            toast.success('Receta actualizada correctamente');
-          } else {
-            const savedCode =
-              result && 'code' in result && result.code ? result.code : previewCode || '';
-            toast.success(
-              savedCode
-                ? `Receta creada correctamente. Código: ${savedCode}`
-                : 'Receta creada correctamente',
-            );
-          }
+          const savedCode =
+            result && 'code' in result && result.code ? result.code : previewCode || '';
+          toast.success(
+            savedCode
+              ? `Receta creada correctamente. Código: ${savedCode}`
+              : 'Receta creada correctamente',
+          );
 
           setEditingRecipeId(null);
           resetWizardNavigation();
@@ -1113,248 +1108,43 @@ export function RecipesManagementScreen({
     });
   };
 
-  const resetPhaseModalDraft = (): void => {
-    setEditingPhaseId(null);
-    setPhaseName('');
-    setPhaseDescription('');
-    setPhaseDuration('10');
-    setPhaseResponsible('Operario');
-    setPhaseWorkStationId(workStations[0]?.id ?? '');
-    setPhaseIngredients([]);
-    setPhaseValidations([]);
-  };
-
-  const openPhaseModal = (): void => {
-    resetPhaseModalDraft();
+  const handleAddPhaseRow = (): void => {
     setSaveError(null);
-    setPhaseModalOpen(true);
-  };
-
-  const openPhaseModalForEdit = (phase: RecipePhase): void => {
-    const { base, validations } = parsePhaseDescription(phase.description);
-    setEditingPhaseId(phase.id);
-    setPhaseName(phase.title);
-    setPhaseDescription(base);
-    setPhaseDuration(String(phase.durationMin));
-    setPhaseResponsible(phase.assignee);
-    setPhaseWorkStationId(phase.workStationId);
-    setPhaseIngredients(phase.ingredients);
-    setPhaseValidations(phase.validations.length > 0 ? phase.validations : []);
-    setSaveError(null);
-    setPhaseModalOpen(true);
-  };
-
-  const closePhaseModal = (): void => {
-    setPhaseModalOpen(false);
-    resetPhaseModalDraft();
-  };
-
-  const handleAddPhaseIngredient = (): void => {
-    if (supplyItems.length === 0) {
-      setSaveError('No hay insumos en el catálogo. Revisa inventario o el seed.');
-      return;
-    }
-    const defaultItem = supplyItems[0];
-    setPhaseIngredients((prev) => [
-      ...prev,
-      {
-        id: `ing-${Date.now()}-${prev.length}`,
-        supplyItemId: defaultItem?.id ?? '',
-        quantityPerBatch: '1.000',
-        unit: defaultItem?.unidadBase ?? 'KILOGRAMS',
-      },
-    ]);
-  };
-
-  const handleAddPhaseValidation = (): void => {
-    const preset = VALIDATION_PRESETS[phaseValidations.length % VALIDATION_PRESETS.length];
-    setPhaseValidations((prev) => [
-      ...prev,
-      {
-        id: `val-${Date.now()}-${prev.length}`,
-        label: preset,
-      },
-    ]);
-  };
-
-  const handleSavePhase = (): void => {
-    if (!phaseName.trim()) {
-      setSaveError('El nombre de la fase es obligatorio');
-      return;
-    }
-    const durationValue = Number.parseInt(phaseDuration, 10);
-    if (Number.isNaN(durationValue) || durationValue < 1) {
-      setSaveError('La duracion de la fase debe ser al menos 1 minuto');
-      return;
-    }
-    if (!phaseWorkStationId) {
-      setSaveError('Selecciona una estación de trabajo para la fase');
-      return;
-    }
-    const nextPhase: RecipePhase = {
-      id: editingPhaseId ?? `p${Date.now()}`,
-      title: phaseName.trim(),
-      description: buildPhaseDescription(phaseDescription, phaseValidations),
-      durationMin: durationValue,
-      workStationId: phaseWorkStationId,
-      assignee: phaseResponsible,
-      ingredients: phaseIngredients
-        .filter((row) => row.supplyItemId)
-        .map((row) => ({
-          ...row,
-          quantityPerBatch: formatQuantity(row.quantityPerBatch),
-        })),
-      validations: phaseValidations.filter((row) => row.label.trim()),
-    };
-
-    setPhases((prev) => {
-      if (editingPhaseId) {
-        return prev.map((phase) => (phase.id === editingPhaseId ? nextPhase : phase));
-      }
-      return [...prev, nextPhase];
-    });
-    setSaveError(null);
-    closePhaseModal();
-  };
-
-  const phaseModalIngredientsContent = (
-    <>
-      <label className={styles.editorField}>
-        <span>Estación de trabajo *</span>
-        <select
-          className={styles.editorSelect}
-          value={phaseWorkStationId}
-          onChange={(event) => setPhaseWorkStationId(event.target.value)}
-        >
-          <option value="">Seleccionar estación</option>
-          {workStations.map((station) => (
-            <option key={station.id} value={station.id}>
-              {station.name}
-            </option>
-          ))}
-        </select>
-      </label>
-      {phaseIngredients.length === 0 ? (
-        <p className={styles.modalListEmpty}>Sin ingredientes. Usa Agregar para incluir insumos.</p>
-      ) : (
-        <ul className={styles.modalList}>
-          {phaseIngredients.map((row) => (
-            <li key={row.id} className={styles.modalListItem}>
-              <select
-                className={styles.editorSelect}
-                value={row.supplyItemId}
-                onChange={(event) => {
-                  const item = supplyItems.find((entry) => entry.id === event.target.value);
-                  setPhaseIngredients((prev) =>
-                    prev.map((ingredient) =>
-                      ingredient.id === row.id
-                        ? {
-                            ...ingredient,
-                            supplyItemId: event.target.value,
-                            unit: item?.unidadBase ?? ingredient.unit,
-                          }
-                        : ingredient,
-                    ),
-                  );
-                }}
-              >
-                <option value="">Seleccionar insumo</option>
-                {supplyItems.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.nombre}
-                  </option>
-                ))}
-              </select>
-              <input
-                className={styles.modalListInput}
-                type="text"
-                inputMode="decimal"
-                placeholder="Cantidad"
-                value={row.quantityPerBatch}
-                onChange={(event) =>
-                  setPhaseIngredients((prev) =>
-                    prev.map((ingredient) =>
-                      ingredient.id === row.id
-                        ? { ...ingredient, quantityPerBatch: event.target.value }
-                        : ingredient,
-                    ),
-                  )
-                }
-              />
-              <select
-                className={styles.modalListUnitSelect}
-                value={row.unit}
-                onChange={(event) =>
-                  setPhaseIngredients((prev) =>
-                    prev.map((ingredient) =>
-                      ingredient.id === row.id
-                        ? { ...ingredient, unit: event.target.value as StockUnit }
-                        : ingredient,
-                    ),
-                  )
-                }
-              >
-                {STOCK_UNIT_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-              <button
-                type="button"
-                className={styles.modalListRemove}
-                onClick={() =>
-                  setPhaseIngredients((prev) =>
-                    prev.filter((ingredient) => ingredient.id !== row.id),
-                  )
-                }
-              >
-                Quitar
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-    </>
-  );
-
-  const phaseModalValidationsContent =
-    phaseValidations.length === 0 ? (
-      <p className={styles.modalListEmpty}>
-        Sin criterios. Usa Agregar para definir validaciones de la fase.
-      </p>
-    ) : (
-      <ul className={styles.modalList}>
-        {phaseValidations.map((row) => (
-          <li key={row.id} className={styles.modalListItemValidation}>
-            <input
-              className={styles.modalListInputGrow}
-              type="text"
-              placeholder="Ej: Temperatura correcta"
-              value={row.label}
-              onChange={(event) =>
-                setPhaseValidations((prev) =>
-                  prev.map((criterion) =>
-                    criterion.id === row.id
-                      ? { ...criterion, label: event.target.value }
-                      : criterion,
-                  ),
-                )
-              }
-            />
-            <button
-              type="button"
-              className={styles.modalListRemove}
-              onClick={() =>
-                setPhaseValidations((prev) => prev.filter((criterion) => criterion.id !== row.id))
-              }
-            >
-              Quitar
-            </button>
-          </li>
-        ))}
-      </ul>
+    setPhases((prev) =>
+      reorderPhaseRows([
+        ...prev.map((row) => ({ ...row, expanded: false })),
+        createEmptyPhaseRow(prev.length + 1),
+      ]),
     );
+  };
+
+  const handleRemovePhaseRow = (rowId: string): void => {
+    const target = phases.find((row) => row.id === rowId);
+    if (
+      target?.persisted &&
+      !window.confirm('¿Eliminar esta fase de la receta? Esta acción no se puede deshacer.')
+    ) {
+      return;
+    }
+    setPhases((prev) => reorderPhaseRows(prev.filter((row) => row.id !== rowId)));
+  };
+
+  const handleMovePhaseRow = (rowId: string, direction: 'up' | 'down'): void => {
+    setPhases((prev) => {
+      const index = prev.findIndex((row) => row.id === rowId);
+      if (index === -1) {
+        return prev;
+      }
+      const targetIndex = direction === 'up' ? index - 1 : index + 1;
+      if (targetIndex < 0 || targetIndex >= prev.length) {
+        return prev;
+      }
+      const next = [...prev];
+      const [moved] = next.splice(index, 1);
+      next.splice(targetIndex, 0, moved);
+      return reorderPhaseRows(next);
+    });
+  };
 
   const renderMainContent = (): React.JSX.Element => {
     if (currentView === 'process') {
@@ -1844,49 +1634,24 @@ export function RecipesManagementScreen({
           ),
         }}
         productionPhasesStep={{
-          phases: phases.map((phase) => ({
-            id: phase.id,
-            title: phase.title,
-            description: phase.description,
-            durationMin: phase.durationMin,
-            assignee: phase.assignee,
-          })),
-          onAddPhase: openPhaseModal,
-          onEditPhase: (phaseId) => {
-            const phase = phases.find((item) => item.id === phaseId);
-            if (phase) {
-              openPhaseModalForEdit(phase);
-            }
-          },
-          onDeletePhase: (phaseId) => {
-            setPhases((prev) => prev.filter((item) => item.id !== phaseId));
-          },
+          phaseCount: phases.length,
           totalMinutes,
+          timeWarning: phasesTimeWarning,
+          readOnly: phasesReadOnly,
+          onAddPhase: handleAddPhaseRow,
+          children: (
+            <RecipePhaseAccordion
+              rows={phases}
+              compositionRows={compositionRows}
+              theme={theme}
+              readOnly={phasesReadOnly}
+              fieldErrors={phaseFieldErrors}
+              onRowsChange={setPhases}
+              onRemoveRow={handleRemovePhaseRow}
+              onMoveRow={handleMovePhaseRow}
+            />
+          ),
         }}
-      />
-
-      <RecetaPhaseModal
-        open={phaseModalOpen}
-        onClose={closePhaseModal}
-        theme={theme}
-        size="md"
-        title={editingPhaseId ? 'Editar Fase de Proceso' : 'Nueva Fase de Proceso'}
-        saveLabel={editingPhaseId ? 'Actualizar Fase' : 'Guardar Fase'}
-        phaseName={phaseName}
-        onPhaseNameChange={setPhaseName}
-        phaseDescription={phaseDescription}
-        onPhaseDescriptionChange={setPhaseDescription}
-        phaseDuration={phaseDuration}
-        onPhaseDurationChange={setPhaseDuration}
-        phaseResponsible={phaseResponsible}
-        responsibleOptions={responsibleOptions}
-        onPhaseResponsibleChange={(value) => setPhaseResponsible(value as ResponsibleRole)}
-        onAddIngredient={handleAddPhaseIngredient}
-        onAddValidation={handleAddPhaseValidation}
-        ingredientsContent={phaseModalIngredientsContent}
-        validationsContent={phaseModalValidationsContent}
-        onCancel={closePhaseModal}
-        onSave={handleSavePhase}
       />
     </div>
   );

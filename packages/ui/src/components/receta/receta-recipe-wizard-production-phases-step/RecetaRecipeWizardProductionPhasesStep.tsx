@@ -1,29 +1,19 @@
 import React, { type JSX } from 'react';
 
-import { RecetaMetricCard } from '../receta-metric-card/RecetaMetricCard';
 import { RecetaPhaseAddButton } from '../receta-phase-add-button/RecetaPhaseAddButton';
-import { RecetaStepCard } from '../receta-step-card/RecetaStepCard';
-import { RecetaTimelinePanel } from '../receta-timeline-panel/RecetaTimelinePanel';
 import type { RecetaTheme } from '../shared/receta-types';
 import styles from './RecetaRecipeWizardProductionPhasesStep.module.scss';
 
-export interface RecetaRecipeWizardProductionPhaseItem {
-  id: string;
-  title: string;
-  description: string;
-  durationMin: number;
-  assignee: string;
-}
-
 export interface RecetaRecipeWizardProductionPhasesStepProps {
   theme?: RecetaTheme;
-  phases: RecetaRecipeWizardProductionPhaseItem[];
+  phaseCount: number;
+  totalMinutes: number;
+  timeWarning?: string | null;
+  readOnly?: boolean;
   onAddPhase: () => void;
-  onEditPhase: (phaseId: string) => void;
-  onDeletePhase: (phaseId: string) => void;
-  totalMinutes?: number;
   compact?: boolean;
   className?: string;
+  children: React.ReactNode;
 }
 
 const themeClasses: Record<RecetaTheme, string> = {
@@ -33,16 +23,15 @@ const themeClasses: Record<RecetaTheme, string> = {
 
 export function RecetaRecipeWizardProductionPhasesStep({
   theme = 'dark',
-  phases,
-  onAddPhase,
-  onEditPhase,
-  onDeletePhase,
+  phaseCount,
   totalMinutes,
+  timeWarning,
+  readOnly = false,
+  onAddPhase,
   compact = false,
   className,
+  children,
 }: RecetaRecipeWizardProductionPhasesStepProps): JSX.Element {
-  const resolvedTotal = totalMinutes ?? phases.reduce((sum, phase) => sum + phase.durationMin, 0);
-
   return (
     <section
       className={[styles.layout, themeClasses[theme], compact && styles.layoutCompact, className]
@@ -53,64 +42,65 @@ export function RecetaRecipeWizardProductionPhasesStep({
       <div className={styles.main}>
         <div className={styles.header}>
           <div>
-            <h2 className={styles.title}>Fases del proceso ({phases.length})</h2>
-            <p className={styles.hint}>Define cada etapa de producción, tiempos y responsables.</p>
+            <h2 className={styles.title}>Fases del proceso</h2>
+            <p className={styles.hint}>
+              Define cada etapa operativa, tiempos, insumos de composición y equipos.
+            </p>
           </div>
-          <RecetaPhaseAddButton theme={theme} label="Agregar Fase" size="xl" onClick={onAddPhase} />
-        </div>
-
-        {phases.length === 0 ? (
-          <p className={styles.empty}>Aún no hay fases. Agrega al menos una para continuar.</p>
-        ) : (
-          <div className={styles.list}>
-            {phases.map((phase, index) => (
-              <RecetaStepCard
-                key={phase.id}
+          {!readOnly ? (
+            <div className={styles.headerActions}>
+              <RecetaPhaseAddButton
                 theme={theme}
-                selected
-                stepNumber={index + 1}
-                title={phase.title}
-                description={phase.description}
-                duration={`${phase.durationMin} min`}
-                assignee={phase.assignee}
-                onEdit={() => onEditPhase(phase.id)}
-                onDelete={() => onDeletePhase(phase.id)}
+                label="Agregar fase"
+                size="xl"
+                onClick={onAddPhase}
               />
-            ))}
-          </div>
-        )}
-      </div>
-
-      <aside className={styles.sidebar}>
-        <div className={compact ? styles.metricsRow : undefined}>
-          <RecetaMetricCard
-            theme={theme}
-            variant="type-2"
-            title="Suma fases"
-            value={`${resolvedTotal} min`}
-            size={compact ? 'md' : 'xl'}
-          />
-          <RecetaMetricCard
-            theme={theme}
-            variant="type-1"
-            title="Fases definidas"
-            value={phases.length}
-            size={compact ? 'md' : 'xl'}
-          />
+            </div>
+          ) : null}
         </div>
-        {!compact ? (
-          <RecetaTimelinePanel
-            theme={theme}
-            title="Línea de tiempo"
-            items={phases.map((phase) => ({
-              label: phase.title,
-              duration: `${phase.durationMin} min`,
-            }))}
-          />
+
+        {phaseCount === 0 ? (
+          <div className={styles.emptyBlock}>
+            <p className={styles.empty}>Agrega al menos una fase para continuar.</p>
+            {!readOnly ? (
+              <RecetaPhaseAddButton
+                theme={theme}
+                label="Agregar fase"
+                size="md"
+                onClick={onAddPhase}
+              />
+            ) : null}
+          </div>
+        ) : (
+          <div className={styles.listWrap}>{children}</div>
+        )}
+
+        {timeWarning ? <p className={styles.warning}>{timeWarning}</p> : null}
+
+        {phaseCount > 0 ? (
+          <footer className={styles.footer}>
+            <span className={styles.statPill}>
+              Fases
+              <span className={styles.statValue}>{phaseCount}</span>
+            </span>
+            <span className={styles.statPill}>
+              Tiempo total
+              <span className={styles.statValue}>{totalMinutes} min</span>
+            </span>
+          </footer>
         ) : null}
-      </aside>
+      </div>
     </section>
   );
+}
+
+/** @deprecated Legacy card item — use children slot with accordion in web-app */
+export interface RecetaRecipeWizardProductionPhaseItem {
+  id: string;
+  title: string;
+  description: string;
+  durationMin: number;
+  assignee: string;
 }
 
 export default RecetaRecipeWizardProductionPhasesStep;

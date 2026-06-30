@@ -233,3 +233,56 @@ export interface RecipeCompositionRow {
   sortOrder: number;
   persisted?: boolean;
 }
+
+export type RecipeProcessPhaseType =
+  | 'DOSIFICATION_PREP'
+  | 'COOKING'
+  | 'CHILLING'
+  | 'PACKAGING'
+  | 'COLD_STORAGE';
+
+export type RecipePhaseEquipment =
+  | 'OVEN'
+  | 'SMOKER'
+  | 'FRYERS'
+  | 'COMBI_OVEN'
+  | 'TILTING_KETTLE'
+  | 'PLANTAIN_PRESS'
+  | 'BLENDER'
+  | 'MIXER'
+  | 'STOVE'
+  | 'ULTRA_FREEZER'
+  | 'BOWL'
+  | 'LADLE'
+  | 'KNIFE'
+  | 'CLEAVER'
+  | 'POTATO_PEELER'
+  | 'CUTTER'
+  | 'COLD_ROOM'
+  | 'VACUUM_PACKAGING_MACHINE'
+  | 'GRAM_SCALE';
+
+export type RecipeRejectionCriterion = 'TEMPERATURE' | 'SMELL' | 'COLOR' | 'WEIGHT';
+
+export type StorageCondition = 'REFRIGERATED' | 'FROZEN' | 'AMBIENT';
+
+export type ShelfLifeUnit = 'HOURS' | 'DAYS' | 'WEEKS';
+
+export interface RecipePhaseFormRow {
+  id: string;
+  order: number;
+  phaseType: RecipeProcessPhaseType | '';
+  standardMinutes: number;
+  timeHours: string;
+  timeMinutes: string;
+  compositionLineIds: string[];
+  equipment: RecipePhaseEquipment[];
+  finalWeight: string;
+  requiredPackaging: string;
+  shelfLifeValue: string;
+  shelfLifeUnit: ShelfLifeUnit | '';
+  storageCondition: StorageCondition | '';
+  rejectionCriteria: RecipeRejectionCriterion[];
+  expanded: boolean;
+  persisted?: boolean;
+}

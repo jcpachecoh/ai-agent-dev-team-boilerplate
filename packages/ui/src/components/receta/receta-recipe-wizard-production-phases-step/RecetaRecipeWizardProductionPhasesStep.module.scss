@@ -4,8 +4,8 @@
 .layout {
   @include receta.receta-theme-dark;
 
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 300px;
+  display: flex;
+  flex-direction: column;
   min-height: 0;
 }
 
@@ -33,6 +33,11 @@
   gap: $spacing-md;
 }
 
+.headerActions {
+  flex-shrink: 0;
+  align-self: flex-start;
+}
+
 .title {
   margin: 0;
   font-family: $font-family-mono;
@@ -51,46 +56,77 @@
   color: var(--receta-muted);
 }
 
+.emptyBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-md;
+  padding: $spacing-xl $spacing-lg;
+  border: 1px dashed var(--receta-border);
+  border-radius: 12px;
+  text-align: center;
+}
+
 .empty {
   margin: 0;
-  padding: $spacing-md;
-  border: 1px dashed var(--receta-border);
-  border-radius: $border-radius-sm;
+  max-width: 28rem;
   color: var(--receta-muted);
   font-size: $font-size-sm;
+  line-height: 1.5;
 }
 
-.list {
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-md;
+.listWrap {
+  min-width: 0;
 }
 
-.sidebar {
+.warning {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid rgb(234 179 8 / 45%);
+  background: rgb(254 249 195 / 70%);
+  color: #92400e;
+  font-size: $font-size-sm;
+  line-height: 1.45;
+}
+
+.footer {
   display: flex;
-  flex-direction: column;
-  gap: $spacing-md;
-  padding: $spacing-lg;
-  border-left: 1px solid var(--receta-border);
+  flex-wrap: wrap;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+.statPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--receta-border);
+  border-radius: 999px;
   background: var(--receta-surface-raised);
-  min-height: 0;
-  overflow: auto;
+  font-size: $font-size-xs;
+  color: var(--receta-muted);
+}
+
+.statValue {
+  font-weight: $font-weight-semibold;
+  color: var(--receta-text);
 }
 
 .layoutCompact {
-  grid-template-columns: 1fr;
-
   .main {
-    padding: 16px 20px;
+    padding: 16px 20px 12px;
   }
 
-  .sidebar {
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: $spacing-sm;
-    padding: 12px 20px 16px;
-    border-top: 1px solid var(--receta-border);
-    border-left: none;
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .headerActions {
+    align-self: stretch;
   }
 
   .hint {
@@ -98,20 +134,17 @@
   }
 }
 
-.metricsRow {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: $spacing-sm;
-  width: 100%;
-}
-
-@media (width <= 960px) {
-  .layout {
-    grid-template-columns: 1fr;
+@media (width <= 720px) {
+  .main {
+    padding: 14px 16px 12px;
   }
 
-  .sidebar {
-    border-left: none;
-    border-top: 1px solid var(--receta-border);
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .headerActions {
+    align-self: stretch;
   }
 }

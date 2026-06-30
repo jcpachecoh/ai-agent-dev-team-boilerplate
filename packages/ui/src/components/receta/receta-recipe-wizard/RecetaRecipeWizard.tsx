@@ -93,21 +93,31 @@ export function RecetaRecipeWizard({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [open, onClose]);
 
+  const isEditMode = mode === 'edit';
+
   const steps = useMemo(
     () =>
       WIZARD_STEPS.map((step, index) => ({
         ...step,
-        status:
-          step.id === currentStep
+        status: isEditMode
+          ? step.id === currentStep
+            ? ('active' as const)
+            : ('completed' as const)
+          : step.id === currentStep
             ? ('active' as const)
             : index < currentIndex || (index <= maxIndex && index > currentIndex)
               ? ('completed' as const)
               : ('pending' as const),
       })),
-    [currentStep, currentIndex, maxIndex],
+    [currentStep, currentIndex, isEditMode, maxIndex],
   );
 
   const handleStepClick = (stepId: string): void => {
+    if (isEditMode) {
+      onStepChange(stepId as RecetaRecipeWizardStepId);
+      return;
+    }
+
     const targetIndex = stepIndex(stepId as RecetaRecipeWizardStepId);
     if (targetIndex <= maxIndex) {
       onStepChange(stepId as RecetaRecipeWizardStepId);
@@ -128,7 +138,7 @@ export function RecetaRecipeWizard({
 
   const footer = (
     <div className={styles.footerActions}>
-      {currentStep === 'general' ? (
+      {isEditMode || currentStep === 'general' ? (
         <RecetaFormButton variant="cancel" theme={theme} label="Cancelar" onClick={onClose} />
       ) : (
         <RecetaFormButton
@@ -140,7 +150,7 @@ export function RecetaRecipeWizard({
         />
       )}
 
-      {currentStep === 'phases' ? (
+      {isEditMode || currentStep === 'phases' ? (
         <RecetaFormButton
           variant="save"
           theme={theme}

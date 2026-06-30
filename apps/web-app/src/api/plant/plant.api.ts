@@ -225,7 +225,8 @@ export async function loadRecipePhaseCounts(
 }
 
 function isDraftPhaseId(id: string): boolean {
-  return /^p\d+$/.test(id);
+  // Legacy wizard ids (p1, p2) and client-generated ids (phase-<ts>-<order>)
+  return /^p\d+$/.test(id) || /^phase-\d+-\d+$/.test(id);
 }
 
 export type SyncPlantRecipePhaseInput = {
@@ -240,6 +241,15 @@ export type SyncPlantRecipePhaseInput = {
     quantityPerBatch: string;
     unit: string;
   }>;
+  phaseType?: string;
+  equipment?: string[];
+  finalWeight?: string | null;
+  requiredPackaging?: string | null;
+  shelfLifeValue?: number | null;
+  shelfLifeUnit?: string | null;
+  storageCondition?: string | null;
+  rejectionCriteria?: string[];
+  compositionLineIds?: string[];
 };
 
 export async function syncPlantRecipePhases(

@@ -119,10 +119,10 @@ function WizardDemo({ mode }: { mode: 'create' | 'edit' }): React.JSX.Element {
           children: <p style={{ padding: 16 }}>Tabla de composición (demo)</p>,
         }}
         productionPhasesStep={{
-          phases: demoPhases,
+          phaseCount: 0,
+          totalMinutes: 0,
           onAddPhase: () => undefined,
-          onEditPhase: () => undefined,
-          onDeletePhase: () => undefined,
+          children: <p style={{ padding: 16 }}>Acordeón de fases (demo)</p>,
         }}
       />
     </div>

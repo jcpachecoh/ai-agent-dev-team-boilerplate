@@ -88,6 +88,15 @@ export type PlantRecipePhase = {
   standardMinutes: number;
   requiresQA: boolean;
   inputs: PlantRecipePhaseInput[];
+  phaseType?: string;
+  equipment?: string[];
+  finalWeight?: string | null;
+  requiredPackaging?: string | null;
+  shelfLifeValue?: number | null;
+  shelfLifeUnit?: string | null;
+  storageCondition?: string | null;
+  rejectionCriteria?: string[];
+  compositionLineIds?: string[];
 };
 
 export type PlantRecipeCompositionLine = {
