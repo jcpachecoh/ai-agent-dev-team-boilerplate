@@ -167,6 +167,30 @@ export function listPayrollEmployees(
   return payrollFetch<PayrollEmployee[]>(`/employees${query}`);
 }
 
+const PAYROLL_EMPLOYEES_MAX_PAGE_SIZE = 100;
+
+export async function listAllPayrollEmployees(
+  filters: Omit<PayrollEmployeesFilters, 'limit' | 'offset'> = {},
+): Promise<PayrollEmployee[]> {
+  const employees: PayrollEmployee[] = [];
+  let offset = 0;
+
+  while (true) {
+    const page = await listPayrollEmployees({
+      ...filters,
+      limit: PAYROLL_EMPLOYEES_MAX_PAGE_SIZE,
+      offset,
+    });
+    employees.push(...page);
+
+    if (page.length < PAYROLL_EMPLOYEES_MAX_PAGE_SIZE) {
+      return employees;
+    }
+
+    offset += PAYROLL_EMPLOYEES_MAX_PAGE_SIZE;
+  }
+}
+
 export function getPayrollEmployeeByUserId(userId: string): Promise<PayrollEmployee> {
   return payrollFetch<PayrollEmployee>(`/employees/${userId}`);
 }

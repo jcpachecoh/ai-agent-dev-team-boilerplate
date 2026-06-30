@@ -1,8 +1,10 @@
 import { Bell, Menu } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 
 import UserMenu from '@/components/UserMenu';
 import ThemeSwitch from '@/components/ThemeSwitch';
+import { AttendanceHeaderLaborFilter } from '@/features/attendance/components/AttendanceHeaderLaborFilter';
 import { useLogout } from '@/features/auth/hooks/useLogout';
 
 import styles from './Header.module.scss';
@@ -17,6 +19,8 @@ export default function Header({
   showMenuButton = false,
 }: HeaderProps): React.JSX.Element {
   const handleLogout = useLogout();
+  const { pathname } = useLocation();
+  const showAttendanceLaborFilter = pathname.startsWith('/asistencia');
   const [clock, setClock] = useState(() => formatClock(new Date()));
   const [dateLabel, setDateLabel] = useState(() => formatDate(new Date()));
 
@@ -43,6 +47,7 @@ export default function Header({
             <Menu size={16} />
           </button>
         ) : null}
+        {showAttendanceLaborFilter ? <AttendanceHeaderLaborFilter /> : null}
       </div>
 
       <div className={styles.right}>

@@ -139,6 +139,22 @@ describe('LoginScreen', () => {
     expect(screen.getByText(/ingrese su número de cédula/i)).toBeInTheDocument();
   });
 
+  it('clears cédula when user chooses to change it from PIN step', async () => {
+    const user = userEvent.setup();
+
+    renderLoginScreen(<LoginScreen />);
+    await enterCedula(user);
+
+    expect(screen.getByText('Cédula:')).toBeInTheDocument();
+    expect(screen.getByText('12345678')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /cambiar cédula/i }));
+
+    expect(screen.getByText(/ingrese su número de cédula/i)).toBeInTheDocument();
+    expect(screen.queryByText('12345678')).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/número de cédula ingresado/i)).toHaveTextContent('_ _ _ _ _ _');
+  });
+
   it('does not submit when PIN is incomplete', async () => {
     const user = userEvent.setup();
     vi.mocked(authService.loginOperator).mockResolvedValue({

@@ -19,6 +19,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useMe } from '@/features/auth/hooks/useMe';
 import { useTheme } from '@/providers/ThemeProvider';
 
+import { ATTENDANCE_ROUTES } from '../constants/routes';
 import { useAttendanceCardData } from '../hooks/useAttendanceCardData';
 import { usePayrollEmployeeQuery } from '../hooks/usePayrollEmployeeQuery';
 import {
@@ -243,7 +244,10 @@ export function AttendanceCardScreen(): React.JSX.Element {
           <p role="alert">
             No tienes permisos para ver la tarjeta de este colaborador en esta sede.
           </p>
-          <button type="button" onClick={() => navigate(`/payroll/attendance/${locationId}`)}>
+          <button
+            type="button"
+            onClick={() => navigate(ATTENDANCE_ROUTES.locationDetail(locationId))}
+          >
             ← Volver al listado
           </button>
         </div>
@@ -297,7 +301,7 @@ export function AttendanceCardScreen(): React.JSX.Element {
           </footer>
         ) : undefined
       }
-      onBack={() => navigate(`/payroll/attendance/${locationId}`)}
+      onBack={() => navigate(ATTENDANCE_ROUTES.locationDetail(locationId))}
       onSearch={handleSearch}
       onExport={handleExport}
       onSort={toggleSort}

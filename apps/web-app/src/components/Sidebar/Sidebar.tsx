@@ -47,7 +47,7 @@ function mapNavItem(item: NavItem, pathname: string): SidebarNavItem {
         id: child.id,
         label: child.label,
         href: child.path,
-        active: isNavChildPathActive(pathname, child.path),
+        active: isNavChildPathActive(pathname, child.path, child.end ?? true),
         icon: <ChildIcon size={14} aria-hidden />,
       };
     }),

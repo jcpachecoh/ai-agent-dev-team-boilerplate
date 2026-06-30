@@ -10,18 +10,22 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 import { useLocation } from '@/features/sedes/hooks/useLocations';
 import { useTheme } from '@/providers/ThemeProvider';
+import { ATTENDANCE_ROUTES } from '../constants/routes';
 import { AttendanceApiError } from '../api/attendance.client';
 import {
   useRegisterAttendanceEntryMutation,
   useRegisterAttendanceExitMutation,
 } from '../hooks/useAttendanceMutations';
 import { useAttendanceMonitorSummary } from '../hooks/useAttendanceMonitorSummary';
+import { useLaborClassificationLookup } from '../hooks/useLaborClassificationLookup';
 import {
   formatLastSyncLabel,
   formatMonitorPeriodLabel,
   mapMonitorSummaryToEmployees,
   mapMonitorSummaryToMetrics,
 } from '../mappers/monitor.mappers';
+import { useLaborClassificationFilter } from '../stores/attendance-labor-filter.store';
+import { filterAttendanceMonitorSummary } from '../utils/labor-classification';
 import type { AttendanceMonitorPeriod } from '../types/attendance.types';
 import {
   getStoredEmployeeViewMode,
@@ -47,8 +51,13 @@ export function AttendanceLocationDetailScreen(): React.JSX.Element {
     anchorDate,
     refetchInterval: (data) => (data?.isLive ? 30_000 : false),
   });
+  const { value: laborFilter } = useLaborClassificationFilter();
+  const { lookup, payrollEmployees } = useLaborClassificationLookup();
 
-  const summary = summaryQuery.data;
+  const summary = useMemo(() => {
+    if (!summaryQuery.data) return undefined;
+    return filterAttendanceMonitorSummary(summaryQuery.data, laborFilter, lookup, payrollEmployees);
+  }, [summaryQuery.data, laborFilter, lookup, payrollEmployees]);
   const metrics = useMemo(
     () => (summary ? mapMonitorSummaryToMetrics(summary) : undefined),
     [summary],
@@ -131,13 +140,13 @@ export function AttendanceLocationDetailScreen(): React.JSX.Element {
       employees={employees}
       viewMode={viewMode}
       onViewModeChange={handleViewModeChange}
-      onBack={() => navigate('/payroll/attendance')}
+      onBack={() => navigate(ATTENDANCE_ROUTES.monitor)}
       onSync={handleSync}
       onQuickEntry={registerQuickEntry}
       onQuickExit={registerQuickExit}
       onEmployeeClick={(employee) => {
         const targetUserId = employee.userId ?? employee.id;
-        navigate(`/payroll/attendance/${locationId}/employees/${targetUserId}/card`, {
+        navigate(ATTENDANCE_ROUTES.employeeCard(locationId, targetUserId), {
           state: { employeeId: employee.id, employeeName: employee.name },
         });
       }}

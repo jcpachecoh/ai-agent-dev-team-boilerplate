@@ -8,6 +8,7 @@ import { useLocationSession } from '../context/LocationSessionContext';
 import { proveedoresKeys } from '@/features/proveedores/api/proveedores.keys';
 import { clearGraphqlAuthToken, isAuthenticated } from '@/lib/auth-token';
 import { clearActiveLocationId } from '@/lib/location-session-storage';
+import { resetAttendanceModuleFilters } from '@/features/attendance/stores/attendance-labor-filter.store';
 
 export function useLogout(): () => void {
   const navigate = useNavigate();
