@@ -1,7 +1,11 @@
 import { Check, ChevronRight, Pause, RotateCcw, SkipForward } from 'lucide-react';
-import { useEffect, useState, type JSX } from 'react';
+import { useEffect, useMemo, useState, type JSX } from 'react';
 
-import type { PlantDashboardThemeProps } from '../shared/plant-workstation-types';
+import { PlantOrderNoveltiesList } from '../plant-order-novelties-list/PlantOrderNoveltiesList';
+import type {
+  PlantDashboardThemeProps,
+  PlantOrderNoveltyItem,
+} from '../shared/plant-workstation-types';
 import {
   formatPlantElapsed,
   formatPlantStandard,
@@ -18,6 +22,8 @@ const VISIBLE_INGREDIENTS_COMPACT = 2;
 
 export interface PlantWorkstationCardProps extends PlantDashboardThemeProps {
   status: Exclude<PlantWorkstationStatus, 'empty'>;
+  /** Runtime status from API — drives PAUSAR/REANUDAR. Falls back to `status` when omitted. */
+  actionStatus?: Exclude<PlantWorkstationStatus, 'empty'>;
   snapshot: PlantWorkstationSnapshot;
   density?: PlantWorkstationDensity;
   elapsedMs?: number;
@@ -30,10 +36,15 @@ export interface PlantWorkstationCardProps extends PlantDashboardThemeProps {
   onReportIssue?: () => void;
   onChangeOrder?: () => void;
   onViewRecipe?: () => void;
+  novelties?: PlantOrderNoveltyItem[];
+  noveltiesLoading?: boolean;
+  actionsPending?: boolean;
+  startLoading?: boolean;
 }
 
 export function PlantWorkstationCard({
   status,
+  actionStatus,
   snapshot,
   density = 'compact',
   elapsedMs = 0,
@@ -46,18 +57,31 @@ export function PlantWorkstationCard({
   onReportIssue,
   onChangeOrder,
   onViewRecipe,
+  novelties,
+  noveltiesLoading = false,
+  actionsPending = false,
+  startLoading = false,
   theme = 'dark',
   className,
 }: PlantWorkstationCardProps): JSX.Element {
   const [activeTab, setActiveTab] = useState<PlantWorkstationTab>('process');
+  const openNoveltyCount = useMemo(
+    () => (novelties ?? []).filter((item) => !item.resolvedAt).length,
+    [novelties],
+  );
   const accent = PLANT_STATUS_ACCENT[status];
   const statusLabel = PLANT_STATUS_LABELS[status];
+  const runtimeStatus = actionStatus ?? status;
   const isCompact = density === 'compact';
   const visibleIngredients = isCompact
     ? snapshot.ingredients.slice(0, VISIBLE_INGREDIENTS_COMPACT)
     : snapshot.ingredients;
   const hiddenCount = snapshot.ingredients.length - visibleIngredients.length;
-  const timerMuted = status === 'paused' || status === 'pending' || !timerRunning;
+  const timerMuted =
+    runtimeStatus === 'paused' ||
+    runtimeStatus === 'pending' ||
+    runtimeStatus === 'completed' ||
+    !timerRunning;
   const timerLabel = formatPlantElapsed(elapsedMs);
   const standardLabel = formatPlantStandard(snapshot.standardDurationMs);
   const canFinishOrder = snapshot.phaseIndex >= snapshot.phaseTotal;
@@ -124,7 +148,7 @@ export function PlantWorkstationCard({
           className={[styles.tab, activeTab === 'incidents' && styles.tabActive].join(' ')}
           onClick={() => setActiveTab('incidents')}
         >
-          NOVEDADES
+          NOVEDADES{openNoveltyCount > 0 ? ` (${openNoveltyCount})` : ''}
         </button>
       </div>
 
@@ -161,11 +185,11 @@ export function PlantWorkstationCard({
             <span className={[styles.timer, timerMuted && styles.timerMuted].join(' ')}>
               {timerLabel}
             </span>
-            {status === 'completed' ? (
+            {runtimeStatus === 'completed' ? (
               <span className={styles.timerMeta}>TERMINADA</span>
-            ) : status === 'paused' ? (
+            ) : runtimeStatus === 'paused' ? (
               <span className={styles.timerMeta}>⏸ PAUSADO</span>
-            ) : status === 'pending' ? (
+            ) : runtimeStatus === 'pending' ? (
               <span className={styles.timerMeta}>NO INICIADO</span>
             ) : timerRunning ? (
               <span className={styles.timerMeta}>ESTÁNDAR {standardLabel}</span>
@@ -180,32 +204,46 @@ export function PlantWorkstationCard({
           ) : null}
         </>
       ) : (
-        <div className={styles.incidentsPlaceholder}>
-          <p>Sin novedades registradas</p>
+        <div className={styles.noveltiesPanel}>
+          <PlantOrderNoveltiesList
+            theme={theme}
+            items={novelties ?? []}
+            loading={noveltiesLoading}
+          />
         </div>
       )}
 
       <div className={styles.actions}>
-        {status === 'completed' ? (
+        {runtimeStatus === 'completed' ? (
           <div className={styles.actionCompleted}>ORDEN TERMINADA</div>
-        ) : status === 'pending' ? (
+        ) : runtimeStatus === 'pending' ? (
           <button
             type="button"
             className={styles.actionStart}
             onClick={onStart}
-            disabled={!onStart}
+            disabled={!onStart || actionsPending || startLoading}
           >
-            INICIAR
+            {startLoading ? 'CARGANDO…' : 'INICIAR'}
           </button>
         ) : (
           <>
-            {status === 'in_progress' ? (
-              <button type="button" className={styles.actionPause} onClick={onPause}>
+            {runtimeStatus === 'in_progress' ? (
+              <button
+                type="button"
+                className={styles.actionPause}
+                onClick={onPause}
+                disabled={actionsPending}
+              >
                 <Pause size={14} aria-hidden />
                 PAUSAR
               </button>
             ) : (
-              <button type="button" className={styles.actionResume} onClick={onResume}>
+              <button
+                type="button"
+                className={styles.actionResume}
+                onClick={onResume}
+                disabled={actionsPending}
+              >
                 <RotateCcw size={14} aria-hidden />
                 REANUDAR
               </button>
@@ -215,7 +253,7 @@ export function PlantWorkstationCard({
                 type="button"
                 className={styles.actionNext}
                 onClick={() => handleGuardedAction('next', onNextStep)}
-                disabled={!onNextStep}
+                disabled={!onNextStep || actionsPending}
               >
                 <SkipForward size={14} aria-hidden />
                 {armedAction === 'next' ? 'CONFIRMAR' : 'SIGUIENTE PASO'}
@@ -226,7 +264,9 @@ export function PlantWorkstationCard({
                 type="button"
                 className={styles.actionFinish}
                 onClick={() => handleGuardedAction('finish', onFinish)}
-                disabled={status !== 'in_progress' && status !== 'paused'}
+                disabled={
+                  (runtimeStatus !== 'in_progress' && runtimeStatus !== 'paused') || actionsPending
+                }
               >
                 <Check size={14} aria-hidden />
                 {armedAction === 'finish' ? 'CONFIRMAR' : 'FINALIZAR'}

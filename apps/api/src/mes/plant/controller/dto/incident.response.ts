@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { AlarmSeverity, IncidentType } from '@prisma/client';
+import { AlarmSeverity, IncidentType, NoveltyType } from '@prisma/client';
 
 export class IncidentResponseDto {
   @ApiProperty({ example: 'incident-uuid' })
@@ -26,11 +26,17 @@ export class IncidentResponseDto {
   @ApiProperty({ enum: IncidentType })
   type!: IncidentType;
 
+  @ApiPropertyOptional({ enum: NoveltyType, nullable: true })
+  noveltyType!: NoveltyType | null;
+
   @ApiProperty({ enum: AlarmSeverity })
   severity!: AlarmSeverity;
 
   @ApiProperty({ example: 'Producto fuera de especificación en línea 2' })
   description!: string;
+
+  @ApiProperty({ example: false })
+  requiresPause!: boolean;
 
   @ApiPropertyOptional({
     example: 'https://cdn.example.com/incidents/photo.jpg',

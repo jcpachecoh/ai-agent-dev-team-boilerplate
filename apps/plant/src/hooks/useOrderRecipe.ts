@@ -26,6 +26,7 @@ export function useOrderRecipe(orderId: string | undefined) {
     queryKey: orderId ? orderRecipeQueryKey(orderId) : ['order-recipe', ''],
     queryFn: () => fetchOrderRecipeView(orderId!),
     enabled: Boolean(orderId),
+    staleTime: 0,
   });
 
   const view = query.data;

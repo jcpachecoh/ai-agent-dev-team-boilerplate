@@ -80,7 +80,7 @@ export class CreateNoveltyDto {
 
   @ApiPropertyOptional({
     description:
-      'Si true, pausa la orden aunque severity no sea HIGH. En MVP es trigger de comportamiento, no se persiste.',
+      'Si true, pausa la orden aunque severity no sea HIGH. Persistido en production_incidents.',
     example: false,
   })
   @IsBoolean()

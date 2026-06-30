@@ -7,6 +7,15 @@ import { fetchFreshOrderRecipeView, useOrderRecipe } from '@/hooks/useOrderRecip
 import { useOrderRuntimeActions } from '@/hooks/useOrderRuntimeActions';
 import { useDashboardLayoutStore } from '@/stores/dashboard-layout.store';
 import { useWorkstationTimerStore } from '@/stores/workstation-timer.store';
+import {
+  isPlantApiConflictWithMessage,
+  isPlantApiNotFoundWithMessage,
+} from '@/utils/plant-api-conflict';
+import {
+  buildSnapshotPatchFromOrderView,
+  mapOrderViewToCellStatus,
+  resolveOrderStepId,
+} from '@/utils/syncOrderViewToCell';
 
 import styles from './RecipeDetailHost.module.scss';
 
@@ -132,22 +141,57 @@ export function RecipeDetailHost({
     if (!orderId) return;
 
     const freshView = await fetchFreshOrderRecipeView(queryClient, orderId);
-    const stepId = freshView.currentStepId;
+    const stepId = resolveOrderStepId(freshView);
     if (!stepId) return;
 
-    await completeStepMutation.mutateAsync({
-      stepId,
-      actualMinutes: Math.max(1, Math.round(elapsedMs / 60_000)),
-      idempotencyKey: createIdempotencyKey('complete-step', orderId),
-    });
+    try {
+      await completeStepMutation.mutateAsync({
+        stepId,
+        actualMinutes: Math.max(1, Math.round(elapsedMs / 60_000)),
+        idempotencyKey: createIdempotencyKey('complete-step', orderId),
+      });
+    } catch (error) {
+      const alreadyCompleted = isPlantApiConflictWithMessage(error, 'COMPLETED');
+      if (alreadyCompleted) {
+        const refreshedView = await fetchFreshOrderRecipeView(queryClient, orderId);
+        updateCellSnapshot(orderId, buildSnapshotPatchFromOrderView(refreshedView));
+        if (cell?.status !== 'incident') {
+          updateCellStatus(orderId, mapOrderViewToCellStatus(refreshedView));
+        }
+        return;
+      }
+
+      const staleStepId = isPlantApiNotFoundWithMessage(error, 'not found on this order');
+      if (staleStepId) {
+        const retryView = await fetchFreshOrderRecipeView(queryClient, orderId);
+        updateCellSnapshot(orderId, buildSnapshotPatchFromOrderView(retryView));
+        const retryStepId = resolveOrderStepId(retryView);
+        if (retryStepId && retryStepId !== stepId) {
+          await completeStepMutation.mutateAsync({
+            stepId: retryStepId,
+            actualMinutes: Math.max(1, Math.round(elapsedMs / 60_000)),
+            idempotencyKey: createIdempotencyKey('complete-step', orderId),
+          });
+        }
+      } else {
+        throw error;
+      }
+    }
 
     const refreshedView = await fetchFreshOrderRecipeView(queryClient, orderId);
-    updateCellSnapshot(orderId, {
-      phaseIndex: refreshedView.currentPhaseIndex,
-      ...(refreshedView.currentStepId ? { currentStepId: refreshedView.currentStepId } : {}),
-      ...(refreshedView.stationId ? { workStationId: refreshedView.stationId } : {}),
-    });
-  }, [completeStepMutation, elapsedMs, orderId, queryClient, updateCellSnapshot]);
+    updateCellSnapshot(orderId, buildSnapshotPatchFromOrderView(refreshedView));
+    if (cell?.status !== 'incident') {
+      updateCellStatus(orderId, mapOrderViewToCellStatus(refreshedView));
+    }
+  }, [
+    cell?.status,
+    completeStepMutation,
+    elapsedMs,
+    orderId,
+    queryClient,
+    updateCellSnapshot,
+    updateCellStatus,
+  ]);
 
   const handleFinishRequest = useCallback(() => {
     setShowFinishConfirm(true);
@@ -156,13 +200,19 @@ export function RecipeDetailHost({
   const handleFinishConfirm = useCallback(async () => {
     if (!orderId) return;
 
-    await finishMutation.mutateAsync({
-      idempotencyKey: createIdempotencyKey('finish', orderId),
-    });
-    updateCellStatus(orderId, 'completed');
+    try {
+      await finishMutation.mutateAsync({
+        idempotencyKey: createIdempotencyKey('finish', orderId),
+      });
+      const refreshedView = await fetchFreshOrderRecipeView(queryClient, orderId);
+      updateCellSnapshot(orderId, buildSnapshotPatchFromOrderView(refreshedView));
+      updateCellStatus(orderId, 'completed');
+    } catch {
+      return;
+    }
     setShowFinishConfirm(false);
     onBack();
-  }, [finishMutation, onBack, orderId, updateCellStatus]);
+  }, [finishMutation, onBack, orderId, queryClient, updateCellSnapshot, updateCellStatus]);
 
   if (cellIndex === null || !cell?.snapshot || cell.status === 'empty') {
     return null;

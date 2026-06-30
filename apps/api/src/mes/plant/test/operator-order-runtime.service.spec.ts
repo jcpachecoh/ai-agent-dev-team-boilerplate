@@ -879,6 +879,44 @@ describe('OperatorOrderRuntimeService', () => {
     expect(view.currentStepId).toBeUndefined();
   });
 
+  it('getOrderRecipeView does not mark recipe phases as current when no execution is active', async () => {
+    const completedPhase1 = buildOrderDetail(
+      ProductionOrderStatus.IN_PROCESS,
+      PhaseExecutionStatus.COMPLETED,
+    );
+
+    plantRepositoryMock.findOrderDetailById.mockResolvedValue(completedPhase1);
+    plantRepositoryMock.findRecipeDetailById.mockResolvedValue({
+      id: 'recipe-1',
+      name: 'Pizza Margarita',
+      phases: [
+        {
+          id: 'phase-1',
+          order: 1,
+          name: 'Mezclado',
+          standardMinutes: 5,
+          description: null,
+          inputs: [],
+        },
+        {
+          id: 'phase-2',
+          order: 2,
+          name: 'Horneado',
+          standardMinutes: 10,
+          description: null,
+          inputs: [],
+        },
+      ],
+    });
+    plantRepositoryMock.findSupplyItemsWithPrincipalSupplier.mockResolvedValue([]);
+
+    const view = await service.getOrderRecipeView(tenantId, orderId);
+
+    expect(view.currentStepId).toBeUndefined();
+    expect(view.phases.find((phase) => phase.index === 2)?.status).toBe('pending');
+    expect(view.phases.filter((phase) => phase.status === 'current')).toHaveLength(0);
+  });
+
   it('getOrderRecipeView exposes currentStepId from the active execution', async () => {
     const inProcess = buildOrderDetail(
       ProductionOrderStatus.IN_PROCESS,
@@ -1140,6 +1178,73 @@ describe('OperatorOrderRuntimeService', () => {
 
     expect(view.currentStepId).toBe('exec-2');
     expect(view.currentPhaseIndex).toBe(2);
+  });
+
+  it('getOrderRecipeView picks the latest active phase when multiple executions are in process', async () => {
+    const detail = buildOrderDetail(
+      ProductionOrderStatus.IN_PROCESS,
+      PhaseExecutionStatus.IN_PROCESS,
+    );
+    detail.executions = [
+      {
+        ...baseExecution,
+        id: 'exec-2',
+        phaseId: 'phase-2',
+        status: PhaseExecutionStatus.IN_PROCESS,
+        startedAt: new Date(),
+        phase: {
+          id: 'phase-2',
+          order: 2,
+          name: 'Marinado',
+          requiresQA: false,
+          workStationId,
+        },
+      },
+      {
+        ...baseExecution,
+        id: 'exec-3',
+        phaseId: 'phase-3',
+        status: PhaseExecutionStatus.IN_PROCESS,
+        startedAt: new Date(),
+        phase: {
+          id: 'phase-3',
+          order: 3,
+          name: 'Parrilla',
+          requiresQA: false,
+          workStationId,
+        },
+      },
+    ];
+
+    plantRepositoryMock.findOrderDetailById.mockResolvedValue(detail);
+    plantRepositoryMock.findRecipeDetailById.mockResolvedValue({
+      id: 'recipe-1',
+      name: 'Costillas BBQ',
+      phases: [
+        {
+          id: 'phase-2',
+          order: 2,
+          name: 'Marinado',
+          standardMinutes: 25,
+          description: null,
+          inputs: [],
+        },
+        {
+          id: 'phase-3',
+          order: 3,
+          name: 'Parrilla',
+          standardMinutes: 30,
+          description: null,
+          inputs: [],
+        },
+      ],
+    });
+    plantRepositoryMock.findSupplyItemsWithPrincipalSupplier.mockResolvedValue([]);
+
+    const view = await service.getOrderRecipeView(tenantId, orderId);
+
+    expect(view.currentStepId).toBe('exec-3');
+    expect(view.currentPhaseIndex).toBe(3);
   });
 
   it('appendNoveltyLog writes NOVELTY_ADDED production log', async () => {

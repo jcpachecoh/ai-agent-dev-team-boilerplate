@@ -62,10 +62,11 @@ export class OperatorOrderRuntimeService implements IOperatorOrderRuntimeService
 
     const isOrderCompleted = detail.status === ProductionOrderStatus.COMPLETED;
     const currentExecution = isOrderCompleted ? null : this.resolveCurrentExecution(detail);
-    const lastPhaseOrder = detail.executions.at(-1)?.phase.order ?? 1;
-    const currentPhaseIndex = isOrderCompleted
-      ? lastPhaseOrder
-      : (currentExecution?.phase.order ?? detail.executions[0]?.phase.order ?? 1);
+    const currentPhaseIndex = this.resolveCurrentPhaseIndex(
+      detail,
+      currentExecution,
+      isOrderCompleted,
+    );
     const stationId =
       currentExecution?.workStationId ??
       detail.executions.at(-1)?.workStationId ??
@@ -74,7 +75,8 @@ export class OperatorOrderRuntimeService implements IOperatorOrderRuntimeService
 
     const phases = recipe.phases.map((phase) => {
       const execution = detail.executions.find((item) => item.phaseId === phase.id);
-      const isCurrent = !isOrderCompleted && execution?.id === currentExecution?.id;
+      const isCurrent =
+        !isOrderCompleted && currentExecution != null && execution?.id === currentExecution.id;
       const status = isOrderCompleted
         ? ('completed' as OrderRecipePhaseUiStatus)
         : this.mapPhaseUiStatus(execution?.status, isCurrent);
@@ -605,16 +607,48 @@ export class OperatorOrderRuntimeService implements IOperatorOrderRuntimeService
   private resolveCurrentExecution(detail: OrderDetail) {
     const sorted = [...detail.executions].sort((a, b) => a.phase.order - b.phase.order);
 
-    const active = sorted.find(
-      (execution) =>
-        execution.status === PhaseExecutionStatus.IN_PROCESS ||
-        execution.status === PhaseExecutionStatus.PAUSED ||
-        execution.status === PhaseExecutionStatus.READY ||
-        execution.status === PhaseExecutionStatus.QA_PENDING,
-    );
-    if (active) return active;
+    const activeStatuses = new Set<PhaseExecutionStatus>([
+      PhaseExecutionStatus.IN_PROCESS,
+      PhaseExecutionStatus.PAUSED,
+      PhaseExecutionStatus.READY,
+      PhaseExecutionStatus.QA_PENDING,
+    ]);
+
+    const activeExecutions = sorted.filter((execution) => activeStatuses.has(execution.status));
+    if (activeExecutions.length > 0) {
+      return activeExecutions.at(-1) ?? null;
+    }
 
     return sorted.find((execution) => execution.status !== PhaseExecutionStatus.COMPLETED) ?? null;
+  }
+
+  private resolveCurrentPhaseIndex(
+    detail: OrderDetail,
+    currentExecution: OrderDetail['executions'][number] | null,
+    isOrderCompleted: boolean,
+  ): number {
+    if (isOrderCompleted) {
+      return Math.max(...detail.executions.map((execution) => execution.phase.order), 1);
+    }
+
+    if (currentExecution) {
+      return currentExecution.phase.order;
+    }
+
+    const sorted = [...detail.executions].sort((a, b) => a.phase.order - b.phase.order);
+    const lastCompleted = [...sorted]
+      .reverse()
+      .find((execution) => execution.status === PhaseExecutionStatus.COMPLETED);
+    if (lastCompleted) {
+      const nextIncomplete = sorted.find(
+        (execution) =>
+          execution.phase.order >= lastCompleted.phase.order &&
+          execution.status !== PhaseExecutionStatus.COMPLETED,
+      );
+      return nextIncomplete?.phase.order ?? lastCompleted.phase.order;
+    }
+
+    return sorted[0]?.phase.order ?? 1;
   }
 
   private resolveActiveWorkStationId(detail: OrderDetail): string {

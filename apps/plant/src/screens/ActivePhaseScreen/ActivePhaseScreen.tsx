@@ -1,7 +1,10 @@
-import { PlantDashboardHeader, PlantLayoutModeFab } from '@restopsiq/ui';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+
+import { PlantDashboardHeader, PlantLayoutModeFab } from '@restopsiq/ui';
 
 import { usePlantSocket } from '@/hooks/usePlantSocket';
+import { orderRecipeQueryKey } from '@/hooks/useOrderRecipe';
 import { useAvailableProductionOrders } from '@/hooks/useAvailableProductionOrders';
 import { toFieldOpsTheme } from '@/constants/theme';
 import { useTheme } from '@/providers/ThemeProvider';
@@ -73,12 +76,14 @@ export function ActivePhaseScreen({
   const updateCellStatus = useDashboardLayoutStore((s) => s.updateCellStatus);
   const updateCellStatusByIndex = useDashboardLayoutStore((s) => s.updateCellStatusByIndex);
   const hydrateFromPreferences = useDashboardLayoutStore((s) => s.hydrateFromPreferences);
+  const queryClient = useQueryClient();
 
   const [clock, setClock] = useState(() => new Date());
   const [assignModalCell, setAssignModalCell] = useState<number | null>(null);
   const [recipeDetailCell, setRecipeDetailCell] = useState<number | null>(null);
   const [incidentModalCell, setIncidentModalCell] = useState<number | null>(null);
   const [bleDiagnosticOpen, setBleDiagnosticOpen] = useState(false);
+  const [noveltiesRefreshKey, setNoveltiesRefreshKey] = useState(0);
 
   useAvailableProductionOrders(true);
 
@@ -89,11 +94,10 @@ export function ActivePhaseScreen({
       const mapped = mapSocketStatus(payload.status);
       if (!mapped || !payload.orderId) return;
       updateCellStatus(payload.orderId, mapped);
+      void queryClient.refetchQueries({ queryKey: orderRecipeQueryKey(payload.orderId) });
     },
-    [updateCellStatus],
+    [queryClient, updateCellStatus],
   );
-
-  usePlantSocket({ onPhaseStatusChanged: handlePhaseStatusChanged });
 
   useEffect(() => {
     void hydrateFromPreferences();
@@ -133,6 +137,7 @@ export function ActivePhaseScreen({
   }, []);
 
   const handleIncidentSubmitted = useCallback(() => {
+    setNoveltiesRefreshKey((value) => value + 1);
     if (incidentModalCell === null) return;
     const cell = cells.find((item) => item.cellIndex === incidentModalCell);
     if (cell?.orderId) {
@@ -141,6 +146,28 @@ export function ActivePhaseScreen({
     }
     updateCellStatusByIndex(incidentModalCell, 'incident');
   }, [cells, incidentModalCell, updateCellStatus, updateCellStatusByIndex]);
+
+  const handleIncidentCreated = useCallback(
+    (payload: unknown) => {
+      const orderId =
+        payload && typeof payload === 'object' && 'orderId' in payload
+          ? String((payload as { orderId?: string | null }).orderId ?? '')
+          : '';
+      if (!orderId) return;
+
+      const isVisible = cells.some((cell) => cell.orderId === orderId);
+      if (!isVisible) return;
+
+      updateCellStatus(orderId, 'incident');
+      setNoveltiesRefreshKey((value) => value + 1);
+    },
+    [cells, updateCellStatus],
+  );
+
+  usePlantSocket({
+    onPhaseStatusChanged: handlePhaseStatusChanged,
+    onIncidentCreated: handleIncidentCreated,
+  });
 
   if (recipeDetailCell !== null) {
     return (
@@ -199,6 +226,7 @@ export function ActivePhaseScreen({
             cell={cell}
             layoutMode={layoutMode}
             theme={fieldOpsTheme}
+            noveltiesRefreshKey={noveltiesRefreshKey}
             onAssign={openAssignModal}
             onChangeOrder={openAssignModal}
             onViewRecipe={openRecipeDetail}

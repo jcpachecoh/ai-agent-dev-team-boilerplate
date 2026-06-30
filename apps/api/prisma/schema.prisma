@@ -260,9 +260,9 @@ model SupplyItem {
   location         Location?                  @relation(fields: [locationId], references: [id], onDelete: SetNull)
   supplierProducts SupplierProduct[]
   priceHistory     SupplyItemPriceHistory[]
-  orderMaterials      ProductionOrderMaterial[]
-  alertResolutions    InventoryAlertResolution[]
-  compositionLines    RecipeCompositionLine[]
+  orderMaterials   ProductionOrderMaterial[]
+  alertResolutions InventoryAlertResolution[]
+  compositionLines RecipeCompositionLine[]
 
   @@unique([tenantId, codigoInterno])
   @@index([tenantId, categoriaId])
@@ -515,7 +515,7 @@ model Location {
   updatedAt     DateTime  @updatedAt
   deletedAt     DateTime?
 
-  tenant              Tenant               @relation(fields: [tenantId], references: [id])
+  tenant              Tenant                     @relation(fields: [tenantId], references: [id])
   users               UserLocation[]
   employeeDetails     EmployeeDetails[]
   attendanceLogs      AttendanceLog[]
@@ -576,13 +576,13 @@ model EmployeeDetails {
   updatedAt           DateTime             @updatedAt
   deletedAt           DateTime?
 
-  user              User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  location          Location                  @relation(fields: [locationId], references: [id])
-  positionRef       EmployeePosition?         @relation(fields: [positionId], references: [id], onDelete: SetNull)
-  positionHistory   EmployeePositionHistory[]
-  attendanceLogs    AttendanceLog[]
-  socialProfiles    EmployeeSocialProfile[]
-  financialProfile  EmployeeFinancialProfile?
+  user             User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  location         Location                  @relation(fields: [locationId], references: [id])
+  positionRef      EmployeePosition?         @relation(fields: [positionId], references: [id], onDelete: SetNull)
+  positionHistory  EmployeePositionHistory[]
+  attendanceLogs   AttendanceLog[]
+  socialProfiles   EmployeeSocialProfile[]
+  financialProfile EmployeeFinancialProfile?
 
   @@index([tenantId])
   @@index([locationId])
@@ -706,7 +706,7 @@ model EmployeeFinancialProfile {
   updatedAt            DateTime      @updatedAt
   deletedAt            DateTime?
 
-  employeeDetails EmployeeDetails         @relation(fields: [employeeDetailsId], references: [id], onDelete: Cascade)
+  employeeDetails EmployeeDetails          @relation(fields: [employeeDetailsId], references: [id], onDelete: Cascade)
   bankAccounts    EmployeeBankAccount[]
   taxInformation  EmployeeTaxInformation?
   paymentHistory  EmployeePaymentHistory[]
@@ -1021,10 +1021,10 @@ model ProductionRecipe {
   createdAt            DateTime              @default(now())
   updatedAt            DateTime              @updatedAt
 
-  category       RecipeCategory?            @relation(fields: [categoryId], references: [id])
-  phases         ProductionPhase[]
-  orders         ProductionOrder[]
-  images         RecipeImage[]
+  category         RecipeCategory?            @relation(fields: [categoryId], references: [id])
+  phases           ProductionPhase[]
+  orders           ProductionOrder[]
+  images           RecipeImage[]
   locations        ProductionRecipeLocation[]
   statusHistory    RecipeStatusHistory[]
   compositionLines RecipeCompositionLine[]
@@ -1228,6 +1228,16 @@ enum IncidentType {
   QUALITY
   SAFETY
   EQUIPMENT
+  OTHER
+}
+
+enum NoveltyType {
+  INGREDIENT_SHORTAGE
+  EQUIPMENT_FAILURE
+  RECIPE_DEVIATION
+  UNPLANNED_STOP
+  SAFETY_INCIDENT
+  QUALITY_ISSUE
   OTHER
 }
 
@@ -1469,8 +1479,10 @@ model ProductionIncident {
   locationId     String?
   operatorUserId String
   type           IncidentType
+  noveltyType    NoveltyType?
   severity       AlarmSeverity
   description    String
+  requiresPause  Boolean       @default(false)
   photoUrl       String?
   resolvedAt     DateTime?
   resolvedBy     String?

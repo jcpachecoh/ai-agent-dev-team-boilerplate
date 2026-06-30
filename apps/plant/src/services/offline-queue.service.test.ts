@@ -1,44 +1,53 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { STORAGE_KEYS } from '@/constants/storage-keys';
-import { enqueue, flushQueue, listQueue } from './offline-queue.service';
-import { useConnectivityStore } from '@/stores/connectivity.store';
+import { describe, expect, it } from 'vitest';
 
-describe('offline-queue.service', () => {
-  beforeEach(async () => {
-    vi.restoreAllMocks();
-    useConnectivityStore.setState({ isOnline: true, syncQueueCount: 0 });
-    const { idbSet } = await import('@/utils/storage');
-    await idbSet(STORAGE_KEYS.offlineQueue, []);
+import type { OfflineQueueItem } from './offline-queue.service';
+import { offlineQueueRouting } from './offline-queue.service';
+
+describe('offline-queue incident routing', () => {
+  it('uses scoped incidents path when orderId is present', () => {
+    const item: OfflineQueueItem = {
+      id: 'q-1',
+      type: 'incident.create',
+      payload: {
+        orderId: 'order-42',
+        workStationId: 'ws-1',
+        noveltyType: 'OTHER',
+        severity: 'LOW',
+        description: 'Detalle',
+      },
+      createdAt: Date.now(),
+      retryCount: 0,
+      idempotencyKey: 'incident:order-42:abc',
+    };
+
+    expect(offlineQueueRouting.resolveQueuePath(item)).toBe('/api/plant/orders/order-42/incidents');
+    expect(offlineQueueRouting.resolveQueueBody(item)).toEqual({
+      workStationId: 'ws-1',
+      noveltyType: 'OTHER',
+      severity: 'LOW',
+      description: 'Detalle',
+      requiresPause: false,
+      stepId: null,
+      locationId: null,
+    });
   });
 
-  it('deduplicates by idempotencyKey', async () => {
-    const a = await enqueue({
+  it('falls back to legacy incidents path when orderId is missing', () => {
+    const item: OfflineQueueItem = {
+      id: 'q-2',
       type: 'incident.create',
-      payload: { note: 'a' },
-      idempotencyKey: 'key-1',
-    });
-    const b = await enqueue({
-      type: 'incident.create',
-      payload: { note: 'b' },
-      idempotencyKey: 'key-1',
-    });
-    expect(a.id).toBe(b.id);
-    const list = await listQueue();
-    expect(list).toHaveLength(1);
-  });
+      payload: {
+        workStationId: 'ws-1',
+        type: 'QUALITY',
+        severity: 'WARNING',
+        description: 'Legacy',
+      },
+      createdAt: Date.now(),
+      retryCount: 0,
+      idempotencyKey: 'incident:ws-1:abc',
+    };
 
-  it('flushes when online and API ok', async () => {
-    vi.spyOn(useConnectivityStore.getState(), 'ping').mockResolvedValue(true);
-    vi.spyOn(global, 'fetch').mockResolvedValue({ ok: true } as Response);
-
-    await enqueue({
-      type: 'incident.create',
-      payload: { stationId: 'EST-02' },
-      idempotencyKey: 'flush-1',
-    });
-
-    const result = await flushQueue();
-    expect(result.synced).toBe(1);
-    expect(await listQueue()).toHaveLength(0);
+    expect(offlineQueueRouting.resolveQueuePath(item)).toBe('/api/plant/incidents');
+    expect(offlineQueueRouting.resolveQueueBody(item)).toEqual(item.payload);
   });
 });

@@ -2,6 +2,7 @@ import type {
   AlarmSeverity,
   BatchDisplayUnit,
   IncidentType,
+  NoveltyType,
   OperationCenter,
   PhaseExecution,
   PhaseExecutionStatus,
@@ -526,6 +527,7 @@ export interface CreateIncidentInput {
   executionId?: string | null;
   orderId?: string | null;
   type: IncidentType;
+  noveltyType?: NoveltyType | null;
   severity: AlarmSeverity;
   description: string;
   photoUrl?: string | null;
@@ -555,8 +557,10 @@ export interface IncidentResponse {
   locationId: string | null;
   operatorUserId: string;
   type: IncidentType;
+  noveltyType: NoveltyType | null;
   severity: AlarmSeverity;
   description: string;
+  requiresPause: boolean;
   photoUrl: string | null;
   resolvedAt: Date | null;
   resolvedBy: string | null;

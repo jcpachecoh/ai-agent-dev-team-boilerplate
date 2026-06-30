@@ -1,6 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react';
+import { useState } from 'react';
 
 import { plantDashboardStoryMeta } from '../shared/plant-dashboard-story-meta';
+import type { PlantNoveltySeverity, PlantNoveltyType } from '../shared/plant-workstation-types';
 import { PlantIncidentReportModal } from './PlantIncidentReportModal';
 
 const meta: Meta<typeof PlantIncidentReportModal> = {
@@ -22,75 +24,67 @@ const meta: Meta<typeof PlantIncidentReportModal> = {
 export default meta;
 type Story = StoryObj<typeof PlantIncidentReportModal>;
 
-const baseArgs = {
-  open: true,
-  subtitle: 'OP0001-01 · Pollo asado porcionado',
-  description: '',
-  onDescriptionChange: () => undefined,
-  type: 'QUALITY' as const,
-  onTypeChange: () => undefined,
-  severity: 'WARNING' as const,
-  onSeverityChange: () => undefined,
-  onCapturePhoto: () => undefined,
-  onSubmit: () => undefined,
-  onClose: () => undefined,
-};
+function ModalStoryHarness(props: Partial<React.ComponentProps<typeof PlantIncidentReportModal>>) {
+  const [description, setDescription] = useState(props.description ?? '');
+  const [noveltyType, setNoveltyType] = useState<PlantNoveltyType>(
+    props.noveltyType ?? 'QUALITY_ISSUE',
+  );
+  const [severity, setSeverity] = useState<PlantNoveltySeverity>(props.severity ?? 'MEDIUM');
+  const [requiresPause, setRequiresPause] = useState(props.requiresPause ?? false);
+
+  return (
+    <PlantIncidentReportModal
+      open
+      subtitle="OP0001-01 · Pollo asado porcionado"
+      description={description}
+      onDescriptionChange={setDescription}
+      noveltyType={noveltyType}
+      onNoveltyTypeChange={setNoveltyType}
+      severity={severity}
+      onSeverityChange={setSeverity}
+      requiresPause={requiresPause}
+      onRequiresPauseChange={setRequiresPause}
+      onSubmit={() => undefined}
+      onClose={() => undefined}
+      size="xl"
+      {...props}
+    />
+  );
+}
 
 export const Default: Story = {
-  args: baseArgs,
+  render: () => <ModalStoryHarness />,
 };
 
 export const LightMode: Story = {
-  args: {
-    ...baseArgs,
-    theme: 'light',
-  },
+  render: () => <ModalStoryHarness theme="light" />,
 };
 
-export const WithPhoto: Story = {
-  args: {
-    ...baseArgs,
-    description: 'Sensor de temperatura fuera de rango en la estación.',
-    photoPreview:
-      'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="240"%3E%3Crect width="100%25" height="100%25" fill="%23222"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" fill="%23888" font-family="sans-serif" font-size="18"%3EEvidencia%3C/text%3E%3C/svg%3E',
-  },
+export const WithDescription: Story = {
+  render: () => (
+    <ModalStoryHarness description="Sensor de temperatura fuera de rango en la estación." />
+  ),
 };
 
-export const Capturing: Story = {
-  args: {
-    ...baseArgs,
-    isCapturing: true,
-  },
+export const RequiresPause: Story = {
+  render: () => <ModalStoryHarness requiresPause severity="HIGH" noveltyType="UNPLANNED_STOP" />,
 };
 
 export const Submitting: Story = {
-  args: {
-    ...baseArgs,
-    description: 'Falla en sensor',
-    isSubmitting: true,
-  },
+  render: () => (
+    <ModalStoryHarness description="Falla en sensor" isSubmitting noveltyType="EQUIPMENT_FAILURE" />
+  ),
 };
 
 export const ErrorState: Story = {
-  args: {
-    ...baseArgs,
-    description: 'Detalle del incidente',
-    error: 'Permiso de cámara denegado',
-  },
-};
-
-export const OfflineQueued: Story = {
-  args: {
-    ...baseArgs,
-    description: 'Falla en sensor',
-    error:
-      'Incidente en cola offline. La foto se sincronizará cuando haya conexión (upload pendiente).',
-  },
+  render: () => (
+    <ModalStoryHarness
+      description="Detalle del incidente"
+      error="No se pudo registrar la novedad"
+    />
+  ),
 };
 
 export const ExtraLarge: Story = {
-  args: {
-    ...baseArgs,
-    size: 'xl',
-  },
+  render: () => <ModalStoryHarness size="xl" />,
 };

@@ -988,8 +988,6 @@ async function main() {
       department: 'Cundinamarca',
       country: 'CO',
       taxRegime: 'RESPONSABLE_IVA',
-      openingTime: '08:00',
-      closingTime: '22:00',
       isActive: true,
     },
     create: {
@@ -1008,8 +1006,6 @@ async function main() {
       department: 'Cundinamarca',
       country: 'CO',
       taxRegime: 'RESPONSABLE_IVA',
-      openingTime: '08:00',
-      closingTime: '22:00',
       isActive: true,
     },
   });
@@ -1535,11 +1531,20 @@ async function main() {
   await seedEmployeeDetails(ownerGlobalUser.id, operatorGlobalUser.id, firstLocationId);
   await seedEmployeeSocialProfiles(ownerGlobalUser.id, operatorGlobalUser.id);
   await seedUserLocationAssignments([
-    { userId: ownerGlobalUser.id, locationIds: [firstLocationId] },
+    {
+      userId: ownerGlobalUser.id,
+      locationIds: locations.map((location) => location.id),
+    },
     {
       userId: operatorGlobalUser.id,
       locationIds: locations.slice(0, 3).map((location) => location.id),
     },
+    { userId: operator2GlobalUser.id, locationIds: [firstLocationId] },
+    {
+      userId: operationsAdminGlobalUser.id,
+      locationIds: locations.map((location) => location.id),
+    },
+    { userId: nominaGlobalUser.id, locationIds: [firstLocationId] },
   ]);
   const { seedPlantSupervisor } = await import('./seeds/plant-supervisor.seed');
   await seedPlantSupervisor(prisma);

@@ -831,6 +831,7 @@ export class PlantController {
       executionId: dto.stepId ?? null,
       orderId,
       type: mapNoveltyType(dto.noveltyType),
+      noveltyType: dto.noveltyType,
       severity: mapNoveltySeverity(dto.severity),
       description: dto.description,
       photoUrl: dto.photoUrl ?? null,

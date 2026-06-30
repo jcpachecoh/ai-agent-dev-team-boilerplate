@@ -1,10 +1,10 @@
-import type { PlantRecipeDetail, PlantWorkstationStatus } from '@restopsiq/ui';
+import type { PlantRecipeDetail } from '@restopsiq/ui';
 
 import type { OrderRecipeViewResponse } from '@/api/operator-order.api';
 
 export function mapOrderStatusToWorkstationStatus(
   status: OrderRecipeViewResponse['status'],
-): Exclude<PlantWorkstationStatus, 'empty'> {
+): 'pending' | 'in_progress' | 'paused' | 'completed' {
   if (status === 'completed') return 'completed';
   if (status === 'in_progress') return 'in_progress';
   if (status === 'paused') return 'paused';

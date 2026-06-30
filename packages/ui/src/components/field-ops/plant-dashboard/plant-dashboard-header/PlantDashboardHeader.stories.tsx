@@ -24,7 +24,7 @@ type Story = StoryObj<typeof PlantDashboardHeader>;
 
 export const Default: Story = {
   args: {
-    statusCounts: { inProgress: 1, paused: 1, incidents: 1, pending: 1 },
+    statusCounts: { inProgress: 1, paused: 1, incidents: 1, pending: 1, completed: 0 },
     operatorName: 'Carlos Mendoza',
     clockTime: '09:04 a. m.',
     clockSeconds: '09:04:44',

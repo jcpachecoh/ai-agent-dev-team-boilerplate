@@ -90,6 +90,7 @@ export interface PlantStatusCounts {
   paused: number;
   incidents: number;
   pending: number;
+  completed: number;
 }
 
 export interface PlantLocationOption {
@@ -144,7 +145,66 @@ export function layoutModeCellCount(mode: PlantLayoutMode): number {
 
 export type PlantIncidentType = 'QUALITY' | 'SAFETY' | 'EQUIPMENT' | 'OTHER';
 
+/** @deprecated Use PlantNoveltyType for PLT-05 novelty reporting */
 export type PlantAlarmSeverity = 'INFO' | 'WARNING' | 'CRITICAL';
+
+export type PlantNoveltyType =
+  | 'INGREDIENT_SHORTAGE'
+  | 'EQUIPMENT_FAILURE'
+  | 'RECIPE_DEVIATION'
+  | 'UNPLANNED_STOP'
+  | 'SAFETY_INCIDENT'
+  | 'QUALITY_ISSUE'
+  | 'OTHER';
+
+export type PlantNoveltySeverity = 'LOW' | 'MEDIUM' | 'HIGH';
+
+export interface PlantOrderNoveltyItem {
+  id: string;
+  noveltyType: PlantNoveltyType;
+  severity: PlantNoveltySeverity;
+  description: string;
+  createdAt: string;
+  resolvedAt?: string | null;
+  requiresPause?: boolean;
+}
+
+export interface PlantNoveltyTypeOption {
+  value: PlantNoveltyType;
+  label: string;
+}
+
+export const PLANT_NOVELTY_TYPE_OPTIONS: PlantNoveltyTypeOption[] = [
+  { value: 'INGREDIENT_SHORTAGE', label: 'Faltante de insumo' },
+  { value: 'EQUIPMENT_FAILURE', label: 'Falla de equipo / máquina' },
+  { value: 'RECIPE_DEVIATION', label: 'Desviación de receta' },
+  { value: 'UNPLANNED_STOP', label: 'Paro no planificado' },
+  { value: 'SAFETY_INCIDENT', label: 'Incidente de seguridad' },
+  { value: 'QUALITY_ISSUE', label: 'Calidad del producto' },
+  { value: 'OTHER', label: 'Otro' },
+];
+
+export const PLANT_NOVELTY_SEVERITY_OPTIONS: PlantSelectOption<PlantNoveltySeverity>[] = [
+  { value: 'LOW', label: 'Baja' },
+  { value: 'MEDIUM', label: 'Media' },
+  { value: 'HIGH', label: 'Alta' },
+];
+
+export function getPlantNoveltyTypeLabel(type: PlantNoveltyType): string {
+  return PLANT_NOVELTY_TYPE_OPTIONS.find((option) => option.value === type)?.label ?? type;
+}
+
+export function mapAlarmSeverityToNovelty(severity: PlantAlarmSeverity): PlantNoveltySeverity {
+  if (severity === 'INFO') return 'LOW';
+  if (severity === 'WARNING') return 'MEDIUM';
+  return 'HIGH';
+}
+
+export function mapNoveltySeverityToAlarm(severity: PlantNoveltySeverity): PlantAlarmSeverity {
+  if (severity === 'LOW') return 'INFO';
+  if (severity === 'MEDIUM') return 'WARNING';
+  return 'CRITICAL';
+}
 
 export interface PlantSelectOption<T extends string = string> {
   value: T;

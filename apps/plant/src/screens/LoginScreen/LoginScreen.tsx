@@ -178,6 +178,7 @@ export function LoginScreen({
 
   const backToCedula = useCallback(() => {
     setStep('cedula');
+    setCedula('');
     setPin('');
     setError(null);
   }, []);

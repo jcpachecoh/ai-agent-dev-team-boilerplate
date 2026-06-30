@@ -7,12 +7,24 @@ import {
   resumeProductionOrder,
   startProductionOrder,
 } from '@/api/operator-order.api';
+import { PlantApiError } from '@/services/plant-api.service';
 import { enqueue } from '@/services/offline-queue.service';
 import { useConnectivityStore } from '@/stores/connectivity.store';
 
 import { orderRecipeQueryKey } from './useOrderRecipe';
 
 export type RuntimeMutationResult = 'synced' | 'queued';
+
+const PING_FRESH_MS = 8_000;
+
+async function isApiReachable(): Promise<boolean> {
+  const { isOnline, lastPingAt, ping } = useConnectivityStore.getState();
+  if (!isOnline) return false;
+  if (lastPingAt && Date.now() - lastPingAt < PING_FRESH_MS) {
+    return true;
+  }
+  return ping();
+}
 
 async function runOrQueue(
   idempotencyKey: string,
@@ -25,16 +37,19 @@ async function runOrQueue(
   payload: Record<string, unknown>,
   apiCall: () => Promise<unknown>,
 ): Promise<RuntimeMutationResult> {
-  const { isOnline, ping } = useConnectivityStore.getState();
+  const { isOnline } = useConnectivityStore.getState();
 
   if (isOnline) {
-    const reachable = await ping();
+    const reachable = await isApiReachable();
     if (reachable) {
       try {
         await apiCall();
         return 'synced';
-      } catch {
-        // fall through to offline queue
+      } catch (error) {
+        if (error instanceof PlantApiError) {
+          throw error;
+        }
+        // fall through to offline queue for network failures
       }
     }
   }
@@ -52,8 +67,8 @@ export function useOrderRuntimeActions(orderId: string | undefined) {
 
   const invalidate = async () => {
     if (!orderId) return;
-    await queryClient.invalidateQueries({ queryKey: orderRecipeQueryKey(orderId) });
-    await queryClient.invalidateQueries({ queryKey: ['order-live-status', orderId] });
+    await queryClient.refetchQueries({ queryKey: orderRecipeQueryKey(orderId) });
+    await queryClient.refetchQueries({ queryKey: ['order-live-status', orderId] });
   };
 
   const startMutation = useMutation({

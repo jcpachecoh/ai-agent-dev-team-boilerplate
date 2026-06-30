@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -16,7 +16,7 @@ vi.mock('@/services/camera.service', () => ({
 }));
 
 vi.mock('@/services/incident.service', () => ({
-  reportIncident: vi.fn(),
+  reportOrderNovelty: vi.fn(),
 }));
 
 vi.mock('@/stores/session.store', () => ({
@@ -26,7 +26,7 @@ vi.mock('@/stores/session.store', () => ({
 }));
 
 import { IncidentPhotoError, takeIncidentPhoto } from '@/services/camera.service';
-import { reportIncident } from '@/services/incident.service';
+import { reportOrderNovelty } from '@/services/incident.service';
 
 import { IncidentReportModal } from './IncidentReportModal';
 
@@ -34,13 +34,14 @@ const defaultProps = {
   open: true,
   workStationId: 'ws-1',
   orderId: 'order-1',
+  executionId: 'exec-1',
   onClose: vi.fn(),
 };
 
-describe('IncidentReportModal — cámara', () => {
+describe('IncidentReportModal', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(reportIncident).mockResolvedValue({ queued: false, hasPhoto: false });
+    vi.mocked(reportOrderNovelty).mockResolvedValue({ queued: false, hasPhoto: false });
   });
 
   it('muestra preview tras capturar foto', async () => {
@@ -85,10 +86,42 @@ describe('IncidentReportModal — cámara', () => {
     expect(screen.queryByAltText('Vista previa del incidente')).toBeNull();
   });
 
+  it('envía novedad con tipo, gravedad y pausa seleccionados', async () => {
+    const user = userEvent.setup();
+
+    render(<IncidentReportModal {...defaultProps} onSubmitted={vi.fn()} />);
+
+    const typeGroup = screen.getByRole('radiogroup', { name: 'Tipo de novedad' });
+    const severityGroup = screen.getByRole('radiogroup', { name: 'Gravedad' });
+
+    await user.click(within(typeGroup).getByRole('radio', { name: /Falla de equipo/i }));
+    await user.click(within(severityGroup).getByRole('radio', { name: /^Alta$/i }));
+    await user.click(screen.getByLabelText('¿Requiere pausa de la orden?'));
+    await user.type(
+      screen.getByPlaceholderText('Describe la novedad en la estación...'),
+      'Falla en sensor',
+    );
+    await user.click(screen.getByRole('button', { name: 'REGISTRAR NOVEDAD' }));
+
+    expect(reportOrderNovelty).toHaveBeenCalledWith(
+      'order-1',
+      expect.objectContaining({
+        workStationId: 'ws-1',
+        noveltyType: 'EQUIPMENT_FAILURE',
+        severity: 'HIGH',
+        requiresPause: true,
+        description: 'Falla en sensor',
+        stepId: 'exec-1',
+        locationId: 'loc-1',
+      }),
+      undefined,
+    );
+  });
+
   it('informa cola offline cuando hay foto y no hay conexión', async () => {
     const user = userEvent.setup();
     vi.mocked(takeIncidentPhoto).mockResolvedValue('data:image/jpeg;base64,preview');
-    vi.mocked(reportIncident).mockResolvedValue({ queued: true, hasPhoto: true });
+    vi.mocked(reportOrderNovelty).mockResolvedValue({ queued: true, hasPhoto: true });
 
     render(<IncidentReportModal {...defaultProps} onSubmitted={vi.fn()} />);
 
@@ -98,11 +131,12 @@ describe('IncidentReportModal — cámara', () => {
     );
     await user.click(screen.getByRole('button', { name: 'Tomar foto' }));
     await screen.findByAltText('Vista previa del incidente');
-    await user.click(screen.getByRole('button', { name: 'Reportar' }));
+    await user.click(screen.getByRole('button', { name: 'REGISTRAR NOVEDAD' }));
 
-    expect(await screen.findByText(/Incidente en cola offline/i)).toBeTruthy();
-    expect(reportIncident).toHaveBeenCalledWith(
-      expect.objectContaining({ workStationId: 'ws-1', description: 'Falla en sensor' }),
+    expect(await screen.findByText(/Novedad en cola offline/i)).toBeTruthy();
+    expect(reportOrderNovelty).toHaveBeenCalledWith(
+      'order-1',
+      expect.objectContaining({ description: 'Falla en sensor' }),
       'data:image/jpeg;base64,preview',
     );
   });

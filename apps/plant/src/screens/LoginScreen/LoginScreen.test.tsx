@@ -256,6 +256,21 @@ describe('LoginScreen', () => {
     await waitFor(() => expect(onLoginSuccess).toHaveBeenCalled(), { timeout: 2500 });
   });
 
+  it('clears cédula when user chooses to change it on PIN step', async () => {
+    const user = userEvent.setup();
+    renderLoginScreen(<LoginScreen />);
+    await enterCedula(user, '12345678');
+
+    expect(screen.getByText(/ingrese su pin de operador/i)).toBeInTheDocument();
+    expect(screen.getByText('12345678')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /cambiar cédula/i }));
+
+    expect(screen.getByText(/ingrese su número de cédula/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/número de cédula ingresado/i)).toHaveTextContent('_ _ _ _ _ _');
+    expect(screen.queryByText('12345678')).not.toBeInTheDocument();
+  });
+
   it('prompts for station setup when stationId is missing', () => {
     useSessionStore.setState({ stationId: null });
     renderLoginScreen(<LoginScreen />);

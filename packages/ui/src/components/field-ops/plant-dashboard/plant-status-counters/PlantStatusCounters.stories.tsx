@@ -23,7 +23,7 @@ type Story = StoryObj<typeof PlantStatusCounters>;
 
 export const Default: Story = {
   args: {
-    counts: { inProgress: 1, paused: 1, incidents: 1, pending: 1 },
+    counts: { inProgress: 1, paused: 1, incidents: 1, pending: 1, completed: 0 },
   },
 };
 

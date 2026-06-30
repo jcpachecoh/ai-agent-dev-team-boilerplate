@@ -121,9 +121,10 @@ export function computeStatusCounts(cells: WorkstationCell[]): PlantStatusCounts
       if (cell.status === 'paused') acc.paused += 1;
       if (cell.status === 'incident') acc.incidents += 1;
       if (cell.status === 'pending') acc.pending += 1;
+      if (cell.status === 'completed') acc.completed += 1;
       return acc;
     },
-    { inProgress: 0, paused: 0, incidents: 0, pending: 0 },
+    { inProgress: 0, paused: 0, incidents: 0, pending: 0, completed: 0 },
   );
 }
 
@@ -186,6 +187,7 @@ export const useDashboardLayoutStore = create<DashboardLayoutState>((set, get) =
   },
 
   updateCellStatus: (orderId, status) => {
+    // Visual priority when merging runtime + novelty overlays: incident > paused > in_progress.
     set((state) => ({
       cells: state.cells.map((cell) => (cell.orderId === orderId ? { ...cell, status } : cell)),
     }));

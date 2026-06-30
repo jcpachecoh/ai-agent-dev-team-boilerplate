@@ -40,6 +40,12 @@ const COUNTER_ITEMS: Array<{
     tone: 'blue',
     hint: 'Órdenes asignadas que aún no se han iniciado',
   },
+  {
+    key: 'completed',
+    label: 'TERMINADAS',
+    tone: 'gray',
+    hint: 'Órdenes finalizadas en estación',
+  },
 ];
 
 export function PlantStatusCounters({

@@ -566,6 +566,45 @@ describe('PlantController', () => {
         ]),
       );
     });
+
+    it('createOrderNovelty delegates to createIncident with orderId from path', async () => {
+      const dto = {
+        workStationId: 'ws-1',
+        noveltyType: 'UNPLANNED_STOP',
+        severity: 'HIGH',
+        description: 'Parada no planificada',
+        requiresPause: true,
+        stepId: 'exec-1',
+      };
+      incidentServiceMock.createIncident.mockResolvedValue({ id: 'incident-1' });
+
+      await controller.createOrderNovelty(buildReq(), 'order-42', dto as never);
+
+      expect(incidentServiceMock.createIncident).toHaveBeenCalledWith(
+        tenantId,
+        mesUser.sub,
+        expect.objectContaining({
+          orderId: 'order-42',
+          workStationId: 'ws-1',
+          noveltyType: 'UNPLANNED_STOP',
+          requiresPause: true,
+          executionId: 'exec-1',
+          type: 'OTHER',
+          severity: 'CRITICAL',
+        }),
+      );
+    });
+
+    it('listOrderNovelties filters by orderId and resolved=false', async () => {
+      incidentServiceMock.listIncidents.mockResolvedValue([]);
+
+      await controller.listOrderNovelties(buildReq(), 'order-42', 'false');
+
+      expect(incidentServiceMock.listIncidents).toHaveBeenCalledWith(tenantId, {
+        orderId: 'order-42',
+        resolved: false,
+      });
+    });
   });
 
   describe('production committees', () => {

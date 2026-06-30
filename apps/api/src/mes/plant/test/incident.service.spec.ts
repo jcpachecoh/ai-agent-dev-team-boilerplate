@@ -1,6 +1,6 @@
 import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { AlarmSeverity, IncidentType } from '@prisma/client';
+import { AlarmSeverity, IncidentType, NoveltyType, ProductionLogEvent } from '@prisma/client';
 import type { CreateIncidentInput } from '../interfaces/plant.interfaces';
 import { IncidentRepository } from '../repository/incident.repository';
 import { PlantRepository } from '../repository/plant.repository';
@@ -31,8 +31,10 @@ const incidentRecord = {
   locationId: null,
   operatorUserId,
   type: IncidentType.QUALITY,
+  noveltyType: null,
   severity: AlarmSeverity.WARNING,
   description: 'Producto fuera de spec',
+  requiresPause: false,
   photoUrl: null,
   resolvedAt: null,
   resolvedBy: null,
@@ -287,6 +289,88 @@ describe('IncidentService', () => {
 
       // Assert
       expect(plantServiceMock.pauseOrder).not.toHaveBeenCalled();
+    });
+
+    it('persists noveltyType and requiresPause via repository', async () => {
+      // Arrange
+      const noveltyInput: CreateIncidentInput = {
+        ...createInput,
+        type: IncidentType.OTHER,
+        noveltyType: NoveltyType.UNPLANNED_STOP,
+        requiresPause: true,
+      };
+      const noveltyRecord = {
+        ...incidentRecord,
+        type: IncidentType.OTHER,
+        noveltyType: NoveltyType.UNPLANNED_STOP,
+        requiresPause: true,
+      };
+      incidentRepositoryMock.createIncident.mockResolvedValue(noveltyRecord);
+
+      // Act
+      const result = await service.createIncident(tenantId, operatorUserId, noveltyInput);
+
+      // Assert
+      expect(incidentRepositoryMock.createIncident).toHaveBeenCalledWith(
+        tenantId,
+        operatorUserId,
+        expect.objectContaining({
+          noveltyType: NoveltyType.UNPLANNED_STOP,
+          requiresPause: true,
+        }),
+      );
+      expect(result.noveltyType).toBe(NoveltyType.UNPLANNED_STOP);
+      expect(result.requiresPause).toBe(true);
+      expect(plantServiceMock.pauseOrder).toHaveBeenCalled();
+    });
+
+    it('auto-pauses when novelty severity is HIGH (CRITICAL) without requiresPause', async () => {
+      // Arrange
+      const highSeverityInput: CreateIncidentInput = {
+        ...createInput,
+        severity: AlarmSeverity.CRITICAL,
+      };
+      incidentRepositoryMock.createIncident.mockResolvedValue({
+        ...incidentRecord,
+        severity: AlarmSeverity.CRITICAL,
+      });
+
+      // Act
+      await service.createIncident(tenantId, operatorUserId, highSeverityInput);
+
+      // Assert
+      expect(plantServiceMock.pauseOrder).toHaveBeenCalled();
+    });
+
+    it('does NOT auto-pause when severity is LOW (INFO) and requiresPause is false', async () => {
+      // Arrange
+      const lowInput: CreateIncidentInput = {
+        ...createInput,
+        severity: AlarmSeverity.INFO,
+        requiresPause: false,
+      };
+
+      // Act
+      await service.createIncident(tenantId, operatorUserId, lowInput);
+
+      // Assert
+      expect(plantServiceMock.pauseOrder).not.toHaveBeenCalled();
+    });
+
+    it('appends NOVELTY_ADDED production log when orderId is present', async () => {
+      // Arrange — createInput includes orderId
+      // Act
+      await service.createIncident(tenantId, operatorUserId, createInput);
+
+      // Assert
+      expect(productionLogRepositoryMock.append).toHaveBeenCalledWith(
+        expect.objectContaining({
+          tenantId,
+          orderId: 'order-1',
+          event: ProductionLogEvent.NOVELTY_ADDED,
+          notes: createInput.description,
+        }),
+      );
     });
   });
 

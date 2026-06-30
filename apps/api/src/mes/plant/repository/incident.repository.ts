@@ -28,8 +28,10 @@ export class IncidentRepository implements IIncidentRepository {
         executionId: input.executionId ?? null,
         orderId: input.orderId ?? null,
         type: input.type,
+        noveltyType: input.noveltyType ?? null,
         severity: input.severity,
         description: input.description,
+        requiresPause: input.requiresPause ?? false,
         photoUrl: input.photoUrl ?? null,
       },
     });

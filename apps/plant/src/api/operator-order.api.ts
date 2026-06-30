@@ -15,6 +15,7 @@ export interface OrderRecipePhaseIngredientView {
 
 export interface OrderRecipePhaseView {
   id: string;
+  executionId?: string;
   index: number;
   name: string;
   durationMinutes: number;

@@ -54,8 +54,10 @@ describe('IncidentRepository', () => {
           executionId: 'exec-1',
           orderId: 'order-1',
           type: IncidentType.QUALITY,
+          noveltyType: null,
           severity: AlarmSeverity.WARNING,
           description: 'Producto fuera de spec',
+          requiresPause: false,
           photoUrl: null,
         },
       });

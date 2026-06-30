@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 
 import { logoutGlobalUser } from '../api/auth.api';
 import { authKeys } from '../api/auth.keys';
+import { useLocationSession } from '../context/LocationSessionContext';
 import { proveedoresKeys } from '@/features/proveedores/api/proveedores.keys';
 import { clearGraphqlAuthToken, isAuthenticated } from '@/lib/auth-token';
 import { clearActiveLocationId } from '@/lib/location-session-storage';
@@ -11,6 +12,7 @@ import { clearActiveLocationId } from '@/lib/location-session-storage';
 export function useLogout(): () => void {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { resetLocationSession } = useLocationSession();
 
   return useCallback(() => {
     const hadSession = isAuthenticated();
@@ -26,9 +28,10 @@ export function useLogout(): () => void {
 
       clearGraphqlAuthToken();
       clearActiveLocationId();
+      resetLocationSession();
       queryClient.removeQueries({ queryKey: authKeys.all });
       queryClient.removeQueries({ queryKey: proveedoresKeys.all });
       navigate('/login', { replace: true });
     })();
-  }, [navigate, queryClient]);
+  }, [navigate, queryClient, resetLocationSession]);
 }

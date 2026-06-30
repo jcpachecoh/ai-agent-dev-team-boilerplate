@@ -12,6 +12,7 @@ const DEMO_PASSWORD = import.meta.env.VITE_DEMO_PASSWORD ?? 'TestPass123!';
 
 type LoginLocationState = {
   from?: string;
+  sessionExpired?: boolean;
 };
 
 function getRedirectPath(state: unknown): string {
@@ -30,7 +31,10 @@ export default function LoginPage(): React.JSX.Element {
   const location = useLocation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(() => {
+    const state = location.state as LoginLocationState | null;
+    return state?.sessionExpired ? 'Tu sesión expiró. Inicia sesión de nuevo.' : null;
+  });
   const hasToken = isAuthenticated();
 
   const login = useLogin({

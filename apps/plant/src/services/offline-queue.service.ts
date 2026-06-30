@@ -61,7 +61,13 @@ export async function listQueue(): Promise<OfflineQueueItem[]> {
 }
 
 function resolveQueuePath(item: OfflineQueueItem): string {
-  if (item.type === 'incident.create') return '/api/plant/incidents';
+  if (item.type === 'incident.create') {
+    const orderId = item.payload.orderId;
+    if (orderId) {
+      return `/api/plant/orders/${String(orderId)}/incidents`;
+    }
+    return '/api/plant/incidents';
+  }
 
   const orderId = String(item.payload.orderId ?? item.payload.opId ?? '');
   switch (item.type) {
@@ -82,7 +88,21 @@ function resolveQueuePath(item: OfflineQueueItem): string {
 }
 
 function resolveQueueBody(item: OfflineQueueItem): Record<string, unknown> {
-  if (item.type === 'incident.create') return item.payload;
+  if (item.type === 'incident.create') {
+    const payload = item.payload;
+    if (payload.orderId && payload.noveltyType) {
+      return {
+        workStationId: payload.workStationId,
+        noveltyType: payload.noveltyType,
+        severity: payload.severity,
+        description: payload.description,
+        requiresPause: payload.requiresPause ?? false,
+        stepId: payload.stepId ?? null,
+        locationId: payload.locationId ?? null,
+      };
+    }
+    return item.payload;
+  }
 
   if (item.type === 'phase.complete') {
     const payload = item.payload;
@@ -195,6 +215,11 @@ export async function compressImageBase64(dataUrl: string, maxWidth = 1280): Pro
 }
 
 let flushListenerBound = false;
+
+export const offlineQueueRouting = {
+  resolveQueuePath,
+  resolveQueueBody,
+};
 
 export function bindQueueFlushOnReconnect(): void {
   if (flushListenerBound) return;

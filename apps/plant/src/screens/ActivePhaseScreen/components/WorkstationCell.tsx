@@ -4,7 +4,7 @@ import {
   type PlantLayoutMode,
   type PlantWorkstationDensity,
 } from '@restopsiq/ui';
-import { type JSX } from 'react';
+import { useMemo, type JSX } from 'react';
 
 import type { PlantUiTheme } from '@/constants/theme';
 
@@ -12,10 +12,13 @@ import { useOrderLiveStatus } from '@/hooks/useOrderLiveStatus';
 import { useWorkstationOrderRuntime } from '@/hooks/useWorkstationOrderRuntime';
 import type { WorkstationCell } from '@/stores/dashboard-layout.store';
 
+import { useOrderNovelties } from '../hooks/useOrderNovelties';
+
 export interface WorkstationCellProps {
   cell: WorkstationCell;
   layoutMode: PlantLayoutMode;
   theme?: PlantUiTheme;
+  noveltiesRefreshKey?: number;
   onAssign: (cellIndex: number) => void;
   onChangeOrder: (cellIndex: number) => void;
   onViewRecipe: (cellIndex: number) => void;
@@ -30,6 +33,7 @@ export function WorkstationCellView({
   cell,
   layoutMode,
   theme = 'dark',
+  noveltiesRefreshKey = 0,
   onAssign,
   onChangeOrder,
   onViewRecipe,
@@ -37,6 +41,11 @@ export function WorkstationCellView({
 }: WorkstationCellProps): JSX.Element {
   const density = resolveDensity(layoutMode);
   const { data: liveStatus } = useOrderLiveStatus(cell.orderId);
+  const {
+    items: novelties,
+    loading: noveltiesLoading,
+    openCount,
+  } = useOrderNovelties(cell.orderId, noveltiesRefreshKey);
 
   const fallbackStatus: 'pending' | 'in_progress' | 'paused' | 'incident' | 'completed' =
     liveStatus ?? (cell.status === 'empty' ? 'pending' : cell.status);
@@ -53,6 +62,9 @@ export function WorkstationCellView({
     isPending,
     canStart,
     canAdvanceStep,
+    isRecipeLoading,
+    currentPhaseIndex,
+    phaseTotal,
   } = useWorkstationOrderRuntime({
     cellIndex: cell.cellIndex,
     orderId: cell.orderId,
@@ -60,6 +72,12 @@ export function WorkstationCellView({
     fallbackStepId: cell.snapshot?.currentStepId,
     fallbackStatus,
   });
+
+  const cardStatus = useMemo(() => {
+    if (displayStatus === 'completed') return 'completed' as const;
+    if (openCount > 0) return 'incident' as const;
+    return displayStatus;
+  }, [displayStatus, openCount]);
 
   if (cell.status === 'empty' || !cell.snapshot) {
     return (
@@ -71,19 +89,30 @@ export function WorkstationCellView({
     );
   }
 
+  const liveSnapshot = {
+    ...cell.snapshot,
+    phaseIndex: currentPhaseIndex,
+    phaseTotal: phaseTotal || cell.snapshot.phaseTotal,
+  };
+
   return (
     <PlantWorkstationCard
       theme={theme}
-      status={displayStatus}
-      snapshot={cell.snapshot}
+      status={cardStatus}
+      actionStatus={displayStatus}
+      snapshot={liveSnapshot}
       density={density}
       elapsedMs={elapsedMs}
       timerRunning={timerRunning}
-      onStart={isPending || !canStart ? undefined : () => void handleStart()}
-      onPause={isPending ? undefined : () => void handlePause()}
-      onResume={isPending ? undefined : () => void handleResume()}
-      onNextStep={isPending || !canAdvanceStep ? undefined : () => void handleNextStep()}
-      onFinish={isPending ? undefined : () => void handleFinish()}
+      novelties={novelties}
+      noveltiesLoading={noveltiesLoading}
+      actionsPending={isPending}
+      startLoading={isRecipeLoading && fallbackStatus === 'pending'}
+      onStart={!canStart ? undefined : () => void handleStart()}
+      onPause={() => void handlePause()}
+      onResume={() => void handleResume()}
+      onNextStep={!canAdvanceStep ? undefined : () => void handleNextStep()}
+      onFinish={() => void handleFinish()}
       onChangeOrder={() => onChangeOrder(cell.cellIndex)}
       onViewRecipe={() => onViewRecipe(cell.cellIndex)}
       onReportIssue={onReportIssue ? () => onReportIssue(cell.cellIndex) : undefined}

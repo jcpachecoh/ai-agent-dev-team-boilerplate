@@ -1,18 +1,43 @@
-import { Camera, X } from 'lucide-react';
-import type { JSX } from 'react';
+import {
+  AlertTriangle,
+  Camera,
+  ChefHat,
+  CircleAlert,
+  PackageX,
+  PauseCircle,
+  ShieldAlert,
+  Wrench,
+  X,
+} from 'lucide-react';
+import { useMemo, useState, type JSX } from 'react';
 
 import { PlantDashboardModalPortal } from '../shared/PlantDashboardModalPortal';
 import type {
-  PlantAlarmSeverity,
   PlantDashboardThemeProps,
-  PlantIncidentType,
-  PlantSelectOption,
+  PlantNoveltySeverity,
+  PlantNoveltyType,
 } from '../shared/plant-workstation-types';
 import {
-  PLANT_ALARM_SEVERITY_OPTIONS,
-  PLANT_INCIDENT_TYPE_OPTIONS,
+  PLANT_NOVELTY_SEVERITY_OPTIONS,
+  PLANT_NOVELTY_TYPE_OPTIONS,
 } from '../shared/plant-workstation-types';
 import styles from './PlantIncidentReportModal.module.scss';
+
+const NOVELTY_ICONS: Record<PlantNoveltyType, typeof AlertTriangle> = {
+  INGREDIENT_SHORTAGE: PackageX,
+  EQUIPMENT_FAILURE: Wrench,
+  RECIPE_DEVIATION: ChefHat,
+  UNPLANNED_STOP: PauseCircle,
+  SAFETY_INCIDENT: ShieldAlert,
+  QUALITY_ISSUE: CircleAlert,
+  OTHER: AlertTriangle,
+};
+
+const SEVERITY_DOT: Record<PlantNoveltySeverity, string> = {
+  LOW: '🟡',
+  MEDIUM: '🟠',
+  HIGH: '🔴',
+};
 
 export interface PlantIncidentReportModalProps extends PlantDashboardThemeProps {
   open: boolean;
@@ -20,12 +45,12 @@ export interface PlantIncidentReportModalProps extends PlantDashboardThemeProps 
   subtitle?: string;
   description: string;
   onDescriptionChange: (value: string) => void;
-  type: PlantIncidentType;
-  onTypeChange: (value: PlantIncidentType) => void;
-  severity: PlantAlarmSeverity;
-  onSeverityChange: (value: PlantAlarmSeverity) => void;
-  typeOptions?: PlantSelectOption<PlantIncidentType>[];
-  severityOptions?: PlantSelectOption<PlantAlarmSeverity>[];
+  noveltyType: PlantNoveltyType;
+  onNoveltyTypeChange: (value: PlantNoveltyType) => void;
+  severity: PlantNoveltySeverity;
+  onSeverityChange: (value: PlantNoveltySeverity) => void;
+  requiresPause: boolean;
+  onRequiresPauseChange: (value: boolean) => void;
   photoPreview?: string | null;
   onCapturePhoto?: () => void;
   isCapturing?: boolean;
@@ -40,12 +65,12 @@ export function PlantIncidentReportModal({
   subtitle,
   description,
   onDescriptionChange,
-  type,
-  onTypeChange,
+  noveltyType,
+  onNoveltyTypeChange,
   severity,
   onSeverityChange,
-  typeOptions = PLANT_INCIDENT_TYPE_OPTIONS,
-  severityOptions = PLANT_ALARM_SEVERITY_OPTIONS,
+  requiresPause,
+  onRequiresPauseChange,
   photoPreview = null,
   onCapturePhoto,
   isCapturing = false,
@@ -53,9 +78,13 @@ export function PlantIncidentReportModal({
   isSubmitting = false,
   onSubmit,
   theme = 'dark',
-  size = 'md',
+  size = 'xl',
   className,
 }: PlantIncidentReportModalProps): JSX.Element | null {
+  const [showDescriptionError, setShowDescriptionError] = useState(false);
+
+  const canSubmit = useMemo(() => description.trim().length > 0, [description]);
+
   if (!open) return null;
 
   const captureLabel = isCapturing
@@ -63,6 +92,15 @@ export function PlantIncidentReportModal({
     : photoPreview
       ? 'Cambiar foto'
       : 'Tomar foto';
+
+  const handleSubmit = () => {
+    if (!canSubmit) {
+      setShowDescriptionError(true);
+      return;
+    }
+    setShowDescriptionError(false);
+    onSubmit();
+  };
 
   return (
     <PlantDashboardModalPortal open={open}>
@@ -95,53 +133,95 @@ export function PlantIncidentReportModal({
           </header>
 
           <div className={styles.body}>
+            <fieldset className={styles.typeFieldset}>
+              <legend className={styles.fieldLabel}>Tipo de novedad *</legend>
+              <div className={styles.typeGrid} role="radiogroup" aria-label="Tipo de novedad">
+                {PLANT_NOVELTY_TYPE_OPTIONS.map((option) => {
+                  const Icon = NOVELTY_ICONS[option.value];
+                  const selected = noveltyType === option.value;
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      role="radio"
+                      aria-checked={selected}
+                      aria-label={option.label}
+                      className={[styles.typeOption, selected && styles.typeOptionSelected].join(
+                        ' ',
+                      )}
+                      onClick={() => onNoveltyTypeChange(option.value)}
+                    >
+                      <Icon size={22} aria-hidden className={styles.typeIcon} />
+                      <span className={styles.typeLabel}>{option.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </fieldset>
+
             <label className={styles.field}>
               <span className={styles.fieldLabel}>Descripción *</span>
               <textarea
                 className={styles.textarea}
                 value={description}
-                onChange={(event) => onDescriptionChange(event.target.value)}
+                onChange={(event) => {
+                  if (showDescriptionError && event.target.value.trim()) {
+                    setShowDescriptionError(false);
+                  }
+                  onDescriptionChange(event.target.value);
+                }}
                 rows={4}
                 placeholder="Describe la novedad en la estación..."
+                aria-invalid={showDescriptionError}
               />
+              {showDescriptionError ? (
+                <p className={styles.fieldError} role="alert">
+                  La descripción es obligatoria
+                </p>
+              ) : null}
             </label>
 
-            <div className={styles.row}>
-              <label className={styles.field}>
-                <span className={styles.fieldLabel}>Tipo</span>
-                <select
-                  className={styles.select}
-                  value={type}
-                  onChange={(event) => onTypeChange(event.target.value as PlantIncidentType)}
-                >
-                  {typeOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
+            <div className={styles.severitySection}>
+              <span className={styles.fieldLabel}>Gravedad</span>
+              <div className={styles.severityChips} role="radiogroup" aria-label="Gravedad">
+                {PLANT_NOVELTY_SEVERITY_OPTIONS.map((option) => {
+                  const selected = severity === option.value;
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      role="radio"
+                      aria-checked={selected}
+                      aria-label={option.label}
+                      className={[
+                        styles.severityChip,
+                        styles[`severity--${option.value.toLowerCase()}`],
+                        selected && styles.severityChipSelected,
+                      ].join(' ')}
+                      onClick={() => onSeverityChange(option.value)}
+                    >
+                      <span aria-hidden>{SEVERITY_DOT[option.value]}</span>
                       {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className={styles.field}>
-                <span className={styles.fieldLabel}>Severidad</span>
-                <select
-                  className={styles.select}
-                  value={severity}
-                  onChange={(event) => onSeverityChange(event.target.value as PlantAlarmSeverity)}
-                >
-                  {severityOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
-            <section className={styles.photoSection}>
-              <div className={styles.photoHeader}>
-                <span className={styles.fieldLabel}>Evidencia fotográfica</span>
-                {onCapturePhoto ? (
+            <label className={styles.pauseToggle}>
+              <input
+                type="checkbox"
+                checked={requiresPause}
+                onChange={(event) => onRequiresPauseChange(event.target.checked)}
+                aria-label="¿Requiere pausa de la orden?"
+              />
+              <span>¿Requiere pausa de la orden?</span>
+            </label>
+
+            {onCapturePhoto ? (
+              <section className={styles.photoSection}>
+                <div className={styles.photoHeader}>
+                  <span className={styles.fieldLabel}>Evidencia fotográfica</span>
                   <button
                     type="button"
                     className={styles.captureBtn}
@@ -151,18 +231,18 @@ export function PlantIncidentReportModal({
                     <Camera size={14} aria-hidden />
                     {captureLabel}
                   </button>
-                ) : null}
-              </div>
-              {photoPreview ? (
-                <img
-                  src={photoPreview}
-                  alt="Vista previa del incidente"
-                  className={styles.preview}
-                />
-              ) : (
-                <p className={styles.photoHint}>Opcional. Usa la cámara nativa en tablet.</p>
-              )}
-            </section>
+                </div>
+                {photoPreview ? (
+                  <img
+                    src={photoPreview}
+                    alt="Vista previa del incidente"
+                    className={styles.preview}
+                  />
+                ) : (
+                  <p className={styles.photoHint}>Opcional. Usa la cámara nativa en tablet.</p>
+                )}
+              </section>
+            ) : null}
 
             {error ? (
               <p className={styles.error} role="alert">
@@ -183,10 +263,10 @@ export function PlantIncidentReportModal({
             <button
               type="button"
               className={styles.primaryBtn}
-              onClick={onSubmit}
-              disabled={isSubmitting}
+              onClick={handleSubmit}
+              disabled={isSubmitting || !canSubmit}
             >
-              {isSubmitting ? 'Enviando…' : 'Reportar'}
+              {isSubmitting ? 'Enviando…' : 'REGISTRAR NOVEDAD'}
             </button>
           </footer>
         </div>

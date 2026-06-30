@@ -21,7 +21,7 @@ import {
   readPersistedLocationScope,
 } from '@/lib/location-session-storage';
 
-import { fetchMyLocations, selectUserLocation } from '../api/auth.api';
+import { AuthApiError, fetchMyLocations, selectUserLocation } from '../api/auth.api';
 import { authKeys } from '../api/auth.keys';
 import type { AssignedLocationSummary, LoginResponse } from '../types';
 
@@ -34,11 +34,14 @@ interface LocationSessionContextValue {
   requiresLocationSelection: boolean;
   isLoading: boolean;
   isSelecting: boolean;
+  locationsError: Error | null;
   canOperate: boolean;
   showLocationTabs: boolean;
   applyAuthSession: (session: LoginResponse) => void;
   selectLocation: (locationId: string) => Promise<void>;
   selectTab: (tabId: string) => Promise<void>;
+  resetLocationSession: () => void;
+  refetchLocations: () => Promise<void>;
 }
 
 const LocationSessionContext = createContext<LocationSessionContextValue | null>(null);
@@ -108,7 +111,23 @@ export function LocationSessionProvider({ children }: { children: ReactNode }): 
     // Skip refetch when login/signup already hydrated assignedLocations (avoids redundant GraphQL).
     enabled: isAuthenticated() && assignedLocations.length === 0,
     staleTime: 60_000,
+    retry: (failureCount, error) => {
+      if (error instanceof AuthApiError && error.status === 401) {
+        return false;
+      }
+      return failureCount < 1;
+    },
   });
+
+  const resetLocationSession = useCallback(() => {
+    setAssignedLocations([]);
+    setLocationId(null);
+    setActiveTabId(GENERAL_LOCATION_TAB_ID);
+    setIsGeneralScope(true);
+    setRequiresLocationSelection(false);
+    setHydrated(false);
+    queryClient.removeQueries({ queryKey: authKeys.myLocations() });
+  }, [queryClient]);
 
   const applySessionState = useCallback((session: LoginResponse) => {
     const resolvedLocationId = resolveLocationId(
@@ -208,6 +227,10 @@ export function LocationSessionProvider({ children }: { children: ReactNode }): 
   const canOperate = assignedLocations.length > 0;
   const showLocationTabs = assignedLocations.length > 1;
 
+  const refetchLocations = useCallback(async () => {
+    await locationsQuery.refetch();
+  }, [locationsQuery]);
+
   const value = useMemo<LocationSessionContextValue>(
     () => ({
       assignedLocations,
@@ -218,11 +241,14 @@ export function LocationSessionProvider({ children }: { children: ReactNode }): 
       requiresLocationSelection,
       isLoading: locationsQuery.isPending && !hydrated,
       isSelecting: selectMutation.isPending,
+      locationsError: locationsQuery.error,
       canOperate,
       showLocationTabs,
       applyAuthSession,
       selectLocation,
       selectTab,
+      resetLocationSession,
+      refetchLocations,
     }),
     [
       assignedLocations,
@@ -232,6 +258,7 @@ export function LocationSessionProvider({ children }: { children: ReactNode }): 
       isGeneralScope,
       requiresLocationSelection,
       locationsQuery.isPending,
+      locationsQuery.error,
       hydrated,
       selectMutation.isPending,
       canOperate,
@@ -239,6 +266,8 @@ export function LocationSessionProvider({ children }: { children: ReactNode }): 
       applyAuthSession,
       selectLocation,
       selectTab,
+      resetLocationSession,
+      refetchLocations,
     ],
   );
 

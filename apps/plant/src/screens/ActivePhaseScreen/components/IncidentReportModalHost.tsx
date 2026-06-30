@@ -41,7 +41,7 @@ export function IncidentReportModalHost({
       theme={theme}
       workStationId={workStationId}
       orderId={cell.orderId ?? undefined}
-      executionId={undefined}
+      executionId={cell.snapshot?.currentStepId}
       orderLabel={cell.snapshot?.orderNumber ?? cell.snapshot?.productName}
       onClose={onClose}
       onSubmitted={onSubmitted}

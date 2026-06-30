@@ -1,5 +1,7 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { ReactElement } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { computeStatusCounts, useDashboardLayoutStore } from '@/stores/dashboard-layout.store';
@@ -33,13 +35,36 @@ vi.mock('@/hooks/useWorkstationOrderRuntime', () => ({
     handleStart: vi.fn(),
     handlePause: vi.fn(),
     handleResume: vi.fn(),
+    handleNextStep: vi.fn(),
     handleFinish: vi.fn(),
     isPending: false,
+    canStart: true,
+    canAdvanceStep: true,
+    isRecipeLoading: false,
   })),
+}));
+
+vi.mock('@/providers/ThemeProvider', () => ({
+  useTheme: () => ({ theme: 'dark' as const, toggleTheme: vi.fn() }),
+}));
+
+vi.mock('@/services/incident.service', () => ({
+  fetchOrderNovelties: vi.fn().mockResolvedValue([]),
+  reportOrderNovelty: vi.fn(),
 }));
 
 import { useAvailableProductionOrders } from '@/hooks/useAvailableProductionOrders';
 import { DEMO_AVAILABLE_ORDERS } from '@/stores/dashboard-layout.store';
+
+function renderWithProviders(ui: ReactElement) {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return {
+    queryClient,
+    ...render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>),
+  };
+}
 
 describe('dashboard-layout store', () => {
   beforeEach(() => {
@@ -149,7 +174,7 @@ describe('ActivePhaseScreen', () => {
   });
 
   it('renders dashboard header and workstation grid', () => {
-    render(<ActivePhaseScreen />);
+    renderWithProviders(<ActivePhaseScreen />);
 
     expect(screen.getByTestId('active-phase-screen')).toBeInTheDocument();
     expect(screen.getByTestId('plant-dashboard-header')).toBeInTheDocument();
@@ -159,7 +184,7 @@ describe('ActivePhaseScreen', () => {
 
   it('opens assign modal when empty slot is tapped', async () => {
     const user = userEvent.setup();
-    render(<ActivePhaseScreen />);
+    renderWithProviders(<ActivePhaseScreen />);
 
     const emptySlots = await screen.findAllByTestId('workstation-empty-slot');
     await user.click(emptySlots[0]);
@@ -171,7 +196,7 @@ describe('ActivePhaseScreen', () => {
 
   it('assigns order to cell and closes modal', async () => {
     const user = userEvent.setup();
-    render(<ActivePhaseScreen />);
+    renderWithProviders(<ActivePhaseScreen />);
 
     await user.click(screen.getAllByTestId('workstation-empty-slot')[0]);
     await user.click(screen.getByText('OP-000012'));
@@ -182,16 +207,20 @@ describe('ActivePhaseScreen', () => {
 
   it('updates cell when socket changes order status', () => {
     useDashboardLayoutStore.getState().hydrateDemoAssignments();
-    const { rerender } = render(<ActivePhaseScreen />);
+    const { queryClient, rerender } = renderWithProviders(<ActivePhaseScreen />);
 
     useDashboardLayoutStore.getState().updateCellStatus('OP-000014', 'in_progress');
-    rerender(<ActivePhaseScreen />);
+    rerender(
+      <QueryClientProvider client={queryClient}>
+        <ActivePhaseScreen />
+      </QueryClientProvider>,
+    );
 
     expect(screen.getAllByText('EN PROCESO').length).toBeGreaterThan(0);
   });
 
   it('shows layout mode fab', () => {
-    render(<ActivePhaseScreen />);
+    renderWithProviders(<ActivePhaseScreen />);
     expect(screen.getByTestId('plant-layout-mode-fab')).toBeInTheDocument();
   });
 });
