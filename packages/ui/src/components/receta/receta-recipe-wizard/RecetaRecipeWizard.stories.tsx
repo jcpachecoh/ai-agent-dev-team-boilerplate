@@ -49,7 +49,7 @@ function WizardDemo({ mode }: { mode: 'create' | 'edit' }): React.JSX.Element {
   const [isActive, setIsActive] = useState(true);
   const [notes, setNotes] = useState('Receta de demostración');
 
-  const stepOrder: RecetaRecipeWizardStepId[] = ['general', 'phases', 'review'];
+  const stepOrder: RecetaRecipeWizardStepId[] = ['general', 'composition', 'phases'];
   const advanceMax = (step: RecetaRecipeWizardStepId): void => {
     const currentIndex = stepOrder.indexOf(maxReachedStep);
     const nextIndex = stepOrder.indexOf(step);
@@ -112,22 +112,17 @@ function WizardDemo({ mode }: { mode: 'create' | 'edit' }): React.JSX.Element {
           showVersion: mode === 'edit',
           versionLabel: mode === 'edit' ? 'v1.1' : undefined,
         }}
-        phasesStep={{
+        compositionStep={{
+          componentCount: 0,
+          totalNetLabel: '0 g',
+          onAddComponent: () => undefined,
+          children: <p style={{ padding: 16 }}>Tabla de composición (demo)</p>,
+        }}
+        productionPhasesStep={{
           phases: demoPhases,
           onAddPhase: () => undefined,
           onEditPhase: () => undefined,
           onDeletePhase: () => undefined,
-        }}
-        reviewStep={{
-          name: name || 'Sin nombre',
-          categoryLabel: 'Plato principal',
-          finishedProductLabel: 'Costillas (INS-001)',
-          batchLabel: `${batchSize} Kilogramos`,
-          estimatedMinutes: Number.parseInt(estimatedMinutes, 10) || 0,
-          isActive,
-          notes,
-          versionLabel: mode === 'edit' ? 'v1.1' : undefined,
-          phases: demoPhases,
         }}
       />
     </div>

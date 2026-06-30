@@ -161,6 +161,7 @@ export async function updatePlantRecipe(
       | 'notes'
       | 'isActive'
       | 'isDraft'
+      | 'composition'
     >
   >,
 ): Promise<PlantProductionRecipe> {

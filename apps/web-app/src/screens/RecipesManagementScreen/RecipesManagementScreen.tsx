@@ -34,6 +34,7 @@ import type {
 
 import { RecipeImagesManager } from '@/components/recetas/RecipeImagesManager';
 import { RecipeReferencePhotoField } from '@/components/recetas/RecipeReferencePhotoField';
+import { RecipeCompositionTable } from '@/components/recetas/RecipeCompositionTable';
 import { HistoryResponsiveList } from '@/components/recetas/HistoryResponsiveList';
 import { ProcessListCard } from '@/components/recetas/ProcessListCard';
 import { ProcessListRow } from '@/components/recetas/ProcessListRow';
@@ -48,6 +49,7 @@ import {
 } from '@/features/recetas/recipe-list-columns';
 import type {
   ProcessRow,
+  RecipeCompositionRow,
   RecipeFormGeneralValues,
   RecipeListItem,
   RecipeListStatusFilter,
@@ -74,6 +76,16 @@ import {
   validateRecipeFormDraft,
   validateRecipeFormGeneral,
 } from '@/features/recetas/validation/recipeForm.schema';
+import { validateRecipeCompositionRows } from '@/features/recetas/validation/recipeComposition.schema';
+import {
+  buildBatchWeightWarning,
+  calculateTotalNetGrams,
+  createEmptyCompositionRow,
+  duplicateCompositionRow,
+  formatCompositionTotalLabel,
+  mapCompositionRowsToApi,
+  mapPlantCompositionToRow,
+} from '@/features/recetas/mappers/composition.mapper';
 import { addRecipeImage, uploadRecipeImageFile } from '@/features/recetas/api/recipe-images.api';
 import { useLocations } from '@/features/sedes/hooks/useLocations';
 import {
@@ -97,7 +109,7 @@ type RecipesView = 'list' | 'process' | 'history';
 type RecipeListSortKey = 'nombre' | 'tiempo' | 'fases';
 type ResponsibleRole = 'Operario' | 'Supervisor' | 'Manager';
 
-const WIZARD_STEP_ORDER: RecetaRecipeWizardStepId[] = ['general', 'phases', 'review'];
+const WIZARD_STEP_ORDER: RecetaRecipeWizardStepId[] = ['general', 'composition', 'phases'];
 
 const responsibleOptions = [
   { value: 'Operario', label: 'Operario' },
@@ -362,6 +374,8 @@ export function RecipesManagementScreen({
   const [rejectReason, setRejectReason] = useState('');
   const [estimatedMinutes, setEstimatedMinutes] = useState('30');
   const [phases, setPhases] = useState<RecipePhase[]>([]);
+  const [compositionRows, setCompositionRows] = useState<RecipeCompositionRow[]>([]);
+  const [compositionFieldErrors, setCompositionFieldErrors] = useState<Record<string, string>>({});
   const [finishedProductId, setFinishedProductId] = useState('');
   const [saveError, setSaveError] = useState<string | null>(null);
   const [togglingRecipeId, setTogglingRecipeId] = useState<string | null>(null);
@@ -486,6 +500,20 @@ export function RecipesManagementScreen({
     [phases],
   );
 
+  const compositionReadOnly = lifecycleStatus === 'INACTIVE';
+  const compositionTotalNetGrams = useMemo(
+    () => calculateTotalNetGrams(compositionRows),
+    [compositionRows],
+  );
+  const compositionTotalNetLabel = useMemo(
+    () => formatCompositionTotalLabel(compositionTotalNetGrams),
+    [compositionTotalNetGrams],
+  );
+  const compositionBatchWeightWarning = useMemo(
+    () => buildBatchWeightWarning(compositionTotalNetGrams, packageWeightGrams),
+    [compositionTotalNetGrams, packageWeightGrams],
+  );
+
   useEffect(() => {
     setCurrentView(view);
   }, [view]);
@@ -541,6 +569,12 @@ export function RecipesManagementScreen({
     );
     setPhases(detail.phases.map(mapPlantPhaseToEditor));
     setPersistedPhaseIds(detail.phases.map((phase) => phase.id));
+    setCompositionRows(
+      (detail.composition ?? [])
+        .map(mapPlantCompositionToRow)
+        .sort((a, b) => a.sortOrder - b.sortOrder),
+    );
+    setCompositionFieldErrors({});
   }, [editingRecipeId, recipeDetailQuery.data]);
 
   useEffect(() => {
@@ -751,6 +785,18 @@ export function RecipesManagementScreen({
     return true;
   };
 
+  const validateCompositionStep = (): boolean => {
+    const validation = validateRecipeCompositionRows(compositionRows);
+    if (!validation.success) {
+      setCompositionFieldErrors(validation.fieldErrors ?? {});
+      setSaveError(validation.message ?? 'Revisa la composición de la receta');
+      return false;
+    }
+    setCompositionFieldErrors({});
+    setSaveError(null);
+    return true;
+  };
+
   const validatePhasesStep = (): boolean => {
     if (phases.length === 0) {
       setSaveError('Agrega al menos una fase al proceso');
@@ -762,11 +808,11 @@ export function RecipesManagementScreen({
 
   const handleWizardNext = (): void => {
     if (wizardStep === 'general' && validateGeneralStep()) {
-      advanceWizardStep('phases');
+      advanceWizardStep('composition');
       return;
     }
-    if (wizardStep === 'phases' && validatePhasesStep()) {
-      advanceWizardStep('review');
+    if (wizardStep === 'composition' && validateCompositionStep()) {
+      advanceWizardStep('phases');
     }
   };
 
@@ -813,6 +859,8 @@ export function RecipesManagementScreen({
     setFieldErrors({});
     setRejectReason('');
     setPhases([]);
+    setCompositionRows([]);
+    setCompositionFieldErrors({});
     setFinishedProductId('');
     setSaveError(null);
     resetWizardNavigation();
@@ -896,15 +944,18 @@ export function RecipesManagementScreen({
 
   const handleSaveRecipe = async (): Promise<void> => {
     const formValues = buildFormValues();
-    const validation = validateRecipeFormGeneral(formValues);
-    if (!validation.success) {
-      setFieldErrors(validation.fieldErrors);
-      setSaveError(validation.message);
+    const generalValidation = validateRecipeFormGeneral(formValues);
+    if (!generalValidation.success) {
+      setFieldErrors(generalValidation.fieldErrors);
+      setSaveError(generalValidation.message);
       return;
     }
 
-    if (phases.length === 0) {
-      setSaveError('Agrega al menos una fase al proceso');
+    if (!validateCompositionStep()) {
+      return;
+    }
+
+    if (!validatePhasesStep()) {
       return;
     }
 
@@ -943,6 +994,7 @@ export function RecipesManagementScreen({
       technicalResponsible: technicalResponsible as TechnicalResponsible,
       allergens,
       notes: notes.trim() || undefined,
+      composition: mapCompositionRowsToApi(compositionRows),
     };
 
     saveRecipeMutation.mutate(
@@ -1013,6 +1065,52 @@ export function RecipesManagementScreen({
         },
       },
     );
+  };
+
+  const handleAddCompositionRow = (): void => {
+    setCompositionRows((prev) => [...prev, createEmptyCompositionRow(prev.length)]);
+  };
+
+  const handleRemoveCompositionRow = (rowId: string): void => {
+    const row = compositionRows.find((item) => item.id === rowId);
+    if (row?.persisted && editingRecipeId) {
+      const confirmed = window.confirm(
+        '¿Eliminar este componente de la composición? Este cambio se guardará al actualizar la receta.',
+      );
+      if (!confirmed) {
+        return;
+      }
+    }
+    setCompositionRows((prev) =>
+      prev
+        .filter((item) => item.id !== rowId)
+        .map((item, index) => ({ ...item, sortOrder: index })),
+    );
+  };
+
+  const handleDuplicateCompositionRow = (rowId: string): void => {
+    const row = compositionRows.find((item) => item.id === rowId);
+    if (!row) {
+      return;
+    }
+    setCompositionRows((prev) => [...prev, duplicateCompositionRow(row, prev.length)]);
+  };
+
+  const handleMoveCompositionRow = (rowId: string, direction: 'up' | 'down'): void => {
+    setCompositionRows((prev) => {
+      const index = prev.findIndex((item) => item.id === rowId);
+      if (index < 0) {
+        return prev;
+      }
+      const targetIndex = direction === 'up' ? index - 1 : index + 1;
+      if (targetIndex < 0 || targetIndex >= prev.length) {
+        return prev;
+      }
+      const next = [...prev];
+      const [moved] = next.splice(index, 1);
+      next.splice(targetIndex, 0, moved);
+      return next.map((item, sortOrder) => ({ ...item, sortOrder }));
+    });
   };
 
   const resetPhaseModalDraft = (): void => {
@@ -1724,7 +1822,28 @@ export function RecipesManagementScreen({
           savingDraft: saving,
           extraContent: wizardStep === 'general' ? generalExtraContent : null,
         }}
-        phasesStep={{
+        compositionStep={{
+          componentCount: compositionRows.length,
+          totalNetLabel: compositionTotalNetLabel,
+          batchWeightWarning: compositionBatchWeightWarning,
+          readOnly: compositionReadOnly,
+          onAddComponent: handleAddCompositionRow,
+          children: (
+            <RecipeCompositionTable
+              rows={compositionRows}
+              supplyItems={supplyItems}
+              supplyItemsLoading={supplyItemsQuery.isLoading}
+              readOnly={compositionReadOnly}
+              theme={theme}
+              fieldErrors={compositionFieldErrors}
+              onRowsChange={setCompositionRows}
+              onRemoveRow={handleRemoveCompositionRow}
+              onDuplicateRow={handleDuplicateCompositionRow}
+              onMoveRow={handleMoveCompositionRow}
+            />
+          ),
+        }}
+        productionPhasesStep={{
           phases: phases.map((phase) => ({
             id: phase.id,
             title: phase.title,
@@ -1743,40 +1862,6 @@ export function RecipesManagementScreen({
             setPhases((prev) => prev.filter((item) => item.id !== phaseId));
           },
           totalMinutes,
-        }}
-        reviewStep={{
-          name: name.trim() || 'Sin nombre',
-          codeLabel: editorCode !== 'Nueva' ? editorCode : undefined,
-          categoryLabel: selectedCategory?.nombre,
-          recipeTypeLabel: getRecipeTypeLabel(recipeType ? (recipeType as RecipeType) : null),
-          finishedProductLabel: selectedProduct
-            ? `${selectedProduct.nombre} (${selectedProduct.codigoInterno})`
-            : undefined,
-          batchLabel: `${batchSize} ${batchDisplayUnitLabel}`,
-          packageWeightGramsLabel: packageWeightGrams ? `${packageWeightGrams} g` : undefined,
-          expectedYieldLabel:
-            expectedYield && expectedYieldUnit
-              ? `${expectedYield} ${expectedYieldUnit}`
-              : undefined,
-          estimatedMinutes: estimatedTotalMinutes,
-          lifecycleStatusLabel: LIFECYCLE_STATUS_LABELS[lifecycleStatus],
-          operationCenterLabel: getOperationCenterLabel(
-            operationCenter ? (operationCenter as OperationCenter) : null,
-          ),
-          locationsLabel: selectedLocationLabels || undefined,
-          technicalResponsibleLabel: getTechnicalResponsibleLabel(
-            technicalResponsible ? (technicalResponsible as TechnicalResponsible) : null,
-          ),
-          allergensLabel: getAllergenLabels(allergens),
-          createdAtLabel,
-          notes,
-          phases: phases.map((phase) => ({
-            id: phase.id,
-            title: phase.title,
-            description: phase.description,
-            durationMin: phase.durationMin,
-            assignee: phase.assignee,
-          })),
         }}
       />
 

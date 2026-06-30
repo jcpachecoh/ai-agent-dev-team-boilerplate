@@ -17,7 +17,11 @@ import {
   IsString,
   MaxLength,
   Min,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
+
+import { RecipeCompositionLineDto } from './recipe-composition.dto';
 
 export class UpdateRecipeDto {
   @ApiPropertyOptional({ example: 'Pan integral 500g' })
@@ -130,4 +134,11 @@ export class UpdateRecipeDto {
   @IsBoolean()
   @IsOptional()
   isDraft?: boolean;
+
+  @ApiPropertyOptional({ type: [RecipeCompositionLineDto] })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => RecipeCompositionLineDto)
+  @IsOptional()
+  composition?: RecipeCompositionLineDto[];
 }

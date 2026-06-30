@@ -11,5 +11,6 @@ export { usePlantRecipeDetail } from './usePlantRecipeDetail';
 export { useSavePlantRecipe, type SavePlantRecipeInput } from './usePlantRecipeMutations';
 export { usePlantRecipes } from './usePlantRecipes';
 export { usePlantWorkstations } from './usePlantWorkstations';
+export { useRecipeComposition } from './useRecipeComposition';
 export { useRecipeImages } from './useRecipeImages';
 export { useRecipeImageMutations } from './useRecipeImageMutations';

@@ -1,0 +1,117 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/receta-theme' as receta;
+
+.layout {
+  @include receta.receta-theme-dark;
+
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  min-height: 0;
+}
+
+.themeLight {
+  @include receta.receta-theme-light;
+}
+
+.themeDark {
+  @include receta.receta-theme-dark;
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  padding: $spacing-lg;
+  min-height: 0;
+  overflow: auto;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: $spacing-md;
+}
+
+.title {
+  margin: 0;
+  font-family: $font-family-mono;
+  font-size: 0.6875rem;
+  font-weight: $font-weight-bold;
+  line-height: 1.5;
+  color: var(--receta-text);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.hint {
+  margin: $spacing-xs 0 0;
+  font-size: $font-size-sm;
+  line-height: 1.5;
+  color: var(--receta-muted);
+}
+
+.empty {
+  margin: 0;
+  padding: $spacing-md;
+  border: 1px dashed var(--receta-border);
+  border-radius: $border-radius-sm;
+  color: var(--receta-muted);
+  font-size: $font-size-sm;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  padding: $spacing-lg;
+  border-left: 1px solid var(--receta-border);
+  background: var(--receta-surface-raised);
+  min-height: 0;
+  overflow: auto;
+}
+
+.layoutCompact {
+  grid-template-columns: 1fr;
+
+  .main {
+    padding: 16px 20px;
+  }
+
+  .sidebar {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: $spacing-sm;
+    padding: 12px 20px 16px;
+    border-top: 1px solid var(--receta-border);
+    border-left: none;
+  }
+
+  .hint {
+    font-size: $font-size-xs;
+  }
+}
+
+.metricsRow {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: $spacing-sm;
+  width: 100%;
+}
+
+@media (width <= 960px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    border-left: none;
+    border-top: 1px solid var(--receta-border);
+  }
+}

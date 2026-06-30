@@ -92,6 +92,7 @@ export * from './components/receta/receta-wizard-shell';
 export * from './components/receta/receta-wizard-field';
 export * from './components/receta/receta-recipe-wizard-general-step';
 export * from './components/receta/receta-recipe-wizard-phases-step';
+export * from './components/receta/receta-recipe-wizard-production-phases-step';
 export * from './components/receta/receta-recipe-wizard-review-step';
 export * from './components/receta/receta-recipe-wizard';
 export * from './components/receta/shared/receta-wizard-types';

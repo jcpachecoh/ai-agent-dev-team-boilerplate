@@ -24,6 +24,8 @@ import {
   ValidateNested,
 } from 'class-validator';
 
+import { RecipeCompositionLineDto } from './recipe-composition.dto';
+
 export class CreatePhaseInputNestedDto {
   @ApiProperty({ example: 'supply-item-uuid' })
   @IsString()
@@ -215,4 +217,12 @@ export class CreateRecipeDto {
   @ValidateNested({ each: true })
   @Type(() => CreatePhaseDto)
   phases?: CreatePhaseDto[];
+
+  @ApiPropertyOptional({ type: [RecipeCompositionLineDto] })
+  @ValidateIf((dto: CreateRecipeDto) => !dto.isDraft)
+  @IsArray()
+  @ArrayMinSize(1)
+  @ValidateNested({ each: true })
+  @Type(() => RecipeCompositionLineDto)
+  composition?: RecipeCompositionLineDto[];
 }

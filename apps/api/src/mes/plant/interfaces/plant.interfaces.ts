@@ -18,8 +18,11 @@ import type {
   ProductionRecipe,
   ProductionShift,
   RecipeAllergen,
+  RecipeComponentType,
+  RecipeCompositionLine,
   RecipeLifecycleStatus,
   RecipeType,
+  RecipeUsageUnit,
   StockUnit,
   TechnicalResponsible,
   WorkStation,
@@ -62,6 +65,16 @@ export interface CreatePhaseInputNestedInput {
   isOptional?: boolean;
 }
 
+export interface RecipeCompositionLineInput {
+  id?: string;
+  supplyItemId: string;
+  componentType: RecipeComponentType;
+  usageUnit: RecipeUsageUnit;
+  grossQuantity: Decimal;
+  netQuantity: Decimal;
+  sortOrder: number;
+}
+
 export interface CreatePhaseNestedInput {
   order: number;
   name: string;
@@ -95,6 +108,7 @@ export interface CreateRecipeWithPhasesInput {
   isDraft?: boolean;
   isActive?: boolean;
   phases: CreatePhaseNestedInput[];
+  composition?: RecipeCompositionLineInput[];
   actorUserId?: string | null;
 }
 
@@ -120,6 +134,7 @@ export interface UpdateRecipeInput {
   lifecycleStatus?: RecipeLifecycleStatus;
   isDraft?: boolean;
   rejectionReason?: string | null;
+  composition?: RecipeCompositionLineInput[];
 }
 
 /** Payload for repository transactional recipe + phases + inputs create. */
@@ -168,6 +183,14 @@ export interface CreateRecipeWithPhasesTxInput {
   }>;
   /** When versioning: id of the active recipe to deactivate in the same transaction. */
   deactivateRecipeId?: string;
+  composition?: Array<{
+    supplyItemId: string;
+    componentType: RecipeComponentType;
+    usageUnit: RecipeUsageUnit;
+    grossQuantity: Decimal;
+    netQuantity: Decimal;
+    sortOrder: number;
+  }>;
 }
 
 export type RecipeCategorySummary = {
@@ -175,14 +198,31 @@ export type RecipeCategorySummary = {
   nombre: string;
 };
 
+export type RecipeCompositionLineWithSupply = RecipeCompositionLine & {
+  supplyItem: { id: string; codigoInterno: string; nombre: string; unidadBase: StockUnit };
+};
+
 export type RecipeWithPhasesAndInputs = ProductionRecipe & {
   category: RecipeCategorySummary | null;
   phases: Array<ProductionPhase & { inputs: PhaseInput[] }>;
+  compositionLines: RecipeCompositionLineWithSupply[];
 };
 
 export interface RecipeDetailResponse extends ProductionRecipe {
   categoryName?: string | null;
   phases: Array<ProductionPhase & { inputs: PhaseInput[] }>;
+  composition: Array<{
+    id: string;
+    supplyItemId: string;
+    supplyItemCode: string;
+    supplyItemName: string;
+    componentType: RecipeComponentType;
+    usageUnit: RecipeUsageUnit;
+    grossQuantity: string;
+    netQuantity: string;
+    sortOrder: number;
+    shrinkagePercent: number;
+  }>;
   totalStandardMinutes: number;
 }
 
@@ -586,6 +626,10 @@ export interface IPlantRepository {
   findAllRecipes(tenantId: string): Promise<ProductionRecipe[]>;
   findRecipeById(tenantId: string, id: string): Promise<ProductionRecipe | null>;
   findActiveRecipeByName(tenantId: string, name: string): Promise<ProductionRecipe | null>;
+  findActiveRecipeByFinishedProductId(
+    tenantId: string,
+    supplyItemId: string,
+  ): Promise<ProductionRecipe | null>;
   findRecipeDetailById(tenantId: string, id: string): Promise<RecipeWithPhasesAndInputs | null>;
   createRecipeWithPhasesTx(input: CreateRecipeWithPhasesTxInput): Promise<ProductionRecipe>;
   updateRecipe(tenantId: string, id: string, data: UpdateRecipeInput): Promise<ProductionRecipe>;
@@ -693,6 +737,7 @@ export interface IPlantService {
   >;
   findAllRecipes(tenantId: string): Promise<ProductionRecipe[]>;
   findRecipeById(tenantId: string, id: string): Promise<RecipeDetailResponse>;
+  findRecipeBySupplyItem(tenantId: string, supplyItemId: string): Promise<ProductionRecipe>;
   updateRecipe(tenantId: string, id: string, input: UpdateRecipeInput): Promise<ProductionRecipe>;
   cloneRecipe(tenantId: string, id: string): Promise<ProductionRecipe>;
   softDeleteRecipe(tenantId: string, id: string): Promise<ProductionRecipe>;

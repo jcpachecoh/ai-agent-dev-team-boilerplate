@@ -90,10 +90,34 @@ export type PlantRecipePhase = {
   inputs: PlantRecipePhaseInput[];
 };
 
+export type PlantRecipeCompositionLine = {
+  id: string;
+  supplyItemId: string;
+  supplyItemCode: string;
+  supplyItemName: string;
+  componentType: RecipeComponentType;
+  usageUnit: RecipeUsageUnit;
+  grossQuantity: string;
+  netQuantity: string;
+  sortOrder: number;
+  shrinkagePercent: number;
+};
+
+export type RecipeComponentType =
+  | 'INGREDIENT'
+  | 'SUB_RECIPE'
+  | 'PACKAGING'
+  | 'SAUCE'
+  | 'TOPPING'
+  | 'DECORATION';
+
+export type RecipeUsageUnit = 'GRAM' | 'MILLILITER' | 'UNIT' | 'KILOGRAM' | 'LITER' | 'OUNCE';
+
 export type PlantRecipeDetail = PlantProductionRecipe & {
   categoryName?: string | null;
   locationIds?: string[];
   phases: PlantRecipePhase[];
+  composition: PlantRecipeCompositionLine[];
   totalStandardMinutes: number;
 };
 
@@ -172,4 +196,12 @@ export type CreatePlantRecipeInput = {
   isDraft?: boolean;
   isActive?: boolean;
   phases?: CreatePlantRecipePhaseInput[];
+  composition?: Array<{
+    supplyItemId: string;
+    componentType: RecipeComponentType;
+    usageUnit: RecipeUsageUnit;
+    grossQuantity: string;
+    netQuantity: string;
+    sortOrder: number;
+  }>;
 };

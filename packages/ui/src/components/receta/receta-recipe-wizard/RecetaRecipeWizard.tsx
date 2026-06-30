@@ -5,9 +5,9 @@ import { RecetaFormButton } from '../receta-form-button/RecetaFormButton';
 import { RecetaRecipeWizardGeneralStep } from '../receta-recipe-wizard-general-step/RecetaRecipeWizardGeneralStep';
 import type { RecetaRecipeWizardGeneralStepProps } from '../receta-recipe-wizard-general-step/RecetaRecipeWizardGeneralStep';
 import { RecetaRecipeWizardPhasesStep } from '../receta-recipe-wizard-phases-step/RecetaRecipeWizardPhasesStep';
-import type { RecetaRecipeWizardPhasesStepProps } from '../receta-recipe-wizard-phases-step/RecetaRecipeWizardPhasesStep';
-import { RecetaRecipeWizardReviewStep } from '../receta-recipe-wizard-review-step/RecetaRecipeWizardReviewStep';
-import type { RecetaRecipeWizardReviewStepProps } from '../receta-recipe-wizard-review-step/RecetaRecipeWizardReviewStep';
+import type { RecetaRecipeWizardCompositionStepProps } from '../receta-recipe-wizard-phases-step/RecetaRecipeWizardPhasesStep';
+import { RecetaRecipeWizardProductionPhasesStep } from '../receta-recipe-wizard-production-phases-step/RecetaRecipeWizardProductionPhasesStep';
+import type { RecetaRecipeWizardProductionPhasesStepProps } from '../receta-recipe-wizard-production-phases-step/RecetaRecipeWizardProductionPhasesStep';
 import { RecetaWizardShell } from '../receta-wizard-shell/RecetaWizardShell';
 import type { RecetaTheme } from '../shared/receta-types';
 import type { RecetaRecipeWizardStepId } from '../shared/receta-wizard-types';
@@ -15,8 +15,8 @@ import styles from './RecetaRecipeWizard.module.scss';
 
 const WIZARD_STEPS: Array<{ id: RecetaRecipeWizardStepId; label: string }> = [
   { id: 'general', label: 'Datos generales' },
+  { id: 'composition', label: 'Composición' },
   { id: 'phases', label: 'Fases' },
-  { id: 'review', label: 'Revisión' },
 ];
 
 const themeClasses: Record<RecetaTheme, string> = {
@@ -43,8 +43,8 @@ export interface RecetaRecipeWizardProps {
   nextDisabled?: boolean;
   saveDisabled?: boolean;
   generalStep: RecetaRecipeWizardGeneralStepProps;
-  phasesStep: RecetaRecipeWizardPhasesStepProps;
-  reviewStep: RecetaRecipeWizardReviewStepProps;
+  compositionStep: RecetaRecipeWizardCompositionStepProps;
+  productionPhasesStep: RecetaRecipeWizardProductionPhasesStepProps;
   className?: string;
 }
 
@@ -71,8 +71,8 @@ export function RecetaRecipeWizard({
   nextDisabled = false,
   saveDisabled = false,
   generalStep,
-  phasesStep,
-  reviewStep,
+  compositionStep,
+  productionPhasesStep,
   className,
 }: RecetaRecipeWizardProps): JSX.Element | null {
   const resolvedTitle = title ?? (mode === 'edit' ? 'Editar Receta' : 'Nueva Receta');
@@ -140,7 +140,7 @@ export function RecetaRecipeWizard({
         />
       )}
 
-      {currentStep === 'review' ? (
+      {currentStep === 'phases' ? (
         <RecetaFormButton
           variant="save"
           theme={theme}
@@ -188,11 +188,15 @@ export function RecetaRecipeWizard({
           {currentStep === 'general' ? (
             <RecetaRecipeWizardGeneralStep theme={theme} compact {...generalStep} />
           ) : null}
-          {currentStep === 'phases' ? (
-            <RecetaRecipeWizardPhasesStep theme={theme} compact {...phasesStep} />
+          {currentStep === 'composition' ? (
+            <RecetaRecipeWizardPhasesStep theme={theme} compact {...compositionStep} />
           ) : null}
-          {currentStep === 'review' ? (
-            <RecetaRecipeWizardReviewStep theme={theme} compact {...reviewStep} />
+          {currentStep === 'phases' ? (
+            <RecetaRecipeWizardProductionPhasesStep
+              theme={theme}
+              compact
+              {...productionPhasesStep}
+            />
           ) : null}
         </RecetaWizardShell>
       </div>

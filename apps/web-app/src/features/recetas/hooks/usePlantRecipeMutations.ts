@@ -31,6 +31,7 @@ export type UpdatePlantRecipePayload = Partial<
     | 'notes'
     | 'isActive'
     | 'isDraft'
+    | 'composition'
   >
 >;
 

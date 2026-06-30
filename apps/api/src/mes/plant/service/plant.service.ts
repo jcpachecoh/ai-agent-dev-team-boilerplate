@@ -8,6 +8,7 @@ import {
   PhaseExecutionStatus,
   ProductionOrderStatus,
   ProductionPriority,
+  RecipeComponentType,
   StockUnit,
   type PhaseInput,
   type ProductionPhase,
@@ -39,6 +40,7 @@ import type {
   RecipeWithPhasesAndInputs,
   RecipeDetailResponse,
   ReorderPhaseItem,
+  RecipeCompositionLineInput,
   UpdatePhaseInput,
   UpdateRecipeInput,
   UpdateWorkStationInput,
@@ -50,6 +52,7 @@ import {
   gramsToLegacyPackageWeightKg,
   mapBatchDisplayUnitToStockUnit,
 } from '../utils/recipe-form.utils';
+import { calculateShrinkagePercent, isNetQuantityValid } from '../utils/recipe-composition.utils';
 
 @Injectable()
 export class PlantService implements IPlantService {
@@ -154,12 +157,21 @@ export class PlantService implements IPlantService {
       if (!input.finishedProductId?.trim()) {
         throw new BadRequestException('Finished product is required');
       }
+      if (!input.composition?.length) {
+        throw new BadRequestException('At least one composition line is required');
+      }
       if (input.phases.length === 0) {
         throw new BadRequestException('At least one phase is required');
       }
+      await this.validateCompositionLines(tenantId, input.composition);
       await this.validateNestedPhases(tenantId, input.phases);
-    } else if (input.phases.length > 0) {
-      await this.validateNestedPhases(tenantId, input.phases);
+    } else {
+      if (input.composition?.length) {
+        await this.validateCompositionLines(tenantId, input.composition);
+      }
+      if (input.phases.length > 0) {
+        await this.validateNestedPhases(tenantId, input.phases);
+      }
     }
 
     const batchUnit =
@@ -312,8 +324,33 @@ export class PlantService implements IPlantService {
     return {
       ...recipe,
       categoryName: recipe.category?.nombre ?? null,
+      composition: recipe.compositionLines?.map((line) => ({
+        id: line.id,
+        supplyItemId: line.supplyItemId,
+        supplyItemCode: line.supplyItem.codigoInterno,
+        supplyItemName: line.supplyItem.nombre,
+        componentType: line.componentType,
+        usageUnit: line.usageUnit,
+        grossQuantity: line.grossQuantity.toString(),
+        netQuantity: line.netQuantity.toString(),
+        sortOrder: line.sortOrder,
+        shrinkagePercent: calculateShrinkagePercent(line.grossQuantity, line.netQuantity),
+      })),
       totalStandardMinutes,
     };
+  }
+
+  findRecipeBySupplyItem(tenantId: string, supplyItemId: string): Promise<ProductionRecipe> {
+    return this.plantRepository
+      .findActiveRecipeByFinishedProductId(tenantId, supplyItemId)
+      .then((recipe) => {
+        if (!recipe) {
+          throw new NotFoundException(
+            `No active recipe is linked to supply item "${supplyItemId}"`,
+          );
+        }
+        return recipe;
+      });
   }
 
   async updateRecipe(
@@ -322,6 +359,10 @@ export class PlantService implements IPlantService {
     input: UpdateRecipeInput,
   ): Promise<ProductionRecipe> {
     const recipe = await this.requireRecipe(tenantId, id);
+
+    if (recipe.lifecycleStatus === 'INACTIVE' && input.composition !== undefined) {
+      throw new BadRequestException('Cannot modify composition on an inactive recipe');
+    }
 
     const updateData: UpdateRecipeInput & { version?: number } = { ...input };
 
@@ -363,6 +404,18 @@ export class PlantService implements IPlantService {
       throw new BadRequestException('Notes must be at most 500 characters');
     }
 
+    if (input.composition !== undefined) {
+      const becomingFullRecipe = input.isDraft === false && recipe.isDraft;
+      if (!recipe.isDraft || becomingFullRecipe) {
+        if (!input.composition.length) {
+          throw new BadRequestException('At least one composition line is required');
+        }
+      }
+      if (input.composition.length > 0) {
+        await this.validateCompositionLines(tenantId, input.composition);
+      }
+    }
+
     if (input.name !== undefined && input.name !== recipe.name) {
       const conflict = await this.plantRepository.findActiveRecipeByName(tenantId, input.name);
       if (conflict && conflict.id !== id) {
@@ -372,6 +425,35 @@ export class PlantService implements IPlantService {
     }
 
     return this.plantRepository.updateRecipe(tenantId, id, updateData);
+  }
+
+  async syncRecipeComposition(
+    tenantId: string,
+    recipeId: string,
+    composition: RecipeCompositionLineInput[],
+    actorUserId?: string | null,
+  ): Promise<ProductionRecipe> {
+    const recipe = await this.requireRecipe(tenantId, recipeId);
+    if (recipe.lifecycleStatus === 'INACTIVE') {
+      throw new BadRequestException('Cannot modify composition on an inactive recipe');
+    }
+    if (!composition.length) {
+      throw new BadRequestException('At least one composition line is required');
+    }
+    await this.validateCompositionLines(tenantId, composition);
+
+    const updated = await this.plantRepository.updateRecipe(tenantId, recipeId, { composition });
+
+    await this.auditService.log({
+      tenantId,
+      action: 'UPDATE',
+      entityType: 'RecipeComposition',
+      entityId: recipeId,
+      actorUserId: actorUserId ?? null,
+      newValue: { lineCount: composition.length },
+    });
+
+    return updated;
   }
 
   async cloneRecipe(tenantId: string, id: string): Promise<ProductionRecipe> {
@@ -1242,7 +1324,47 @@ export class PlantService implements IPlantService {
           isOptional: item.isOptional ?? false,
         })),
       })),
+      composition: (input.composition ?? []).map((line) => ({
+        supplyItemId: line.supplyItemId,
+        componentType: line.componentType,
+        usageUnit: line.usageUnit,
+        grossQuantity: line.grossQuantity,
+        netQuantity: line.netQuantity,
+        sortOrder: line.sortOrder,
+      })),
     };
+  }
+
+  private async validateCompositionLines(
+    tenantId: string,
+    lines: RecipeCompositionLineInput[],
+  ): Promise<void> {
+    for (const line of lines) {
+      if (!isNetQuantityValid(line.grossQuantity, line.netQuantity)) {
+        throw new BadRequestException(
+          'Net quantity must be greater than zero and less than or equal to gross quantity',
+        );
+      }
+
+      const supplyItem = await this.supplyItemsService.findOne(tenantId, line.supplyItemId);
+      if (!supplyItem.isActive) {
+        throw new BadRequestException(
+          `Supply item "${supplyItem.codigoInterno}" is inactive and cannot be used in composition`,
+        );
+      }
+
+      if (line.componentType === RecipeComponentType.SUB_RECIPE) {
+        const linkedRecipe = await this.plantRepository.findActiveRecipeByFinishedProductId(
+          tenantId,
+          line.supplyItemId,
+        );
+        if (!linkedRecipe) {
+          throw new BadRequestException(
+            `Supply item "${supplyItem.codigoInterno}" must be linked to an active sub-recipe`,
+          );
+        }
+      }
+    }
   }
 
   private async resolveCategoryId(

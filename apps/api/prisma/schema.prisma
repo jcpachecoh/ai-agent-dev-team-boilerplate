@@ -260,8 +260,9 @@ model SupplyItem {
   location         Location?                  @relation(fields: [locationId], references: [id], onDelete: SetNull)
   supplierProducts SupplierProduct[]
   priceHistory     SupplyItemPriceHistory[]
-  orderMaterials   ProductionOrderMaterial[]
-  alertResolutions InventoryAlertResolution[]
+  orderMaterials      ProductionOrderMaterial[]
+  alertResolutions    InventoryAlertResolution[]
+  compositionLines    RecipeCompositionLine[]
 
   @@unique([tenantId, codigoInterno])
   @@index([tenantId, categoriaId])
@@ -955,6 +956,24 @@ enum BatchDisplayUnit {
   BATCH
 }
 
+enum RecipeComponentType {
+  INGREDIENT
+  SUB_RECIPE
+  PACKAGING
+  SAUCE
+  TOPPING
+  DECORATION
+}
+
+enum RecipeUsageUnit {
+  GRAM
+  MILLILITER
+  UNIT
+  KILOGRAM
+  LITER
+  OUNCE
+}
+
 model RecipeCategory {
   id           String   @id @default(cuid())
   tenantId     String
@@ -1006,8 +1025,9 @@ model ProductionRecipe {
   phases         ProductionPhase[]
   orders         ProductionOrder[]
   images         RecipeImage[]
-  locations      ProductionRecipeLocation[]
-  statusHistory  RecipeStatusHistory[]
+  locations        ProductionRecipeLocation[]
+  statusHistory    RecipeStatusHistory[]
+  compositionLines RecipeCompositionLine[]
 
   @@unique([tenantId, code])
   @@unique([tenantId, categoryId, name])
@@ -1047,6 +1067,27 @@ model RecipeStatusHistory {
   @@index([tenantId, recipeId])
   @@index([recipeId, createdAt])
   @@map("recipe_status_history")
+}
+
+model RecipeCompositionLine {
+  id            String              @id @default(cuid())
+  tenantId      String
+  recipeId      String
+  supplyItemId  String
+  componentType RecipeComponentType
+  usageUnit     RecipeUsageUnit
+  grossQuantity Decimal             @db.Decimal(10, 3)
+  netQuantity   Decimal             @db.Decimal(10, 3)
+  sortOrder     Int
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  recipe     ProductionRecipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  supplyItem SupplyItem       @relation(fields: [supplyItemId], references: [id])
+
+  @@index([tenantId, recipeId])
+  @@index([recipeId, sortOrder])
+  @@map("recipe_composition_lines")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

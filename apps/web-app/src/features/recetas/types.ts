@@ -191,3 +191,45 @@ export function splitEstimatedMinutes(totalMinutes: number): { hours: string; mi
     minutes: String(minutes),
   };
 }
+
+export type RecipeComponentType =
+  | 'INGREDIENT'
+  | 'SUB_RECIPE'
+  | 'PACKAGING'
+  | 'SAUCE'
+  | 'TOPPING'
+  | 'DECORATION';
+
+export type RecipeUsageUnit = 'GRAM' | 'MILLILITER' | 'UNIT' | 'KILOGRAM' | 'LITER' | 'OUNCE';
+
+export const RECIPE_COMPONENT_TYPE_OPTIONS: Array<{ value: RecipeComponentType; label: string }> = [
+  { value: 'INGREDIENT', label: 'Ingrediente' },
+  { value: 'SUB_RECIPE', label: 'Subreceta' },
+  { value: 'PACKAGING', label: 'Empaque' },
+  { value: 'SAUCE', label: 'Salsa' },
+  { value: 'TOPPING', label: 'Topping' },
+  { value: 'DECORATION', label: 'Decoración' },
+];
+
+export const RECIPE_USAGE_UNIT_OPTIONS: Array<{ value: RecipeUsageUnit; label: string }> = [
+  { value: 'GRAM', label: 'Gramo' },
+  { value: 'MILLILITER', label: 'Mililitro' },
+  { value: 'UNIT', label: 'Unidad' },
+  { value: 'KILOGRAM', label: 'Kilo' },
+  { value: 'LITER', label: 'Litro' },
+  { value: 'OUNCE', label: 'Onza' },
+];
+
+export interface RecipeCompositionRow {
+  id: string;
+  supplyItemId: string;
+  supplyItemCode: string;
+  supplyItemName: string;
+  supplyItemBaseUnit?: import('@/features/inventario/types').StockUnit;
+  componentType: RecipeComponentType | '';
+  usageUnit: RecipeUsageUnit | '';
+  grossQuantity: string;
+  netQuantity: string;
+  sortOrder: number;
+  persisted?: boolean;
+}

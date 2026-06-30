@@ -4,7 +4,7 @@ import { RecetaCategoryChip } from '../receta-category-chip/RecetaCategoryChip';
 import { RecetaStatusButton } from '../receta-status-button/RecetaStatusButton';
 import { RecetaStepCard } from '../receta-step-card/RecetaStepCard';
 import type { RecetaTheme } from '../shared/receta-types';
-import type { RecetaRecipeWizardPhaseItem } from '../receta-recipe-wizard-phases-step/RecetaRecipeWizardPhasesStep';
+import type { RecetaRecipeWizardProductionPhaseItem } from '../receta-recipe-wizard-production-phases-step/RecetaRecipeWizardProductionPhasesStep';
 import styles from './RecetaRecipeWizardReviewStep.module.scss';
 
 export interface RecetaRecipeWizardReviewStepProps {
@@ -25,7 +25,9 @@ export interface RecetaRecipeWizardReviewStepProps {
   allergensLabel?: string;
   createdAtLabel?: string;
   notes?: string;
-  phases: RecetaRecipeWizardPhaseItem[];
+  phases: RecetaRecipeWizardProductionPhaseItem[];
+  compositionCount?: number;
+  compositionTotalNetLabel?: string;
   compact?: boolean;
   className?: string;
 }
@@ -63,6 +65,8 @@ export function RecetaRecipeWizardReviewStep({
   createdAtLabel,
   notes,
   phases,
+  compositionCount,
+  compositionTotalNetLabel,
   compact = false,
   className,
 }: RecetaRecipeWizardReviewStepProps): JSX.Element {
@@ -121,6 +125,12 @@ export function RecetaRecipeWizardReviewStep({
             <ReviewRow label="Responsable técnico" value={technicalResponsibleLabel} />
           ) : null}
           {allergensLabel ? <ReviewRow label="Alérgenos" value={allergensLabel} /> : null}
+          {compositionCount != null ? (
+            <ReviewRow label="Componentes" value={String(compositionCount)} />
+          ) : null}
+          {compositionTotalNetLabel ? (
+            <ReviewRow label="Total neto composición" value={compositionTotalNetLabel} />
+          ) : null}
           {createdAtLabel ? <ReviewRow label="Fecha de creación" value={createdAtLabel} /> : null}
           {notes?.trim() ? <ReviewRow label="Notas" value={notes.trim()} /> : null}
         </div>

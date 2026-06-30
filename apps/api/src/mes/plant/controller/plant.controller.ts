@@ -47,6 +47,7 @@ import type {
   CreatePhaseInputInput,
   CreatePhaseNestedInput,
   CreateRecipeWithPhasesInput,
+  RecipeCompositionLineInput,
   UpdatePhaseInput,
   IncidentResponse,
   ListIncidentsFilters,
@@ -85,6 +86,7 @@ import { CreateIncidentDto } from './dto/create-incident.dto';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { CreatePhaseInputDto } from './dto/create-phase-input.dto';
 import { CreateRecipeDto } from './dto/create-recipe.dto';
+import { RecipeCompositionLineDto } from './dto/recipe-composition.dto';
 import { RejectRecipeDto } from './dto/reject-recipe.dto';
 import { CreateWorkstationDto } from './dto/create-workstation.dto';
 import { FinishOrderDto } from './dto/finish-order.dto';
@@ -364,6 +366,14 @@ export class PlantController {
   @HttpCode(HttpStatus.CREATED)
   cloneRecipe(@Req() req: MesRequest, @Param('id') id: string): Promise<ProductionRecipe> {
     return this.plantService.cloneRecipe(this.resolveTenantId(req), id);
+  }
+
+  @Get('recipes/by-supply-item/:supplyItemId')
+  findRecipeBySupplyItem(
+    @Req() req: MesRequest,
+    @Param('supplyItemId') supplyItemId: string,
+  ): Promise<ProductionRecipe> {
+    return this.plantService.findRecipeBySupplyItem(this.resolveTenantId(req), supplyItemId);
   }
 
   @ApiOperation({ summary: 'Get recipe detail with phases, inputs, and total standard minutes' })
@@ -879,6 +889,19 @@ export class PlantController {
       notes: dto.notes ?? null,
       isDraft: dto.isDraft ?? false,
       phases: (dto.phases ?? []).map((phase) => this.toCreatePhaseNestedInput(phase)),
+      composition: (dto.composition ?? []).map((line) => this.toCompositionLineInput(line)),
+    };
+  }
+
+  private toCompositionLineInput(dto: RecipeCompositionLineDto): RecipeCompositionLineInput {
+    return {
+      id: dto.id,
+      supplyItemId: dto.supplyItemId,
+      componentType: dto.componentType,
+      usageUnit: dto.usageUnit,
+      grossQuantity: new Decimal(dto.grossQuantity),
+      netQuantity: new Decimal(dto.netQuantity),
+      sortOrder: dto.sortOrder,
     };
   }
 
@@ -955,6 +978,7 @@ export class PlantController {
       notes: dto.notes,
       isActive: dto.isActive,
       isDraft: dto.isDraft,
+      composition: dto.composition?.map((line) => this.toCompositionLineInput(line)),
     };
   }
 

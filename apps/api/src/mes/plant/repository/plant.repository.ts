@@ -128,6 +128,20 @@ export class PlantRepository implements IPlantRepository {
     });
   }
 
+  findActiveRecipeByFinishedProductId(
+    tenantId: string,
+    supplyItemId: string,
+  ): Promise<ProductionRecipe | null> {
+    return this.prisma.productionRecipe.findFirst({
+      where: {
+        tenantId,
+        finishedProductId: supplyItemId,
+        lifecycleStatus: 'ACTIVE',
+        isDraft: false,
+      },
+    });
+  }
+
   async previewNextRecipeCode(tenantId: string, categoryId: string): Promise<string> {
     const category = await this.prisma.recipeCategory.findFirst({
       where: { id: categoryId, tenantId, isActive: true },
@@ -168,6 +182,14 @@ export class PlantRepository implements IPlantRepository {
         phases: {
           orderBy: { order: 'asc' },
           include: { inputs: true },
+        },
+        compositionLines: {
+          orderBy: { sortOrder: 'asc' },
+          include: {
+            supplyItem: {
+              select: { id: true, codigoInterno: true, nombre: true, unidadBase: true },
+            },
+          },
         },
       },
     });
@@ -237,6 +259,21 @@ export class PlantRepository implements IPlantRepository {
         });
       }
 
+      if (input.composition?.length) {
+        await tx.recipeCompositionLine.createMany({
+          data: input.composition.map((line) => ({
+            tenantId: input.tenantId,
+            recipeId: recipe.id,
+            supplyItemId: line.supplyItemId,
+            componentType: line.componentType,
+            usageUnit: line.usageUnit,
+            grossQuantity: line.grossQuantity,
+            netQuantity: line.netQuantity,
+            sortOrder: line.sortOrder,
+          })),
+        });
+      }
+
       for (const phase of input.phases) {
         const createdPhase = await tx.productionPhase.create({
           data: {
@@ -272,7 +309,7 @@ export class PlantRepository implements IPlantRepository {
   }
 
   updateRecipe(tenantId: string, id: string, data: UpdateRecipeInput): Promise<ProductionRecipe> {
-    const { locationIds, ...recipeData } = data;
+    const { locationIds, composition, ...recipeData } = data;
 
     return this.prisma.$transaction(async (tx) => {
       const recipe = await tx.productionRecipe.update({
@@ -301,6 +338,27 @@ export class PlantRepository implements IPlantRepository {
         await tx.productionRecipeLocation.deleteMany({
           where: { recipeId: id, tenantId },
         });
+      }
+
+      if (composition !== undefined) {
+        await tx.recipeCompositionLine.deleteMany({
+          where: { recipeId: id, tenantId },
+        });
+
+        if (composition.length > 0) {
+          await tx.recipeCompositionLine.createMany({
+            data: composition.map((line) => ({
+              tenantId,
+              recipeId: id,
+              supplyItemId: line.supplyItemId,
+              componentType: line.componentType,
+              usageUnit: line.usageUnit,
+              grossQuantity: line.grossQuantity,
+              netQuantity: line.netQuantity,
+              sortOrder: line.sortOrder,
+            })),
+          });
+        }
       }
 
       return recipe;

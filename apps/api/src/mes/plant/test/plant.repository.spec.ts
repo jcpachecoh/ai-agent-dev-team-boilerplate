@@ -22,6 +22,10 @@ const txMock = {
     createMany: jest.fn(),
     deleteMany: jest.fn(),
   },
+  recipeCompositionLine: {
+    createMany: jest.fn(),
+    deleteMany: jest.fn(),
+  },
   productionPhase: {
     create: jest.fn(),
     findMany: jest.fn(),
@@ -216,6 +220,14 @@ describe('PlantRepository', () => {
         where: { id: 'recipe-1', tenantId },
         include: {
           category: { select: { id: true, nombre: true, codePrefix: true } },
+          compositionLines: {
+            orderBy: { sortOrder: 'asc' },
+            include: {
+              supplyItem: {
+                select: { id: true, codigoInterno: true, nombre: true, unidadBase: true },
+              },
+            },
+          },
           locations: { include: { location: { select: { id: true, name: true } } } },
           statusHistory: { orderBy: { createdAt: 'desc' }, take: 20 },
           phases: {
@@ -282,6 +294,54 @@ describe('PlantRepository', () => {
       expect(result).toEqual(createdRecipe);
     });
 
+    it('createRecipeWithPhasesTx persists composition lines when provided', async () => {
+      const createdRecipe = { id: 'recipe-new', tenantId, name: 'Pan' };
+      txMock.productionRecipe.create.mockResolvedValue(createdRecipe);
+      txMock.recipeCategory.update.mockResolvedValue({ codePrefix: 'COC', codeSequence: 1 });
+      txMock.recipeStatusHistory.create.mockResolvedValue({});
+      txMock.productionPhase.create.mockResolvedValue({ id: 'phase-1' });
+
+      await repository.createRecipeWithPhasesTx({
+        tenantId,
+        recipe: {
+          name: 'Pan',
+          categoryId: 'cat-1',
+          recipeType: 'FINAL_PRODUCT',
+          finishedProductId: 'prod-1',
+          batchSize: new Decimal('10'),
+          batchUnit: StockUnit.UNIT,
+          estimatedMinutes: 60,
+          operationCenter: 'PLANT',
+          technicalResponsible: 'CHEF',
+          version: 1,
+          notes: null,
+          lifecycleStatus: 'TRIAL',
+        },
+        phases: [],
+        composition: [
+          {
+            supplyItemId: 'supply-1',
+            componentType: 'INGREDIENT',
+            usageUnit: 'GRAM',
+            grossQuantity: new Decimal('2'),
+            netQuantity: new Decimal('1.5'),
+            sortOrder: 0,
+          },
+        ],
+      });
+
+      expect(txMock.recipeCompositionLine.createMany).toHaveBeenCalledWith({
+        data: [
+          expect.objectContaining({
+            tenantId,
+            recipeId: 'recipe-new',
+            supplyItemId: 'supply-1',
+            sortOrder: 0,
+          }),
+        ],
+      });
+    });
+
     it('updateRecipe delegates to prisma.update', async () => {
       txMock.productionRecipe.update.mockResolvedValue({ id: 'recipe-1' });
       await repository.updateRecipe(tenantId, 'recipe-1', { name: 'Updated' });
@@ -323,6 +383,45 @@ describe('PlantRepository', () => {
         where: { recipeId: 'recipe-1', tenantId },
       });
       expect(txMock.productionRecipeLocation.createMany).not.toHaveBeenCalled();
+    });
+
+    it('updateRecipe replaces composition lines when composition is provided', async () => {
+      txMock.productionRecipe.update.mockResolvedValue({ id: 'recipe-1' });
+      await repository.updateRecipe(tenantId, 'recipe-1', {
+        composition: [
+          {
+            supplyItemId: 'supply-1',
+            componentType: 'INGREDIENT',
+            usageUnit: 'GRAM',
+            grossQuantity: new Decimal('2'),
+            netQuantity: new Decimal('1.5'),
+            sortOrder: 0,
+          },
+        ],
+      });
+
+      expect(txMock.recipeCompositionLine.deleteMany).toHaveBeenCalledWith({
+        where: { recipeId: 'recipe-1', tenantId },
+      });
+      expect(txMock.recipeCompositionLine.createMany).toHaveBeenCalledWith({
+        data: [
+          expect.objectContaining({
+            tenantId,
+            recipeId: 'recipe-1',
+            supplyItemId: 'supply-1',
+          }),
+        ],
+      });
+    });
+
+    it('updateRecipe clears composition without recreating when empty array is provided', async () => {
+      txMock.productionRecipe.update.mockResolvedValue({ id: 'recipe-1' });
+      await repository.updateRecipe(tenantId, 'recipe-1', { composition: [] });
+
+      expect(txMock.recipeCompositionLine.deleteMany).toHaveBeenCalledWith({
+        where: { recipeId: 'recipe-1', tenantId },
+      });
+      expect(txMock.recipeCompositionLine.createMany).not.toHaveBeenCalled();
     });
 
     it('softDeleteRecipe sets isActive false', async () => {

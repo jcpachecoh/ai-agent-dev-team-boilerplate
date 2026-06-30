@@ -27,7 +27,10 @@ Modificar el formulario de **Nueva receta** (paso `general` del wizard y flujo d
 
 ## Out of scope
 
-- Rediseño de pasos **Fases** y **Revisión** del wizard (solo ajustar review si muestra nuevos campos).
+- Rediseño del paso **Revisión** del wizard (solo ajustar review si muestra nuevos campos del paso 1).
+- Bloque **Composición de la receta** (paso 2) — task `20-composicion-receta-formulario.md`.
+- Bloque **Fases** (paso 3) — task `30-fases-receta-formulario.md`.
+- Paso **Revisión** del wizard — fusionado con guardado en paso 3 o eliminado (ver task 30).
 - Motor de aprobación supervisor en app plant/iPad (`apps/plant`) — solo web-app en esta task; workflow BE en task 03.
 - Reorden drag-and-drop de fases.
 - Múltiples imágenes en el alta (solo 1 foto de referencia; galería completa queda en detalle).

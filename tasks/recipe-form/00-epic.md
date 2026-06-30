@@ -89,16 +89,24 @@ Reutilizar epic **recipe-images** + `StorageModule`:
 
 ## Subtask breakdown
 
-| File                              | Title                                                             | Layer | Depends on             |
-| --------------------------------- | ----------------------------------------------------------------- | ----- | ---------------------- |
-| `01-schema.md`                    | Prisma — campos receta, categoría, historial estado, sedes, enums | BE    | —                      |
-| `01b-migration.md`                | Migración SQL + backfill código/estado                            | BE    | 01                     |
-| `02-backend-recipe-metadata.md`   | Service: código, validaciones, borrador, unicidad nombre          | BE    | 01b                    |
-| `03-backend-approval-workflow.md` | Aprobar/rechazar receta + historial estado                        | BE    | 02                     |
-| `04-backend-audit-rbac.md`        | AuditLog + guards roles recetas                                   | BE    | 02                     |
-| `05-api-dtos.md`                  | Extender `CreateRecipeDto` / responses plant REST                 | BE    | 02–04                  |
-| `10-nueva-receta-formulario.md`   | **Frontend: formulario Nueva receta + AC 1–10**                   | FE    | 05, `recipe-images/07` |
-| `11-tests-rollout.md`             | Tests BE/FE + checklist QA                                        | BE/FE | 10                     |
+| File                                  | Title                                                             | Layer | Depends on             |
+| ------------------------------------- | ----------------------------------------------------------------- | ----- | ---------------------- |
+| `01-schema.md`                        | Prisma — campos receta, categoría, historial estado, sedes, enums | BE    | —                      |
+| `01b-migration.md`                    | Migración SQL + backfill código/estado                            | BE    | 01                     |
+| `02-backend-recipe-metadata.md`       | Service: código, validaciones, borrador, unicidad nombre          | BE    | 01b                    |
+| `03-backend-approval-workflow.md`     | Aprobar/rechazar receta + historial estado                        | BE    | 02                     |
+| `04-backend-audit-rbac.md`            | AuditLog + guards roles recetas                                   | BE    | 02                     |
+| `05-api-dtos.md`                      | Extender `CreateRecipeDto` / responses plant REST                 | BE    | 02–04                  |
+| `06-schema-composicion.md`            | Prisma — `RecipeCompositionLine`, enums componente/unidad         | BE    | 01                     |
+| `07-backend-composition.md`           | Service: CRUD composición, subreceta, auditoría                   | BE    | 06                     |
+| `08-api-composition-dtos.md`          | DTOs REST composición + sync create/update                        | BE    | 07                     |
+| `09-schema-fases.md`                  | Prisma — extender `ProductionPhase`, enums fase/equipos/criterios | BE    | 06, 01                 |
+| `12-backend-fases.md`                 | Service: fases extendidas, insumos composición, auditoría         | BE    | 09, 07                 |
+| `13-api-fases-dtos.md`                | DTOs REST fases + sync create/update                              | BE    | 12                     |
+| `10-nueva-receta-formulario.md`       | **Frontend paso 1: Datos generales + AC 1–10**                    | FE    | 05, `recipe-images/07` |
+| `20-composicion-receta-formulario.md` | **Frontend paso 2: Composición + AC 1–9**                         | FE    | 10, 06–08 (BE)         |
+| `30-fases-receta-formulario.md`       | **Frontend paso 3: Fases + AC 1–10**                              | FE    | 10, 20, 09–13 (BE)     |
+| `11-tests-rollout.md`                 | Tests BE/FE + checklist QA                                        | BE/FE | 10, 20, 30             |
 
 > Implementar **una task a la vez** siguiendo SDD. La task `10-nueva-receta-formulario.md` contiene el detalle funcional completo y los criterios de aceptación del producto.
 

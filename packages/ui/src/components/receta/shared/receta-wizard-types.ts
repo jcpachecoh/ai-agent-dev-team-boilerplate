@@ -1,4 +1,4 @@
-export type RecetaRecipeWizardStepId = 'general' | 'phases' | 'review';
+export type RecetaRecipeWizardStepId = 'general' | 'composition' | 'phases';
 
 export type RecetaWizardStepStatus = 'pending' | 'active' | 'completed';
 

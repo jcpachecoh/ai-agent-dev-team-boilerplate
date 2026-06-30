@@ -70,6 +70,16 @@ const createRecipeInput: CreateRecipeWithPhasesInput = {
       inputs: [],
     },
   ],
+  composition: [
+    {
+      supplyItemId: 'supply-1',
+      componentType: 'INGREDIENT',
+      usageUnit: 'GRAM',
+      grossQuantity: new Decimal('2.000'),
+      netQuantity: new Decimal('1.500'),
+      sortOrder: 0,
+    },
+  ],
 };
 
 const repoMock = {
@@ -84,6 +94,7 @@ const repoMock = {
   findRecipeById: jest.fn(),
   findActiveRecipeByName: jest.fn(),
   findRecipeByCategoryAndName: jest.fn(),
+  findActiveRecipeByFinishedProductId: jest.fn(),
   previewNextRecipeCode: jest.fn(),
   findRecipeStatusHistory: jest.fn(),
   createRecipeStatusHistory: jest.fn(),
@@ -156,6 +167,11 @@ describe('PlantService', () => {
       repoMock.findWorkStationById.mockResolvedValue(mockWorkStation);
       repoMock.createRecipeWithPhasesTx.mockResolvedValue(mockRecipe);
       repoMock.findRecipeByCategoryAndName.mockResolvedValue(null);
+      supplyItemsServiceMock.findOne.mockResolvedValue({
+        id: 'supply-1',
+        codigoInterno: 'INS-001',
+        isActive: true,
+      });
       recipeCategoriesServiceMock.findOne.mockResolvedValue({
         id: 'cat-1',
         tenantId,
@@ -201,7 +217,11 @@ describe('PlantService', () => {
     });
 
     it('validates phase inputs and maps optional recipe and phase fields', async () => {
-      supplyItemsServiceMock.findOne.mockResolvedValue({ id: 'supply-1' });
+      supplyItemsServiceMock.findOne.mockResolvedValue({
+        id: 'supply-1',
+        codigoInterno: 'INS-001',
+        isActive: true,
+      });
 
       await service.createRecipe(tenantId, {
         ...createRecipeInput,
@@ -286,6 +306,7 @@ describe('PlantService', () => {
             inputs: [],
           },
         ],
+        compositionLines: [],
       });
 
       const result = await service.findRecipeById(tenantId, 'recipe-1');
@@ -298,11 +319,47 @@ describe('PlantService', () => {
         ...mockRecipe,
         category: { id: 'cat-1', nombre: 'Platos principales' },
         phases: [],
+        compositionLines: [],
       });
 
       const result = await service.findRecipeById(tenantId, 'recipe-1');
 
       expect(result.categoryName).toBe('Platos principales');
+    });
+
+    it('maps composition lines in recipe detail', async () => {
+      repoMock.findRecipeDetailById.mockResolvedValue({
+        ...mockRecipe,
+        category: null,
+        phases: [],
+        compositionLines: [
+          {
+            id: 'line-1',
+            supplyItemId: 'supply-1',
+            componentType: 'INGREDIENT',
+            usageUnit: 'GRAM',
+            grossQuantity: new Decimal('2.000'),
+            netQuantity: new Decimal('1.500'),
+            sortOrder: 0,
+            supplyItem: {
+              id: 'supply-1',
+              codigoInterno: 'INS-001',
+              nombre: 'Harina',
+              unidadBase: 'GRAMS',
+            },
+          },
+        ],
+      });
+
+      const result = await service.findRecipeById(tenantId, 'recipe-1');
+
+      expect(result.composition).toEqual([
+        expect.objectContaining({
+          supplyItemCode: 'INS-001',
+          supplyItemName: 'Harina',
+          shrinkagePercent: 25,
+        }),
+      ]);
     });
 
     it('throws NotFoundException when recipe is missing', async () => {
@@ -587,6 +644,164 @@ describe('PlantService', () => {
         service.updateRecipe(tenantId, 'recipe-1', { notes: 'x'.repeat(501) }),
       ).rejects.toThrow(BadRequestException);
     });
+
+    it('throws when modifying composition on inactive recipe', async () => {
+      repoMock.findRecipeById.mockResolvedValue({ ...mockRecipe, lifecycleStatus: 'INACTIVE' });
+
+      await expect(
+        service.updateRecipe(tenantId, 'recipe-1', { composition: createRecipeInput.composition }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('throws when clearing composition on non-draft recipe', async () => {
+      repoMock.findRecipeById.mockResolvedValue({ ...mockRecipe, isDraft: false });
+
+      await expect(service.updateRecipe(tenantId, 'recipe-1', { composition: [] })).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('updates composition when lines are valid', async () => {
+      repoMock.findRecipeById.mockResolvedValue({ ...mockRecipe, isDraft: true });
+      repoMock.updateRecipe.mockResolvedValue(mockRecipe);
+      supplyItemsServiceMock.findOne.mockResolvedValue({
+        id: 'supply-1',
+        codigoInterno: 'INS-001',
+        isActive: true,
+      });
+
+      await service.updateRecipe(tenantId, 'recipe-1', {
+        composition: createRecipeInput.composition,
+      });
+
+      expect(repoMock.updateRecipe).toHaveBeenCalledWith(
+        tenantId,
+        'recipe-1',
+        expect.objectContaining({ composition: createRecipeInput.composition }),
+      );
+    });
+  });
+
+  describe('syncRecipeComposition', () => {
+    const compositionLine = createRecipeInput.composition![0];
+
+    it('syncs composition and logs audit', async () => {
+      repoMock.findRecipeById.mockResolvedValue({ ...mockRecipe, lifecycleStatus: 'TRIAL' });
+      repoMock.updateRecipe.mockResolvedValue(mockRecipe);
+      supplyItemsServiceMock.findOne.mockResolvedValue({
+        id: 'supply-1',
+        codigoInterno: 'INS-001',
+        isActive: true,
+      });
+
+      await service.syncRecipeComposition(tenantId, 'recipe-1', [compositionLine], 'user-1');
+
+      expect(repoMock.updateRecipe).toHaveBeenCalledWith(
+        tenantId,
+        'recipe-1',
+        expect.objectContaining({ composition: [compositionLine] }),
+      );
+      expect(auditServiceMock.log).toHaveBeenCalledWith(
+        expect.objectContaining({ entityType: 'RecipeComposition' }),
+      );
+    });
+
+    it('throws when recipe is inactive', async () => {
+      repoMock.findRecipeById.mockResolvedValue({ ...mockRecipe, lifecycleStatus: 'INACTIVE' });
+
+      await expect(
+        service.syncRecipeComposition(tenantId, 'recipe-1', [compositionLine]),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('throws when composition is empty', async () => {
+      repoMock.findRecipeById.mockResolvedValue(mockRecipe);
+
+      await expect(service.syncRecipeComposition(tenantId, 'recipe-1', [])).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('throws when net quantity is invalid', async () => {
+      repoMock.findRecipeById.mockResolvedValue(mockRecipe);
+
+      await expect(
+        service.syncRecipeComposition(tenantId, 'recipe-1', [
+          {
+            ...compositionLine,
+            grossQuantity: new Decimal('1'),
+            netQuantity: new Decimal('2'),
+          },
+        ]),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('throws when supply item is inactive', async () => {
+      repoMock.findRecipeById.mockResolvedValue(mockRecipe);
+      supplyItemsServiceMock.findOne.mockResolvedValue({
+        id: 'supply-1',
+        codigoInterno: 'INS-001',
+        isActive: false,
+      });
+
+      await expect(
+        service.syncRecipeComposition(tenantId, 'recipe-1', [compositionLine]),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('throws when sub-recipe component lacks linked active recipe', async () => {
+      repoMock.findRecipeById.mockResolvedValue(mockRecipe);
+      supplyItemsServiceMock.findOne.mockResolvedValue({
+        id: 'supply-1',
+        codigoInterno: 'SUB-001',
+        isActive: true,
+      });
+      repoMock.findActiveRecipeByFinishedProductId.mockResolvedValue(null);
+
+      await expect(
+        service.syncRecipeComposition(tenantId, 'recipe-1', [
+          { ...compositionLine, componentType: 'SUB_RECIPE' },
+        ]),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('accepts sub-recipe component when linked recipe exists', async () => {
+      repoMock.findRecipeById.mockResolvedValue(mockRecipe);
+      supplyItemsServiceMock.findOne.mockResolvedValue({
+        id: 'supply-1',
+        codigoInterno: 'SUB-001',
+        isActive: true,
+      });
+      repoMock.findActiveRecipeByFinishedProductId.mockResolvedValue(mockRecipe);
+      repoMock.updateRecipe.mockResolvedValue(mockRecipe);
+
+      await service.syncRecipeComposition(tenantId, 'recipe-1', [
+        { ...compositionLine, componentType: 'SUB_RECIPE' },
+      ]);
+
+      expect(repoMock.findActiveRecipeByFinishedProductId).toHaveBeenCalledWith(
+        tenantId,
+        'supply-1',
+      );
+    });
+  });
+
+  describe('findRecipeBySupplyItem', () => {
+    it('returns recipe when linked to supply item', async () => {
+      repoMock.findActiveRecipeByFinishedProductId.mockResolvedValue(mockRecipe);
+
+      const result = await service.findRecipeBySupplyItem(tenantId, 'supply-1');
+
+      expect(result).toEqual(mockRecipe);
+    });
+
+    it('throws NotFoundException when no linked recipe exists', async () => {
+      repoMock.findActiveRecipeByFinishedProductId.mockResolvedValue(null);
+
+      await expect(service.findRecipeBySupplyItem(tenantId, 'missing')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
   });
 
   describe('approveRecipe', () => {
@@ -794,6 +1009,12 @@ describe('PlantService', () => {
   describe('createRecipe validation', () => {
     beforeEach(() => {
       repoMock.findRecipeByCategoryAndName.mockResolvedValue(null);
+      repoMock.findWorkStationById.mockResolvedValue(mockWorkStation);
+      supplyItemsServiceMock.findOne.mockResolvedValue({
+        id: 'supply-1',
+        codigoInterno: 'INS-001',
+        isActive: true,
+      });
       recipeCategoriesServiceMock.findOne.mockResolvedValue({
         id: 'cat-1',
         tenantId,
@@ -836,6 +1057,12 @@ describe('PlantService', () => {
       ).rejects.toThrow(BadRequestException);
     });
 
+    it('throws when non-draft recipe has no composition', async () => {
+      await expect(
+        service.createRecipe(tenantId, { ...createRecipeInput, composition: [] }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
     it('creates draft recipe without phases or finished product', async () => {
       await service.createRecipe(tenantId, {
         ...createRecipeInput,
@@ -843,6 +1070,7 @@ describe('PlantService', () => {
         isDraft: true,
         finishedProductId: null,
         phases: [],
+        composition: [],
       });
 
       expect(repoMock.createRecipeWithPhasesTx).toHaveBeenCalledWith(
