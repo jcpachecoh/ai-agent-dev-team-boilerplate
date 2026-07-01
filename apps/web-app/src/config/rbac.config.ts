@@ -25,6 +25,7 @@ export enum AppModule {
   DESPACHO = 'DESPACHO',
   USUARIOS = 'USUARIOS',
   NOMINA = 'NOMINA',
+  ASISTENCIA = 'ASISTENCIA',
   EMPRESA = 'EMPRESA',
   CONFIGURACION = 'CONFIGURACION',
 }
@@ -49,6 +50,7 @@ export const MODULE_ROLES: Record<AppModule, readonly RoleCode[]> = {
   [AppModule.DESPACHO]: [...SYSTEM_ADMIN_ROLES, 'SUPERVISOR', 'MANAGER'],
   [AppModule.USUARIOS]: [...SYSTEM_ADMIN_ROLES, 'SUPERVISOR'],
   [AppModule.NOMINA]: [...SYSTEM_ADMIN_ROLES, 'SUPERVISOR', 'MANAGER', 'NOMINA'],
+  [AppModule.ASISTENCIA]: [...SYSTEM_ADMIN_ROLES, 'SUPERVISOR', 'MANAGER', 'NOMINA'],
   [AppModule.EMPRESA]: [...SYSTEM_ADMIN_ROLES, 'SUPERVISOR', 'MANAGER'],
   [AppModule.CONFIGURACION]: [...SYSTEM_ADMIN_ROLES, 'SUPERVISOR', 'MANAGER'],
 };
@@ -63,6 +65,7 @@ export const NAV_ID_TO_MODULE: Record<string, AppModule> = {
   despacho: AppModule.DESPACHO,
   usuarios: AppModule.USUARIOS,
   nomina: AppModule.NOMINA,
+  asistencia: AppModule.ASISTENCIA,
   empresa: AppModule.EMPRESA,
   settings: AppModule.CONFIGURACION,
 };
@@ -71,6 +74,7 @@ export const NAV_ID_TO_MODULE: Record<string, AppModule> = {
 export const NOMINA_HIDDEN_NAV_CHILD_IDS = new Set(['payroll-salaries']);
 
 export const ROUTE_PREFIX_TO_MODULE: ReadonlyArray<{ prefix: string; module: AppModule }> = [
+  { prefix: '/asistencia', module: AppModule.ASISTENCIA },
   { prefix: '/payroll', module: AppModule.NOMINA },
   { prefix: '/inventory', module: AppModule.INVENTARIOS },
   { prefix: '/proveedores', module: AppModule.PROVEEDORES },

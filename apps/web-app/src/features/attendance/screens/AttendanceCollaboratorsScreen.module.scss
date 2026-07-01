@@ -1,0 +1,41 @@
+.toolbarFilters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.fieldLabel {
+  color: var(--color-text-secondary, #64748b);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 0.75rem;
+}
+
+.state {
+  padding: 2rem 1rem;
+  color: var(--color-text-secondary, #64748b);
+  text-align: center;
+}
+
+.readOnlyBanner {
+  margin: 0 0 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  background: rgb(245 158 11 / 12%);
+  color: #92400e;
+  font-size: 0.875rem;
+}

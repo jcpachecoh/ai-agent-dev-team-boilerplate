@@ -18,6 +18,7 @@ import ActivateAccountPage from '@/pages/ActivateAccountPage/ActivateAccountPage
 import LoginPage from '@/pages/LoginPage';
 import NotFoundPage from '@/pages/NotFoundPage';
 import PayrollPage from '@/pages/PayrollPage';
+import AttendancePage from '@/pages/AttendancePage/AttendancePage';
 import ProduccionComitesPage from '@/pages/ProduccionComitesPage/ProduccionComitesPage';
 import ProduccionPage from '@/pages/ProduccionPage';
 import ProveedoresPage from '@/pages/ProveedoresPage';
@@ -201,6 +202,14 @@ export default function App(): React.JSX.Element {
               element={
                 <ProtectedRoute module={AppModule.USUARIOS}>
                   <UsersPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/asistencia/*"
+              element={
+                <ProtectedRoute module={AppModule.ASISTENCIA}>
+                  <AttendancePage />
                 </ProtectedRoute>
               }
             />

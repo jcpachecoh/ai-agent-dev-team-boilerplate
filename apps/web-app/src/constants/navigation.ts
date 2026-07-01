@@ -8,6 +8,7 @@ import {
   Building2,
   ChefHat,
   ClipboardList,
+  Clock,
   Factory,
   FileText,
   History,
@@ -34,6 +35,8 @@ export interface NavChildItem {
   label: string;
   path: string;
   icon: LucideIcon;
+  /** When true, only an exact path match marks this child active. */
+  end?: boolean;
 }
 
 export interface NavItem {
@@ -187,6 +190,46 @@ export const navigationItems: NavItem[] = [
     ],
   },
   {
+    id: 'asistencia',
+    label: 'Asistencia',
+    icon: ClipboardList,
+    accent: 'teal',
+    children: [
+      {
+        id: 'attendance-panel',
+        label: 'Panel de control',
+        path: '/asistencia',
+        icon: LayoutGrid,
+        end: true,
+      },
+      {
+        id: 'attendance-collaborators',
+        label: 'Colaboradores',
+        path: '/asistencia/colaboradores',
+        icon: Users,
+      },
+      {
+        id: 'attendance-shifts',
+        label: 'Turnos',
+        path: '/asistencia/turnos',
+        icon: Clock,
+      },
+      {
+        id: 'attendance-monitor',
+        label: 'Asistencias',
+        path: '/asistencia/asistencias',
+        icon: Monitor,
+        end: false,
+      },
+      {
+        id: 'attendance-reports',
+        label: 'Reportes',
+        path: '/asistencia/reportes',
+        icon: FileText,
+      },
+    ],
+  },
+  {
     id: 'nomina',
     label: 'Nómina',
     icon: Wallet,
@@ -199,12 +242,6 @@ export const navigationItems: NavItem[] = [
         label: 'Gestión de Cargos',
         path: '/payroll/positions',
         icon: Briefcase,
-      },
-      {
-        id: 'payroll-attendance',
-        label: 'Monitor de asistencia',
-        path: '/payroll/attendance',
-        icon: Monitor,
       },
       { id: 'payroll-salaries', label: 'Salarios', path: '/payroll/salaries', icon: BarChart3 },
     ],
@@ -261,8 +298,12 @@ const routeLabels: Record<string, string> = {
   '/payroll/reports': 'Reportes de nómina',
   '/payroll/employees': 'Empleados',
   '/payroll/positions': 'Gestión de Cargos',
-  '/payroll/attendance': 'Monitor de asistencia',
   '/payroll/salaries': 'Salarios',
+  '/asistencia': 'Panel de control',
+  '/asistencia/colaboradores': 'Colaboradores',
+  '/asistencia/turnos': 'Turnos',
+  '/asistencia/asistencias': 'Asistencias',
+  '/asistencia/reportes': 'Reportes',
   '/empresa/informacion': 'Información del restaurante',
   '/empresa/sedes': 'Sedes',
   '/empresa/sedes/nueva': 'Nueva sede',
@@ -303,12 +344,19 @@ export function isNavPathActive(pathname: string, path: string): boolean {
   return pathname === path || pathname.startsWith(`${path}/`);
 }
 
-/** Exact match — use for submenu siblings so only one child highlights at a time. */
-export function isNavChildPathActive(pathname: string, path: string): boolean {
-  return pathname === path;
+/** Exact match for siblings unless `end` is false — then nested routes also match. */
+export function isNavChildPathActive(pathname: string, path: string, end = true): boolean {
+  if (end) {
+    return pathname === path;
+  }
+  if (path === '/') return pathname === '/';
+  return pathname === path || pathname.startsWith(`${path}/`);
 }
 
 export function isNavItemActive(pathname: string, item: NavItem): boolean {
   if (item.path && isNavPathActive(pathname, item.path)) return true;
-  return item.children?.some((child) => isNavChildPathActive(pathname, child.path)) ?? false;
+  return (
+    item.children?.some((child) => isNavChildPathActive(pathname, child.path, child.end ?? true)) ??
+    false
+  );
 }

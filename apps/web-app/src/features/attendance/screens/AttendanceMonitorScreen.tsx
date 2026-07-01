@@ -8,13 +8,17 @@ import { useQueries, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { useLocations } from '@/features/sedes/hooks/useLocations';
 import { useTheme } from '@/providers/ThemeProvider';
 import { getErrorMessage } from '@/lib/graphql-client';
 
+import { ATTENDANCE_ROUTES } from '../constants/routes';
 import { getAttendanceMonitorSummary } from '../api/attendance.client';
 import { attendanceKeys } from '../api/queryKeys';
+import { useAttendanceScopeLocations } from '../hooks/useAttendanceScopeLocations';
 import { buildLocationSummary, formatLastSyncLabel } from '../mappers/monitor.mappers';
+import { useLaborClassificationFilter } from '../stores/attendance-labor-filter.store';
+import { filterAttendanceMonitorSummary } from '../utils/labor-classification';
+import { useLaborClassificationLookup } from '../hooks/useLaborClassificationLookup';
 import {
   getStoredLocationViewMode,
   getTodayIsoDateBogota,
@@ -28,12 +32,14 @@ export function AttendanceMonitorScreen(): React.JSX.Element {
   const asistenciaTheme = theme === 'light' ? 'light' : 'dark';
   const today = useMemo(() => getTodayIsoDateBogota(), []);
   const [viewMode, setViewMode] = useState<AsistenciaViewMode>(getStoredLocationViewMode);
+  const { value: laborFilter } = useLaborClassificationFilter();
+  const { lookup, payrollEmployees } = useLaborClassificationLookup();
 
-  const locationsQuery = useLocations();
-  const activeLocations = useMemo(
-    () => (locationsQuery.data ?? []).filter((location) => location.isActive),
-    [locationsQuery.data],
-  );
+  const {
+    locations: activeLocations,
+    isLoading: isLocationsLoading,
+    error: locationsError,
+  } = useAttendanceScopeLocations();
 
   const summaryQueries = useQueries({
     queries: activeLocations.map((location) => ({
@@ -50,8 +56,8 @@ export function AttendanceMonitorScreen(): React.JSX.Element {
 
   const locationSummaries = useMemo((): AsistenciaLocationSummary[] => {
     return activeLocations.map((location, index) => {
-      const summary = summaryQueries[index]?.data;
-      if (!summary) {
+      const rawSummary = summaryQueries[index]?.data;
+      if (!rawSummary) {
         return {
           id: location.id,
           name: location.name,
@@ -65,12 +71,19 @@ export function AttendanceMonitorScreen(): React.JSX.Element {
           },
         };
       }
+
+      const summary = filterAttendanceMonitorSummary(
+        rawSummary,
+        laborFilter,
+        lookup,
+        payrollEmployees,
+      );
       return buildLocationSummary(location, summary);
     });
-  }, [activeLocations, summaryQueries]);
+  }, [activeLocations, summaryQueries, laborFilter, lookup, payrollEmployees]);
 
-  const isLoading = locationsQuery.isPending || summaryQueries.some((query) => query.isPending);
-  const queryError = locationsQuery.error ?? summaryQueries.find((query) => query.error)?.error;
+  const isLoading = isLocationsLoading || summaryQueries.some((query) => query.isPending);
+  const queryError = locationsError ?? summaryQueries.find((query) => query.error)?.error;
   const isLive = summaryQueries.some((query) => query.data?.isLive);
   const latestSyncAt = summaryQueries.reduce<number | undefined>((latest, query) => {
     if (!query.dataUpdatedAt) return latest;
@@ -84,7 +97,7 @@ export function AttendanceMonitorScreen(): React.JSX.Element {
   };
 
   const handleLocationSelect = (locationId: string) => {
-    navigate(`/payroll/attendance/${locationId}`);
+    navigate(ATTENDANCE_ROUTES.locationDetail(locationId));
   };
 
   const handleSync = async () => {

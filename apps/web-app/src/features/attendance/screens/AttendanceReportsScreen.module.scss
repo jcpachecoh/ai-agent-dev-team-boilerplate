@@ -1,0 +1,58 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.kpiGrid {
+  margin-top: 0.5rem;
+}
+
+.alerts {
+  margin-top: 0.5rem;
+}
+
+.tableSection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.tableTitle {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.tableWrap {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid rgb(255 255 255 / 8%);
+  text-align: left;
+}
+
+.table th {
+  color: #94a3b8;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.muted {
+  margin: 0;
+  color: #94a3b8;
+}
+
+.error {
+  margin: 0;
+  color: #fecaca;
+}

@@ -1,0 +1,84 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 1rem;
+}
+
+.error {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border-radius: 0.65rem;
+  background: rgb(239 68 68 / 12%);
+  color: #fecaca;
+}
+
+.locations {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.locationsHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.locationsTitle {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.linkButton {
+  border: 0;
+  background: transparent;
+  color: #2dd4bf;
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.locationList {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.locationCard {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  width: 100%;
+  padding: 1rem;
+  border: 1px solid rgb(255 255 255 / 8%);
+  border-radius: 0.75rem;
+  background: rgb(255 255 255 / 3%);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.locationName {
+  font-weight: 600;
+}
+
+.locationMeta {
+  color: #94a3b8;
+  font-size: 0.875rem;
+}
+
+.empty {
+  margin: 0;
+  color: #94a3b8;
+}
