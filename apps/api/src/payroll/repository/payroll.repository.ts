@@ -71,6 +71,10 @@ export class PayrollRepository implements IPayrollRepository {
     });
   }
 
+  private static readonly PHOTO_INCLUDE = {
+    select: { id: true, key: true, visibility: true, status: true, deletedAt: true },
+  } as const;
+
   async findAll(
     filters: ListEmployeesFilters,
   ): Promise<(EmployeeDetails & { user: User; location?: { id: string; name: string } })[]> {
@@ -95,7 +99,11 @@ export class PayrollRepository implements IPayrollRepository {
 
     return this.prisma.employeeDetails.findMany({
       where,
-      include: { user: true, location: { select: { id: true, name: true } } },
+      include: {
+        user: true,
+        location: { select: { id: true, name: true } },
+        photoStorageObject: PayrollRepository.PHOTO_INCLUDE,
+      },
       take: filters.limit || 50,
       skip: filters.offset || 0,
       orderBy: { createdAt: 'desc' },
@@ -107,14 +115,21 @@ export class PayrollRepository implements IPayrollRepository {
   ): Promise<(EmployeeDetails & { user: User; location?: { id: string; name: string } }) | null> {
     return this.prisma.employeeDetails.findUnique({
       where: { id },
-      include: { user: true, location: { select: { id: true, name: true } } },
+      include: {
+        user: true,
+        location: { select: { id: true, name: true } },
+        photoStorageObject: PayrollRepository.PHOTO_INCLUDE,
+      },
     });
   }
 
   async findByUserId(userId: string): Promise<(EmployeeDetails & { user: User }) | null> {
     return this.prisma.employeeDetails.findUnique({
       where: { userId },
-      include: { user: true },
+      include: {
+        user: true,
+        photoStorageObject: PayrollRepository.PHOTO_INCLUDE,
+      },
     });
   }
 
@@ -135,14 +150,22 @@ export class PayrollRepository implements IPayrollRepository {
       if (Object.keys(employeeData).length === 0) {
         return tx.employeeDetails.findUniqueOrThrow({
           where: { userId },
-          include: { user: true, location: { select: { id: true, name: true } } },
+          include: {
+            user: true,
+            location: { select: { id: true, name: true } },
+            photoStorageObject: PayrollRepository.PHOTO_INCLUDE,
+          },
         });
       }
 
       return tx.employeeDetails.update({
         where: { userId },
         data: employeeData,
-        include: { user: true, location: { select: { id: true, name: true } } },
+        include: {
+          user: true,
+          location: { select: { id: true, name: true } },
+          photoStorageObject: PayrollRepository.PHOTO_INCLUDE,
+        },
       });
     });
   }
@@ -170,6 +193,7 @@ export class PayrollRepository implements IPayrollRepository {
       'arlRiskLevel',
       'cajaCompensacion',
       'isActive',
+      'photoStorageObjectId',
     ] as const;
 
     for (const field of scalarFields) {

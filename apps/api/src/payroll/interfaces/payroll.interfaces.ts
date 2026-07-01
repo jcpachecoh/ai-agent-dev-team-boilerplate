@@ -56,6 +56,7 @@ export interface UpdateEmployeeData {
   arlRiskLevel?: ArlRiskLevel;
   cajaCompensacion?: string;
   isActive?: boolean;
+  photoStorageObjectId?: string | null;
 }
 
 export interface UpdateEmployeeUserData {

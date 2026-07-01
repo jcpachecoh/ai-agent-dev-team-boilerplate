@@ -1,5 +1,14 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { EmployeeDetails, User } from '@prisma/client';
+import { EmployeeDetails, StorageObject, User } from '@prisma/client';
+
+const PUBLIC_DOMAIN = (): string => {
+  const raw = process.env.R2_PUBLIC_DOMAIN ?? '';
+  const trimmed = raw.trim().replace(/\/+$/, '');
+  if (!trimmed) return '';
+  return trimmed.startsWith('http://') || trimmed.startsWith('https://')
+    ? trimmed
+    : `https://${trimmed}`;
+};
 
 export class EmployeeResponseDto {
   @ApiProperty() id!: string;
@@ -25,6 +34,8 @@ export class EmployeeResponseDto {
   @ApiPropertyOptional() arlName?: string | null;
   @ApiPropertyOptional() arlRiskLevel?: string | null;
   @ApiPropertyOptional() cajaCompensacion?: string | null;
+  @ApiPropertyOptional() photoStorageObjectId?: string | null;
+  @ApiPropertyOptional() photoUrl?: string | null;
   @ApiProperty() isActive!: boolean;
   @ApiProperty() createdAt!: Date;
   @ApiProperty() updatedAt!: Date;
@@ -45,8 +56,13 @@ export function toEmployeeResponse(
   employee: EmployeeDetails & {
     user?: User | null;
     location?: { id: string; name: string } | null;
+    photoStorageObject?: StorageObject | null;
   },
 ): EmployeeResponseDto {
+  const photoUrl = employee.photoStorageObject?.key
+    ? `${PUBLIC_DOMAIN()}/${employee.photoStorageObject.key}`
+    : null;
+
   return {
     id: employee.id,
     userId: employee.userId,
@@ -71,6 +87,8 @@ export function toEmployeeResponse(
     arlName: employee.arlName ?? undefined,
     arlRiskLevel: employee.arlRiskLevel ?? undefined,
     cajaCompensacion: employee.cajaCompensacion ?? undefined,
+    photoStorageObjectId: employee.photoStorageObjectId ?? null,
+    photoUrl: photoUrl ?? null,
     isActive: employee.isActive,
     createdAt: employee.createdAt,
     updatedAt: employee.updatedAt,

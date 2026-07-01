@@ -31,6 +31,7 @@ const employee: EmployeeWithUser = {
   arlRiskLevel: 'RIESGO_I',
   cajaCompensacion: 'Caja',
   pinHash: null,
+  photoStorageObjectId: null,
   isActive: true,
   createdAt: new Date(),
   updatedAt: new Date(),

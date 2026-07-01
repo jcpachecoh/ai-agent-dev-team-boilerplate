@@ -13,6 +13,19 @@
   border-style: solid;
   font-family: 'IBM Plex Mono', $font-family-mono, monospace;
   font-weight: $font-weight-bold;
+  overflow: hidden;
+
+  &.has-photo {
+    border-color: transparent;
+    background: transparent;
+  }
+}
+
+.photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .size--sm {
@@ -25,6 +38,12 @@
   width: 34px;
   height: 34px;
   font-size: 0.66rem;
+}
+
+.size--lg {
+  width: 72px;
+  height: 72px;
+  font-size: 1rem;
 }
 
 .tone--teal {

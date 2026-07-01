@@ -596,6 +596,27 @@
       "description": "NOM-04 Reports — Fecha fin del rango de asistencia (YYYY-MM-DD). Usado en GET attendance?to=."
     },
     {
+      "key": "employeeDetailsId",
+      "value": "",
+      "type": "default",
+      "enabled": true,
+      "description": "OS-562 — EmployeeDetails.id del empleado (no el userId). Capturado de POST /api/employees response."
+    },
+    {
+      "key": "employeePhotoStorageObjectId",
+      "value": "",
+      "type": "default",
+      "enabled": true,
+      "description": "OS-562 — StorageObject.id de la foto subida. Capturado por test script de Upload Employee Photo."
+    },
+    {
+      "key": "employeePhotoUrl",
+      "value": "",
+      "type": "default",
+      "enabled": true,
+      "description": "OS-562 — URL pública de la foto del empleado en Cloudflare R2."
+    },
+    {
       "key": "mobileStorageObjectId",
       "value": "",
       "type": "default",

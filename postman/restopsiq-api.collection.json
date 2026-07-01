@@ -7851,6 +7851,172 @@
               "path": ["api", "employees", "contract-type", "FIJO"]
             }
           }
+        },
+        {
+          "name": "OS-562 Photo Upload",
+          "description": "OS-562 — Flujo completo de carga y vinculación de foto de empleado.\n\nFlujo:\n1. Upload Employee Photo → guarda employeePhotoStorageObjectId\n2. Update Employee Photo → vincula al empleado\n3. Get Employee → verifica campos photo\n\nPre-requisito: ejecutar POST /api/employees para obtener employeeUserId + employeeDetailsId.",
+          "item": [
+            {
+              "name": "Upload Employee Photo",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "x-tenant-id",
+                    "value": "{{tenantId}}"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "file",
+                      "type": "file",
+                      "src": "",
+                      "description": "Imagen del empleado (JPG, PNG o WebP, máx 2 MB)"
+                    },
+                    {
+                      "key": "domain",
+                      "value": "USERS",
+                      "type": "text"
+                    },
+                    {
+                      "key": "imageProfile",
+                      "value": "AVATAR",
+                      "type": "text"
+                    },
+                    {
+                      "key": "entityType",
+                      "value": "EmployeeDetails",
+                      "type": "text"
+                    },
+                    {
+                      "key": "entityId",
+                      "value": "{{employeeDetailsId}}",
+                      "type": "text",
+                      "description": "ID del EmployeeDetails (no el userId)"
+                    },
+                    {
+                      "key": "visibility",
+                      "value": "PUBLIC",
+                      "type": "text"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/storage/upload",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "storage", "upload"]
+                },
+                "description": "OS-562 — Sube la foto de un empleado al storage R2 con perfil AVATAR (256x256, WebP). Guarda el `id` devuelto en `employeePhotoStorageObjectId`."
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 201 Created', () => pm.response.to.have.status(201));",
+                      "const body = pm.response.json();",
+                      "pm.test('Respuesta tiene id y publicUrl', () => {",
+                      "  pm.expect(body).to.have.property('id');",
+                      "  pm.expect(body.publicUrl).to.be.a('string');",
+                      "});",
+                      "pm.collectionVariables.set('employeePhotoStorageObjectId', body.id);",
+                      "pm.environment.set('employeePhotoStorageObjectId', body.id);",
+                      "pm.collectionVariables.set('employeePhotoUrl', body.publicUrl);",
+                      "pm.environment.set('employeePhotoUrl', body.publicUrl);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Update Employee Photo (link to EmployeeDetails)",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "x-tenant-id",
+                    "value": "{{tenantId}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"photoStorageObjectId\": \"{{employeePhotoStorageObjectId}}\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/employees/{{employeeUserId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "employees", "{{employeeUserId}}"]
+                },
+                "description": "OS-562 — Vincula el storageObjectId de la foto al empleado. Requiere `employeePhotoStorageObjectId` del paso anterior y `employeeUserId` del empleado."
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                      "const body = pm.response.json();",
+                      "pm.test('Respuesta incluye photoStorageObjectId', () => {",
+                      "  pm.expect(body.photoStorageObjectId).to.equal(pm.collectionVariables.get('employeePhotoStorageObjectId'));",
+                      "});",
+                      "pm.test('Respuesta incluye photoUrl', () => {",
+                      "  pm.expect(body.photoUrl).to.be.a('string');",
+                      "});",
+                      "pm.environment.set('employeePhotoUrl', body.photoUrl);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Get Employee — verify photo fields",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "x-tenant-id",
+                    "value": "{{tenantId}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/employees/{{employeeUserId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "employees", "{{employeeUserId}}"]
+                },
+                "description": "OS-562 — Verifica que el empleado devuelve `photoStorageObjectId` y `photoUrl` tras la actualización."
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                      "const body = pm.response.json();",
+                      "pm.test('photoStorageObjectId presente y correcto', () => {",
+                      "  pm.expect(body.photoStorageObjectId).to.equal(pm.collectionVariables.get('employeePhotoStorageObjectId'));",
+                      "});",
+                      "pm.test('photoUrl es una URL pública', () => {",
+                      "  pm.expect(body.photoUrl).to.be.a('string').and.to.include('http');",
+                      "});"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
         }
       ]
     },

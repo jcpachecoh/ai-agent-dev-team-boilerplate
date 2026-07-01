@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { EmpleadoModal } from '@restopsiq/ui';
 
 import type { PayrollEmployee, PayrollEmployeeFormValues } from '../types/payroll.types';
+import { EmployeePhotoUploader } from './EmployeePhotoUploader';
 import { PayrollEmployeeForm } from './PayrollEmployeeForm';
 
 interface PayrollEmployeeEditDrawerProps {
@@ -20,7 +22,13 @@ export function PayrollEmployeeEditDrawer({
   onClose,
   onSubmit,
 }: PayrollEmployeeEditDrawerProps): React.JSX.Element | null {
+  const [localPhotoUrl, setLocalPhotoUrl] = useState<string | null>(null);
+
   if (!employee) return null;
+
+  const employeeWithPhoto: PayrollEmployee = localPhotoUrl
+    ? { ...employee, photoUrl: localPhotoUrl }
+    : employee;
 
   return (
     <EmpleadoModal
@@ -30,6 +38,7 @@ export function PayrollEmployeeEditDrawer({
       theme={theme}
       onClose={onClose}
     >
+      <EmployeePhotoUploader employee={employeeWithPhoto} onPhotoUpdated={setLocalPhotoUrl} />
       <PayrollEmployeeForm
         mode="edit"
         initialValues={employee}

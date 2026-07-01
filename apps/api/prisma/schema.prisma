@@ -61,6 +61,8 @@ model StorageObject {
   updatedAt    DateTime            @updatedAt
   deletedAt    DateTime?
 
+  employeePhotos EmployeeDetails[]
+
   @@index([tenantId])
   @@index([tenantId, domain])
   @@index([tenantId, status])
@@ -553,43 +555,45 @@ model UserLocation {
 }
 
 model EmployeeDetails {
-  id                  String               @id @default(cuid())
-  userId              String               @unique
-  tenantId            String
-  name                String
-  locationId          String
-  positionId          String?
-  position            String
-  area                String
-  department          String
-  contractType        EmployeeContractType
-  hireDate            DateTime
-  contractStart       DateTime
-  contractEnd         DateTime?
-  salaryType          SalaryType
-  salaryAmount        Decimal              @db.Decimal(12, 2)
-  hasTransportSubsidy Boolean              @default(false)
-  isExemptFromTax     Boolean              @default(false)
-  epsName             String
-  pensionFundName     String
-  cesantiasFundName   String
-  arlName             String
-  arlRiskLevel        ArlRiskLevel
-  cajaCompensacion    String
-  pinHash             String?
-  isActive            Boolean              @default(true)
-  createdAt           DateTime             @default(now())
-  updatedAt           DateTime             @updatedAt
-  deletedAt           DateTime?
+  id                   String               @id @default(cuid())
+  userId               String               @unique
+  tenantId             String
+  name                 String
+  locationId           String
+  positionId           String?
+  position             String
+  area                 String
+  department           String
+  contractType         EmployeeContractType
+  hireDate             DateTime
+  contractStart        DateTime
+  contractEnd          DateTime?
+  salaryType           SalaryType
+  salaryAmount         Decimal              @db.Decimal(12, 2)
+  hasTransportSubsidy  Boolean              @default(false)
+  isExemptFromTax      Boolean              @default(false)
+  epsName              String
+  pensionFundName      String
+  cesantiasFundName    String
+  arlName              String
+  arlRiskLevel         ArlRiskLevel
+  cajaCompensacion     String
+  pinHash              String?
+  photoStorageObjectId String?
+  isActive             Boolean              @default(true)
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+  deletedAt            DateTime?
 
-  user             User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  location         Location                  @relation(fields: [locationId], references: [id])
-  positionRef      EmployeePosition?         @relation(fields: [positionId], references: [id], onDelete: SetNull)
-  positionHistory  EmployeePositionHistory[]
-  attendanceLogs       AttendanceLog[]
+  user                User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  location            Location                  @relation(fields: [locationId], references: [id])
+  positionRef         EmployeePosition?         @relation(fields: [positionId], references: [id], onDelete: SetNull)
+  photoStorageObject  StorageObject?            @relation(fields: [photoStorageObjectId], references: [id], onDelete: SetNull)
+  positionHistory     EmployeePositionHistory[]
+  attendanceLogs          AttendanceLog[]
   mobileAttendanceLogs MobileAttendanceLog[]
-  socialProfiles       EmployeeSocialProfile[]
-  financialProfile EmployeeFinancialProfile?
+  socialProfiles          EmployeeSocialProfile[]
+  financialProfile    EmployeeFinancialProfile?
 
   @@index([tenantId])
   @@index([locationId])

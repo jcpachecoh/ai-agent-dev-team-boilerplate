@@ -2,9 +2,14 @@ import { EmployeeContractType, SalaryType, ArlRiskLevel } from '@prisma/client';
 import { PayrollRepository } from '../repository/payroll.repository';
 import { PrismaService } from '../../prisma/prisma.service';
 
+const photoInclude = {
+  select: { id: true, key: true, visibility: true, status: true, deletedAt: true },
+} as const;
+
 const employeeInclude = {
   user: true,
   location: { select: { id: true, name: true } },
+  photoStorageObject: photoInclude,
 } as const;
 
 describe('PayrollRepository', () => {
@@ -230,7 +235,7 @@ describe('PayrollRepository', () => {
     });
     expect(prisma.employeeDetails.findUnique).toHaveBeenNthCalledWith(2, {
       where: { userId: 'user-1' },
-      include: { user: true },
+      include: { user: true, photoStorageObject: photoInclude },
     });
   });
 
@@ -265,7 +270,11 @@ describe('PayrollRepository', () => {
     });
     expect(findUniqueOrThrow).toHaveBeenCalledWith({
       where: { userId: 'user-1' },
-      include: { user: true, location: { select: { id: true, name: true } } },
+      include: {
+        user: true,
+        location: { select: { id: true, name: true } },
+        photoStorageObject: photoInclude,
+      },
     });
   });
 
@@ -294,7 +303,11 @@ describe('PayrollRepository', () => {
     expect(employeeDetailsUpdate).toHaveBeenCalledWith({
       where: { userId: 'user-1' },
       data: { position: 'Lead' },
-      include: { user: true, location: { select: { id: true, name: true } } },
+      include: {
+        user: true,
+        location: { select: { id: true, name: true } },
+        photoStorageObject: photoInclude,
+      },
     });
 
     expect(prisma.employeeDetails.update).toHaveBeenCalledWith({

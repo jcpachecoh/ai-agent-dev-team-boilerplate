@@ -1,5 +1,5 @@
 export type EmpleadoTheme = 'light' | 'dark';
-export type EmpleadoSize = 'sm' | 'md';
+export type EmpleadoSize = 'sm' | 'md' | 'lg';
 
 export type EmpleadoStatusFilterValue = 'all' | 'active' | 'inactive';
 

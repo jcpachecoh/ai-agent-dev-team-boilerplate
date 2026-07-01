@@ -15,12 +15,15 @@ import {
 import { PayrollService } from '../service/payroll.service';
 import { PayrollRepository } from '../repository/payroll.repository';
 import { EmployeePositionsService } from '../service/employee-positions.service';
+import { StorageService } from '../../storage/service/storage.service';
 import { SMLV_2025 } from '../payroll.constants';
+import { StorageDomain } from '../../storage/enums/storage.enums';
 
 describe('PayrollService', () => {
   let service: PayrollService;
   let repository: PayrollRepository;
   let employeePositionsService: EmployeePositionsService;
+  let storageService: jest.Mocked<StorageService>;
 
   const mockTenantId = 'tenant-1';
   const mockLocationId = 'loc-1';
@@ -98,12 +101,20 @@ describe('PayrollService', () => {
             assignPositionToEmployee: jest.fn(),
           },
         },
+        {
+          provide: StorageService,
+          useValue: {
+            findById: jest.fn(),
+            deleteFile: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
     service = module.get<PayrollService>(PayrollService);
     repository = module.get<PayrollRepository>(PayrollRepository);
     employeePositionsService = module.get<EmployeePositionsService>(EmployeePositionsService);
+    storageService = module.get(StorageService);
   });
 
   describe('create', () => {
@@ -503,6 +514,159 @@ describe('PayrollService', () => {
           }),
         }),
       );
+    });
+
+    describe('photo update', () => {
+      const mockStorageObject = {
+        id: 'storage-1',
+        tenantId: mockTenantId,
+        domain: StorageDomain.USERS,
+        entityType: 'EmployeeDetails',
+        entityId: 'emp-details-1',
+        publicUrl: 'https://cdn.opssynk.com/tenants/t1/users/photo.webp',
+      };
+
+      beforeEach(() => {
+        (repository.findByUserId as jest.Mock).mockResolvedValue({
+          id: 'emp-details-1',
+          tenantId: mockTenantId,
+          contractType: EmployeeContractType.INDEFINIDO,
+          salaryAmount: 2000000,
+          salaryType: SalaryType.ORDINARIO,
+          photoStorageObjectId: null,
+          user: { id: 'user-1', email: 'test@example.com', cedula: '123456' },
+        });
+        (repository.update as jest.Mock).mockResolvedValue({ id: 'emp-1' });
+      });
+
+      it('acepta un photoStorageObjectId válido y lo persiste', async () => {
+        // Arrange
+        storageService.findById.mockResolvedValue(mockStorageObject as any);
+
+        // Act
+        await service.update(mockTenantId, 'user-1', { photoStorageObjectId: 'storage-1' });
+
+        // Assert
+        expect(storageService.findById).toHaveBeenCalledWith('storage-1', mockTenantId);
+        expect(repository.update).toHaveBeenCalledWith(
+          'user-1',
+          expect.objectContaining({
+            employee: expect.objectContaining({ photoStorageObjectId: 'storage-1' }),
+          }),
+        );
+      });
+
+      it('rechaza si el StorageObject no pertenece al tenant (NotFoundException)', async () => {
+        // Arrange
+        storageService.findById.mockRejectedValue(
+          new NotFoundException('StorageObject no encontrado'),
+        );
+
+        // Act & Assert
+        await expect(
+          service.update(mockTenantId, 'user-1', { photoStorageObjectId: 'bad-id' }),
+        ).rejects.toThrow(NotFoundException);
+      });
+
+      it('rechaza si el dominio del StorageObject no es USERS', async () => {
+        // Arrange
+        storageService.findById.mockResolvedValue({
+          ...mockStorageObject,
+          domain: 'INVENTORY',
+        } as any);
+
+        // Act & Assert
+        await expect(
+          service.update(mockTenantId, 'user-1', { photoStorageObjectId: 'storage-1' }),
+        ).rejects.toThrow(BadRequestException);
+      });
+
+      it('rechaza si entityType del StorageObject no corresponde a EmployeeDetails', async () => {
+        // Arrange
+        storageService.findById.mockResolvedValue({
+          ...mockStorageObject,
+          entityType: 'ProductionRecipe',
+          entityId: 'recipe-99',
+        } as any);
+
+        // Act & Assert
+        await expect(
+          service.update(mockTenantId, 'user-1', { photoStorageObjectId: 'storage-1' }),
+        ).rejects.toThrow(BadRequestException);
+      });
+
+      it('hace soft-delete del StorageObject anterior al actualizar con uno nuevo', async () => {
+        // Arrange
+        (repository.findByUserId as jest.Mock).mockResolvedValue({
+          id: 'emp-details-1',
+          tenantId: mockTenantId,
+          contractType: EmployeeContractType.INDEFINIDO,
+          salaryAmount: 2000000,
+          salaryType: SalaryType.ORDINARIO,
+          photoStorageObjectId: 'old-storage-id',
+          user: { id: 'user-1', email: 'test@example.com', cedula: '123456' },
+        });
+        storageService.findById.mockResolvedValue(mockStorageObject as any);
+        storageService.deleteFile.mockResolvedValue(undefined);
+
+        // Act
+        await service.update(mockTenantId, 'user-1', { photoStorageObjectId: 'storage-1' });
+
+        // Assert
+        expect(storageService.deleteFile).toHaveBeenCalledWith('old-storage-id', mockTenantId);
+      });
+
+      it('acepta photoStorageObjectId null para quitar la foto', async () => {
+        // Arrange
+        (repository.findByUserId as jest.Mock).mockResolvedValue({
+          id: 'emp-details-1',
+          tenantId: mockTenantId,
+          contractType: EmployeeContractType.INDEFINIDO,
+          salaryAmount: 2000000,
+          salaryType: SalaryType.ORDINARIO,
+          photoStorageObjectId: 'old-storage-id',
+          user: { id: 'user-1', email: 'test@example.com', cedula: '123456' },
+        });
+        storageService.deleteFile.mockResolvedValue(undefined);
+
+        // Act
+        await service.update(mockTenantId, 'user-1', { photoStorageObjectId: null });
+
+        // Assert — se elimina la foto anterior, no se llama findById
+        expect(storageService.findById).not.toHaveBeenCalled();
+        expect(storageService.deleteFile).toHaveBeenCalledWith('old-storage-id', mockTenantId);
+        expect(repository.update).toHaveBeenCalledWith(
+          'user-1',
+          expect.objectContaining({
+            employee: expect.objectContaining({ photoStorageObjectId: null }),
+          }),
+        );
+      });
+
+      it('no llama deleteFile si no había foto previa', async () => {
+        // Arrange
+        storageService.findById.mockResolvedValue(mockStorageObject as any);
+
+        // Act
+        await service.update(mockTenantId, 'user-1', { photoStorageObjectId: 'storage-1' });
+
+        // Assert
+        expect(storageService.deleteFile).not.toHaveBeenCalled();
+      });
+
+      it('rechaza si entityId del StorageObject no coincide con el empleado indicado', async () => {
+        // Arrange — mismo tenant, entityType correcto, pero entityId apunta a otro empleado
+        storageService.findById.mockResolvedValue({
+          ...mockStorageObject,
+          entityType: 'EmployeeDetails',
+          entityId: 'other-employee-id',
+        } as any);
+
+        // Act & Assert
+        await expect(
+          service.update(mockTenantId, 'user-1', { photoStorageObjectId: 'storage-1' }),
+        ).rejects.toThrow(BadRequestException);
+      });
     });
   });
 

@@ -15,6 +15,8 @@ import { EmployeePositionsService } from './employee-positions.service';
 import { IPayrollService } from '../interfaces/payroll.interfaces';
 import type { UpdateEmployeePayload } from '../interfaces/payroll.interfaces';
 import { decimalToNumber } from '../../common/utils/decimal.util';
+import { StorageService } from '../../storage/service/storage.service';
+import { StorageDomain } from '../../storage/enums/storage.enums';
 
 const SALT_ROUNDS = 12;
 
@@ -25,6 +27,7 @@ export class PayrollService implements IPayrollService {
   constructor(
     private readonly payrollRepository: PayrollRepository,
     private readonly employeePositionsService: EmployeePositionsService,
+    private readonly storageService: StorageService,
   ) {}
 
   async create(
@@ -206,6 +209,10 @@ export class PayrollService implements IPayrollService {
       }
     }
 
+    if (data.photoStorageObjectId !== undefined) {
+      await this.validateAndSwapPhoto(tenantId, employee, data.photoStorageObjectId);
+    }
+
     const payload = this.buildUpdatePayload(data);
 
     try {
@@ -349,6 +356,41 @@ export class PayrollService implements IPayrollService {
     throw new UnprocessableEntityException(message);
   }
 
+  private async validateAndSwapPhoto(
+    tenantId: string,
+    employee: EmployeeDetails & { user: User },
+    newPhotoId: string | null,
+  ): Promise<void> {
+    if (newPhotoId !== null) {
+      const storageObj = await this.storageService.findById(newPhotoId, tenantId);
+
+      if (storageObj.domain !== StorageDomain.USERS) {
+        throw new BadRequestException('El StorageObject no pertenece al dominio USERS');
+      }
+
+      if (storageObj.entityType !== null && storageObj.entityType !== 'EmployeeDetails') {
+        throw new BadRequestException(
+          'El StorageObject no corresponde a la entidad EmployeeDetails',
+        );
+      }
+
+      if (storageObj.entityId !== null && storageObj.entityId !== employee.id) {
+        throw new BadRequestException('El StorageObject no corresponde al empleado indicado');
+      }
+    }
+
+    const previousPhotoId = employee.photoStorageObjectId;
+    if (previousPhotoId && previousPhotoId !== newPhotoId) {
+      try {
+        await this.storageService.deleteFile(previousPhotoId, tenantId);
+      } catch {
+        this.logger.warn(
+          `[PHOTO_CLEANUP] No se pudo soft-delete el StorageObject anterior id=${previousPhotoId} tenantId=${tenantId}`,
+        );
+      }
+    }
+  }
+
   private buildUpdatePayload(data: Record<string, unknown>): UpdateEmployeePayload {
     const employee: UpdateEmployeePayload['employee'] = {};
     const user: NonNullable<UpdateEmployeePayload['user']> = {};
@@ -370,6 +412,7 @@ export class PayrollService implements IPayrollService {
       'arlRiskLevel',
       'cajaCompensacion',
       'isActive',
+      'photoStorageObjectId',
     ] as const;
 
     for (const field of employeeScalars) {

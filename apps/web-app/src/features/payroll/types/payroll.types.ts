@@ -37,6 +37,8 @@ export interface PayrollEmployee {
   arlName: string;
   arlRiskLevel: ArlRiskLevel;
   cajaCompensacion: string;
+  photoStorageObjectId?: string | null;
+  photoUrl?: string | null;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -83,6 +85,7 @@ export interface CreatePayrollEmployeeInput {
 
 export type UpdatePayrollEmployeeInput = Partial<CreatePayrollEmployeeInput> & {
   isActive?: boolean;
+  photoStorageObjectId?: string | null;
 };
 
 export interface PayrollEmployeeFormValues {
