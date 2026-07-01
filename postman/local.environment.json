@@ -594,6 +594,62 @@
       "type": "default",
       "enabled": true,
       "description": "NOM-04 Reports — Fecha fin del rango de asistencia (YYYY-MM-DD). Usado en GET attendance?to=."
+    },
+    {
+      "key": "mobileStorageObjectId",
+      "value": "",
+      "type": "default",
+      "enabled": true,
+      "description": "OS-499 Mobile Attendance — StorageObject id from Upload foto marcación. Set by test script."
+    },
+    {
+      "key": "mobileAttendanceId",
+      "value": "",
+      "type": "default",
+      "enabled": true,
+      "description": "OS-499 Mobile Attendance — MobileAttendanceLog id from registrarMarcacion. Set by test script."
+    },
+    {
+      "key": "mobileClientLatitude",
+      "value": "4.6097",
+      "type": "default",
+      "enabled": true,
+      "description": "OS-499 Mobile Attendance — Latitud del cliente DENTRO del radio de PL-01 (4.6097, -74.0817). Produce status=VALID. Mismo punto que geoLatitude del seed."
+    },
+    {
+      "key": "mobileClientLongitude",
+      "value": "-74.0817",
+      "type": "default",
+      "enabled": true,
+      "description": "OS-499 Mobile Attendance — Longitud del cliente DENTRO del radio de PL-01. Produce status=VALID."
+    },
+    {
+      "key": "mobileClientLatitudeOutside",
+      "value": "4.7100",
+      "type": "default",
+      "enabled": true,
+      "description": "OS-499 Mobile Attendance — Latitud FUERA del radio de PL-01 (~11 km al norte). Produce status=REJECTED con rejectionReason=OUTSIDE_RADIUS."
+    },
+    {
+      "key": "mobileClientLongitudeOutside",
+      "value": "-74.0817",
+      "type": "default",
+      "enabled": true,
+      "description": "OS-499 Mobile Attendance — Longitud del punto fuera del radio."
+    },
+    {
+      "key": "mobileFacialMatchScore",
+      "value": "0.97",
+      "type": "default",
+      "enabled": true,
+      "description": "OS-499 Mobile Attendance — Score de reconocimiento facial (0.0–1.0). Informativo; no determina el status de la marcación."
+    },
+    {
+      "key": "mobileFacialMatchResult",
+      "value": "match",
+      "type": "default",
+      "enabled": true,
+      "description": "OS-499 Mobile Attendance — Resultado textual del reconocimiento facial (match|no_match). Informativo; no determina el status."
     }
   ],
   "_postman_variable_scope": "environment",

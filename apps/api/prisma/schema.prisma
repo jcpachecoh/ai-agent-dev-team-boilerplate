@@ -507,6 +507,11 @@ model Location {
   code          String?
   latitude      String?
   longitude     String?
+  // Geo fields for mobile attendance geofencing (OS-499/OS-505).
+  // latitude/longitude kept as String? for backwards compat; new Float fields used for math.
+  geoLatitude          Float?
+  geoLongitude         Float?
+  checkInRadiusMeters  Int?
   businessHours Json?
   openingTime   String?
   closingTime   String?
@@ -518,8 +523,9 @@ model Location {
   tenant              Tenant                     @relation(fields: [tenantId], references: [id])
   users               UserLocation[]
   employeeDetails     EmployeeDetails[]
-  attendanceLogs      AttendanceLog[]
-  productionIncidents ProductionIncident[]
+  attendanceLogs       AttendanceLog[]
+  mobileAttendanceLogs MobileAttendanceLog[]
+  productionIncidents  ProductionIncident[]
   supplyItems         SupplyItem[]
   productionRecipes   ProductionRecipeLocation[]
 
@@ -580,8 +586,9 @@ model EmployeeDetails {
   location         Location                  @relation(fields: [locationId], references: [id])
   positionRef      EmployeePosition?         @relation(fields: [positionId], references: [id], onDelete: SetNull)
   positionHistory  EmployeePositionHistory[]
-  attendanceLogs   AttendanceLog[]
-  socialProfiles   EmployeeSocialProfile[]
+  attendanceLogs       AttendanceLog[]
+  mobileAttendanceLogs MobileAttendanceLog[]
+  socialProfiles       EmployeeSocialProfile[]
   financialProfile EmployeeFinancialProfile?
 
   @@index([tenantId])
@@ -1391,6 +1398,52 @@ model ProductionLog {
   @@index([tenantId, orderId, timestamp])
   @@index([tenantId, orderId, event])
   @@map("production_logs")
+}
+
+// ── Mobile Attendance (OS-499 / OS-505) ──────────────────────────────────────
+
+enum MobileAttendanceEventType {
+  ENTRY
+  EXIT
+}
+
+enum MobileAttendanceStatus {
+  VALID    // Distancia dentro del radio configurado
+  REJECTED // Fuera de radio, empleado inactivo u otro rechazo de validación
+  PENDING  // Sede sin geofence configurado — requiere revisión manual
+}
+
+model MobileAttendanceLog {
+  id               String                    @id @default(cuid())
+  tenantId         String
+  employeeId       String
+  locationId       String
+  eventType        MobileAttendanceEventType
+  status           MobileAttendanceStatus    @default(PENDING)
+  timestamp        DateTime                  @default(now())
+  workDate         DateTime
+  clientLatitude   Float
+  clientLongitude  Float
+  distanceMeters   Float?
+  radiusMeters     Int?
+  storageObjectId  String?
+  photoUrl         String?
+  facialMatchScore  Float?
+  facialMatchResult String?
+  rejectionReason  String?
+  notes            String?
+  createdAt        DateTime                  @default(now())
+  updatedAt        DateTime                  @updatedAt
+  deletedAt        DateTime?
+
+  employee EmployeeDetails @relation(fields: [employeeId], references: [id])
+  location Location        @relation(fields: [locationId], references: [id])
+
+  @@index([tenantId, employeeId, workDate])
+  @@index([tenantId, locationId, workDate])
+  @@index([tenantId, status])
+  @@index([deletedAt])
+  @@map("mobile_attendance_logs")
 }
 
 model ProductionOrderMaterial {
