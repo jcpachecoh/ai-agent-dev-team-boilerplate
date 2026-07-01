@@ -16,11 +16,12 @@
  * Global User + Role (USR-01):
  *   Roles: OWNER, SUPERVISOR, MANAGER, OPERATOR, OPERATIONS_ADMIN, NOMINA (tenant-scoped)
  *
- * Global Permission catalog (USR-02 + USR-03):
- *   22 permission codes — see PERMISSION_SEEDS (ids cccccccc-0000-0000-0000-000000000001…022)
+ * Global Permission catalog (USR-02 + USR-03 + OS-499/OS-505/OS-559/OS-560):
+ *   38 permission codes — see PERMISSION_SEEDS (ids cccccccc-0000-0000-0000-000000000001…048,
+ *   non-contiguous: 001-031 + 037-038 + 039-048; see inline comments for OS-ticket mapping)
  *
  * Role-permission matrix (USR-02 + USR-03, tenant palos-de-lena):
- *   OWNER      — all 22 permissions
+ *   OWNER      — all permissions (ALL_PERMISSION_CODES)
  *   SUPERVISOR — 17 permissions (base 13 + 4 admin.users/roles.read)
  *   MANAGER    — 14 permissions (base 13 + admin.users.read)
  *   OPERATOR   — plant.orders.read, supply.items.read
@@ -306,8 +307,9 @@ const PERMISSION_SEEDS = [
     action: 'assign',
   },
   // OS-559 — Employee Financial Profile
+  // IDs 049-053: DB already had 027-031 occupied by nomina.roles/users (from a9e66b8 commit).
   {
-    id: 'cccccccc-0000-0000-0000-000000000027',
+    id: 'cccccccc-0000-0000-0000-000000000049',
     code: 'nomina.financial.read',
     name: 'Read employee financial profile',
     description: 'View financial profile and bank accounts of an employee',
@@ -316,7 +318,7 @@ const PERMISSION_SEEDS = [
     action: 'read',
   },
   {
-    id: 'cccccccc-0000-0000-0000-000000000028',
+    id: 'cccccccc-0000-0000-0000-000000000050',
     code: 'nomina.financial.write',
     name: 'Write employee financial profile',
     description: 'Create and update financial profile and bank accounts of an employee',
@@ -325,7 +327,7 @@ const PERMISSION_SEEDS = [
     action: 'write',
   },
   {
-    id: 'cccccccc-0000-0000-0000-000000000029',
+    id: 'cccccccc-0000-0000-0000-000000000051',
     code: 'nomina.financial.tax.read',
     name: 'Read employee tax information',
     description: 'View tax withholding configuration of an employee',
@@ -334,7 +336,7 @@ const PERMISSION_SEEDS = [
     action: 'read',
   },
   {
-    id: 'cccccccc-0000-0000-0000-000000000030',
+    id: 'cccccccc-0000-0000-0000-000000000052',
     code: 'nomina.financial.tax.write',
     name: 'Write employee tax information',
     description: 'Create or update tax withholding configuration of an employee',
@@ -343,7 +345,7 @@ const PERMISSION_SEEDS = [
     action: 'write',
   },
   {
-    id: 'cccccccc-0000-0000-0000-000000000031',
+    id: 'cccccccc-0000-0000-0000-000000000053',
     code: 'nomina.financial.history.read',
     name: 'Read employee payment history',
     description: 'View payment history ledger of an employee',
@@ -389,8 +391,9 @@ const PERMISSION_SEEDS = [
     action: 'delete',
   },
   // Nómina — roles, usuarios, nóminas y configuración
+  // IDs start at 039 to avoid collision with OS-559 block above (027–031).
   {
-    id: 'cccccccc-0000-0000-0000-000000000027',
+    id: 'cccccccc-0000-0000-0000-000000000039',
     code: 'nomina.roles.manage',
     name: 'Gestionar roles',
     description: 'Crear, actualizar y eliminar roles de nómina en el sistema.',
@@ -399,7 +402,7 @@ const PERMISSION_SEEDS = [
     action: 'manage',
   },
   {
-    id: 'cccccccc-0000-0000-0000-000000000028',
+    id: 'cccccccc-0000-0000-0000-000000000040',
     code: 'nomina.roles.read',
     name: 'Leer roles',
     description: 'Listar todos los roles de nómina en el sistema.',
@@ -408,7 +411,7 @@ const PERMISSION_SEEDS = [
     action: 'read',
   },
   {
-    id: 'cccccccc-0000-0000-0000-000000000029',
+    id: 'cccccccc-0000-0000-0000-000000000041',
     code: 'nomina.roles.permissions.assign',
     name: 'Asignar permisos a roles',
     description: 'Asignar o eliminar permisos a un rol de nómina.',
@@ -417,7 +420,7 @@ const PERMISSION_SEEDS = [
     action: 'assign',
   },
   {
-    id: 'cccccccc-0000-0000-0000-000000000030',
+    id: 'cccccccc-0000-0000-0000-000000000042',
     code: 'nomina.users.create',
     name: 'Crear usuario nómina',
     description: 'Crear un nuevo usuario en el módulo de nómina.',
@@ -426,7 +429,7 @@ const PERMISSION_SEEDS = [
     action: 'create',
   },
   {
-    id: 'cccccccc-0000-0000-0000-000000000031',
+    id: 'cccccccc-0000-0000-0000-000000000043',
     code: 'nomina.users.read',
     name: 'Leer usuarios nómina',
     description: 'Listar y ver los usuarios del módulo de nómina.',
@@ -435,7 +438,7 @@ const PERMISSION_SEEDS = [
     action: 'read',
   },
   {
-    id: 'cccccccc-0000-0000-0000-000000000032',
+    id: 'cccccccc-0000-0000-0000-000000000044',
     code: 'nomina.users.update',
     name: 'Actualizar usuario nómina',
     description: 'Actualizar los datos de un usuario de nómina.',
@@ -444,7 +447,7 @@ const PERMISSION_SEEDS = [
     action: 'update',
   },
   {
-    id: 'cccccccc-0000-0000-0000-000000000033',
+    id: 'cccccccc-0000-0000-0000-000000000045',
     code: 'nomina.users.deactivate',
     name: 'Desactivar usuario nómina',
     description: 'Desactivar (dar de baja) un usuario de nómina.',
@@ -453,7 +456,7 @@ const PERMISSION_SEEDS = [
     action: 'deactivate',
   },
   {
-    id: 'cccccccc-0000-0000-0000-000000000034',
+    id: 'cccccccc-0000-0000-0000-000000000046',
     code: 'nomina.payrolls.process',
     name: 'Procesar nómina',
     description: 'Ejecutar el cálculo, procesamiento y generación de archivos de nómina.',
@@ -462,7 +465,7 @@ const PERMISSION_SEEDS = [
     action: 'process',
   },
   {
-    id: 'cccccccc-0000-0000-0000-000000000035',
+    id: 'cccccccc-0000-0000-0000-000000000047',
     code: 'nomina.payrolls.read',
     name: 'Leer nóminas procesadas',
     description: 'Visualizar reportes, resultados y planillas de nómina generadas.',
@@ -471,13 +474,32 @@ const PERMISSION_SEEDS = [
     action: 'read',
   },
   {
-    id: 'cccccccc-0000-0000-0000-000000000036',
+    id: 'cccccccc-0000-0000-0000-000000000048',
     code: 'nomina.configs.manage',
     name: 'Gestionar configuración',
     description: 'Gestionar configuraciones globales del módulo de nómina.',
     module: 'nomina',
     resource: 'configs',
     action: 'manage',
+  },
+  // OS-499 / OS-505 — Marcaciones móviles
+  {
+    id: 'cccccccc-0000-0000-0000-000000000037',
+    code: 'attendance.mobile.create',
+    name: 'Registrar marcación móvil',
+    description: 'Registrar entrada o salida desde la app móvil (solo marcación propia).',
+    module: 'attendance',
+    resource: 'mobile',
+    action: 'create',
+  },
+  {
+    id: 'cccccccc-0000-0000-0000-000000000038',
+    code: 'attendance.mobile.read',
+    name: 'Consultar marcaciones móviles',
+    description: 'Consultar marcaciones de todos los empleados por sede o por empleado.',
+    module: 'attendance',
+    resource: 'mobile',
+    action: 'read',
   },
 ] as const;
 
@@ -514,6 +536,10 @@ const OPERATOR_PERMISSION_CODES = ['plant.orders.read', 'supply.items.read'] as 
 
 const OPERATIONS_ADMIN_PERMISSION_CODES = ['plant.orders.read', 'plant.committees.read'] as const;
 
+// OS-499/OS-505 — marcaciones móviles (crear = self-service desde app; leer = admin/nómina)
+const MOBILE_ATTENDANCE_CREATE_CODES = ['attendance.mobile.create'] as const;
+const MOBILE_ATTENDANCE_READ_CODES = ['attendance.mobile.read'] as const;
+
 // OS-560 — todos los roles de nómina gestionan perfiles sociales
 const SOCIAL_PROFILE_PERMISSION_CODES = [
   'payroll.social_profile.read',
@@ -545,6 +571,8 @@ const ROLE_PERMISSION_MATRIX: Record<string, readonly string[]> = {
     ...SOCIAL_PROFILE_PERMISSION_CODES,
     ...FINANCIAL_READ_PERMISSION_CODES,
     ...FINANCIAL_TAX_READ_PERMISSION_CODES,
+    ...MOBILE_ATTENDANCE_CREATE_CODES,
+    ...MOBILE_ATTENDANCE_READ_CODES,
   ],
   MANAGER: [
     ...MANAGER_PERMISSION_CODES,
@@ -552,10 +580,17 @@ const ROLE_PERMISSION_MATRIX: Record<string, readonly string[]> = {
     ...FINANCIAL_READ_PERMISSION_CODES,
     ...FINANCIAL_TAX_READ_PERMISSION_CODES,
     ...FINANCIAL_WRITE_PERMISSION_CODES,
+    ...MOBILE_ATTENDANCE_CREATE_CODES,
+    ...MOBILE_ATTENDANCE_READ_CODES,
   ],
-  OPERATOR: OPERATOR_PERMISSION_CODES,
+  OPERATOR: [...OPERATOR_PERMISSION_CODES, ...MOBILE_ATTENDANCE_CREATE_CODES],
   OPERATIONS_ADMIN: OPERATIONS_ADMIN_PERMISSION_CODES,
-  NOMINA: [...SOCIAL_PROFILE_PERMISSION_CODES, ...FINANCIAL_READ_PERMISSION_CODES],
+  NOMINA: [
+    ...SOCIAL_PROFILE_PERMISSION_CODES,
+    ...FINANCIAL_READ_PERMISSION_CODES,
+    ...MOBILE_ATTENDANCE_CREATE_CODES,
+    ...MOBILE_ATTENDANCE_READ_CODES,
+  ],
 };
 
 /** Matches MesAuthService cédula hashing (HMAC-SHA256 or SHA-256 fallback). */
@@ -687,6 +722,11 @@ const DEFAULT_BUSINESS_HOURS = {
   ],
 };
 
+// PL-01 uses real Bogotá coords so mobile-attendance QA can produce VALID/REJECTED status.
+// mobileClientLatitude=4.6097 / mobileClientLongitude=-74.0817 → VALID (on-site)
+// mobileClientLatitudeOutside=4.7100 / mobileClientLongitudeOutside=-74.0817 → REJECTED (~11 km away)
+const PL01_GEO = { geoLatitude: 4.6097, geoLongitude: -74.0817, checkInRadiusMeters: 100 } as const;
+
 async function seedLocations() {
   const locations: Location[] = [];
   for (let i = 1; i <= 10; i++) {
@@ -695,6 +735,8 @@ async function seedLocations() {
     const address = `Calle ${i} # 10-20, Bogotá`;
     const city = 'Bogotá';
     const phone = `+57 300 000 00${i.toString().padStart(2, '0')}`;
+    // PL-01 has geofence configured; the rest intentionally left without geo to test PENDING status.
+    const geoFields = i === 1 ? PL01_GEO : {};
     const location = await prisma.location.upsert({
       where: {
         tenantId_code: { tenantId: OPERATIONAL_TENANT_ID, code },
@@ -708,6 +750,7 @@ async function seedLocations() {
         businessHours: DEFAULT_BUSINESS_HOURS,
         openingTime: '08:00',
         closingTime: '22:00',
+        ...geoFields,
       },
       create: {
         tenantId: OPERATIONAL_TENANT_ID,
@@ -720,6 +763,7 @@ async function seedLocations() {
         businessHours: DEFAULT_BUSINESS_HOURS,
         openingTime: '08:00',
         closingTime: '22:00',
+        ...geoFields,
       },
     });
     locations.push(location);
@@ -1507,6 +1551,13 @@ async function main() {
   }
   console.log('\n✅ MES auth (local/dev only):');
   console.log('  See file header for synthetic cédula + PIN test credentials');
+  console.log('\n✅ Mobile Attendance QA (NOM-05):');
+  console.log('  PL-01 geofence: lat=4.6097 lng=-74.0817 radius=100m');
+  console.log('  VALID  → use mobileClientLatitude=4.6097 / mobileClientLongitude=-74.0817');
+  console.log(
+    '  REJECTED → use mobileClientLatitudeOutside=4.7100 / mobileClientLongitudeOutside=-74.0817',
+  );
+  console.log('  PENDING  → use any location other than PL-01 (no geofence configured)');
 
   // ── USR-01 Task 09: link any orphan OperationalUser rows when cédula mapping exists ──
   try {

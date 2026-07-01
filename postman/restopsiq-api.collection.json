@@ -7863,14 +7863,25 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/employee-positions?includeInactive=false",
               "host": ["{{baseUrl}}"],
               "path": ["api", "employee-positions"],
-              "query": [{ "key": "includeInactive", "value": "false" }]
+              "query": [
+                {
+                  "key": "includeInactive",
+                  "value": "false"
+                }
+              ]
             }
           }
         },
@@ -7879,8 +7890,14 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/employee-positions/{{positionId}}",
@@ -7908,9 +7925,18 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -7928,9 +7954,18 @@
           "request": {
             "method": "PATCH",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -7948,8 +7983,14 @@
           "request": {
             "method": "PATCH",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/employee-positions/{{positionId}}/deactivate",
@@ -7963,8 +8004,14 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/employee-positions/employees/{{employeeDetailsId}}/history",
@@ -7978,9 +8025,18 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -8596,6 +8652,575 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('formato inválido: 400 Bad Request', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "NOM-05 Mobile Attendance (OS-499/OS-505)",
+      "description": "Marcaciones de entrada/salida desde app móvil.\n\nFlujo de 2 pasos:\n1. POST /api/storage/upload (domain=PAYROLL) → obtener mobileStorageObjectId\n2. mutation registrarMarcacion con storageObjectId\n\nVariables de entorno usadas:\n- accessToken: JWT de cualquier usuario autenticado del tenant\n- accessTokenOwner: JWT OWNER para queries admin\n- locationId: ID de la sede\n- attendanceEmployeeId: EmployeeDetails.id (capturado de NOM-03 kiosk-auth)\n- mobileStorageObjectId: capturado de request 1 (Upload foto)\n- mobileAttendanceId: capturado de request 2 (registrarMarcacion)\n\nPrerrequisito: ejecutar NOM-03 kiosk-auth primero para capturar attendanceEmployeeId.",
+      "item": [
+        {
+          "name": "1 — Upload foto marcación",
+          "description": "Paso 1 del flujo de 2 pasos.\n\nSube la foto de asistencia como asset PRIVATE en dominio PAYROLL.\nEl `id` devuelto se guarda en `mobileStorageObjectId` y se usa en registrarMarcacion como `storageObjectId`.\n\nSelecciona un archivo JPEG o PNG en el campo `file`.",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function setVar(key, val) {",
+                  "  pm.collectionVariables.set(key, val);",
+                  "  try { pm.environment.set(key, val); } catch(e) {}",
+                  "}",
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "const res = pm.response.json();",
+                  "pm.test('domain es PAYROLL', () => pm.expect(res.domain).to.equal('PAYROLL'));",
+                  "pm.test('visibility PRIVATE', () => pm.expect(res.visibility).to.equal('PRIVATE'));",
+                  "pm.test('key contiene /payroll/', () => pm.expect(res.key).to.include('/payroll/'));",
+                  "if (res.id) { setVar('mobileStorageObjectId', res.id); console.log('mobileStorageObjectId =', res.id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": [],
+                  "description": "Imagen JPEG o PNG de la cara del empleado"
+                },
+                {
+                  "key": "domain",
+                  "value": "PAYROLL",
+                  "type": "text"
+                },
+                {
+                  "key": "visibility",
+                  "value": "PRIVATE",
+                  "type": "text"
+                },
+                {
+                  "key": "entityType",
+                  "value": "mobile_attendance",
+                  "type": "text"
+                },
+                {
+                  "key": "entityId",
+                  "value": "",
+                  "type": "text",
+                  "description": "Opcional — puede dejarse vacío"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/api/storage/upload"
+          },
+          "response": []
+        },
+        {
+          "name": "2 — registrarMarcacion (ENTRY)",
+          "description": "Paso 2 del flujo de 2 pasos.\n\nRegistra una marcación de ENTRY para el empleado autenticado.\nUsa {{mobileClientLatitude}} / {{mobileClientLongitude}} que apuntan al mismo punto que\nPL-01 (geoLatitude=4.6097 geoLongitude=-74.0817) → debe producir status=VALID.\n\nstorageObjectId es opcional; si se omite, la foto no se adjunta.\nPrerequisito: ejecutar request 1 para obtener mobileStorageObjectId.",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation RegistrarMarcacion($input: RegistrarMarcacionInput!) {\\n  registrarMarcacion(input: $input) {\\n    id\\n    status\\n    distanceMeters\\n    rejectionReason\\n    timestamp\\n    workDate\\n  }\\n}\",\n  \"variables\": {\n    \"input\": {\n      \"locationId\": \"{{locationId}}\",\n      \"eventType\": \"ENTRY\",\n      \"clientLatitude\": {{mobileClientLatitude}},\n      \"clientLongitude\": {{mobileClientLongitude}},\n      \"storageObjectId\": \"{{mobileStorageObjectId}}\",\n      \"facialMatchScore\": {{mobileFacialMatchScore}},\n      \"facialMatchResult\": \"{{mobileFacialMatchResult}}\",\n      \"notes\": \"Marcación de prueba desde Postman\"\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{graphqlUrl}}"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function setVar(key, val) {",
+                  "  pm.collectionVariables.set(key, val);",
+                  "  try { pm.environment.set(key, val); } catch(e) {}",
+                  "}",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('No GraphQL errors', () => pm.expect(pm.response.json().errors).to.be.undefined);",
+                  "const data = pm.response.json().data?.registrarMarcacion;",
+                  "pm.test('Tiene id y status', () => {",
+                  "  pm.expect(data).to.have.property('id');",
+                  "  pm.expect(['VALID','REJECTED','PENDING']).to.include(data.status);",
+                  "});",
+                  "if (data?.id) { setVar('mobileAttendanceId', data.id); console.log('mobileAttendanceId =', data.id, '| status =', data.status); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3 — registrarMarcacion (EXIT)",
+          "description": "Registra marcación de EXIT dentro del radio → status=VALID.\nUsa {{mobileClientLatitude}} / {{mobileClientLongitude}} (mismo punto que PL-01).",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation RegistrarMarcacion($input: RegistrarMarcacionInput!) {\\n  registrarMarcacion(input: $input) {\\n    id\\n    status\\n    distanceMeters\\n    rejectionReason\\n    timestamp\\n    workDate\\n  }\\n}\",\n  \"variables\": {\n    \"input\": {\n      \"locationId\": \"{{locationId}}\",\n      \"eventType\": \"EXIT\",\n      \"clientLatitude\": {{mobileClientLatitude}},\n      \"clientLongitude\": {{mobileClientLongitude}}\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{graphqlUrl}}"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('No GraphQL errors', () => pm.expect(pm.response.json().errors).to.be.undefined);",
+                  "const data = pm.response.json().data?.registrarMarcacion;",
+                  "pm.test('status válido', () => pm.expect(['VALID','REJECTED','PENDING']).to.include(data.status));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "❌ registrarMarcacion — fuera del radio (REJECTED)",
+          "description": "Registra una marcación de ENTRY con coordenadas FUERA del radio de PL-01.\nUsa {{mobileClientLatitudeOutside}} (4.7100) / {{mobileClientLongitudeOutside}} (-74.0817) → ~11 km al norte.\n\nDebe producir status=REJECTED con rejectionReason=OUTSIDE_RADIUS.\nEl log queda guardado en DB para auditoría — no se lanza excepción.",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation RegistrarMarcacion($input: RegistrarMarcacionInput!) {\\n  registrarMarcacion(input: $input) {\\n    id\\n    status\\n    distanceMeters\\n    rejectionReason\\n    timestamp\\n    workDate\\n  }\\n}\",\n  \"variables\": {\n    \"input\": {\n      \"locationId\": \"{{locationId}}\",\n      \"eventType\": \"ENTRY\",\n      \"clientLatitude\": {{mobileClientLatitudeOutside}},\n      \"clientLongitude\": {{mobileClientLongitudeOutside}},\n      \"notes\": \"Prueba fuera del radio desde Postman\"\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{graphqlUrl}}"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('No GraphQL errors', () => pm.expect(pm.response.json().errors).to.be.undefined);",
+                  "const data = pm.response.json().data?.registrarMarcacion;",
+                  "pm.test('status = REJECTED', () => pm.expect(data.status).to.equal('REJECTED'));",
+                  "pm.test('rejectionReason = OUTSIDE_RADIUS', () => pm.expect(data.rejectionReason).to.equal('OUTSIDE_RADIUS'));",
+                  "pm.test('distanceMeters > 100', () => pm.expect(data.distanceMeters).to.be.above(100));",
+                  "console.log('REJECTED marcacion id =', data.id, '| distance =', data.distanceMeters, 'm');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4 — misMarcaciones",
+          "description": "Historial paginado de marcaciones del empleado autenticado (cursor-based). Solo devuelve las propias.",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query MisMarcaciones($take: Int, $cursor: ID, $dateFrom: String, $dateTo: String) {\\n  misMarcaciones(take: $take, cursor: $cursor, dateFrom: $dateFrom, dateTo: $dateTo) {\\n    edges {\\n      cursor\\n      node {\\n        id\\n        eventType\\n        status\\n        locationName\\n        timestamp\\n        workDate\\n        distanceMeters\\n        rejectionReason\\n      }\\n    }\\n    pageInfo { hasNextPage endCursor }\\n  }\\n}\",\n  \"variables\": {\n    \"take\": 20,\n    \"cursor\": null,\n    \"dateFrom\": null,\n    \"dateTo\": null\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{graphqlUrl}}"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('No GraphQL errors', () => pm.expect(pm.response.json().errors).to.be.undefined);",
+                  "const conn = pm.response.json().data?.misMarcaciones;",
+                  "pm.test('Tiene edges y pageInfo', () => {",
+                  "  pm.expect(conn).to.have.property('edges');",
+                  "  pm.expect(conn).to.have.property('pageInfo');",
+                  "});",
+                  "console.log('Total marcaciones devueltas:', conn?.edges?.length, '| hasNextPage:', conn?.pageInfo?.hasNextPage);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5 — marcacionesPorSede",
+          "description": "Requiere rol SUPERVISOR/MANAGER/NOMINA/OWNER + permiso attendance.mobile.read.\n\nDevuelve todas las marcaciones de una sede en el rango de fechas. Filtro opcional por status (VALID | REJECTED | PENDING).",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessTokenOwner}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query MarcacionesPorSede($input: MarcacionesPorSedeInput!) {\\n  marcacionesPorSede(input: $input) {\\n    edges {\\n      cursor\\n      node {\\n        id\\n        employeeId\\n        eventType\\n        status\\n        timestamp\\n        distanceMeters\\n        rejectionReason\\n        photoUrl\\n      }\\n    }\\n    pageInfo { hasNextPage endCursor }\\n  }\\n}\",\n  \"variables\": {\n    \"input\": {\n      \"locationId\": \"{{locationId}}\",\n      \"dateFrom\": \"2026-06-01\",\n      \"dateTo\": \"2026-06-30\",\n      \"status\": null,\n      \"cursor\": null,\n      \"take\": 20\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{graphqlUrl}}"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('No GraphQL errors', () => pm.expect(pm.response.json().errors).to.be.undefined);",
+                  "const conn = pm.response.json().data?.marcacionesPorSede;",
+                  "pm.test('Tiene edges y pageInfo', () => {",
+                  "  pm.expect(conn).to.have.property('edges');",
+                  "  pm.expect(conn).to.have.property('pageInfo');",
+                  "});",
+                  "console.log('Marcaciones sede:', conn?.edges?.length);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "6 — marcacionesPorEmpleado",
+          "description": "Requiere rol SUPERVISOR/MANAGER/NOMINA/OWNER + permiso attendance.mobile.read.\n\nDevuelve el historial de marcaciones de un empleado específico (por employeeId = EmployeeDetails.id). Usar {{attendanceEmployeeId}} capturado de NOM-03 kiosk-auth.",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessTokenOwner}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query MarcacionesPorEmpleado($input: MarcacionesPorEmpleadoInput!) {\\n  marcacionesPorEmpleado(input: $input) {\\n    edges {\\n      cursor\\n      node {\\n        id\\n        employeeId\\n        eventType\\n        status\\n        timestamp\\n        workDate\\n        distanceMeters\\n        rejectionReason\\n      }\\n    }\\n    pageInfo { hasNextPage endCursor }\\n  }\\n}\",\n  \"variables\": {\n    \"input\": {\n      \"employeeId\": \"{{attendanceEmployeeId}}\",\n      \"dateFrom\": \"2026-06-01\",\n      \"dateTo\": \"2026-06-30\",\n      \"status\": null,\n      \"cursor\": null,\n      \"take\": 20\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{graphqlUrl}}"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('No GraphQL errors', () => pm.expect(pm.response.json().errors).to.be.undefined);",
+                  "const conn = pm.response.json().data?.marcacionesPorEmpleado;",
+                  "pm.test('Tiene edges y pageInfo', () => {",
+                  "  pm.expect(conn).to.have.property('edges');",
+                  "  pm.expect(conn).to.have.property('pageInfo');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "7 — sedeMarcacionConfig",
+          "description": "Devuelve la configuración de geofence de una sede: coordenadas, radio y si requiere foto.\nLa app móvil debe llamar esto antes de registrar una marcación para saber si tiene geofence activo.",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query SedeMarcacionConfig($locationId: ID!) {\\n  sedeMarcacionConfig(locationId: $locationId) {\\n    locationId\\n    name\\n    geoLatitude\\n    geoLongitude\\n    checkInRadiusMeters\\n    requiresPhoto\\n  }\\n}\",\n  \"variables\": {\n    \"locationId\": \"{{locationId}}\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{graphqlUrl}}"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('No GraphQL errors', () => pm.expect(pm.response.json().errors).to.be.undefined);",
+                  "const cfg = pm.response.json().data?.sedeMarcacionConfig;",
+                  "pm.test('Tiene locationId y name', () => {",
+                  "  pm.expect(cfg).to.have.property('locationId');",
+                  "  pm.expect(cfg).to.have.property('name');",
+                  "});",
+                  "console.log('Config sede:', JSON.stringify(cfg, null, 2));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "❌ registrarMarcacion — sin JWT (401)",
+          "description": "Verifica que el endpoint rechaza requests sin token.",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation { registrarMarcacion(input: { locationId: \\\"x\\\", eventType: ENTRY, clientLatitude: 0, clientLongitude: 0 }) { id } }\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{graphqlUrl}}"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200 con error UNAUTHENTICATED', () => {",
+                  "  const errors = pm.response.json().errors;",
+                  "  pm.expect(errors).to.not.be.undefined;",
+                  "  pm.expect(errors[0].extensions?.code).to.equal('UNAUTHENTICATED');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "❌ marcacionesPorSede — OPERATOR (permiso insuficiente)",
+          "description": "OPERATOR no tiene attendance.mobile.read — debe recibir FORBIDDEN.",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query MarcacionesPorSede($input: MarcacionesPorSedeInput!) {\\n  marcacionesPorSede(input: $input) {\\n    edges {\\n      cursor\\n      node {\\n        id\\n        employeeId\\n        eventType\\n        status\\n        timestamp\\n        distanceMeters\\n        rejectionReason\\n        photoUrl\\n      }\\n    }\\n    pageInfo { hasNextPage endCursor }\\n  }\\n}\",\n  \"variables\": {\n    \"input\": {\n      \"locationId\": \"{{locationId}}\",\n      \"dateFrom\": \"2026-06-01\",\n      \"dateTo\": \"2026-06-30\",\n      \"take\": 5\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{graphqlUrl}}"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const errors = pm.response.json().errors;",
+                  "pm.test('Tiene error de permisos', () => {",
+                  "  pm.expect(errors).to.not.be.undefined;",
+                  "  pm.expect(errors[0].extensions?.code).to.be.oneOf(['FORBIDDEN', 'UNAUTHENTICATED']);",
+                  "});"
                 ]
               }
             }
