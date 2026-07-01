@@ -13,6 +13,7 @@ import {
   type EmpleadoSortDirection,
 } from '@restopsiq/ui';
 import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import { useTheme } from '@/providers/ThemeProvider';
 import { isPayrollReadOnlyRole } from '@/config/rbac.config';
@@ -79,6 +80,7 @@ function getErrorMessage(error: unknown): string {
 }
 
 export function PayrollEmployeesListScreen(): React.JSX.Element {
+  const navigate = useNavigate();
   const { theme } = useTheme();
   const empleadoTheme = theme === 'light' ? 'light' : 'dark';
   const { data: me } = useMe();
@@ -276,7 +278,7 @@ export function PayrollEmployeesListScreen(): React.JSX.Element {
         {!employeesQuery.isLoading && !employeesQuery.isError && sortedEmployees.length > 0 ? (
           <EmpleadoTable
             theme={empleadoTheme}
-            showActions={!readOnly}
+            showActions
             sortColumn={sortColumn}
             sortDirection={sortDirection}
             onSortColumn={handleSortColumn}
@@ -302,7 +304,7 @@ export function PayrollEmployeesListScreen(): React.JSX.Element {
                 hireDate={employee.hireDate}
                 isActive={employee.isActive}
                 theme={empleadoTheme}
-                showActions={!readOnly}
+                onView={() => navigate(`/payroll/employees/${employee.userId}/profile`)}
                 onEdit={readOnly ? undefined : () => setEditingEmployee(employee)}
                 onToggleStatus={readOnly ? undefined : () => setStatusChangeEmployee(employee)}
               />

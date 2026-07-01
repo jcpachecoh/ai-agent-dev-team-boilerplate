@@ -10,7 +10,7 @@ interface ImageProcessingProfile {
 
 const PROFILES: Record<ImageProfile, ImageProcessingProfile | null> = {
   [ImageProfile.LOGO]: { maxWidth: 512, maxHeight: 512, quality: 85, crop: false },
-  [ImageProfile.AVATAR]: { maxWidth: 256, maxHeight: 256, quality: 80, crop: true },
+  [ImageProfile.AVATAR]: { maxWidth: 400, maxHeight: 400, quality: 85, crop: true },
   [ImageProfile.PRODUCT]: { maxWidth: 800, maxHeight: 800, quality: 80, crop: false },
   [ImageProfile.RECIPE]: { maxWidth: 800, maxHeight: 800, quality: 80, crop: false },
   [ImageProfile.INCIDENT]: { maxWidth: 1920, maxHeight: 1080, quality: 75, crop: false },

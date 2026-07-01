@@ -29,6 +29,7 @@ export interface EmpleadoTableRowProps {
   locationCity?: string;
   hireDate?: string;
   isActive?: boolean;
+  onView?: () => void;
   onEdit?: () => void;
   onToggleStatus?: () => void;
   showActions?: boolean;
@@ -59,6 +60,7 @@ export function EmpleadoTableRow({
   locationCity,
   hireDate,
   isActive = true,
+  onView,
   onEdit,
   onToggleStatus,
   showActions: showActionsProp,
@@ -70,7 +72,7 @@ export function EmpleadoTableRow({
   const resolvedInitials = initials ?? resolveEmpleadoInitials(name);
   const resolvedTone = avatarTone ?? resolveEmpleadoAvatarTone(id ?? name);
   const contractLabel = formatEmpleadoContractLabel(contractType);
-  const showActions = showActionsProp ?? Boolean(onEdit || onToggleStatus);
+  const showActions = showActionsProp ?? Boolean(onView || onEdit || onToggleStatus);
 
   return (
     <div
@@ -115,14 +117,21 @@ export function EmpleadoTableRow({
       </div>
       {showActions ? (
         <div className={styles.actionsCell} role="cell">
-          <EmpleadoRowActionButton variant="edit" theme={theme} onClick={onEdit} />
-          <EmpleadoRowActionButton
-            variant="toggle"
-            active={isActive}
-            theme={theme}
-            onClick={onToggleStatus}
-            disabled={toggleLoading}
-          />
+          {onView ? (
+            <EmpleadoRowActionButton variant="view" theme={theme} onClick={onView} />
+          ) : null}
+          {onEdit ? (
+            <EmpleadoRowActionButton variant="edit" theme={theme} onClick={onEdit} />
+          ) : null}
+          {onToggleStatus ? (
+            <EmpleadoRowActionButton
+              variant="toggle"
+              active={isActive}
+              theme={theme}
+              onClick={onToggleStatus}
+              disabled={toggleLoading}
+            />
+          ) : null}
         </div>
       ) : null}
     </div>

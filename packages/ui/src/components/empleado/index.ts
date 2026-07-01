@@ -7,6 +7,8 @@ export * from './empleado-modal';
 export * from './empleado-page';
 export * from './empleado-page-header';
 export * from './empleado-page-section';
+export * from './empleado-profile-tab';
+export * from './empleado-profile-tab-bar';
 export * from './empleado-pagination';
 export * from './empleado-row-action-button';
 export * from './empleado-search';

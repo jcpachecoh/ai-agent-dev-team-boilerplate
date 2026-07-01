@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 
 import {
   EmployeePositionsListScreen,
+  PayrollEmployeeProfileScreen,
   PayrollEmployeesListScreen,
   PayrollReportsScreen,
 } from '@/features/payroll';
@@ -14,6 +15,7 @@ export default function PayrollPage(): React.JSX.Element {
       <Route index element={<PayrollReportsScreen />} />
       <Route path="reports" element={<PayrollReportsScreen />} />
       <Route path="employees" element={<PayrollEmployeesListScreen />} />
+      <Route path="employees/:userId/profile" element={<PayrollEmployeeProfileScreen />} />
       <Route path="positions" element={<EmployeePositionsListScreen />} />
       <Route path="attendance/*" element={<RedirectLegacyPayrollAttendance />} />
       <Route path="salaries" element={<ModulePlaceholderPage title="Salarios" />} />

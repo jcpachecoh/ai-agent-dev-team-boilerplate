@@ -1,0 +1,25 @@
+@use '../shared/empleado-theme' as emp;
+
+.bar {
+  @include emp.empleado-theme-classes;
+
+  display: grid;
+  grid-template-columns: repeat(var(--tab-count, 6), minmax(0, 1fr));
+  width: 100%;
+  border-bottom: 1px solid var(--empleado-border);
+  background: var(--empleado-surface);
+}
+
+@media (max-width: 1023px) {
+  .bar {
+    display: flex;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+}

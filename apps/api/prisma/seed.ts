@@ -1155,21 +1155,41 @@ async function main() {
     { id: 'bbbbbbbb-0000-0000-0000-000000000029', nombre: 'Comodatos', prefijo: 'COM' },
   ] as const;
   for (const cat of canonicalCategories) {
-    const row = await prisma.supplyCategory.upsert({
-      where: { id: cat.id },
-      update: {
-        tenantId: OPERATIONAL_TENANT_ID,
-        nombre: cat.nombre,
-        prefijo: cat.prefijo,
-        isActive: true,
-      },
-      create: {
-        id: cat.id,
-        tenantId: OPERATIONAL_TENANT_ID,
-        nombre: cat.nombre,
-        prefijo: cat.prefijo,
+    const byNombre = await prisma.supplyCategory.findUnique({
+      where: {
+        tenantId_nombre: { tenantId: OPERATIONAL_TENANT_ID, nombre: cat.nombre },
       },
     });
+
+    let row;
+    if (byNombre) {
+      row = await prisma.supplyCategory.update({
+        where: { id: byNombre.id },
+        data: { prefijo: cat.prefijo, isActive: true },
+      });
+    } else {
+      const byId = await prisma.supplyCategory.findUnique({ where: { id: cat.id } });
+      if (byId) {
+        row = await prisma.supplyCategory.update({
+          where: { id: cat.id },
+          data: {
+            nombre: cat.nombre,
+            prefijo: cat.prefijo,
+            isActive: true,
+          },
+        });
+      } else {
+        row = await prisma.supplyCategory.create({
+          data: {
+            id: cat.id,
+            tenantId: OPERATIONAL_TENANT_ID,
+            nombre: cat.nombre,
+            prefijo: cat.prefijo,
+          },
+        });
+      }
+    }
+
     console.log('SupplyCategory:', row.nombre, '—', row.id);
   }
 

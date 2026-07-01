@@ -60,12 +60,12 @@ describe('image-processor', () => {
       expect(result.buffer).toEqual(Buffer.from('processed-webp'));
     });
 
-    it('procesa AVATAR con fit cover (crop), 256×256', async () => {
+    it('procesa AVATAR con fit cover (crop), 400×400', async () => {
       await processImage(buf, 'image/jpeg', ImageProfile.AVATAR);
 
       expect(instance.resize).toHaveBeenCalledWith({
-        width: 256,
-        height: 256,
+        width: 400,
+        height: 400,
         fit: 'cover',
       });
     });

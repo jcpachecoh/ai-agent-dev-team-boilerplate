@@ -489,6 +489,20 @@ enum ArlRiskLevel {
   RIESGO_V
 }
 
+enum MaritalStatus {
+  SOLTERO
+  CASADO
+  UNION_LIBRE
+  DIVORCIADO
+  VIUDO
+}
+
+enum Gender {
+  MASCULINO
+  FEMENINO
+  OTRO
+}
+
 enum EmployeeCatalogType {
   EPS
   ARL
@@ -592,8 +606,9 @@ model EmployeeDetails {
   positionHistory     EmployeePositionHistory[]
   attendanceLogs          AttendanceLog[]
   mobileAttendanceLogs MobileAttendanceLog[]
-  socialProfiles          EmployeeSocialProfile[]
-  financialProfile    EmployeeFinancialProfile?
+  socialProfiles       EmployeeSocialProfile[]
+  financialProfile EmployeeFinancialProfile?
+  personalData     EmployeePersonalData?
 
   @@index([tenantId])
   @@index([locationId])
@@ -601,6 +616,35 @@ model EmployeeDetails {
   @@index([contractType])
   @@index([isActive])
   @@map("employee_details")
+}
+
+model EmployeePersonalData {
+  id                           String         @id @default(cuid())
+  tenantId                     String
+  employeeDetailsId            String         @unique
+  nombres                      String?
+  primerApellido               String?
+  segundoApellido              String?
+  fechaNacimiento              DateTime?      @db.Date
+  estadoCivil                  MaritalStatus?
+  sexo                         Gender?
+  departamento                 String?
+  ciudad                       String?
+  localidad                    String?
+  barrio                       String?
+  direccion                    String?
+  telefono                     String?
+  contactoEmergenciaNombre     String?
+  contactoEmergenciaTelefono   String?
+  contactoEmergenciaParentesco String?
+  profilePhotoStorageObjectId  String?
+  createdAt                    DateTime       @default(now())
+  updatedAt                    DateTime       @updatedAt
+
+  employee EmployeeDetails @relation(fields: [employeeDetailsId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@map("employee_personal_data")
 }
 
 model EmployeePosition {

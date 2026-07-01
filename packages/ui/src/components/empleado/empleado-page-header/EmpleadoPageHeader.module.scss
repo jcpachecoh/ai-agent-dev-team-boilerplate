@@ -9,13 +9,16 @@
 
 .leading {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 10px;
   min-width: 0;
 }
 
 .iconWrap {
-  display: none;
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
 }
 
 .titles {

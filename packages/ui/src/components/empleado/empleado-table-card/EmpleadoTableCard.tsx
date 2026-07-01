@@ -37,6 +37,7 @@ export function EmpleadoTableCard({
   locationCity,
   hireDate,
   isActive = true,
+  onView,
   onEdit,
   onToggleStatus,
   showActions: showActionsProp,
@@ -48,7 +49,7 @@ export function EmpleadoTableCard({
   const resolvedInitials = initials ?? resolveEmpleadoInitials(name);
   const resolvedTone = avatarTone ?? resolveEmpleadoAvatarTone(id ?? name);
   const contractLabel = formatEmpleadoContractLabel(contractType);
-  const showActions = showActionsProp ?? Boolean(onEdit || onToggleStatus);
+  const showActions = showActionsProp ?? Boolean(onView || onEdit || onToggleStatus);
 
   return (
     <article
@@ -106,14 +107,21 @@ export function EmpleadoTableCard({
 
       {showActions ? (
         <footer className={styles.footer}>
-          <EmpleadoRowActionButton variant="edit" theme={theme} onClick={onEdit} />
-          <EmpleadoRowActionButton
-            variant="toggle"
-            active={isActive}
-            theme={theme}
-            onClick={onToggleStatus}
-            disabled={toggleLoading}
-          />
+          {onView ? (
+            <EmpleadoRowActionButton variant="view" theme={theme} onClick={onView} />
+          ) : null}
+          {onEdit ? (
+            <EmpleadoRowActionButton variant="edit" theme={theme} onClick={onEdit} />
+          ) : null}
+          {onToggleStatus ? (
+            <EmpleadoRowActionButton
+              variant="toggle"
+              active={isActive}
+              theme={theme}
+              onClick={onToggleStatus}
+              disabled={toggleLoading}
+            />
+          ) : null}
         </footer>
       ) : null}
     </article>
