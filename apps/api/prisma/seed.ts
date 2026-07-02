@@ -798,144 +798,144 @@ async function seedUserLocationAssignments(
 // ─── OS-563: EmployeePosition catalog for Palos de Leña (lista oficial cliente) ─
 const EMPLOYEE_POSITIONS_PDL = [
   // Gerencia
-  { id: 'pos-pdl-001', title: 'ADMINISTRADOR', area: 'Gerencia', baseSalaryRange: 5000000 },
-  { id: 'pos-pdl-002', title: 'ADMINISTRADOR JUNIOR', area: 'Gerencia', baseSalaryRange: 3000000 },
+  { id: 'pos-pdl-001', title: 'Administrador', area: 'Gerencia', baseSalaryRange: 5000000 },
+  { id: 'pos-pdl-002', title: 'Administrador junior', area: 'Gerencia', baseSalaryRange: 3000000 },
   {
     id: 'pos-pdl-003',
-    title: 'DIRECTOR DE OPERACIONES',
+    title: 'Director de operaciones',
     area: 'Gerencia',
     baseSalaryRange: 8000000,
   },
-  { id: 'pos-pdl-004', title: 'DIRECTORA COMERCIAL', area: 'Gerencia', baseSalaryRange: 7000000 },
+  { id: 'pos-pdl-004', title: 'Directora comercial', area: 'Gerencia', baseSalaryRange: 7000000 },
   {
     id: 'pos-pdl-005',
-    title: 'GERENTE ADMINISTRATIVA',
+    title: 'Gerente administrativa',
     area: 'Gerencia',
     baseSalaryRange: 6000000,
   },
   {
     id: 'pos-pdl-006',
-    title: 'GERENTE DE PUNTO DE VENTA',
+    title: 'Gerente de punto de venta',
     area: 'Gerencia',
     baseSalaryRange: 4500000,
   },
-  { id: 'pos-pdl-007', title: 'GERENTE GENERAL', area: 'Gerencia', baseSalaryRange: 15000000 },
+  { id: 'pos-pdl-007', title: 'Gerente general', area: 'Gerencia', baseSalaryRange: 15000000 },
   // Cocina
   {
     id: 'pos-pdl-008',
-    title: 'AUXILIAR DE COCINA Y PRODUCCION',
+    title: 'Auxiliar de cocina y produccion',
     area: 'Cocina',
     baseSalaryRange: 1423500,
   },
   {
     id: 'pos-pdl-009',
-    title: 'AUXLIAR DE COCINA Y PRODUCCION',
+    title: 'Auxliar de cocina y produccion',
     area: 'Cocina',
     baseSalaryRange: 1423500,
   },
-  { id: 'pos-pdl-010', title: 'CHEF COORPORATIVO', area: 'Cocina', baseSalaryRange: 6000000 },
-  { id: 'pos-pdl-011', title: 'COCINA', area: 'Cocina', baseSalaryRange: 1800000 },
-  { id: 'pos-pdl-012', title: 'COCINA FIN DE SEMANA', area: 'Cocina', baseSalaryRange: 1423500 },
-  { id: 'pos-pdl-013', title: 'PARRILLERO', area: 'Cocina', baseSalaryRange: 2200000 },
-  { id: 'pos-pdl-014', title: 'PARRILLERO JUNIOR', area: 'Cocina', baseSalaryRange: 1600000 },
+  { id: 'pos-pdl-010', title: 'Chef coorporativo', area: 'Cocina', baseSalaryRange: 6000000 },
+  { id: 'pos-pdl-011', title: 'Cocina', area: 'Cocina', baseSalaryRange: 1800000 },
+  { id: 'pos-pdl-012', title: 'Cocina fin de semana', area: 'Cocina', baseSalaryRange: 1423500 },
+  { id: 'pos-pdl-013', title: 'Parrillero', area: 'Cocina', baseSalaryRange: 2200000 },
+  { id: 'pos-pdl-014', title: 'Parrillero junior', area: 'Cocina', baseSalaryRange: 1600000 },
   // Servicio
-  { id: 'pos-pdl-015', title: 'ASESOR DE VENTAS', area: 'Servicio', baseSalaryRange: 1800000 },
+  { id: 'pos-pdl-015', title: 'Asesor de ventas', area: 'Servicio', baseSalaryRange: 1800000 },
   {
     id: 'pos-pdl-016',
-    title: 'ASESORA DE VENTAS FIN DE SEMANA',
+    title: 'Asesora de ventas fin de semana',
     area: 'Servicio',
     baseSalaryRange: 1423500,
   },
-  { id: 'pos-pdl-017', title: 'BARTENDER', area: 'Servicio', baseSalaryRange: 1800000 },
-  { id: 'pos-pdl-018', title: 'EJECUTIVO COMERCIAL', area: 'Servicio', baseSalaryRange: 3000000 },
+  { id: 'pos-pdl-017', title: 'Bartender', area: 'Servicio', baseSalaryRange: 1800000 },
+  { id: 'pos-pdl-018', title: 'Ejecutivo comercial', area: 'Servicio', baseSalaryRange: 3000000 },
   {
     id: 'pos-pdl-019',
-    title: 'HOTESS FIN DE SEMANA',
+    title: 'Hotess fin de semana',
     area: 'Servicio',
     baseSalaryRange: 1423500,
   },
-  { id: 'pos-pdl-020', title: 'IMPULSADOR', area: 'Servicio', baseSalaryRange: 1600000 },
+  { id: 'pos-pdl-020', title: 'Impulsador', area: 'Servicio', baseSalaryRange: 1600000 },
   {
     id: 'pos-pdl-021',
-    title: 'IMPULSADOR FIN DE SEMANA',
+    title: 'Impulsador fin de semana',
     area: 'Servicio',
     baseSalaryRange: 1423500,
   },
   // Planta / Producción
   {
     id: 'pos-pdl-022',
-    title: 'LIDER DE PLANTA DE PRODUCCION',
+    title: 'Lider de planta de produccion',
     area: 'Planta',
     baseSalaryRange: 3500000,
   },
   // Administrativo
   {
     id: 'pos-pdl-023',
-    title: 'ANALISTA DE COMPRAS',
+    title: 'Analista de compras',
     area: 'Administrativo',
     baseSalaryRange: 3000000,
   },
   {
     id: 'pos-pdl-024',
-    title: 'ANALISTA DE GESTIÓN HUMANA',
+    title: 'Analista de gestión humana',
     area: 'Administrativo',
     baseSalaryRange: 3000000,
   },
   {
     id: 'pos-pdl-025',
-    title: 'ANALISTA FINANCIERA Y CONTABLE',
+    title: 'Analista financiera y contable',
     area: 'Administrativo',
     baseSalaryRange: 3500000,
   },
-  { id: 'pos-pdl-026', title: 'APRENDIZ SENA', area: 'Administrativo', baseSalaryRange: 711750 },
-  { id: 'pos-pdl-027', title: 'AUDITOR', area: 'Administrativo', baseSalaryRange: 4000000 },
+  { id: 'pos-pdl-026', title: 'Aprendiz sena', area: 'Administrativo', baseSalaryRange: 711750 },
+  { id: 'pos-pdl-027', title: 'Auditor', area: 'Administrativo', baseSalaryRange: 4000000 },
   {
     id: 'pos-pdl-028',
-    title: 'AUXILIAR ADMINISTRATIVO',
+    title: 'Auxiliar administrativo',
     area: 'Administrativo',
     baseSalaryRange: 1800000,
   },
   {
     id: 'pos-pdl-029',
-    title: 'AUXILIAR TALENTO HUMANO',
+    title: 'Auxiliar talento humano',
     area: 'Administrativo',
     baseSalaryRange: 1800000,
   },
-  { id: 'pos-pdl-030', title: 'CONTADOR', area: 'Administrativo', baseSalaryRange: 4500000 },
+  { id: 'pos-pdl-030', title: 'Contador', area: 'Administrativo', baseSalaryRange: 4500000 },
   {
     id: 'pos-pdl-031',
-    title: 'JEFE DE COMPRAS',
+    title: 'Jefe de compras',
     area: 'Administrativo',
     baseSalaryRange: 4000000,
   },
   {
     id: 'pos-pdl-032',
-    title: 'JEFE DE TALENO HUMANO',
+    title: 'Jefe de taleno humano',
     area: 'Administrativo',
     baseSalaryRange: 4000000,
   },
-  { id: 'pos-pdl-033', title: 'PROGRAMADOR', area: 'Administrativo', baseSalaryRange: 3500000 },
+  { id: 'pos-pdl-033', title: 'Programador', area: 'Administrativo', baseSalaryRange: 3500000 },
   {
     id: 'pos-pdl-034',
-    title: 'SERVICIOS GENERALES',
+    title: 'Servicios generales',
     area: 'Administrativo',
     baseSalaryRange: 1423500,
   },
   // Logística
-  { id: 'pos-pdl-035', title: 'ALMACENISTA', area: 'Logística', baseSalaryRange: 1800000 },
+  { id: 'pos-pdl-035', title: 'Almacenista', area: 'Logística', baseSalaryRange: 1800000 },
   {
     id: 'pos-pdl-036',
-    title: 'AUXILIAR DE CONDUCCION',
+    title: 'Auxiliar de conduccion',
     area: 'Logística',
     baseSalaryRange: 1800000,
   },
   {
     id: 'pos-pdl-037',
-    title: 'AUXILIAR DE CONDUCCION Y MANTENIMIENTO',
+    title: 'Auxiliar de conduccion y mantenimiento',
     area: 'Logística',
     baseSalaryRange: 2000000,
   },
-  { id: 'pos-pdl-038', title: 'CONDUCTOR', area: 'Logística', baseSalaryRange: 2200000 },
+  { id: 'pos-pdl-038', title: 'Conductor', area: 'Logística', baseSalaryRange: 2200000 },
 ] as const;
 
 async function seedEmployeePositions(tenantId: string) {
@@ -1792,6 +1792,8 @@ async function main() {
   await seedEmployeePositions(OPERATIONAL_TENANT_ID);
   await seedEmployeeDetails(ownerGlobalUser.id, operatorGlobalUser.id, firstLocationId);
   await seedEmployeeSocialProfiles(ownerGlobalUser.id, operatorGlobalUser.id);
+  const { seedEmployeeFinancialProfiles } = await import('./seeds/employee-financial-profile.seed');
+  await seedEmployeeFinancialProfiles(prisma, ownerGlobalUser.id, operatorGlobalUser.id);
   await seedUserLocationAssignments([
     {
       userId: ownerGlobalUser.id,

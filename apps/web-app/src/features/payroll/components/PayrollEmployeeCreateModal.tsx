@@ -1,14 +1,12 @@
-import { EmpleadoModal } from '@restopsiq/ui';
-
-import type { PayrollEmployeeFormValues } from '../types/payroll.types';
-import { PayrollEmployeeForm } from './PayrollEmployeeForm';
+import type { PayrollEmployeeCreateWizardPayload } from '../types/payroll-employee-create-wizard.types';
+import { PayrollEmployeeCreateWizard } from './PayrollEmployeeCreateWizard';
 
 interface PayrollEmployeeCreateModalProps {
   open: boolean;
   submitting?: boolean;
   theme?: 'light' | 'dark';
   onClose: () => void;
-  onSubmit: (values: PayrollEmployeeFormValues) => void;
+  onSubmit: (payload: PayrollEmployeeCreateWizardPayload) => void;
 }
 
 export function PayrollEmployeeCreateModal({
@@ -19,19 +17,12 @@ export function PayrollEmployeeCreateModal({
   onSubmit,
 }: PayrollEmployeeCreateModalProps): React.JSX.Element | null {
   return (
-    <EmpleadoModal
+    <PayrollEmployeeCreateWizard
       open={open}
-      title="Nuevo empleado"
-      subtitle="Registro base de empleado en employeeDetails"
+      submitting={submitting}
       theme={theme}
       onClose={onClose}
-    >
-      <PayrollEmployeeForm
-        mode="create"
-        submitting={submitting}
-        onCancel={onClose}
-        onSubmit={onSubmit}
-      />
-    </EmpleadoModal>
+      onSubmit={onSubmit}
+    />
   );
 }

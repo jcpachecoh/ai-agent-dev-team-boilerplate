@@ -36,14 +36,7 @@ export const PAYROLL_EMPLOYEE_PROFILE_TABS: PayrollEmployeeProfileTabDefinition[
     placeholderDescription:
       'Próximamente — nombre, documento, contacto, dirección y foto del colaborador.',
   },
-  {
-    id: 'payments',
-    label: 'Pagos',
-    icon: <Receipt {...iconProps} />,
-    placeholderTitle: 'Pagos y liquidaciones',
-    placeholderDescription:
-      'Próximamente — historial de pagos, salario base, novedades y comprobantes.',
-  },
+
   {
     id: 'social-security',
     label: 'Seg. social',
@@ -74,6 +67,14 @@ export const PAYROLL_EMPLOYEE_PROFILE_TABS: PayrollEmployeeProfileTabDefinition[
     icon: <Building2 {...iconProps} />,
     placeholderTitle: 'Información de impuestos',
     placeholderDescription: 'Próximamente — retención en la fuente y certificados tributarios.',
+  },
+  {
+    id: 'payments',
+    label: 'Pagos',
+    icon: <Receipt {...iconProps} />,
+    placeholderTitle: 'Pagos y liquidaciones',
+    placeholderDescription:
+      'Próximamente — historial de pagos, salario base, novedades y comprobantes.',
   },
 ];
 

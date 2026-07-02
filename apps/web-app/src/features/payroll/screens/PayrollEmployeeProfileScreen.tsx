@@ -13,8 +13,13 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
 import { useTheme } from '@/providers/ThemeProvider';
 
+import { PayrollEmployeeAttendanceTab } from '../components/PayrollEmployeeAttendanceTab';
+import { PayrollEmployeeBankAccountsTab } from '../components/PayrollEmployeeBankAccountsTab';
+import { PayrollEmployeePaymentsTab } from '../components/PayrollEmployeePaymentsTab';
 import { PayrollEmployeePersonalDataTab } from '../components/PayrollEmployeePersonalDataTab';
 import { PayrollEmployeeProfilePlaceholderTab } from '../components/PayrollEmployeeProfilePlaceholderTab';
+import { PayrollEmployeeSocialSecurityTab } from '../components/PayrollEmployeeSocialSecurityTab';
+import { PayrollEmployeeTaxTab } from '../components/PayrollEmployeeTaxTab';
 import {
   PAYROLL_EMPLOYEE_PROFILE_TABS,
   getPayrollEmployeeProfileTabDefinition,
@@ -22,6 +27,7 @@ import {
   type PayrollEmployeeProfileTabId,
 } from '../constants/employee-profile-tabs';
 import { usePayrollEmployeeQuery } from '../hooks/usePayrollEmployeeQuery';
+import { PayrollEmployeeProfileTabLoading } from '../components/PayrollEmployeeProfileTabLoading';
 import styles from './PayrollEmployeeProfileScreen.module.scss';
 
 export function PayrollEmployeeProfileScreen(): React.JSX.Element {
@@ -95,9 +101,7 @@ export function PayrollEmployeeProfileScreen(): React.JSX.Element {
           />
 
           <div className={styles.profileBody}>
-            {employeeQuery.isLoading ? (
-              <p className={styles.state}>Cargando perfil del colaborador…</p>
-            ) : null}
+            {employeeQuery.isLoading ? <PayrollEmployeeProfileTabLoading /> : null}
 
             {employeeQuery.isError ? (
               <div className={styles.state}>
@@ -136,6 +140,26 @@ function ProfileTabPanel({
 }): React.JSX.Element {
   if (tabId === 'personal') {
     return <PayrollEmployeePersonalDataTab userId={userId} theme={theme} />;
+  }
+
+  if (tabId === 'social-security') {
+    return <PayrollEmployeeSocialSecurityTab userId={userId} theme={theme} />;
+  }
+
+  if (tabId === 'attendance') {
+    return <PayrollEmployeeAttendanceTab userId={userId} theme={theme} />;
+  }
+
+  if (tabId === 'bank-accounts') {
+    return <PayrollEmployeeBankAccountsTab userId={userId} theme={theme} />;
+  }
+
+  if (tabId === 'payments') {
+    return <PayrollEmployeePaymentsTab userId={userId} theme={theme} />;
+  }
+
+  if (tabId === 'taxes') {
+    return <PayrollEmployeeTaxTab userId={userId} theme={theme} />;
   }
 
   return (

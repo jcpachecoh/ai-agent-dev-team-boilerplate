@@ -134,3 +134,16 @@ export function getDefaultRouteForRole(roleCode: string | null | undefined): str
 export function isPayrollReadOnlyRole(roleCode: string | null | undefined): boolean {
   return roleCode === 'NOMINA';
 }
+
+export function canWritePayrollEmployee(roleCode: string | null | undefined): boolean {
+  if (!roleCode) return false;
+  return (PAYROLL_WRITE_ROLES as readonly string[]).includes(roleCode);
+}
+
+/** OS-559 — escritura de perfil financiero y cuentas bancarias (MANAGER + admins). */
+export const FINANCIAL_WRITE_ROLES: readonly RoleCode[] = [...SYSTEM_ADMIN_ROLES, 'MANAGER'];
+
+export function canWriteFinancialProfile(roleCode: string | null | undefined): boolean {
+  if (!roleCode) return false;
+  return (FINANCIAL_WRITE_ROLES as readonly string[]).includes(roleCode);
+}

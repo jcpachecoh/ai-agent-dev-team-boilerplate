@@ -1,9 +1,6 @@
-import { useState } from 'react';
-import { EmpleadoModal } from '@restopsiq/ui';
-
-import type { PayrollEmployee, PayrollEmployeeFormValues } from '../types/payroll.types';
-import { EmployeePhotoUploader } from './EmployeePhotoUploader';
-import { PayrollEmployeeForm } from './PayrollEmployeeForm';
+import type { PayrollEmployee } from '../types/payroll.types';
+import type { PayrollEmployeeCreateWizardPayload } from '../types/payroll-employee-create-wizard.types';
+import { PayrollEmployeeWizard } from './PayrollEmployeeWizard';
 
 interface PayrollEmployeeEditDrawerProps {
   employee?: PayrollEmployee;
@@ -11,7 +8,7 @@ interface PayrollEmployeeEditDrawerProps {
   submitting?: boolean;
   theme?: 'light' | 'dark';
   onClose: () => void;
-  onSubmit: (values: PayrollEmployeeFormValues) => void;
+  onSubmit: (payload: PayrollEmployeeCreateWizardPayload) => void;
 }
 
 export function PayrollEmployeeEditDrawer({
@@ -22,30 +19,15 @@ export function PayrollEmployeeEditDrawer({
   onClose,
   onSubmit,
 }: PayrollEmployeeEditDrawerProps): React.JSX.Element | null {
-  const [localPhotoUrl, setLocalPhotoUrl] = useState<string | null>(null);
-
-  if (!employee) return null;
-
-  const employeeWithPhoto: PayrollEmployee = localPhotoUrl
-    ? { ...employee, photoUrl: localPhotoUrl }
-    : employee;
-
   return (
-    <EmpleadoModal
+    <PayrollEmployeeWizard
+      mode="edit"
       open={open}
-      title="Editar empleado"
-      subtitle={employee.name}
+      employee={employee}
+      submitting={submitting}
       theme={theme}
       onClose={onClose}
-    >
-      <EmployeePhotoUploader employee={employeeWithPhoto} onPhotoUpdated={setLocalPhotoUrl} />
-      <PayrollEmployeeForm
-        mode="edit"
-        initialValues={employee}
-        submitting={submitting}
-        onCancel={onClose}
-        onSubmit={onSubmit}
-      />
-    </EmpleadoModal>
+      onSubmit={onSubmit}
+    />
   );
 }

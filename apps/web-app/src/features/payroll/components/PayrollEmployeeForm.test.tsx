@@ -23,7 +23,7 @@ const TEST_CATALOGS = {
 const TEST_POSITIONS = [
   {
     id: 'pos-1',
-    title: 'Desarrollador',
+    title: 'Programador',
     area: 'Administración',
     baseSalaryRange: 4500000,
     isActive: true,
@@ -85,7 +85,9 @@ describe('PayrollEmployeeForm', () => {
 
     await user.click(screen.getByRole('button', { name: 'Crear empleado' }));
 
-    expect(screen.getByText('Nombre, correo y cédula son obligatorios.')).toBeInTheDocument();
+    expect(
+      screen.getByText('Nombres, primer apellido, correo y cédula son obligatorios.'),
+    ).toBeInTheDocument();
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
@@ -95,15 +97,16 @@ describe('PayrollEmployeeForm', () => {
 
     renderForm({ mode: 'create', locations: TEST_LOCATIONS, roles: TEST_ROLES, onSubmit });
 
-    await user.type(screen.getByLabelText('Nombre'), 'Carlos Perez');
+    await user.type(screen.getByLabelText('Nombres'), 'Carlos');
+    await user.type(screen.getByLabelText('Primer apellido'), 'Perez');
     await user.type(screen.getByLabelText('Cédula'), '12345678');
     await user.type(screen.getByLabelText('Correo'), 'carlos@test.com');
-    await user.click(screen.getByRole('button', { name: 'Rol' }));
+    await user.click(screen.getByRole('button', { name: 'Rol del sistema' }));
     await user.click(screen.getByRole('option', { name: 'Manager' }));
-    await user.click(screen.getByRole('button', { name: 'Sede' }));
+    await user.click(screen.getByRole('button', { name: 'Áreas' }));
     await user.click(screen.getByRole('option', { name: 'Sede Palos de Leña 1' }));
     await user.click(screen.getByRole('button', { name: 'Cargo' }));
-    await user.click(screen.getByRole('option', { name: 'Desarrollador — Administración' }));
+    await user.click(screen.getByRole('option', { name: 'Programador' }));
     await user.type(screen.getByLabelText('Salario'), '3000000');
     await user.click(screen.getByRole('button', { name: 'Departamento' }));
     await user.click(screen.getByRole('option', { name: 'Gerencia' }));
@@ -120,6 +123,8 @@ describe('PayrollEmployeeForm', () => {
     await user.click(screen.getByRole('button', { name: 'Crear empleado' }));
 
     expect(onSubmit).toHaveBeenCalledTimes(1);
+    expect(onSubmit.mock.calls[0][0].nombres).toBe('Carlos');
+    expect(onSubmit.mock.calls[0][0].primerApellido).toBe('Perez');
     expect(onSubmit.mock.calls[0][0].positionId).toBe('pos-1');
     expect(onSubmit.mock.calls[0][0].area).toBe('Administración');
   });

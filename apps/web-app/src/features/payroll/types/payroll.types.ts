@@ -127,7 +127,9 @@ export interface PayrollEmployeeFormValues {
   email: string;
   roleId: string;
   locationId: string;
-  name: string;
+  nombres: string;
+  primerApellido: string;
+  segundoApellido: string;
   positionId: string;
   area: string;
   department: string;

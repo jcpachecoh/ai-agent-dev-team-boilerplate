@@ -1,0 +1,107 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px 24px 24px;
+}
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.title {
+  margin: 0;
+  color: var(--empleado-text);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.subtitle {
+  margin: 6px 0 0;
+  color: var(--empleado-subtle);
+  font-size: 0.875rem;
+}
+
+.detailsGrid,
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 16px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.fieldLabelRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.label {
+  color: var(--empleado-muted);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.value,
+.readonlyValue {
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--empleado-border);
+  border-radius: 4px;
+  background: var(--empleado-input);
+  color: var(--empleado-text);
+  font-size: 0.875rem;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.hint {
+  margin: 0;
+  color: var(--empleado-subtle);
+  font-size: 0.75rem;
+}
+
+.error {
+  margin: 0;
+  color: #e05a44;
+  font-size: 0.75rem;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.state {
+  padding: 2rem 1rem;
+  color: var(--empleado-subtle);
+  text-align: center;
+}
+
+@media (max-width: 900px) {
+  .detailsGrid,
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}

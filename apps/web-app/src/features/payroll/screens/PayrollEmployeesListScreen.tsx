@@ -36,6 +36,10 @@ import { PayrollDeactivateEmployeeDialog } from '../components/PayrollDeactivate
 import { PayrollEmployeeCreateModal } from '../components/PayrollEmployeeCreateModal';
 import { PayrollEmployeeEditDrawer } from '../components/PayrollEmployeeEditDrawer';
 import { PayrollApiError } from '../api/payroll.client';
+import type { PayrollEmployeeCreateWizardPayload } from '../types/payroll-employee-create-wizard.types';
+import { applyPayrollEmployeeCreateFinancialProfile } from '../utils/applyPayrollEmployeeCreateFinancialProfile';
+import { applyPayrollEmployeeCreatePersonalData } from '../utils/applyPayrollEmployeeCreatePersonalData';
+import { buildEmployeeFullName } from '../utils/employee-name';
 import { sortPayrollEmployees } from '../utils/sortPayrollEmployees';
 import styles from './PayrollEmployeesListScreen.module.scss';
 
@@ -46,7 +50,7 @@ function toCreateInput(values: PayrollEmployeeFormValues): CreatePayrollEmployee
     email: values.email.trim(),
     roleId: values.roleId.trim(),
     locationId: values.locationId.trim(),
-    name: values.name.trim(),
+    name: buildEmployeeFullName(values),
     positionId: values.positionId.trim() || undefined,
     area: values.area.trim(),
     department: values.department.trim(),
@@ -155,9 +159,11 @@ export function PayrollEmployeesListScreen(): React.JSX.Element {
   const pageStart = filteredCount === 0 ? 0 : (state.page - 1) * state.pageSize + 1;
   const pageEnd = Math.min(state.page * state.pageSize, filteredCount);
 
-  const handleCreate = async (values: PayrollEmployeeFormValues) => {
+  const handleCreate = async (payload: PayrollEmployeeCreateWizardPayload) => {
     try {
-      await createEmployee.mutateAsync(toCreateInput(values));
+      const employee = await createEmployee.mutateAsync(toCreateInput(payload.employee));
+      await applyPayrollEmployeeCreatePersonalData(employee.userId, payload.employee);
+      await applyPayrollEmployeeCreateFinancialProfile(employee.id, payload);
       toast.success('Empleado creado correctamente');
       setCreateOpen(false);
     } catch (error) {
@@ -165,14 +171,16 @@ export function PayrollEmployeesListScreen(): React.JSX.Element {
     }
   };
 
-  const handleEdit = async (values: PayrollEmployeeFormValues) => {
+  const handleEdit = async (payload: PayrollEmployeeCreateWizardPayload) => {
     if (!editingEmployee) return;
 
     try {
       await updateEmployee.mutateAsync({
         userId: editingEmployee.userId,
-        input: toUpdateInput(values),
+        input: toUpdateInput(payload.employee),
       });
+      await applyPayrollEmployeeCreatePersonalData(editingEmployee.userId, payload.employee);
+      await applyPayrollEmployeeCreateFinancialProfile(editingEmployee.id, payload);
       toast.success('Empleado actualizado');
       setEditingEmployee(undefined);
     } catch (error) {
@@ -340,7 +348,7 @@ export function PayrollEmployeesListScreen(): React.JSX.Element {
             submitting={updateEmployee.isPending}
             theme={empleadoTheme}
             onClose={() => setEditingEmployee(undefined)}
-            onSubmit={(values) => void handleEdit(values)}
+            onSubmit={(payload) => void handleEdit(payload)}
           />
 
           <PayrollDeactivateEmployeeDialog

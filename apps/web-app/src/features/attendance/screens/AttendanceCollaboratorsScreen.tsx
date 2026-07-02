@@ -34,6 +34,10 @@ import type {
   PayrollEmployeeFormValues,
   UpdatePayrollEmployeeInput,
 } from '@/features/payroll/types/payroll.types';
+import type { PayrollEmployeeCreateWizardPayload } from '@/features/payroll/types/payroll-employee-create-wizard.types';
+import { applyPayrollEmployeeCreateFinancialProfile } from '@/features/payroll/utils/applyPayrollEmployeeCreateFinancialProfile';
+import { applyPayrollEmployeeCreatePersonalData } from '@/features/payroll/utils/applyPayrollEmployeeCreatePersonalData';
+import { buildEmployeeFullName } from '@/features/payroll/utils/employee-name';
 import { sortPayrollEmployees } from '@/features/payroll/utils/sortPayrollEmployees';
 
 import { useAttendanceCollaboratorsEmployeesQuery } from '../hooks/useAttendanceCollaboratorsEmployeesQuery';
@@ -59,7 +63,7 @@ function toCreateInput(values: PayrollEmployeeFormValues): CreatePayrollEmployee
     email: values.email.trim(),
     roleId: values.roleId.trim(),
     locationId: values.locationId.trim(),
-    name: values.name.trim(),
+    name: buildEmployeeFullName(values),
     positionId: values.positionId.trim(),
     area: values.area.trim(),
     department: values.department.trim(),
@@ -226,9 +230,11 @@ export function AttendanceCollaboratorsScreen(): React.JSX.Element {
   const pageStart = filteredCount === 0 ? 0 : (state.page - 1) * state.pageSize + 1;
   const pageEnd = Math.min(state.page * state.pageSize, filteredCount);
 
-  const handleCreate = async (values: PayrollEmployeeFormValues) => {
+  const handleCreate = async (payload: PayrollEmployeeCreateWizardPayload) => {
     try {
-      await createEmployee.mutateAsync(toCreateInput(values));
+      const employee = await createEmployee.mutateAsync(toCreateInput(payload.employee));
+      await applyPayrollEmployeeCreatePersonalData(employee.userId, payload.employee);
+      await applyPayrollEmployeeCreateFinancialProfile(employee.id, payload);
       toast.success('Colaborador creado correctamente');
       setCreateOpen(false);
     } catch (error) {
@@ -236,14 +242,16 @@ export function AttendanceCollaboratorsScreen(): React.JSX.Element {
     }
   };
 
-  const handleEdit = async (values: PayrollEmployeeFormValues) => {
+  const handleEdit = async (payload: PayrollEmployeeCreateWizardPayload) => {
     if (!editingEmployee) return;
 
     try {
       await updateEmployee.mutateAsync({
         userId: editingEmployee.userId,
-        input: toUpdateInput(values),
+        input: toUpdateInput(payload.employee),
       });
+      await applyPayrollEmployeeCreatePersonalData(editingEmployee.userId, payload.employee);
+      await applyPayrollEmployeeCreateFinancialProfile(editingEmployee.id, payload);
       toast.success('Colaborador actualizado');
       setEditingEmployee(undefined);
     } catch (error) {
@@ -437,7 +445,7 @@ export function AttendanceCollaboratorsScreen(): React.JSX.Element {
             submitting={createEmployee.isPending}
             theme={empleadoTheme}
             onClose={() => setCreateOpen(false)}
-            onSubmit={(values) => void handleCreate(values)}
+            onSubmit={(payload) => void handleCreate(payload)}
           />
 
           <PayrollEmployeeEditDrawer
@@ -446,7 +454,7 @@ export function AttendanceCollaboratorsScreen(): React.JSX.Element {
             submitting={updateEmployee.isPending}
             theme={empleadoTheme}
             onClose={() => setEditingEmployee(undefined)}
-            onSubmit={(values) => void handleEdit(values)}
+            onSubmit={(payload) => void handleEdit(payload)}
           />
 
           <PayrollDeactivateEmployeeDialog

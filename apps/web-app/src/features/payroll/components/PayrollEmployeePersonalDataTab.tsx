@@ -24,6 +24,7 @@ import type {
 } from '../types/personal-data.types';
 import { PayrollApiError } from '../api/payroll.client';
 import { EmployeePhotoUploader } from './EmployeePhotoUploader';
+import { PayrollEmployeeProfileTabLoading } from './PayrollEmployeeProfileTabLoading';
 import styles from './PayrollEmployeePersonalDataTab.module.scss';
 
 const DOCUMENT_OPTIONS = [
@@ -195,7 +196,7 @@ export function PayrollEmployeePersonalDataTab({
   };
 
   if (query.isLoading || !values) {
-    return <p className={styles.state}>Cargando datos personales…</p>;
+    return <PayrollEmployeeProfileTabLoading />;
   }
 
   if (query.isError) {

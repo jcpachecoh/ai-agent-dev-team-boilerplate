@@ -8,6 +8,15 @@ export const payrollKeys = {
   employeeList: (filters: PayrollEmployeesFilters) =>
     [...payrollKeys.employees(), filters] as const,
   employee: (userId: string) => [...payrollKeys.employees(), 'detail', userId] as const,
+  employeeMarcaciones: (
+    employeeId: string,
+    filters: { dateFrom: string; dateTo: string; status?: string | null; take?: number },
+  ) => [...payrollKeys.all, 'marcaciones', employeeId, filters] as const,
+  bankAccounts: (employeeId: string) => [...payrollKeys.all, 'bank-accounts', employeeId] as const,
+  taxInformation: (employeeId: string) =>
+    [...payrollKeys.all, 'tax-information', employeeId] as const,
+  paymentHistory: (employeeId: string) =>
+    [...payrollKeys.all, 'payment-history', employeeId] as const,
   catalogs: () => [...payrollKeys.all, 'employee-catalogs'] as const,
   catalogList: (type?: string) => [...payrollKeys.catalogs(), type ?? 'all'] as const,
   positions: () => [...payrollKeys.all, 'employee-positions'] as const,
