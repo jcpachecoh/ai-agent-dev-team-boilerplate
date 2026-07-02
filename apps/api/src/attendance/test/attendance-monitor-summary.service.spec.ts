@@ -162,4 +162,64 @@ describe('AttendanceMonitorSummaryService', () => {
     expect(result.metrics.onShift).toBe(1);
     expect(result.employees.onShift[0]?.name).toBe('Carlos Mendoza');
   });
+
+  it('clasifica tardanzas y horas extra en periodo histórico', async () => {
+    repositoryMock.listHistory.mockResolvedValue([
+      {
+        id: 'log-late',
+        tenantId,
+        employeeId: employee.id,
+        locationId,
+        eventType: AttendanceEventType.ENTRY,
+        shift: AttendanceShift.MORNING,
+        timestamp: new Date('2026-06-10T15:00:00.000Z'),
+        workDate: new Date('2026-06-10T00:00:00.000Z'),
+        notes: null,
+        isActive: true,
+        createdAt: new Date('2026-06-10T15:00:00.000Z'),
+        updatedAt: new Date('2026-06-10T15:00:00.000Z'),
+        employee,
+      },
+      {
+        id: 'log-exit',
+        tenantId,
+        employeeId: employee.id,
+        locationId,
+        eventType: AttendanceEventType.EXIT,
+        shift: AttendanceShift.MORNING,
+        timestamp: new Date('2026-06-10T23:30:00.000Z'),
+        workDate: new Date('2026-06-10T00:00:00.000Z'),
+        notes: null,
+        isActive: true,
+        createdAt: new Date('2026-06-10T23:30:00.000Z'),
+        updatedAt: new Date('2026-06-10T23:30:00.000Z'),
+        employee,
+      },
+    ]);
+    repositoryMock.listActiveAtLocation.mockResolvedValue([]);
+
+    const result = await service.getMonitorSummary(
+      { locationId, period: 'week', anchorDate: '2026-06-10' },
+      tenantId,
+    );
+
+    expect(result.isLive).toBe(false);
+    expect(result.metrics.lateArrivals).toBe(1);
+    expect(result.metrics.overtime).toBe(1);
+    expect(result.employees.late[0]?.lateMinutes).toBeGreaterThan(0);
+  });
+
+  it('usa el email cuando el empleado no tiene nombre', async () => {
+    const unnamedEmployee = { ...employee, name: '   ' };
+    repositoryMock.findEmployeesAtLocation.mockResolvedValue([unnamedEmployee]);
+    repositoryMock.listHistory.mockResolvedValue([]);
+    repositoryMock.listActiveAtLocation.mockResolvedValue([]);
+
+    const result = await service.getMonitorSummary(
+      { locationId, period: 'day', anchorDate: '2026-06-18' },
+      tenantId,
+    );
+
+    expect(result.employees.absent[0]?.name).toBe('carlos');
+  });
 });

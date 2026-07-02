@@ -1,6 +1,13 @@
 .wrapper {
   display: flex;
   flex-direction: column;
-  height: 100%;
-  min-height: inherit;
+  gap: 6px;
+  width: 100%;
+}
+
+.plot {
+  width: 100%;
+  max-width: none;
+  flex-shrink: 0;
+  --chart-width: 100%;
 }

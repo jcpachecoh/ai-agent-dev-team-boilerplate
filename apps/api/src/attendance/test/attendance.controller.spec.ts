@@ -3,6 +3,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AttendanceController } from '../controller/attendance.controller';
 import { AttendanceService } from '../service/attendance.service';
 import { AttendanceMonitorSummaryService } from '../service/attendance-monitor-summary.service';
+import { AttendanceControlPanelService } from '../service/attendance-control-panel.service';
+import { AttendanceComparisonService } from '../service/attendance-comparison.service';
 import { KioskAuthDto } from '../controller/dto/kiosk-auth.dto';
 import { RegisterEntryDto, RegisterExitDto } from '../controller/dto/register-event.dto';
 import {
@@ -10,6 +12,8 @@ import {
   ActiveAttendanceQueryDto,
 } from '../controller/dto/list-attendance-query.dto';
 import { MonitorSummaryQueryDto } from '../controller/dto/monitor-summary-query.dto';
+import { ControlPanelQueryDto } from '../controller/dto/control-panel-query.dto';
+import { AttendanceComparisonQueryDto } from '../controller/dto/attendance-comparison-query.dto';
 
 const serviceMock = {
   kioskAuth: jest.fn(),
@@ -22,6 +26,14 @@ const serviceMock = {
 
 const monitorSummaryServiceMock = {
   getMonitorSummary: jest.fn(),
+};
+
+const controlPanelServiceMock = {
+  getControlPanel: jest.fn(),
+};
+
+const comparisonServiceMock = {
+  getComparison: jest.fn(),
 };
 
 const TENANT = 'test-tenant';
@@ -44,6 +56,8 @@ describe('AttendanceController', () => {
       providers: [
         { provide: AttendanceService, useValue: serviceMock },
         { provide: AttendanceMonitorSummaryService, useValue: monitorSummaryServiceMock },
+        { provide: AttendanceControlPanelService, useValue: controlPanelServiceMock },
+        { provide: AttendanceComparisonService, useValue: comparisonServiceMock },
       ],
     }).compile();
 
@@ -184,6 +198,57 @@ describe('AttendanceController', () => {
         TENANT,
       );
       expect(result).toEqual(summary);
+    });
+  });
+
+  describe('getControlPanel', () => {
+    it('delega al control panel service', async () => {
+      const user = { tenantId: TENANT };
+      const query = Object.assign(new ControlPanelQueryDto(), {
+        anchorDate: '2026-07-01',
+        period: 'day',
+      });
+      const summary = { metrics: { workingNow: 2 } };
+      controlPanelServiceMock.getControlPanel.mockResolvedValue(summary);
+
+      const result = await controller.getControlPanel(user, '', query);
+
+      expect(controlPanelServiceMock.getControlPanel).toHaveBeenCalledWith(TENANT, query);
+      expect(result).toEqual(summary);
+    });
+
+    it('lanza BadRequestException cuando no hay tenantId', () => {
+      expect(() => controller.getControlPanel(null, '', new ControlPanelQueryDto())).toThrow(
+        BadRequestException,
+      );
+    });
+  });
+
+  describe('getControlPanelComparison', () => {
+    it('delega al comparison service', async () => {
+      const user = { tenantId: TENANT };
+      const query = Object.assign(new AttendanceComparisonQueryDto(), {
+        anchorDate: '2026-07-01',
+        period: 'week',
+      });
+      const summary = { period: 'week', points: [] };
+      comparisonServiceMock.getComparison.mockResolvedValue(summary);
+
+      const result = await controller.getControlPanelComparison(user, '', query);
+
+      expect(comparisonServiceMock.getComparison).toHaveBeenCalledWith(TENANT, query);
+      expect(result).toEqual(summary);
+    });
+
+    it('usa tenantId del header cuando no hay JWT', async () => {
+      const query = Object.assign(new AttendanceComparisonQueryDto(), {
+        anchorDate: '2026-07-01',
+      });
+      comparisonServiceMock.getComparison.mockResolvedValue({ period: 'day', points: [] });
+
+      await controller.getControlPanelComparison(null, TENANT, query);
+
+      expect(comparisonServiceMock.getComparison).toHaveBeenCalledWith(TENANT, query);
     });
   });
 });

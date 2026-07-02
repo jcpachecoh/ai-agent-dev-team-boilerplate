@@ -8,6 +8,8 @@ import { AttendanceController } from './controller/attendance.controller';
 import { AttendanceResolver } from './resolver/attendance.resolver';
 import { AttendanceService } from './service/attendance.service';
 import { AttendanceMonitorSummaryService } from './service/attendance-monitor-summary.service';
+import { AttendanceControlPanelService } from './service/attendance-control-panel.service';
+import { AttendanceComparisonService } from './service/attendance-comparison.service';
 import { AttendanceRepository } from './repository/attendance.repository';
 
 @Module({
@@ -16,12 +18,19 @@ import { AttendanceRepository } from './repository/attendance.repository';
   providers: [
     AttendanceService,
     AttendanceMonitorSummaryService,
+    AttendanceControlPanelService,
+    AttendanceComparisonService,
     AttendanceRepository,
     AttendanceResolver,
     MobileAttendanceRepository,
     MobileAttendanceService,
     MobileAttendanceResolver,
   ],
-  exports: [AttendanceService, AttendanceMonitorSummaryService],
+  exports: [
+    AttendanceService,
+    AttendanceMonitorSummaryService,
+    AttendanceControlPanelService,
+    AttendanceComparisonService,
+  ],
 })
 export class AttendanceModule {}

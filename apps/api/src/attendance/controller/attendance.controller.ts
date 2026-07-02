@@ -19,6 +19,8 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { PAYROLL_MODULE_ROLES } from '../../common/config/rbac.config';
 import { AttendanceService } from '../service/attendance.service';
 import { AttendanceMonitorSummaryService } from '../service/attendance-monitor-summary.service';
+import { AttendanceControlPanelService } from '../service/attendance-control-panel.service';
+import { AttendanceComparisonService } from '../service/attendance-comparison.service';
 import { KioskAuthDto } from './dto/kiosk-auth.dto';
 import { RegisterEntryDto, RegisterExitDto } from './dto/register-event.dto';
 import {
@@ -35,6 +37,10 @@ import {
 } from './dto/attendance-summary.response';
 import { MonitorSummaryQueryDto } from './dto/monitor-summary-query.dto';
 import { AttendanceMonitorSummaryDto } from './dto/monitor-summary.response';
+import { ControlPanelQueryDto } from './dto/control-panel-query.dto';
+import { ControlPanelSummaryDto } from './dto/control-panel.response';
+import { AttendanceComparisonQueryDto } from './dto/attendance-comparison-query.dto';
+import { AttendanceComparisonSummaryDto } from './dto/attendance-comparison.response';
 
 @ApiTags('attendance')
 @ApiHeader({
@@ -47,6 +53,8 @@ export class AttendanceController {
   constructor(
     private readonly attendanceService: AttendanceService,
     private readonly monitorSummaryService: AttendanceMonitorSummaryService,
+    private readonly controlPanelService: AttendanceControlPanelService,
+    private readonly comparisonService: AttendanceComparisonService,
   ) {}
 
   // ── Public kiosk endpoints ─────────────────────────────────────────────────
@@ -167,6 +175,44 @@ export class AttendanceController {
       },
       tenantId,
     ) as Promise<AttendanceMonitorSummaryDto>;
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(RolesGuard)
+  @Roles(...PAYROLL_MODULE_ROLES)
+  @Get('control-panel/comparison')
+  @ApiOperation({ summary: 'Comparativo de asistencias (periodo actual vs anterior)' })
+  @ApiResponse({ status: 200, type: AttendanceComparisonSummaryDto })
+  getControlPanelComparison(
+    @CurrentUser() user: any,
+    @Headers('x-tenant-id') headerTenantId: string,
+    @Query() query: AttendanceComparisonQueryDto,
+  ): Promise<AttendanceComparisonSummaryDto> {
+    const tenantId = this.resolveTenantId(user, headerTenantId);
+    return this.comparisonService.getComparison(
+      tenantId,
+      query,
+    ) as Promise<AttendanceComparisonSummaryDto>;
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(RolesGuard)
+  @Roles(...PAYROLL_MODULE_ROLES)
+  @Get('control-panel')
+  @ApiOperation({
+    summary: 'Panel de control de asistencia (indicadores, línea de tiempo y alertas)',
+  })
+  @ApiResponse({ status: 200, type: ControlPanelSummaryDto })
+  getControlPanel(
+    @CurrentUser() user: any,
+    @Headers('x-tenant-id') headerTenantId: string,
+    @Query() query: ControlPanelQueryDto,
+  ): Promise<ControlPanelSummaryDto> {
+    const tenantId = this.resolveTenantId(user, headerTenantId);
+    return this.controlPanelService.getControlPanel(
+      tenantId,
+      query,
+    ) as Promise<ControlPanelSummaryDto>;
   }
 
   @ApiBearerAuth()

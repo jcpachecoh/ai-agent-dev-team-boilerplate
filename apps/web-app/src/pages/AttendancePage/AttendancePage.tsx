@@ -3,6 +3,7 @@ import { Navigate, Route, Routes, useParams } from 'react-router-dom';
 import {
   AttendanceCardScreen,
   AttendanceCollaboratorsScreen,
+  AttendanceDashboardScreen,
   AttendanceLocationDetailScreen,
   AttendanceMonitorScreen,
 } from '@/features/attendance';
@@ -21,12 +22,7 @@ function RedirectLegacyPayrollAttendance(): React.JSX.Element {
 export default function AttendancePage(): React.JSX.Element {
   return (
     <Routes>
-      <Route
-        index
-        element={
-          <ModulePlaceholderPage title="Panel de control" subtitle={ATTENDANCE_COMING_SOON} />
-        }
-      />
+      <Route index element={<AttendanceDashboardScreen />} />
       <Route path="colaboradores" element={<AttendanceCollaboratorsScreen />} />
       <Route
         path="turnos"

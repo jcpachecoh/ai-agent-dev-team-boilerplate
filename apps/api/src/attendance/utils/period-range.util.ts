@@ -116,6 +116,46 @@ export function isLiveAttendancePeriod(
   return period === 'day' && anchorDate === getTodayAnchorDate(timeZone);
 }
 
+export function resolvePreviousAttendancePeriodRange(
+  period: AttendancePeriodPreset,
+  anchorDate: string,
+): { dateFrom: string; dateTo: string } {
+  const current = resolveAttendancePeriodRange(period, anchorDate);
+
+  if (period === 'day') {
+    const previousDay = shiftDateIso(current.dateFrom, -1);
+    return { dateFrom: previousDay, dateTo: previousDay };
+  }
+
+  if (period === 'week') {
+    return {
+      dateFrom: shiftDateIso(current.dateFrom, -7),
+      dateTo: shiftDateIso(current.dateTo, -7),
+    };
+  }
+
+  if (period === 'month') {
+    const { year, month, day } = parseAnchorDate(anchorDate);
+    const previousMonth = month === 1 ? 12 : month - 1;
+    const previousYear = month === 1 ? year - 1 : year;
+    const previousAnchorDay = Math.min(day, daysInMonth(previousYear, previousMonth));
+    const previousAnchor = formatDateParts(previousYear, previousMonth, previousAnchorDay);
+    const previous = resolveAttendancePeriodRange('month', previousAnchor);
+    return { dateFrom: previous.dateFrom, dateTo: previous.dateTo };
+  }
+
+  const previousYear = parseAnchorDate(anchorDate).year - 1;
+  const previous = resolveAttendancePeriodRange('year', formatDateParts(previousYear, 6, 15));
+  return { dateFrom: previous.dateFrom, dateTo: previous.dateTo };
+}
+
+function shiftDateIso(dateIso: string, days: number): string {
+  const { year, month, day } = parseAnchorDate(dateIso);
+  const cursor = new Date(Date.UTC(year, month - 1, day));
+  cursor.setUTCDate(cursor.getUTCDate() + days);
+  return formatDateParts(cursor.getUTCFullYear(), cursor.getUTCMonth() + 1, cursor.getUTCDate());
+}
+
 export function workDateFromIso(dateIso: string): Date {
   return new Date(`${dateIso}T00:00:00.000Z`);
 }

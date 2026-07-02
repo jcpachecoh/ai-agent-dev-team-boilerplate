@@ -17,6 +17,7 @@ module.exports = {
     '!**/*.interface.ts',
     '!**/main.ts',
     '!**/__mocks__/**',
+    '!**/*.e2e-spec.ts',
   ],
 
   // ── Coverage thresholds (must maintain ≥80%) ─────────────────────────────

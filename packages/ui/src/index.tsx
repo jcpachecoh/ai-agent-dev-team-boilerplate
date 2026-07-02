@@ -207,6 +207,9 @@ export * from './components/nomina';
 
 export * from './components/empresa';
 
+export * from './components/charts/line-chart';
+export * from './components/charts/area-chart';
+
 export * from './components/ProfileHeader';
 export * from './components/InitialBadge';
 export * from './components/Sidebar';

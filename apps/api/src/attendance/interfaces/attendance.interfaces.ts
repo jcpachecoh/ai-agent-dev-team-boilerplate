@@ -189,6 +189,130 @@ export interface IAttendanceRepository {
   findEmployeeByUserId(userId: string, tenantId: string): Promise<EmployeeWithUser | null>;
   findLocationById(locationId: string, tenantId: string): Promise<Location | null>;
   findEmployeesAtLocation(locationId: string, tenantId: string): Promise<EmployeeWithUser[]>;
+  findTenantLabel(tenantId: string): Promise<string>;
+  listActiveLocations(tenantId: string, locationIds?: string[]): Promise<Location[]>;
+  listControlPanelLogs(
+    filters: AttendanceHistoryFilters & { locationIds?: string[] },
+  ): Promise<AttendanceLogFull[]>;
+  listMobileLogsForDay(
+    tenantId: string,
+    workDate: Date,
+    locationIds?: string[],
+  ): Promise<
+    Array<{
+      id: string;
+      employeeId: string;
+      locationId: string;
+      status: string;
+      timestamp: Date;
+      clientLatitude: number;
+      clientLongitude: number;
+      distanceMeters: number | null;
+      rejectionReason: string | null;
+      employee: EmployeeWithUser;
+      location: Location;
+    }>
+  >;
+}
+
+export interface ControlPanelQuery {
+  anchorDate?: string;
+  period?: 'day' | 'week' | 'month';
+  locationId?: string;
+  area?: string;
+  contractType?: string;
+  search?: string;
+  page?: number;
+  pageSize?: number;
+  sortBy?: string;
+  sortDir?: 'asc' | 'desc';
+}
+
+export interface ControlPanelTimelineRow {
+  employeeId: string;
+  userId: string;
+  photoUrl: string | null;
+  documentNumber: string;
+  primerApellido: string | null;
+  nombres: string | null;
+  especialidad: string;
+  area: string;
+  contrato: string;
+  locationId: string;
+  locationName: string;
+  lastRecordAt: string;
+  lastEventType: AttendanceEventType;
+  latitude: number | null;
+  longitude: number | null;
+  hasGeo: boolean;
+  isOutOfGeofence: boolean;
+}
+
+export interface ControlPanelAlert {
+  id: string;
+  type: string;
+  title: string;
+  subtitle?: string;
+  generatedAt: string;
+  employeeId?: string;
+  employeeName?: string;
+}
+
+export interface ControlPanelSummary {
+  anchorDate: string;
+  period: 'day' | 'week' | 'month';
+  dateFrom: string;
+  dateTo: string;
+  tenantName: string;
+  isLive: boolean;
+  metrics: {
+    workingNow: number;
+    attendanceToday: number;
+    tenantAttendanceToday: number;
+    overtimeHoursMonth: number;
+  };
+  timeline: {
+    items: ControlPanelTimelineRow[];
+    total: number;
+    page: number;
+    pageSize: number;
+  };
+  alerts: ControlPanelAlert[];
+  filters: {
+    areas: string[];
+    contractTypes: string[];
+    locations: Array<{ id: string; name: string }>;
+  };
+}
+
+export interface AttendanceComparisonQuery {
+  anchorDate?: string;
+  period?: 'day' | 'week' | 'month';
+  locationId?: string;
+  area?: string;
+  contractType?: string;
+  search?: string;
+}
+
+export interface AttendanceComparisonPoint {
+  label: string;
+  bucketKey: string;
+  current: number;
+  previous: number;
+}
+
+export interface AttendanceComparisonSummary {
+  period: 'day' | 'week' | 'month';
+  anchorDate: string;
+  dateFrom: string;
+  dateTo: string;
+  previousDateFrom: string;
+  previousDateTo: string;
+  series: {
+    current: { key: string; name: string };
+    previous: { key: string; name: string };
+  };
+  points: AttendanceComparisonPoint[];
 }
 
 // ── Service contract ────────────────────────────────────────────────────────

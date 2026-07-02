@@ -10,5 +10,7 @@ export * from './hooks/useAttendanceActiveQuery';
 export * from './hooks/useAttendanceHistoryQuery';
 export * from './hooks/useAttendanceMonitorSummary';
 export * from './hooks/useAttendanceMutations';
+export * from './hooks/useAttendanceControlPanelQuery';
+export * from './hooks/useAttendanceComparisonQuery';
 export * from './hooks/useAttendanceOvertimeQuery';
 export * from './types/attendance.types';

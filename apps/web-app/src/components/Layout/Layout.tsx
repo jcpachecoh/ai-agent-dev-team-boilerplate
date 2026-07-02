@@ -57,8 +57,13 @@ export default function Layout({ children }: LayoutProps): React.JSX.Element {
       ) : null}
 
       <div className={styles.mainColumn}>
-        <Header showMenuButton={!isDesktop} onMenuClick={() => setMobileOpen((value) => !value)} />
-        <LocationTabsBar />
+        <div className={styles.topBar}>
+          <Header
+            showMenuButton={!isDesktop}
+            onMenuClick={() => setMobileOpen((value) => !value)}
+          />
+          <LocationTabsBar />
+        </div>
         <main className={styles.content}>{children}</main>
       </div>
     </div>

@@ -2,7 +2,9 @@
 
 .shell {
   display: flex;
+  height: 100dvh;
   min-height: 100dvh;
+  overflow: hidden;
   background: var(--color-bg-primary);
   color: var(--color-text-primary);
 }
@@ -20,13 +22,24 @@
   flex: 1;
   flex-direction: column;
   min-width: 0;
-  min-height: 100dvh;
+  min-height: 0;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.topBar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  flex-shrink: 0;
+  background: var(--color-bg-header);
 }
 
 .content {
   flex: 1;
   min-height: 0;
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
   background: var(--color-bg-primary);
 }
 

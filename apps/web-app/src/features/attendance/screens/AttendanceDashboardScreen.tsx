@@ -2,114 +2,203 @@ import {
   AsistenciaPage,
   AsistenciaPageHeader,
   AsistenciaSyncButton,
+  AreaChart,
+  EmpleadoAvatar,
+  RecetaFilterSelect,
   RecetaMetricCard,
+  RecetaTextInput,
+  resolveEmpleadoInitials,
 } from '@restopsiq/ui';
-import { useQueries, useQueryClient } from '@tanstack/react-query';
-import { useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { MapPin, X } from 'lucide-react';
+import { useMemo, useState } from 'react';
 
+import { useUiTheme } from '@/hooks/useUiTheme';
 import { useTheme } from '@/providers/ThemeProvider';
 import { getErrorMessage } from '@/lib/graphql-client';
 
-import { getAttendanceMonitorSummary } from '../api/attendance.client';
-import { ATTENDANCE_ROUTES } from '../constants/routes';
-import { attendanceKeys } from '../api/queryKeys';
+import { formatLastSyncLabel } from '../mappers/monitor.mappers';
+import { useAttendanceComparisonQuery } from '../hooks/useAttendanceComparisonQuery';
+import { useAttendanceControlPanelQuery } from '../hooks/useAttendanceControlPanelQuery';
 import { useAttendanceScopeLocations } from '../hooks/useAttendanceScopeLocations';
-import { buildLocationSummary, formatLastSyncLabel } from '../mappers/monitor.mappers';
-import { getTodayIsoDateBogota } from '../utils/attendance-storage';
+import {
+  dismissAlertId,
+  getDismissedAlertIds,
+  getTodayIsoDateBogota,
+} from '../utils/attendance-storage';
+import type {
+  AttendanceControlPanelPeriod,
+  AttendanceControlPanelTimelineRow,
+} from '../types/attendance.types';
 import styles from './AttendanceDashboardScreen.module.scss';
 
-const REFETCH_INTERVAL_MS = 60_000;
+const TIMELINE_PERIOD_OPTIONS: Array<{ id: AttendanceControlPanelPeriod; label: string }> = [
+  { id: 'day', label: 'Hoy' },
+  { id: 'week', label: 'Semana' },
+  { id: 'month', label: 'Mes' },
+];
+
+const TIMELINE_PERIOD_TITLES: Record<AttendanceControlPanelPeriod, string> = {
+  day: 'Línea de tiempo hoy',
+  week: 'Línea de tiempo semana',
+  month: 'Línea de tiempo mes',
+};
+
+type SortableColumn =
+  | 'documentNumber'
+  | 'primerApellido'
+  | 'nombres'
+  | 'especialidad'
+  | 'area'
+  | 'contrato'
+  | 'lastRecordAt';
+
+function formatRecordDate(value: string): string {
+  const date = new Date(value);
+  return new Intl.DateTimeFormat('es-CO', {
+    timeZone: 'America/Bogota',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(date);
+}
+
+function formatComparisonChartLabel(
+  label: string,
+  bucketKey: string,
+  period: AttendanceControlPanelPeriod,
+): string {
+  if (period === 'day') return label;
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(bucketKey);
+  if (match) return `${match[3]}-${match[2]}-${match[1]}`;
+  return label;
+}
+
+function formatAlertTime(value: string): string {
+  return new Intl.DateTimeFormat('es-CO', {
+    timeZone: 'America/Bogota',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(new Date(value));
+}
 
 export function AttendanceDashboardScreen(): React.JSX.Element {
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
+  const uiTheme = useUiTheme();
   const { theme } = useTheme();
   const asistenciaTheme = theme === 'light' ? 'light' : 'dark';
   const today = useMemo(() => getTodayIsoDateBogota(), []);
   const {
+    isSystemAdmin,
+    isGeneralScope,
     locations: scopedLocations,
-    isLoading: isLocationsLoading,
-    error: locationsError,
   } = useAttendanceScopeLocations();
 
-  const summaryQueries = useQueries({
-    queries: scopedLocations.map((location) => ({
-      queryKey: attendanceKeys.monitorSummary(location.id, 'day', today),
-      queryFn: () =>
-        getAttendanceMonitorSummary(location.id, {
-          period: 'day',
-          anchorDate: today,
-        }),
-      enabled: Boolean(location.id),
-      refetchInterval: REFETCH_INTERVAL_MS,
-    })),
+  const scopedLocationId = useMemo(() => {
+    if (isSystemAdmin || isGeneralScope) return '';
+    if (scopedLocations.length === 1) return scopedLocations[0]?.id ?? '';
+    return '';
+  }, [isGeneralScope, isSystemAdmin, scopedLocations]);
+
+  const [search, setSearch] = useState('');
+  const [locationId, setLocationId] = useState('');
+  const [area, setArea] = useState('');
+  const [contractType, setContractType] = useState('');
+  const [page, setPage] = useState(1);
+  const [timelinePeriod, setTimelinePeriod] = useState<AttendanceControlPanelPeriod>('day');
+  const [sortBy, setSortBy] = useState<SortableColumn>('lastRecordAt');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+  const [dismissedAlerts, setDismissedAlerts] = useState(() => getDismissedAlertIds());
+  const [mobileTab, setMobileTab] = useState<'timeline' | 'alerts'>('timeline');
+
+  const query = useAttendanceControlPanelQuery({
+    anchorDate: today,
+    period: timelinePeriod,
+    locationId: locationId || scopedLocationId || undefined,
+    area: area || undefined,
+    contractType: contractType || undefined,
+    search: search.trim() || undefined,
+    page,
+    pageSize: 20,
+    sortBy,
+    sortDir,
   });
 
-  const locationSummaries = useMemo(() => {
-    return scopedLocations.map((location, index) => {
-      const summary = summaryQueries[index]?.data;
-      if (!summary) {
-        return buildLocationSummary(location, {
-          locationId: location.id,
-          period: 'day',
-          anchorDate: today,
-          dateFrom: today,
-          dateTo: today,
-          isLive: false,
-          metrics: {
-            total: 0,
-            onShift: 0,
-            absent: 0,
-            lateArrivals: 0,
-            overtime: 0,
-            offSchedule: 0,
-            legalAlerts: 0,
-          },
-          employees: { onShift: [], absent: [], late: [], overtime: [] },
-        });
-      }
-      return buildLocationSummary(location, summary);
-    });
-  }, [scopedLocations, summaryQueries, today]);
+  const comparisonFilters = useMemo(
+    () => ({
+      anchorDate: today,
+      period: timelinePeriod,
+      locationId: locationId || scopedLocationId || undefined,
+      area: area || undefined,
+      contractType: contractType || undefined,
+      search: search.trim() || undefined,
+    }),
+    [area, contractType, locationId, scopedLocationId, search, timelinePeriod, today],
+  );
 
-  const aggregateMetrics = useMemo(() => {
-    return locationSummaries.reduce(
-      (acc, location) => ({
-        total: acc.total + location.metrics.total,
-        onShift: acc.onShift + location.metrics.onShift,
-        absent: acc.absent + location.metrics.absent,
-        offSchedule: acc.offSchedule + location.metrics.lateArrivals,
-        overtime: acc.overtime + location.metrics.overtime,
-        legalAlerts: acc.legalAlerts,
-      }),
-      { total: 0, onShift: 0, absent: 0, offSchedule: 0, overtime: 0, legalAlerts: 0 },
-    );
-  }, [locationSummaries]);
+  const comparisonQuery = useAttendanceComparisonQuery(comparisonFilters);
+  const comparison = comparisonQuery.data;
 
-  const formatMetricFraction = (value: number, total: number): string => `${value} / ${total}`;
+  const chartData = useMemo(
+    () =>
+      comparison?.points.map((point) => ({
+        label: formatComparisonChartLabel(point.label, point.bucketKey, timelinePeriod),
+        current: point.current,
+        previous: point.previous,
+      })) ?? [],
+    [comparison?.points, timelinePeriod],
+  );
 
-  const noveltyCount =
-    aggregateMetrics.offSchedule + aggregateMetrics.overtime + aggregateMetrics.legalAlerts;
+  const chartSeries = useMemo(
+    () => [
+      {
+        dataKey: 'current',
+        name: comparison?.series.current.name ?? 'Periodo actual',
+        colorIndex: 0,
+      },
+      {
+        dataKey: 'previous',
+        name: comparison?.series.previous.name ?? 'Periodo anterior',
+        colorIndex: 1,
+      },
+    ],
+    [comparison?.series.current.name, comparison?.series.previous.name],
+  );
 
-  const isLoading = isLocationsLoading || summaryQueries.some((query) => query.isPending);
-  const queryError =
-    locationsError ?? summaryQueries.find((query) => query.error)?.error ?? undefined;
-  const isLive = summaryQueries.some((query) => query.data?.isLive);
-  const latestSyncAt = summaryQueries.reduce<number | undefined>((latest, query) => {
-    if (!query.dataUpdatedAt) return latest;
-    return latest === undefined ? query.dataUpdatedAt : Math.max(latest, query.dataUpdatedAt);
-  }, undefined);
-  const lastSyncLabel = formatLastSyncLabel(latestSyncAt ? new Date(latestSyncAt) : undefined);
+  const chartXAxisInterval = useMemo(() => {
+    if (timelinePeriod === 'day') return 2;
+    if (timelinePeriod === 'week') return 0;
+    return 5;
+  }, [timelinePeriod]);
 
-  const handleSync = async () => {
-    await Promise.all(
-      scopedLocations.map((location) =>
-        queryClient.invalidateQueries({
-          queryKey: attendanceKeys.monitorSummary(location.id, 'day', today),
-        }),
-      ),
-    );
+  const data = query.data;
+  const visibleAlerts = useMemo(
+    () => (data?.alerts ?? []).filter((alert) => !dismissedAlerts.has(alert.id)),
+    [data?.alerts, dismissedAlerts],
+  );
+
+  const totalPages = data
+    ? Math.max(1, Math.ceil(data.timeline.total / data.timeline.pageSize))
+    : 1;
+  const canFilterByLocation = isSystemAdmin || isGeneralScope;
+
+  const handleSort = (column: SortableColumn) => {
+    if (sortBy === column) {
+      setSortDir((current) => (current === 'asc' ? 'desc' : 'asc'));
+      return;
+    }
+    setSortBy(column);
+    setSortDir('asc');
+  };
+
+  const clearFilters = () => {
+    setSearch('');
+    setLocationId('');
+    setArea('');
+    setContractType('');
+    setPage(1);
   };
 
   return (
@@ -117,88 +206,411 @@ export function AttendanceDashboardScreen(): React.JSX.Element {
       <AsistenciaPageHeader
         theme={asistenciaTheme}
         title="Panel de control"
-        subtitle={`Resumen del día · ${today} · Actualización cada 60s · Última sync: ${lastSyncLabel}`}
-        live={isLive}
+        subtitle={`Línea de tiempo hoy · ${today} · Actualización cada 60s · Última sync: ${formatLastSyncLabel(query.dataUpdatedAt ? new Date(query.dataUpdatedAt) : undefined)}`}
+        live={data?.isLive}
         syncAction={
-          <AsistenciaSyncButton theme={asistenciaTheme} onClick={() => void handleSync()} />
+          <AsistenciaSyncButton theme={asistenciaTheme} onClick={() => void query.refetch()} />
         }
       />
 
-      {queryError ? (
+      {query.error ? (
         <p className={styles.error} role="alert">
-          {getErrorMessage(queryError)}
+          {getErrorMessage(query.error)}
         </p>
       ) : null}
+
+      <section className={styles.chartPanel} aria-label="Comparativo de asistencias">
+        <div className={styles.panelHeader}>
+          <div className={styles.chartHeading}>
+            <h2 className={styles.panelTitle}>Comparativo de asistencias</h2>
+            {comparison ? (
+              <p className={styles.chartSubtitle}>
+                {comparison.dateFrom === comparison.dateTo
+                  ? comparison.dateFrom
+                  : `${comparison.dateFrom} – ${comparison.dateTo}`}{' '}
+                vs{' '}
+                {comparison.previousDateFrom === comparison.previousDateTo
+                  ? comparison.previousDateFrom
+                  : `${comparison.previousDateFrom} – ${comparison.previousDateTo}`}
+              </p>
+            ) : null}
+          </div>
+          <div className={styles.periodFilter} role="group" aria-label="Periodo del comparativo">
+            {TIMELINE_PERIOD_OPTIONS.map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                className={[
+                  styles.periodButton,
+                  timelinePeriod === option.id ? styles.periodButtonActive : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
+                aria-pressed={timelinePeriod === option.id}
+                onClick={() => {
+                  setTimelinePeriod(option.id);
+                  setPage(1);
+                }}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className={styles.chartWrap}>
+          <AreaChart
+            theme={asistenciaTheme}
+            size="md"
+            height={220}
+            xAxisInterval={chartXAxisInterval}
+            className={styles.comparisonChart}
+            data={chartData}
+            xDataKey="label"
+            series={chartSeries}
+            loading={comparisonQuery.isLoading}
+            empty={!comparisonQuery.isLoading && chartData.length === 0}
+            emptyTitle="Sin datos de comparación"
+            emptyDescription="No hay marcaciones en el periodo seleccionado."
+            ariaLabel="Comparativo de asistencias por periodo"
+          />
+        </div>
+      </section>
 
       <section className={styles.metrics} aria-label="Indicadores del día">
         <RecetaMetricCard
           theme={asistenciaTheme}
-          title="Colaboradores esperados"
-          value={String(aggregateMetrics.total)}
-          description="Total programado hoy"
+          title="Cantidad de personas trabajando"
+          value={String(data?.metrics.workingNow ?? 0)}
+          description="Con entrada activa sin salida"
           variant="type-1"
-          loading={isLoading}
+          loading={query.isLoading}
         />
         <RecetaMetricCard
           theme={asistenciaTheme}
-          title="Presentes"
-          value={formatMetricFraction(aggregateMetrics.onShift, aggregateMetrics.total)}
-          description="En turno ahora"
+          title="Cantidad de asistencias de hoy"
+          value={String(data?.metrics.attendanceToday ?? 0)}
+          description="Colaboradores con marcación hoy"
           variant="type-2"
-          loading={isLoading}
+          loading={query.isLoading}
         />
         <RecetaMetricCard
           theme={asistenciaTheme}
-          title="Ausentes"
-          value={formatMetricFraction(aggregateMetrics.absent, aggregateMetrics.total)}
-          description="Sin marcación de entrada"
+          title={`Asistencias ${data?.tenantName ?? 'empresa'}`}
+          value={String(data?.metrics.tenantAttendanceToday ?? 0)}
+          description="Consolidado del alcance visible"
           variant="type-3"
-          loading={isLoading}
+          loading={query.isLoading}
         />
         <RecetaMetricCard
           theme={asistenciaTheme}
-          title="Con novedad"
-          value={String(noveltyCount)}
-          description="Tardanzas, extras o alertas legales"
+          title="Hrs Extras mes"
+          value={`${data?.metrics.overtimeHoursMonth ?? 0}h`}
+          description="Acumulado del mes calendario"
           variant="type-4"
-          loading={isLoading}
+          loading={query.isLoading}
         />
       </section>
 
-      <section className={styles.locations} aria-label="Sedes monitoreadas">
-        <div className={styles.locationsHeader}>
-          <h2 className={styles.locationsTitle}>Sedes</h2>
-          <button
-            type="button"
-            className={styles.linkButton}
-            onClick={() => navigate(ATTENDANCE_ROUTES.monitor)}
-          >
-            Ir al monitor de asistencias
-          </button>
-        </div>
-
-        {scopedLocations.length === 0 && !isLoading ? (
-          <p className={styles.empty}>No hay sedes activas en tu alcance.</p>
-        ) : (
-          <ul className={styles.locationList}>
-            {locationSummaries.map((location) => (
-              <li key={location.id}>
-                <button
-                  type="button"
-                  className={styles.locationCard}
-                  onClick={() => navigate(ATTENDANCE_ROUTES.locationDetail(location.id))}
-                >
-                  <span className={styles.locationName}>{location.name}</span>
-                  <span className={styles.locationMeta}>
-                    {location.city} · Presentes {location.metrics.onShift} /{' '}
-                    {location.metrics.total}
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
+      <section className={styles.filters} aria-label="Filtros del panel">
+        <RecetaTextInput
+          theme={uiTheme}
+          className={styles.searchInput}
+          placeholder="Buscar por nombre o documento"
+          value={search}
+          onChange={(event) => {
+            setSearch(event.target.value);
+            setPage(1);
+          }}
+        />
+        {canFilterByLocation ? (
+          <RecetaFilterSelect
+            theme={uiTheme}
+            size="md"
+            placeholder="Todas las sedes"
+            value={locationId}
+            options={[
+              { value: '', label: 'Todas las sedes' },
+              ...(data?.filters.locations ?? []).map((location) => ({
+                value: location.id,
+                label: location.name,
+              })),
+            ]}
+            onChange={(value) => {
+              setLocationId(value);
+              setPage(1);
+            }}
+          />
+        ) : null}
+        <RecetaFilterSelect
+          theme={uiTheme}
+          size="md"
+          placeholder="Todas las áreas"
+          value={area}
+          options={[
+            { value: '', label: 'Todas las áreas' },
+            ...(data?.filters.areas ?? []).map((item) => ({ value: item, label: item })),
+          ]}
+          onChange={(value) => {
+            setArea(value);
+            setPage(1);
+          }}
+        />
+        <RecetaFilterSelect
+          theme={uiTheme}
+          size="md"
+          placeholder="Todos los contratos"
+          value={contractType}
+          options={[
+            { value: '', label: 'Todos los contratos' },
+            ...(data?.filters.contractTypes ?? []).map((item) => ({ value: item, label: item })),
+          ]}
+          onChange={(value) => {
+            setContractType(value);
+            setPage(1);
+          }}
+        />
+        <button type="button" className={styles.clearButton} onClick={clearFilters}>
+          Limpiar filtros
+        </button>
       </section>
+
+      <div className={styles.mobileTabs} role="tablist" aria-label="Secciones del panel">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mobileTab === 'timeline'}
+          className={mobileTab === 'timeline' ? styles.mobileTabActive : styles.mobileTab}
+          onClick={() => setMobileTab('timeline')}
+        >
+          Línea de tiempo
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mobileTab === 'alerts'}
+          className={mobileTab === 'alerts' ? styles.mobileTabActive : styles.mobileTab}
+          onClick={() => setMobileTab('alerts')}
+        >
+          Alertas ({visibleAlerts.length})
+        </button>
+      </div>
+
+      <div className={styles.content}>
+        <section
+          className={[styles.timelinePanel, mobileTab === 'alerts' ? styles.hiddenOnMobile : '']
+            .filter(Boolean)
+            .join(' ')}
+          aria-label="Línea de tiempo hoy"
+        >
+          <div className={styles.panelHeader}>
+            <h2 className={styles.panelTitle}>{TIMELINE_PERIOD_TITLES[timelinePeriod]}</h2>
+          </div>
+
+          <div className={styles.tableWrap}>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th scope="col">Foto</th>
+                  <th scope="col">
+                    <button
+                      type="button"
+                      className={styles.sortButton}
+                      onClick={() => handleSort('documentNumber')}
+                    >
+                      Documento
+                    </button>
+                  </th>
+                  <th scope="col">
+                    <button
+                      type="button"
+                      className={styles.sortButton}
+                      onClick={() => handleSort('primerApellido')}
+                    >
+                      Primer apellido
+                    </button>
+                  </th>
+                  <th scope="col">
+                    <button
+                      type="button"
+                      className={styles.sortButton}
+                      onClick={() => handleSort('nombres')}
+                    >
+                      Nombre
+                    </button>
+                  </th>
+                  <th scope="col">
+                    <button
+                      type="button"
+                      className={styles.sortButton}
+                      onClick={() => handleSort('especialidad')}
+                    >
+                      Especialidad
+                    </button>
+                  </th>
+                  <th scope="col">
+                    <button
+                      type="button"
+                      className={styles.sortButton}
+                      onClick={() => handleSort('area')}
+                    >
+                      Área
+                    </button>
+                  </th>
+                  <th scope="col">
+                    <button
+                      type="button"
+                      className={styles.sortButton}
+                      onClick={() => handleSort('contrato')}
+                    >
+                      Contrato
+                    </button>
+                  </th>
+                  <th scope="col">
+                    <button
+                      type="button"
+                      className={styles.sortButton}
+                      onClick={() => handleSort('lastRecordAt')}
+                    >
+                      Último registro
+                    </button>
+                  </th>
+                  <th scope="col">Geo</th>
+                </tr>
+              </thead>
+              <tbody>
+                {query.isLoading ? (
+                  <tr>
+                    <td colSpan={9} className={styles.emptyCell}>
+                      Cargando línea de tiempo…
+                    </td>
+                  </tr>
+                ) : (data?.timeline.items.length ?? 0) === 0 ? (
+                  <tr>
+                    <td colSpan={9} className={styles.emptyCell}>
+                      No hay marcaciones registradas en el periodo con los filtros actuales.
+                    </td>
+                  </tr>
+                ) : (
+                  data?.timeline.items.map((row) => (
+                    <TimelineRow key={row.employeeId} row={row} theme={asistenciaTheme} />
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          <div className={styles.pagination}>
+            <button
+              type="button"
+              className={styles.pageButton}
+              disabled={page <= 1}
+              onClick={() => setPage((current) => Math.max(1, current - 1))}
+            >
+              Anterior
+            </button>
+            <span className={styles.pageInfo}>
+              Página {page} de {totalPages} · {data?.timeline.total ?? 0} registros
+            </span>
+            <button
+              type="button"
+              className={styles.pageButton}
+              disabled={page >= totalPages}
+              onClick={() => setPage((current) => current + 1)}
+            >
+              Siguiente
+            </button>
+          </div>
+        </section>
+
+        <aside
+          className={[styles.alertsPanel, mobileTab === 'timeline' ? styles.hiddenOnMobile : '']
+            .filter(Boolean)
+            .join(' ')}
+          aria-label="Alertas"
+        >
+          <div className={styles.alertsHeader}>
+            <h2 className={styles.panelTitle}>Alertas</h2>
+            <span className={styles.alertCount}>{visibleAlerts.length}</span>
+          </div>
+          {visibleAlerts.length === 0 ? (
+            <p className={styles.emptyAlerts}>Sin alertas activas para el día consultado.</p>
+          ) : (
+            <ul className={styles.alertList}>
+              {visibleAlerts.map((alert) => (
+                <li key={alert.id} className={styles.alertItem}>
+                  <div>
+                    <p className={styles.alertTitle}>{alert.title}</p>
+                    {alert.subtitle ? (
+                      <p className={styles.alertSubtitle}>{alert.subtitle}</p>
+                    ) : null}
+                    <p className={styles.alertTime}>{formatAlertTime(alert.generatedAt)}</p>
+                  </div>
+                  <button
+                    type="button"
+                    className={styles.dismissButton}
+                    aria-label={`Descartar alerta de ${alert.employeeName ?? 'colaborador'}`}
+                    onClick={() => {
+                      dismissAlertId(alert.id);
+                      setDismissedAlerts(getDismissedAlertIds());
+                    }}
+                  >
+                    <X size={14} aria-hidden />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </aside>
+      </div>
     </AsistenciaPage>
+  );
+}
+
+function TimelineRow({
+  row,
+  theme,
+}: {
+  row: AttendanceControlPanelTimelineRow;
+  theme: 'light' | 'dark';
+}): React.JSX.Element {
+  const fullName = [row.nombres, row.primerApellido].filter(Boolean).join(' ');
+  const mapUrl =
+    row.latitude != null && row.longitude != null
+      ? `https://www.google.com/maps?q=${row.latitude},${row.longitude}`
+      : null;
+
+  return (
+    <tr className={row.isOutOfGeofence ? styles.outOfGeofenceRow : undefined}>
+      <td>
+        <EmpleadoAvatar
+          initials={resolveEmpleadoInitials(fullName || row.documentNumber)}
+          photoUrl={row.photoUrl ?? undefined}
+          theme={theme}
+          size="sm"
+        />
+      </td>
+      <td>{row.documentNumber}</td>
+      <td>{row.primerApellido ?? '—'}</td>
+      <td>{row.nombres ?? '—'}</td>
+      <td>{row.especialidad}</td>
+      <td>{row.area}</td>
+      <td>{row.contrato}</td>
+      <td>{formatRecordDate(row.lastRecordAt)}</td>
+      <td>
+        {mapUrl ? (
+          <a
+            href={mapUrl}
+            target="_blank"
+            rel="noreferrer"
+            className={row.isOutOfGeofence ? styles.geoLinkDanger : styles.geoLink}
+            aria-label={`Ver ubicación de ${fullName}`}
+          >
+            <MapPin size={16} aria-hidden />
+          </a>
+        ) : (
+          <span className={styles.noGeo}>—</span>
+        )}
+      </td>
+    </tr>
   );
 }

@@ -37,6 +37,8 @@ export interface LineChartProps extends ChartBaseProps {
   valueType?: ChartValueType;
   referenceLine?: LineChartReferenceLine;
   showLegend?: boolean;
+  height?: number;
+  xAxisInterval?: number;
 }
 
 export const LineChart: React.FC<LineChartProps> = ({
@@ -46,6 +48,8 @@ export const LineChart: React.FC<LineChartProps> = ({
   valueType = 'number',
   referenceLine,
   showLegend = true,
+  height,
+  xAxisInterval = 0,
   theme = 'light',
   size = 'md',
   loading = false,
@@ -82,74 +86,80 @@ export const LineChart: React.FC<LineChartProps> = ({
   const tickFormatter = (v: number): string =>
     valueType === 'currency' ? formatNumberCompact(v) : formatNumberCompact(v);
 
+  const plotHeight = height ?? (size === 'xl' ? 240 : size === 'sm' ? 140 : 180);
+
   return (
-    <ChartContainer
-      theme={theme}
-      size={size}
-      loading={loading}
-      empty={isEmpty}
-      emptyTitle={emptyTitle}
-      emptyDescription={emptyDescription}
-      ariaLabel={ariaLabel}
-      className={[styles.wrapper, className].filter(Boolean).join(' ')}
-    >
-      <ResponsiveContainer width="100%" height="100%">
-        <RechartsLineChart data={data} margin={{ top: 8, right: 12, left: 0, bottom: 4 }}>
-          <CartesianGrid stroke={chartTheme.grid} strokeDasharray="3 3" vertical={false} />
-          <XAxis
-            dataKey={xDataKey}
-            tick={{ fill: chartTheme.axis, fontSize: 12 }}
-            axisLine={{ stroke: chartTheme.grid }}
-            tickLine={false}
-          />
-          <YAxis
-            tick={{ fill: chartTheme.axis, fontSize: 12 }}
-            axisLine={false}
-            tickLine={false}
-            tickFormatter={tickFormatter}
-            width={48}
-          />
-          <Tooltip
-            content={({ active, payload, label }: any) => (
-              <ChartTooltip
-                active={active}
-                payload={payload}
-                label={label != null ? String(label) : undefined}
-                theme={theme}
-                valueType={valueType}
-              />
-            )}
-          />
-          {referenceLine ? (
-            <ReferenceLine
-              y={referenceLine.value}
-              stroke={chartTheme.referenceLine}
-              strokeDasharray="4 4"
-              label={{
-                value: referenceLine.label ?? 'Meta',
-                fill: chartTheme.referenceLine,
-                fontSize: 11,
-              }}
+    <div className={[styles.wrapper, className].filter(Boolean).join(' ')}>
+      <ChartContainer
+        theme={theme}
+        size={size}
+        loading={loading}
+        empty={isEmpty}
+        emptyTitle={emptyTitle}
+        emptyDescription={emptyDescription}
+        ariaLabel={ariaLabel}
+        height={plotHeight}
+        className={styles.plot}
+      >
+        <ResponsiveContainer width="100%" height={plotHeight}>
+          <RechartsLineChart data={data} margin={{ top: 8, right: 16, left: 4, bottom: 0 }}>
+            <CartesianGrid stroke={chartTheme.grid} strokeDasharray="3 3" vertical={false} />
+            <XAxis
+              dataKey={xDataKey}
+              interval={xAxisInterval}
+              tick={{ fill: chartTheme.axis, fontSize: 11 }}
+              axisLine={{ stroke: chartTheme.grid }}
+              tickLine={false}
             />
-          ) : null}
-          {visibleSeries.map((s) => {
-            const index = series.findIndex((item) => item.dataKey === s.dataKey);
-            return (
-              <Line
-                key={s.dataKey}
-                type="monotone"
-                dataKey={s.dataKey}
-                name={s.name}
-                stroke={getSeriesColor(s.colorIndex ?? index)}
-                strokeWidth={2}
-                dot={false}
-                activeDot={{ r: 4 }}
-                isAnimationActive={!reduceMotion}
+            <YAxis
+              tick={{ fill: chartTheme.axis, fontSize: 12 }}
+              axisLine={false}
+              tickLine={false}
+              tickFormatter={tickFormatter}
+              width={48}
+            />
+            <Tooltip
+              content={({ active, payload, label }: any) => (
+                <ChartTooltip
+                  active={active}
+                  payload={payload}
+                  label={label != null ? String(label) : undefined}
+                  theme={theme}
+                  valueType={valueType}
+                />
+              )}
+            />
+            {referenceLine ? (
+              <ReferenceLine
+                y={referenceLine.value}
+                stroke={chartTheme.referenceLine}
+                strokeDasharray="4 4"
+                label={{
+                  value: referenceLine.label ?? 'Meta',
+                  fill: chartTheme.referenceLine,
+                  fontSize: 11,
+                }}
               />
-            );
-          })}
-        </RechartsLineChart>
-      </ResponsiveContainer>
+            ) : null}
+            {visibleSeries.map((s) => {
+              const index = series.findIndex((item) => item.dataKey === s.dataKey);
+              return (
+                <Line
+                  key={s.dataKey}
+                  type="monotone"
+                  dataKey={s.dataKey}
+                  name={s.name}
+                  stroke={getSeriesColor(s.colorIndex ?? index)}
+                  strokeWidth={2}
+                  dot={false}
+                  activeDot={{ r: 4 }}
+                  isAnimationActive={!reduceMotion}
+                />
+              );
+            })}
+          </RechartsLineChart>
+        </ResponsiveContainer>
+      </ChartContainer>
       {showLegend ? (
         <ChartLegend
           series={legendSeries}
@@ -158,7 +168,7 @@ export const LineChart: React.FC<LineChartProps> = ({
           theme={theme}
         />
       ) : null}
-    </ChartContainer>
+    </div>
   );
 };
 

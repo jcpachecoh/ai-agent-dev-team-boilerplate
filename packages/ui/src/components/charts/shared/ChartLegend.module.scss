@@ -4,7 +4,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--chart-legend-gap, #{$spacing-sm});
-  margin-top: $spacing-sm;
+  margin-top: 0;
   font-size: var(--chart-font-size, #{$font-size-sm});
 }
 

@@ -3,6 +3,10 @@ import { getTenantId } from '@/lib/tenant';
 
 import type {
   AttendanceActiveEntry,
+  AttendanceComparisonFilters,
+  AttendanceComparisonSummary,
+  AttendanceControlPanelFilters,
+  AttendanceControlPanelSummary,
   AttendanceEntryInput,
   AttendanceEntryResult,
   AttendanceExitInput,
@@ -175,5 +179,39 @@ export function getAttendanceMonitorSummary(
   });
   return attendanceFetch<AttendanceMonitorSummary>(
     `/attendance/locations/${locationId}/monitor-summary${query}`,
+  );
+}
+
+export function getAttendanceControlPanel(
+  filters: AttendanceControlPanelFilters = {},
+): Promise<AttendanceControlPanelSummary> {
+  const query = toQueryString({
+    anchorDate: filters.anchorDate,
+    period: filters.period,
+    locationId: filters.locationId,
+    area: filters.area,
+    contractType: filters.contractType,
+    search: filters.search,
+    page: filters.page,
+    pageSize: filters.pageSize,
+    sortBy: filters.sortBy,
+    sortDir: filters.sortDir,
+  });
+  return attendanceFetch<AttendanceControlPanelSummary>(`/attendance/control-panel${query}`);
+}
+
+export function getAttendanceComparison(
+  filters: AttendanceComparisonFilters = {},
+): Promise<AttendanceComparisonSummary> {
+  const query = toQueryString({
+    anchorDate: filters.anchorDate,
+    period: filters.period,
+    locationId: filters.locationId,
+    area: filters.area,
+    contractType: filters.contractType,
+    search: filters.search,
+  });
+  return attendanceFetch<AttendanceComparisonSummary>(
+    `/attendance/control-panel/comparison${query}`,
   );
 }

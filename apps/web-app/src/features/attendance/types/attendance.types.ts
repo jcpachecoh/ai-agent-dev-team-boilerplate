@@ -145,3 +145,105 @@ export interface AttendanceMonitorSummaryFilters {
   period: AttendanceMonitorPeriod;
   anchorDate: string;
 }
+
+export type AttendanceControlPanelPeriod = 'day' | 'week' | 'month';
+
+export interface AttendanceComparisonFilters {
+  anchorDate?: string;
+  period?: AttendanceControlPanelPeriod;
+  locationId?: string;
+  area?: string;
+  contractType?: string;
+  search?: string;
+}
+
+export interface AttendanceComparisonPoint {
+  label: string;
+  bucketKey: string;
+  current: number;
+  previous: number;
+}
+
+export interface AttendanceComparisonSummary {
+  period: AttendanceControlPanelPeriod;
+  anchorDate: string;
+  dateFrom: string;
+  dateTo: string;
+  previousDateFrom: string;
+  previousDateTo: string;
+  series: {
+    current: { key: string; name: string };
+    previous: { key: string; name: string };
+  };
+  points: AttendanceComparisonPoint[];
+}
+
+export interface AttendanceControlPanelFilters {
+  anchorDate?: string;
+  period?: AttendanceControlPanelPeriod;
+  locationId?: string;
+  area?: string;
+  contractType?: string;
+  search?: string;
+  page?: number;
+  pageSize?: number;
+  sortBy?: string;
+  sortDir?: 'asc' | 'desc';
+}
+
+export interface AttendanceControlPanelTimelineRow {
+  employeeId: string;
+  userId: string;
+  photoUrl: string | null;
+  documentNumber: string;
+  primerApellido: string | null;
+  nombres: string | null;
+  especialidad: string;
+  area: string;
+  contrato: string;
+  locationId: string;
+  locationName: string;
+  lastRecordAt: string;
+  lastEventType: AttendanceEventType;
+  latitude: number | null;
+  longitude: number | null;
+  hasGeo: boolean;
+  isOutOfGeofence: boolean;
+}
+
+export interface AttendanceControlPanelAlert {
+  id: string;
+  type: string;
+  title: string;
+  subtitle?: string;
+  generatedAt: string;
+  employeeId?: string;
+  employeeName?: string;
+}
+
+export interface AttendanceControlPanelSummary {
+  anchorDate: string;
+  period: AttendanceControlPanelPeriod;
+  dateFrom: string;
+  dateTo: string;
+  tenantName: string;
+  isLive: boolean;
+  metrics: {
+    workingNow: number;
+    attendanceToday: number;
+    tenantAttendanceToday: number;
+    overtimeHoursMonth: number;
+  };
+  timeline: {
+    items: AttendanceControlPanelTimelineRow[];
+    total: number;
+    page: number;
+    pageSize: number;
+  };
+  alerts: AttendanceControlPanelAlert[];
+  filters: {
+    areas: string[];
+    contractTypes: string[];
+    locations: Array<{ id: string; name: string }>;
+  };
+}

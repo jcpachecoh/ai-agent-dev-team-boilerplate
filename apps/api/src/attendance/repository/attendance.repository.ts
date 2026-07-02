@@ -155,6 +155,84 @@ export class AttendanceRepository implements IAttendanceRepository {
     }) as Promise<EmployeeWithUser[]>;
   }
 
+  async findTenantLabel(tenantId: string): Promise<string> {
+    const tenant = await this.prisma.tenant.findFirst({
+      where: { id: tenantId, deletedAt: null },
+      select: { name: true, tradeName: true, legalName: true },
+    });
+    if (!tenant) return 'Empresa';
+    return tenant.tradeName ?? tenant.legalName ?? tenant.name;
+  }
+
+  listActiveLocations(tenantId: string, locationIds?: string[]): Promise<Location[]> {
+    return this.prisma.location.findMany({
+      where: {
+        tenantId,
+        deletedAt: null,
+        isActive: true,
+        ...(locationIds?.length ? { id: { in: locationIds } } : {}),
+      },
+      orderBy: { name: 'asc' },
+    });
+  }
+
+  async listControlPanelLogs(
+    filters: AttendanceHistoryFilters & { locationIds?: string[] },
+  ): Promise<AttendanceLogFull[]> {
+    const where: Record<string, unknown> = { tenantId: filters.tenantId, isActive: true };
+
+    if (filters.employeeId) where.employeeId = filters.employeeId;
+    if (filters.locationId) where.locationId = filters.locationId;
+    if (filters.locationIds?.length) where.locationId = { in: filters.locationIds };
+
+    if (filters.dateFrom || filters.dateTo) {
+      const workDate: Record<string, Date> = {};
+      if (filters.dateFrom) workDate.gte = filters.dateFrom;
+      if (filters.dateTo) workDate.lte = filters.dateTo;
+      where.workDate = workDate;
+    }
+
+    return this.prisma.attendanceLog.findMany({
+      where,
+      include: {
+        employee: {
+          include: {
+            user: true,
+            personalData: {
+              select: { nombres: true, primerApellido: true, segundoApellido: true },
+            },
+            photoStorageObject: { select: { key: true } },
+          },
+        },
+        location: true,
+      },
+      orderBy: { timestamp: 'desc' },
+      take: filters.limit ?? 5000,
+      skip: filters.offset ?? 0,
+    }) as Promise<AttendanceLogFull[]>;
+  }
+
+  listMobileLogsForDay(tenantId: string, workDate: Date, locationIds?: string[]) {
+    return this.listMobileLogsForRange(tenantId, workDate, workDate, locationIds);
+  }
+
+  listMobileLogsForRange(tenantId: string, dateFrom: Date, dateTo: Date, locationIds?: string[]) {
+    return this.prisma.mobileAttendanceLog.findMany({
+      where: {
+        tenantId,
+        deletedAt: null,
+        workDate: { gte: dateFrom, lte: dateTo },
+        ...(locationIds?.length ? { locationId: { in: locationIds } } : {}),
+      },
+      include: {
+        employee: { include: { user: true } },
+        location: true,
+      },
+      orderBy: { timestamp: 'desc' },
+      take: 5000,
+    });
+  }
+
   private getTodayWorkDate(): Date {
     return normalizeWorkDate(new Date());
   }

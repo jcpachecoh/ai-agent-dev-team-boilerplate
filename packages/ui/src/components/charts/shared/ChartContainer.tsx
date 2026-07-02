@@ -24,15 +24,14 @@ export const ChartContainer: React.FC<ChartContainerProps> = ({
 }) => {
   const themeClass = theme === 'light' ? styles['theme--light'] : styles['theme--dark'];
   const sizeClass = styles[`size--${size}`];
+  const resolvedHeight = typeof height === 'number' ? `${height}px` : height;
 
   return (
     <div
       className={[styles.container, sizeClass, themeClass, className].filter(Boolean).join(' ')}
       role="img"
       aria-label={ariaLabel}
-      style={{
-        ['--chart-body-height' as string]: typeof height === 'number' ? `${height}px` : height,
-      }}
+      style={{ height: resolvedHeight }}
     >
       {loading ? (
         <div className={styles.stateWrapper}>
@@ -48,9 +47,7 @@ export const ChartContainer: React.FC<ChartContainerProps> = ({
           />
         </div>
       ) : (
-        <div className={styles.chartBody} style={{ height }}>
-          {children}
-        </div>
+        <div className={styles.chartBody}>{children}</div>
       )}
     </div>
   );
