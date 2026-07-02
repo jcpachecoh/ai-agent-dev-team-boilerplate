@@ -69,11 +69,14 @@ const employee: EmployeeWithUser = {
   },
 };
 
+const defaultClasificacionCounts = { cocina: 2, servicio: 3, administrativo: 1 };
+
 const repositoryMock = {
   findLocationById: jest.fn(),
   findEmployeesAtLocation: jest.fn(),
   listHistory: jest.fn(),
   listActiveAtLocation: jest.fn(),
+  countByLaborClassification: jest.fn(),
 };
 
 describe('AttendanceMonitorSummaryService', () => {
@@ -84,6 +87,9 @@ describe('AttendanceMonitorSummaryService', () => {
     jest.clearAllMocks();
     repositoryMock.findLocationById.mockResolvedValue({ id: locationId, tenantId, name: 'Sede 1' });
     repositoryMock.findEmployeesAtLocation.mockResolvedValue([employee]);
+    repositoryMock.listHistory.mockResolvedValue([]);
+    repositoryMock.listActiveAtLocation.mockResolvedValue([]);
+    repositoryMock.countByLaborClassification.mockResolvedValue(defaultClasificacionCounts);
   });
 
   it('lanza NotFoundException si la sede no existe', async () => {
@@ -210,16 +216,123 @@ describe('AttendanceMonitorSummaryService', () => {
   });
 
   it('usa el email cuando el empleado no tiene nombre', async () => {
+    // Arrange
     const unnamedEmployee = { ...employee, name: '   ' };
     repositoryMock.findEmployeesAtLocation.mockResolvedValue([unnamedEmployee]);
-    repositoryMock.listHistory.mockResolvedValue([]);
-    repositoryMock.listActiveAtLocation.mockResolvedValue([]);
 
+    // Act
     const result = await service.getMonitorSummary(
       { locationId, period: 'day', anchorDate: '2026-06-18' },
       tenantId,
     );
 
+    // Assert
     expect(result.employees.absent[0]?.name).toBe('carlos');
+  });
+
+  describe('filtro clasificacion', () => {
+    it('sin clasificacion llama findEmployeesAtLocation sin filtro', async () => {
+      // Arrange & Act
+      await service.getMonitorSummary(
+        { locationId, period: 'day', anchorDate: '2026-06-18' },
+        tenantId,
+      );
+
+      // Assert
+      expect(repositoryMock.findEmployeesAtLocation).toHaveBeenCalledWith(
+        locationId,
+        tenantId,
+        undefined,
+      );
+    });
+
+    it('clasificacion=todos llama findEmployeesAtLocation sin filtro', async () => {
+      // Arrange & Act
+      await service.getMonitorSummary(
+        { locationId, period: 'day', anchorDate: '2026-06-18', clasificacion: 'todos' },
+        tenantId,
+      );
+
+      // Assert
+      expect(repositoryMock.findEmployeesAtLocation).toHaveBeenCalledWith(
+        locationId,
+        tenantId,
+        undefined,
+      );
+    });
+
+    it('clasificacion=administrativo filtra por [ADMINISTRATIVO]', async () => {
+      // Arrange & Act
+      await service.getMonitorSummary(
+        { locationId, period: 'day', anchorDate: '2026-06-18', clasificacion: 'administrativo' },
+        tenantId,
+      );
+
+      // Assert
+      expect(repositoryMock.findEmployeesAtLocation).toHaveBeenCalledWith(locationId, tenantId, [
+        LaborClassification.ADMINISTRATIVO,
+      ]);
+    });
+
+    it('clasificacion=operaciones filtra por [COCINA, SERVICIO]', async () => {
+      // Arrange & Act
+      await service.getMonitorSummary(
+        { locationId, period: 'day', anchorDate: '2026-06-18', clasificacion: 'operaciones' },
+        tenantId,
+      );
+
+      // Assert
+      expect(repositoryMock.findEmployeesAtLocation).toHaveBeenCalledWith(locationId, tenantId, [
+        LaborClassification.COCINA,
+        LaborClassification.SERVICIO,
+      ]);
+    });
+
+    it('siempre llama countByLaborClassification independientemente del filtro activo', async () => {
+      // Arrange & Act
+      await service.getMonitorSummary(
+        { locationId, period: 'day', anchorDate: '2026-06-18', clasificacion: 'administrativo' },
+        tenantId,
+      );
+
+      // Assert
+      expect(repositoryMock.countByLaborClassification).toHaveBeenCalledWith(locationId, tenantId);
+    });
+
+    it('incluye clasificacionCounts en el response con valores del repositorio', async () => {
+      // Arrange & Act
+      const result = await service.getMonitorSummary(
+        { locationId, period: 'day', anchorDate: '2026-06-18' },
+        tenantId,
+      );
+
+      // Assert
+      expect(result.clasificacionCounts).toEqual(defaultClasificacionCounts);
+    });
+
+    it('refleja el clasificacion activo en el response', async () => {
+      // Arrange & Act
+      const result = await service.getMonitorSummary(
+        { locationId, period: 'day', anchorDate: '2026-06-18', clasificacion: 'operaciones' },
+        tenantId,
+      );
+
+      // Assert
+      expect(result.clasificacion).toBe('operaciones');
+    });
+
+    it('metrics.total refleja el subconjunto filtrado devuelto por el repositorio', async () => {
+      // Arrange — simula que el repositorio devuelve solo el empleado administrativo
+      repositoryMock.findEmployeesAtLocation.mockResolvedValue([employee]);
+
+      // Act
+      const result = await service.getMonitorSummary(
+        { locationId, period: 'day', anchorDate: '2026-06-18', clasificacion: 'administrativo' },
+        tenantId,
+      );
+
+      // Assert
+      expect(result.metrics.total).toBe(1);
+    });
   });
 });

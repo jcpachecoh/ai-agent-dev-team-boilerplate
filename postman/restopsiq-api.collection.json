@@ -512,6 +512,12 @@
       "value": "",
       "type": "string",
       "description": "Generated cédula for weak password test"
+    },
+    {
+      "key": "attendanceLocationId",
+      "value": "",
+      "type": "string",
+      "description": "Location id para NOM-03 attendance endpoints. Auto-poblada por el pre-request del folder OS-578 via myLocations GraphQL, o manualmente con el id de PL-01 (primer resultado del seed)."
     }
   ],
   "item": [
@@ -8438,6 +8444,286 @@
                   "});"
                 ]
               }
+            }
+          ]
+        },
+        {
+          "name": "OS-578 Monitor Summary — filtro clasificacion",
+          "description": "Pruebas del filtro clasificacion del endpoint GET /api/attendance/locations/:locationId/monitor-summary (OS-578).\n\nPrerrequisito: {{attendanceLocationId}} debe estar seteada. Corre primero POST kiosk-auth o setea la variable manualmente con un locationId real de tu tenant.\n\nMapeo implementado:\n- administrativo → laborClassification = ADMINISTRATIVO\n- operaciones    → laborClassification IN (COCINA, SERVICIO)\n- todos / omitido → sin filtro\n\nTodos los responses incluyen clasificacionCounts con conteos independientes del filtro activo.",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Compute today's date in Bogotá timezone for anchorDate",
+                  "const today = new Intl.DateTimeFormat('en-CA', {",
+                  "  timeZone: 'America/Bogota',",
+                  "  year: 'numeric', month: '2-digit', day: '2-digit'",
+                  "}).format(new Date());",
+                  "pm.collectionVariables.set('monitorAnchorDate', today);",
+                  "",
+                  "// Auto-resolve attendanceLocationId via myLocations GraphQL if not already set.",
+                  "// Uses the first location assigned to the logged-in user (PL-01 after seed).",
+                  "const existingLocationId = pm.variables.get('attendanceLocationId');",
+                  "if (!existingLocationId) {",
+                  "  const baseUrl = pm.variables.get('baseUrl');",
+                  "  const accessToken = pm.variables.get('accessToken');",
+                  "  if (baseUrl && accessToken) {",
+                  "    pm.sendRequest({",
+                  "      url: baseUrl + '/graphql',",
+                  "      method: 'POST',",
+                  "      header: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + accessToken },",
+                  "      body: { mode: 'raw', raw: JSON.stringify({ query: 'query { myLocations { id code name } }' }) }",
+                  "    }, function(err, res) {",
+                  "      if (err || res.code !== 200) return;",
+                  "      const locs = (res.json().data || {}).myLocations;",
+                  "      if (locs && locs.length > 0) {",
+                  "        pm.collectionVariables.set('attendanceLocationId', locs[0].id);",
+                  "        pm.environment.set('attendanceLocationId', locs[0].id);",
+                  "        console.log('[OS-578] attendanceLocationId auto-set to', locs[0].code, locs[0].id);",
+                  "      }",
+                  "    });",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "item": [
+            {
+              "name": "Monitor Summary — sin filtro (baseline)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                  { "key": "x-tenant-id", "value": "{{tenantId}}" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/attendance/locations/{{attendanceLocationId}}/monitor-summary?period=day&anchorDate={{monitorAnchorDate}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": [
+                    "api",
+                    "attendance",
+                    "locations",
+                    "{{attendanceLocationId}}",
+                    "monitor-summary"
+                  ],
+                  "query": [
+                    { "key": "period", "value": "day" },
+                    { "key": "anchorDate", "value": "{{monitorAnchorDate}}" }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                      "pm.test('shape base: locationId, metrics, employees', () => {",
+                      "    const b = pm.response.json();",
+                      "    pm.expect(b.locationId).to.be.a('string');",
+                      "    pm.expect(b.metrics).to.be.an('object');",
+                      "    pm.expect(b.metrics.total).to.be.a('number');",
+                      "    pm.expect(b.employees).to.be.an('object');",
+                      "});",
+                      "pm.test('clasificacionCounts presente con las 3 claves', () => {",
+                      "    const counts = pm.response.json().clasificacionCounts;",
+                      "    pm.expect(counts).to.be.an('object');",
+                      "    pm.expect(counts).to.have.all.keys('cocina', 'servicio', 'administrativo');",
+                      "    pm.expect(counts.cocina).to.be.a('number');",
+                      "    pm.expect(counts.servicio).to.be.a('number');",
+                      "    pm.expect(counts.administrativo).to.be.a('number');",
+                      "});",
+                      "pm.test('sin filtro: campo clasificacion ausente del response', () => {",
+                      "    pm.expect(pm.response.json().clasificacion).to.be.undefined;",
+                      "});"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Monitor Summary — clasificacion=administrativo",
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                  { "key": "x-tenant-id", "value": "{{tenantId}}" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/attendance/locations/{{attendanceLocationId}}/monitor-summary?period=day&anchorDate={{monitorAnchorDate}}&clasificacion=administrativo",
+                  "host": ["{{baseUrl}}"],
+                  "path": [
+                    "api",
+                    "attendance",
+                    "locations",
+                    "{{attendanceLocationId}}",
+                    "monitor-summary"
+                  ],
+                  "query": [
+                    { "key": "period", "value": "day" },
+                    { "key": "anchorDate", "value": "{{monitorAnchorDate}}" },
+                    { "key": "clasificacion", "value": "administrativo" }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                      "pm.test('clasificacion reflejada en el response', () => {",
+                      "    pm.expect(pm.response.json().clasificacion).to.equal('administrativo');",
+                      "});",
+                      "pm.test('metrics.total ≤ clasificacionCounts.administrativo', () => {",
+                      "    const b = pm.response.json();",
+                      "    pm.expect(b.metrics.total).to.be.at.most(b.clasificacionCounts.administrativo);",
+                      "});",
+                      "pm.test('clasificacionCounts independiente del filtro: suma correcta', () => {",
+                      "    const counts = pm.response.json().clasificacionCounts;",
+                      "    pm.expect(counts).to.have.all.keys('cocina', 'servicio', 'administrativo');",
+                      "});"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Monitor Summary — clasificacion=operaciones",
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                  { "key": "x-tenant-id", "value": "{{tenantId}}" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/attendance/locations/{{attendanceLocationId}}/monitor-summary?period=day&anchorDate={{monitorAnchorDate}}&clasificacion=operaciones",
+                  "host": ["{{baseUrl}}"],
+                  "path": [
+                    "api",
+                    "attendance",
+                    "locations",
+                    "{{attendanceLocationId}}",
+                    "monitor-summary"
+                  ],
+                  "query": [
+                    { "key": "period", "value": "day" },
+                    { "key": "anchorDate", "value": "{{monitorAnchorDate}}" },
+                    { "key": "clasificacion", "value": "operaciones" }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                      "pm.test('clasificacion=operaciones reflejada', () => {",
+                      "    pm.expect(pm.response.json().clasificacion).to.equal('operaciones');",
+                      "});",
+                      "pm.test('metrics.total ≤ cocina+servicio en clasificacionCounts', () => {",
+                      "    const b = pm.response.json();",
+                      "    const ops = b.clasificacionCounts.cocina + b.clasificacionCounts.servicio;",
+                      "    pm.expect(b.metrics.total).to.be.at.most(ops);",
+                      "});",
+                      "pm.test('clasificacionCounts tiene las 3 claves', () => {",
+                      "    pm.expect(pm.response.json().clasificacionCounts).to.have.all.keys('cocina', 'servicio', 'administrativo');",
+                      "});"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Monitor Summary — clasificacion=todos",
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                  { "key": "x-tenant-id", "value": "{{tenantId}}" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/attendance/locations/{{attendanceLocationId}}/monitor-summary?period=day&anchorDate={{monitorAnchorDate}}&clasificacion=todos",
+                  "host": ["{{baseUrl}}"],
+                  "path": [
+                    "api",
+                    "attendance",
+                    "locations",
+                    "{{attendanceLocationId}}",
+                    "monitor-summary"
+                  ],
+                  "query": [
+                    { "key": "period", "value": "day" },
+                    { "key": "anchorDate", "value": "{{monitorAnchorDate}}" },
+                    { "key": "clasificacion", "value": "todos" }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                      "pm.test('metrics.total igual a suma de clasificacionCounts', () => {",
+                      "    const b = pm.response.json();",
+                      "    const sum = b.clasificacionCounts.cocina + b.clasificacionCounts.servicio + b.clasificacionCounts.administrativo;",
+                      "    pm.expect(b.metrics.total).to.equal(sum);",
+                      "});"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "❌ Monitor Summary — clasificacion inválida (400)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                  { "key": "x-tenant-id", "value": "{{tenantId}}" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/attendance/locations/{{attendanceLocationId}}/monitor-summary?period=day&anchorDate={{monitorAnchorDate}}&clasificacion=invalido",
+                  "host": ["{{baseUrl}}"],
+                  "path": [
+                    "api",
+                    "attendance",
+                    "locations",
+                    "{{attendanceLocationId}}",
+                    "monitor-summary"
+                  ],
+                  "query": [
+                    { "key": "period", "value": "day" },
+                    { "key": "anchorDate", "value": "{{monitorAnchorDate}}" },
+                    { "key": "clasificacion", "value": "invalido" }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('400 Bad Request para clasificacion inválida', () => pm.response.to.have.status(400));",
+                      "pm.test('mensaje de error menciona clasificacion', () => {",
+                      "    const body = pm.response.json();",
+                      "    const msgs = Array.isArray(body.message) ? body.message : [body.message];",
+                      "    pm.expect(msgs.some(m => m.includes('clasificacion'))).to.be.true;",
+                      "});"
+                    ]
+                  }
+                }
+              ]
             }
           ]
         }

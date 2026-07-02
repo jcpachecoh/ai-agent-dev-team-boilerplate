@@ -3,9 +3,14 @@ import {
   AttendanceShift,
   AttendanceEventType,
   EmployeeDetails,
+  LaborClassification,
   Location,
   User,
 } from '@prisma/client';
+
+export type AttendanceClasificacion = 'administrativo' | 'operaciones' | 'todos';
+
+export type LaborClassificationCounts = Record<Lowercase<LaborClassification>, number>;
 
 // ── Composed types ──────────────────────────────────────────────────────────
 
@@ -111,6 +116,7 @@ export interface AttendanceMonitorSummaryInput {
   locationId: string;
   period: AttendanceMonitorPeriod;
   anchorDate: string;
+  clasificacion?: AttendanceClasificacion;
 }
 
 export interface AttendanceMonitorEmployee {
@@ -134,6 +140,8 @@ export interface AttendanceMonitorSummary {
   dateFrom: string;
   dateTo: string;
   isLive: boolean;
+  clasificacion?: AttendanceClasificacion;
+  clasificacionCounts: LaborClassificationCounts;
   metrics: {
     total: number;
     onShift: number;
@@ -188,7 +196,15 @@ export interface IAttendanceRepository {
   findById(id: string, tenantId: string): Promise<AttendanceLogFull | null>;
   findEmployeeByUserId(userId: string, tenantId: string): Promise<EmployeeWithUser | null>;
   findLocationById(locationId: string, tenantId: string): Promise<Location | null>;
-  findEmployeesAtLocation(locationId: string, tenantId: string): Promise<EmployeeWithUser[]>;
+  findEmployeesAtLocation(
+    locationId: string,
+    tenantId: string,
+    laborClassifications?: LaborClassification[],
+  ): Promise<EmployeeWithUser[]>;
+  countByLaborClassification(
+    locationId: string,
+    tenantId: string,
+  ): Promise<LaborClassificationCounts>;
   findTenantLabel(tenantId: string): Promise<string>;
   listActiveLocations(tenantId: string, locationIds?: string[]): Promise<Location[]>;
   listControlPanelLogs(

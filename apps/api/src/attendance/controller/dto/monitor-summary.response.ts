@@ -1,4 +1,8 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import type {
+  AttendanceClasificacion,
+  LaborClassificationCounts,
+} from '../../interfaces/attendance.interfaces';
 
 export class AttendanceMonitorEmployeeDto {
   @ApiProperty()
@@ -90,6 +94,15 @@ export class AttendanceMonitorSummaryDto {
 
   @ApiProperty()
   isLive!: boolean;
+
+  @ApiPropertyOptional({ enum: ['administrativo', 'operaciones', 'todos'] })
+  clasificacion?: AttendanceClasificacion;
+
+  @ApiProperty({
+    description: 'Conteo de empleados activos por clasificación (independiente del filtro activo)',
+    example: { cocina: 5, servicio: 8, administrativo: 3 },
+  })
+  clasificacionCounts!: LaborClassificationCounts;
 
   @ApiProperty({ type: AttendanceMonitorMetricsDto })
   metrics!: AttendanceMonitorMetricsDto;

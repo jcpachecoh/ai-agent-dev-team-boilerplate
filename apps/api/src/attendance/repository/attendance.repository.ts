@@ -3,6 +3,7 @@ import {
   AttendanceEventType,
   AttendanceLog,
   EmployeeDetails,
+  LaborClassification,
   Location,
   User,
 } from '@prisma/client';
@@ -13,6 +14,7 @@ import type {
   CreateAttendanceLogData,
   EmployeeWithUser,
   IAttendanceRepository,
+  LaborClassificationCounts,
 } from '../interfaces/attendance.interfaces';
 
 @Injectable()
@@ -147,12 +149,40 @@ export class AttendanceRepository implements IAttendanceRepository {
     });
   }
 
-  findEmployeesAtLocation(locationId: string, tenantId: string): Promise<EmployeeWithUser[]> {
+  findEmployeesAtLocation(
+    locationId: string,
+    tenantId: string,
+    laborClassifications?: LaborClassification[],
+  ): Promise<EmployeeWithUser[]> {
     return this.prisma.employeeDetails.findMany({
-      where: { locationId, tenantId, isActive: true, deletedAt: null },
+      where: {
+        locationId,
+        tenantId,
+        isActive: true,
+        deletedAt: null,
+        ...(laborClassifications ? { laborClassification: { in: laborClassifications } } : {}),
+      },
       include: { user: true },
       orderBy: { name: 'asc' },
     }) as Promise<EmployeeWithUser[]>;
+  }
+
+  async countByLaborClassification(
+    locationId: string,
+    tenantId: string,
+  ): Promise<LaborClassificationCounts> {
+    const groups = await this.prisma.employeeDetails.groupBy({
+      by: ['laborClassification'],
+      where: { locationId, tenantId, isActive: true, deletedAt: null },
+      _count: { _all: true },
+    });
+
+    const counts: LaborClassificationCounts = { cocina: 0, servicio: 0, administrativo: 0 };
+    for (const group of groups) {
+      counts[group.laborClassification.toLowerCase() as keyof LaborClassificationCounts] =
+        group._count._all;
+    }
+    return counts;
   }
 
   async findTenantLabel(tenantId: string): Promise<string> {

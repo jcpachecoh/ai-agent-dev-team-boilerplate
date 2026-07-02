@@ -172,6 +172,7 @@ export class AttendanceController {
         locationId,
         period: query.period,
         anchorDate: query.anchorDate,
+        clasificacion: query.clasificacion,
       },
       tenantId,
     ) as Promise<AttendanceMonitorSummaryDto>;

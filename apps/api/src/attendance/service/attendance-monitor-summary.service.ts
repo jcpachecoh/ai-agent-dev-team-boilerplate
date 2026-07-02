@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { AttendanceEventType, AttendanceLog } from '@prisma/client';
+import { AttendanceEventType, AttendanceLog, LaborClassification } from '@prisma/client';
 import type {
+  AttendanceClasificacion,
   AttendanceMonitorEmployee,
   AttendanceMonitorSummary,
   AttendanceMonitorSummaryInput,
@@ -46,11 +47,17 @@ export class AttendanceMonitorSummaryService {
       throw new NotFoundException(`Sede ${input.locationId} no encontrada`);
     }
 
+    const laborClassifications = resolveClasificacionFilter(input.clasificacion);
     const range = resolveAttendancePeriodRange(input.period, input.anchorDate);
-    const employees = await this.attendanceRepository.findEmployeesAtLocation(
-      input.locationId,
-      tenantId,
-    );
+
+    const [employees, clasificacionCounts] = await Promise.all([
+      this.attendanceRepository.findEmployeesAtLocation(
+        input.locationId,
+        tenantId,
+        laborClassifications,
+      ),
+      this.attendanceRepository.countByLaborClassification(input.locationId, tenantId),
+    ]);
 
     const logs = await this.attendanceRepository.listHistory({
       tenantId,
@@ -105,6 +112,8 @@ export class AttendanceMonitorSummaryService {
       dateFrom: range.dateFrom,
       dateTo: range.dateTo,
       isLive,
+      clasificacion: input.clasificacion,
+      clasificacionCounts,
       metrics: {
         total,
         onShift: uniqueOnShift.length,
@@ -233,4 +242,13 @@ export class AttendanceMonitorSummaryService {
     }
     return Array.from(map.values());
   }
+}
+
+function resolveClasificacionFilter(
+  clasificacion?: AttendanceClasificacion,
+): LaborClassification[] | undefined {
+  if (!clasificacion || clasificacion === 'todos') return undefined;
+  if (clasificacion === 'administrativo') return [LaborClassification.ADMINISTRATIVO];
+  if (clasificacion === 'operaciones')
+    return [LaborClassification.COCINA, LaborClassification.SERVICIO];
 }
