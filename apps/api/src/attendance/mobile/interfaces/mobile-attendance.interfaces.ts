@@ -72,6 +72,19 @@ export interface SedeMarcacionConfigResult {
   requiresPhoto: boolean;
 }
 
+export interface FacialReferenceResult {
+  storageObjectId: string;
+  signedUrl: string;
+  version: string;
+  updatedAt: Date;
+}
+
+export type EmployeeWithFacialReference = EmployeeDetails & {
+  personalData: { profilePhotoStorageObjectId: string | null; updatedAt: Date } | null;
+  photoStorageObjectId: string | null;
+  updatedAt: Date;
+};
+
 export interface PageInfo {
   hasNextPage: boolean;
   endCursor: string | null;
@@ -108,6 +121,10 @@ export interface CreateMobileAttendanceData {
 
 export interface IMobileAttendanceRepository {
   findEmployeeByUserId(userId: string, tenantId: string): Promise<EmployeeDetails | null>;
+  findEmployeeWithFacialReference(
+    userId: string,
+    tenantId: string,
+  ): Promise<EmployeeWithFacialReference | null>;
   findLocationById(locationId: string, tenantId: string): Promise<Location | null>;
   create(data: CreateMobileAttendanceData): Promise<MobileAttendanceLog>;
   findByEmployeeId(
@@ -161,4 +178,6 @@ export interface IMobileAttendanceService {
     tenantId: string,
   ): Promise<MarcacionConnection>;
   sedeMarcacionConfig(locationId: string, tenantId: string): Promise<SedeMarcacionConfigResult>;
+  misDatosFaciales(userId: string, tenantId: string): Promise<FacialReferenceResult | null>;
+  miSede(userId: string, tenantId: string): Promise<SedeMarcacionConfigResult>;
 }

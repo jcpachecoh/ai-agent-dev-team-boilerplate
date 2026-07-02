@@ -10,6 +10,7 @@ import { StorageService } from '../../../storage/service/storage.service';
 import { normalizeWorkDate } from '../../repository/attendance.repository';
 import type {
   IMobileAttendanceService,
+  FacialReferenceResult,
   MarcacionConnection,
   MarcacionResult,
   MarcacionesPorEmpleadoInput,
@@ -22,6 +23,7 @@ import { MobileAttendanceRepository } from '../repository/mobile-attendance.repo
 
 const MAX_TIMESTAMP_DRIFT_MS = 5 * 60 * 1000; // 5 minutes
 const DEFAULT_TAKE = 20;
+const FACIAL_REFERENCE_URL_TTL_SECONDS = 600;
 
 @Injectable()
 export class MobileAttendanceService implements IMobileAttendanceService {
@@ -179,6 +181,59 @@ export class MobileAttendanceService implements IMobileAttendanceService {
       throw new NotFoundException(`Sede ${locationId} no encontrada`);
     }
 
+    return this.toSedeMarcacionConfig(location);
+  }
+
+  async misDatosFaciales(userId: string, tenantId: string): Promise<FacialReferenceResult | null> {
+    const employee = await this.repo.findEmployeeWithFacialReference(userId, tenantId);
+    if (!employee) {
+      return null;
+    }
+
+    const referenceStorageObjectId =
+      employee.personalData?.profilePhotoStorageObjectId ?? employee.photoStorageObjectId ?? null;
+
+    if (!referenceStorageObjectId) {
+      return null;
+    }
+
+    const signedUrl = await this.storageService.getPresignedUrl(
+      referenceStorageObjectId,
+      tenantId,
+      FACIAL_REFERENCE_URL_TTL_SECONDS,
+    );
+
+    return {
+      storageObjectId: referenceStorageObjectId,
+      signedUrl,
+      version: referenceStorageObjectId,
+      updatedAt: employee.personalData?.updatedAt ?? employee.updatedAt,
+    };
+  }
+
+  async miSede(userId: string, tenantId: string): Promise<SedeMarcacionConfigResult> {
+    const employee = await this.repo.findEmployeeByUserId(userId, tenantId);
+    if (!employee) {
+      throw new NotFoundException('Empleado no encontrado');
+    }
+
+    const location = await this.repo.findLocationById(employee.locationId, tenantId);
+    if (!location) {
+      throw new NotFoundException(`Sede ${employee.locationId} no encontrada`);
+    }
+
+    return this.toSedeMarcacionConfig(location);
+  }
+
+  // ── Pure helpers ────────────────────────────────────────────────────────────
+
+  private toSedeMarcacionConfig(location: {
+    id: string;
+    name: string;
+    geoLatitude: number | null;
+    geoLongitude: number | null;
+    checkInRadiusMeters: number | null;
+  }): SedeMarcacionConfigResult {
     return {
       locationId: location.id,
       name: location.name,
@@ -188,8 +243,6 @@ export class MobileAttendanceService implements IMobileAttendanceService {
       requiresPhoto: location.checkInRadiusMeters != null,
     };
   }
-
-  // ── Pure helpers ────────────────────────────────────────────────────────────
 
   private validateGeofence(
     clientLat: number,

@@ -29,6 +29,7 @@ import { PermissionsGuard } from '../../../common/guards/permissions.guard';
 import { RolesGuard } from '../../../common/guards/roles.guard';
 import { PageInfoType } from '../../../locations/resolver/dto/location-connection.type';
 import type {
+  FacialReferenceResult,
   MarcacionConnection,
   MarcacionResult,
   SedeMarcacionConfigResult,
@@ -204,6 +205,14 @@ export class MobileAttendanceConnectionType {
   @Field(() => PageInfoType) pageInfo!: PageInfoType;
 }
 
+@ObjectType('FacialReference')
+export class FacialReferenceType {
+  @Field(() => ID) storageObjectId!: string;
+  @Field() signedUrl!: string;
+  @Field() version!: string;
+  @Field() updatedAt!: Date;
+}
+
 @ObjectType('SedeMarcacionConfig')
 export class SedeMarcacionConfigType implements SedeMarcacionConfigResult {
   @Field(() => ID) locationId!: string;
@@ -286,6 +295,24 @@ export class MobileAttendanceResolver {
   ): Promise<SedeMarcacionConfigResult> {
     const tenantId = this.resolveTenantId(user, context);
     return this.service.sedeMarcacionConfig(locationId, tenantId);
+  }
+
+  @Query(() => FacialReferenceType, { nullable: true })
+  async misDatosFaciales(
+    @CurrentUser() user: JwtPayload,
+    @Context() context: GqlRequestContext,
+  ): Promise<FacialReferenceResult | null> {
+    const tenantId = this.resolveTenantId(user, context);
+    return this.service.misDatosFaciales(user.sub, tenantId);
+  }
+
+  @Query(() => SedeMarcacionConfigType)
+  async miSede(
+    @CurrentUser() user: JwtPayload,
+    @Context() context: GqlRequestContext,
+  ): Promise<SedeMarcacionConfigResult> {
+    const tenantId = this.resolveTenantId(user, context);
+    return this.service.miSede(user.sub, tenantId);
   }
 
   // ── Helpers ─────────────────────────────────────────────────────────────────

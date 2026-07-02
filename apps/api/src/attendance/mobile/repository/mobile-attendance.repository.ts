@@ -8,6 +8,7 @@ import type {
 import { PrismaService } from '../../../prisma/prisma.service';
 import type {
   CreateMobileAttendanceData,
+  EmployeeWithFacialReference,
   IMobileAttendanceRepository,
   MarcacionConnection,
 } from '../interfaces/mobile-attendance.interfaces';
@@ -27,6 +28,23 @@ export class MobileAttendanceRepository implements IMobileAttendanceRepository {
   findEmployeeByUserId(userId: string, tenantId: string): Promise<EmployeeDetails | null> {
     return this.prisma.employeeDetails.findFirst({
       where: { userId, tenantId, deletedAt: null },
+    });
+  }
+
+  findEmployeeWithFacialReference(
+    userId: string,
+    tenantId: string,
+  ): Promise<EmployeeWithFacialReference | null> {
+    return this.prisma.employeeDetails.findFirst({
+      where: { userId, tenantId, deletedAt: null },
+      include: {
+        personalData: {
+          select: {
+            profilePhotoStorageObjectId: true,
+            updatedAt: true,
+          },
+        },
+      },
     });
   }
 

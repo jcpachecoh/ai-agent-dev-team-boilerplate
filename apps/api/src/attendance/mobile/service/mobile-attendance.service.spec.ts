@@ -60,6 +60,7 @@ describe('MobileAttendanceService', () => {
           provide: MobileAttendanceRepository,
           useValue: {
             findEmployeeByUserId: jest.fn(),
+            findEmployeeWithFacialReference: jest.fn(),
             findLocationById: jest.fn(),
             create: jest.fn(),
             findByEmployeeId: jest.fn(),
@@ -71,6 +72,7 @@ describe('MobileAttendanceService', () => {
           provide: StorageService,
           useValue: {
             findById: jest.fn(),
+            getPresignedUrl: jest.fn(),
           },
         },
       ],
@@ -362,6 +364,130 @@ describe('MobileAttendanceService', () => {
   });
 
   // ── haversineDistanceMeters ────────────────────────────────────────────────
+
+  describe('misDatosFaciales', () => {
+    const mockEmployeeWithPhoto = {
+      ...mockEmployee,
+      photoStorageObjectId: 'photo-storage-001',
+      updatedAt: new Date('2026-06-01T10:00:00Z'),
+      personalData: null,
+    };
+
+    it('devuelve referencia facial con URL firmada cuando hay foto en employee', async () => {
+      // Arrange
+      repo.findEmployeeWithFacialReference.mockResolvedValue(mockEmployeeWithPhoto);
+      storageService.getPresignedUrl.mockResolvedValue('https://signed.example.com/photo.jpg');
+
+      // Act
+      const result = await service.misDatosFaciales(USER_ID, TENANT_ID);
+
+      // Assert
+      expect(result).toEqual({
+        storageObjectId: 'photo-storage-001',
+        signedUrl: 'https://signed.example.com/photo.jpg',
+        version: 'photo-storage-001',
+        updatedAt: mockEmployeeWithPhoto.updatedAt,
+      });
+      expect(storageService.getPresignedUrl).toHaveBeenCalledWith(
+        'photo-storage-001',
+        TENANT_ID,
+        600,
+      );
+    });
+
+    it('prioriza profilePhotoStorageObjectId de personalData sobre photoStorageObjectId', async () => {
+      // Arrange
+      const personalUpdatedAt = new Date('2026-06-15T12:00:00Z');
+      repo.findEmployeeWithFacialReference.mockResolvedValue({
+        ...mockEmployeeWithPhoto,
+        personalData: {
+          profilePhotoStorageObjectId: 'personal-photo-001',
+          updatedAt: personalUpdatedAt,
+        },
+      });
+      storageService.getPresignedUrl.mockResolvedValue('https://signed.example.com/personal.jpg');
+
+      // Act
+      const result = await service.misDatosFaciales(USER_ID, TENANT_ID);
+
+      // Assert
+      expect(result?.storageObjectId).toBe('personal-photo-001');
+      expect(result?.version).toBe('personal-photo-001');
+      expect(result?.updatedAt).toBe(personalUpdatedAt);
+      expect(storageService.getPresignedUrl).toHaveBeenCalledWith(
+        'personal-photo-001',
+        TENANT_ID,
+        600,
+      );
+    });
+
+    it('devuelve null si el empleado no existe', async () => {
+      // Arrange
+      repo.findEmployeeWithFacialReference.mockResolvedValue(null);
+
+      // Act
+      const result = await service.misDatosFaciales(USER_ID, TENANT_ID);
+
+      // Assert
+      expect(result).toBeNull();
+      expect(storageService.getPresignedUrl).not.toHaveBeenCalled();
+    });
+
+    it('devuelve null si no hay foto de referencia (opción A — app bloquea marcación)', async () => {
+      // Arrange
+      repo.findEmployeeWithFacialReference.mockResolvedValue({
+        ...mockEmployeeWithPhoto,
+        photoStorageObjectId: null,
+        personalData: null,
+      });
+
+      // Act
+      const result = await service.misDatosFaciales(USER_ID, TENANT_ID);
+
+      // Assert
+      expect(result).toBeNull();
+      expect(storageService.getPresignedUrl).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('miSede', () => {
+    it('devuelve la configuración de la sede asignada al empleado', async () => {
+      // Arrange
+      repo.findEmployeeByUserId.mockResolvedValue(mockEmployee);
+      repo.findLocationById.mockResolvedValue(mockLocation);
+
+      // Act
+      const result = await service.miSede(USER_ID, TENANT_ID);
+
+      // Assert
+      expect(repo.findLocationById).toHaveBeenCalledWith(LOCATION_ID, TENANT_ID);
+      expect(result).toEqual({
+        locationId: LOCATION_ID,
+        name: 'Sede Principal',
+        geoLatitude: 4.6097,
+        geoLongitude: -74.0817,
+        checkInRadiusMeters: 100,
+        requiresPhoto: true,
+      });
+    });
+
+    it('lanza NotFoundException si el empleado no existe', async () => {
+      // Arrange
+      repo.findEmployeeByUserId.mockResolvedValue(null);
+
+      // Act & Assert
+      await expect(service.miSede(USER_ID, TENANT_ID)).rejects.toThrow(NotFoundException);
+    });
+
+    it('lanza NotFoundException si la sede del empleado no existe', async () => {
+      // Arrange
+      repo.findEmployeeByUserId.mockResolvedValue(mockEmployee);
+      repo.findLocationById.mockResolvedValue(null);
+
+      // Act & Assert
+      await expect(service.miSede(USER_ID, TENANT_ID)).rejects.toThrow(NotFoundException);
+    });
+  });
 
   describe('haversineDistanceMeters', () => {
     it('calcula ~2445 km entre Bogotá y Madrid', () => {
