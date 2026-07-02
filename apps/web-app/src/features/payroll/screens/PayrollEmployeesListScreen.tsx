@@ -47,7 +47,7 @@ function toCreateInput(values: PayrollEmployeeFormValues): CreatePayrollEmployee
     roleId: values.roleId.trim(),
     locationId: values.locationId.trim(),
     name: values.name.trim(),
-    positionId: values.positionId.trim(),
+    positionId: values.positionId.trim() || undefined,
     area: values.area.trim(),
     department: values.department.trim(),
     contractType: values.contractType,
@@ -62,6 +62,17 @@ function toCreateInput(values: PayrollEmployeeFormValues): CreatePayrollEmployee
     arlName: values.arlName.trim(),
     arlRiskLevel: values.arlRiskLevel,
     cajaCompensacion: values.cajaCompensacion.trim(),
+    barrio: values.barrio.trim() || undefined,
+    localidad: values.localidad.trim() || undefined,
+    costCenter: values.costCenter,
+    laborClassification: values.laborClassification,
+    nonSalaryAmount:
+      values.nonSalaryAmount.trim() !== '' ? Number(values.nonSalaryAmount) : undefined,
+    beneficiaries: values.beneficiaries.map((b) => ({
+      fullName: b.fullName.trim(),
+      relationshipType: b.relationshipType,
+      age: Number(b.age),
+    })),
   };
 }
 

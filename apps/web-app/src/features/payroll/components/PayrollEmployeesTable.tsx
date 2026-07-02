@@ -28,8 +28,9 @@ export function PayrollEmployeesTable({
             <th>Cedula</th>
             <th>Email</th>
             <th>Cargo</th>
+            <th>Centro de Costos</th>
             <th>Contrato</th>
-            <th>Sede</th>
+            <th>Áreas</th>
             <th>Ingreso</th>
             <th>Estado</th>
             <th>Acciones</th>
@@ -42,6 +43,7 @@ export function PayrollEmployeesTable({
               <td>{employee.user?.cedula ?? '-'}</td>
               <td>{employee.user?.email ?? '-'}</td>
               <td>{employee.position}</td>
+              <td>{employee.costCenter ?? '-'}</td>
               <td>{employee.contractType}</td>
               <td>{employee.location?.name ?? employee.locationId ?? '-'}</td>
               <td>{formatDate(employee.hireDate)}</td>

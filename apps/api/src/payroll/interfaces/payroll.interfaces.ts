@@ -5,6 +5,8 @@ import {
   SalaryType,
   ArlRiskLevel,
   DocumentType,
+  CostCenter,
+  LaborClassification,
 } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 
@@ -34,6 +36,11 @@ export interface CreateEmployeeData {
   arlName: string;
   arlRiskLevel: ArlRiskLevel;
   cajaCompensacion: string;
+  barrio?: string;
+  localidad?: string;
+  costCenter: CostCenter;
+  laborClassification: LaborClassification;
+  nonSalaryAmount?: number | Decimal | null;
 }
 
 export interface UpdateEmployeeData {
@@ -55,6 +62,11 @@ export interface UpdateEmployeeData {
   arlName?: string;
   arlRiskLevel?: ArlRiskLevel;
   cajaCompensacion?: string;
+  barrio?: string;
+  localidad?: string;
+  costCenter?: CostCenter;
+  laborClassification?: LaborClassification;
+  nonSalaryAmount?: number | Decimal | null;
   isActive?: boolean;
   photoStorageObjectId?: string | null;
 }

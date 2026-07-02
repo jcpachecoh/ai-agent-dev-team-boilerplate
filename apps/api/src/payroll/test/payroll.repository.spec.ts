@@ -1,4 +1,10 @@
-import { EmployeeContractType, SalaryType, ArlRiskLevel } from '@prisma/client';
+import {
+  CostCenter,
+  EmployeeContractType,
+  LaborClassification,
+  SalaryType,
+  ArlRiskLevel,
+} from '@prisma/client';
 import { PayrollRepository } from '../repository/payroll.repository';
 import { PrismaService } from '../../prisma/prisma.service';
 
@@ -6,10 +12,13 @@ const photoInclude = {
   select: { id: true, key: true, visibility: true, status: true, deletedAt: true },
 } as const;
 
+const socialProfileInclude = { where: { deletedAt: null } } as const;
+
 const employeeInclude = {
   user: true,
   location: { select: { id: true, name: true } },
   photoStorageObject: photoInclude,
+  socialProfiles: socialProfileInclude,
 } as const;
 
 describe('PayrollRepository', () => {
@@ -62,6 +71,8 @@ describe('PayrollRepository', () => {
     arlName: 'ARL',
     arlRiskLevel: ArlRiskLevel.RIESGO_I,
     cajaCompensacion: 'Caja',
+    costCenter: CostCenter.OPERACIONES,
+    laborClassification: LaborClassification.ADMINISTRATIVO,
   };
 
   beforeEach(() => {
@@ -134,7 +145,7 @@ describe('PayrollRepository', () => {
           userId: 'user-1',
           contractEnd: null,
         }),
-        include: { user: true },
+        include: { user: true, socialProfiles: socialProfileInclude },
       }),
     );
   });
@@ -235,7 +246,11 @@ describe('PayrollRepository', () => {
     });
     expect(prisma.employeeDetails.findUnique).toHaveBeenNthCalledWith(2, {
       where: { userId: 'user-1' },
-      include: { user: true, photoStorageObject: photoInclude },
+      include: {
+        user: true,
+        photoStorageObject: photoInclude,
+        socialProfiles: socialProfileInclude,
+      },
     });
   });
 
@@ -274,6 +289,7 @@ describe('PayrollRepository', () => {
         user: true,
         location: { select: { id: true, name: true } },
         photoStorageObject: photoInclude,
+        socialProfiles: socialProfileInclude,
       },
     });
   });
@@ -307,6 +323,7 @@ describe('PayrollRepository', () => {
         user: true,
         location: { select: { id: true, name: true } },
         photoStorageObject: photoInclude,
+        socialProfiles: socialProfileInclude,
       },
     });
 

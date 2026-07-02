@@ -40,9 +40,11 @@
 import {
   ArlRiskLevel,
   CondicionPago,
+  CostCenter,
   DocumentType,
   EmployeeContractType,
   EmployeeRelationshipType,
+  LaborClassification,
   Location,
   OperationalRole,
   PrismaClient,
@@ -793,6 +795,169 @@ async function seedUserLocationAssignments(
   }
 }
 
+// ─── OS-563: EmployeePosition catalog for Palos de Leña (lista oficial cliente) ─
+const EMPLOYEE_POSITIONS_PDL = [
+  // Gerencia
+  { id: 'pos-pdl-001', title: 'ADMINISTRADOR', area: 'Gerencia', baseSalaryRange: 5000000 },
+  { id: 'pos-pdl-002', title: 'ADMINISTRADOR JUNIOR', area: 'Gerencia', baseSalaryRange: 3000000 },
+  {
+    id: 'pos-pdl-003',
+    title: 'DIRECTOR DE OPERACIONES',
+    area: 'Gerencia',
+    baseSalaryRange: 8000000,
+  },
+  { id: 'pos-pdl-004', title: 'DIRECTORA COMERCIAL', area: 'Gerencia', baseSalaryRange: 7000000 },
+  {
+    id: 'pos-pdl-005',
+    title: 'GERENTE ADMINISTRATIVA',
+    area: 'Gerencia',
+    baseSalaryRange: 6000000,
+  },
+  {
+    id: 'pos-pdl-006',
+    title: 'GERENTE DE PUNTO DE VENTA',
+    area: 'Gerencia',
+    baseSalaryRange: 4500000,
+  },
+  { id: 'pos-pdl-007', title: 'GERENTE GENERAL', area: 'Gerencia', baseSalaryRange: 15000000 },
+  // Cocina
+  {
+    id: 'pos-pdl-008',
+    title: 'AUXILIAR DE COCINA Y PRODUCCION',
+    area: 'Cocina',
+    baseSalaryRange: 1423500,
+  },
+  {
+    id: 'pos-pdl-009',
+    title: 'AUXLIAR DE COCINA Y PRODUCCION',
+    area: 'Cocina',
+    baseSalaryRange: 1423500,
+  },
+  { id: 'pos-pdl-010', title: 'CHEF COORPORATIVO', area: 'Cocina', baseSalaryRange: 6000000 },
+  { id: 'pos-pdl-011', title: 'COCINA', area: 'Cocina', baseSalaryRange: 1800000 },
+  { id: 'pos-pdl-012', title: 'COCINA FIN DE SEMANA', area: 'Cocina', baseSalaryRange: 1423500 },
+  { id: 'pos-pdl-013', title: 'PARRILLERO', area: 'Cocina', baseSalaryRange: 2200000 },
+  { id: 'pos-pdl-014', title: 'PARRILLERO JUNIOR', area: 'Cocina', baseSalaryRange: 1600000 },
+  // Servicio
+  { id: 'pos-pdl-015', title: 'ASESOR DE VENTAS', area: 'Servicio', baseSalaryRange: 1800000 },
+  {
+    id: 'pos-pdl-016',
+    title: 'ASESORA DE VENTAS FIN DE SEMANA',
+    area: 'Servicio',
+    baseSalaryRange: 1423500,
+  },
+  { id: 'pos-pdl-017', title: 'BARTENDER', area: 'Servicio', baseSalaryRange: 1800000 },
+  { id: 'pos-pdl-018', title: 'EJECUTIVO COMERCIAL', area: 'Servicio', baseSalaryRange: 3000000 },
+  {
+    id: 'pos-pdl-019',
+    title: 'HOTESS FIN DE SEMANA',
+    area: 'Servicio',
+    baseSalaryRange: 1423500,
+  },
+  { id: 'pos-pdl-020', title: 'IMPULSADOR', area: 'Servicio', baseSalaryRange: 1600000 },
+  {
+    id: 'pos-pdl-021',
+    title: 'IMPULSADOR FIN DE SEMANA',
+    area: 'Servicio',
+    baseSalaryRange: 1423500,
+  },
+  // Planta / Producción
+  {
+    id: 'pos-pdl-022',
+    title: 'LIDER DE PLANTA DE PRODUCCION',
+    area: 'Planta',
+    baseSalaryRange: 3500000,
+  },
+  // Administrativo
+  {
+    id: 'pos-pdl-023',
+    title: 'ANALISTA DE COMPRAS',
+    area: 'Administrativo',
+    baseSalaryRange: 3000000,
+  },
+  {
+    id: 'pos-pdl-024',
+    title: 'ANALISTA DE GESTIÓN HUMANA',
+    area: 'Administrativo',
+    baseSalaryRange: 3000000,
+  },
+  {
+    id: 'pos-pdl-025',
+    title: 'ANALISTA FINANCIERA Y CONTABLE',
+    area: 'Administrativo',
+    baseSalaryRange: 3500000,
+  },
+  { id: 'pos-pdl-026', title: 'APRENDIZ SENA', area: 'Administrativo', baseSalaryRange: 711750 },
+  { id: 'pos-pdl-027', title: 'AUDITOR', area: 'Administrativo', baseSalaryRange: 4000000 },
+  {
+    id: 'pos-pdl-028',
+    title: 'AUXILIAR ADMINISTRATIVO',
+    area: 'Administrativo',
+    baseSalaryRange: 1800000,
+  },
+  {
+    id: 'pos-pdl-029',
+    title: 'AUXILIAR TALENTO HUMANO',
+    area: 'Administrativo',
+    baseSalaryRange: 1800000,
+  },
+  { id: 'pos-pdl-030', title: 'CONTADOR', area: 'Administrativo', baseSalaryRange: 4500000 },
+  {
+    id: 'pos-pdl-031',
+    title: 'JEFE DE COMPRAS',
+    area: 'Administrativo',
+    baseSalaryRange: 4000000,
+  },
+  {
+    id: 'pos-pdl-032',
+    title: 'JEFE DE TALENO HUMANO',
+    area: 'Administrativo',
+    baseSalaryRange: 4000000,
+  },
+  { id: 'pos-pdl-033', title: 'PROGRAMADOR', area: 'Administrativo', baseSalaryRange: 3500000 },
+  {
+    id: 'pos-pdl-034',
+    title: 'SERVICIOS GENERALES',
+    area: 'Administrativo',
+    baseSalaryRange: 1423500,
+  },
+  // Logística
+  { id: 'pos-pdl-035', title: 'ALMACENISTA', area: 'Logística', baseSalaryRange: 1800000 },
+  {
+    id: 'pos-pdl-036',
+    title: 'AUXILIAR DE CONDUCCION',
+    area: 'Logística',
+    baseSalaryRange: 1800000,
+  },
+  {
+    id: 'pos-pdl-037',
+    title: 'AUXILIAR DE CONDUCCION Y MANTENIMIENTO',
+    area: 'Logística',
+    baseSalaryRange: 2000000,
+  },
+  { id: 'pos-pdl-038', title: 'CONDUCTOR', area: 'Logística', baseSalaryRange: 2200000 },
+] as const;
+
+async function seedEmployeePositions(tenantId: string) {
+  for (const pos of EMPLOYEE_POSITIONS_PDL) {
+    await prisma.employeePosition.upsert({
+      where: { id: pos.id },
+      update: { title: pos.title, area: pos.area, isActive: true },
+      create: {
+        id: pos.id,
+        tenantId,
+        title: pos.title,
+        area: pos.area,
+        baseSalaryRange: pos.baseSalaryRange,
+        isActive: true,
+      },
+    });
+  }
+  console.log(
+    `EmployeePositions: Seeded ${EMPLOYEE_POSITIONS_PDL.length} positions for ${tenantId}`,
+  );
+}
+
 async function seedEmployeeDetails(
   ownerUserId: string,
   operatorUserId: string,
@@ -803,7 +968,15 @@ async function seedEmployeeDetails(
   const ownerPinHashEmployee = await bcrypt.hash('1234', SALT_ROUNDS);
   await prisma.employeeDetails.upsert({
     where: { userId: ownerUserId },
-    update: { isActive: true, pinHash: ownerPinHashEmployee, name: 'Propietario Principal' },
+    update: {
+      isActive: true,
+      pinHash: ownerPinHashEmployee,
+      name: 'Propietario Principal',
+      costCenter: CostCenter.GERENCIA,
+      laborClassification: LaborClassification.ADMINISTRATIVO,
+      barrio: 'El Poblado',
+      localidad: 'Medellín',
+    },
     create: {
       userId: ownerUserId,
       tenantId: OPERATIONAL_TENANT_ID,
@@ -825,6 +998,11 @@ async function seedEmployeeDetails(
       arlName: 'Sura',
       arlRiskLevel: ArlRiskLevel.RIESGO_I,
       cajaCompensacion: 'Comfama',
+      barrio: 'El Poblado',
+      localidad: 'Medellín',
+      costCenter: CostCenter.GERENCIA,
+      laborClassification: LaborClassification.ADMINISTRATIVO,
+      nonSalaryAmount: 500000.0,
       pinHash: ownerPinHashEmployee,
       isActive: true,
     },
@@ -835,7 +1013,15 @@ async function seedEmployeeDetails(
   const operatorPinHashEmployee = await bcrypt.hash('4321', SALT_ROUNDS);
   await prisma.employeeDetails.upsert({
     where: { userId: operatorUserId },
-    update: { isActive: true, pinHash: operatorPinHashEmployee, name: 'Operario de Planta' },
+    update: {
+      isActive: true,
+      pinHash: operatorPinHashEmployee,
+      name: 'Operario de Planta',
+      costCenter: CostCenter.PLANTA,
+      laborClassification: LaborClassification.COCINA,
+      barrio: 'Laureles',
+      localidad: 'Medellín',
+    },
     create: {
       userId: operatorUserId,
       tenantId: OPERATIONAL_TENANT_ID,
@@ -858,6 +1044,10 @@ async function seedEmployeeDetails(
       arlName: 'Sura',
       arlRiskLevel: ArlRiskLevel.RIESGO_II,
       cajaCompensacion: 'Compensar',
+      barrio: 'Laureles',
+      localidad: 'Medellín',
+      costCenter: CostCenter.PLANTA,
+      laborClassification: LaborClassification.COCINA,
       pinHash: operatorPinHashEmployee,
       isActive: true,
     },
@@ -1599,6 +1789,7 @@ async function main() {
   // ── NOM-01: Seed EmployeeDetails ─────────────────────────────────────────
   const { seedEmployeeCatalogOptions } = await import('./seeds/employee-catalog.seed');
   await seedEmployeeCatalogOptions(prisma, OPERATIONAL_TENANT_ID);
+  await seedEmployeePositions(OPERATIONAL_TENANT_ID);
   await seedEmployeeDetails(ownerGlobalUser.id, operatorGlobalUser.id, firstLocationId);
   await seedEmployeeSocialProfiles(ownerGlobalUser.id, operatorGlobalUser.id);
   await seedUserLocationAssignments([

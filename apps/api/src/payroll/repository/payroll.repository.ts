@@ -62,9 +62,14 @@ export class PayrollRepository implements IPayrollRepository {
           arlName: data.arlName,
           arlRiskLevel: data.arlRiskLevel,
           cajaCompensacion: data.cajaCompensacion,
+          barrio: data.barrio ?? null,
+          localidad: data.localidad ?? null,
+          costCenter: data.costCenter,
+          laborClassification: data.laborClassification,
+          nonSalaryAmount: data.nonSalaryAmount ?? null,
           isActive: true,
         },
-        include: { user: true },
+        include: { user: true, socialProfiles: { where: { deletedAt: null } } },
       });
 
       return employeeDetails as EmployeeDetails & { user: User };
@@ -101,8 +106,10 @@ export class PayrollRepository implements IPayrollRepository {
       where,
       include: {
         user: true,
+
         location: { select: { id: true, name: true } },
         photoStorageObject: PayrollRepository.PHOTO_INCLUDE,
+        socialProfiles: { where: { deletedAt: null } },
       },
       take: filters.limit || 50,
       skip: filters.offset || 0,
@@ -117,8 +124,10 @@ export class PayrollRepository implements IPayrollRepository {
       where: { id },
       include: {
         user: true,
+
         location: { select: { id: true, name: true } },
         photoStorageObject: PayrollRepository.PHOTO_INCLUDE,
+        socialProfiles: { where: { deletedAt: null } },
       },
     });
   }
@@ -129,6 +138,7 @@ export class PayrollRepository implements IPayrollRepository {
       include: {
         user: true,
         photoStorageObject: PayrollRepository.PHOTO_INCLUDE,
+        socialProfiles: { where: { deletedAt: null } },
       },
     });
   }
@@ -147,13 +157,16 @@ export class PayrollRepository implements IPayrollRepository {
         });
       }
 
+      const socialProfileInclude = { where: { deletedAt: null } };
       if (Object.keys(employeeData).length === 0) {
         return tx.employeeDetails.findUniqueOrThrow({
           where: { userId },
           include: {
             user: true,
+
             location: { select: { id: true, name: true } },
             photoStorageObject: PayrollRepository.PHOTO_INCLUDE,
+            socialProfiles: socialProfileInclude,
           },
         });
       }
@@ -163,8 +176,10 @@ export class PayrollRepository implements IPayrollRepository {
         data: employeeData,
         include: {
           user: true,
+
           location: { select: { id: true, name: true } },
           photoStorageObject: PayrollRepository.PHOTO_INCLUDE,
+          socialProfiles: socialProfileInclude,
         },
       });
     });
@@ -192,6 +207,11 @@ export class PayrollRepository implements IPayrollRepository {
       'arlName',
       'arlRiskLevel',
       'cajaCompensacion',
+      'barrio',
+      'localidad',
+      'costCenter',
+      'laborClassification',
+      'nonSalaryAmount',
       'isActive',
       'photoStorageObjectId',
     ] as const;

@@ -592,6 +592,11 @@ model EmployeeDetails {
   arlName              String
   arlRiskLevel         ArlRiskLevel
   cajaCompensacion     String
+  barrio              String?
+  localidad           String?
+  costCenter          CostCenter          @default(OPERACIONES)
+  laborClassification LaborClassification @default(ADMINISTRATIVO)
+  nonSalaryAmount     Decimal?            @db.Decimal(12, 2)
   pinHash              String?
   photoStorageObjectId String?
   isActive             Boolean              @default(true)
@@ -615,6 +620,8 @@ model EmployeeDetails {
   @@index([positionId])
   @@index([contractType])
   @@index([isActive])
+  @@index([tenantId, costCenter])
+  @@index([tenantId, laborClassification])
   @@map("employee_details")
 }
 
@@ -690,7 +697,26 @@ enum EmployeeRelationshipType {
   CHILD
   FATHER
   MOTHER
+  TUTOR
   OTHER
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// OS-563 — EMPLOYEE FORM ENHANCEMENTS
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum CostCenter {
+  ADMINISTRATIVO
+  OPERACIONES
+  PLANTA
+  GERENCIA
+  INCAPACIDADES
+}
+
+enum LaborClassification {
+  COCINA
+  SERVICIO
+  ADMINISTRATIVO
 }
 
 model EmployeeSocialProfile {

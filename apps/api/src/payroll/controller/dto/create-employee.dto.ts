@@ -1,15 +1,27 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
+  IsArray,
   IsEmail,
   IsEnum,
   IsNotEmpty,
   IsNumber,
   IsOptional,
   IsString,
+  MaxLength,
   Min,
   IsDateString,
+  ValidateNested,
 } from 'class-validator';
-import { EmployeeContractType, SalaryType, ArlRiskLevel, DocumentType } from '@prisma/client';
+import { Type } from 'class-transformer';
+import {
+  EmployeeContractType,
+  SalaryType,
+  ArlRiskLevel,
+  DocumentType,
+  CostCenter,
+  LaborClassification,
+} from '@prisma/client';
+import { CreateBeneficiaryDto } from './create-beneficiary.dto';
 
 export class CreateEmployeeDto {
   @ApiProperty()
@@ -122,4 +134,39 @@ export class CreateEmployeeDto {
   @IsString()
   @IsNotEmpty()
   cajaCompensacion!: string;
+
+  @ApiPropertyOptional({ maxLength: 100 })
+  @IsString()
+  @IsOptional()
+  @MaxLength(100)
+  barrio?: string;
+
+  @ApiPropertyOptional({ maxLength: 100 })
+  @IsString()
+  @IsOptional()
+  @MaxLength(100)
+  localidad?: string;
+
+  @ApiProperty({ enum: CostCenter })
+  @IsEnum(CostCenter)
+  @IsNotEmpty()
+  costCenter!: CostCenter;
+
+  @ApiProperty({ enum: LaborClassification })
+  @IsEnum(LaborClassification)
+  @IsNotEmpty()
+  laborClassification!: LaborClassification;
+
+  @ApiPropertyOptional({ type: 'number', minimum: 0 })
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  nonSalaryAmount?: number;
+
+  @ApiPropertyOptional({ type: [CreateBeneficiaryDto] })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateBeneficiaryDto)
+  @IsOptional()
+  beneficiaries?: CreateBeneficiaryDto[];
 }

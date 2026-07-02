@@ -10,12 +10,17 @@ import {
   SalaryType,
   ArlRiskLevel,
   DocumentType,
+  CostCenter,
+  LaborClassification,
+  EmployeeRelationshipType,
   Prisma,
 } from '@prisma/client';
 import { PayrollService } from '../service/payroll.service';
 import { PayrollRepository } from '../repository/payroll.repository';
 import { EmployeePositionsService } from '../service/employee-positions.service';
 import { StorageService } from '../../storage/service/storage.service';
+import { AuditService } from '../../audit/service/audit.service';
+import { EmployeeSocialProfileService } from '../../employee-social-profile/service/employee-social-profile.service';
 import { SMLV_2025 } from '../payroll.constants';
 import { StorageDomain } from '../../storage/enums/storage.enums';
 
@@ -24,6 +29,8 @@ describe('PayrollService', () => {
   let repository: PayrollRepository;
   let employeePositionsService: EmployeePositionsService;
   let storageService: jest.Mocked<StorageService>;
+  let auditService: AuditService;
+  let socialProfileService: EmployeeSocialProfileService;
 
   const mockTenantId = 'tenant-1';
   const mockLocationId = 'loc-1';
@@ -51,6 +58,8 @@ describe('PayrollService', () => {
     arlName: 'ARL',
     arlRiskLevel: ArlRiskLevel.RIESGO_I,
     cajaCompensacion: 'Caja',
+    costCenter: CostCenter.OPERACIONES,
+    laborClassification: LaborClassification.ADMINISTRATIVO,
   };
 
   const mockLinkedUser = {
@@ -108,6 +117,20 @@ describe('PayrollService', () => {
             deleteFile: jest.fn(),
           },
         },
+        {
+          provide: AuditService,
+          useValue: {
+            log: jest.fn().mockResolvedValue(undefined),
+          },
+        },
+        {
+          provide: EmployeeSocialProfileService,
+          useValue: {
+            findAllByEmployee: jest.fn().mockResolvedValue([]),
+            remove: jest.fn().mockResolvedValue(undefined),
+            create: jest.fn().mockResolvedValue({}),
+          },
+        },
       ],
     }).compile();
 
@@ -115,6 +138,8 @@ describe('PayrollService', () => {
     repository = module.get<PayrollRepository>(PayrollRepository);
     employeePositionsService = module.get<EmployeePositionsService>(EmployeePositionsService);
     storageService = module.get(StorageService);
+    auditService = module.get<AuditService>(AuditService);
+    socialProfileService = module.get<EmployeeSocialProfileService>(EmployeeSocialProfileService);
   });
 
   describe('create', () => {
@@ -828,6 +853,213 @@ describe('PayrollService', () => {
       await expect(
         service.create(mockTenantId, { ...mockEmployeeData, position: '' }),
       ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('OS-563 — new employee fields', () => {
+    const makeEmployee = (overrides: object = {}) => ({
+      tenantId: mockTenantId,
+      contractType: EmployeeContractType.INDEFINIDO,
+      salaryAmount: 2000000,
+      salaryType: SalaryType.ORDINARIO,
+      user: { id: 'user-1', email: 'test@example.com', cedula: '123456' },
+      ...overrides,
+    });
+
+    describe('create — costCenter & laborClassification', () => {
+      it('passes costCenter and laborClassification to repository.create', async () => {
+        // Arrange
+        setupSuccessfulCreate(null);
+        (repository.create as jest.Mock).mockResolvedValue({ id: 'emp-1', tenantId: mockTenantId });
+
+        // Act
+        await service.create(mockTenantId, {
+          ...mockEmployeeData,
+          costCenter: CostCenter.GERENCIA,
+          laborClassification: LaborClassification.COCINA,
+        });
+
+        // Assert
+        expect(repository.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            costCenter: CostCenter.GERENCIA,
+            laborClassification: LaborClassification.COCINA,
+          }),
+        );
+      });
+
+      it('passes barrio and localidad to repository.create', async () => {
+        // Arrange
+        setupSuccessfulCreate(null);
+        (repository.create as jest.Mock).mockResolvedValue({ id: 'emp-1', tenantId: mockTenantId });
+
+        // Act
+        await service.create(mockTenantId, {
+          ...mockEmployeeData,
+          barrio: 'Chapinero',
+          localidad: 'Chapinero',
+        });
+
+        // Assert
+        expect(repository.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            barrio: 'Chapinero',
+            localidad: 'Chapinero',
+          }),
+        );
+      });
+
+      it('passes nonSalaryAmount to repository.create when provided', async () => {
+        // Arrange
+        setupSuccessfulCreate(null);
+        (repository.create as jest.Mock).mockResolvedValue({ id: 'emp-1', tenantId: mockTenantId });
+
+        // Act
+        await service.create(mockTenantId, {
+          ...mockEmployeeData,
+          nonSalaryAmount: 500000,
+        });
+
+        // Assert
+        expect(repository.create).toHaveBeenCalledWith(
+          expect.objectContaining({ nonSalaryAmount: 500000 }),
+        );
+      });
+    });
+
+    describe('beneficiaries sync', () => {
+      const makeEmployee2 = () => ({
+        id: 'emp-details-1',
+        tenantId: mockTenantId,
+        contractType: EmployeeContractType.INDEFINIDO,
+        salaryAmount: 2000000,
+        salaryType: SalaryType.ORDINARIO,
+        user: { id: 'user-1', email: 'test@example.com', cedula: '123456' },
+      });
+
+      it('creates beneficiaries on create when beneficiaries array is provided', async () => {
+        // Arrange
+        setupSuccessfulCreate(null);
+        (repository.create as jest.Mock).mockResolvedValue(makeEmployee2());
+        (repository.findByUserId as jest.Mock).mockResolvedValue(makeEmployee2());
+        (socialProfileService.findAllByEmployee as jest.Mock).mockResolvedValue([]);
+
+        // Act
+        await service.create(mockTenantId, {
+          ...mockEmployeeData,
+          beneficiaries: [
+            {
+              fullName: 'Ana López',
+              relationshipType: EmployeeRelationshipType.CHILD,
+              age: 5,
+            },
+          ],
+        });
+
+        // Assert
+        expect(socialProfileService.create).toHaveBeenCalledWith(
+          mockTenantId,
+          'emp-details-1',
+          expect.objectContaining({
+            fullName: 'Ana López',
+            relationshipType: EmployeeRelationshipType.CHILD,
+          }),
+        );
+      });
+
+      it('soft-deletes existing beneficiaries before recreating on update', async () => {
+        // Arrange
+        const existingProfile = {
+          id: 'profile-old',
+          fullName: 'Old Person',
+          relationshipType: EmployeeRelationshipType.SPOUSE,
+        };
+        (repository.findByUserId as jest.Mock).mockResolvedValue(makeEmployee2());
+        (repository.update as jest.Mock).mockResolvedValue(makeEmployee2());
+        (socialProfileService.findAllByEmployee as jest.Mock).mockResolvedValue([existingProfile]);
+
+        // Act
+        await service.update(mockTenantId, 'user-1', {
+          beneficiaries: [
+            {
+              fullName: 'New Person',
+              relationshipType: EmployeeRelationshipType.TUTOR,
+              age: 60,
+            },
+          ],
+        });
+
+        // Assert
+        expect(socialProfileService.remove).toHaveBeenCalledWith(
+          mockTenantId,
+          'profile-old',
+          'emp-details-1',
+        );
+        expect(socialProfileService.create).toHaveBeenCalledWith(
+          mockTenantId,
+          'emp-details-1',
+          expect.objectContaining({
+            fullName: 'New Person',
+            relationshipType: EmployeeRelationshipType.TUTOR,
+          }),
+        );
+      });
+
+      it('skips beneficiary sync on update when beneficiaries is not in payload', async () => {
+        // Arrange
+        (repository.findByUserId as jest.Mock).mockResolvedValue(makeEmployee2());
+        (repository.update as jest.Mock).mockResolvedValue(makeEmployee2());
+
+        // Act
+        await service.update(mockTenantId, 'user-1', { position: 'Chef' });
+
+        // Assert
+        expect(socialProfileService.findAllByEmployee).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('audit log', () => {
+      it('calls auditService.log with CREATE action after successful create', async () => {
+        // Arrange
+        setupSuccessfulCreate(null);
+        (repository.create as jest.Mock).mockResolvedValue({
+          id: 'emp-1',
+          tenantId: mockTenantId,
+        });
+
+        // Act
+        await service.create(mockTenantId, mockEmployeeData, 'requester-1');
+
+        // Assert
+        expect(auditService.log).toHaveBeenCalledWith(
+          expect.objectContaining({
+            action: 'CREATE',
+            tenantId: mockTenantId,
+          }),
+        );
+      });
+
+      it('calls auditService.log with UPDATE action after successful update', async () => {
+        // Arrange
+        (repository.findByUserId as jest.Mock).mockResolvedValue(
+          makeEmployee({ id: 'emp-details-1' }),
+        );
+        (repository.update as jest.Mock).mockResolvedValue({
+          id: 'emp-details-1',
+          tenantId: mockTenantId,
+        });
+
+        // Act
+        await service.update(mockTenantId, 'user-1', { position: 'Senior Chef' }, 'requester-1');
+
+        // Assert
+        expect(auditService.log).toHaveBeenCalledWith(
+          expect.objectContaining({
+            action: 'UPDATE',
+            tenantId: mockTenantId,
+          }),
+        );
+      });
     });
   });
 });

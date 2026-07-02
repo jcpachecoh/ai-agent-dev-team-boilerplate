@@ -214,10 +214,105 @@
   font-weight: 600;
 }
 
-.formHint {
+.formHint,
+.fieldHint {
   margin: 0;
   color: var(--color-text-secondary);
   font-size: t.$font-size-xs;
+}
+
+.beneficiariesSection {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.beneficiariesHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.beneficiariesTitle {
+  font-size: t.$font-size-sm;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.beneficiaryList {
+  border: 1px solid var(--color-border);
+  border-radius: t.$border-radius-base;
+  overflow: hidden;
+  font-size: t.$font-size-sm;
+}
+
+.beneficiaryHeader,
+.beneficiaryRow {
+  display: grid;
+  grid-template-columns: 148px 1fr 72px 48px;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.75rem;
+}
+
+.beneficiaryHeader {
+  background: var(--color-bg-surface-raised);
+  border-bottom: 1px solid var(--color-border);
+  font-size: t.$font-size-xs;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.045em;
+}
+
+.beneficiaryRow {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--color-border);
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.beneficiaryRemoveCell {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.btnRemove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--color-danger) 55%, transparent);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--color-danger) 14%, transparent);
+  color: var(--color-danger);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition:
+    background 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease;
+
+  svg {
+    pointer-events: none;
+  }
+
+  &:hover {
+    background: var(--color-danger);
+    border-color: var(--color-danger);
+    color: #fff;
+  }
+
+  &:active {
+    opacity: 0.85;
+    transform: scale(0.95);
+  }
 }
 
 .modalFooter {

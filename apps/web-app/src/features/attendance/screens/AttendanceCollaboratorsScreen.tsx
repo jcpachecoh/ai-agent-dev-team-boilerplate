@@ -75,6 +75,17 @@ function toCreateInput(values: PayrollEmployeeFormValues): CreatePayrollEmployee
     arlName: values.arlName.trim(),
     arlRiskLevel: values.arlRiskLevel,
     cajaCompensacion: values.cajaCompensacion.trim(),
+    costCenter: values.costCenter,
+    laborClassification: values.laborClassification,
+    barrio: values.barrio.trim() || undefined,
+    localidad: values.localidad.trim() || undefined,
+    nonSalaryAmount:
+      values.nonSalaryAmount.trim() !== '' ? Number(values.nonSalaryAmount) : undefined,
+    beneficiaries: values.beneficiaries.map((b) => ({
+      fullName: b.fullName.trim(),
+      relationshipType: b.relationshipType,
+      age: Number(b.age),
+    })),
   };
 }
 

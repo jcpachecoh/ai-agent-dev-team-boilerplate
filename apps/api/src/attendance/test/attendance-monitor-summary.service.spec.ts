@@ -1,5 +1,11 @@
 import { NotFoundException } from '@nestjs/common';
-import { AttendanceEventType, AttendanceShift, DocumentType } from '@prisma/client';
+import {
+  AttendanceEventType,
+  AttendanceShift,
+  CostCenter,
+  DocumentType,
+  LaborClassification,
+} from '@prisma/client';
 import { AttendanceMonitorSummaryService } from '../service/attendance-monitor-summary.service';
 import type { EmployeeWithUser } from '../interfaces/attendance.interfaces';
 
@@ -30,6 +36,11 @@ const employee: EmployeeWithUser = {
   arlName: 'ARL',
   arlRiskLevel: 'RIESGO_I',
   cajaCompensacion: 'Caja',
+  barrio: null,
+  localidad: null,
+  costCenter: CostCenter.OPERACIONES,
+  laborClassification: LaborClassification.COCINA,
+  nonSalaryAmount: null,
   pinHash: null,
   photoStorageObjectId: null,
   isActive: true,

@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { EmployeeDetails, StorageObject, User } from '@prisma/client';
+import { EmployeeDetails, StorageObject, EmployeeSocialProfile, User } from '@prisma/client';
 
 const PUBLIC_DOMAIN = (): string => {
   const raw = process.env.R2_PUBLIC_DOMAIN ?? '';
@@ -36,6 +36,11 @@ export class EmployeeResponseDto {
   @ApiPropertyOptional() cajaCompensacion?: string | null;
   @ApiPropertyOptional() photoStorageObjectId?: string | null;
   @ApiPropertyOptional() photoUrl?: string | null;
+  @ApiPropertyOptional() barrio?: string | null;
+  @ApiPropertyOptional() localidad?: string | null;
+  @ApiPropertyOptional() costCenter?: string | null;
+  @ApiPropertyOptional() laborClassification?: string | null;
+  @ApiPropertyOptional() nonSalaryAmount?: string | null;
   @ApiProperty() isActive!: boolean;
   @ApiProperty() createdAt!: Date;
   @ApiProperty() updatedAt!: Date;
@@ -50,6 +55,12 @@ export class EmployeeResponseDto {
     id: string;
     name: string;
   };
+  @ApiPropertyOptional() beneficiaries?: Array<{
+    id: string;
+    fullName: string;
+    relationshipType: string;
+    age: number;
+  }>;
 }
 
 export function toEmployeeResponse(
@@ -57,6 +68,7 @@ export function toEmployeeResponse(
     user?: User | null;
     location?: { id: string; name: string } | null;
     photoStorageObject?: StorageObject | null;
+    socialProfiles?: EmployeeSocialProfile[];
   },
 ): EmployeeResponseDto {
   const photoUrl = employee.photoStorageObject?.key
@@ -89,6 +101,12 @@ export function toEmployeeResponse(
     cajaCompensacion: employee.cajaCompensacion ?? undefined,
     photoStorageObjectId: employee.photoStorageObjectId ?? null,
     photoUrl: photoUrl ?? null,
+    barrio: employee.barrio ?? undefined,
+    localidad: employee.localidad ?? undefined,
+    costCenter: employee.costCenter ?? undefined,
+    laborClassification: employee.laborClassification ?? undefined,
+    nonSalaryAmount:
+      employee.nonSalaryAmount != null ? employee.nonSalaryAmount.toString() : undefined,
     isActive: employee.isActive,
     createdAt: employee.createdAt,
     updatedAt: employee.updatedAt,
@@ -107,5 +125,11 @@ export function toEmployeeResponse(
           name: employee.location.name,
         }
       : undefined,
+    beneficiaries: employee.socialProfiles?.map((p) => ({
+      id: p.id,
+      fullName: p.fullName,
+      relationshipType: p.relationshipType,
+      age: new Date().getFullYear() - p.birthDate.getFullYear(),
+    })),
   };
 }

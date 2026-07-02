@@ -6,6 +6,18 @@ export type ArlRiskLevel = 'RIESGO_I' | 'RIESGO_II' | 'RIESGO_III' | 'RIESGO_IV'
 
 export type DocumentType = 'CC' | 'CE' | 'NIT' | 'PASSPORT';
 
+export type CostCenter = 'ADMINISTRATIVO' | 'OPERACIONES' | 'PLANTA' | 'GERENCIA' | 'INCAPACIDADES';
+
+export type LaborClassification = 'COCINA' | 'SERVICIO' | 'ADMINISTRATIVO';
+
+export type BeneficiaryRelationshipType = 'CHILD' | 'SPOUSE' | 'TUTOR';
+
+export interface BeneficiaryFormRow {
+  relationshipType: BeneficiaryRelationshipType;
+  fullName: string;
+  age: string;
+}
+
 export interface EmployeeUserSummary {
   email: string;
   cedula: string;
@@ -39,6 +51,17 @@ export interface PayrollEmployee {
   cajaCompensacion: string;
   photoStorageObjectId?: string | null;
   photoUrl?: string | null;
+  barrio?: string | null;
+  localidad?: string | null;
+  costCenter?: CostCenter | null;
+  laborClassification?: LaborClassification | null;
+  nonSalaryAmount?: string | null;
+  beneficiaries?: Array<{
+    id: string;
+    fullName: string;
+    relationshipType: BeneficiaryRelationshipType;
+    age: number;
+  }>;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -81,6 +104,16 @@ export interface CreatePayrollEmployeeInput {
   arlName: string;
   arlRiskLevel: ArlRiskLevel;
   cajaCompensacion: string;
+  barrio?: string;
+  localidad?: string;
+  costCenter: CostCenter;
+  laborClassification: LaborClassification;
+  nonSalaryAmount?: number;
+  beneficiaries?: Array<{
+    fullName: string;
+    relationshipType: BeneficiaryRelationshipType;
+    age: number;
+  }>;
 }
 
 export type UpdatePayrollEmployeeInput = Partial<CreatePayrollEmployeeInput> & {
@@ -110,4 +143,10 @@ export interface PayrollEmployeeFormValues {
   arlName: string;
   arlRiskLevel: ArlRiskLevel;
   cajaCompensacion: string;
+  barrio: string;
+  localidad: string;
+  costCenter: CostCenter;
+  laborClassification: LaborClassification;
+  nonSalaryAmount: string;
+  beneficiaries: BeneficiaryFormRow[];
 }

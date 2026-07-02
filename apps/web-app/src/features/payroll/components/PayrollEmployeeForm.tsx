@@ -8,8 +8,12 @@ import type { AdminRoleOptionApi } from '@/features/usuarios/types';
 
 import {
   type ArlRiskLevel,
+  type BeneficiaryFormRow,
+  type BeneficiaryRelationshipType,
+  type CostCenter,
   type DocumentType,
   type EmployeeContractType,
+  type LaborClassification,
   type PayrollEmployee,
   type PayrollEmployeeFormValues,
   type SalaryType,
@@ -33,6 +37,8 @@ export interface PayrollEmployeeFormProps {
   submitting?: boolean;
 }
 
+const EMPTY_BENEFICIARY: BeneficiaryFormRow = { relationshipType: 'CHILD', fullName: '', age: '' };
+
 const EMPTY_VALUES: PayrollEmployeeFormValues = {
   cedula: '',
   documentType: 'CC',
@@ -55,6 +61,12 @@ const EMPTY_VALUES: PayrollEmployeeFormValues = {
   arlName: '',
   arlRiskLevel: 'RIESGO_I',
   cajaCompensacion: '',
+  barrio: '',
+  localidad: '',
+  costCenter: 'OPERACIONES',
+  laborClassification: 'ADMINISTRATIVO',
+  nonSalaryAmount: '',
+  beneficiaries: [],
 };
 
 const REQUIRED_CATALOG_FIELDS: Array<{
@@ -107,6 +119,16 @@ function employeeToFormValues(employee: PayrollEmployee): PayrollEmployeeFormVal
     arlName: employee.arlName,
     arlRiskLevel: employee.arlRiskLevel,
     cajaCompensacion: employee.cajaCompensacion,
+    barrio: employee.barrio ?? '',
+    localidad: employee.localidad ?? '',
+    costCenter: (employee.costCenter as CostCenter) ?? 'OPERACIONES',
+    laborClassification: (employee.laborClassification as LaborClassification) ?? 'ADMINISTRATIVO',
+    nonSalaryAmount: employee.nonSalaryAmount ?? '',
+    beneficiaries: (employee.beneficiaries ?? []).map((b) => ({
+      relationshipType: b.relationshipType as BeneficiaryRelationshipType,
+      fullName: b.fullName,
+      age: String(b.age),
+    })),
   };
 }
 
@@ -142,6 +164,26 @@ const ARL_LEVEL_OPTIONS: Array<{ value: ArlRiskLevel; label: string }> = [
   { value: 'RIESGO_V', label: 'Riesgo V' },
 ];
 
+const COST_CENTER_OPTIONS: Array<{ value: CostCenter; label: string }> = [
+  { value: 'ADMINISTRATIVO', label: 'Administrativo' },
+  { value: 'OPERACIONES', label: 'Operaciones' },
+  { value: 'PLANTA', label: 'Planta' },
+  { value: 'GERENCIA', label: 'Gerencia' },
+  { value: 'INCAPACIDADES', label: 'Incapacidades' },
+];
+
+const LABOR_CLASSIFICATION_OPTIONS: Array<{ value: LaborClassification; label: string }> = [
+  { value: 'COCINA', label: 'Cocina' },
+  { value: 'SERVICIO', label: 'Servicio' },
+  { value: 'ADMINISTRATIVO', label: 'Administrativo' },
+];
+
+const BENEFICIARY_TYPE_OPTIONS: Array<{ value: BeneficiaryRelationshipType; label: string }> = [
+  { value: 'CHILD', label: 'Hijo' },
+  { value: 'SPOUSE', label: 'Cónyuge' },
+  { value: 'TUTOR', label: 'Tutor' },
+];
+
 export function PayrollEmployeeForm({
   mode,
   initialValues,
@@ -162,6 +204,8 @@ export function PayrollEmployeeForm({
     initialValues ? employeeToFormValues(initialValues) : EMPTY_VALUES,
   );
   const [error, setError] = useState<string | null>(null);
+
+  const hasActivePositions = (positionsQuery.data ?? []).some((p) => p.isActive);
 
   const locationOptions = useMemo(() => {
     const options = locationRows
@@ -299,6 +343,26 @@ export function PayrollEmployeeForm({
   const update = (patch: Partial<PayrollEmployeeFormValues>) =>
     setValues((prev) => ({ ...prev, ...patch }));
 
+  const updateBeneficiary = (index: number, patch: Partial<BeneficiaryFormRow>) => {
+    setValues((prev) => {
+      const next = [...prev.beneficiaries];
+      next[index] = { ...next[index], ...patch };
+      return { ...prev, beneficiaries: next };
+    });
+  };
+
+  const addBeneficiary = () =>
+    setValues((prev) => ({
+      ...prev,
+      beneficiaries: [...prev.beneficiaries, { ...EMPTY_BENEFICIARY }],
+    }));
+
+  const removeBeneficiary = (index: number) =>
+    setValues((prev) => ({
+      ...prev,
+      beneficiaries: prev.beneficiaries.filter((_, i) => i !== index),
+    }));
+
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
@@ -308,19 +372,31 @@ export function PayrollEmployeeForm({
     }
 
     if (!values.locationId.trim() || !values.roleId.trim()) {
-      setError('Sede y rol son obligatorios.');
+      setError('Áreas y rol del sistema son obligatorios.');
       return;
     }
 
-    if (!values.positionId.trim()) {
+    if (!values.costCenter) {
+      setError('Centro de Costos es obligatorio.');
+      return;
+    }
+
+    if (!values.laborClassification) {
+      setError('Clasificación mano de obra es obligatoria.');
+      return;
+    }
+
+    if (hasActivePositions && !values.positionId.trim()) {
       setError('Cargo es obligatorio.');
       return;
     }
 
-    const areaFromPosition = selectedPosition?.area?.trim() ?? '';
-    if (!areaFromPosition) {
-      setError('El cargo seleccionado no tiene área configurada.');
-      return;
+    if (hasActivePositions) {
+      const areaFromPosition = selectedPosition?.area?.trim() ?? '';
+      if (!areaFromPosition) {
+        setError('El cargo seleccionado no tiene área configurada.');
+        return;
+      }
     }
 
     const salary = Number(values.salaryAmount);
@@ -329,13 +405,37 @@ export function PayrollEmployeeForm({
       return;
     }
 
+    if (values.nonSalaryAmount !== '') {
+      const nsa = Number(values.nonSalaryAmount);
+      if (!Number.isFinite(nsa) || nsa < 0) {
+        setError('El valor no salarial debe ser un número positivo.');
+        return;
+      }
+    }
+
     const missingCatalogField = REQUIRED_CATALOG_FIELDS.find((field) => !values[field.key].trim());
     if (missingCatalogField) {
       setError(`${missingCatalogField.label} es obligatorio.`);
       return;
     }
 
+    for (let i = 0; i < values.beneficiaries.length; i++) {
+      const b = values.beneficiaries[i];
+      if (!b.fullName.trim()) {
+        setError(`Beneficiario ${i + 1}: el nombre completo es obligatorio.`);
+        return;
+      }
+      const age = Number(b.age);
+      if (!Number.isInteger(age) || age < 0 || age > 99) {
+        setError(`Beneficiario ${i + 1}: la edad debe ser entre 0 y 99.`);
+        return;
+      }
+    }
+
     setError(null);
+    const areaFromPosition = hasActivePositions
+      ? (selectedPosition?.area?.trim() ?? '')
+      : values.area;
     onSubmit({
       ...values,
       area: areaFromPosition,
@@ -364,6 +464,7 @@ export function PayrollEmployeeForm({
           </p>
         ) : null}
         <div className={styles.formGrid}>
+          {/* ── Datos personales ─────────────────────────────────────────── */}
           <div className={styles.field}>
             <span className={styles.fieldLabel}>Tipo de documento</span>
             <RecetaFilterSelect
@@ -403,10 +504,32 @@ export function PayrollEmployeeForm({
               onChange={(event) => update({ name: event.target.value })}
             />
           </label>
+          <label className={styles.field}>
+            <span className={styles.fieldLabel}>Barrio</span>
+            <input
+              aria-label="Barrio"
+              className={styles.input}
+              maxLength={100}
+              value={values.barrio}
+              onChange={(event) => update({ barrio: event.target.value })}
+            />
+          </label>
+          <label className={styles.field}>
+            <span className={styles.fieldLabel}>Localidad / Ciudad</span>
+            <input
+              aria-label="Localidad"
+              className={styles.input}
+              maxLength={100}
+              value={values.localidad}
+              onChange={(event) => update({ localidad: event.target.value })}
+            />
+          </label>
+
+          {/* ── Rol del sistema (auth) y clasificación operacional ────────── */}
           <div className={styles.field}>
-            <span className={styles.fieldLabel}>Rol *</span>
+            <span className={styles.fieldLabel}>Rol del sistema *</span>
             <RecetaFilterSelect
-              aria-label="Rol"
+              aria-label="Rol del sistema"
               options={roleSelectOptions}
               value={values.roleId}
               disabled={rolesQuery.isLoading && !roles}
@@ -417,14 +540,25 @@ export function PayrollEmployeeForm({
             />
           </div>
           <div className={styles.field}>
-            <span className={styles.fieldLabel}>Sede *</span>
+            <span className={styles.fieldLabel}>Centro de Costos *</span>
             <RecetaFilterSelect
-              aria-label="Sede"
+              aria-label="Centro de Costos"
+              options={COST_CENTER_OPTIONS}
+              value={values.costCenter}
+              onChange={(value) => update({ costCenter: value as CostCenter })}
+              theme={theme}
+              size="md"
+            />
+          </div>
+          <div className={styles.field}>
+            <span className={styles.fieldLabel}>Áreas *</span>
+            <RecetaFilterSelect
+              aria-label="Áreas"
               options={locationSelectOptions}
               value={values.locationId}
               disabled={locationsQuery.isLoading && !locations}
               placeholder={
-                locationsQuery.isLoading && !locations ? 'Cargando sedes...' : 'Seleccionar sede'
+                locationsQuery.isLoading && !locations ? 'Cargando áreas...' : 'Seleccionar área'
               }
               onChange={(value) => update({ locationId: value })}
               theme={theme}
@@ -432,42 +566,70 @@ export function PayrollEmployeeForm({
             />
           </div>
           <div className={styles.field}>
-            <span className={styles.fieldLabel}>Cargo *</span>
+            <span className={styles.fieldLabel}>Clasificación mano de obra *</span>
             <RecetaFilterSelect
-              aria-label="Cargo"
-              options={positionSelectOptions}
-              value={values.positionId}
-              disabled={positionsQuery.isLoading}
-              placeholder={
-                positionsQuery.isLoading
-                  ? 'Cargando cargos...'
-                  : positionsQuery.isError
-                    ? 'Error al cargar cargos'
-                    : positionSelectOptions.length === 0
-                      ? 'No hay cargos configurados'
-                      : 'Seleccionar cargo'
-              }
-              onChange={(value) => {
-                const position = (positionsQuery.data ?? []).find((item) => item.id === value);
-                update({
-                  positionId: value,
-                  area: position?.area ?? '',
-                });
-              }}
+              aria-label="Clasificación mano de obra"
+              options={LABOR_CLASSIFICATION_OPTIONS}
+              value={values.laborClassification}
+              onChange={(value) => update({ laborClassification: value as LaborClassification })}
               theme={theme}
               size="md"
             />
-            {selectedPosition ? (
-              <small>
-                Rango salarial de referencia:{' '}
-                {new Intl.NumberFormat('es-CO', {
-                  style: 'currency',
-                  currency: 'COP',
-                  maximumFractionDigits: 0,
-                }).format(selectedPosition.baseSalaryRange)}
-              </small>
-            ) : null}
           </div>
+
+          {/* ── Cargo ────────────────────────────────────────────────────── */}
+          <div className={styles.field}>
+            <span className={styles.fieldLabel}>Cargo {hasActivePositions ? '*' : ''}</span>
+            {hasActivePositions ? (
+              <>
+                <RecetaFilterSelect
+                  aria-label="Cargo"
+                  options={positionSelectOptions}
+                  value={values.positionId}
+                  disabled={positionsQuery.isLoading}
+                  placeholder={
+                    positionsQuery.isLoading
+                      ? 'Cargando cargos...'
+                      : positionsQuery.isError
+                        ? 'Error al cargar cargos'
+                        : 'Seleccionar cargo'
+                  }
+                  onChange={(value) => {
+                    const position = (positionsQuery.data ?? []).find((item) => item.id === value);
+                    update({
+                      positionId: value,
+                      area: position?.area ?? '',
+                    });
+                  }}
+                  theme={theme}
+                  size="md"
+                />
+                {selectedPosition ? (
+                  <small>
+                    Rango salarial de referencia:{' '}
+                    {new Intl.NumberFormat('es-CO', {
+                      style: 'currency',
+                      currency: 'COP',
+                      maximumFractionDigits: 0,
+                    }).format(selectedPosition.baseSalaryRange)}
+                  </small>
+                ) : null}
+              </>
+            ) : (
+              <>
+                <input
+                  aria-label="Cargo"
+                  className={styles.input}
+                  value={values.area}
+                  placeholder="Ej: Administrador"
+                  onChange={(event) => update({ area: event.target.value, positionId: '' })}
+                />
+                <small className={styles.fieldHint}>Lista en configuración</small>
+              </>
+            )}
+          </div>
+
+          {/* ── Departamento ─────────────────────────────────────────────── */}
           <div className={styles.field}>
             <span className={styles.fieldLabel}>Departamento *</span>
             <RecetaFilterSelect
@@ -481,6 +643,8 @@ export function PayrollEmployeeForm({
               size="md"
             />
           </div>
+
+          {/* ── Contrato ─────────────────────────────────────────────────── */}
           <div className={styles.field}>
             <span className={styles.fieldLabel}>Tipo de contrato</span>
             <RecetaFilterSelect
@@ -519,6 +683,8 @@ export function PayrollEmployeeForm({
               onChange={(event) => update({ contractEnd: event.target.value })}
             />
           </label>
+
+          {/* ── Salario ──────────────────────────────────────────────────── */}
           <div className={styles.field}>
             <span className={styles.fieldLabel}>Tipo de salario</span>
             <RecetaFilterSelect
@@ -541,6 +707,21 @@ export function PayrollEmployeeForm({
               onChange={(event) => update({ salaryAmount: event.target.value })}
             />
           </label>
+          <label className={styles.field}>
+            <span className={styles.fieldLabel}>No salariales (COP)</span>
+            <input
+              aria-label="No salariales"
+              className={styles.input}
+              type="number"
+              min="0"
+              step="0.01"
+              value={values.nonSalaryAmount}
+              placeholder="0.00"
+              onChange={(event) => update({ nonSalaryAmount: event.target.value })}
+            />
+          </label>
+
+          {/* ── Seguridad social ─────────────────────────────────────────── */}
           <div className={styles.field}>
             <span className={styles.fieldLabel}>EPS *</span>
             <RecetaFilterSelect
@@ -618,6 +799,95 @@ export function PayrollEmployeeForm({
             />
           </div>
         </div>
+
+        {/* ── Beneficiarios ──────────────────────────────────────────────── */}
+        <section className={styles.beneficiariesSection}>
+          <div className={styles.beneficiariesHeader}>
+            <span className={styles.beneficiariesTitle}>Beneficiarios</span>
+            <button type="button" className={styles.buttonSecondary} onClick={addBeneficiary}>
+              + Agregar beneficiario
+            </button>
+          </div>
+          {values.beneficiaries.length > 0 ? (
+            <div className={styles.beneficiaryList}>
+              <div className={styles.beneficiaryHeader}>
+                <span>Tipo</span>
+                <span>Nombre completo</span>
+                <span>Edad</span>
+                <span />
+              </div>
+              {values.beneficiaries.map((b, index) => (
+                <div key={index} className={styles.beneficiaryRow}>
+                  <div>
+                    <RecetaFilterSelect
+                      aria-label={`Tipo beneficiario ${index + 1}`}
+                      options={BENEFICIARY_TYPE_OPTIONS}
+                      value={b.relationshipType}
+                      onChange={(value) =>
+                        updateBeneficiary(index, {
+                          relationshipType: value as BeneficiaryRelationshipType,
+                        })
+                      }
+                      theme={theme}
+                      size="sm"
+                    />
+                  </div>
+                  <div>
+                    <input
+                      aria-label={`Nombre beneficiario ${index + 1}`}
+                      className={styles.input}
+                      value={b.fullName}
+                      placeholder="Nombre completo"
+                      onChange={(event) =>
+                        updateBeneficiary(index, { fullName: event.target.value })
+                      }
+                    />
+                  </div>
+                  <div>
+                    <input
+                      aria-label={`Edad beneficiario ${index + 1}`}
+                      className={styles.input}
+                      type="number"
+                      min="0"
+                      max="99"
+                      value={b.age}
+                      placeholder="0"
+                      onChange={(event) => updateBeneficiary(index, { age: event.target.value })}
+                    />
+                  </div>
+                  <div className={styles.beneficiaryRemoveCell}>
+                    <button
+                      type="button"
+                      className={styles.btnRemove}
+                      aria-label={`Eliminar beneficiario ${index + 1}`}
+                      onClick={() => removeBeneficiary(index)}
+                    >
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M3 6h18" />
+                        <path d="M8 6V4h8v2" />
+                        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                        <line x1="10" y1="11" x2="10" y2="17" />
+                        <line x1="14" y1="11" x2="14" y2="17" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className={styles.formHint}>Sin beneficiarios registrados.</p>
+          )}
+        </section>
+
         {error ? <p className={styles.error}>{error}</p> : null}
         <p className={styles.formHint}>
           Los campos con * son obligatorios para crear y actualizar.

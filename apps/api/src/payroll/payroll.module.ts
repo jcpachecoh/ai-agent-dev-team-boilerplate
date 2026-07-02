@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module';
 import { PrismaModule } from '../prisma/prisma.module';
+import { AuditModule } from '../audit/audit.module';
+import { EmployeeSocialProfileModule } from '../employee-social-profile/employee-social-profile.module';
 import { PayrollController } from './controller/payroll.controller';
 import { EmployeeCatalogController } from './controller/employee-catalog.controller';
 import { EmployeePositionsController } from './controller/employee-positions.controller';
@@ -15,7 +17,7 @@ import { EmployeePositionsResolver } from './resolver/employee-positions.resolve
 import { PayrollCalculationService } from './service/payroll-calculation.service';
 
 @Module({
-  imports: [PrismaModule, AuthModule],
+  imports: [PrismaModule, AuthModule, AuditModule, EmployeeSocialProfileModule],
   controllers: [PayrollController, EmployeeCatalogController, EmployeePositionsController],
   providers: [
     PayrollService,

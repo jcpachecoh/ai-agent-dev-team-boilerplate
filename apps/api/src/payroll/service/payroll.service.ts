@@ -6,7 +6,14 @@ import {
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
-import { EmployeeContractType, SalaryType, EmployeeDetails, User, Prisma } from '@prisma/client';
+import {
+  EmployeeContractType,
+  SalaryType,
+  EmployeeDetails,
+  User,
+  Prisma,
+  AuditAction,
+} from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { SMLV_2025, TRANSPORT_SUBSIDY_THRESHOLD } from '../payroll.constants';
@@ -17,8 +24,27 @@ import type { UpdateEmployeePayload } from '../interfaces/payroll.interfaces';
 import { decimalToNumber } from '../../common/utils/decimal.util';
 import { StorageService } from '../../storage/service/storage.service';
 import { StorageDomain } from '../../storage/enums/storage.enums';
+import { AuditService } from '../../audit/service/audit.service';
+import { EmployeeSocialProfileService } from '../../employee-social-profile/service/employee-social-profile.service';
+import type { CreateBeneficiaryDto } from '../controller/dto/create-beneficiary.dto';
 
 const SALT_ROUNDS = 12;
+
+// Converts a Prisma model record to a plain JSON-serializable object safe for AuditLog.
+// JSON.stringify handles Decimal via Decimal.toJSON() and Date via the replacer.
+function toAuditJson(value: unknown): Record<string, unknown> {
+  return JSON.parse(
+    JSON.stringify(value, (_, v) => (v instanceof Date ? v.toISOString() : v)),
+  ) as Record<string, unknown>;
+}
+
+function ageToApproxBirthDate(age: number): Date {
+  const d = new Date();
+  d.setFullYear(d.getFullYear() - age);
+  d.setMonth(0);
+  d.setDate(1);
+  return d;
+}
 
 @Injectable()
 export class PayrollService implements IPayrollService {
@@ -28,6 +54,8 @@ export class PayrollService implements IPayrollService {
     private readonly payrollRepository: PayrollRepository,
     private readonly employeePositionsService: EmployeePositionsService,
     private readonly storageService: StorageService,
+    private readonly auditService: AuditService,
+    private readonly socialProfileService: EmployeeSocialProfileService,
   ) {}
 
   async create(
@@ -83,6 +111,11 @@ export class PayrollService implements IPayrollService {
         arlName: data.arlName,
         arlRiskLevel: data.arlRiskLevel,
         cajaCompensacion: data.cajaCompensacion,
+        barrio: data.barrio,
+        localidad: data.localidad,
+        costCenter: data.costCenter,
+        laborClassification: data.laborClassification,
+        nonSalaryAmount: data.nonSalaryAmount,
         hasTransportSubsidy,
       });
 
@@ -93,13 +126,23 @@ export class PayrollService implements IPayrollService {
           positionId,
           changedBy,
         );
-        const refreshed = await this.payrollRepository.findByUserId(employee.userId);
-        if (refreshed) {
-          return refreshed;
-        }
       }
 
-      return employee;
+      await this.syncBeneficiaries(tenantId, employee.id, data.beneficiaries ?? []);
+
+      const refreshed = await this.payrollRepository.findByUserId(employee.userId);
+      const result = refreshed ?? employee;
+
+      await this.auditService.log({
+        tenantId,
+        action: AuditAction.CREATE,
+        entityType: 'EmployeeDetails',
+        entityId: result.id,
+        actorUserId: changedBy ?? null,
+        newValue: toAuditJson(result),
+      });
+
+      return result;
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
         throw new ConflictException('Email or Cédula already registered');
@@ -225,13 +268,26 @@ export class PayrollService implements IPayrollService {
           nextPositionId,
           changedBy,
         );
-        const refreshed = await this.payrollRepository.findByUserId(userId);
-        if (refreshed) {
-          return refreshed;
-        }
       }
 
-      return updated;
+      if (data.beneficiaries !== undefined) {
+        await this.syncBeneficiaries(tenantId, employee.id, data.beneficiaries ?? []);
+      }
+
+      const refreshed = await this.payrollRepository.findByUserId(userId);
+      const result = refreshed ?? updated;
+
+      await this.auditService.log({
+        tenantId,
+        action: AuditAction.UPDATE,
+        entityType: 'EmployeeDetails',
+        entityId: employee.id,
+        actorUserId: changedBy ?? null,
+        oldValue: toAuditJson(employee),
+        newValue: toAuditJson(result),
+      });
+
+      return result;
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
         throw new ConflictException('Email or Cédula already registered');
@@ -350,6 +406,25 @@ export class PayrollService implements IPayrollService {
     return salaryAmount <= TRANSPORT_SUBSIDY_THRESHOLD;
   }
 
+  private async syncBeneficiaries(
+    tenantId: string,
+    employeeDetailsId: string,
+    beneficiaries: CreateBeneficiaryDto[],
+  ): Promise<void> {
+    const existing = await this.socialProfileService.findAllByEmployee(tenantId, employeeDetailsId);
+    for (const profile of existing) {
+      await this.socialProfileService.remove(tenantId, profile.id, employeeDetailsId);
+    }
+    for (const b of beneficiaries) {
+      await this.socialProfileService.create(tenantId, employeeDetailsId, {
+        fullName: b.fullName,
+        relationshipType: b.relationshipType,
+        birthDate: ageToApproxBirthDate(b.age),
+        isDependent: true,
+      });
+    }
+  }
+
   private logAndThrow(tenantId: string, message: string, userId?: string) {
     const context = `tenantId=${tenantId}${userId ? `, userId=${userId}` : ''}`;
     this.logger.warn(`Validation error: ${message} (${context})`);
@@ -411,6 +486,11 @@ export class PayrollService implements IPayrollService {
       'arlName',
       'arlRiskLevel',
       'cajaCompensacion',
+      'barrio',
+      'localidad',
+      'costCenter',
+      'laborClassification',
+      'nonSalaryAmount',
       'isActive',
       'photoStorageObjectId',
     ] as const;
