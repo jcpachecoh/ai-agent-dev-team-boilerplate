@@ -1,0 +1,94 @@
+@use '../../../styles/abstracts/variables' as *;
+
+$cargo-accent: #f0c040;
+$cargo-secondary: #818cf8;
+$cargo-teal: #2ec4a0;
+$cargo-purple: #818cf8;
+$cargo-amber: #f0c040;
+$cargo-cyan: #14b8a6;
+$cargo-coral: #e05a44;
+$cargo-blue: #38bdf8;
+
+$cargo-dark-page: #0a0a0a;
+$cargo-dark-surface: #111111;
+$cargo-dark-surface-raised: #141414;
+$cargo-dark-input: #0d0d0d;
+$cargo-dark-border: #2e2e2e;
+$cargo-dark-border-subtle: #1a1a1a;
+$cargo-dark-text: #f5f5f0;
+$cargo-dark-muted: #888888;
+
+@mixin cargo-theme-dark {
+  --cargo-page: #{$cargo-dark-page};
+  --cargo-surface: #{$cargo-dark-surface};
+  --cargo-surface-raised: #{$cargo-dark-surface-raised};
+  --cargo-input: #{$cargo-dark-input};
+  --cargo-border: #{$cargo-dark-border};
+  --cargo-border-subtle: #{$cargo-dark-border-subtle};
+  --cargo-text: #{$cargo-dark-text};
+  --cargo-text-secondary: #bbbbbb;
+  --cargo-muted: #{$cargo-dark-muted};
+  --cargo-subtle: #666666;
+  --cargo-faint: #555555;
+  --cargo-dim: #444444;
+  --cargo-placeholder: #{rgba($cargo-dark-text, 0.5)};
+  --cargo-hover: #{rgba($color-white, 0.06)};
+  --cargo-overlay: #{rgba($color-black, 0.72)};
+  --cargo-accent: #{$cargo-accent};
+  --cargo-accent-soft: #{rgba($cargo-accent, 0.12)};
+  --cargo-accent-border: #{rgba($cargo-accent, 0.4)};
+  --cargo-secondary: #{$cargo-secondary};
+  --cargo-secondary-soft: #{rgba($cargo-secondary, 0.08)};
+  --cargo-secondary-border: #{rgba($cargo-secondary, 0.25)};
+  --cargo-teal: #{$cargo-teal};
+  --cargo-teal-soft: #{rgba($cargo-teal, 0.1)};
+  --cargo-teal-border: #{rgba($cargo-teal, 0.31)};
+  --cargo-purple: #{$cargo-purple};
+  --cargo-purple-soft: #{rgba($cargo-purple, 0.06)};
+  --cargo-purple-border: #{rgba($cargo-purple, 0.19)};
+}
+
+@mixin cargo-theme-light {
+  --cargo-page: #f6f4ef;
+  --cargo-surface: #ffffff;
+  --cargo-surface-raised: #fbfaf6;
+  --cargo-input: #fbfaf6;
+  --cargo-border: #{rgba($color-black, 0.12)};
+  --cargo-border-subtle: #{rgba($color-black, 0.08)};
+  --cargo-text: #{$color-gray-900};
+  --cargo-text-secondary: #{$color-gray-700};
+  --cargo-muted: #{$color-gray-600};
+  --cargo-subtle: #{$color-gray-500};
+  --cargo-faint: #{$color-gray-500};
+  --cargo-dim: #{$color-gray-400};
+  --cargo-placeholder: #{rgba($color-black, 0.45)};
+  --cargo-hover: #{rgba($color-black, 0.04)};
+  --cargo-overlay: #{rgba($color-black, 0.45)};
+  --cargo-accent: #{$cargo-accent};
+  --cargo-accent-soft: #{rgba($cargo-accent, 0.12)};
+  --cargo-accent-border: #{rgba($cargo-accent, 0.4)};
+  --cargo-secondary: #{$cargo-secondary};
+  --cargo-secondary-soft: #{rgba($cargo-secondary, 0.1)};
+  --cargo-secondary-border: #{rgba($cargo-secondary, 0.3)};
+  --cargo-teal: #{$cargo-teal};
+  --cargo-teal-soft: #{rgba($cargo-teal, 0.1)};
+  --cargo-teal-border: #{rgba($cargo-teal, 0.35)};
+  --cargo-purple: #{$cargo-purple};
+  --cargo-purple-soft: #{rgba($cargo-purple, 0.08)};
+  --cargo-purple-border: #{rgba($cargo-purple, 0.25)};
+}
+
+@mixin cargo-focus-ring {
+  outline: 2px solid rgba($cargo-accent, 0.65);
+  outline-offset: 2px;
+}
+
+@mixin cargo-theme-classes {
+  &.theme--dark {
+    @include cargo-theme-dark;
+  }
+
+  &.theme--light {
+    @include cargo-theme-light;
+  }
+}

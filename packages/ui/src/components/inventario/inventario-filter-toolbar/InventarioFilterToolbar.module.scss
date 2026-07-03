@@ -1,0 +1,78 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/inventario-theme' as inventario;
+
+.toolbar {
+  @include inventario.inventario-theme-classes;
+  @include inventario.inventario-size-vars;
+
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 16px;
+  border: $border-width solid var(--inventario-border);
+  border-radius: var(--control-radius);
+  background: var(--inventario-surface);
+  box-sizing: border-box;
+}
+
+.search {
+  flex: 1 1 42%;
+  min-width: 200px;
+  --control-width: 100%;
+}
+
+.filterSlot {
+  flex: 0 1 260px;
+  min-width: 160px;
+  --control-width: 100%;
+}
+
+.checkbox {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: $font-weight-medium;
+  color: var(--inventario-text);
+  cursor: pointer;
+  white-space: nowrap;
+
+  input {
+    width: 13px;
+    height: 13px;
+    accent-color: inventario.$inventario-info;
+  }
+}
+
+.size--sm {
+  gap: 8px;
+  padding: 12px;
+}
+
+.size--sm .filterSlot {
+  flex-basis: 200px;
+  min-width: 140px;
+}
+
+@media (max-width: 960px) {
+  .toolbar {
+    flex-wrap: wrap;
+  }
+
+  .search {
+    flex: 1 1 100%;
+  }
+
+  .filterSlot {
+    flex: 1 1 calc(50% - 6px);
+  }
+
+  .checkbox {
+    margin-left: 0;
+  }
+}

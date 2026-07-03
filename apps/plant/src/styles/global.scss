@@ -1,0 +1,92 @@
+@use 'tokens' as *;
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: $font-size-base;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  background: $color-operator-bg;
+  color: $color-operator-text;
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+  line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+}
+
+html[data-theme='light'] body,
+html[data-theme='light'] .screen-operator {
+  background: #f2f0ea;
+  color: #2f2b27;
+}
+
+.screen-operator {
+  min-height: 100vh;
+  background: $color-operator-bg;
+  color: $color-operator-text;
+}
+
+.screen-supervisor {
+  min-height: 100vh;
+  background: #141a22;
+  color: $color-operator-text;
+}
+
+.touch-target {
+  @include touch-target;
+}
+
+.keypad-key {
+  @include keypad-key;
+}
+
+.btn-operator-primary {
+  min-height: $operator-button-min-h;
+  @include touch-target;
+}
+
+.app-shell {
+  padding: 1.5rem;
+
+  &__title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0 0 0.5rem;
+  }
+
+  &__meta {
+    font-size: 1rem;
+    opacity: 0.85;
+    margin: 0.25rem 0;
+  }
+
+  &__badge {
+    display: inline-block;
+    margin-top: 1rem;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    background: rgb(61 158 255 / 15%);
+    color: $color-accent;
+  }
+
+  &__badge--offline {
+    background: rgb(232 93 74 / 15%);
+    color: $color-danger;
+  }
+}

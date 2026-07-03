@@ -135,7 +135,7 @@ git commit -m "feat: implement database schema (automated)"
 ### Typical Tech Stack (from ARCHITECTURE.md)
 
 ```
-Frontend:  Next.js + TailwindCSS
+Frontend:  Next.js + SASS/SCSS Modules (7-1 architecture) + Storybook
 Backend:   NestJS or Node.js
 Database:  PostgreSQL + Prisma ORM
 DevOps:    Docker + GitHub Actions
@@ -530,11 +530,11 @@ This repository is an **AI Software Factory** — a reusable framework where AI 
 
 The factory is built on top of the multi-agent architecture described below. It adds three new layers:
 
-| Layer | Location | Purpose |
-|---|---|---|
-| **Orchestrator** | `factory/orchestrator.md` | Defines the end-to-end collaboration workflow across all agents |
-| **Task Execution Engine** | `factory/task-executor.md` | Explains how task files in `tasks/` trigger specific agents |
-| **Shared Memory** | `memory/` | Stores project context, decisions, and progress so all agents stay aligned |
+| Layer                     | Location                   | Purpose                                                                    |
+| ------------------------- | -------------------------- | -------------------------------------------------------------------------- |
+| **Orchestrator**          | `factory/orchestrator.md`  | Defines the end-to-end collaboration workflow across all agents            |
+| **Task Execution Engine** | `factory/task-executor.md` | Explains how task files in `tasks/` trigger specific agents                |
+| **Shared Memory**         | `memory/`                  | Stores project context, decisions, and progress so all agents stay aligned |
 
 ### Quick Start with the Factory
 
@@ -570,14 +570,14 @@ This repository provides a collaborative **multi-agent architecture** for AI-ass
 
 ### Agent Overview
 
-| Agent | Folder | Responsibility |
-|-------|--------|----------------|
-| **Product Agent** | `agents/product-agent/` | Defines product requirements and generates specs |
-| **Backend Agent** | `agents/backend-agent/` | Builds APIs, services, and backend architecture |
-| **Frontend Agent** | `agents/frontend-agent/` | Builds UI/UX and connects frontend to APIs |
-| **Data Agent** | `agents/data-agent/` | Manages datasets, ETL scripts, and data pipelines |
-| **Testing Agent** | `agents/testing-agent/` | Writes tests and validates acceptance criteria |
-| **DevOps Agent** | `agents/devops-agent/` | Handles Docker, CI/CD, and cloud deployment |
+| Agent                  | Folder                       | Responsibility                                        |
+| ---------------------- | ---------------------------- | ----------------------------------------------------- |
+| **Product Agent**      | `agents/product-agent/`      | Defines product requirements and generates specs      |
+| **Backend Agent**      | `agents/backend-agent/`      | Builds APIs, services, and backend architecture       |
+| **Frontend Agent**     | `agents/frontend-agent/`     | Builds UI/UX and connects frontend to APIs            |
+| **Data Agent**         | `agents/data-agent/`         | Manages datasets, ETL scripts, and data pipelines     |
+| **Testing Agent**      | `agents/testing-agent/`      | Writes tests and validates acceptance criteria        |
+| **DevOps Agent**       | `agents/devops-agent/`       | Handles Docker, CI/CD, and cloud deployment           |
 | **Architecture Agent** | `agents/architecture-agent/` | Defines system architecture and reviews agent outputs |
 
 ### How Agents Collaborate

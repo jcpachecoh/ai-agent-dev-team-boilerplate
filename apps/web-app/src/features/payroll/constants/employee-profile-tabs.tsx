@@ -1,0 +1,99 @@
+import {
+  Building2,
+  Clock3,
+  Landmark,
+  Receipt,
+  ShieldCheck,
+  UserRound,
+  type LucideIcon,
+} from 'lucide-react';
+import type { ReactNode } from 'react';
+
+export type PayrollEmployeeProfileTabId =
+  | 'personal'
+  | 'payments'
+  | 'social-security'
+  | 'attendance'
+  | 'bank-accounts'
+  | 'taxes';
+
+export interface PayrollEmployeeProfileTabDefinition {
+  id: PayrollEmployeeProfileTabId;
+  label: string;
+  icon: ReactNode;
+  placeholderTitle: string;
+  placeholderDescription: string;
+}
+
+const iconProps = { size: 14, 'aria-hidden': true as const };
+
+export const PAYROLL_EMPLOYEE_PROFILE_TABS: PayrollEmployeeProfileTabDefinition[] = [
+  {
+    id: 'personal',
+    label: 'Datos personales',
+    icon: <UserRound {...iconProps} />,
+    placeholderTitle: 'Datos personales',
+    placeholderDescription:
+      'Próximamente — nombre, documento, contacto, dirección y foto del colaborador.',
+  },
+
+  {
+    id: 'social-security',
+    label: 'Seg. social',
+    icon: <ShieldCheck {...iconProps} />,
+    placeholderTitle: 'Seguridad social',
+    placeholderDescription:
+      'Próximamente — afiliaciones a salud, pensión, ARL y caja de compensación.',
+  },
+  {
+    id: 'attendance',
+    label: 'Asistencia',
+    icon: <Clock3 {...iconProps} />,
+    placeholderTitle: 'Historial de asistencia',
+    placeholderDescription:
+      'Próximamente — registros de entrada/salida, ausencias, tardanzas y vacaciones.',
+  },
+  {
+    id: 'bank-accounts',
+    label: 'Bancos',
+    icon: <Landmark {...iconProps} />,
+    placeholderTitle: 'Cuentas bancarias',
+    placeholderDescription:
+      'Próximamente — cuentas para dispersión de nómina con datos enmascarados.',
+  },
+  {
+    id: 'taxes',
+    label: 'Impuestos',
+    icon: <Building2 {...iconProps} />,
+    placeholderTitle: 'Información de impuestos',
+    placeholderDescription: 'Próximamente — retención en la fuente y certificados tributarios.',
+  },
+  {
+    id: 'payments',
+    label: 'Pagos',
+    icon: <Receipt {...iconProps} />,
+    placeholderTitle: 'Pagos y liquidaciones',
+    placeholderDescription:
+      'Próximamente — historial de pagos, salario base, novedades y comprobantes.',
+  },
+];
+
+export const PAYROLL_EMPLOYEE_PROFILE_TAB_IDS = PAYROLL_EMPLOYEE_PROFILE_TABS.map((tab) => tab.id);
+
+export function parsePayrollEmployeeProfileTab(value: string | null): PayrollEmployeeProfileTabId {
+  if (value && PAYROLL_EMPLOYEE_PROFILE_TAB_IDS.includes(value as PayrollEmployeeProfileTabId)) {
+    return value as PayrollEmployeeProfileTabId;
+  }
+  return 'personal';
+}
+
+export function getPayrollEmployeeProfileTabDefinition(
+  tabId: PayrollEmployeeProfileTabId,
+): PayrollEmployeeProfileTabDefinition {
+  return (
+    PAYROLL_EMPLOYEE_PROFILE_TABS.find((tab) => tab.id === tabId) ??
+    PAYROLL_EMPLOYEE_PROFILE_TABS[0]!
+  );
+}
+
+export type PayrollEmployeeProfileTabIcon = LucideIcon;

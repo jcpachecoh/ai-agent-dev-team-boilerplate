@@ -1,0 +1,59 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../../../styles/abstracts/page-header-action' as pha;
+@use '../shared/rol-theme' as rol;
+
+.button {
+  @include rol.rol-theme-classes;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: var(--rol-accent);
+  color: #fff;
+  font-family: 'IBM Plex Mono', $font-family-mono, monospace;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 160ms ease;
+
+  &:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--rol-accent) 85%, black);
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  &:focus-visible {
+    @include rol.rol-focus-ring;
+  }
+}
+
+.size--sm {
+  min-height: 32px;
+  padding: 8px 14px;
+  font-size: 0.6875rem;
+}
+
+.size--md {
+  @include pha.page-header-action-size-md;
+}
+
+.size--md .icon svg {
+  @include pha.page-header-action-icon-md;
+}
+
+.icon {
+  display: inline-flex;
+
+  svg {
+    width: 13px;
+    height: 13px;
+  }
+}

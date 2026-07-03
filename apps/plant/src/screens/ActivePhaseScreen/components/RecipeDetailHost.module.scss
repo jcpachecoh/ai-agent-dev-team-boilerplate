@@ -1,0 +1,53 @@
+.state {
+  display: grid;
+  place-content: center;
+  gap: 1rem;
+  min-height: 100%;
+  padding: 2rem;
+  text-align: center;
+}
+
+.finishOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  background: rgb(0 0 0 / 55%);
+}
+
+.finishDialog {
+  width: min(28rem, calc(100vw - 2rem));
+  padding: 1.5rem;
+  border-radius: 0.75rem;
+  background: #1a1a1a;
+  color: #f5f5f5;
+}
+
+.finishDialog h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.25rem;
+}
+
+.finishDialog p {
+  margin: 0 0 1.25rem;
+  color: #c7c7c7;
+}
+
+.finishActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.finishActions button {
+  padding: 0.5rem 1rem;
+  border: 0;
+  border-radius: 0.5rem;
+  cursor: pointer;
+}
+
+.finishActions button:last-child {
+  background: #e85d04;
+  color: #fff;
+}

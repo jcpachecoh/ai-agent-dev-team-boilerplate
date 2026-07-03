@@ -1,0 +1,67 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/inventario-theme' as inventario;
+
+.search {
+  @include inventario.inventario-theme-classes;
+  @include inventario.inventario-size-vars;
+  @include inventario.inventario-control-base;
+
+  position: relative;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+
+.input {
+  width: 100%;
+  min-height: calc(var(--control-min-height) - 2px);
+  padding: var(--control-padding-y)
+    calc(var(--control-padding-x) + var(--control-icon-size) + var(--control-gap));
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--inventario-text);
+  font-size: var(--control-font-size);
+
+  &::placeholder {
+    color: color-mix(in srgb, var(--inventario-muted) 75%, transparent);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+}
+
+.searchIcon,
+.clearButton svg {
+  width: var(--control-icon-size);
+  height: var(--control-icon-size);
+}
+
+.searchIcon {
+  position: absolute;
+  left: var(--control-padding-x);
+  color: var(--inventario-muted);
+  pointer-events: none;
+}
+
+.clearButton {
+  position: absolute;
+  right: calc(var(--control-padding-x) - 0.25rem);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: $border-radius-sm;
+  background: transparent;
+  color: var(--inventario-muted);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--inventario-hover);
+    color: var(--inventario-text);
+  }
+}

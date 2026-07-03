@@ -1,0 +1,113 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/field-ops-theme' as fo;
+
+.panel {
+  width: min(100%, var(--display-width));
+  min-height: var(--display-min-height);
+  border-radius: $border-radius-lg;
+  border: $border-width solid var(--fo-border);
+  background-color: var(--fo-surface-elevated);
+  overflow: hidden;
+  font-family: $font-family-base;
+  box-sizing: border-box;
+}
+
+.header {
+  padding: var(--header-padding);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--title-size);
+  font-weight: $font-weight-semibold;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--fo-text-secondary);
+}
+
+.list {
+  margin: 0;
+  padding: 0 var(--body-padding-x) var(--body-padding-bottom);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-md;
+  padding: var(--row-padding-y) 0;
+  border-bottom: $border-width solid var(--fo-border);
+
+  &:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+}
+
+.label {
+  margin: 0;
+  font-size: var(--row-label-size);
+  color: var(--fo-text-muted);
+  font-weight: $font-weight-medium;
+}
+
+.value {
+  margin: 0;
+  font-size: var(--row-value-size);
+  font-weight: $font-weight-semibold;
+  color: var(--fo-text-primary);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.tone--gold {
+  color: fo.$field-ops-gold;
+}
+
+.tone--success {
+  color: fo.$field-ops-teal;
+}
+
+.size--sm {
+  --display-width: 220px;
+  --display-min-height: 140px;
+  --header-padding: #{$spacing-sm} #{$spacing-md} #{$spacing-xs};
+  --body-padding-x: #{$spacing-md};
+  --body-padding-bottom: #{$spacing-sm};
+  --title-size: 10px;
+  --row-padding-y: 6px;
+  --row-label-size: #{$font-size-xs};
+  --row-value-size: #{$font-size-xs};
+}
+
+.size--md {
+  --display-width: 320px;
+  --display-min-height: 180px;
+  --header-padding: #{$spacing-md} #{$spacing-md} #{$spacing-sm};
+  --body-padding-x: #{$spacing-md};
+  --body-padding-bottom: #{$spacing-md};
+  --title-size: #{$font-size-xs};
+  --row-padding-y: #{$spacing-xs};
+  --row-label-size: #{$font-size-sm};
+  --row-value-size: #{$font-size-sm};
+}
+
+.size--xl {
+  --display-width: 100%;
+  --display-min-height: 220px;
+  --header-padding: #{$spacing-lg} #{$spacing-lg} #{$spacing-md};
+  --body-padding-x: #{$spacing-lg};
+  --body-padding-bottom: #{$spacing-lg};
+  --title-size: #{$font-size-sm};
+  --row-padding-y: #{$spacing-sm};
+  --row-label-size: #{$font-size-base};
+  --row-value-size: #{$font-size-base};
+}
+
+.theme--dark {
+  @include fo.field-ops-theme-dark;
+}
+
+.theme--light {
+  @include fo.field-ops-theme-light;
+}

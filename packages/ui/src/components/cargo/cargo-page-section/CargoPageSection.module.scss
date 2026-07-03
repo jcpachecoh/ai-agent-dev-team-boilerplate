@@ -1,0 +1,27 @@
+@use '../shared/cargo-theme' as emp;
+
+.section {
+  @include emp.cargo-theme-classes;
+
+  width: 100%;
+  min-width: 0;
+}
+
+.variant--header,
+.variant--toolbar,
+.variant--default {
+  padding: 18px 24px;
+}
+
+.divider {
+  border-bottom: 1px solid var(--cargo-border-subtle);
+}
+
+@media (max-width: 767px) {
+  .variant--header,
+  .variant--toolbar,
+  .variant--default {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}

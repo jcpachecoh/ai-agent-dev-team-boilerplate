@@ -1,0 +1,72 @@
+@use '@/styles/tokens' as t;
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.fieldLabel {
+  font-size: t.$font-size-xs;
+  color: var(--color-text-secondary);
+  font-weight: 600;
+}
+
+.input {
+  min-height: 40px;
+  width: 100%;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--color-border);
+  border-radius: t.$border-radius-base;
+  background: var(--color-bg-surface-raised);
+  color: var(--color-text-primary);
+}
+
+.checkboxRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: t.$font-size-sm;
+  color: var(--color-text-secondary);
+}
+
+.error {
+  color: var(--color-danger);
+  font-size: t.$font-size-sm;
+}
+
+.select {
+  --control-width: 100%;
+  --control-min-height: 40px;
+  --control-padding-y: 0.5rem;
+  --control-padding-x: 0.65rem;
+  --control-gap: 0.5rem;
+  --control-radius: #{t.$border-radius-base};
+  --control-font-size: #{t.$font-size-sm};
+  --control-icon-size: 16px;
+}
+
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  padding-top: 0.25rem;
+}
+
+@media (max-width: 520px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,36 @@
+@use './tokens' as t;
+
+@mixin page-header-titles-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+@mixin page-header-title {
+  margin: 0;
+  font-family: t.$font-family-base;
+  font-size: 1.5rem;
+  font-weight: t.$font-weight-bold;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  color: var(--color-text-primary);
+}
+
+@mixin page-header-subtitle {
+  margin: 0;
+  font-family: t.$font-family-base;
+  font-size: t.$font-size-sm;
+  font-weight: t.$font-weight-normal;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}
+
+@mixin page-header-shell {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+  min-width: 0;
+}

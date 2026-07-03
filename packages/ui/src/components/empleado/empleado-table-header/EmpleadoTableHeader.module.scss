@@ -1,0 +1,82 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../../../styles/abstracts/mixins' as *;
+@use '../shared/empleado-theme' as emp;
+
+.header {
+  @include emp.empleado-theme-classes;
+  @include module-table-header-theme-colors;
+
+  display: grid;
+  grid-template-columns: var(--empleado-columns);
+  column-gap: 20px;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--empleado-border);
+  background: var(--empleado-input);
+}
+
+.cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font-family: 'IBM Plex Mono', $font-family-mono, monospace;
+  font-size: 0.56rem;
+  font-weight: $font-weight-bold;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  @include module-table-header-text-color;
+}
+
+.label {
+  min-width: 0;
+}
+
+.sortable {
+  cursor: pointer;
+
+  &:hover {
+    opacity: 0.85;
+  }
+
+  &:focus-visible {
+    @include emp.empleado-focus-ring;
+  }
+}
+
+.cellActive {
+  color: var(--empleado-accent);
+}
+
+.sortIcon {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.sortIconMuted {
+  opacity: 0.6;
+}
+
+.sortIcon svg {
+  width: 9px;
+  height: 9px;
+}
+
+.alignLeft {
+  justify-self: start;
+  text-align: left;
+}
+
+.alignCenter {
+  justify-self: center;
+  text-align: center;
+}
+
+.alignRight {
+  justify-self: end;
+  text-align: right;
+}

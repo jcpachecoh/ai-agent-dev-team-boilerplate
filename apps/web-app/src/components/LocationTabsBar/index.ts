@@ -1,0 +1,1 @@
+export { LocationTabsBar } from './LocationTabsBar';

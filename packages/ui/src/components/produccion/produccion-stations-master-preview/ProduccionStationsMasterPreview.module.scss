@@ -1,0 +1,63 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/produccion-theme' as produccion;
+.screen {
+  @include produccion.produccion-theme-classes;
+  @include produccion.produccion-size-vars;
+  width: min(100%, var(--control-width));
+  min-height: 778px;
+  background: var(--produccion-bg);
+  color: var(--produccion-text);
+}
+.contentHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px;
+  border-bottom: $border-width solid var(--produccion-border);
+  background: var(--produccion-surface);
+}
+.title {
+  flex: 1;
+  font-family: $font-family-mono;
+  font-size: 0.625rem;
+  font-weight: $font-weight-bold;
+  color: var(--produccion-muted);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.content {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  min-height: 686px;
+}
+.tableWrap {
+  min-width: 0;
+  overflow-x: auto;
+}
+.rows {
+  min-width: 900px;
+}
+.size--xl {
+  --control-width: 100%;
+}
+
+@media (width <= 980px) {
+  .content {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (width <= 720px) {
+  .contentHeader {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .tableWrap {
+    overflow-x: visible;
+  }
+
+  .rows {
+    min-width: 0;
+  }
+}

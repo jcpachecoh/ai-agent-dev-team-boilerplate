@@ -1,0 +1,119 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/asistencia-theme' as asis;
+
+.header {
+  @include asis.asistencia-theme-classes;
+
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem 1.25rem;
+  padding: 14px 16px;
+  border: 1px solid var(--asistencia-border);
+  border-radius: 6px;
+  background: var(--asistencia-surface);
+}
+
+.item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.label {
+  font-family: $font-family-mono;
+  font-size: 0.5625rem;
+  font-weight: $font-weight-bold;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--asistencia-faint);
+}
+
+.value {
+  font-size: 0.8125rem;
+  font-weight: $font-weight-semibold;
+  color: var(--asistencia-text);
+  word-break: break-word;
+}
+
+.filtersWrap {
+  @include asis.asistencia-theme-classes;
+
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.filters {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.field {
+  display: flex;
+  flex: 1 1 180px;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.fieldLabel {
+  font-size: 0.75rem;
+  font-weight: $font-weight-semibold;
+  color: var(--asistencia-muted);
+}
+
+.datePicker {
+  width: 100%;
+  --control-width: 100%;
+}
+
+.searchButton {
+  flex: 0 0 auto;
+  min-height: 40px;
+  padding: 0 18px;
+  border: none;
+  border-radius: 6px;
+  background: var(--asistencia-accent);
+  color: #fff;
+  font-size: 0.8125rem;
+  font-weight: $font-weight-bold;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+}
+
+.error {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--asistencia-coral);
+}
+
+@media (max-width: 860px) {
+  .header {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .filters {
+    flex-wrap: wrap;
+  }
+
+  .field {
+    flex: 1 1 calc(50% - 6px);
+  }
+}
+
+@media (max-width: 560px) {
+  .header {
+    grid-template-columns: 1fr;
+  }
+
+  .field {
+    flex: 1 1 100%;
+  }
+}

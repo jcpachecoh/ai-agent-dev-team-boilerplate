@@ -1,0 +1,32 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/sede-theme' as sede;
+
+.banner {
+  @include sede.sede-theme-classes;
+
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 13px 15px;
+  border: $border-width solid rgba(sede.$sede-primary, 0.2);
+  border-radius: 4px;
+  background: rgba(sede.$sede-primary, 0.05);
+  color: var(--sede-primary);
+
+  svg {
+    flex-shrink: 0;
+    width: 14px;
+    height: 14px;
+    margin-top: 2px;
+  }
+}
+
+.message {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.5;
+
+  strong {
+    font-weight: $font-weight-bold;
+  }
+}

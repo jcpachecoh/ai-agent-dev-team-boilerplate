@@ -1,0 +1,74 @@
+@use '../../../../styles/abstracts/variables' as *;
+@use '../shared/plant-dashboard-theme' as pd;
+
+.slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.85rem;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  padding: $spacing-md;
+  border: 1.5px dashed var(--pd-border-strong);
+  background: var(--pd-bg);
+  cursor: pointer;
+  font-family: 'IBM Plex Mono', $font-family-mono, monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--pd-empty-text);
+  box-sizing: border-box;
+}
+
+.theme--dark {
+  @include pd.plant-dashboard-theme-dark;
+}
+
+.theme--light {
+  @include pd.plant-dashboard-theme-light;
+}
+
+.slot:focus-visible {
+  outline: 2px solid #c8a96e;
+  outline-offset: 2px;
+}
+
+.density--full .primary {
+  font-size: 0.67rem;
+}
+
+.density--full .secondary {
+  font-size: 0.6rem;
+  color: var(--pd-empty-hint);
+}
+
+.density--compact .primary {
+  font-size: 0.6rem;
+}
+
+.density--compact .secondary {
+  font-size: 0.55rem;
+  color: var(--pd-empty-hint);
+}
+
+.iconRing {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.4rem;
+  height: 3.4rem;
+  border: 2px dashed var(--pd-border-strong);
+  border-radius: 50%;
+  color: var(--pd-empty-text);
+}
+
+.density--compact .iconRing {
+  width: 2.65rem;
+  height: 2.65rem;
+}
+
+.primary,
+.secondary {
+  font-weight: 500;
+}

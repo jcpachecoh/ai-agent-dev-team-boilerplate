@@ -1,0 +1,29 @@
+@use '@/styles/tokens' as *;
+
+.block {
+  width: 100%;
+}
+
+.state--over {
+  :global(article) {
+    border-color: rgba($color-danger, 0.55) !important;
+  }
+
+  :global([class*='value']) {
+    color: $color-danger !important;
+  }
+
+  :global([class*='progressFill']) {
+    background: linear-gradient(90deg, #a63d32 0%, $color-danger 100%) !important;
+    box-shadow: 0 0 10px rgba($color-danger, 0.4) !important;
+  }
+
+  :global([class*='progressLabel']) {
+    color: $color-danger !important;
+  }
+
+  :global([class*='tag']) {
+    border-color: rgba($color-danger, 0.65) !important;
+    color: $color-danger !important;
+  }
+}

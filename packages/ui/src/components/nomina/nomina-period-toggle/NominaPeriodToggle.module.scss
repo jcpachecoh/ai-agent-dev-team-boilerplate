@@ -1,0 +1,38 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/nomina-theme' as nomina;
+
+.root {
+  @include nomina.nomina-theme-classes;
+
+  display: inline-flex;
+  padding: 3px;
+  border: 1px solid var(--asistencia-border);
+  border-radius: 4px;
+  background: var(--asistencia-input);
+}
+
+.option {
+  min-width: 72px;
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 2px;
+  background: transparent;
+  font-family: $font-family-mono;
+  font-size: 0.5625rem;
+  font-weight: $font-weight-bold;
+  letter-spacing: 0.14em;
+  color: var(--asistencia-faint);
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.optionActive {
+  background: var(--asistencia-accent);
+  color: #fff;
+}
+
+.theme--light .optionActive {
+  color: #fff;
+}

@@ -1,0 +1,165 @@
+import type {
+  PayrollEmployeeCreateBankDraft,
+  PayrollEmployeeCreateTaxDraft,
+} from '../types/payroll-employee-create-wizard.types';
+import type { PayrollEmployeeFormValues } from '../types/payroll.types';
+import { validateAccountNumberForBank } from './bank-account-validation';
+import { parseWithholdingRatePercent } from './financial-profile-display';
+
+const REQUIRED_CATALOG_FIELDS: Array<{
+  key: keyof Pick<
+    PayrollEmployeeFormValues,
+    | 'department'
+    | 'epsName'
+    | 'pensionFundName'
+    | 'cesantiasFundName'
+    | 'arlName'
+    | 'cajaCompensacion'
+  >;
+  label: string;
+}> = [
+  { key: 'department', label: 'Departamento' },
+  { key: 'epsName', label: 'EPS' },
+  { key: 'pensionFundName', label: 'Fondo de pensión' },
+  { key: 'cesantiasFundName', label: 'Fondo de cesantías' },
+  { key: 'arlName', label: 'ARL' },
+  { key: 'cajaCompensacion', label: 'Caja de compensación' },
+];
+
+export function validatePayrollEmployeePersonalStep(
+  values: PayrollEmployeeFormValues,
+  options: {
+    hasActivePositions: boolean;
+    selectedPositionArea?: string;
+  },
+): string | null {
+  if (
+    !values.nombres.trim() ||
+    !values.primerApellido.trim() ||
+    !values.email.trim() ||
+    !values.cedula.trim()
+  ) {
+    return 'Nombres, primer apellido, correo y cédula son obligatorios.';
+  }
+
+  if (!values.locationId.trim() || !values.roleId.trim()) {
+    return 'Áreas y rol del sistema son obligatorios.';
+  }
+
+  if (!values.costCenter) {
+    return 'Centro de Costos es obligatorio.';
+  }
+
+  if (!values.laborClassification) {
+    return 'Clasificación mano de obra es obligatoria.';
+  }
+
+  if (options.hasActivePositions && !values.positionId.trim()) {
+    return 'Cargo es obligatorio.';
+  }
+
+  if (options.hasActivePositions && !options.selectedPositionArea?.trim()) {
+    return 'El cargo seleccionado no tiene área configurada.';
+  }
+
+  const salary = Number(values.salaryAmount);
+  if (!Number.isFinite(salary) || salary <= 0) {
+    return 'El salario debe ser un número mayor que 0.';
+  }
+
+  if (values.nonSalaryAmount !== '') {
+    const nonSalary = Number(values.nonSalaryAmount);
+    if (!Number.isFinite(nonSalary) || nonSalary < 0) {
+      return 'El valor no salarial debe ser un número positivo.';
+    }
+  }
+
+  if (!values.department.trim()) {
+    return 'Departamento es obligatorio.';
+  }
+
+  for (let index = 0; index < values.beneficiaries.length; index += 1) {
+    const beneficiary = values.beneficiaries[index];
+    if (!beneficiary.fullName.trim()) {
+      return `Beneficiario ${index + 1}: el nombre completo es obligatorio.`;
+    }
+    const age = Number(beneficiary.age);
+    if (!Number.isInteger(age) || age < 0 || age > 99) {
+      return `Beneficiario ${index + 1}: la edad debe ser entre 0 y 99.`;
+    }
+  }
+
+  return null;
+}
+
+export function validatePayrollEmployeeSocialStep(
+  values: PayrollEmployeeFormValues,
+): string | null {
+  const missingCatalogField = REQUIRED_CATALOG_FIELDS.find(
+    (field) => field.key !== 'department' && !values[field.key].trim(),
+  );
+  if (missingCatalogField) {
+    return `${missingCatalogField.label} es obligatorio.`;
+  }
+  return null;
+}
+
+export function validatePayrollEmployeeBankStep(draft: PayrollEmployeeCreateBankDraft): {
+  message: string | null;
+  fieldErrors: Partial<Record<keyof PayrollEmployeeCreateBankDraft, string>>;
+} {
+  if (!draft.bankCode.trim() && !draft.accountNumber.trim()) {
+    return { message: null, fieldErrors: {} };
+  }
+
+  const fieldErrors: Partial<Record<keyof PayrollEmployeeCreateBankDraft, string>> = {};
+
+  if (!draft.bankCode.trim()) {
+    fieldErrors.bankCode = 'Selecciona un banco para registrar la cuenta.';
+    return {
+      message: fieldErrors.bankCode,
+      fieldErrors,
+    };
+  }
+
+  const accountError = validateAccountNumberForBank(draft.bankCode, draft.accountNumber);
+  if (accountError) {
+    fieldErrors.accountNumber = accountError;
+    return { message: accountError, fieldErrors };
+  }
+
+  return { message: null, fieldErrors: {} };
+}
+
+export function validatePayrollEmployeeTaxStep(
+  draft: PayrollEmployeeCreateTaxDraft,
+): string | null {
+  if (!draft.taxId.trim()) {
+    return null;
+  }
+
+  if (!/^\d{6,15}$/.test(draft.taxId.trim())) {
+    return 'El NIT/RUT debe contener solo dígitos (6-15 caracteres).';
+  }
+
+  if (draft.withholdingApplicable) {
+    const rate = parseWithholdingRatePercent(draft.withholdingRatePercent);
+    if (rate == null) {
+      return 'Ingresa un porcentaje de retención entre 0 y 100.';
+    }
+  }
+
+  return null;
+}
+
+export function resolveEmployeeAreaForSubmit(
+  values: PayrollEmployeeFormValues,
+  positions: Array<{ id: string; area: string }> | undefined,
+  hasActivePositions: boolean,
+): string {
+  if (!hasActivePositions) {
+    return values.area;
+  }
+  const selected = (positions ?? []).find((position) => position.id === values.positionId);
+  return selected?.area?.trim() ?? values.area;
+}

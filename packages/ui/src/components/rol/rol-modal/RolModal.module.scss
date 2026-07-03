@@ -1,0 +1,94 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/rol-theme' as rol;
+
+.backdrop {
+  @include rol.rol-theme-dark;
+
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba($color-black, 0.72);
+}
+
+.theme--light {
+  @include rol.rol-theme-light;
+  background: rgba($color-black, 0.45);
+}
+
+.modal {
+  @include rol.rol-theme-classes;
+
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 560px);
+  max-height: min(92vh, 720px);
+  border: 1px solid var(--rol-border);
+  border-radius: 6px;
+  background: var(--rol-surface-raised);
+  box-shadow: 0 24px 64px rgba($color-black, 0.35);
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: $spacing-md;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid var(--rol-border);
+  background: var(--rol-surface);
+}
+
+.titles {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: $font-weight-bold;
+  color: var(--rol-text);
+}
+
+.subtitle {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--rol-muted);
+}
+
+.closeButton {
+  border: 1px solid var(--rol-border);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--rol-muted);
+  padding: 8px 12px;
+  font-size: 0.75rem;
+  font-weight: $font-weight-semibold;
+  cursor: pointer;
+
+  &:focus-visible {
+    @include rol.rol-focus-ring;
+  }
+}
+
+.body {
+  flex: 1;
+  overflow: auto;
+  padding: 18px 20px;
+}
+
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 14px 20px 18px;
+  border-top: 1px solid var(--rol-border);
+  background: var(--rol-surface);
+}

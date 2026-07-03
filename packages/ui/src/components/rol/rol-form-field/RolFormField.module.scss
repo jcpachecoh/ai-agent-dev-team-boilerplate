@@ -1,0 +1,15 @@
+@use '../shared/rol-theme' as rol;
+
+.field {
+  @include rol.rol-theme-classes;
+
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.label {
+  font-size: 0.75rem;
+  color: var(--rol-text-secondary);
+}

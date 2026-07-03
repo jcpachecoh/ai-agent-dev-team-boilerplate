@@ -1,0 +1,130 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/sede-theme' as sede;
+
+.row {
+  @include sede.sede-theme-classes;
+
+  display: grid;
+  grid-template-columns: var(--sede-columns);
+  align-items: center;
+  min-height: 64px;
+  padding: 0 14px;
+  border-bottom: $border-width solid var(--sede-border-subtle);
+}
+
+.nameCell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.nameIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: $border-width solid rgba(sede.$sede-primary, 0.3);
+  background: rgba(sede.$sede-primary, 0.12);
+  color: var(--sede-primary);
+
+  svg {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+.nameText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.name {
+  font-size: 0.8125rem;
+  font-weight: $font-weight-semibold;
+  color: var(--sede-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.date {
+  font-family: $font-family-mono;
+  font-size: 0.6875rem;
+  color: var(--sede-faint);
+}
+
+.addressCell,
+.phoneCell {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  font-size: 0.75rem;
+  color: var(--sede-muted);
+
+  svg {
+    flex-shrink: 0;
+    width: 11px;
+    height: 11px;
+  }
+
+  span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.phoneCell span {
+  font-family: $font-family-mono;
+  font-size: 0.6875rem;
+}
+
+.cityCell {
+  font-size: 0.75rem;
+  font-weight: $font-weight-medium;
+  color: var(--sede-text-secondary);
+}
+
+.usersCell {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.75rem;
+  color: var(--sede-muted);
+
+  svg {
+    flex-shrink: 0;
+    width: 11px;
+    height: 11px;
+  }
+}
+
+.userCount {
+  font-family: $font-family-mono;
+  font-size: 0.75rem;
+  font-weight: $font-weight-semibold;
+  color: var(--sede-text-secondary);
+}
+
+.statusCell,
+.actionsCell {
+  display: flex;
+  align-items: center;
+}
+
+.statusCell {
+  justify-self: center;
+  justify-content: center;
+}
+
+.actionsCell {
+  justify-self: end;
+  justify-content: flex-end;
+  gap: 6px;
+}

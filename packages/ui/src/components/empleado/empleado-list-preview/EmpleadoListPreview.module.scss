@@ -1,0 +1,12 @@
+.metrics {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 8px;
+  overflow-x: auto;
+}
+
+.metrics > * {
+  flex: 1 1 0;
+  min-width: 120px;
+  max-width: none;
+}

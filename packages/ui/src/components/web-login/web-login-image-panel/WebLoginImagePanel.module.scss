@@ -1,0 +1,21 @@
+@use '../shared/web-login-theme' as login;
+
+.panel {
+  @include login.web-login-root;
+  @include login.web-login-theme-classes;
+
+  min-height: 100%;
+  background-color: var(--web-login-bg);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgb(0 0 0 / 0.15) 0%, rgb(0 0 0 / 0.35) 100%);
+    pointer-events: none;
+  }
+}

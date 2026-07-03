@@ -1,0 +1,325 @@
+@use '@/styles/tokens' as t;
+@use '@/styles/page-header-title' as ph;
+
+.screen {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+}
+
+.pageHeader {
+  flex-shrink: 0;
+  padding: 1.1rem 1.25rem 1rem;
+  border-bottom: 1px solid var(--color-border);
+
+  h1 {
+    @include ph.page-header-title;
+  }
+
+  p {
+    @include ph.page-header-subtitle;
+  }
+}
+
+.headerTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.newPermBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+  padding: 0.45rem 0.85rem;
+  border: 1px solid var(--color-accent, #6366f1);
+  border-radius: t.$border-radius-base;
+  background: transparent;
+  color: var(--color-accent, #6366f1);
+  font-size: 0.8rem;
+  font-family: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s;
+  white-space: nowrap;
+
+  &:hover {
+    background: var(--color-accent, #6366f1);
+    color: #fff;
+  }
+}
+
+.body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 1.25rem;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.moduleSection {
+  border: 1px solid var(--color-border);
+  border-radius: t.$border-radius-base;
+  overflow: hidden;
+  background: var(--color-bg-surface);
+}
+
+.moduleHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg-surface-raised, var(--color-bg-surface));
+}
+
+.moduleTitle {
+  font-family: t.$font-family-mono;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+.moduleCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 18px;
+  padding: 0 0.35rem;
+  border-radius: 9999px;
+  background: var(--color-bg-surface-raised, var(--color-bg-primary));
+  border: 1px solid var(--color-border);
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.permissionList {
+  display: flex;
+  flex-direction: column;
+}
+
+.permissionRow {
+  display: grid;
+  grid-template-columns: 240px 1fr auto auto auto;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid var(--color-border);
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &:nth-child(even) {
+    background: color-mix(
+      in srgb,
+      var(--color-bg-surface-raised, var(--color-bg-primary)) 50%,
+      transparent
+    );
+  }
+}
+
+.permCode {
+  font-family: t.$font-family-mono;
+  font-size: 0.78rem;
+  color: var(--color-text-secondary);
+}
+
+.permName {
+  font-size: 0.85rem;
+  color: var(--color-text-primary);
+}
+
+.permDesc {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.inactive {
+  opacity: 0.45;
+  text-decoration: line-through;
+}
+
+.badgeInactive {
+  display: inline-block;
+  padding: 0.15rem 0.45rem;
+  border-radius: 9999px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: color-mix(in srgb, var(--color-text-muted) 15%, transparent);
+  color: var(--color-text-muted);
+  border: 1px solid color-mix(in srgb, var(--color-text-muted) 25%, transparent);
+  white-space: nowrap;
+}
+
+.rowActions {
+  display: flex;
+  gap: 0.3rem;
+  opacity: 0;
+  transition: opacity 0.15s;
+
+  .permissionRow:hover & {
+    opacity: 1;
+  }
+}
+
+.actionBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s,
+    border-color 0.15s;
+
+  &:hover {
+    background: var(--color-bg-surface-raised, var(--color-bg-primary));
+    color: var(--color-text-primary);
+    border-color: var(--color-text-secondary);
+  }
+}
+
+.actionBtnDanger {
+  &:hover {
+    background: color-mix(in srgb, var(--color-error, #ef4444) 12%, transparent);
+    color: var(--color-error, #ef4444);
+    border-color: var(--color-error, #ef4444);
+  }
+}
+
+/* Deactivation confirm dialog */
+.confirmBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: var(--color-overlay);
+  backdrop-filter: blur(6px);
+}
+
+.confirmDialog {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  width: min(100%, 420px);
+  padding: 1.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  background: var(--color-bg-surface);
+  color: var(--color-text-primary);
+}
+
+.confirmMsg {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+
+.confirmCode {
+  font-family: t.$font-family-mono;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  background: var(--color-bg-surface-raised, var(--color-bg-primary));
+  padding: 0.1rem 0.3rem;
+  border-radius: 0.2rem;
+  border: 1px solid var(--color-border);
+}
+
+.confirmSub {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.confirmActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.65rem;
+}
+
+.cancelBtn {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.35rem;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+  font-family: inherit;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--color-bg-surface-raised, var(--color-bg-primary));
+    color: var(--color-text-primary);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.deactivateBtn {
+  padding: 0.5rem 1rem;
+  border: 1px solid transparent;
+  border-radius: 0.35rem;
+  background: var(--color-error, #ef4444);
+  color: #fff;
+  font-size: 0.875rem;
+  font-family: inherit;
+  font-weight: 500;
+  cursor: pointer;
+
+  &:hover {
+    background: color-mix(in srgb, var(--color-error, #ef4444) 85%, black);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+@media (width <= 640px) {
+  .permissionRow {
+    grid-template-columns: 1fr;
+    gap: 0.25rem;
+  }
+
+  .rowActions {
+    opacity: 1;
+  }
+}

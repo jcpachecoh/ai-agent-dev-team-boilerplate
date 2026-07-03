@@ -1,0 +1,49 @@
+@use '../../../styles/abstracts/variables' as *;
+
+.wrapper {
+  --chart-width: 100%;
+  --chart-min-height: 40px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 40px !important;
+  overflow: hidden;
+}
+
+.sm {
+  --chart-min-height: 40px;
+  min-height: 40px !important;
+}
+
+.md {
+  --chart-min-height: 56px;
+  min-height: 56px !important;
+}
+
+.xl {
+  --chart-min-height: 72px;
+  min-height: 72px !important;
+}
+
+.empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.emptyLabel {
+  font-size: $font-size-xs;
+  color: $color-text-secondary;
+}
+
+.light {
+  background: transparent;
+}
+
+.dark {
+  background: transparent;
+
+  .emptyLabel {
+    color: rgba($color-white, 0.58);
+  }
+}

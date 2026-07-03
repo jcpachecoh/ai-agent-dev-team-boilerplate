@@ -1,0 +1,105 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../../../styles/abstracts/page-header-action' as pha;
+@use '../shared/proveedor-theme' as proveedor;
+
+.button {
+  @include proveedor.proveedor-theme-classes;
+  @include proveedor.proveedor-size-vars;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--action-gap);
+  width: auto;
+  min-width: var(--action-min-width);
+  min-height: var(--action-height);
+  padding: 0 var(--action-padding-x);
+  border-radius: $border-radius-sm;
+  border: $border-width solid transparent;
+  font-family: $font-family-mono;
+  font-size: var(--action-font-size);
+  font-weight: $font-weight-bold;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease;
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  &:focus-visible {
+    @include proveedor.proveedor-focus-ring;
+  }
+}
+
+.size--sm {
+  --action-height: 32px;
+  --action-padding-x: 12px;
+  --action-gap: 6px;
+  --action-font-size: 0.625rem;
+  --action-min-width: 96px;
+}
+
+.size--md {
+  @include pha.page-header-action-size-md;
+  --action-min-width: 0;
+}
+
+.size--md .icon svg {
+  @include pha.page-header-action-icon-md;
+}
+
+.size--xl {
+  --action-height: 44px;
+  --action-padding-x: 20px;
+  --action-gap: 10px;
+  --action-font-size: 0.75rem;
+  --action-min-width: 140px;
+  width: 100%;
+}
+
+.icon {
+  display: inline-flex;
+
+  svg {
+    width: var(--control-icon-size);
+    height: var(--control-icon-size);
+  }
+}
+
+.variant--primary {
+  background: proveedor.$proveedor-enterprise;
+  color: $color-black;
+  border-color: proveedor.$proveedor-enterprise;
+
+  &:hover:not(:disabled) {
+    filter: brightness(1.05);
+  }
+}
+
+.variant--export,
+.variant--secondary {
+  background: transparent;
+  color: var(--proveedor-text-secondary);
+  border-color: var(--proveedor-border-strong);
+
+  &:hover:not(:disabled) {
+    border-color: proveedor.$proveedor-enterprise;
+    color: var(--proveedor-text);
+  }
+}
+
+.variant--new-product {
+  background: rgba(proveedor.$proveedor-enterprise, 0.12);
+  color: proveedor.$proveedor-enterprise;
+  border-color: proveedor.$proveedor-enterprise;
+}
+
+.loading {
+  opacity: 0.8;
+}

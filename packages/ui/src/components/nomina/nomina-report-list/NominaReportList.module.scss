@@ -1,0 +1,26 @@
+@use '../shared/nomina-theme' as nomina;
+
+.panel {
+  @include nomina.nomina-theme-classes;
+  @include nomina.nomina-panel;
+}
+
+.header {
+  @include nomina.nomina-panel-header;
+}
+
+.eyebrow {
+  @include nomina.nomina-eyebrow;
+}
+
+.title {
+  margin: 4px 0 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--asistencia-text);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+}

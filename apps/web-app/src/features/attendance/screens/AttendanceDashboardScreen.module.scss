@@ -1,0 +1,348 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 16px 24px 20px;
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.filters {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.4fr) repeat(3, minmax(160px, 1fr)) auto;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.searchInput {
+  min-height: 40px;
+  padding: 0.5rem 0.75rem;
+}
+
+.clearButton {
+  border: 1px solid var(--asistencia-border, rgb(255 255 255 / 12%));
+  border-radius: 0.5rem;
+  background: transparent;
+  color: inherit;
+  padding: 0.55rem 0.9rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.content {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 1rem;
+  align-items: start;
+}
+
+.chartPanel {
+  border: 1px solid var(--asistencia-border, rgb(15 23 42 / 8%));
+  border-radius: 0.85rem;
+  background: var(--asistencia-surface, #fff);
+  padding: 0.85rem 1rem 0.75rem;
+  box-shadow: 0 1px 3px rgb(15 23 42 / 6%);
+}
+
+.chartPanel .panelHeader {
+  margin-bottom: 0.5rem;
+}
+
+.chartHeading {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.chartSubtitle {
+  margin: 0;
+  color: var(--asistencia-muted, #94a3b8);
+  font-size: 0.6875rem;
+}
+
+.chartWrap {
+  width: 100%;
+}
+
+.comparisonChart {
+  width: 100%;
+  max-width: none;
+
+  --chart-width: 100%;
+}
+
+.timelinePanel,
+.alertsPanel {
+  border: 1px solid var(--asistencia-border, rgb(255 255 255 / 10%));
+  border-radius: 0.85rem;
+  background: var(--asistencia-surface, rgb(255 255 255 / 3%));
+  padding: 1rem;
+}
+
+.panelHeader,
+.alertsHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.85rem;
+}
+
+.panelTitle {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.periodFilter {
+  display: inline-flex;
+  border: 1px solid var(--asistencia-border, rgb(255 255 255 / 12%));
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.periodButton {
+  padding: 0.45rem 0.75rem;
+  border: none;
+  background: transparent;
+  color: var(--asistencia-muted, #94a3b8);
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:not(:last-child) {
+    border-right: 1px solid var(--asistencia-border, rgb(255 255 255 / 12%));
+  }
+
+  &:hover {
+    background: var(--asistencia-hover, rgb(255 255 255 / 6%));
+    color: inherit;
+  }
+}
+
+.periodButtonActive {
+  background: rgb(45 212 191 / 14%);
+  color: #2dd4bf;
+}
+
+.tableWrap {
+  overflow: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.table th,
+.table td {
+  padding: 0.65rem 0.5rem;
+  border-bottom: 1px solid var(--asistencia-border, rgb(255 255 255 / 8%));
+  text-align: left;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.sortButton {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.emptyCell {
+  padding: 1.5rem 0.5rem;
+  color: var(--asistencia-muted, #94a3b8);
+  text-align: center;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.85rem;
+}
+
+.pageButton {
+  border: 1px solid var(--asistencia-border, rgb(255 255 255 / 12%));
+  border-radius: 0.45rem;
+  background: transparent;
+  color: inherit;
+  padding: 0.45rem 0.75rem;
+  cursor: pointer;
+}
+
+.pageButton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.pageInfo {
+  color: var(--asistencia-muted, #94a3b8);
+  font-size: 0.8125rem;
+}
+
+.alertCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  padding: 0 0.4rem;
+  border-radius: 999px;
+  background: rgb(45 212 191 / 18%);
+  color: #2dd4bf;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.alertList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.alertItem {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid var(--asistencia-border, rgb(255 255 255 / 10%));
+  border-radius: 0.65rem;
+  background: rgb(255 255 255 / 2%);
+}
+
+.alertTitle {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.alertSubtitle,
+.alertTime,
+.emptyAlerts {
+  margin: 0.2rem 0 0;
+  color: var(--asistencia-muted, #94a3b8);
+  font-size: 0.75rem;
+}
+
+.dismissButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 0;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 6%);
+  color: inherit;
+  cursor: pointer;
+}
+
+.geoLink,
+.geoLinkDanger {
+  display: inline-flex;
+  color: #2dd4bf;
+}
+
+.geoLinkDanger {
+  color: #f87171;
+}
+
+.noGeo {
+  color: var(--asistencia-muted, #94a3b8);
+}
+
+.outOfGeofenceRow td {
+  background: rgb(248 113 113 / 8%);
+}
+
+.error {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border-radius: 0.65rem;
+  background: rgb(239 68 68 / 12%);
+  color: #fecaca;
+}
+
+.mobileTabs {
+  display: none;
+}
+
+@media (max-width: 1279px) {
+  .metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .content {
+    grid-template-columns: 1fr;
+  }
+
+  .mobileTabs {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .mobileTab,
+  .mobileTabActive {
+    flex: 1;
+    border: 1px solid var(--asistencia-border, rgb(255 255 255 / 12%));
+    border-radius: 0.5rem;
+    background: transparent;
+    color: inherit;
+    padding: 0.6rem 0.75rem;
+    cursor: pointer;
+  }
+
+  .mobileTabActive {
+    border-color: #2dd4bf;
+    color: #2dd4bf;
+  }
+
+  .hiddenOnMobile {
+    display: none;
+  }
+}
+
+@media (max-width: 767px) {
+  .page {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .chartPanel .panelHeader {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .periodFilter {
+    width: 100%;
+  }
+
+  .periodButton {
+    flex: 1;
+  }
+
+  .metrics,
+  .filters {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,66 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../../../styles/abstracts/page-header-title' as ph;
+@use '../shared/usuario-theme' as usr;
+
+.header {
+  @include usr.usuario-theme-classes;
+  @include ph.page-header-shell;
+}
+
+.leading {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+}
+
+.iconWrap {
+  display: none;
+}
+
+.titles {
+  @include ph.page-header-titles-stack;
+}
+
+.eyebrow {
+  @include usr.usuario-eyebrow;
+}
+
+.title {
+  @include ph.page-header-title;
+  color: var(--usuario-text);
+}
+
+.subtitle {
+  @include ph.page-header-subtitle;
+  color: var(--usuario-subtle);
+}
+
+.size--sm {
+  .title {
+    font-size: 1.125rem;
+  }
+
+  .subtitle {
+    font-size: $font-size-xs;
+  }
+}
+
+.actions {
+  flex-shrink: 0;
+}
+
+@media (max-width: 767px) {
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .actions {
+    width: 100%;
+
+    > * {
+      width: 100%;
+    }
+  }
+}

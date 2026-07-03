@@ -1,0 +1,48 @@
+@use '../../sede/shared/sede-theme' as sede;
+
+.button {
+  @include sede.sede-theme-classes;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+  white-space: nowrap;
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.button--primary {
+  color: #818cf8;
+  background: rgba(129, 140, 248, 0.12);
+  border-color: rgba(129, 140, 248, 0.35);
+}
+
+.button--primary:hover:not(:disabled) {
+  background: rgba(129, 140, 248, 0.2);
+}
+
+.button--secondary {
+  color: var(--sede-text);
+  background: var(--sede-surface);
+  border-color: var(--sede-border);
+}
+
+.button--secondary:hover:not(:disabled) {
+  background: var(--sede-hover);
+}

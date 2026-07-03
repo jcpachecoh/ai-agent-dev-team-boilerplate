@@ -1,0 +1,49 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/cargo-theme' as emp;
+
+.filter {
+  @include emp.cargo-theme-classes;
+
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid var(--cargo-border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.button {
+  border: none;
+  background: transparent;
+  color: var(--cargo-subtle);
+  font-family: 'IBM Plex Mono', $font-family-mono, monospace;
+  font-weight: $font-weight-bold;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease;
+
+  &:focus-visible {
+    @include emp.cargo-focus-ring;
+  }
+}
+
+.size--sm .button {
+  padding: 6px 10px;
+  font-size: 0.5rem;
+}
+
+.size--md .button {
+  padding: 6px 12px;
+  font-size: 0.56rem;
+}
+
+.withDivider {
+  border-left: 1px solid var(--cargo-border);
+}
+
+.active {
+  background: var(--cargo-accent-soft);
+  color: var(--cargo-accent);
+}

@@ -1,0 +1,58 @@
+@use '../shared/empleado-theme' as emp;
+
+$mobile-breakpoint: 768px;
+
+.table {
+  @include emp.empleado-theme-classes;
+
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--empleado-border);
+  border-radius: 4px;
+  background: var(--empleado-surface);
+  overflow: hidden;
+}
+
+.scrollRegion {
+  overflow-x: auto;
+  overflow-y: hidden;
+  min-width: 0;
+  -webkit-overflow-scrolling: touch;
+}
+
+.scrollContent {
+  width: 100%;
+  min-width: var(--empleado-table-min-width, 1046px);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .table {
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    gap: 10px;
+  }
+
+  .scrollRegion {
+    overflow-x: visible;
+  }
+
+  .scrollContent {
+    min-width: 0;
+  }
+
+  .body {
+    gap: 10px;
+  }
+
+  .desktopHeader {
+    display: none;
+  }
+}

@@ -1,0 +1,249 @@
+.screen {
+  min-height: 100%;
+  min-width: 0;
+}
+
+.readOnlyBanner {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--cargo-accent-border);
+  border-radius: 4px;
+  background: var(--cargo-accent-soft);
+  color: var(--cargo-text);
+  font-size: 0.8125rem;
+  line-height: 1.45;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem 1rem;
+  width: 100%;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 11rem;
+  flex: 1 1 11rem;
+  max-width: 16rem;
+}
+
+.fieldLabel {
+  color: var(--cargo-text-secondary);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.weekNav {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.navButton,
+.navButtonToday {
+  padding: 0.45rem 0.85rem;
+  border-radius: 0.4rem;
+  border: 1px solid var(--cargo-border);
+  background: var(--cargo-surface);
+  color: var(--cargo-text);
+  font-size: 0.8125rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+
+  &:hover {
+    background: var(--cargo-hover);
+  }
+}
+
+.navButtonToday {
+  font-weight: 600;
+  border-color: var(--cargo-secondary-border);
+  color: var(--cargo-secondary);
+}
+
+.weekRange {
+  font-size: 0.85rem;
+  font-weight: 600;
+  min-width: 7rem;
+  text-align: center;
+  color: var(--cargo-text);
+}
+
+.rightActions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-left: auto;
+}
+
+.selectedCounter {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--cargo-text-secondary);
+}
+
+.downloadButton {
+  padding: 0.45rem 0.85rem;
+  border-radius: 0.4rem;
+  border: 1px solid var(--cargo-border);
+  background: var(--cargo-surface);
+  color: var(--cargo-muted);
+  font-size: 0.8125rem;
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.loading {
+  padding: 2rem 0;
+  text-align: center;
+  color: var(--cargo-text-secondary);
+}
+
+.tableWrapper {
+  max-height: 70vh;
+  overflow: auto;
+  border: 1px solid var(--cargo-border);
+  border-radius: 0.5rem;
+  background: var(--cargo-surface);
+}
+
+.table {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+  min-width: 60rem;
+  color: var(--cargo-text);
+}
+
+.fixedHeaderCell,
+.dayHeaderCell {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--cargo-surface-raised);
+  padding: 0.7rem 0.85rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--cargo-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 2px solid var(--cargo-border);
+  text-align: left;
+}
+
+.fixedHeaderCell {
+  left: 0;
+  z-index: 3;
+  min-width: 14rem;
+}
+
+.dayHeaderCell {
+  min-width: 7rem;
+  text-align: center;
+}
+
+.dayHeaderWeekday {
+  display: block;
+  font-weight: 700;
+  color: var(--cargo-text);
+}
+
+.dayHeaderDate {
+  display: block;
+  font-weight: 400;
+  color: var(--cargo-text-secondary);
+}
+
+.todayHeaderCell {
+  background: var(--cargo-secondary-soft);
+  border-bottom: 2px solid var(--cargo-secondary);
+
+  .dayHeaderWeekday,
+  .dayHeaderDate {
+    color: var(--cargo-secondary);
+  }
+}
+
+.fixedBodyCell {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--cargo-surface);
+  padding: 0.6rem 0.85rem;
+  border-bottom: 1px solid var(--cargo-border-subtle);
+  min-width: 14rem;
+}
+
+.colaboradorRow {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.colaboradorInfo {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.colaboradorNombre {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--cargo-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.colaboradorDocumento {
+  font-size: 0.7rem;
+  color: var(--cargo-text-secondary);
+}
+
+.cell {
+  min-width: 7rem;
+  padding: 0.55rem 0.65rem;
+  border-bottom: 1px solid var(--cargo-border-subtle);
+  text-align: center;
+  cursor: pointer;
+  color: var(--cargo-text);
+  background-color: var(--cargo-surface);
+
+  &:hover {
+    outline: 1px solid var(--cargo-secondary-border);
+    outline-offset: -1px;
+  }
+}
+
+.saturdayCell {
+  background-color: var(--cargo-accent-soft);
+}
+
+.restCell {
+  background-color: var(--cargo-teal-soft);
+}
+
+.todayCell {
+  border-left: 2px solid var(--cargo-secondary-border);
+  border-right: 2px solid var(--cargo-secondary-border);
+}
+
+.cellPrimary {
+  display: block;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--cargo-text);
+}
+
+.cellSecondary {
+  display: block;
+  font-size: 0.68rem;
+  color: var(--cargo-text-secondary);
+  margin-top: 0.1rem;
+}

@@ -1,0 +1,74 @@
+@use '../../styles/tokens' as t;
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: t.$space-5;
+  padding: t.$space-5;
+  max-width: 72rem;
+  margin: 0 auto;
+  width: 100%;
+  min-width: 0;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: t.$space-2;
+}
+
+.title {
+  font-size: t.$font-size-xl;
+  color: var(--color-text-primary);
+}
+
+.subtitle {
+  font-size: t.$font-size-sm;
+  color: var(--color-text-secondary);
+  max-width: 42rem;
+  line-height: t.$line-height-base;
+}
+
+.tableHeader,
+.tableRow {
+  display: grid;
+  gap: t.$space-3;
+  align-items: center;
+  padding: t.$space-3 t.$space-4;
+  min-width: 0;
+}
+
+.tableHeader {
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg-secondary);
+}
+
+.headerCell {
+  font-size: t.$font-size-xs;
+  font-weight: t.$font-weight-semibold;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.tableRow {
+  border-bottom: 1px solid var(--color-border);
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.02);
+  }
+}
+
+.cell {
+  font-size: t.$font-size-sm;
+  color: var(--color-text-primary);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.empty {
+  padding: t.$space-6;
+  text-align: center;
+  color: var(--color-text-secondary);
+}

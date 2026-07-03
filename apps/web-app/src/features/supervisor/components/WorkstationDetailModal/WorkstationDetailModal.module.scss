@@ -1,0 +1,43 @@
+@use '@/styles/tokens' as *;
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: var(--color-overlay);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+.dialog {
+  width: min(100%, 420px);
+  max-height: min(92dvh, 720px);
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  background: var(--color-bg-surface);
+  overflow: hidden;
+}
+
+.panel {
+  width: 100% !important;
+  min-height: auto !important;
+  height: auto !important;
+  max-height: min(92dvh, 720px);
+  border-left: 0 !important;
+  overflow: auto;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

@@ -1,0 +1,23 @@
+@use '../../../styles/abstracts/variables' as *;
+
+$mobile-breakpoint: 768px;
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 8px;
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+    gap: 8px;
+    padding-top: 4px;
+
+    > * {
+      width: 100%;
+    }
+  }
+}

@@ -1,0 +1,33 @@
+.grid {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  width: 100%;
+  gap: 2px;
+  background: #0a0a0a;
+}
+
+:global(html[data-theme='light']) .grid {
+  background: #fafafa;
+}
+
+.mode--1x1 {
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr;
+}
+
+.mode--1x2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: 1fr;
+}
+
+.mode--2x2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+}
+
+.cell {
+  min-width: 0;
+  min-height: 0;
+  box-sizing: border-box;
+}

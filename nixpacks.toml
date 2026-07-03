@@ -1,0 +1,15 @@
+[phases.setup]
+nixPkgs = ["nodejs_20"]
+cmds = ["corepack enable && corepack prepare pnpm@9.15.9 --activate"]
+
+[phases.install]
+cmds = ["pnpm install --frozen-lockfile"]
+
+[phases.build]
+cmds = [
+  "cd apps/api && npx prisma@5 generate",
+  "pnpm --filter @restopsiq/api run build"
+]
+
+[start]
+cmd = "node apps/api/dist/main"

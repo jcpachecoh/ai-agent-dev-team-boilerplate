@@ -1,0 +1,73 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/inventario-theme' as inventario;
+
+.wrap {
+  @include inventario.inventario-theme-classes;
+  @include inventario.inventario-size-vars;
+
+  position: relative;
+  width: 100%;
+}
+
+.dateInput {
+  width: 100%;
+  min-height: calc(var(--control-min-height) - 2px);
+  padding: var(--control-padding-y) var(--control-padding-x);
+  padding-right: calc(var(--control-padding-x) + 1.75rem);
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--inventario-text);
+  font-family: $font-family-base;
+  font-size: var(--control-font-size);
+  box-sizing: border-box;
+  cursor: pointer;
+  position: relative;
+  z-index: 1;
+
+  &::-webkit-calendar-picker-indicator {
+    position: absolute;
+    right: 0.35rem;
+    top: 0;
+    z-index: 2;
+    width: 2rem;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    cursor: pointer;
+    opacity: 0;
+    background: transparent;
+  }
+
+  &::-webkit-datetime-edit-fields-wrapper {
+    padding: 0;
+  }
+
+  &::-webkit-datetime-edit {
+    padding: 0;
+  }
+}
+
+.calendarIcon {
+  position: absolute;
+  right: 0.65rem;
+  top: 50%;
+  z-index: 0;
+  width: 1.125rem;
+  height: 1.125rem;
+  transform: translateY(-50%);
+  color: var(--inventario-muted);
+  pointer-events: none;
+}
+
+.wrap.theme--dark .dateInput {
+  color-scheme: dark;
+}
+
+.wrap.theme--light .dateInput {
+  color-scheme: light;
+}
+
+.size--xl {
+  --control-width: 100%;
+}

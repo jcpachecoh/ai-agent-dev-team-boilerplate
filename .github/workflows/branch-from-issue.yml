@@ -1,0 +1,46 @@
+name: Issue → Branch
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  create-branch:
+    name: Create feature branch from issue
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create feature branch
+        id: create_branch
+        env:
+          ISSUE_NUM: ${{ github.event.issue.number }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+        run: |
+          SLUG=$(echo "$ISSUE_TITLE" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/-\+/-/g' | sed 's/^-//;s/-$//' | cut -c1-30)
+          BRANCH="feature/${ISSUE_NUM}-${SLUG}"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git push -u origin "$BRANCH"
+
+          echo "branch=$BRANCH" >> $GITHUB_OUTPUT
+
+      - name: Comment on issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const branch = '${{ steps.create_branch.outputs.branch }}';
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `🌿 Development branch created: [\`${branch}\`](https://github.com/${context.repo.owner}/${context.repo.repo}/tree/${branch})\n\n\`\`\`bash\ngit checkout ${branch}\n\`\`\``
+            });

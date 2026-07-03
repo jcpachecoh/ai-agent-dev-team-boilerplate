@@ -1,0 +1,100 @@
+.clickable {
+  cursor: pointer;
+
+  &:hover {
+    filter: brightness(1.05);
+  }
+}
+
+.row {
+  display: grid;
+  grid-template-columns: var(--proveedor-columns);
+  align-items: center;
+  width: 100%;
+  min-height: 52px;
+  padding: 0 1rem;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg-surface);
+  box-sizing: border-box;
+}
+
+.cell {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+.card {
+  background: var(--color-bg-surface);
+
+  .name {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+    word-break: break-word;
+  }
+}
+
+.titleGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.id {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.muted {
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reliability {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.balance {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.price {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.priceUp {
+  color: #ef4444;
+}
+
+.priceDown {
+  color: #22c55e;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+}

@@ -1,0 +1,169 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px 24px 24px;
+}
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.title {
+  margin: 0;
+  color: var(--empleado-text);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.subtitle {
+  margin: 6px 0 0;
+  color: var(--empleado-subtle);
+  font-size: 0.875rem;
+}
+
+.emptyState {
+  border: 1px dashed var(--empleado-border);
+  border-radius: 6px;
+  background: var(--empleado-surface-raised);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 16px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid var(--empleado-border);
+  border-radius: 6px;
+  background: var(--empleado-surface-raised);
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.cardPrimary {
+  border-color: var(--empleado-accent-border);
+  box-shadow: inset 3px 0 0 var(--empleado-accent);
+}
+
+.cardTop {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.bankIconWrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--empleado-border);
+  border-radius: 8px;
+  background: var(--empleado-accent-soft);
+  color: var(--empleado-accent);
+}
+
+.cardHeading {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 10px;
+  min-width: 0;
+}
+
+.bankName {
+  margin: 0;
+  color: var(--empleado-text);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.details {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding-top: 2px;
+}
+
+.detailRow {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.detailRow dt {
+  color: var(--empleado-muted);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.detailRow dd {
+  margin: 0;
+  color: var(--empleado-text);
+  font-size: 0.875rem;
+}
+
+.masked {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.9375rem;
+  letter-spacing: 0.1em;
+}
+
+.cardActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px solid var(--empleado-border-subtle, var(--empleado-border));
+}
+
+.actionButton {
+  min-height: 32px;
+  height: 32px;
+  padding-inline: 12px;
+  font-size: 0.8125rem;
+}
+
+.state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 280px;
+  padding: 2rem 1rem;
+  color: var(--empleado-subtle);
+  text-align: center;
+}
+
+.hint {
+  margin: 8px 0 0;
+  font-size: 0.8125rem;
+}
+
+@media (max-width: 900px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}

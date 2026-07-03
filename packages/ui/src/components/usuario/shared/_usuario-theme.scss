@@ -1,0 +1,104 @@
+@use '../../../styles/abstracts/variables' as *;
+
+$usuario-accent: #2ec4a0;
+$usuario-accent-secondary: #14b8a6;
+$usuario-purple: #818cf8;
+$usuario-green: #22c55e;
+$usuario-red: #ef4444;
+$usuario-coral: #e05a44;
+
+$usuario-dark-page: #0a0a0a;
+$usuario-dark-surface: #111111;
+$usuario-dark-surface-raised: #141414;
+$usuario-dark-input: #0d0d0d;
+$usuario-dark-border: #2e2e2e;
+$usuario-dark-border-subtle: #1a1a1a;
+$usuario-dark-text: #f5f5f0;
+$usuario-dark-muted: #888888;
+
+@mixin usuario-theme-dark {
+  --usuario-page: #{$usuario-dark-page};
+  --usuario-surface: #{$usuario-dark-surface};
+  --usuario-surface-raised: #{$usuario-dark-surface-raised};
+  --usuario-input: #{$usuario-dark-input};
+  --usuario-border: #{$usuario-dark-border};
+  --usuario-border-subtle: #{$usuario-dark-border-subtle};
+  --usuario-text: #{$usuario-dark-text};
+  --usuario-text-secondary: #bbbbbb;
+  --usuario-muted: #{$usuario-dark-muted};
+  --usuario-subtle: #666666;
+  --usuario-faint: #555555;
+  --usuario-dim: #444444;
+  --usuario-placeholder: #{rgba($usuario-dark-text, 0.5)};
+  --usuario-hover: #{rgba($color-white, 0.06)};
+  --usuario-overlay: #{rgba($color-black, 0.72)};
+  --usuario-accent: #{$usuario-accent};
+  --usuario-accent-soft: #{rgba($usuario-accent, 0.12)};
+  --usuario-accent-border: #{rgba($usuario-accent, 0.4)};
+  --usuario-accent-secondary: #{$usuario-accent-secondary};
+  --usuario-purple: #{$usuario-purple};
+  --usuario-purple-soft: #{rgba($usuario-purple, 0.06)};
+  --usuario-purple-border: #{rgba($usuario-purple, 0.19)};
+  --usuario-green: #{$usuario-green};
+  --usuario-green-soft: #{rgba($usuario-green, 0.1)};
+  --usuario-green-border: #{rgba($usuario-green, 0.3)};
+  --usuario-red: #{$usuario-red};
+  --usuario-red-soft: #{rgba($usuario-red, 0.1)};
+  --usuario-red-border: #{rgba($usuario-red, 0.3)};
+}
+
+@mixin usuario-theme-light {
+  --usuario-page: #f6f4ef;
+  --usuario-surface: #ffffff;
+  --usuario-surface-raised: #fbfaf6;
+  --usuario-input: #fbfaf6;
+  --usuario-border: #{rgba($color-black, 0.12)};
+  --usuario-border-subtle: #{rgba($color-black, 0.08)};
+  --usuario-text: #{$color-gray-900};
+  --usuario-text-secondary: #{$color-gray-700};
+  --usuario-muted: #{$color-gray-600};
+  --usuario-subtle: #{$color-gray-500};
+  --usuario-faint: #{$color-gray-500};
+  --usuario-dim: #{$color-gray-400};
+  --usuario-placeholder: #{rgba($color-black, 0.45)};
+  --usuario-hover: #{rgba($color-black, 0.04)};
+  --usuario-overlay: #{rgba($color-black, 0.45)};
+  --usuario-accent: #{$usuario-accent};
+  --usuario-accent-soft: #{rgba($usuario-accent, 0.1)};
+  --usuario-accent-border: #{rgba($usuario-accent, 0.35)};
+  --usuario-accent-secondary: #{$usuario-accent-secondary};
+  --usuario-purple: #{$usuario-purple};
+  --usuario-purple-soft: #{rgba($usuario-purple, 0.08)};
+  --usuario-purple-border: #{rgba($usuario-purple, 0.25)};
+  --usuario-green: #{$usuario-green};
+  --usuario-green-soft: #{rgba($usuario-green, 0.12)};
+  --usuario-green-border: #{rgba($usuario-green, 0.35)};
+  --usuario-red: #{$usuario-red};
+  --usuario-red-soft: #{rgba($usuario-red, 0.12)};
+  --usuario-red-border: #{rgba($usuario-red, 0.35)};
+}
+
+@mixin usuario-focus-ring {
+  outline: 2px solid rgba($usuario-accent, 0.65);
+  outline-offset: 2px;
+}
+
+@mixin usuario-theme-classes {
+  &.theme--dark {
+    @include usuario-theme-dark;
+  }
+
+  &.theme--light {
+    @include usuario-theme-light;
+  }
+}
+
+@mixin usuario-eyebrow {
+  margin: 0;
+  font-family: 'IBM Plex Mono', $font-family-mono, monospace;
+  font-size: 0.5625rem;
+  font-weight: $font-weight-bold;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--usuario-faint);
+}

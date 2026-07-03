@@ -1,0 +1,26 @@
+.subNav {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.tab,
+.tabActive {
+  padding: 0.4rem 0.9rem;
+  border-radius: 0.4rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-decoration: none;
+  color: inherit;
+  opacity: 0.65;
+
+  &:hover {
+    opacity: 1;
+  }
+}
+
+.tabActive {
+  opacity: 1;
+  background: var(--cargo-secondary-soft);
+  color: var(--cargo-secondary);
+}

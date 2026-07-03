@@ -1,0 +1,40 @@
+# CODEOWNERS
+# Each line assigns code owners who are automatically requested for review
+# when a PR touches matching files. At least ONE owner must approve before merge.
+
+# ── Default: all files require review ─────────────────────────────────────────
+*                                   @codenix-ai/backend @codenix-ai/frontend
+
+# ── Architecture & Docs ────────────────────────────────────────────────────────
+/docs/                              @codenix-ai/architecture
+/.github/                           @codenix-ai/devops @codenix-ai/architecture
+
+# ── API (NestJS) ───────────────────────────────────────────────────────────────
+/apps/api/                          @codenix-ai/backend
+/apps/api/src/**/entities/          @codenix-ai/backend @codenix-ai/architecture
+/apps/api/src/**/application/       @codenix-ai/backend
+/apps/api/src/**/infrastructure/    @codenix-ai/backend
+
+# ── Web (Next.js) ─────────────────────────────────────────────────────────────
+/apps/web/                          @codenix-ai/frontend
+
+# ── Mobile apps ───────────────────────────────────────────────────────────────
+/apps/mobile-client/                @codenix-ai/mobile
+/apps/mobile-manager/               @codenix-ai/mobile
+/apps/mobile-rider/                 @codenix-ai/mobile
+
+# ── Shared packages ───────────────────────────────────────────────────────────
+/packages/types/                    @codenix-ai/backend @codenix-ai/frontend
+/packages/ui/                       @codenix-ai/frontend
+/packages/api-client/               @codenix-ai/backend @codenix-ai/frontend
+
+# ── AI Dev Team ───────────────────────────────────────────────────────────────
+/ai-dev-team/                       @codenix-ai/architecture
+
+# ── CI/CD & Config (must be reviewed by devops) ───────────────────────────────
+/.github/workflows/                 @codenix-ai/devops
+/turbo.json                         @codenix-ai/devops
+/package.json                       @codenix-ai/devops @codenix-ai/architecture
+/.eslintrc.json                     @codenix-ai/architecture
+/.stylelintrc.json                  @codenix-ai/frontend
+/scripts/                           @codenix-ai/devops
