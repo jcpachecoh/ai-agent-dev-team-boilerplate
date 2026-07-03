@@ -155,3 +155,21 @@ export function canWriteTurnos(roleCode: string | null | undefined): boolean {
   if (!roleCode) return false;
   return (TURNOS_WRITE_ROLES as readonly string[]).includes(roleCode);
 }
+
+/** OS-582 — asignar/reasignar/marcar descanso (acotado a sedes propias para SUPERVISOR/MANAGER en backend). */
+export const TURNO_ASSIGNMENTS_WRITE_ROLES: readonly RoleCode[] = [
+  ...SYSTEM_ADMIN_ROLES,
+  'SUPERVISOR',
+  'MANAGER',
+];
+
+export function canWriteTurnoAssignments(roleCode: string | null | undefined): boolean {
+  if (!roleCode) return false;
+  return (TURNO_ASSIGNMENTS_WRITE_ROLES as readonly string[]).includes(roleCode);
+}
+
+/** OS-582 — únicos roles que pueden asignar/eliminar en fechas pasadas. */
+export function canOverridePastDateAssignments(roleCode: string | null | undefined): boolean {
+  if (!roleCode) return false;
+  return (SYSTEM_ADMIN_ROLES as readonly string[]).includes(roleCode);
+}

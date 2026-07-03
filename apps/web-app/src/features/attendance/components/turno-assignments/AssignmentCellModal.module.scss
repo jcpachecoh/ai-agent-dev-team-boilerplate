@@ -1,0 +1,60 @@
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.modeToggle {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.modeButton,
+.modeActive {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--cargo-border);
+  background: var(--cargo-surface);
+  color: var(--cargo-text);
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.modeActive {
+  background: var(--cargo-secondary-soft);
+  border-color: var(--cargo-secondary-border);
+  color: var(--cargo-secondary);
+  font-weight: 600;
+}
+
+.select {
+  --control-width: 100%;
+}
+
+.restNotice,
+.readOnlyNotice {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  background: var(--cargo-teal-soft);
+  color: var(--cargo-teal);
+  font-size: 0.8125rem;
+}
+
+.readOnlyNotice {
+  background: var(--cargo-accent-soft);
+  color: var(--cargo-accent);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.actionsRight {
+  display: flex;
+  gap: 0.75rem;
+}
