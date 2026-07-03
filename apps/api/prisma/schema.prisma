@@ -455,6 +455,8 @@ model User {
   loginAudits          LoginAudit[]
   auditLogs            AuditLog[]
   committeeMemberships ProductionCommitteeMember[]
+  turnosCreated        Turno[]                     @relation("TurnoCreatedBy")
+  turnosUpdated        Turno[]                     @relation("TurnoUpdatedBy")
 
   @@unique([tenantId, email])
   @@unique([tenantId, cedula])
@@ -514,36 +516,36 @@ enum EmployeeCatalogType {
 }
 
 model Location {
-  id            String    @id @default(cuid())
-  tenantId      String
-  name          String
-  address       String
-  city          String?
-  phone         String?
-  code          String?
-  latitude      String?
-  longitude     String?
+  id                  String    @id @default(cuid())
+  tenantId            String
+  name                String
+  address             String
+  city                String?
+  phone               String?
+  code                String?
+  latitude            String?
+  longitude           String?
   // Geo fields for mobile attendance geofencing (OS-499/OS-505).
   // latitude/longitude kept as String? for backwards compat; new Float fields used for math.
-  geoLatitude          Float?
-  geoLongitude         Float?
-  checkInRadiusMeters  Int?
-  businessHours Json?
-  openingTime   String?
-  closingTime   String?
-  isActive      Boolean   @default(true)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  deletedAt     DateTime?
+  geoLatitude         Float?
+  geoLongitude        Float?
+  checkInRadiusMeters Int?
+  businessHours       Json?
+  openingTime         String?
+  closingTime         String?
+  isActive            Boolean   @default(true)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  deletedAt           DateTime?
 
-  tenant              Tenant                     @relation(fields: [tenantId], references: [id])
-  users               UserLocation[]
-  employeeDetails     EmployeeDetails[]
+  tenant               Tenant                     @relation(fields: [tenantId], references: [id])
+  users                UserLocation[]
+  employeeDetails      EmployeeDetails[]
   attendanceLogs       AttendanceLog[]
   mobileAttendanceLogs MobileAttendanceLog[]
   productionIncidents  ProductionIncident[]
-  supplyItems         SupplyItem[]
-  productionRecipes   ProductionRecipeLocation[]
+  supplyItems          SupplyItem[]
+  productionRecipes    ProductionRecipeLocation[]
 
   @@unique([tenantId, name])
   @@unique([tenantId, code])
@@ -592,11 +594,11 @@ model EmployeeDetails {
   arlName              String
   arlRiskLevel         ArlRiskLevel
   cajaCompensacion     String
-  barrio              String?
-  localidad           String?
-  costCenter          CostCenter          @default(OPERACIONES)
-  laborClassification LaborClassification @default(ADMINISTRATIVO)
-  nonSalaryAmount     Decimal?            @db.Decimal(12, 2)
+  barrio               String?
+  localidad            String?
+  costCenter           CostCenter           @default(OPERACIONES)
+  laborClassification  LaborClassification  @default(ADMINISTRATIVO)
+  nonSalaryAmount      Decimal?             @db.Decimal(12, 2)
   pinHash              String?
   photoStorageObjectId String?
   isActive             Boolean              @default(true)
@@ -604,16 +606,17 @@ model EmployeeDetails {
   updatedAt            DateTime             @updatedAt
   deletedAt            DateTime?
 
-  user                User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  location            Location                  @relation(fields: [locationId], references: [id])
-  positionRef         EmployeePosition?         @relation(fields: [positionId], references: [id], onDelete: SetNull)
-  photoStorageObject  StorageObject?            @relation(fields: [photoStorageObjectId], references: [id], onDelete: SetNull)
-  positionHistory     EmployeePositionHistory[]
-  attendanceLogs          AttendanceLog[]
+  user                 User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  location             Location                  @relation(fields: [locationId], references: [id])
+  positionRef          EmployeePosition?         @relation(fields: [positionId], references: [id], onDelete: SetNull)
+  photoStorageObject   StorageObject?            @relation(fields: [photoStorageObjectId], references: [id], onDelete: SetNull)
+  positionHistory      EmployeePositionHistory[]
+  attendanceLogs       AttendanceLog[]
   mobileAttendanceLogs MobileAttendanceLog[]
   socialProfiles       EmployeeSocialProfile[]
-  financialProfile EmployeeFinancialProfile?
-  personalData     EmployeePersonalData?
+  financialProfile     EmployeeFinancialProfile?
+  personalData         EmployeePersonalData?
+  turnoAssignments     TurnoAssignment[]
 
   @@index([tenantId])
   @@index([locationId])
@@ -1482,33 +1485,33 @@ enum MobileAttendanceEventType {
 }
 
 enum MobileAttendanceStatus {
-  VALID    // Distancia dentro del radio configurado
+  VALID // Distancia dentro del radio configurado
   REJECTED // Fuera de radio, empleado inactivo u otro rechazo de validación
-  PENDING  // Sede sin geofence configurado — requiere revisión manual
+  PENDING // Sede sin geofence configurado — requiere revisión manual
 }
 
 model MobileAttendanceLog {
-  id               String                    @id @default(cuid())
-  tenantId         String
-  employeeId       String
-  locationId       String
-  eventType        MobileAttendanceEventType
-  status           MobileAttendanceStatus    @default(PENDING)
-  timestamp        DateTime                  @default(now())
-  workDate         DateTime
-  clientLatitude   Float
-  clientLongitude  Float
-  distanceMeters   Float?
-  radiusMeters     Int?
-  storageObjectId  String?
-  photoUrl         String?
+  id                String                    @id @default(cuid())
+  tenantId          String
+  employeeId        String
+  locationId        String
+  eventType         MobileAttendanceEventType
+  status            MobileAttendanceStatus    @default(PENDING)
+  timestamp         DateTime                  @default(now())
+  workDate          DateTime
+  clientLatitude    Float
+  clientLongitude   Float
+  distanceMeters    Float?
+  radiusMeters      Int?
+  storageObjectId   String?
+  photoUrl          String?
   facialMatchScore  Float?
   facialMatchResult String?
-  rejectionReason  String?
-  notes            String?
-  createdAt        DateTime                  @default(now())
-  updatedAt        DateTime                  @updatedAt
-  deletedAt        DateTime?
+  rejectionReason   String?
+  notes             String?
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
+  deletedAt         DateTime?
 
   employee EmployeeDetails @relation(fields: [employeeId], references: [id])
   location Location        @relation(fields: [locationId], references: [id])
@@ -1683,4 +1686,60 @@ model AttendanceLog {
   @@index([tenantId, locationId, workDate])
   @@index([tenantId, workDate])
   @@map("attendance_logs")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// NÓMINA — TURNOS (NOM-08)
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum TurnoTipo {
+  PERMANENTE
+  VARIABLE
+}
+
+enum TurnoJornada {
+  DIURNO
+  NOCTURNO
+  MIXTO
+}
+
+model Turno {
+  id              String       @id @default(cuid())
+  tenantId        String
+  nombre          String       @db.VarChar(100)
+  sigla           String       @db.VarChar(30)
+  tipo            TurnoTipo
+  jornada         TurnoJornada
+  horaInicio      String
+  horaFin         String
+  estado          Boolean      @default(true)
+  createdByUserId String?
+  updatedByUserId String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  createdBy   User?             @relation("TurnoCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  updatedBy   User?             @relation("TurnoUpdatedBy", fields: [updatedByUserId], references: [id], onDelete: SetNull)
+  assignments TurnoAssignment[]
+
+  @@unique([tenantId, sigla])
+  @@index([tenantId, estado])
+  @@index([tenantId, nombre])
+  @@map("turnos")
+}
+
+model TurnoAssignment {
+  id         String   @id @default(cuid())
+  tenantId   String
+  turnoId    String
+  employeeId String
+  workDate   DateTime @db.Date
+  createdAt  DateTime @default(now())
+
+  turno    Turno           @relation(fields: [turnoId], references: [id])
+  employee EmployeeDetails @relation(fields: [employeeId], references: [id])
+
+  @@index([tenantId, turnoId, workDate])
+  @@index([tenantId, employeeId, workDate])
+  @@map("turno_assignments")
 }

@@ -5,6 +5,7 @@ import { CargoPagination, type CargoPaginationProps } from '../cargo-pagination'
 import { CargoTableHeader } from '../cargo-table-header';
 import {
   buildCargoHeaderColumns,
+  getCargoColumns,
   getCargoTableMinWidthPx,
   type CargoSortColumnKey,
   type CargoSortDirection,
@@ -19,6 +20,7 @@ export interface CargoTableProps {
   sortColumn?: CargoSortColumnKey | null;
   sortDirection?: CargoSortDirection;
   onSortColumn?: (column: CargoSortColumnKey) => void;
+  enableSorting?: boolean;
   theme?: CargoTheme;
   size?: CargoSize;
   className?: string;
@@ -32,11 +34,14 @@ export function CargoTable({
   sortColumn = null,
   sortDirection = 'asc',
   onSortColumn,
+  enableSorting = true,
   theme = 'dark',
   size = 'md',
   className,
 }: CargoTableProps): JSX.Element {
-  const columns = buildCargoHeaderColumns(showActions, sortColumn, sortDirection, onSortColumn);
+  const columns = enableSorting
+    ? buildCargoHeaderColumns(showActions, sortColumn, sortDirection, onSortColumn)
+    : getCargoColumns(showActions).map((column) => ({ ...column, sortable: false }));
   const tableMinWidthPx = getCargoTableMinWidthPx(showActions);
 
   return (

@@ -147,3 +147,11 @@ export function canWriteFinancialProfile(roleCode: string | null | undefined): b
   if (!roleCode) return false;
   return (FINANCIAL_WRITE_ROLES as readonly string[]).includes(roleCode);
 }
+
+/** NOM-08 — crear, editar y cambiar estado de turnos (solo Superusuario). */
+export const TURNOS_WRITE_ROLES: readonly RoleCode[] = [...SYSTEM_ADMIN_ROLES];
+
+export function canWriteTurnos(roleCode: string | null | undefined): boolean {
+  if (!roleCode) return false;
+  return (TURNOS_WRITE_ROLES as readonly string[]).includes(roleCode);
+}

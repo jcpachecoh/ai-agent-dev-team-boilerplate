@@ -6,6 +6,7 @@ import {
   AttendanceDashboardScreen,
   AttendanceLocationDetailScreen,
   AttendanceMonitorScreen,
+  TurnosListScreen,
 } from '@/features/attendance';
 import { ATTENDANCE_ROUTES } from '@/features/attendance/constants/routes';
 import ModulePlaceholderPage from '@/pages/ModulePlaceholderPage';
@@ -24,9 +25,10 @@ export default function AttendancePage(): React.JSX.Element {
     <Routes>
       <Route index element={<AttendanceDashboardScreen />} />
       <Route path="colaboradores" element={<AttendanceCollaboratorsScreen />} />
+      <Route path="turnos" element={<TurnosListScreen />} />
       <Route
-        path="turnos"
-        element={<ModulePlaceholderPage title="Turnos" subtitle={ATTENDANCE_COMING_SOON} />}
+        path="turnos/asignacion"
+        element={<Navigate to={ATTENDANCE_ROUTES.shifts} replace />}
       />
       <Route path="asistencias" element={<AttendanceMonitorScreen />} />
       <Route path="asistencias/:locationId" element={<AttendanceLocationDetailScreen />} />

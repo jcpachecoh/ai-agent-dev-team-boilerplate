@@ -4,6 +4,7 @@ import type {
   AttendanceHistoryFilters,
   AttendanceMonitorPeriod,
 } from '../types/attendance.types';
+import type { TurnosListQuery } from '../types/turnos.types';
 
 export const attendanceKeys = {
   all: ['attendance'] as const,
@@ -19,4 +20,8 @@ export const attendanceKeys = {
     [...attendanceKeys.all, 'control-panel', filters] as const,
   comparison: (filters: AttendanceComparisonFilters) =>
     [...attendanceKeys.all, 'comparison', filters] as const,
+  turnos: {
+    all: () => [...attendanceKeys.all, 'turnos'] as const,
+    list: (filters: TurnosListQuery) => [...attendanceKeys.turnos.all(), 'list', filters] as const,
+  },
 };
