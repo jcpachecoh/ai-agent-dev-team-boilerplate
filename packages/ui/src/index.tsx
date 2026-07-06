@@ -12,6 +12,7 @@ export { Card } from './components/Card';
 
 export * from './components/feedback/alert';
 export * from './components/feedback/empty-state';
+export * from './components/feedback/loading-state';
 export * from './components/feedback/error-boundary';
 export * from './components/feedback/progress';
 export * from './components/feedback/skeleton';

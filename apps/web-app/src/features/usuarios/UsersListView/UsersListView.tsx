@@ -7,6 +7,7 @@ import {
   UsuarioPageSection,
   UsuarioTable,
   UsuarioTableItem,
+  LoadingState,
   type UsuarioSortColumnKey,
   type UsuarioSortDirection,
 } from '@restopsiq/ui';
@@ -173,7 +174,11 @@ export default function UsersListView(): JSX.Element {
 
       <UsuarioPageSection theme={usuarioTheme} variant="body" className={styles.bodySection}>
         {usersQuery.isLoading ? (
-          <div className={styles.state}>Cargando usuarios…</div>
+          <LoadingState
+            message="Cargando usuarios…"
+            theme={usuarioTheme === 'dark' ? 'dark' : 'light'}
+            layout="compact"
+          />
         ) : usersQuery.isError ? (
           <div className={styles.state}>Error al cargar usuarios.</div>
         ) : sortedFiltered.length === 0 ? (

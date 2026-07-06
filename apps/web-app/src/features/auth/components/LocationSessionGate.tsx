@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { LoadingState } from '@restopsiq/ui';
 import { Navigate } from 'react-router-dom';
 
 import { AuthApiError } from '../api/auth.api';
@@ -24,9 +25,11 @@ export function LocationSessionGate({ children }: { children: ReactNode }): Reac
 
   if (isLoading) {
     return (
-      <div className={styles.loading} role="status">
-        Cargando sedes asignadas…
-      </div>
+      <LoadingState
+        message="Cargando sedes asignadas…"
+        layout="compact"
+        className={styles.loading}
+      />
     );
   }
 

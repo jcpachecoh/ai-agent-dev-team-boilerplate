@@ -1,16 +1,13 @@
-import styles from './PayrollEmployeeProfileTabLoading.module.scss';
+import { LoadingState } from '@restopsiq/ui';
 
 interface PayrollEmployeeProfileTabLoadingProps {
   label?: string;
+  theme?: 'light' | 'dark';
 }
 
 export function PayrollEmployeeProfileTabLoading({
-  label = 'Cargando',
+  label = 'Cargando…',
+  theme = 'light',
 }: PayrollEmployeeProfileTabLoadingProps): React.JSX.Element {
-  return (
-    <div className={styles.loadingState} role="status" aria-live="polite" aria-label={label}>
-      <div className={styles.spinner} aria-hidden />
-      <p className={styles.loadingLabel}>{label}</p>
-    </div>
-  );
+  return <LoadingState message={label} theme={theme} layout="compact" />;
 }

@@ -10,6 +10,7 @@ import {
   InventarioExportActions,
   InventarioPrimaryButton,
   InventarioSearch,
+  LoadingState,
   RecetaFilterSelect,
   toast,
 } from '@restopsiq/ui';
@@ -64,11 +65,11 @@ const JORNADA_LABELS: Record<TurnoJornada, string> = {
 };
 
 const TURNOS_TABLE_COLUMNS: CargoColumnDef[] = [
-  { key: 'title', label: 'Nombre del turno', width: 'minmax(200px, 1.4fr)', align: 'center' },
-  { key: 'area', label: 'Sigla', width: 'minmax(140px, 1fr)', align: 'center' },
-  { key: 'salary', label: 'Horario', width: 'minmax(220px, 1.4fr)', align: 'center' },
+  { key: 'title', label: 'Nombre del turno', width: 'minmax(200px, 1.4fr)', align: 'left' },
+  { key: 'area', label: 'Sigla', width: 'minmax(140px, 1fr)', align: 'left' },
+  { key: 'salary', label: 'Horario', width: 'minmax(220px, 1.4fr)', align: 'right' },
   { key: 'status', label: 'Estado', width: 'minmax(108px, max-content)', align: 'center' },
-  { key: 'actions', label: 'Acciones', width: '72px', align: 'center' },
+  { key: 'actions', label: 'Acciones', width: '72px', align: 'right' },
 ];
 
 function getTurnosTableColumns(showActions: boolean): CargoColumnDef[] {
@@ -334,14 +335,10 @@ export function TurnosListScreen(): React.JSX.Element {
 
       <CargoPageSection theme={cargoTheme}>
         {turnosQuery.isLoading ? (
-          <div className={styles.state}>
-            <div className={styles.skeletonRows}>
-              {Array.from({ length: 4 }).map((_, index) => (
-                <div key={index} className={styles.skeletonRow} aria-hidden />
-              ))}
-            </div>
-            <span className={styles.loadingLabel}>Cargando turnos...</span>
-          </div>
+          <LoadingState
+            message="Cargando turnos…"
+            theme={cargoTheme === 'dark' ? 'dark' : 'light'}
+          />
         ) : null}
 
         {turnosQuery.isError ? (

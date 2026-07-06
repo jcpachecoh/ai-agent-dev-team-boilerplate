@@ -7,7 +7,7 @@ import {
   ProveedorProductModalFields,
   RecetaFilterSelect,
   RecetaTextInput,
-  Spinner,
+  LoadingState,
 } from '@restopsiq/ui';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -212,10 +212,7 @@ export default function ProveedorFormView({ mode }: ProveedorFormViewProps): Rea
   if (mode === 'edit' && supplierId && supplierQuery.isPending) {
     return (
       <div className={`${styles.content} ${styles.contentPadded}`}>
-        <div className={styles.documentationLoading}>
-          <Spinner size="lg" theme={theme === 'dark' ? 'dark' : 'light'} />
-          <p className={styles.documentationLoadingText}>Cargando proveedor…</p>
-        </div>
+        <LoadingState message="Cargando proveedor…" theme={theme === 'dark' ? 'dark' : 'light'} />
       </div>
     );
   }

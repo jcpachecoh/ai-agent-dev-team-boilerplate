@@ -10,6 +10,7 @@ import {
   SedePageSection,
   SedeTable,
   SedeTableItem,
+  LoadingState,
   type SedeStatusFilter,
   toast,
 } from '@restopsiq/ui';
@@ -191,6 +192,8 @@ export default function SedesListView(): JSX.Element {
             <p className={`${styles.stateMessage} ${styles.stateMessageError}`} role="alert">
               {getErrorMessage(error)}
             </p>
+          ) : isPending ? (
+            <LoadingState message="Cargando sedes…" theme={theme === 'dark' ? 'dark' : 'light'} />
           ) : (
             <SedeTable
               theme={theme}
@@ -200,9 +203,7 @@ export default function SedesListView(): JSX.Element {
               pagination={{
                 page: 1,
                 totalPages: 1,
-                summary: isPending
-                  ? 'Cargando sedes…'
-                  : `Mostrando 1-${filteredRows.length} de ${rows.length}`,
+                summary: `Mostrando 1-${filteredRows.length} de ${rows.length}`,
               }}
             >
               {filteredRows.map((row) => (

@@ -7,6 +7,7 @@ import {
   RolSplitLayout,
   RolTable,
   RolTableRow,
+  LoadingState,
   toast,
 } from '@restopsiq/ui';
 import { useState, type JSX } from 'react';
@@ -155,7 +156,11 @@ export default function RolesListView(): JSX.Element {
 
       <RolPageSection theme={theme} variant="body">
         {rolesQuery.isLoading ? (
-          <div className={styles.loadingState}>Cargando roles…</div>
+          <LoadingState
+            message="Cargando roles…"
+            theme={theme === 'dark' ? 'dark' : 'light'}
+            layout="compact"
+          />
         ) : rolesQuery.isError ? (
           <div className={styles.loadingState}>Error al cargar roles.</div>
         ) : (

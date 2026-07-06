@@ -7,8 +7,8 @@ import {
   RecetaFilterSelect,
   RecetaMetricCard,
   RecetaTextInput,
+  LoadingState,
   resolveEmpleadoInitials,
-  Spinner,
 } from '@restopsiq/ui';
 import { MapPin, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
@@ -531,10 +531,11 @@ export function AttendanceDashboardScreen(): React.JSX.Element {
                 {query.isLoading ? (
                   <tr>
                     <td colSpan={10} className={styles.emptyCell}>
-                      <div className={styles.loadingState} role="status" aria-live="polite">
-                        <Spinner size="lg" theme={asistenciaTheme === 'light' ? 'light' : 'dark'} />
-                        <p className={styles.loadingText}>Cargando línea de tiempo…</p>
-                      </div>
+                      <LoadingState
+                        message="Cargando línea de tiempo…"
+                        theme={asistenciaTheme === 'light' ? 'light' : 'dark'}
+                        layout="inline"
+                      />
                     </td>
                   </tr>
                 ) : (data?.timeline.items.length ?? 0) === 0 ? (

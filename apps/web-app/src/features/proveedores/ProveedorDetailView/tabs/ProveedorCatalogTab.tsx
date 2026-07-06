@@ -1,4 +1,4 @@
-import { Spinner } from '@restopsiq/ui';
+import { LoadingState } from '@restopsiq/ui';
 
 import { useUiTheme } from '@/hooks/useUiTheme';
 import { getErrorMessage, isGraphqlConfigured } from '@/lib/graphql-client';
@@ -41,10 +41,7 @@ export default function ProveedorCatalogTab({
 
   if (isPending) {
     return (
-      <div className={styles.documentationLoading}>
-        <Spinner size="lg" theme={theme === 'dark' ? 'dark' : 'light'} />
-        <p className={styles.documentationLoadingText}>Cargando catálogo…</p>
-      </div>
+      <LoadingState message="Cargando catálogo…" theme={theme === 'dark' ? 'dark' : 'light'} />
     );
   }
 

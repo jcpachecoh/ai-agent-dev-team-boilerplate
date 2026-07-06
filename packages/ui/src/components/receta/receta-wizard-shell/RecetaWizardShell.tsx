@@ -1,6 +1,7 @@
 import { X } from 'lucide-react';
 import React, { type JSX, type ReactNode } from 'react';
 
+import { LoadingState } from '../../feedback/loading-state';
 import { RecetaFormButton } from '../receta-form-button/RecetaFormButton';
 import { RecetaWizardStepper } from '../receta-wizard-stepper/RecetaWizardStepper';
 import type { RecetaTheme } from '../shared/receta-types';
@@ -122,7 +123,14 @@ export function RecetaWizardShell({
       </div>
 
       {error ? <p className={styles.error}>{error}</p> : null}
-      {loading ? <p className={styles.loading}>{loadingMessage}</p> : null}
+      {loading ? (
+        <LoadingState
+          message={loadingMessage}
+          theme={theme === 'light' ? 'light' : 'dark'}
+          layout="inline"
+          className={styles.loading}
+        />
+      ) : null}
 
       <div className={styles.body}>{children}</div>
 

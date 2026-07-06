@@ -1,4 +1,4 @@
-import { InventarioPageHeader, InventarioPanel, toast } from '@restopsiq/ui';
+import { InventarioPageHeader, InventarioPanel, LoadingState, toast } from '@restopsiq/ui';
 import { Link, useParams } from 'react-router-dom';
 
 import { InventoryScreenState } from '@/components/inventory/InventoryScreenState';
@@ -104,7 +104,11 @@ export function InventoryProductDetailScreen(): React.JSX.Element {
           <div className={[shared.tableWrap, shared.tableWrapInset].join(' ')}>
             <div className={shared.tableBody}>
               {suppliersQuery.isLoading ? (
-                <p className={styles.muted}>Cargando proveedores…</p>
+                <LoadingState
+                  message="Cargando proveedores…"
+                  theme={theme === 'dark' ? 'dark' : 'light'}
+                  layout="inline"
+                />
               ) : suppliers.length === 0 ? (
                 <p className={styles.muted}>Sin proveedores asociados.</p>
               ) : (
@@ -139,7 +143,11 @@ export function InventoryProductDetailScreen(): React.JSX.Element {
           <div className={[shared.tableWrap, shared.tableWrapInset].join(' ')}>
             <div className={shared.tableBody}>
               {historyQuery.isLoading ? (
-                <p className={styles.muted}>Cargando historial…</p>
+                <LoadingState
+                  message="Cargando historial…"
+                  theme={theme === 'dark' ? 'dark' : 'light'}
+                  layout="inline"
+                />
               ) : history.length === 0 ? (
                 <p className={styles.muted}>Sin movimientos de costo registrados.</p>
               ) : (

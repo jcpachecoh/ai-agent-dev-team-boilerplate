@@ -1,8 +1,8 @@
 import type { JSX } from 'react';
 import { useMemo, useState } from 'react';
 
+import { LoadingState } from '../../feedback/loading-state';
 import { RecetaMetricCard } from '../../receta/receta-metric-card';
-import { Spinner } from '../../Spinner';
 import { AsistenciaContextBar } from '../asistencia-context-bar';
 import { AsistenciaLocationCard } from '../asistencia-location-card';
 import { AsistenciaLocationList, AsistenciaLocationListRow } from '../asistencia-location-list';
@@ -137,10 +137,12 @@ export function AsistenciaLocationHub({
             {errorMessage}
           </p>
         ) : loading ? (
-          <div className={styles.loadingState} role="status" aria-live="polite">
-            <Spinner size="lg" theme={theme === 'light' ? 'light' : 'dark'} />
-            <p className={styles.loadingText}>Cargando sedes…</p>
-          </div>
+          <LoadingState
+            message="Cargando sedes…"
+            theme={theme === 'light' ? 'light' : 'dark'}
+            layout="section"
+            className={styles.loadingState}
+          />
         ) : sortedLocations.length === 0 ? (
           <p className={styles.emptyMessage}>{emptyMessage}</p>
         ) : resolvedViewMode === 'grid' ? (

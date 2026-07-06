@@ -1,4 +1,4 @@
-import { EmpresaInformacionPreview, toast } from '@restopsiq/ui';
+import { EmpresaInformacionPreview, LoadingState, toast } from '@restopsiq/ui';
 import { type JSX } from 'react';
 
 import { useUiTheme } from '@/hooks/useUiTheme';
@@ -44,7 +44,14 @@ export default function EmpresaInformacionView(): JSX.Element {
   }
 
   if (isLoading || !values) {
-    return <p className={styles.stateMessage}>Cargando información del restaurante…</p>;
+    return (
+      <LoadingState
+        message="Cargando información del restaurante…"
+        theme={theme === 'dark' ? 'dark' : 'light'}
+        layout="compact"
+        className={styles.stateMessage}
+      />
+    );
   }
 
   if (isError) {

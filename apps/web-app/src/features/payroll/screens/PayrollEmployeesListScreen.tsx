@@ -6,6 +6,7 @@ import {
   EmpleadoPageSection,
   EmpleadoTable,
   EmpleadoTableItem,
+  LoadingState,
   RecetaMetricCard,
   toast,
   toggleEmpleadoSort,
@@ -278,7 +279,11 @@ export function PayrollEmployeesListScreen(): React.JSX.Element {
 
       <EmpleadoPageSection theme={empleadoTheme}>
         {employeesQuery.isLoading ? (
-          <div className={styles.state}>Cargando empleados...</div>
+          <LoadingState
+            message="Cargando empleados…"
+            theme={empleadoTheme === 'dark' ? 'dark' : 'light'}
+            layout="compact"
+          />
         ) : null}
 
         {employeesQuery.isError ? (

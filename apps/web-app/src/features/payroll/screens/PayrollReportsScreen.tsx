@@ -1,4 +1,5 @@
 import {
+  LoadingState,
   NominaDashboardPreview,
   type NominaPeriodMode,
   type NominaReportDefinition,
@@ -147,7 +148,7 @@ export function PayrollReportsScreen(): React.JSX.Element {
   if (isLoading) {
     return (
       <div className={[styles.state, styles[`theme--${nominaTheme}`]].join(' ')}>
-        <p>Cargando reportes de nómina…</p>
+        <LoadingState message="Cargando reportes de nómina…" theme={nominaTheme} layout="compact" />
       </div>
     );
   }

@@ -8,6 +8,7 @@ import {
   EmpleadoTable,
   EmpleadoTableItem,
   InventarioPrimaryButton,
+  LoadingState,
   Modal,
   RecetaFilterSelect,
   RecetaMetricCard,
@@ -381,7 +382,7 @@ export function AttendanceCollaboratorsScreen(): React.JSX.Element {
   };
 
   return (
-    <EmpleadoPage theme={empleadoTheme} className={styles.screen}>
+    <EmpleadoPage theme={empleadoTheme}>
       <EmpleadoPageSection theme={empleadoTheme} divider variant="header">
         <EmpleadoPageHeader
           title="Colaboradores"
@@ -561,9 +562,13 @@ export function AttendanceCollaboratorsScreen(): React.JSX.Element {
         </div>
       </EmpleadoPageSection>
 
-      <EmpleadoPageSection theme={empleadoTheme}>
+      <EmpleadoPageSection theme={empleadoTheme} className={styles.tableSection}>
         {collaboratorsQuery.isLoading ? (
-          <div className={styles.state}>Cargando colaboradores...</div>
+          <LoadingState
+            message="Cargando colaboradores…"
+            theme={empleadoTheme === 'dark' ? 'dark' : 'light'}
+            layout="compact"
+          />
         ) : null}
 
         {collaboratorsQuery.isError ? (
@@ -732,7 +737,13 @@ export function AttendanceCollaboratorsScreen(): React.JSX.Element {
         title="Historial de cambios"
         description="Últimos cambios registrados en auditoría para este colaborador."
       >
-        {auditQuery.isLoading ? <p>Cargando historial...</p> : null}
+        {auditQuery.isLoading ? (
+          <LoadingState
+            message="Cargando historial…"
+            theme={empleadoTheme === 'dark' ? 'dark' : 'light'}
+            layout="inline"
+          />
+        ) : null}
         {auditQuery.isError ? <p>No se pudo cargar el historial.</p> : null}
         {!auditQuery.isLoading && !auditQuery.isError && (auditQuery.data ?? []).length === 0 ? (
           <p>No hay historial de cambios para este colaborador</p>

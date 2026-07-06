@@ -2,7 +2,7 @@ import {
   ProveedorActionButton,
   ProveedorDetailHeader,
   ProveedorDetailTabBar,
-  Spinner,
+  LoadingState,
 } from '@restopsiq/ui';
 import { useUiTheme } from '@/hooks/useUiTheme';
 import { Mail, Pencil } from 'lucide-react';
@@ -75,10 +75,7 @@ export default function ProveedorDetailView(): React.JSX.Element {
   if (isPending) {
     return (
       <div className={`${styles.content} ${styles.contentPadded}`}>
-        <div className={styles.documentationLoading}>
-          <Spinner size="lg" theme={theme === 'dark' ? 'dark' : 'light'} />
-          <p className={styles.documentationLoadingText}>Cargando proveedor…</p>
-        </div>
+        <LoadingState message="Cargando proveedor…" theme={theme === 'dark' ? 'dark' : 'light'} />
       </div>
     );
   }

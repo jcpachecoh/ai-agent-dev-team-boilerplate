@@ -7,6 +7,7 @@ import {
   CargoTable,
   CargoTableItem,
   EmptyState,
+  LoadingState,
   RecetaMetricCard,
   toast,
   toggleCargoSort,
@@ -267,14 +268,10 @@ export function EmployeePositionsListScreen(): React.JSX.Element {
 
       <CargoPageSection theme={cargoTheme}>
         {positionsQuery.isLoading ? (
-          <div className={styles.state}>
-            <div className={styles.skeletonRows}>
-              {Array.from({ length: 4 }).map((_, index) => (
-                <div key={index} className={styles.skeletonRow} aria-hidden />
-              ))}
-            </div>
-            <span className={styles.loadingLabel}>Cargando cargos...</span>
-          </div>
+          <LoadingState
+            message="Cargando cargos…"
+            theme={cargoTheme === 'dark' ? 'dark' : 'light'}
+          />
         ) : null}
 
         {positionsQuery.isError ? (

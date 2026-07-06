@@ -67,20 +67,17 @@
   background: var(--receta-surface-raised);
 }
 
-.error,
 .loading {
+  flex-shrink: 0;
+  padding: $spacing-sm $spacing-lg 0;
+}
+
+.error {
   flex-shrink: 0;
   margin: 0;
   padding: $spacing-sm $spacing-lg 0;
   font-size: $font-size-sm;
-}
-
-.error {
   color: receta.$receta-failed;
-}
-
-.loading {
-  color: var(--receta-muted);
 }
 
 .body {

@@ -1,4 +1,4 @@
-import { toast } from '@restopsiq/ui';
+import { LoadingState, toast } from '@restopsiq/ui';
 import { Pencil, Plus, PowerOff } from 'lucide-react';
 import { useMemo, useState, type JSX } from 'react';
 
@@ -109,7 +109,7 @@ export default function PermissionsListView(): JSX.Element {
 
         <div className={styles.body}>
           {isLoading ? (
-            <div className={styles.loading}>Cargando permisos…</div>
+            <LoadingState message="Cargando permisos…" layout="compact" />
           ) : (
             Array.from(grouped.entries()).map(([module, perms]) => (
               <section key={module} className={styles.moduleSection}>

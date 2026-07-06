@@ -1,4 +1,9 @@
-import { NominaKpiGrid, NominaLegalAlertsPanel, NominaPageHeader } from '@restopsiq/ui';
+import {
+  LoadingState,
+  NominaKpiGrid,
+  NominaLegalAlertsPanel,
+  NominaPageHeader,
+} from '@restopsiq/ui';
 import { useMemo } from 'react';
 
 import { useTheme } from '@/providers/ThemeProvider';
@@ -74,7 +79,11 @@ export function AttendanceReportsScreen(): React.JSX.Element {
       <section className={styles.tableSection} aria-label="Detalle por colaborador">
         <h2 className={styles.tableTitle}>Detalle de asistencia</h2>
         {attendanceQuery.isLoading ? (
-          <p className={styles.muted}>Cargando reporte…</p>
+          <LoadingState
+            message="Cargando reporte…"
+            theme={nominaTheme === 'dark' ? 'dark' : 'light'}
+            layout="inline"
+          />
         ) : attendanceQuery.isError ? (
           <p className={styles.error} role="alert">
             No se pudo cargar el reporte de asistencia.

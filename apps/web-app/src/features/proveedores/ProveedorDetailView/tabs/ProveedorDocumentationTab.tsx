@@ -1,6 +1,6 @@
 import {
   ProveedorDocumentationTable,
-  Spinner,
+  LoadingState,
   type ProveedorDocumentationTableRowProps,
 } from '@restopsiq/ui';
 import { useRef, useState } from 'react';
@@ -142,10 +142,7 @@ export default function ProveedorDocumentationTab({
 
   if (isPending) {
     return (
-      <div className={styles.documentationLoading}>
-        <Spinner size="lg" theme={theme === 'dark' ? 'dark' : 'light'} />
-        <p className={styles.documentationLoadingText}>Cargando documentación…</p>
-      </div>
+      <LoadingState message="Cargando documentación…" theme={theme === 'dark' ? 'dark' : 'light'} />
     );
   }
 

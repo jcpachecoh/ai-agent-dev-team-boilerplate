@@ -3,6 +3,7 @@ import {
   RecetaFilterSelect,
   RecetaMetricCard,
   RecetaSearch,
+  LoadingState,
   RecetaTableHeader,
   type RecetaTableColumn,
   toast,
@@ -226,7 +227,7 @@ export function RecipeCategoriesScreen(): JSX.Element {
 
         <section className={[listStyles.tableWrap, listStyles.tableWrapList].join(' ')}>
           {categoriesQuery.isLoading ? (
-            <p className={listStyles.loadError}>Cargando categorías…</p>
+            <LoadingState message="Cargando categorías…" layout="compact" />
           ) : filtered.length === 0 ? (
             <p className={listStyles.loadError}>No hay categorías que coincidan con los filtros.</p>
           ) : (

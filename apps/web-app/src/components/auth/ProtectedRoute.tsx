@@ -1,3 +1,4 @@
+import { LoadingState } from '@restopsiq/ui';
 import { Navigate, Outlet } from 'react-router-dom';
 
 import { AppModule, canAccessModule, canAccessPath } from '@/config/rbac.config';
@@ -19,7 +20,7 @@ export function ProtectedRoute({ module, children }: ProtectedRouteProps): React
   const waitingForProfile = (isLoading || isFetching) && !roleCode;
 
   if (waitingForProfile) {
-    return <div role="status">Cargando permisos…</div>;
+    return <LoadingState message="Cargando permisos…" layout="compact" />;
   }
 
   if (!canAccessModule(roleCode, module)) {
@@ -41,7 +42,7 @@ export function ModulePathRoute({ children }: ModulePathRouteProps): React.JSX.E
   const waitingForProfile = (isLoading || isFetching) && !roleCode;
 
   if (waitingForProfile) {
-    return <div role="status">Cargando permisos…</div>;
+    return <LoadingState message="Cargando permisos…" layout="compact" />;
   }
 
   if (!canAccessPath(roleCode, pathname)) {

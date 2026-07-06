@@ -4,7 +4,7 @@ import {
   ProveedorPageHeader,
   RecetaFilterSelect,
   RecetaSearch,
-  Spinner,
+  LoadingState,
   type ProveedorTableRowProps,
 } from '@restopsiq/ui';
 import { useMemo, useState } from 'react';
@@ -197,10 +197,10 @@ export default function ProveedoresListView(): React.JSX.Element {
             {getErrorMessage(error)}
           </p>
         ) : isPending ? (
-          <div className={styles.documentationLoading}>
-            <Spinner size="lg" theme={theme === 'dark' ? 'dark' : 'light'} />
-            <p className={styles.documentationLoadingText}>Cargando proveedores…</p>
-          </div>
+          <LoadingState
+            message="Cargando proveedores…"
+            theme={theme === 'dark' ? 'dark' : 'light'}
+          />
         ) : (
           <ProveedorSuppliersResponsiveTable
             className={styles.suppliersTable}

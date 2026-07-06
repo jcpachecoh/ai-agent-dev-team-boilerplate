@@ -5,6 +5,7 @@ import {
   Checkbox,
   EmptyState,
   InventarioSearch,
+  LoadingState,
   RecetaFilterSelect,
   toast,
 } from '@restopsiq/ui';
@@ -269,7 +270,10 @@ export function AsignacionTurnosScreen(): React.JSX.Element {
 
       <CargoPageSection theme={cargoTheme} variant="default">
         {weeklyQuery.isLoading ? (
-          <p className={styles.loading}>Cargando asignaciones…</p>
+          <LoadingState
+            message="Cargando asignaciones…"
+            theme={cargoTheme === 'dark' ? 'dark' : 'light'}
+          />
         ) : weeklyQuery.isError ? (
           <EmptyState
             variant="error"
