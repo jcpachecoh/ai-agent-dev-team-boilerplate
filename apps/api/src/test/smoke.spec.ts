@@ -8,6 +8,7 @@ import { MesAuthResolver } from '../mes/auth/resolver/mes-auth.resolver';
 import { MesAuthService } from '../mes/auth/service/mes-auth.service';
 import { SupplierResolver } from '../supplier/resolver/supplier.resolver';
 import { SupplierService } from '../supplier/service/supplier.service';
+import { SupplierLogisticsService } from '../supplier-logistics/service/supplier-logistics.service';
 import { AppController } from '../app.controller';
 import { AppService } from '../app.service';
 import { PUB_SUB } from '../pubsub/pubsub.module';
@@ -82,6 +83,10 @@ describe('Smoke — unified apps/api', () => {
     const supplierServiceMock = {
       findAll: jest.fn().mockResolvedValue([]),
     };
+    const supplierLogisticsServiceMock = {
+      findBySupplierId: jest.fn(),
+      getHistory: jest.fn(),
+    };
 
     let supplierResolver: SupplierResolver;
 
@@ -90,6 +95,7 @@ describe('Smoke — unified apps/api', () => {
         providers: [
           SupplierResolver,
           { provide: SupplierService, useValue: supplierServiceMock },
+          { provide: SupplierLogisticsService, useValue: supplierLogisticsServiceMock },
           { provide: PUB_SUB, useValue: { publish: jest.fn(), asyncIterator: jest.fn() } },
         ],
       }).compile();

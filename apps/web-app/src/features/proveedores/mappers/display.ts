@@ -15,10 +15,20 @@ const STOCK_UNIT_LABELS: Record<StockUnit, string> = {
   KILOGRAMS: 'Kg',
   ML: 'ml',
   LITERS: 'L',
+  BOX: 'Caja',
 };
 
 export function formatCondicionPago(value: CondicionPago): string {
   return CONDICION_PAGO_LABELS[value];
+}
+
+const LOGISTICS_HISTORY_ACTION_LABELS: Record<string, string> = {
+  CREATE: 'Creación',
+  UPDATE: 'Actualización',
+};
+
+export function formatLogisticsHistoryAction(action: string): string {
+  return LOGISTICS_HISTORY_ACTION_LABELS[action] ?? action;
 }
 
 export function formatStockUnit(value: StockUnit): string {

@@ -29,7 +29,6 @@ interface EditableSupplierProductsTableProps {
   supplierId: string;
   rows: SupplierCatalogRow[];
   linkedSupplyItemIds: Set<string>;
-  isLoading?: boolean;
 }
 
 interface ProductDraft {
@@ -63,7 +62,6 @@ export default function EditableSupplierProductsTable({
   supplierId,
   rows,
   linkedSupplyItemIds,
-  isLoading,
 }: EditableSupplierProductsTableProps): React.JSX.Element {
   const theme = useUiTheme();
   const [createOpen, setCreateOpen] = useState(false);
@@ -203,16 +201,14 @@ export default function EditableSupplierProductsTable({
             setEditingRow(null);
             setFormError(null);
           }}
-          disabled={createOpen || editingRow !== null || isLoading}
+          disabled={createOpen || editingRow !== null}
         />
       </div>
 
       <ProveedorCatalogResponsiveTable
         rows={tableRows}
         emptyState={
-          isLoading ? (
-            'Cargando catálogo…'
-          ) : rows.length === 0 ? (
+          rows.length === 0 ? (
             <EmptyState
               variant="create"
               theme={theme}

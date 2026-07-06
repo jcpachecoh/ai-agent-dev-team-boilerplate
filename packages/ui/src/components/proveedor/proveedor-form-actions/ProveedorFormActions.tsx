@@ -7,9 +7,12 @@ import styles from './ProveedorFormActions.module.scss';
 export interface ProveedorFormActionsProps {
   onCancel?: () => void;
   onSave?: () => void;
+  onSaveDraft?: () => void;
   cancelLabel?: string;
   saveLabel?: string;
+  saveDraftLabel?: string;
   saveDisabled?: boolean;
+  saveDraftDisabled?: boolean;
   saveLoading?: boolean;
   theme?: ProveedorTheme;
   size?: ProveedorSize;
@@ -21,9 +24,12 @@ export interface ProveedorFormActionsProps {
 export function ProveedorFormActions({
   onCancel,
   onSave,
+  onSaveDraft,
   cancelLabel = 'Cancelar',
   saveLabel = 'Guardar',
+  saveDraftLabel = 'Guardar borrador',
   saveDisabled = false,
+  saveDraftDisabled = false,
   saveLoading = false,
   theme = 'light',
   size = 'md',
@@ -45,6 +51,16 @@ export function ProveedorFormActions({
       <button type="button" className={styles.cancel} onClick={onCancel} disabled={saveLoading}>
         {cancelLabel}
       </button>
+      {onSaveDraft && (
+        <button
+          type="button"
+          className={styles.draft}
+          onClick={onSaveDraft}
+          disabled={saveDraftDisabled || saveLoading}
+        >
+          {saveDraftLabel}
+        </button>
+      )}
       <button
         type="button"
         className={styles.save}

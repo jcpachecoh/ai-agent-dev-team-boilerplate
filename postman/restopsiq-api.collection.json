@@ -11717,6 +11717,146 @@
           ]
         }
       ]
+    },
+    {
+      "name": "PROV-LOG — Logística proveedor",
+      "description": "GraphQL: logística de proveedor (borrador → completo, historial, validaciones). Requiere {{graphqlUrl}}, {{tenantId}}, {{accessToken}} y variables {{supplierId}}, {{receptionUserId}}, {{locationId}}.",
+      "item": [
+        {
+          "name": "GraphQL Login OWNER",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation Login($input: LoginInput!) { login(input: $input) { accessToken } }\",\n  \"variables\": { \"input\": { \"email\": \"{{ownerEmail}}\", \"password\": \"{{password}}\" } }\n}"
+            },
+            "url": "{{graphqlUrl}}"
+          }
+        },
+        {
+          "name": "GraphQL createSupplier — logistics draft",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" },
+              { "key": "x-actor-user-id", "value": "{{globalUserId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation CreateSupplier($input: CreateSupplierInput!) { createSupplier(input: $input) { id logistics { status leadTimeDays } } }\",\n  \"variables\": {\n    \"input\": {\n      \"razonSocial\": \"Proveedor Logística Draft\",\n      \"nit\": \"901{{$timestamp}}\",\n      \"tipo\": \"PERSONA_JURIDICA\",\n      \"condicionPago\": \"DIAS_30\",\n      \"saveLogisticsAsDraft\": true,\n      \"logistics\": {\n        \"leadTimeDays\": 2,\n        \"deliveryDays\": [1, 3]\n      }\n    }\n  }\n}"
+            },
+            "url": "{{graphqlUrl}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('create draft: 200', () => pm.response.to.have.status(200));",
+                  "const data = pm.response.json().data;",
+                  "if (data?.createSupplier?.id) pm.collectionVariables.set('supplierId', data.createSupplier.id);",
+                  "pm.test('logistics status DRAFT', () => {",
+                  "  pm.expect(data.createSupplier.logistics.status).to.eql('DRAFT');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GraphQL updateSupplier — logistics COMPLETE",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" },
+              { "key": "x-actor-user-id", "value": "{{globalUserId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation UpdateSupplier($id: ID!, $input: UpdateSupplierInput!) { updateSupplier(id: $id, input: $input) { id logistics { status leadTimeDays deliveryMode transportType } } }\",\n  \"variables\": {\n    \"id\": \"{{supplierId}}\",\n    \"input\": {\n      \"saveLogisticsAsDraft\": false,\n      \"logistics\": {\n        \"deliveryMode\": \"SUPPLIER_DELIVERS\",\n        \"deliveryPlace\": \"PLANT\",\n        \"deliveryDays\": [1, 2, 3, 4, 5],\n        \"leadTimeDays\": 5,\n        \"receptionResponsibleUserId\": \"{{receptionUserId}}\",\n        \"transportType\": \"OWN\",\n        \"requiresColdChain\": false,\n        \"coverageLocationIds\": [\"{{locationId}}\"]\n      }\n    }\n  }\n}"
+            },
+            "url": "{{graphqlUrl}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('complete logistics: 200', () => pm.response.to.have.status(200));",
+                  "const data = pm.response.json().data;",
+                  "pm.test('status COMPLETE', () => pm.expect(data.updateSupplier.logistics.status).to.eql('COMPLETE'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GraphQL supplier — read logistics",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query Supplier($id: ID!) { supplier(id: $id) { id logistics { status leadTimeDays coverageLocations { id name } } } }\",\n  \"variables\": { \"id\": \"{{supplierId}}\" }\n}"
+            },
+            "url": "{{graphqlUrl}}"
+          }
+        },
+        {
+          "name": "GraphQL supplierLogisticsHistory",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query History($supplierId: ID!) { supplierLogisticsHistory(supplierId: $supplierId) { id action changes { field oldValue newValue } } }\",\n  \"variables\": { \"supplierId\": \"{{supplierId}}\" }\n}"
+            },
+            "url": "{{graphqlUrl}}"
+          }
+        },
+        {
+          "name": "GraphQL updateSupplier — cold chain sin temperatura (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation UpdateSupplier($id: ID!, $input: UpdateSupplierInput!) { updateSupplier(id: $id, input: $input) { id } }\",\n  \"variables\": {\n    \"id\": \"{{supplierId}}\",\n    \"input\": {\n      \"saveLogisticsAsDraft\": false,\n      \"logistics\": {\n        \"deliveryMode\": \"SUPPLIER_DELIVERS\",\n        \"deliveryPlace\": \"PLANT\",\n        \"deliveryDays\": [1],\n        \"leadTimeDays\": 3,\n        \"receptionResponsibleUserId\": \"{{receptionUserId}}\",\n        \"transportType\": \"OWN\",\n        \"requiresColdChain\": true\n      }\n    }\n  }\n}"
+            },
+            "url": "{{graphqlUrl}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('cold chain sin temp: GraphQL errors', () => {",
+                  "  pm.expect(pm.response.json().errors).to.be.an('array').that.is.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
     }
   ]
 }

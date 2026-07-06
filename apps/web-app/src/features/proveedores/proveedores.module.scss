@@ -379,6 +379,9 @@
 .formSectionFields {
   grid-column: 1 / -1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
 }
 
 .formField {
@@ -405,6 +408,235 @@
   gap: 0.5rem;
   font-size: 0.85rem;
   color: var(--color-text-primary);
+}
+
+.logisticsErrorSummary {
+  grid-column: 1 / -1;
+  padding: 0.75rem 1rem;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  border-radius: 8px;
+  background: rgba(239, 68, 68, 0.08);
+  color: var(--color-text-primary);
+  font-size: 0.85rem;
+
+  ul {
+    margin: 0.5rem 0 0;
+    padding-left: 1.1rem;
+  }
+}
+
+.logisticsFieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.logisticsOptionsPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--color-border, rgb(255 255 255 / 12%));
+  border-radius: 10px;
+  background: rgb(255 255 255 / 2%);
+}
+
+.logisticsPanelDivider {
+  height: 1px;
+  margin: 0;
+  border: 0;
+  background: var(--color-border, rgb(255 255 255 / 10%));
+}
+
+.logisticsCheckboxOption {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  user-select: none;
+
+  input {
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    flex-shrink: 0;
+    accent-color: #ff9f43;
+    cursor: pointer;
+  }
+}
+
+.logisticsEmptyHint {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+}
+
+.logisticsNumberInput {
+  width: 100%;
+  --control-width: 100%;
+  height: 44px;
+}
+
+.logisticsTextInput {
+  min-height: 44px;
+  height: 44px;
+  box-sizing: border-box;
+}
+
+.logisticsGroupLabel {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.deliveryDaysRow {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.625rem;
+
+  @media (max-width: 640px) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.deliveryDayToggle {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0.5rem 0.25rem;
+  border: 1px solid var(--color-border, rgb(255 255 255 / 14%));
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease,
+    color 0.15s ease;
+  user-select: none;
+
+  input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+  }
+
+  &:hover {
+    border-color: rgb(255 159 67 / 35%);
+    background: rgb(255 159 67 / 6%);
+  }
+
+  &:has(input:checked) {
+    border-color: rgb(255 159 67 / 65%);
+    background: rgb(255 159 67 / 14%);
+    color: rgb(255 180 100);
+  }
+
+  &:has(input:focus-visible) {
+    outline: 2px solid rgb(255 159 67 / 55%);
+    outline-offset: 2px;
+  }
+}
+
+.locationCoverageGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.625rem;
+
+  @media (max-width: 720px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.locationCoverageItem {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 44px;
+  padding: 0.625rem 0.875rem;
+  border: 1px solid var(--color-border, rgb(255 255 255 / 14%));
+  border-radius: 8px;
+  font-size: 0.875rem;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+  user-select: none;
+
+  input {
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    flex-shrink: 0;
+    accent-color: #ff9f43;
+    cursor: pointer;
+  }
+
+  span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &:hover {
+    border-color: rgb(255 159 67 / 35%);
+    background: rgb(255 159 67 / 5%);
+  }
+
+  &:has(input:checked) {
+    border-color: rgb(255 159 67 / 50%);
+    background: rgb(255 159 67 / 10%);
+  }
+
+  &:has(input:focus-visible) {
+    outline: 2px solid rgb(255 159 67 / 55%);
+    outline-offset: 2px;
+  }
+}
+
+.logisticsBadgeDraft {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(255, 159, 67, 0.15);
+  color: rgba(255, 159, 67, 0.95);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.logisticsWarning {
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  color: rgba(255, 159, 67, 0.95);
+}
+
+.logisticsHistory {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.logisticsHistoryItem {
+  padding: 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  font-size: 0.8rem;
 }
 
 .modalForm {

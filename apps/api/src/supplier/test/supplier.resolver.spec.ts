@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { SupplierLogisticsService } from '../../supplier-logistics/service/supplier-logistics.service';
 import { SupplierResolver } from '../resolver/supplier.resolver';
 import { SupplierService } from '../service/supplier.service';
 import { PUB_SUB } from '../../pubsub/pubsub.module';
@@ -29,6 +30,11 @@ const serviceMock = {
   delete: jest.fn(),
 };
 
+const logisticsServiceMock = {
+  findBySupplierId: jest.fn(),
+  getHistory: jest.fn(),
+};
+
 describe('SupplierResolver', () => {
   let resolver: SupplierResolver;
 
@@ -37,6 +43,7 @@ describe('SupplierResolver', () => {
       providers: [
         SupplierResolver,
         { provide: SupplierService, useValue: serviceMock },
+        { provide: SupplierLogisticsService, useValue: logisticsServiceMock },
         {
           provide: PUB_SUB,
           useValue: {
@@ -87,6 +94,7 @@ describe('SupplierResolver', () => {
     const publish = jest.fn().mockResolvedValue(undefined);
     const resolverWithPubSub = new SupplierResolver(
       serviceMock as never,
+      logisticsServiceMock as never,
       {
         publish,
         asyncIterator: jest.fn(),

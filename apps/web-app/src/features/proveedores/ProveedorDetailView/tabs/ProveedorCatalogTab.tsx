@@ -1,3 +1,6 @@
+import { Spinner } from '@restopsiq/ui';
+
+import { useUiTheme } from '@/hooks/useUiTheme';
 import { getErrorMessage, isGraphqlConfigured } from '@/lib/graphql-client';
 
 import EditableSupplierProductsTable from '../../components/EditableSupplierProductsTable';
@@ -11,6 +14,7 @@ interface ProveedorCatalogTabProps {
 export default function ProveedorCatalogTab({
   supplierId,
 }: ProveedorCatalogTabProps): React.JSX.Element {
+  const theme = useUiTheme();
   const { data: catalog = [], isPending, isError, error } = useSupplierProducts(supplierId);
 
   const linkedSupplyItemIds = new Set(catalog.map((row) => row.supplyItemId));
@@ -35,12 +39,20 @@ export default function ProveedorCatalogTab({
     );
   }
 
+  if (isPending) {
+    return (
+      <div className={styles.documentationLoading}>
+        <Spinner size="lg" theme={theme === 'dark' ? 'dark' : 'light'} />
+        <p className={styles.documentationLoadingText}>Cargando catálogo…</p>
+      </div>
+    );
+  }
+
   return (
     <EditableSupplierProductsTable
       supplierId={supplierId}
       rows={catalog}
       linkedSupplyItemIds={linkedSupplyItemIds}
-      isLoading={isPending}
     />
   );
 }

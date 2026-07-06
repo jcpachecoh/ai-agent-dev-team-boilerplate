@@ -3,6 +3,7 @@ import type { RecetaFilterOption } from '@restopsiq/ui';
 import type {
   CondicionPago,
   CondicionPagoFilter,
+  SupplierLogisticsFormValues,
   SupplierStatusFilter,
   SupplierViewModel,
 } from './types';
@@ -279,3 +280,60 @@ export function matchesPaymentFilter(
   if (filter === 'all') return true;
   return condicionPago === filter;
 }
+
+export const DELIVERY_MODE_OPTIONS: RecetaFilterOption[] = [
+  { value: 'SUPPLIER_DELIVERS', label: 'Entrega proveedor' },
+  { value: 'COMPANY_PICKUP', label: 'Recoge empresa' },
+];
+
+export const DELIVERY_PLACE_OPTIONS: RecetaFilterOption[] = [
+  { value: 'PLANT', label: 'Planta' },
+  { value: 'PDV', label: 'PDV' },
+  { value: 'WAREHOUSE', label: 'Bodega' },
+  { value: 'OTHER', label: 'Otro' },
+];
+
+export const TRANSPORT_TYPE_OPTIONS: RecetaFilterOption[] = [
+  { value: 'OWN', label: 'Propio' },
+  { value: 'THIRD_PARTY', label: 'Tercero' },
+];
+
+export const CURRENCY_OPTIONS: RecetaFilterOption[] = [
+  { value: 'COP', label: 'COP' },
+  { value: 'USD', label: 'USD' },
+];
+
+export const MINIMUM_ORDER_UNIT_OPTIONS: RecetaFilterOption[] = [
+  { value: 'UNIT', label: 'Unidades' },
+  { value: 'KILOGRAMS', label: 'Kilogramos' },
+  { value: 'BOX', label: 'Cajas' },
+];
+
+export const DELIVERY_DAY_OPTIONS = [
+  { value: 1, label: 'Lun' },
+  { value: 2, label: 'Mar' },
+  { value: 3, label: 'Mié' },
+  { value: 4, label: 'Jue' },
+  { value: 5, label: 'Vie' },
+  { value: 6, label: 'Sáb' },
+] as const;
+
+export const EMPTY_LOGISTICS_FORM: SupplierLogisticsFormValues = {
+  deliveryMode: '',
+  deliveryPlace: '',
+  deliveryPlaceCustom: '',
+  deliveryDays: [],
+  leadTimeDays: null,
+  timeWindowStart: '',
+  timeWindowEnd: '',
+  receptionResponsibleUserId: '',
+  transportType: '',
+  requiresColdChain: false,
+  transportTempMinC: null,
+  transportTempMaxC: null,
+  transportCost: null,
+  transportCostCurrency: 'COP',
+  minimumOrderQty: null,
+  minimumOrderUnit: '',
+  coverageLocationIds: [],
+};

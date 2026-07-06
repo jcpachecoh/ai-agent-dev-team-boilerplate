@@ -197,6 +197,33 @@ enum SupplierDocumentStatus {
   EXPIRED
 }
 
+enum SupplierDeliveryMode {
+  SUPPLIER_DELIVERS
+  COMPANY_PICKUP
+}
+
+enum SupplierDeliveryPlace {
+  PLANT
+  PDV
+  WAREHOUSE
+  OTHER
+}
+
+enum SupplierTransportType {
+  OWN
+  THIRD_PARTY
+}
+
+enum SupplierLogisticsStatus {
+  DRAFT
+  COMPLETE
+}
+
+enum SupplierTransportCostCurrency {
+  COP
+  USD
+}
+
 model Supplier {
   id                     String        @id @default(cuid())
   tenantId               String
@@ -224,6 +251,7 @@ model Supplier {
 
   products  SupplierProduct[]
   documents SupplierDocument[]
+  logistics SupplierLogistics?
 
   @@unique([tenantId, nit])
   @@index([tenantId, isActive])
@@ -290,6 +318,54 @@ model SupplierDocumentPolicy {
   updatedAt                  DateTime @updatedAt
 
   @@map("supplier_document_policies")
+}
+
+model SupplierLogistics {
+  id                         String                         @id @default(cuid())
+  tenantId                   String
+  supplierId                 String                         @unique
+  deliveryMode               SupplierDeliveryMode?
+  deliveryPlace              SupplierDeliveryPlace?
+  deliveryPlaceCustom        String?
+  deliveryDays               Int[]                          @default([])
+  leadTimeDays               Int?
+  timeWindowStart            String?
+  timeWindowEnd              String?
+  receptionResponsibleUserId String?
+  transportType              SupplierTransportType?
+  requiresColdChain          Boolean                        @default(false)
+  transportTempMinC          Decimal?                       @db.Decimal(5, 2)
+  transportTempMaxC          Decimal?                       @db.Decimal(5, 2)
+  transportCost              Decimal?                       @db.Decimal(12, 2)
+  transportCostCurrency      SupplierTransportCostCurrency?
+  minimumOrderQty            Decimal?                       @db.Decimal(12, 2)
+  minimumOrderUnit           String?
+  status                     SupplierLogisticsStatus        @default(DRAFT)
+  createdAt                  DateTime                       @default(now())
+  updatedAt                  DateTime                       @updatedAt
+
+  supplier                 Supplier                    @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  receptionResponsibleUser User?                       @relation("SupplierLogisticsReceptionResponsible", fields: [receptionResponsibleUserId], references: [id], onDelete: SetNull)
+  coverageLocations        SupplierLogisticsCoverage[]
+
+  @@index([tenantId])
+  @@index([receptionResponsibleUserId])
+  @@map("supplier_logistics")
+}
+
+model SupplierLogisticsCoverage {
+  supplierLogisticsId String
+  locationId          String
+  tenantId            String
+  createdAt           DateTime @default(now())
+
+  supplierLogistics SupplierLogistics @relation(fields: [supplierLogisticsId], references: [id], onDelete: Cascade)
+  location          Location          @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@id([supplierLogisticsId, locationId])
+  @@index([tenantId])
+  @@index([locationId])
+  @@map("supplier_logistics_coverage")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -542,22 +618,23 @@ model User {
 
   role Role @relation(fields: [roleId], references: [id])
 
-  employeeDetails                  EmployeeDetails?
-  operationalProfile               OperationalUser?
-  userPermissions                  UserPermission[]
-  userLocations                    UserLocation[]
-  loginAudits                      LoginAudit[]
-  auditLogs                        AuditLog[]
-  committeeMemberships             ProductionCommitteeMember[]
-  turnosCreated                    Turno[]                     @relation("TurnoCreatedBy")
-  turnosUpdated                    Turno[]                     @relation("TurnoUpdatedBy")
-  turnoAssignmentsCreated          TurnoAssignment[]           @relation("TurnoAssignmentCreatedBy")
-  turnoAssignmentsUpdated          TurnoAssignment[]           @relation("TurnoAssignmentUpdatedBy")
-  supplierDocumentsUploaded        SupplierDocument[]          @relation("SupplierDocumentUploadedBy")
-  supplierDocumentVersionsUploaded SupplierDocumentVersion[]   @relation("SupplierDocumentVersionUploadedBy")
-  attendanceLogsCreated         AttendanceLog[]             @relation("AttendanceLogCreatedBy")
-  attendanceObservationsCreated AttendanceObservation[]     @relation("AttendanceObservationCreatedBy")
-  attendanceObservationsUpdated AttendanceObservation[]     @relation("AttendanceObservationUpdatedBy")
+  employeeDetails                       EmployeeDetails?
+  operationalProfile                    OperationalUser?
+  userPermissions                       UserPermission[]
+  userLocations                         UserLocation[]
+  loginAudits                           LoginAudit[]
+  auditLogs                             AuditLog[]
+  committeeMemberships                  ProductionCommitteeMember[]
+  turnosCreated                         Turno[]                     @relation("TurnoCreatedBy")
+  turnosUpdated                         Turno[]                     @relation("TurnoUpdatedBy")
+  turnoAssignmentsCreated               TurnoAssignment[]           @relation("TurnoAssignmentCreatedBy")
+  turnoAssignmentsUpdated               TurnoAssignment[]           @relation("TurnoAssignmentUpdatedBy")
+  supplierDocumentsUploaded             SupplierDocument[]          @relation("SupplierDocumentUploadedBy")
+  supplierDocumentVersionsUploaded      SupplierDocumentVersion[]   @relation("SupplierDocumentVersionUploadedBy")
+  supplierLogisticsReceptionResponsible SupplierLogistics[]         @relation("SupplierLogisticsReceptionResponsible")
+  attendanceLogsCreated                 AttendanceLog[]             @relation("AttendanceLogCreatedBy")
+  attendanceObservationsCreated         AttendanceObservation[]     @relation("AttendanceObservationCreatedBy")
+  attendanceObservationsUpdated         AttendanceObservation[]     @relation("AttendanceObservationUpdatedBy")
 
   @@unique([tenantId, email])
   @@unique([tenantId, cedula])
@@ -639,14 +716,15 @@ model Location {
   updatedAt           DateTime  @updatedAt
   deletedAt           DateTime?
 
-  tenant               Tenant                     @relation(fields: [tenantId], references: [id])
-  users                UserLocation[]
-  employeeDetails      EmployeeDetails[]
-  attendanceLogs       AttendanceLog[]
-  mobileAttendanceLogs MobileAttendanceLog[]
-  productionIncidents  ProductionIncident[]
-  supplyItems          SupplyItem[]
-  productionRecipes    ProductionRecipeLocation[]
+  tenant                    Tenant                      @relation(fields: [tenantId], references: [id])
+  users                     UserLocation[]
+  employeeDetails           EmployeeDetails[]
+  attendanceLogs            AttendanceLog[]
+  mobileAttendanceLogs      MobileAttendanceLog[]
+  productionIncidents       ProductionIncident[]
+  supplyItems               SupplyItem[]
+  productionRecipes         ProductionRecipeLocation[]
+  supplierLogisticsCoverage SupplierLogisticsCoverage[]
 
   @@unique([tenantId, name])
   @@unique([tenantId, code])

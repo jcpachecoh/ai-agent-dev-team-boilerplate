@@ -15,6 +15,28 @@ export const SUPPLIER_FIELDS = `
   calificacion
   isActive
   productCount
+  logistics {
+    id
+    deliveryMode
+    deliveryPlace
+    deliveryPlaceCustom
+    deliveryDays
+    leadTimeDays
+    timeWindowStart
+    timeWindowEnd
+    receptionResponsible { id email name }
+    receptionResponsibleStale
+    transportType
+    requiresColdChain
+    transportTempMinC
+    transportTempMaxC
+    transportCost
+    transportCostCurrency
+    minimumOrderQty
+    minimumOrderUnit
+    coverageLocations { id name }
+    status
+  }
 `;
 
 export const SUPPLIER_PRODUCT_FIELDS = `

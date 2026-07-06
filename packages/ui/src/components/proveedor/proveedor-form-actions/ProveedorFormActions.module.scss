@@ -13,6 +13,7 @@
 }
 
 .cancel,
+.draft,
 .save {
   display: inline-flex;
   align-items: center;
@@ -69,6 +70,12 @@
 .cancel {
   background: transparent;
   color: var(--proveedor-muted);
+  border-color: var(--proveedor-border);
+}
+
+.draft {
+  background: transparent;
+  color: var(--proveedor-text);
   border-color: var(--proveedor-border);
 }
 

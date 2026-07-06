@@ -2,6 +2,7 @@ import { BadRequestException, ConflictException, NotFoundException } from '@nest
 import { Test, TestingModule } from '@nestjs/testing';
 import type { Supplier } from '@prisma/client';
 import { SupplierDocumentsService } from '../../supplier-documents/service/supplier-documents.service';
+import { SupplierLogisticsService } from '../../supplier-logistics/service/supplier-logistics.service';
 import { SupplierRepository } from '../repository/supplier.repository';
 import { SupplierService } from '../service/supplier.service';
 
@@ -47,6 +48,12 @@ const documentsServiceMock = {
   getRequiredPending: jest.fn().mockResolvedValue([]),
 };
 
+const logisticsServiceMock = {
+  upsert: jest.fn().mockResolvedValue({ id: 'log-1' }),
+  findBySupplierId: jest.fn(),
+  getHistory: jest.fn(),
+};
+
 describe('SupplierService', () => {
   let service: SupplierService;
 
@@ -56,6 +63,7 @@ describe('SupplierService', () => {
         SupplierService,
         { provide: SupplierRepository, useValue: repoMock },
         { provide: SupplierDocumentsService, useValue: documentsServiceMock },
+        { provide: SupplierLogisticsService, useValue: logisticsServiceMock },
       ],
     }).compile();
 
@@ -173,15 +181,49 @@ describe('SupplierService', () => {
     expect(result.ciudad).toBe('Cali');
   });
 
-  it('blocks update when required supplier documents are pending', async () => {
-    repoMock.findById.mockResolvedValue(mockSupplier);
+  it('blocks activation when required supplier documents are pending', async () => {
+    repoMock.findById.mockResolvedValue({ ...mockSupplier, isActive: false });
     documentsServiceMock.getRequiredPending.mockResolvedValue(['RUT']);
 
     await expect(
       service.update('sup-1', tenantId, {
+        isActive: true,
         razonSocial: 'Updated Supplier',
       }),
     ).rejects.toThrow(BadRequestException);
+  });
+
+  it('allows update on active supplier when required documents are pending', async () => {
+    repoMock.findById.mockResolvedValue(mockSupplier);
+    documentsServiceMock.getRequiredPending.mockResolvedValue(['RUT']);
+    repoMock.update.mockResolvedValue({
+      ...mockSupplier,
+      razonSocial: 'Updated Supplier',
+    });
+
+    const result = await service.update('sup-1', tenantId, {
+      isActive: true,
+      razonSocial: 'Updated Supplier',
+      saveLogisticsAsDraft: false,
+      logistics: { leadTimeDays: 2, deliveryDays: [1, 2] },
+    });
+
+    expect(result.razonSocial).toBe('Updated Supplier');
+    expect(documentsServiceMock.getRequiredPending).not.toHaveBeenCalled();
+  });
+
+  it('skips required documents check when saving logistics as draft', async () => {
+    repoMock.findById.mockResolvedValue({ ...mockSupplier, isActive: false });
+    documentsServiceMock.getRequiredPending.mockResolvedValue(['RUT']);
+    repoMock.update.mockResolvedValue(mockSupplier);
+
+    await service.update('sup-1', tenantId, {
+      isActive: true,
+      saveLogisticsAsDraft: true,
+      logistics: { leadTimeDays: 2 },
+    });
+
+    expect(documentsServiceMock.getRequiredPending).not.toHaveBeenCalled();
   });
 
   it('supplier response includes departamento field', async () => {

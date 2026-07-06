@@ -19,6 +19,24 @@ vi.mock('../hooks/useSupplier', () => ({
   useSupplier: () => ({ data: null, isPending: false, isError: false }),
 }));
 
+vi.mock('@/features/sedes/hooks/useLocations', () => ({
+  useLocations: () => ({
+    data: [{ id: 'loc-1', name: 'Sede Centro', isActive: true }],
+    isPending: false,
+  }),
+}));
+
+vi.mock('@tanstack/react-query', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@tanstack/react-query')>();
+  return {
+    ...actual,
+    useQuery: () => ({
+      data: [{ id: 'user-1', email: 'recepcion@test.com', isActive: true }],
+      isPending: false,
+    }),
+  };
+});
+
 function renderCreateForm(): void {
   render(
     <TestQueryProvider>
@@ -38,7 +56,8 @@ describe('ProveedorFormView', () => {
 
   it('disables save when required fields are empty', () => {
     renderCreateForm();
-    expect(screen.getByRole('button', { name: /guardar/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Guardar' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Guardar borrador' })).toBeDisabled();
   });
 
   it('renders Dirección in Información general section', () => {
@@ -100,12 +119,26 @@ describe('ProveedorFormView', () => {
     });
     fireEvent.change(screen.getByLabelText(/^nit/i), { target: { value: '900111222' } });
 
-    fireEvent.click(screen.getByRole('button', { name: /guardar/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar borrador' }));
 
     await vi.waitFor(() => expect(mockCreate).toHaveBeenCalled());
 
-    const calledWith = mockCreate.mock.calls[0][0] as Record<string, unknown>;
-    expect(calledWith).not.toHaveProperty('calificacion');
+    const calledWith = mockCreate.mock.calls[0][0] as { values: Record<string, unknown> };
+    expect(calledWith.values).not.toHaveProperty('calificacion');
+  });
+
+  it('renders logistics section', () => {
+    renderCreateForm();
+    expect(screen.getByText('Información logística')).toBeInTheDocument();
+    expect(screen.getByText('Modalidad de entrega')).toBeInTheDocument();
+    expect(screen.getByText('Lead time (días)')).toBeInTheDocument();
+  });
+
+  it('shows temperature fields when cold chain is enabled', () => {
+    renderCreateForm();
+    expect(screen.queryByLabelText(/temp\. mínima/i)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText(/requiere cadena de frío/i));
+    expect(screen.getByLabelText(/temp\. mínima/i)).toBeInTheDocument();
   });
 
   it('payload create includes departamento', async () => {
@@ -117,11 +150,11 @@ describe('ProveedorFormView', () => {
     });
     fireEvent.change(screen.getByLabelText(/^nit/i), { target: { value: '900111222' } });
 
-    fireEvent.click(screen.getByRole('button', { name: /guardar/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar borrador' }));
 
     await vi.waitFor(() => expect(mockCreate).toHaveBeenCalled());
 
-    const calledWith = mockCreate.mock.calls[0][0] as Record<string, unknown>;
-    expect(Object.keys(calledWith)).toContain('departamento');
+    const calledWith = mockCreate.mock.calls[0][0] as { values: Record<string, unknown> };
+    expect(Object.keys(calledWith.values)).toContain('departamento');
   });
 });

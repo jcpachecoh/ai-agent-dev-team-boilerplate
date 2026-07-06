@@ -6,6 +6,7 @@ import type {
   SupplierProductApiModel,
   SupplierViewModel,
 } from '../types';
+import { formatLogisticsLeadTime } from './logistics';
 
 export function toDisplayCode(id: string): string {
   return `#${id.slice(-6).toUpperCase()}`;
@@ -35,9 +36,10 @@ export function mapSupplierToViewModel(supplier: SupplierApiModel): SupplierView
     isActive: supplier.isActive,
     status: toSupplierStatus(supplier.isActive),
     categoryLabel: 'Sin categoría',
-    leadTimeLabel: '—',
+    leadTimeLabel: formatLogisticsLeadTime(supplier.logistics?.leadTimeDays),
     balanceCxp: 0,
     productCount: supplier.productCount ?? 0,
+    logistics: supplier.logistics ?? null,
   };
 }
 

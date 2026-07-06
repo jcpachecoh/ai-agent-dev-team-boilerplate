@@ -7,6 +7,7 @@ import {
   ProveedorProductModalFields,
   RecetaFilterSelect,
   RecetaTextInput,
+  Spinner,
 } from '@restopsiq/ui';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -17,6 +18,7 @@ import {
   CIUDADES_POR_DEPARTAMENTO,
   CONDICION_PAGO_OPTIONS,
   DEPARTAMENTO_OPTIONS,
+  EMPTY_LOGISTICS_FORM,
   PROVEEDOR_TABLE_SIZE,
   TIPO_OPTIONS,
   getDepartamentoFromCiudad,
@@ -24,8 +26,15 @@ import {
 import { useSupplier } from '../hooks/useSupplier';
 import { useCreateSupplier, useUpdateSupplier } from '../hooks/useSupplierMutations';
 import styles from '../proveedores.module.scss';
-import type { CondicionPago, SupplierFormValues, SupplierTipo } from '../types';
+import type {
+  CondicionPago,
+  SupplierFormValues,
+  SupplierLogisticsFormValues,
+  SupplierTipo,
+} from '../types';
 import { useUiTheme } from '@/hooks/useUiTheme';
+import ProveedorLogisticsFormSection from './ProveedorLogisticsFormSection';
+import { mapLogisticsApiToForm } from '../mappers/logistics';
 
 const EMPTY_FORM: SupplierFormValues = {
   razonSocial: '',
@@ -41,11 +50,14 @@ const EMPTY_FORM: SupplierFormValues = {
   condicionPago: 'DIAS_30',
   cupoCredito: 0,
   isActive: true,
+  logistics: { ...EMPTY_LOGISTICS_FORM },
 };
 
 interface ProveedorFormViewProps {
   mode: 'create' | 'edit';
 }
+
+const FORM_FIELD_SIZE = 'md' as const;
 
 export default function ProveedorFormView({ mode }: ProveedorFormViewProps): React.JSX.Element {
   const theme = useUiTheme();
@@ -58,6 +70,7 @@ export default function ProveedorFormView({ mode }: ProveedorFormViewProps): Rea
 
   const [form, setForm] = useState<SupplierFormValues>(EMPTY_FORM);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [logisticsErrors, setLogisticsErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!existing) return;
@@ -77,6 +90,7 @@ export default function ProveedorFormView({ mode }: ProveedorFormViewProps): Rea
       condicionPago: existing.condicionPago,
       cupoCredito: existing.cupoCredito,
       isActive: existing.isActive,
+      logistics: mapLogisticsApiToForm(existing.logistics),
     });
   }, [existing]);
 
@@ -119,9 +133,53 @@ export default function ProveedorFormView({ mode }: ProveedorFormViewProps): Rea
     navigate('/proveedores');
   };
 
-  const handleSave = async (): Promise<void> => {
+  const validateLogistics = (logistics: SupplierLogisticsFormValues): Record<string, string> => {
+    const errors: Record<string, string> = {};
+    if (!logistics.deliveryMode) errors.deliveryMode = 'Modalidad de entrega es requerida';
+    if (!logistics.deliveryPlace) errors.deliveryPlace = 'Lugar de entrega es requerido';
+    if (!logistics.leadTimeDays || logistics.leadTimeDays <= 0) {
+      errors.leadTimeDays = 'Lead time debe ser un entero positivo';
+    }
+    if (!logistics.transportType) errors.transportType = 'Tipo de transporte es requerido';
+    if (!logistics.receptionResponsibleUserId) {
+      errors.receptionResponsibleUserId = 'Responsable de recepción es requerido';
+    }
+    if (logistics.deliveryDays.length === 0) {
+      errors.deliveryDays = 'Selecciona al menos un día de entrega';
+    }
+    if (logistics.deliveryPlace === 'OTHER' && !logistics.deliveryPlaceCustom.trim()) {
+      errors.deliveryPlaceCustom = 'Indica el lugar personalizado';
+    }
+    if (
+      logistics.timeWindowStart &&
+      logistics.timeWindowEnd &&
+      logistics.timeWindowStart > logistics.timeWindowEnd
+    ) {
+      errors.timeWindowEnd = 'La hora fin debe ser posterior a la hora inicio';
+    }
+    if (logistics.requiresColdChain) {
+      if (logistics.transportTempMinC === null) {
+        errors.transportTempMinC = 'Temperatura mínima requerida';
+      }
+      if (logistics.transportTempMaxC === null) {
+        errors.transportTempMaxC = 'Temperatura máxima requerida';
+      }
+    }
+    return errors;
+  };
+
+  const handleSave = async (saveLogisticsAsDraft = false): Promise<void> => {
     if (!isValid) return;
     setSaveError(null);
+
+    if (!saveLogisticsAsDraft) {
+      const errors = validateLogistics(form.logistics);
+      setLogisticsErrors(errors);
+      if (Object.keys(errors).length > 0) return;
+    } else {
+      setLogisticsErrors({});
+    }
+
     const payload: SupplierFormValues = {
       ...form,
       razonSocial: form.razonSocial.trim(),
@@ -137,13 +195,13 @@ export default function ProveedorFormView({ mode }: ProveedorFormViewProps): Rea
 
     try {
       if (mode === 'create') {
-        const created = await createMutation.mutateAsync(payload);
+        const created = await createMutation.mutateAsync({ values: payload, saveLogisticsAsDraft });
         navigate(`/proveedores/${created.id}`);
         return;
       }
 
       if (supplierId) {
-        await updateMutation.mutateAsync({ id: supplierId, values: payload });
+        await updateMutation.mutateAsync({ id: supplierId, values: payload, saveLogisticsAsDraft });
         navigate(`/proveedores/${supplierId}`);
       }
     } catch (error) {
@@ -154,7 +212,10 @@ export default function ProveedorFormView({ mode }: ProveedorFormViewProps): Rea
   if (mode === 'edit' && supplierId && supplierQuery.isPending) {
     return (
       <div className={`${styles.content} ${styles.contentPadded}`}>
-        <p className={styles.stateMessage}>Cargando proveedor…</p>
+        <div className={styles.documentationLoading}>
+          <Spinner size="lg" theme={theme === 'dark' ? 'dark' : 'light'} />
+          <p className={styles.documentationLoadingText}>Cargando proveedor…</p>
+        </div>
       </div>
     );
   }
@@ -172,7 +233,7 @@ export default function ProveedorFormView({ mode }: ProveedorFormViewProps): Rea
       <ProveedorFormHeader title={title} onBack={handleCancel} theme={theme} size="xl" />
 
       <div className={styles.formPage}>
-        <ProveedorFormSection title="Información general" theme={theme} size={PROVEEDOR_TABLE_SIZE}>
+        <ProveedorFormSection title="Información general" theme={theme} size="xl">
           <div className={styles.formSectionFields}>
             <ProveedorProductModalFields>
               <ProveedorProductModalField
@@ -211,7 +272,7 @@ export default function ProveedorFormView({ mode }: ProveedorFormViewProps): Rea
                   value={form.tipo}
                   onChange={(value) => updateField('tipo', value as SupplierTipo)}
                   theme={theme}
-                  size={PROVEEDOR_TABLE_SIZE}
+                  size={FORM_FIELD_SIZE}
                 />
               </ProveedorProductModalField>
               <ProveedorProductModalField fullWidth label="Dirección" htmlFor="direccion">
@@ -229,7 +290,7 @@ export default function ProveedorFormView({ mode }: ProveedorFormViewProps): Rea
                   value={form.departamento ?? ''}
                   onChange={handleDepartamentoChange}
                   theme={theme}
-                  size={PROVEEDOR_TABLE_SIZE}
+                  size={FORM_FIELD_SIZE}
                 />
               </ProveedorProductModalField>
               <ProveedorProductModalField label="Ciudad" htmlFor="ciudad">
@@ -239,14 +300,14 @@ export default function ProveedorFormView({ mode }: ProveedorFormViewProps): Rea
                   value={form.ciudad ?? ''}
                   onChange={(value) => updateField('ciudad', value)}
                   theme={theme}
-                  size={PROVEEDOR_TABLE_SIZE}
+                  size={FORM_FIELD_SIZE}
                 />
               </ProveedorProductModalField>
             </ProveedorProductModalFields>
           </div>
         </ProveedorFormSection>
 
-        <ProveedorFormSection title="Contacto" theme={theme} size={PROVEEDOR_TABLE_SIZE}>
+        <ProveedorFormSection title="Contacto" theme={theme} size="xl">
           <div className={styles.formSectionFields}>
             <ProveedorProductModalFields>
               <ProveedorProductModalField label="Nombre contacto" htmlFor="contactoNombre">
@@ -279,11 +340,7 @@ export default function ProveedorFormView({ mode }: ProveedorFormViewProps): Rea
           </div>
         </ProveedorFormSection>
 
-        <ProveedorFormSection
-          title="Condiciones comerciales"
-          theme={theme}
-          size={PROVEEDOR_TABLE_SIZE}
-        >
+        <ProveedorFormSection title="Condiciones comerciales" theme={theme} size="xl">
           <div className={styles.formSectionFields}>
             <ProveedorProductModalFields>
               <ProveedorProductModalField label="Condición de pago" htmlFor="condicionPago">
@@ -293,7 +350,7 @@ export default function ProveedorFormView({ mode }: ProveedorFormViewProps): Rea
                   value={form.condicionPago}
                   onChange={(value) => updateField('condicionPago', value as CondicionPago)}
                   theme={theme}
-                  size={PROVEEDOR_TABLE_SIZE}
+                  size={FORM_FIELD_SIZE}
                 />
               </ProveedorProductModalField>
               <ProveedorProductModalField label="Cupo crédito (COP)" htmlFor="cupoCredito">
@@ -303,7 +360,7 @@ export default function ProveedorFormView({ mode }: ProveedorFormViewProps): Rea
                   value={form.cupoCredito}
                   onChange={(value) => updateField('cupoCredito', value)}
                   theme={theme}
-                  size={PROVEEDOR_TABLE_SIZE}
+                  size={FORM_FIELD_SIZE}
                   min={0}
                 />
               </ProveedorProductModalField>
@@ -323,6 +380,13 @@ export default function ProveedorFormView({ mode }: ProveedorFormViewProps): Rea
           </div>
         </ProveedorFormSection>
 
+        <ProveedorLogisticsFormSection
+          value={form.logistics}
+          onChange={(logistics) => setForm((current) => ({ ...current, logistics }))}
+          errors={logisticsErrors}
+          theme={theme}
+        />
+
         {saveError && (
           <p className={styles.formError} role="alert">
             {saveError}
@@ -333,8 +397,10 @@ export default function ProveedorFormView({ mode }: ProveedorFormViewProps): Rea
           theme={theme}
           size={PROVEEDOR_TABLE_SIZE}
           onCancel={handleCancel}
-          onSave={() => void handleSave()}
+          onSave={() => void handleSave(false)}
+          onSaveDraft={() => void handleSave(true)}
           saveDisabled={!isValid || createMutation.isPending || updateMutation.isPending}
+          saveDraftDisabled={!isValid || createMutation.isPending || updateMutation.isPending}
         />
       </div>
     </div>
