@@ -12,6 +12,7 @@ const p2003Error = new PrismaClientKnownRequestError('FK constraint failed', {
 const prismaMock = {
   auditLog: {
     create: jest.fn(),
+    findMany: jest.fn(),
   },
   loginAudit: {
     create: jest.fn(),
@@ -166,6 +167,53 @@ describe('AuditRepository', () => {
           status: 'FAILURE' as LoginAuditStatus,
         }),
       ).rejects.toThrow('database unavailable');
+    });
+  });
+
+  describe('findByEntity', () => {
+    it('consulta por tenantId/entityType/entityId, ordena desc y limita, mapeando actorName', async () => {
+      const createdAt = new Date('2026-07-01');
+      prismaMock.auditLog.findMany.mockResolvedValue([
+        {
+          id: 'audit-1',
+          action: AuditAction.UPDATE,
+          createdAt,
+          oldValue: { portalWorkerEnabled: false },
+          newValue: { portalWorkerEnabled: true },
+          actor: { email: 'owner@example.com', employeeDetails: { name: 'Owner Uno' } },
+        },
+        {
+          id: 'audit-2',
+          action: AuditAction.CREATE,
+          createdAt,
+          oldValue: null,
+          newValue: { name: 'Ana' },
+          actor: { email: 'nomina@example.com', employeeDetails: null },
+        },
+        {
+          id: 'audit-3',
+          action: AuditAction.EXPORT,
+          createdAt,
+          oldValue: null,
+          newValue: null,
+          actor: null,
+        },
+      ]);
+
+      const result = await repo.findByEntity('t-1', 'EmployeeDetails', 'emp-1', 50);
+
+      expect(prismaMock.auditLog.findMany).toHaveBeenCalledWith({
+        where: { tenantId: 't-1', entityType: 'EmployeeDetails', entityId: 'emp-1' },
+        orderBy: { createdAt: 'desc' },
+        take: 50,
+        include: {
+          actor: { select: { email: true, employeeDetails: { select: { name: true } } } },
+        },
+      });
+
+      expect(result[0].actorName).toBe('Owner Uno');
+      expect(result[1].actorName).toBe('nomina@example.com');
+      expect(result[2].actorName).toBeNull();
     });
   });
 });

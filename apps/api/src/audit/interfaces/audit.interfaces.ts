@@ -1,5 +1,14 @@
 import type { AuthMethod, LoginAuditStatus, AuditAction } from '@prisma/client';
 
+export interface AuditLogWithActorName {
+  id: string;
+  action: AuditAction;
+  actorName: string | null;
+  createdAt: Date;
+  oldValue: unknown;
+  newValue: unknown;
+}
+
 export interface IAuditRepository {
   create(data: {
     tenantId: string;
@@ -26,6 +35,13 @@ export interface IAuditRepository {
     userAgent?: string | null;
     deviceInfo?: Record<string, unknown> | null;
   }): Promise<void>;
+
+  findByEntity(
+    tenantId: string,
+    entityType: string,
+    entityId: string,
+    limit: number,
+  ): Promise<AuditLogWithActorName[]>;
 }
 
 export interface IAuditService {
@@ -54,4 +70,11 @@ export interface IAuditService {
     userAgent?: string | null;
     deviceInfo?: Record<string, unknown> | null;
   }): Promise<void>;
+
+  findRecentByEntity(
+    tenantId: string,
+    entityType: string,
+    entityId: string,
+    limit?: number,
+  ): Promise<AuditLogWithActorName[]>;
 }

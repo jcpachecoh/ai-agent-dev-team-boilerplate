@@ -143,6 +143,23 @@ export function renderTemplateElement(
         </BaseLayout>
       );
 
+    case 'collaborators-export': {
+      const formatLabel = template.props.format === 'excel' ? 'Excel' : 'PDF';
+      return (
+        <BaseLayout {...layoutProps} previewText={`Listado de colaboradores (${formatLabel})`}>
+          <Heading style={headingStyle}>Listado de Colaboradores</Heading>
+          <Text style={textStyle}>
+            {template.props.requestedByName} compartió el listado de colaboradores de asistencia en
+            formato <strong>{formatLabel}</strong>, adjunto a este correo.
+          </Text>
+          <Text style={textStyle}>
+            <strong>Registros:</strong> {template.props.rowCount} · <strong>Generado:</strong>{' '}
+            {template.props.generatedAt}
+          </Text>
+        </BaseLayout>
+      );
+    }
+
     default: {
       const _exhaustive: never = template;
       void _exhaustive;

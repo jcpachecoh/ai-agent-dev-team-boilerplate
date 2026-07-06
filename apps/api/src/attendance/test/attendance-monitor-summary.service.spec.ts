@@ -43,6 +43,7 @@ const employee: EmployeeWithUser = {
   nonSalaryAmount: null,
   pinHash: null,
   photoStorageObjectId: null,
+  portalWorkerEnabled: false,
   isActive: true,
   createdAt: new Date(),
   updatedAt: new Date(),

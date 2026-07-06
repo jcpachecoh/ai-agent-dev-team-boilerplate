@@ -1,5 +1,6 @@
 import type { JSX } from 'react';
 
+import { Switch } from '../../Switch';
 import { EmpleadoAvatar } from '../empleado-avatar';
 import { EmpleadoContractBadge } from '../empleado-contract-badge';
 import { EmpleadoRowActionButton } from '../empleado-row-action-button';
@@ -38,10 +39,18 @@ export function EmpleadoTableCard({
   hireDate,
   isActive = true,
   onView,
+  viewLabel,
   onEdit,
   onToggleStatus,
+  onHistory,
   showActions: showActionsProp,
   toggleLoading = false,
+  showAttendanceColumns = false,
+  primerApellido,
+  segundoApellido,
+  supervisorsLabel,
+  turnoLabel,
+  portalWorker,
   theme = 'dark',
   size = 'md',
   className,
@@ -49,7 +58,7 @@ export function EmpleadoTableCard({
   const resolvedInitials = initials ?? resolveEmpleadoInitials(name);
   const resolvedTone = avatarTone ?? resolveEmpleadoAvatarTone(id ?? name);
   const contractLabel = formatEmpleadoContractLabel(contractType);
-  const showActions = showActionsProp ?? Boolean(onView || onEdit || onToggleStatus);
+  const showActions = showActionsProp ?? Boolean(onView || onEdit || onToggleStatus || onHistory);
 
   return (
     <article
@@ -74,6 +83,18 @@ export function EmpleadoTableCard({
           <dt>Cédula</dt>
           <dd>{formatEmpleadoCedula(cedula)}</dd>
         </div>
+        {showAttendanceColumns ? (
+          <div className={styles.detailRow}>
+            <dt>Primer apellido</dt>
+            <dd>{primerApellido ?? '-'}</dd>
+          </div>
+        ) : null}
+        {showAttendanceColumns ? (
+          <div className={styles.detailRow}>
+            <dt>Segundo apellido</dt>
+            <dd>{segundoApellido ?? '-'}</dd>
+          </div>
+        ) : null}
         <div className={styles.detailRow}>
           <dt>Cargo / Área</dt>
           <dd>
@@ -103,12 +124,49 @@ export function EmpleadoTableCard({
           <dt>Ingreso</dt>
           <dd>{formatEmpleadoHireDate(hireDate)}</dd>
         </div>
+        {showAttendanceColumns ? (
+          <div className={styles.detailRow}>
+            <dt>Supervisor</dt>
+            <dd>{supervisorsLabel ?? 'N/A'}</dd>
+          </div>
+        ) : null}
+        {showAttendanceColumns ? (
+          <div className={styles.detailRow}>
+            <dt>Turno</dt>
+            <dd>{turnoLabel ?? 'N/A'}</dd>
+          </div>
+        ) : null}
+        {showAttendanceColumns ? (
+          <div className={styles.detailRow}>
+            <dt>Portal trabajador</dt>
+            <dd>
+              {portalWorker ? (
+                <Switch
+                  checked={portalWorker.checked}
+                  disabled={portalWorker.disabled}
+                  loading={portalWorker.loading}
+                  onChange={portalWorker.onChange}
+                  theme={theme}
+                  size="sm"
+                  aria-label="Portal trabajador"
+                />
+              ) : (
+                'Pendiente'
+              )}
+            </dd>
+          </div>
+        ) : null}
       </dl>
 
       {showActions ? (
         <footer className={styles.footer}>
           {onView ? (
-            <EmpleadoRowActionButton variant="view" theme={theme} onClick={onView} />
+            <EmpleadoRowActionButton
+              variant="view"
+              theme={theme}
+              onClick={onView}
+              aria-label={viewLabel}
+            />
           ) : null}
           {onEdit ? (
             <EmpleadoRowActionButton variant="edit" theme={theme} onClick={onEdit} />
@@ -121,6 +179,9 @@ export function EmpleadoTableCard({
               onClick={onToggleStatus}
               disabled={toggleLoading}
             />
+          ) : null}
+          {onHistory ? (
+            <EmpleadoRowActionButton variant="history" theme={theme} onClick={onHistory} />
           ) : null}
         </footer>
       ) : null}

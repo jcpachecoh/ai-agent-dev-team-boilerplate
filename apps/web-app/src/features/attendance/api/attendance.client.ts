@@ -4,6 +4,12 @@ import { getTenantId } from '@/lib/tenant';
 import type {
   AttendanceActiveEntry,
   AttendanceCardResult,
+  AttendanceCollaboratorAuditEntry,
+  AttendanceCollaboratorEmailExportInput,
+  AttendanceCollaboratorExportFormat,
+  AttendanceCollaboratorSupervisorOption,
+  AttendanceCollaboratorsFilters,
+  AttendanceCollaboratorsResult,
   AttendanceComparisonFilters,
   AttendanceComparisonSummary,
   AttendanceControlPanelFilters,
@@ -104,6 +110,26 @@ async function attendanceFetch<T>(path: string, init?: RequestInit): Promise<T> 
   }
 
   return response.json() as Promise<T>;
+}
+
+async function attendanceFetchBlob(path: string, init?: RequestInit): Promise<Blob> {
+  const response = await fetch(buildApiUrl(path), {
+    ...init,
+    headers: buildHeaders(init),
+  });
+
+  if (response.status === 401) {
+    window.location.href = '/login';
+    throw new AttendanceApiError('No autorizado', 401);
+  }
+
+  if (!response.ok) {
+    const body = await response.text();
+    const message = await parseErrorMessage(body, response.statusText);
+    throw new AttendanceApiError(message, response.status);
+  }
+
+  return response.blob();
 }
 
 export function registerAttendanceEntry(
@@ -242,6 +268,96 @@ export function dismissAttendanceAlert(alertKey: string): Promise<DismissAlertRe
     method: 'POST',
     body: JSON.stringify({ alertKey }),
   });
+}
+
+// OS-550 — Colaboradores de Asistencia
+
+export function listAttendanceCollaborators(
+  filters: AttendanceCollaboratorsFilters = {},
+): Promise<AttendanceCollaboratorsResult> {
+  const query = toQueryString({
+    search: filters.search,
+    positionId: filters.positionId,
+    contractType: filters.contractType,
+    area: filters.area,
+    locationId: filters.locationId,
+    supervisorUserId: filters.supervisorUserId,
+    laborClassification: filters.laborClassification,
+    status: filters.status,
+    sortBy: filters.sortBy,
+    sortDir: filters.sortDir,
+    page: filters.page,
+    pageSize: filters.pageSize,
+  });
+  return attendanceFetch<AttendanceCollaboratorsResult>(`/attendance/collaborators${query}`);
+}
+
+export function listAttendanceCollaboratorSupervisors(): Promise<
+  AttendanceCollaboratorSupervisorOption[]
+> {
+  return attendanceFetch<AttendanceCollaboratorSupervisorOption[]>(
+    '/attendance/collaborators/supervisors',
+  );
+}
+
+// OS-550 follow-up — Portal trabajador, exportaciones e historial mínimo
+
+export function patchAttendanceCollaboratorPortal(
+  employeeDetailsId: string,
+  enabled: boolean,
+): Promise<{ portalWorkerEnabled: boolean }> {
+  return attendanceFetch<{ portalWorkerEnabled: boolean }>(
+    `/attendance/collaborators/${employeeDetailsId}/portal`,
+    { method: 'PATCH', body: JSON.stringify({ enabled }) },
+  );
+}
+
+export function exportAttendanceCollaborators(
+  format: AttendanceCollaboratorExportFormat,
+  filters: AttendanceCollaboratorsFilters = {},
+): Promise<Blob> {
+  const query = toQueryString({
+    format,
+    search: filters.search,
+    positionId: filters.positionId,
+    contractType: filters.contractType,
+    area: filters.area,
+    locationId: filters.locationId,
+    supervisorUserId: filters.supervisorUserId,
+    laborClassification: filters.laborClassification,
+    status: filters.status,
+  });
+  return attendanceFetchBlob(`/attendance/collaborators/export${query}`);
+}
+
+export function emailAttendanceCollaboratorsExport(
+  input: AttendanceCollaboratorEmailExportInput,
+): Promise<{ sent: true }> {
+  return attendanceFetch<{ sent: true }>('/attendance/collaborators/export/email', {
+    method: 'POST',
+    body: JSON.stringify({
+      recipients: input.recipients,
+      format: input.format,
+      filters: {
+        search: input.filters.search,
+        positionId: input.filters.positionId,
+        contractType: input.filters.contractType,
+        area: input.filters.area,
+        locationId: input.filters.locationId,
+        supervisorUserId: input.filters.supervisorUserId,
+        laborClassification: input.filters.laborClassification,
+        status: input.filters.status,
+      },
+    }),
+  });
+}
+
+export function getAttendanceCollaboratorAudit(
+  employeeDetailsId: string,
+): Promise<AttendanceCollaboratorAuditEntry[]> {
+  return attendanceFetch<{ items: AttendanceCollaboratorAuditEntry[] }>(
+    `/attendance/collaborators/${employeeDetailsId}/audit`,
+  ).then((response) => response.items);
 }
 
 export function getAttendanceComparison(

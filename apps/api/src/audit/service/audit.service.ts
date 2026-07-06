@@ -1,7 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import type { AuditAction, AuthMethod, LoginAuditStatus } from '@prisma/client';
-import type { IAuditService } from '../interfaces/audit.interfaces';
+import type { AuditLogWithActorName, IAuditService } from '../interfaces/audit.interfaces';
 import { AuditRepository } from '../repository/audit.repository';
+
+const DEFAULT_HISTORY_LIMIT = 50;
 
 const SENSITIVE_FIELDS = new Set([
   'password',
@@ -79,6 +81,15 @@ export class AuditService implements IAuditService {
         ? (this.redact(params.deviceInfo) as Record<string, unknown>)
         : null,
     });
+  }
+
+  async findRecentByEntity(
+    tenantId: string,
+    entityType: string,
+    entityId: string,
+    limit: number = DEFAULT_HISTORY_LIMIT,
+  ): Promise<AuditLogWithActorName[]> {
+    return this.auditRepository.findByEntity(tenantId, entityType, entityId, limit);
   }
 
   /**

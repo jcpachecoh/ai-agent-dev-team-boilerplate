@@ -8,23 +8,31 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  Patch,
   Post,
   Put,
   Query,
+  Res,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiHeader, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import type { Response } from 'express';
 import { Public } from '../../common/decorators/public.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
-import { PAYROLL_MODULE_ROLES, PAYROLL_WRITE_ROLES } from '../../common/config/rbac.config';
+import {
+  PAYROLL_MODULE_ROLES,
+  PAYROLL_WRITE_ROLES,
+  SYSTEM_ADMIN_ROLES,
+} from '../../common/config/rbac.config';
 import type { JwtPayload } from '../../auth/interfaces/auth.interfaces';
 import { AttendanceService } from '../service/attendance.service';
 import { AttendanceCardService } from '../service/attendance-card.service';
 import { AttendanceMonitorSummaryService } from '../service/attendance-monitor-summary.service';
 import { AttendanceControlPanelService } from '../service/attendance-control-panel.service';
 import { AttendanceComparisonService } from '../service/attendance-comparison.service';
+import { AttendanceCollaboratorsService } from '../service/attendance-collaborators.service';
 import { KioskAuthDto } from './dto/kiosk-auth.dto';
 import { RegisterEntryDto, RegisterExitDto } from './dto/register-event.dto';
 import {
@@ -51,6 +59,15 @@ import { AttendanceCardResponseDto } from './dto/attendance-card.response';
 import { UpsertAttendanceObservationDto } from './dto/upsert-attendance-observation.dto';
 import { AttendanceObservationResponseDto } from './dto/attendance-observation.response';
 import { CreateManualMarkingDto } from './dto/create-manual-marking.dto';
+import { ListAttendanceCollaboratorsQueryDto } from './dto/list-attendance-collaborators-query.dto';
+import {
+  AttendanceCollaboratorSupervisorOptionDto,
+  AttendanceCollaboratorsResponseDto,
+} from './dto/attendance-collaborator-response.dto';
+import { PatchPortalWorkerDto, PortalWorkerResponseDto } from './dto/patch-portal-worker.dto';
+import { ExportCollaboratorsQueryDto } from './dto/export-collaborators-query.dto';
+import { EmailExportCollaboratorsDto } from './dto/email-export-collaborators.dto';
+import { AttendanceCollaboratorAuditResponseDto } from './dto/attendance-collaborator-audit-response.dto';
 
 @ApiTags('attendance')
 @ApiHeader({
@@ -66,6 +83,7 @@ export class AttendanceController {
     private readonly monitorSummaryService: AttendanceMonitorSummaryService,
     private readonly controlPanelService: AttendanceControlPanelService,
     private readonly comparisonService: AttendanceComparisonService,
+    private readonly collaboratorsService: AttendanceCollaboratorsService,
   ) {}
 
   // ── Public kiosk endpoints ─────────────────────────────────────────────────
@@ -377,6 +395,191 @@ export class AttendanceController {
   ): Promise<void> {
     const tenantId = this.resolveTenantId(user, headerTenantId);
     return this.attendanceCardService.deleteManualMarking(id, tenantId, user);
+  }
+
+  // ── OS-550 — Colaboradores de Asistencia (listado con búsqueda/filtros/paginación) ──
+
+  @ApiBearerAuth()
+  @UseGuards(RolesGuard)
+  @Roles(...PAYROLL_MODULE_ROLES)
+  @Get('collaborators')
+  @ApiOperation({
+    summary: 'Listado de colaboradores con búsqueda, filtros, scoping de sede y paginación real',
+  })
+  @ApiResponse({ status: 200, type: AttendanceCollaboratorsResponseDto })
+  getCollaborators(
+    @CurrentUser() user: JwtPayload,
+    @Headers('x-tenant-id') headerTenantId: string,
+    @Query() query: ListAttendanceCollaboratorsQueryDto,
+  ): Promise<AttendanceCollaboratorsResponseDto> {
+    const tenantId = this.resolveTenantId(user, headerTenantId);
+    return this.collaboratorsService.list(
+      tenantId,
+      { userId: user.sub, roleCode: user.roleCode },
+      {
+        search: query.search,
+        positionId: query.positionId,
+        contractType: query.contractType,
+        area: query.area,
+        locationId: query.locationId,
+        supervisorUserId: query.supervisorUserId,
+        laborClassification: query.laborClassification,
+        status: query.status ?? 'all',
+        sortBy: query.sortBy,
+        sortDir: query.sortDir,
+        page: query.page ?? 1,
+        pageSize: query.pageSize ?? 20,
+      },
+    ) as Promise<AttendanceCollaboratorsResponseDto>;
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(RolesGuard)
+  @Roles(...PAYROLL_MODULE_ROLES)
+  @Get('collaborators/supervisors')
+  @ApiOperation({
+    summary:
+      'Usuarios SUPERVISOR/MANAGER visibles dentro del scope del caller (para el filtro Supervisor)',
+  })
+  @ApiResponse({ status: 200, type: [AttendanceCollaboratorSupervisorOptionDto] })
+  getCollaboratorSupervisors(
+    @CurrentUser() user: JwtPayload,
+    @Headers('x-tenant-id') headerTenantId: string,
+  ): Promise<AttendanceCollaboratorSupervisorOptionDto[]> {
+    const tenantId = this.resolveTenantId(user, headerTenantId);
+    return this.collaboratorsService.listSupervisorOptions(tenantId, {
+      userId: user.sub,
+      roleCode: user.roleCode,
+    }) as Promise<AttendanceCollaboratorSupervisorOptionDto[]>;
+  }
+
+  // ── OS-550 follow-up — Portal trabajador, exportaciones e historial mínimo ──
+
+  @ApiBearerAuth()
+  @UseGuards(RolesGuard)
+  @Roles(...SYSTEM_ADMIN_ROLES)
+  @Patch('collaborators/:employeeDetailsId/portal')
+  @ApiOperation({
+    summary: 'Activar/desactivar el flag administrativo Portal trabajador (OWNER/SUPER_ADMIN)',
+  })
+  @ApiResponse({ status: 200, type: PortalWorkerResponseDto })
+  @ApiResponse({ status: 404, description: 'Colaborador no encontrado en este tenant' })
+  setCollaboratorPortalWorker(
+    @CurrentUser() user: JwtPayload,
+    @Headers('x-tenant-id') headerTenantId: string,
+    @Param('employeeDetailsId') employeeDetailsId: string,
+    @Body() dto: PatchPortalWorkerDto,
+  ): Promise<PortalWorkerResponseDto> {
+    const tenantId = this.resolveTenantId(user, headerTenantId);
+    return this.collaboratorsService.setPortalWorkerEnabled(
+      tenantId,
+      employeeDetailsId,
+      dto.enabled,
+      user.sub,
+    );
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(RolesGuard)
+  @Roles(...PAYROLL_MODULE_ROLES)
+  @Get('collaborators/export')
+  @ApiOperation({
+    summary: 'Exportar el listado filtrado completo (Excel/PDF), respetando scoping de sede',
+  })
+  @ApiResponse({ status: 200, description: 'Archivo binario (xlsx/pdf)' })
+  @ApiResponse({
+    status: 400,
+    description: 'Sin registros para exportar con los filtros aplicados',
+  })
+  async exportCollaborators(
+    @CurrentUser() user: JwtPayload,
+    @Headers('x-tenant-id') headerTenantId: string,
+    @Query() query: ExportCollaboratorsQueryDto,
+    @Res() res: Response,
+  ): Promise<void> {
+    const tenantId = this.resolveTenantId(user, headerTenantId);
+    const { buffer, filename } = await this.collaboratorsService.exportFile(
+      tenantId,
+      { userId: user.sub, roleCode: user.roleCode },
+      {
+        search: query.search,
+        positionId: query.positionId,
+        contractType: query.contractType,
+        area: query.area,
+        locationId: query.locationId,
+        supervisorUserId: query.supervisorUserId,
+        laborClassification: query.laborClassification,
+        status: query.status ?? 'all',
+      },
+      query.format,
+      user.sub,
+    );
+
+    res.setHeader(
+      'Content-Type',
+      query.format === 'excel'
+        ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        : 'application/pdf',
+    );
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(buffer);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(RolesGuard)
+  @Roles(...PAYROLL_MODULE_ROLES)
+  @Post('collaborators/export/email')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Enviar el listado filtrado completo por correo (Excel/PDF adjunto)' })
+  @ApiResponse({ status: 200, description: 'Correo encolado' })
+  @ApiResponse({
+    status: 400,
+    description: 'Destinatarios inválidos o sin registros para exportar',
+  })
+  async emailExportCollaborators(
+    @CurrentUser() user: JwtPayload,
+    @Headers('x-tenant-id') headerTenantId: string,
+    @Body() dto: EmailExportCollaboratorsDto,
+  ): Promise<{ sent: true }> {
+    const tenantId = this.resolveTenantId(user, headerTenantId);
+    await this.collaboratorsService.emailExport(
+      tenantId,
+      { userId: user.sub, roleCode: user.roleCode },
+      user.email,
+      {
+        recipients: dto.recipients,
+        format: dto.format,
+        filters: {
+          search: dto.filters.search,
+          positionId: dto.filters.positionId,
+          contractType: dto.filters.contractType,
+          area: dto.filters.area,
+          locationId: dto.filters.locationId,
+          supervisorUserId: dto.filters.supervisorUserId,
+          laborClassification: dto.filters.laborClassification,
+          status: dto.filters.status ?? 'all',
+        },
+      },
+      user.sub,
+    );
+    return { sent: true };
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(RolesGuard)
+  @Roles(...SYSTEM_ADMIN_ROLES)
+  @Get('collaborators/:employeeDetailsId/audit')
+  @ApiOperation({ summary: 'Últimos 50 cambios de auditoría del colaborador (OWNER/SUPER_ADMIN)' })
+  @ApiResponse({ status: 200, type: AttendanceCollaboratorAuditResponseDto })
+  @ApiResponse({ status: 404, description: 'Colaborador no encontrado en este tenant' })
+  async getCollaboratorAudit(
+    @CurrentUser() user: JwtPayload,
+    @Headers('x-tenant-id') headerTenantId: string,
+    @Param('employeeDetailsId') employeeDetailsId: string,
+  ): Promise<AttendanceCollaboratorAuditResponseDto> {
+    const tenantId = this.resolveTenantId(user, headerTenantId);
+    const items = await this.collaboratorsService.getAuditHistory(tenantId, employeeDetailsId);
+    return { items };
   }
 
   // ── Helpers ────────────────────────────────────────────────────────────────

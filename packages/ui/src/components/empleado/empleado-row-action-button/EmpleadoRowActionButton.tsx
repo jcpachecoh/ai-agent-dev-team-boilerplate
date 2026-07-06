@@ -1,10 +1,10 @@
-import { Eye, Pencil, ToggleRight } from 'lucide-react';
+import { Eye, History, Pencil, ToggleRight } from 'lucide-react';
 import type { ButtonHTMLAttributes, JSX, ReactNode } from 'react';
 
 import type { EmpleadoSize, EmpleadoTheme } from '../shared/empleado-types';
 import styles from './EmpleadoRowActionButton.module.scss';
 
-export type EmpleadoRowActionVariant = 'edit' | 'toggle' | 'view';
+export type EmpleadoRowActionVariant = 'edit' | 'toggle' | 'view' | 'history';
 
 export interface EmpleadoRowActionButtonProps extends Omit<
   ButtonHTMLAttributes<HTMLButtonElement>,
@@ -21,6 +21,7 @@ const defaultIcons: Record<EmpleadoRowActionVariant, ReactNode> = {
   edit: <Pencil aria-hidden />,
   toggle: <ToggleRight aria-hidden />,
   view: <Eye aria-hidden />,
+  history: <History aria-hidden />,
 };
 
 export function EmpleadoRowActionButton({
@@ -39,9 +40,11 @@ export function EmpleadoRowActionButton({
       ? 'Ver perfil del empleado'
       : variant === 'edit'
         ? 'Editar empleado'
-        : active
-          ? 'Desactivar empleado'
-          : 'Activar empleado');
+        : variant === 'history'
+          ? 'Ver historial de cambios'
+          : active
+            ? 'Desactivar empleado'
+            : 'Activar empleado');
 
   return (
     <button

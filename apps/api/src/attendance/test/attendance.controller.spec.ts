@@ -6,6 +6,7 @@ import { AttendanceCardService } from '../service/attendance-card.service';
 import { AttendanceMonitorSummaryService } from '../service/attendance-monitor-summary.service';
 import { AttendanceControlPanelService } from '../service/attendance-control-panel.service';
 import { AttendanceComparisonService } from '../service/attendance-comparison.service';
+import { AttendanceCollaboratorsService } from '../service/attendance-collaborators.service';
 import { KioskAuthDto } from '../controller/dto/kiosk-auth.dto';
 import { RegisterEntryDto, RegisterExitDto } from '../controller/dto/register-event.dto';
 import {
@@ -49,6 +50,15 @@ const comparisonServiceMock = {
   getComparison: jest.fn(),
 };
 
+const collaboratorsServiceMock = {
+  list: jest.fn(),
+  listSupervisorOptions: jest.fn(),
+  setPortalWorkerEnabled: jest.fn(),
+  exportFile: jest.fn(),
+  emailExport: jest.fn(),
+  getAuditHistory: jest.fn(),
+};
+
 const TENANT = 'test-tenant';
 
 const kioskAuthResult = {
@@ -72,6 +82,7 @@ describe('AttendanceController', () => {
         { provide: AttendanceMonitorSummaryService, useValue: monitorSummaryServiceMock },
         { provide: AttendanceControlPanelService, useValue: controlPanelServiceMock },
         { provide: AttendanceComparisonService, useValue: comparisonServiceMock },
+        { provide: AttendanceCollaboratorsService, useValue: collaboratorsServiceMock },
       ],
     }).compile();
 
@@ -385,6 +396,177 @@ describe('AttendanceController', () => {
         TENANT,
         user,
       );
+    });
+  });
+
+  describe('getCollaborators', () => {
+    it('delega al AttendanceCollaboratorsService con el actor resuelto del JWT y defaults de paginación', async () => {
+      const user = { sub: 'actor-1', roleCode: 'SUPERVISOR', tenantId: TENANT };
+      collaboratorsServiceMock.list.mockResolvedValue({
+        items: [],
+        pagination: { page: 1, pageSize: 20, total: 0, totalPages: 1 },
+      });
+
+      const result = await controller.getCollaborators(user as never, '', {});
+
+      expect(collaboratorsServiceMock.list).toHaveBeenCalledWith(
+        TENANT,
+        { userId: 'actor-1', roleCode: 'SUPERVISOR' },
+        expect.objectContaining({ status: 'all', page: 1, pageSize: 20 }),
+      );
+      expect(result.pagination.total).toBe(0);
+    });
+
+    it('propaga los filtros de la query al service sin transformarlos', async () => {
+      const user = { sub: 'actor-1', roleCode: 'OWNER', tenantId: TENANT };
+      collaboratorsServiceMock.list.mockResolvedValue({
+        items: [],
+        pagination: { page: 2, pageSize: 50, total: 0, totalPages: 1 },
+      });
+
+      await controller.getCollaborators(user as never, '', {
+        search: 'josé',
+        positionId: 'pos-1',
+        supervisorUserId: 'sup-1',
+        laborClassification: 'operaciones',
+        status: 'active',
+        page: 2,
+        pageSize: 50,
+      } as never);
+
+      expect(collaboratorsServiceMock.list).toHaveBeenCalledWith(
+        TENANT,
+        { userId: 'actor-1', roleCode: 'OWNER' },
+        expect.objectContaining({
+          search: 'josé',
+          positionId: 'pos-1',
+          supervisorUserId: 'sup-1',
+          laborClassification: 'operaciones',
+          status: 'active',
+          page: 2,
+          pageSize: 50,
+        }),
+      );
+    });
+  });
+
+  describe('getCollaboratorSupervisors', () => {
+    it('delega al AttendanceCollaboratorsService con el actor resuelto del JWT', async () => {
+      const user = { sub: 'actor-1', roleCode: 'MANAGER', tenantId: TENANT };
+      collaboratorsServiceMock.listSupervisorOptions.mockResolvedValue([
+        { id: 'sup-1', name: 'Sup Uno', email: 'sup1@example.com' },
+      ]);
+
+      const result = await controller.getCollaboratorSupervisors(user as never, '');
+
+      expect(collaboratorsServiceMock.listSupervisorOptions).toHaveBeenCalledWith(TENANT, {
+        userId: 'actor-1',
+        roleCode: 'MANAGER',
+      });
+      expect(result).toEqual([{ id: 'sup-1', name: 'Sup Uno', email: 'sup1@example.com' }]);
+    });
+  });
+
+  describe('setCollaboratorPortalWorker', () => {
+    it('delega al service con tenantId/employeeDetailsId/enabled/actorUserId', async () => {
+      const user = { sub: 'actor-1', roleCode: 'OWNER', tenantId: TENANT };
+      collaboratorsServiceMock.setPortalWorkerEnabled.mockResolvedValue({
+        portalWorkerEnabled: true,
+      });
+
+      const result = await controller.setCollaboratorPortalWorker(user as never, '', 'emp-1', {
+        enabled: true,
+      } as never);
+
+      expect(collaboratorsServiceMock.setPortalWorkerEnabled).toHaveBeenCalledWith(
+        TENANT,
+        'emp-1',
+        true,
+        'actor-1',
+      );
+      expect(result).toEqual({ portalWorkerEnabled: true });
+    });
+  });
+
+  describe('exportCollaborators', () => {
+    it('escribe Content-Type/Content-Disposition y envía el buffer', async () => {
+      const user = { sub: 'actor-1', roleCode: 'OWNER', tenantId: TENANT };
+      collaboratorsServiceMock.exportFile.mockResolvedValue({
+        buffer: Buffer.from('data'),
+        filename: 'colaboradores_asistencia_2026-07-06.xlsx',
+      });
+      const res = { setHeader: jest.fn(), send: jest.fn() };
+
+      await controller.exportCollaborators(
+        user as never,
+        '',
+        { format: 'excel' } as never,
+        res as never,
+      );
+
+      expect(collaboratorsServiceMock.exportFile).toHaveBeenCalledWith(
+        TENANT,
+        { userId: 'actor-1', roleCode: 'OWNER' },
+        expect.objectContaining({ status: 'all' }),
+        'excel',
+        'actor-1',
+      );
+      expect(res.setHeader).toHaveBeenCalledWith(
+        'Content-Type',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      );
+      expect(res.setHeader).toHaveBeenCalledWith(
+        'Content-Disposition',
+        'attachment; filename="colaboradores_asistencia_2026-07-06.xlsx"',
+      );
+      expect(res.send).toHaveBeenCalledWith(Buffer.from('data'));
+    });
+  });
+
+  describe('emailExportCollaborators', () => {
+    it('delega al service con recipients/format/filters y el email del actor', async () => {
+      const user = { sub: 'actor-1', roleCode: 'OWNER', tenantId: TENANT, email: 'owner@x.com' };
+      collaboratorsServiceMock.emailExport.mockResolvedValue(undefined);
+
+      const result = await controller.emailExportCollaborators(user as never, '', {
+        recipients: ['a@example.com'],
+        format: 'pdf',
+        filters: { area: 'Cocina' },
+      } as never);
+
+      expect(collaboratorsServiceMock.emailExport).toHaveBeenCalledWith(
+        TENANT,
+        { userId: 'actor-1', roleCode: 'OWNER' },
+        'owner@x.com',
+        {
+          recipients: ['a@example.com'],
+          format: 'pdf',
+          filters: expect.objectContaining({ area: 'Cocina', status: 'all' }),
+        },
+        'actor-1',
+      );
+      expect(result).toEqual({ sent: true });
+    });
+  });
+
+  describe('getCollaboratorAudit', () => {
+    it('delega al service y envuelve el resultado en { items }', async () => {
+      const user = { sub: 'actor-1', roleCode: 'SUPER_ADMIN', tenantId: TENANT };
+      collaboratorsServiceMock.getAuditHistory.mockResolvedValue([
+        {
+          id: 'audit-1',
+          action: 'UPDATE',
+          actorName: 'owner@x.com',
+          createdAt: new Date(),
+          oldValue: null,
+          newValue: null,
+        },
+      ]);
+
+      const result = await controller.getCollaboratorAudit(user as never, '', 'emp-1');
+
+      expect(collaboratorsServiceMock.getAuditHistory).toHaveBeenCalledWith(TENANT, 'emp-1');
+      expect(result.items).toHaveLength(1);
     });
   });
 });

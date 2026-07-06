@@ -44,6 +44,7 @@ export type {
   DianInvoiceProps,
   StockAlertProps,
   ShiftSummaryProps,
+  CollaboratorsExportProps,
   EmailTemplate,
   SendEmailOptions,
   EmailJobPayload,

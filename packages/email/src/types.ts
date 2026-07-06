@@ -70,6 +70,13 @@ export interface ShiftSummaryProps {
   reportUrl: string;
 }
 
+export interface CollaboratorsExportProps {
+  requestedByName: string;
+  format: 'excel' | 'pdf';
+  rowCount: number;
+  generatedAt: string;
+}
+
 // ---------------------------------------------------------------------------
 // Discriminated union over all template types
 // ---------------------------------------------------------------------------
@@ -82,7 +89,8 @@ export type EmailTemplate =
   | { type: 'account-confirmation'; props: AccountConfirmationProps }
   | { type: 'dian-invoice'; props: DianInvoiceProps }
   | { type: 'stock-alert'; props: StockAlertProps }
-  | { type: 'shift-summary'; props: ShiftSummaryProps };
+  | { type: 'shift-summary'; props: ShiftSummaryProps }
+  | { type: 'collaborators-export'; props: CollaboratorsExportProps };
 
 // ---------------------------------------------------------------------------
 // EmailService API

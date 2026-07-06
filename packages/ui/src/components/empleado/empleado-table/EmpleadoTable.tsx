@@ -16,6 +16,8 @@ export interface EmpleadoTableProps {
   footer?: ReactNode;
   pagination?: EmpleadoPaginationProps;
   showActions?: boolean;
+  /** OS-550 — agrega columnas Primer/Segundo apellido, Supervisor, Turno y Portal trabajador. */
+  showAttendanceColumns?: boolean;
   sortColumn?: EmpleadoSortColumnKey | null;
   sortDirection?: EmpleadoSortDirection;
   onSortColumn?: (column: EmpleadoSortColumnKey) => void;
@@ -29,6 +31,7 @@ export function EmpleadoTable({
   footer,
   pagination,
   showActions = true,
+  showAttendanceColumns = false,
   sortColumn = null,
   sortDirection = 'asc',
   onSortColumn,
@@ -36,8 +39,14 @@ export function EmpleadoTable({
   size = 'md',
   className,
 }: EmpleadoTableProps): JSX.Element {
-  const columns = buildEmpleadoHeaderColumns(showActions, sortColumn, sortDirection, onSortColumn);
-  const tableMinWidthPx = getEmpleadoTableMinWidthPx(showActions);
+  const columns = buildEmpleadoHeaderColumns(
+    showActions,
+    sortColumn,
+    sortDirection,
+    onSortColumn,
+    showAttendanceColumns,
+  );
+  const tableMinWidthPx = getEmpleadoTableMinWidthPx(showActions, showAttendanceColumns);
 
   return (
     <section

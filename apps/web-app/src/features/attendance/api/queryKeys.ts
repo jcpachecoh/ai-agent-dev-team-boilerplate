@@ -1,4 +1,5 @@
 import type {
+  AttendanceCollaboratorsFilters,
   AttendanceComparisonFilters,
   AttendanceControlPanelFilters,
   AttendanceHistoryFilters,
@@ -23,6 +24,11 @@ export const attendanceKeys = {
     [...attendanceKeys.all, 'control-panel', filters] as const,
   comparison: (filters: AttendanceComparisonFilters) =>
     [...attendanceKeys.all, 'comparison', filters] as const,
+  collaborators: (filters: AttendanceCollaboratorsFilters) =>
+    [...attendanceKeys.all, 'collaborators', filters] as const,
+  collaboratorSupervisors: () => [...attendanceKeys.all, 'collaborator-supervisors'] as const,
+  collaboratorAudit: (employeeDetailsId: string) =>
+    [...attendanceKeys.all, 'collaborator-audit', employeeDetailsId] as const,
   turnos: {
     all: () => [...attendanceKeys.all, 'turnos'] as const,
     list: (filters: TurnosListQuery) => [...attendanceKeys.turnos.all(), 'list', filters] as const,

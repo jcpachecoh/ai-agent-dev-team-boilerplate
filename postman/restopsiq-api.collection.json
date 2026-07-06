@@ -154,6 +154,30 @@
       "description": "Generated timestamp-based code before Create Supply Item"
     },
     {
+      "key": "attendanceCollaboratorSearch",
+      "value": "jose",
+      "type": "string",
+      "description": "OS-550 — término de búsqueda sin tildes; el endpoint debe encontrar coincidencias con tildes (accent-insensitive)"
+    },
+    {
+      "key": "attendanceCollaboratorPositionId",
+      "value": "",
+      "type": "string",
+      "description": "OS-550 — EmployeePosition.id (Especialidad/Cargo) para filtrar /attendance/collaborators"
+    },
+    {
+      "key": "attendanceCollaboratorSupervisorUserId",
+      "value": "",
+      "type": "string",
+      "description": "OS-550 — userId de un usuario con rol SUPERVISOR/MANAGER, para el filtro supervisorUserId"
+    },
+    {
+      "key": "attendanceCollaboratorEmployeeDetailsId",
+      "value": "",
+      "type": "string",
+      "description": "OS-550 follow-up — EmployeeDetails.id capturado de 'GET Collaborators — sin filtros', usado por PATCH portal y GET audit"
+    },
+    {
       "key": "projectId",
       "value": "",
       "type": "string",
@@ -11719,6 +11743,1016 @@
       ]
     },
     {
+      "name": "OS-550 Attendance Collaborators",
+      "description": "Listado de Colaboradores de Asistencia con búsqueda (case+accent insensitive), filtros (positionId/contractType/area/locationId/supervisorUserId/laborClassification), scoping de sede real en backend (OWNER/SUPER_ADMIN/NOMINA tenant-wide; SUPERVISOR/MANAGER solo UserLocation) y paginación real con total. Requiere 'NOM-03 Attendance' ejecutado antes (captura attendanceUserId/attendanceLocationId). Solo lectura: PAYROLL_MODULE_ROLES (OWNER, SUPER_ADMIN, SUPERVISOR, MANAGER, NOMINA). OS-550 follow-up agrega: Portal trabajador (PATCH, solo OWNER/SUPER_ADMIN), exportaciones Excel/PDF del dataset filtrado completo (GET .../export, mismos roles que el listado), envío por correo con adjunto (POST .../export/email), e historial mínimo de auditoría (GET .../:employeeDetailsId/audit, solo OWNER/SUPER_ADMIN). Portal real de autoservicio y módulo avanzado de auditoría quedan fuera de alcance (ver tasks/attendance/OS-550-attendance-collaborators.md).",
+      "item": [
+        {
+          "name": "GET Collaborators — sin filtros",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/collaborators",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "collaborators"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('collaborators: status 200 y shape items/pagination', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.items).to.be.an('array');",
+                  "    pm.expect(body.pagination).to.have.all.keys('page', 'pageSize', 'total', 'totalPages');",
+                  "    pm.expect(body.pagination.page).to.eql(1);",
+                  "    pm.expect(body.pagination.pageSize).to.eql(20);",
+                  "    if (body.items.length > 0) {",
+                  "        pm.collectionVariables.set('attendanceCollaboratorEmployeeDetailsId', body.items[0].id);",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Collaborators — con search (accent insensitive)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/collaborators?search={{attendanceCollaboratorSearch}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "collaborators"],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "{{attendanceCollaboratorSearch}}"
+                }
+              ]
+            },
+            "description": "attendanceCollaboratorSearch se guarda sin tildes (p.ej. 'jose') a propósito — el endpoint debe encontrar colaboradores cuyo nombre lleva tilde ('José') gracias al translate() case+accent insensitive del repositorio."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('search: status 200', () => pm.response.to.have.status(200));"]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Collaborators — con positionId",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/collaborators?positionId={{attendanceCollaboratorPositionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "collaborators"],
+              "query": [
+                {
+                  "key": "positionId",
+                  "value": "{{attendanceCollaboratorPositionId}}"
+                }
+              ]
+            },
+            "description": "attendanceCollaboratorPositionId debe capturarse de GET /employee-positions (folder de Payroll) antes de correr este request."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('positionId: status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Collaborators — con contractType",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/collaborators?contractType=INDEFINIDO",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "collaborators"],
+              "query": [
+                {
+                  "key": "contractType",
+                  "value": "INDEFINIDO"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('contractType: status 200 y todos los items con ese contrato', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "    const body = pm.response.json();",
+                  "    body.items.forEach((item) => pm.expect(item.contractType).to.eql('INDEFINIDO'));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Collaborators — con area",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/collaborators?area=Cocina",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "collaborators"],
+              "query": [
+                {
+                  "key": "area",
+                  "value": "Cocina"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('area: status 200', () => pm.response.to.have.status(200));"]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Collaborators — con laborClassification=operaciones",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/collaborators?laborClassification=operaciones",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "collaborators"],
+              "query": [
+                {
+                  "key": "laborClassification",
+                  "value": "operaciones"
+                }
+              ]
+            },
+            "description": "operaciones = COCINA + SERVICIO (mapeo del enum LaborClassification); administrativo = ADMINISTRATIVO."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('laborClassification: status 200 y sin ADMINISTRATIVO', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "    const body = pm.response.json();",
+                  "    body.items.forEach((item) => pm.expect(item.laborClassification).to.not.eql('ADMINISTRATIVO'));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Collaborators — con supervisorUserId",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/collaborators?supervisorUserId={{attendanceCollaboratorSupervisorUserId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "collaborators"],
+              "query": [
+                {
+                  "key": "supervisorUserId",
+                  "value": "{{attendanceCollaboratorSupervisorUserId}}"
+                }
+              ]
+            },
+            "description": "attendanceCollaboratorSupervisorUserId debe ser el userId de un usuario con rol SUPERVISOR o MANAGER en el tenant (capturado de 'GET Collaborator Supervisors' o de admin/users). Filtra colaboradores cuya sede está entre las UserLocation de ese supervisor, intersectado con el scope del caller autenticado."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('supervisorUserId: status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Collaborators — supervisorUserId inválido devuelve 400",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/collaborators?supervisorUserId=non-existent-user-id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "collaborators"],
+              "query": [
+                {
+                  "key": "supervisorUserId",
+                  "value": "non-existent-user-id"
+                }
+              ]
+            },
+            "description": "Caso 'supervisor fuera de scope / inválido': un supervisorUserId que no existe o no tiene rol SUPERVISOR/MANAGER en el tenant debe rechazarse con 400, nunca ignorarse silenciosamente."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('supervisorUserId inválido -> 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Collaborators — pageSize 50",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/collaborators?pageSize=50",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "collaborators"],
+              "query": [
+                {
+                  "key": "pageSize",
+                  "value": "50"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('pageSize=50: status 200 y pagination.pageSize=50', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json().pagination.pageSize).to.eql(50);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Collaborators — pageSize 100",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/collaborators?pageSize=100",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "collaborators"],
+              "query": [
+                {
+                  "key": "pageSize",
+                  "value": "100"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('pageSize=100: status 200 y pagination.pageSize=100', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json().pagination.pageSize).to.eql(100);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Collaborators — pageSize inválido devuelve 400",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/collaborators?pageSize=30",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "collaborators"],
+              "query": [
+                {
+                  "key": "pageSize",
+                  "value": "30"
+                }
+              ]
+            },
+            "description": "30 no está en {20,50,100} — debe rechazarse con 400, nunca normalizarse silenciosamente a un valor permitido."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('pageSize inválido -> 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Collaborator Supervisors",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/collaborators/supervisors",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "collaborators", "supervisors"]
+            },
+            "description": "Usuarios SUPERVISOR/MANAGER visibles dentro del scope del caller — usar el primer id devuelto para poblar attendanceCollaboratorSupervisorUserId."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('supervisors: status 200 y array', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body).to.be.an('array');",
+                  "    if (body.length > 0) {",
+                  "        pm.collectionVariables.set('attendanceCollaboratorSupervisorUserId', body[0].id);",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH Portal Trabajador — true (OWNER/SUPER_ADMIN)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/collaborators/{{attendanceCollaboratorEmployeeDetailsId}}/portal",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "attendance",
+                "collaborators",
+                "{{attendanceCollaboratorEmployeeDetailsId}}",
+                "portal"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"enabled\": true\n}"
+            },
+            "description": "Requiere ejecutar antes 'GET Collaborators — sin filtros' para capturar attendanceCollaboratorEmployeeDetailsId. Requiere un usuario logueado con rol OWNER o SUPER_ADMIN."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('portal true: status 200 y portalWorkerEnabled=true', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json().portalWorkerEnabled).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH Portal Trabajador — false",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/collaborators/{{attendanceCollaboratorEmployeeDetailsId}}/portal",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "attendance",
+                "collaborators",
+                "{{attendanceCollaboratorEmployeeDetailsId}}",
+                "portal"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"enabled\": false\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('portal false: status 200 y portalWorkerEnabled=false', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json().portalWorkerEnabled).to.eql(false);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH Portal Trabajador — rol no autorizado devuelve 403",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/collaborators/{{attendanceCollaboratorEmployeeDetailsId}}/portal",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "attendance",
+                "collaborators",
+                "{{attendanceCollaboratorEmployeeDetailsId}}",
+                "portal"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"enabled\": true\n}"
+            },
+            "description": "Ejecutar con un accessToken de un usuario SUPERVISOR/MANAGER/NOMINA (no OWNER/SUPER_ADMIN) para validar el 403."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('portal con rol no autorizado -> 403 (solo si el token usado no es OWNER/SUPER_ADMIN)', () => {",
+                  "    pm.expect([200, 403]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Export Excel (con filtros activos)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/collaborators/export?format=excel&status=all",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "collaborators", "export"],
+              "query": [
+                {
+                  "key": "format",
+                  "value": "excel"
+                },
+                {
+                  "key": "status",
+                  "value": "all"
+                }
+              ]
+            },
+            "description": "Usar 'Send and Download' en Postman para guardar el .xlsx y confirmar manualmente que refleja los filtros de la query, no solo la página actual."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('export excel: status 200 y content-type xlsx', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('spreadsheetml');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Export PDF (con filtros activos)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/collaborators/export?format=pdf&status=all",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "collaborators", "export"],
+              "query": [
+                {
+                  "key": "format",
+                  "value": "pdf"
+                },
+                {
+                  "key": "status",
+                  "value": "all"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('export pdf: status 200 y content-type pdf', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/pdf');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Export — sin datos devuelve 400",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/collaborators/export?format=excel&search=zzzzz-sin-coincidencias-zzzzz",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "collaborators", "export"],
+              "query": [
+                {
+                  "key": "format",
+                  "value": "excel"
+                },
+                {
+                  "key": "search",
+                  "value": "zzzzz-sin-coincidencias-zzzzz"
+                }
+              ]
+            },
+            "description": "search sin coincidencias -> 0 filas filtradas -> 400 con mensaje claro."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('export sin datos -> 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Export por correo — válido",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/collaborators/export/email",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "collaborators", "export", "email"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"recipients\": [\"qa@restopsiq.dev\"],\n  \"format\": \"excel\",\n  \"filters\": { \"status\": \"all\" }\n}"
+            },
+            "description": "Encola el email con adjunto vía EmailService (BullMQ) — confirmar en logs/worker que el job se procesó."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('email export válido: status 200 y sent=true', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json().sent).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Export por correo — email inválido devuelve 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/collaborators/export/email",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "collaborators", "export", "email"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"recipients\": [\"no-es-un-email\"],\n  \"format\": \"excel\",\n  \"filters\": {}\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('email inválido -> 400', () => pm.response.to.have.status(400));"]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Export por correo — más de 10 destinatarios devuelve 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/collaborators/export/email",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "collaborators", "export", "email"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"recipients\": [\"a1@x.dev\",\"a2@x.dev\",\"a3@x.dev\",\"a4@x.dev\",\"a5@x.dev\",\"a6@x.dev\",\"a7@x.dev\",\"a8@x.dev\",\"a9@x.dev\",\"a10@x.dev\",\"a11@x.dev\"],\n  \"format\": \"excel\",\n  \"filters\": {}\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('>10 destinatarios -> 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Audit History (OWNER/SUPER_ADMIN)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/collaborators/{{attendanceCollaboratorEmployeeDetailsId}}/audit",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "attendance",
+                "collaborators",
+                "{{attendanceCollaboratorEmployeeDetailsId}}",
+                "audit"
+              ]
+            },
+            "description": "Ejecutar después de los PATCH de portal — debe incluir al menos una entrada UPDATE sobre portalWorkerEnabled."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('audit: status 200 y shape items[]', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json().items).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Audit History — rol no autorizado devuelve 403",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/collaborators/{{attendanceCollaboratorEmployeeDetailsId}}/audit",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "attendance",
+                "collaborators",
+                "{{attendanceCollaboratorEmployeeDetailsId}}",
+                "audit"
+              ]
+            },
+            "description": "Ejecutar con un accessToken de un usuario SUPERVISOR/MANAGER/NOMINA (no OWNER/SUPER_ADMIN) para validar el 403."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('audit con rol no autorizado -> 403 (solo si el token usado no es OWNER/SUPER_ADMIN)', () => {",
+                  "    pm.expect([200, 403]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Audit History — tenant isolation (404 fuera del tenant)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/collaborators/non-existent-employee-details-id/audit",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "attendance",
+                "collaborators",
+                "non-existent-employee-details-id",
+                "audit"
+              ]
+            },
+            "description": "employeeDetailsId inexistente (o de otro tenant) debe devolver 404, nunca datos de otro tenant."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('audit tenant isolation -> 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "PROV-LOG — Logística proveedor",
       "description": "GraphQL: logística de proveedor (borrador → completo, historial, validaciones). Requiere {{graphqlUrl}}, {{tenantId}}, {{accessToken}} y variables {{supplierId}}, {{receptionUserId}}, {{locationId}}.",
       "item": [
@@ -11727,8 +12761,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -11742,9 +12782,18 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" },
-              { "key": "x-actor-user-id", "value": "{{globalUserId}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              },
+              {
+                "key": "x-actor-user-id",
+                "value": "{{globalUserId}}"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -11774,9 +12823,18 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" },
-              { "key": "x-actor-user-id", "value": "{{globalUserId}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              },
+              {
+                "key": "x-actor-user-id",
+                "value": "{{globalUserId}}"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -11803,8 +12861,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -11818,8 +12882,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -11833,8 +12903,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "body": {
               "mode": "raw",

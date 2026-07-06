@@ -41,13 +41,57 @@ export const defaultEmpleadoColumns: EmpleadoColumnDef[] = [
   { key: 'actions', label: 'Acciones', width: '72px', align: 'right' },
 ];
 
-export function getEmpleadoColumns(showActions = true): EmpleadoColumnDef[] {
-  if (showActions) return defaultEmpleadoColumns;
-  return defaultEmpleadoColumns.filter((column) => column.key !== 'actions');
+/**
+ * Columnas exclusivas de OS-550 (Colaboradores de Asistencia) — solo se insertan cuando
+ * showAttendanceColumns=true. Nunca afectan a defaultEmpleadoColumns ni a consumidores
+ * existentes (Payroll) que no pasan ese flag. El orden aquí debe coincidir exactamente
+ * con el orden de las celdas en EmpleadoTableRow/EmpleadoTableCard — apellidos se
+ * insertan justo después de 'cedula'; supervisor/turno/portalTrabajador justo antes de
+ * 'actions' (después de 'status').
+ */
+export const attendanceApellidoColumns: EmpleadoColumnDef[] = [
+  { key: 'primerApellido', label: 'Primer apellido', width: 'minmax(120px, 0.9fr)' },
+  { key: 'segundoApellido', label: 'Segundo apellido', width: 'minmax(120px, 0.9fr)' },
+];
+
+export const attendanceTrailingColumns: EmpleadoColumnDef[] = [
+  { key: 'supervisor', label: 'Supervisor', width: 'minmax(140px, 1fr)' },
+  { key: 'turno', label: 'Turno', width: 'minmax(140px, 0.9fr)', align: 'center' },
+  {
+    key: 'portalTrabajador',
+    label: 'Portal trabajador',
+    width: 'minmax(130px, 0.85fr)',
+    align: 'center',
+  },
+];
+
+export function getEmpleadoColumns(
+  showActions = true,
+  showAttendanceColumns = false,
+): EmpleadoColumnDef[] {
+  if (!showAttendanceColumns) {
+    return showActions
+      ? defaultEmpleadoColumns
+      : defaultEmpleadoColumns.filter((column) => column.key !== 'actions');
+  }
+
+  const cedulaIndex = defaultEmpleadoColumns.findIndex((column) => column.key === 'cedula');
+  const actionsIndex = defaultEmpleadoColumns.findIndex((column) => column.key === 'actions');
+
+  const base = [
+    ...defaultEmpleadoColumns.slice(0, cedulaIndex + 1),
+    ...attendanceApellidoColumns,
+    ...defaultEmpleadoColumns.slice(cedulaIndex + 1, actionsIndex),
+    ...attendanceTrailingColumns,
+    defaultEmpleadoColumns[actionsIndex],
+  ];
+
+  if (showActions) return base;
+  return base.filter((column) => column.key !== 'actions');
 }
 
-export function getEmpleadoGridTemplate(showActions = true): string {
-  return getEmpleadoColumns(showActions)
+export function getEmpleadoGridTemplate(showActions = true, showAttendanceColumns = false): string {
+  return getEmpleadoColumns(showActions, showAttendanceColumns)
     .map((column) => column.width ?? '1fr')
     .join(' ');
 }
@@ -69,8 +113,11 @@ function getColumnMinWidthPx(width?: string): number {
   return 80;
 }
 
-export function getEmpleadoTableMinWidthPx(showActions = true): number {
-  const columns = getEmpleadoColumns(showActions);
+export function getEmpleadoTableMinWidthPx(
+  showActions = true,
+  showAttendanceColumns = false,
+): number {
+  const columns = getEmpleadoColumns(showActions, showAttendanceColumns);
   const columnsWidth = columns.reduce((sum, column) => sum + getColumnMinWidthPx(column.width), 0);
   const gaps = Math.max(columns.length - 1, 0) * EMPLEADO_TABLE_COLUMN_GAP_PX;
 
@@ -82,8 +129,9 @@ export function buildEmpleadoHeaderColumns(
   sortColumn: EmpleadoSortColumnKey | null,
   sortDirection: EmpleadoSortDirection,
   onSortColumn?: (column: EmpleadoSortColumnKey) => void,
+  showAttendanceColumns = false,
 ): EmpleadoColumnDef[] {
-  return getEmpleadoColumns(showActions).map((column) => {
+  return getEmpleadoColumns(showActions, showAttendanceColumns).map((column) => {
     const sortKey = column.key;
 
     if (!column.sortable || !onSortColumn || !isEmpleadoSortColumnKey(sortKey)) {

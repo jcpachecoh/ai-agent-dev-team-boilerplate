@@ -1,5 +1,6 @@
 import type { CSSProperties, JSX } from 'react';
 
+import { Switch } from '../../Switch';
 import { EmpleadoAvatar } from '../empleado-avatar';
 import { EmpleadoContractBadge } from '../empleado-contract-badge';
 import { EmpleadoRowActionButton } from '../empleado-row-action-button';
@@ -30,10 +31,27 @@ export interface EmpleadoTableRowProps {
   hireDate?: string;
   isActive?: boolean;
   onView?: () => void;
+  /** Override del aria-label/tooltip del botón "ver" (p.ej. "Ver tarjeta de asistencia" en OS-550). */
+  viewLabel?: string;
   onEdit?: () => void;
   onToggleStatus?: () => void;
+  /** OS-550 follow-up — acción "Historial" (solo OWNER/SUPER_ADMIN). */
+  onHistory?: () => void;
   showActions?: boolean;
   toggleLoading?: boolean;
+  /** OS-550 — activa las columnas Primer/Segundo apellido, Supervisor, Turno y Portal trabajador. */
+  showAttendanceColumns?: boolean;
+  primerApellido?: string | null;
+  segundoApellido?: string | null;
+  supervisorsLabel?: string;
+  turnoLabel?: string;
+  /** OS-550 follow-up — si se omite, la celda cae al texto "Pendiente" (portal aún no implementado). */
+  portalWorker?: {
+    checked: boolean;
+    disabled?: boolean;
+    loading?: boolean;
+    onChange?: (checked: boolean) => void;
+  };
   theme?: EmpleadoTheme;
   size?: EmpleadoSize;
   className?: string;
@@ -61,10 +79,18 @@ export function EmpleadoTableRow({
   hireDate,
   isActive = true,
   onView,
+  viewLabel,
   onEdit,
   onToggleStatus,
+  onHistory,
   showActions: showActionsProp,
   toggleLoading = false,
+  showAttendanceColumns = false,
+  primerApellido,
+  segundoApellido,
+  supervisorsLabel,
+  turnoLabel,
+  portalWorker,
   theme = 'dark',
   size = 'md',
   className,
@@ -72,7 +98,7 @@ export function EmpleadoTableRow({
   const resolvedInitials = initials ?? resolveEmpleadoInitials(name);
   const resolvedTone = avatarTone ?? resolveEmpleadoAvatarTone(id ?? name);
   const contractLabel = formatEmpleadoContractLabel(contractType);
-  const showActions = showActionsProp ?? Boolean(onView || onEdit || onToggleStatus);
+  const showActions = showActionsProp ?? Boolean(onView || onEdit || onToggleStatus || onHistory);
 
   return (
     <div
@@ -81,7 +107,11 @@ export function EmpleadoTableRow({
         .join(' ')}
       role="row"
       data-empleado-id={id}
-      style={{ '--empleado-columns': getEmpleadoGridTemplate(showActions) } as CSSProperties}
+      style={
+        {
+          '--empleado-columns': getEmpleadoGridTemplate(showActions, showAttendanceColumns),
+        } as CSSProperties
+      }
     >
       <div className={styles.employeeCell} role="cell">
         <EmpleadoAvatar initials={resolvedInitials} tone={resolvedTone} theme={theme} size="md" />
@@ -93,6 +123,16 @@ export function EmpleadoTableRow({
       <span className={styles.cedulaCell} role="cell">
         {formatEmpleadoCedula(cedula)}
       </span>
+      {showAttendanceColumns ? (
+        <span className={styles.cedulaCell} role="cell">
+          {primerApellido ?? '-'}
+        </span>
+      ) : null}
+      {showAttendanceColumns ? (
+        <span className={styles.cedulaCell} role="cell">
+          {segundoApellido ?? '-'}
+        </span>
+      ) : null}
       <div className={styles.roleCell} role="cell">
         <span className={styles.position}>{position ?? '-'}</span>
         {area ? <span className={styles.area}>{area}</span> : null}
@@ -115,10 +155,42 @@ export function EmpleadoTableRow({
       <div className={styles.statusCell} role="cell">
         <EmpleadoStatusBadge active={isActive} theme={theme} size="sm" />
       </div>
+      {showAttendanceColumns ? (
+        <span className={styles.cedulaCell} role="cell">
+          {supervisorsLabel ?? 'N/A'}
+        </span>
+      ) : null}
+      {showAttendanceColumns ? (
+        <span className={styles.cedulaCell} role="cell">
+          {turnoLabel ?? 'N/A'}
+        </span>
+      ) : null}
+      {showAttendanceColumns ? (
+        <span className={styles.cedulaCell} role="cell">
+          {portalWorker ? (
+            <Switch
+              checked={portalWorker.checked}
+              disabled={portalWorker.disabled}
+              loading={portalWorker.loading}
+              onChange={portalWorker.onChange}
+              theme={theme}
+              size="sm"
+              aria-label="Portal trabajador"
+            />
+          ) : (
+            'Pendiente'
+          )}
+        </span>
+      ) : null}
       {showActions ? (
         <div className={styles.actionsCell} role="cell">
           {onView ? (
-            <EmpleadoRowActionButton variant="view" theme={theme} onClick={onView} />
+            <EmpleadoRowActionButton
+              variant="view"
+              theme={theme}
+              onClick={onView}
+              aria-label={viewLabel}
+            />
           ) : null}
           {onEdit ? (
             <EmpleadoRowActionButton variant="edit" theme={theme} onClick={onEdit} />
@@ -131,6 +203,9 @@ export function EmpleadoTableRow({
               onClick={onToggleStatus}
               disabled={toggleLoading}
             />
+          ) : null}
+          {onHistory ? (
+            <EmpleadoRowActionButton variant="history" theme={theme} onClick={onHistory} />
           ) : null}
         </div>
       ) : null}

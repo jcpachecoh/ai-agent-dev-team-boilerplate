@@ -298,3 +298,101 @@ export interface DismissAlertResult {
   alertKey: string;
   dismissedAt: string;
 }
+
+// OS-550 — Colaboradores de Asistencia
+
+export type AttendanceCollaboratorLaborClassification = 'COCINA' | 'SERVICIO' | 'ADMINISTRATIVO';
+
+export interface AttendanceCollaboratorSupervisor {
+  id: string;
+  name: string;
+  email: string | null;
+}
+
+export interface AttendanceCollaboratorTodayShift {
+  type: 'ASSIGNED' | 'REST' | 'BASE';
+  turno: {
+    id: string;
+    nombre: string;
+    sigla: string;
+    horaInicio: string;
+    horaFin: string;
+    jornada: string;
+  } | null;
+}
+
+export interface AttendanceCollaborator {
+  id: string;
+  userId: string;
+  locationId: string;
+  locationName: string | null;
+  name: string;
+  primerApellido: string | null;
+  segundoApellido: string | null;
+  cedula: string;
+  email: string;
+  positionId: string | null;
+  positionName: string;
+  area: string;
+  contractType: string;
+  laborClassification: AttendanceCollaboratorLaborClassification;
+  isActive: boolean;
+  supervisors: AttendanceCollaboratorSupervisor[];
+  todayShift: AttendanceCollaboratorTodayShift;
+  portalWorkerEnabled: boolean;
+}
+
+export interface AttendanceCollaboratorsFilters {
+  search?: string;
+  positionId?: string;
+  contractType?: string;
+  area?: string;
+  locationId?: string;
+  supervisorUserId?: string;
+  laborClassification?: 'administrativo' | 'operaciones';
+  status?: 'all' | 'active' | 'inactive';
+  sortBy?: 'employee' | 'role' | 'hireDate';
+  sortDir?: 'asc' | 'desc';
+  page?: number;
+  pageSize?: number;
+}
+
+export interface AttendanceCollaboratorsResult {
+  items: AttendanceCollaborator[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+  };
+  summary: {
+    total: number;
+    active: number;
+    inactive: number;
+  };
+}
+
+export interface AttendanceCollaboratorSupervisorOption {
+  id: string;
+  name: string;
+  email: string | null;
+}
+
+// OS-550 follow-up — Portal trabajador, exportaciones e historial mínimo
+
+export type AttendanceCollaboratorExportFormat = 'excel' | 'pdf';
+
+export interface AttendanceCollaboratorEmailExportInput {
+  recipients: string[];
+  format: AttendanceCollaboratorExportFormat;
+  filters: AttendanceCollaboratorsFilters;
+}
+
+export interface AttendanceCollaboratorAuditEntry {
+  id: string;
+  action: string;
+  actorName: string | null;
+  createdAt: string;
+  oldValue: unknown;
+  newValue: unknown;
+}

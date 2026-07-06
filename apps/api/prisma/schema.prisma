@@ -779,6 +779,7 @@ model EmployeeDetails {
   nonSalaryAmount      Decimal?             @db.Decimal(12, 2)
   pinHash              String?
   photoStorageObjectId String?
+  portalWorkerEnabled  Boolean              @default(false)
   isActive             Boolean              @default(true)
   createdAt            DateTime             @default(now())
   updatedAt            DateTime             @updatedAt

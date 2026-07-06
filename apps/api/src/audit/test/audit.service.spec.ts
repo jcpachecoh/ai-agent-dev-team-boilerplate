@@ -6,6 +6,7 @@ import { AuditRepository } from '../repository/audit.repository';
 const repoMock = {
   create: jest.fn(),
   createLoginAudit: jest.fn(),
+  findByEntity: jest.fn(),
 };
 
 describe('AuditService', () => {
@@ -177,6 +178,20 @@ describe('AuditService', () => {
           deviceInfo: { browser: 'Chrome', sessionToken: '[REDACTED]' },
         }),
       );
+    });
+  });
+
+  describe('findRecentByEntity', () => {
+    it('delega al repositorio con el límite default (50)', async () => {
+      repoMock.findByEntity.mockResolvedValue([]);
+      await service.findRecentByEntity('t-1', 'EmployeeDetails', 'emp-1');
+      expect(repoMock.findByEntity).toHaveBeenCalledWith('t-1', 'EmployeeDetails', 'emp-1', 50);
+    });
+
+    it('permite sobreescribir el límite', async () => {
+      repoMock.findByEntity.mockResolvedValue([]);
+      await service.findRecentByEntity('t-1', 'EmployeeDetails', 'emp-1', 10);
+      expect(repoMock.findByEntity).toHaveBeenCalledWith('t-1', 'EmployeeDetails', 'emp-1', 10);
     });
   });
 });

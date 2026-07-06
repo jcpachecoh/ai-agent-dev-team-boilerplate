@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import type { AuditAction, AuthMethod, LoginAuditStatus, Prisma } from '@prisma/client';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { PrismaService } from '../../prisma/prisma.service';
-import type { IAuditRepository } from '../interfaces/audit.interfaces';
+import type { AuditLogWithActorName, IAuditRepository } from '../interfaces/audit.interfaces';
 
 @Injectable()
 export class AuditRepository implements IAuditRepository {
@@ -88,5 +88,30 @@ export class AuditRepository implements IAuditRepository {
       }
       throw error;
     }
+  }
+
+  async findByEntity(
+    tenantId: string,
+    entityType: string,
+    entityId: string,
+    limit: number,
+  ): Promise<AuditLogWithActorName[]> {
+    const rows = await this.prisma.auditLog.findMany({
+      where: { tenantId, entityType, entityId },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      include: {
+        actor: { select: { email: true, employeeDetails: { select: { name: true } } } },
+      },
+    });
+
+    return rows.map((row) => ({
+      id: row.id,
+      action: row.action,
+      actorName: row.actor ? (row.actor.employeeDetails?.name ?? row.actor.email) : null,
+      createdAt: row.createdAt,
+      oldValue: row.oldValue,
+      newValue: row.newValue,
+    }));
   }
 }
