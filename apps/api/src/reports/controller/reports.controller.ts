@@ -32,6 +32,7 @@ import { ExportPayrollReportDto, ExportFormat } from './dto/export-payroll-repor
 import { ReportsService } from '../service/reports.service';
 import { ReportPdfService } from '../service/report-pdf.service';
 import { ReportExcelService } from '../service/report-excel.service';
+import type { JwtPayload } from '../../auth/interfaces/auth.interfaces';
 
 @ApiTags('reports')
 @ApiBearerAuth()
@@ -50,36 +51,45 @@ export class ReportsController {
   @ApiOkResponse({ type: PayrollReportResponseDto })
   @Get('payroll')
   async getPayrollReport(
-    @CurrentUser() user: any,
+    @CurrentUser() user: JwtPayload,
     @Headers('x-tenant-id') headerTenantId: string,
     @Query() query: PeriodQueryDto,
   ): Promise<PayrollReportResponseDto> {
     const tenantId = this.resolveTenantId(user, headerTenantId);
-    return this.reportsService.getPayrollReport(tenantId, query);
+    return this.reportsService.getPayrollReport(tenantId, query, {
+      userId: user?.sub ?? '',
+      roleCode: user?.roleCode ?? '',
+    });
   }
 
   @ApiOperation({ summary: 'Attendance summary report for the tenant' })
   @ApiOkResponse({ type: AttendanceReportResponseDto })
   @Get('attendance')
   async getAttendanceReport(
-    @CurrentUser() user: any,
+    @CurrentUser() user: JwtPayload,
     @Headers('x-tenant-id') headerTenantId: string,
     @Query() query: AttendanceQueryDto,
   ): Promise<AttendanceReportResponseDto> {
     const tenantId = this.resolveTenantId(user, headerTenantId);
-    return this.reportsService.getAttendanceReport(tenantId, query);
+    return this.reportsService.getAttendanceReport(tenantId, query, {
+      userId: user?.sub ?? '',
+      roleCode: user?.roleCode ?? '',
+    });
   }
 
   @ApiOperation({ summary: 'Social security (PILA) contributions report for the tenant' })
   @ApiOkResponse({ type: SocialSecurityReportResponseDto })
   @Get('social-security')
   async getSocialSecurityReport(
-    @CurrentUser() user: any,
+    @CurrentUser() user: JwtPayload,
     @Headers('x-tenant-id') headerTenantId: string,
     @Query() query: PeriodQueryDto,
   ): Promise<SocialSecurityReportResponseDto> {
     const tenantId = this.resolveTenantId(user, headerTenantId);
-    return this.reportsService.getSocialSecurityReport(tenantId, query);
+    return this.reportsService.getSocialSecurityReport(tenantId, query, {
+      userId: user?.sub ?? '',
+      roleCode: user?.roleCode ?? '',
+    });
   }
 
   @ApiOperation({ summary: 'Export monthly payroll report as PDF or XLSX' })
@@ -91,13 +101,16 @@ export class ReportsController {
   @Roles(...PAYROLL_WRITE_ROLES)
   @Post('payroll/export')
   async exportPayrollReport(
-    @CurrentUser() user: any,
+    @CurrentUser() user: JwtPayload,
     @Headers('x-tenant-id') headerTenantId: string,
     @Body() body: ExportPayrollReportDto,
     @Res() res: Response,
   ): Promise<void> {
     const tenantId = this.resolveTenantId(user, headerTenantId);
-    const report = await this.reportsService.getPayrollReport(tenantId, body);
+    const report = await this.reportsService.getPayrollReport(tenantId, body, {
+      userId: user?.sub ?? '',
+      roleCode: user?.roleCode ?? '',
+    });
 
     if (body.format === ExportFormat.XLSX) {
       const buffer = await this.reportExcelService.generatePayrollXlsx(report);
@@ -121,7 +134,7 @@ export class ReportsController {
     }
   }
 
-  private resolveTenantId(user: any, headerTenantId: string): string {
+  private resolveTenantId(user: JwtPayload, headerTenantId: string): string {
     const tenantId = user?.tenantId || headerTenantId;
     if (!tenantId) {
       throw new BadRequestException('Tenant ID is required (JWT or x-tenant-id header)');

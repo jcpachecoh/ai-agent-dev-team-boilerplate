@@ -3,13 +3,25 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { PayrollController } from '../controller/payroll.controller';
 import { PayrollService } from '../service/payroll.service';
 import { EmployeeContractType, SalaryType, ArlRiskLevel, DocumentType } from '@prisma/client';
+import type { JwtPayload } from '../../auth/interfaces/auth.interfaces';
+
+function makeJwtUser(overrides?: Partial<JwtPayload>): JwtPayload {
+  return {
+    sub: 'user-1',
+    email: 'test@example.com',
+    tenantId: 'tenant-1',
+    roleId: 'role-1',
+    roleCode: 'OWNER',
+    ...overrides,
+  };
+}
 
 describe('PayrollController', () => {
   let controller: PayrollController;
   let service: PayrollService;
 
   const mockTenantId = 'tenant-1';
-  const mockUser = { tenantId: mockTenantId };
+  const mockUser = makeJwtUser();
   const mockEmployee = {
     id: 'emp-1',
     userId: 'user-1',
@@ -58,7 +70,9 @@ describe('PayrollController', () => {
     });
 
     it('should throw BadRequestException when no tenant id', async () => {
-      await expect(controller.create({}, '', {} as any)).rejects.toThrow(BadRequestException);
+      await expect(controller.create({} as unknown as JwtPayload, '', {} as any)).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
@@ -66,7 +80,14 @@ describe('PayrollController', () => {
     it('should delegate to service.findAll', async () => {
       (service.findAll as jest.Mock).mockResolvedValue([mockEmployee]);
       await controller.findAll(mockUser, mockTenantId, {} as any);
-      expect(service.findAll).toHaveBeenCalledWith(mockTenantId, {});
+      expect(service.findAll).toHaveBeenCalledWith(
+        mockTenantId,
+        {},
+        {
+          userId: 'user-1',
+          roleCode: 'OWNER',
+        },
+      );
     });
   });
 
@@ -74,7 +95,10 @@ describe('PayrollController', () => {
     it('should delegate to service.findOne', async () => {
       (service.findOne as jest.Mock).mockResolvedValue(mockEmployee);
       await controller.findOne(mockUser, mockTenantId, 'user-1');
-      expect(service.findOne).toHaveBeenCalledWith(mockTenantId, 'user-1');
+      expect(service.findOne).toHaveBeenCalledWith(mockTenantId, 'user-1', {
+        userId: 'user-1',
+        roleCode: 'OWNER',
+      });
     });
 
     it('should propagate NotFoundException from service', async () => {

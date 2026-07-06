@@ -24,6 +24,14 @@ const repositoryMock = {
   listControlPanelLogs: jest.fn(),
 };
 
+const userLocationsServiceMock = {
+  resolveAllowedLocationIds: jest.fn().mockResolvedValue(null),
+  assertLocationAllowed: jest.fn(),
+  getActiveUserLocations: jest.fn().mockResolvedValue([]),
+};
+
+const actor = { sub: 'user-1', roleCode: 'OWNER' };
+
 const baseEmployee: TestEmployee = {
   id: 'emp-1',
   userId: 'user-1',
@@ -63,8 +71,12 @@ describe('AttendanceComparisonService', () => {
   let service: AttendanceComparisonService;
 
   beforeEach(() => {
-    service = new AttendanceComparisonService(repositoryMock as never);
+    service = new AttendanceComparisonService(
+      repositoryMock as never,
+      userLocationsServiceMock as never,
+    );
     jest.clearAllMocks();
+    userLocationsServiceMock.resolveAllowedLocationIds.mockResolvedValue(null);
     repositoryMock.listActiveLocations.mockResolvedValue([
       { id: 'loc-1', name: 'Gran Estación', tenantId: 'tenant-1' },
     ]);
@@ -95,10 +107,14 @@ describe('AttendanceComparisonService', () => {
       return [];
     });
 
-    const result = await service.getComparison('tenant-1', {
-      anchorDate: '2026-07-01',
-      period: 'day',
-    });
+    const result = await service.getComparison(
+      'tenant-1',
+      {
+        anchorDate: '2026-07-01',
+        period: 'day',
+      },
+      actor,
+    );
 
     expect(result.period).toBe('day');
     expect(result.series.current.name).toBe('Hoy');
@@ -123,10 +139,14 @@ describe('AttendanceComparisonService', () => {
       buildLog({ id: 'log-wed', timestamp: '2026-07-02T12:00:00.000Z', workDate: '2026-07-02' }),
     ]);
 
-    const result = await service.getComparison('tenant-1', {
-      anchorDate: '2026-07-01',
-      period: 'week',
-    });
+    const result = await service.getComparison(
+      'tenant-1',
+      {
+        anchorDate: '2026-07-01',
+        period: 'week',
+      },
+      actor,
+    );
 
     expect(result.period).toBe('week');
     expect(result.series.current.name).toContain('Semana');
@@ -149,10 +169,14 @@ describe('AttendanceComparisonService', () => {
       }),
     ]);
 
-    const result = await service.getComparison('tenant-1', {
-      anchorDate: '2026-07-01',
-      period: 'month',
-    });
+    const result = await service.getComparison(
+      'tenant-1',
+      {
+        anchorDate: '2026-07-01',
+        period: 'month',
+      },
+      actor,
+    );
 
     expect(result.period).toBe('month');
     expect(result.series.current.name).toContain('Mes');
@@ -190,14 +214,18 @@ describe('AttendanceComparisonService', () => {
       }),
     ]);
 
-    const result = await service.getComparison('tenant-1', {
-      anchorDate: '2026-07-01',
-      period: 'day',
-      locationId: 'loc-1',
-      area: 'Cocina',
-      contractType: EmployeeContractType.FIJO,
-      search: 'ana',
-    });
+    const result = await service.getComparison(
+      'tenant-1',
+      {
+        anchorDate: '2026-07-01',
+        period: 'day',
+        locationId: 'loc-1',
+        area: 'Cocina',
+        contractType: EmployeeContractType.FIJO,
+        search: 'ana',
+      },
+      actor,
+    );
 
     expect(repositoryMock.listActiveLocations).toHaveBeenCalledWith('tenant-1', ['loc-1']);
     const totalCurrent = result.points.reduce((sum, point) => sum + point.current, 0);
@@ -207,11 +235,15 @@ describe('AttendanceComparisonService', () => {
   it('excluye empleados que no coinciden con la búsqueda', async () => {
     repositoryMock.listControlPanelLogs.mockResolvedValue([buildLog()]);
 
-    const result = await service.getComparison('tenant-1', {
-      anchorDate: '2026-07-01',
-      period: 'day',
-      search: 'inexistente',
-    });
+    const result = await service.getComparison(
+      'tenant-1',
+      {
+        anchorDate: '2026-07-01',
+        period: 'day',
+        search: 'inexistente',
+      },
+      actor,
+    );
 
     const totalCurrent = result.points.reduce((sum, point) => sum + point.current, 0);
     expect(totalCurrent).toBe(0);

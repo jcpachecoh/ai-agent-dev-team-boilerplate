@@ -38,6 +38,13 @@ export const PAYROLL_WRITE_ROLES: readonly RoleCode[] = [
   'MANAGER',
 ];
 
+/**
+ * Roles cuyo acceso de lectura debe acotarse a las sedes asignadas en `UserLocation`
+ * (mismo patrón que `TURNO_ASSIGNMENTS_LOCATION_SCOPED_ROLES`). `SYSTEM_ADMIN_ROLES`
+ * y `NOMINA` ven todas las sedes del tenant.
+ */
+export const LOCATION_SCOPED_ROLES: readonly RoleCode[] = ['SUPERVISOR', 'MANAGER'];
+
 export const INVENTORY_MODULE_ROLES: readonly RoleCode[] = MODULE_ROLES[AppModule.INVENTARIOS];
 
 export const PRODUCCION_MODULE_ROLES: readonly RoleCode[] = MODULE_ROLES[AppModule.PRODUCCION];

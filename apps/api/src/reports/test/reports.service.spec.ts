@@ -9,6 +9,7 @@ import {
 } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 import { SMLV_2025, TRANSPORT_SUBSIDY_2025 } from '../../payroll/payroll.constants';
+import { UserLocationsService } from '../../locations/service/user-locations.service';
 import { PayrollCalculationService } from '../../payroll/service/payroll-calculation.service';
 import { EmployeeWithUserAndLocation, ReportsRepository } from '../repository/reports.repository';
 import { ReportsService } from '../service/reports.service';
@@ -18,6 +19,7 @@ import { AttendanceQueryDto, PeriodQueryDto } from '../controller/dto/report-que
 
 const TENANT_ID = 'tenant-1';
 const PERIOD_JUNE_2025 = '2025-06';
+const OWNER_ACTOR = { userId: 'user-owner', roleCode: 'OWNER' };
 
 /** workDate stored as UTC midnight for the Colombia calendar date */
 function workDate(dateStr: string): Date {
@@ -203,6 +205,13 @@ describe('ReportsService', () => {
             findAttendanceLogsByDateRange: jest.fn(),
           },
         },
+        {
+          provide: UserLocationsService,
+          useValue: {
+            resolveAllowedLocationIds: jest.fn().mockResolvedValue(null),
+            assertLocationAllowed: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -221,7 +230,7 @@ describe('ReportsService', () => {
       repository.findActiveEmployees.mockResolvedValue([]);
       repository.findAttendanceLogsByDateRange.mockResolvedValue([]);
 
-      const result = await service.getPayrollReport(TENANT_ID, query);
+      const result = await service.getPayrollReport(TENANT_ID, query, OWNER_ACTOR);
 
       expect(result.tenantId).toBe(TENANT_ID);
       expect(result.period).toEqual({ year: 2025, month: 6 });
@@ -231,7 +240,7 @@ describe('ReportsService', () => {
       repository.findActiveEmployees.mockResolvedValue([]);
       repository.findAttendanceLogsByDateRange.mockResolvedValue([]);
 
-      const result = await service.getPayrollReport(TENANT_ID, query);
+      const result = await service.getPayrollReport(TENANT_ID, query, OWNER_ACTOR);
 
       expect(result.employees).toHaveLength(0);
       expect(result.tenantTotals.employeeCount).toBe(0);
@@ -241,7 +250,7 @@ describe('ReportsService', () => {
       repository.findActiveEmployees.mockResolvedValue([mockEmployee]);
       repository.findAttendanceLogsByDateRange.mockResolvedValue([]);
 
-      const result = await service.getPayrollReport(TENANT_ID, query);
+      const result = await service.getPayrollReport(TENANT_ID, query, OWNER_ACTOR);
       const row = result.employees[0];
 
       expect(row.workedDays).toBe(0);
@@ -259,7 +268,7 @@ describe('ReportsService', () => {
       repository.findActiveEmployees.mockResolvedValue([mockEmployee]);
       repository.findAttendanceLogsByDateRange.mockResolvedValue(logs);
 
-      const result = await service.getPayrollReport(TENANT_ID, query);
+      const result = await service.getPayrollReport(TENANT_ID, query, OWNER_ACTOR);
       const row = result.employees[0];
 
       expect(row.workedDays).toBe(30);
@@ -276,7 +285,7 @@ describe('ReportsService', () => {
       repository.findActiveEmployees.mockResolvedValue([mockEmployee]);
       repository.findAttendanceLogsByDateRange.mockResolvedValue(logs);
 
-      const result = await service.getPayrollReport(TENANT_ID, { period: '2025-06' });
+      const result = await service.getPayrollReport(TENANT_ID, { period: '2025-06' }, OWNER_ACTOR);
       const row = result.employees[0];
 
       expect(row.overtimePay).toBeGreaterThan(0);
@@ -295,7 +304,7 @@ describe('ReportsService', () => {
       repository.findActiveEmployees.mockResolvedValue([mockEmployee]);
       repository.findAttendanceLogsByDateRange.mockResolvedValue(logs);
 
-      const result = await service.getPayrollReport(TENANT_ID, { period: '2025-08' });
+      const result = await service.getPayrollReport(TENANT_ID, { period: '2025-08' }, OWNER_ACTOR);
       const row = result.employees[0];
 
       const festivo = row.overtimeBreakdown.find((b) => b.type === 'FESTIVO_DIURNO');
@@ -314,7 +323,7 @@ describe('ReportsService', () => {
       repository.findActiveEmployees.mockResolvedValue([mockEmployee]);
       repository.findAttendanceLogsByDateRange.mockResolvedValue(logs);
 
-      const result = await service.getPayrollReport(TENANT_ID, { period: '2025-08' });
+      const result = await service.getPayrollReport(TENANT_ID, { period: '2025-08' }, OWNER_ACTOR);
       const row = result.employees[0];
 
       const festivo = row.overtimeBreakdown.find((b) => b.type === 'FESTIVO_NOCTURNO');
@@ -334,10 +343,18 @@ describe('ReportsService', () => {
       repository.findActiveEmployees.mockResolvedValue([mockEmployee]);
 
       repository.findAttendanceLogsByDateRange.mockResolvedValueOnce(diurnoLogs);
-      const diurnoResult = await service.getPayrollReport(TENANT_ID, { period: '2025-08' });
+      const diurnoResult = await service.getPayrollReport(
+        TENANT_ID,
+        { period: '2025-08' },
+        OWNER_ACTOR,
+      );
 
       repository.findAttendanceLogsByDateRange.mockResolvedValueOnce(nocturnoLogs);
-      const nocturnoResult = await service.getPayrollReport(TENANT_ID, { period: '2025-08' });
+      const nocturnoResult = await service.getPayrollReport(
+        TENANT_ID,
+        { period: '2025-08' },
+        OWNER_ACTOR,
+      );
 
       // 1.50 surcharge > 0.75 surcharge → nocturno pay must be higher
       expect(nocturnoResult.employees[0].overtimePay).toBeGreaterThan(
@@ -351,7 +368,7 @@ describe('ReportsService', () => {
       repository.findActiveEmployees.mockResolvedValue([mockEmployee]);
       repository.findAttendanceLogsByDateRange.mockResolvedValue(logs);
 
-      const result = await service.getPayrollReport(TENANT_ID, { period: '2025-06' });
+      const result = await service.getPayrollReport(TENANT_ID, { period: '2025-06' }, OWNER_ACTOR);
       const row = result.employees[0];
 
       expect(row.overtimeBreakdown.find((b) => b.type === 'FESTIVO_DIURNO')).toBeDefined();
@@ -363,7 +380,7 @@ describe('ReportsService', () => {
       repository.findActiveEmployees.mockResolvedValue([mockEmployee]);
       repository.findAttendanceLogsByDateRange.mockResolvedValue(logs);
 
-      const result = await service.getPayrollReport(TENANT_ID, { period: '2026-06' });
+      const result = await service.getPayrollReport(TENANT_ID, { period: '2026-06' }, OWNER_ACTOR);
       expect(
         result.employees[0].overtimeBreakdown.find((b) => b.type === 'FESTIVO_DIURNO'),
       ).toBeDefined();
@@ -374,7 +391,7 @@ describe('ReportsService', () => {
       repository.findActiveEmployees.mockResolvedValue([mockEmployee]);
       repository.findAttendanceLogsByDateRange.mockResolvedValue(logs);
 
-      const result = await service.getPayrollReport(TENANT_ID, { period: '2027-07' });
+      const result = await service.getPayrollReport(TENANT_ID, { period: '2027-07' }, OWNER_ACTOR);
       expect(
         result.employees[0].overtimeBreakdown.find((b) => b.type === 'FESTIVO_DIURNO'),
       ).toBeDefined();
@@ -393,7 +410,7 @@ describe('ReportsService', () => {
       repository.findActiveEmployees.mockResolvedValue([mockEmployee, mockEmployee2]);
       repository.findAttendanceLogsByDateRange.mockResolvedValue([...logs1, ...logs2]);
 
-      const result = await service.getPayrollReport(TENANT_ID, query);
+      const result = await service.getPayrollReport(TENANT_ID, query, OWNER_ACTOR);
 
       expect(result.tenantTotals.employeeCount).toBe(2);
       expect(result.tenantTotals.totalNetPay).toBe(
@@ -408,7 +425,7 @@ describe('ReportsService', () => {
       repository.findActiveEmployees.mockResolvedValue([mockEmployee, mockEmployee2]);
       repository.findAttendanceLogsByDateRange.mockResolvedValue([]);
 
-      const result = await service.getPayrollReport(TENANT_ID, query);
+      const result = await service.getPayrollReport(TENANT_ID, query, OWNER_ACTOR);
 
       expect(result.locationTotals).toHaveLength(2);
       const loc1 = result.locationTotals.find((l) => l.locationId === 'loc-1');
@@ -423,7 +440,11 @@ describe('ReportsService', () => {
       repository.findActiveEmployees.mockResolvedValue([]);
       repository.findAttendanceLogsByDateRange.mockResolvedValue([]);
 
-      await service.getPayrollReport(TENANT_ID, { period: '2025-06', locationId: 'loc-1' });
+      await service.getPayrollReport(
+        TENANT_ID,
+        { period: '2025-06', locationId: 'loc-1' },
+        OWNER_ACTOR,
+      );
 
       expect(repository.findActiveEmployees).toHaveBeenCalledWith(
         TENANT_ID,
@@ -435,10 +456,14 @@ describe('ReportsService', () => {
       repository.findActiveEmployees.mockResolvedValue([]);
       repository.findAttendanceLogsByDateRange.mockResolvedValue([]);
 
-      await service.getPayrollReport(TENANT_ID, {
-        period: '2025-06',
-        contractType: EmployeeContractType.INDEFINIDO,
-      });
+      await service.getPayrollReport(
+        TENANT_ID,
+        {
+          period: '2025-06',
+          contractType: EmployeeContractType.INDEFINIDO,
+        },
+        OWNER_ACTOR,
+      );
 
       expect(repository.findActiveEmployees).toHaveBeenCalledWith(
         TENANT_ID,
@@ -456,7 +481,7 @@ describe('ReportsService', () => {
         fullDayLogs('emp-1', '2025-06-01'),
       );
 
-      const result = await service.getPayrollReport(TENANT_ID, query);
+      const result = await service.getPayrollReport(TENANT_ID, query, OWNER_ACTOR);
       expect(result.employees[0].totalEmployerContributions).toBe(0);
     });
 
@@ -465,7 +490,7 @@ describe('ReportsService', () => {
       repository.findActiveEmployees.mockResolvedValue([mockEmployee]);
       repository.findAttendanceLogsByDateRange.mockResolvedValue(onlyEntry);
 
-      const result = await service.getPayrollReport(TENANT_ID, query);
+      const result = await service.getPayrollReport(TENANT_ID, query, OWNER_ACTOR);
       expect(result.employees[0].workedDays).toBe(0);
     });
 
@@ -475,7 +500,7 @@ describe('ReportsService', () => {
         nocturnoDayLogs('emp-1', '2025-06-01'),
       );
 
-      const result = await service.getPayrollReport(TENANT_ID, query);
+      const result = await service.getPayrollReport(TENANT_ID, query, OWNER_ACTOR);
       const row = result.employees[0];
       const nocturno = row.overtimeBreakdown.find((b) => b.type === 'NOCTURNO');
       expect(nocturno).toBeDefined();
@@ -492,7 +517,7 @@ describe('ReportsService', () => {
       repository.findActiveEmployees.mockResolvedValue([]);
       repository.findAttendanceLogsByDateRange.mockResolvedValue([]);
 
-      const result = await service.getAttendanceReport(TENANT_ID, query);
+      const result = await service.getAttendanceReport(TENANT_ID, query, OWNER_ACTOR);
 
       expect(result.tenantId).toBe(TENANT_ID);
       expect(result.from).toBe('2025-06-01');
@@ -507,7 +532,7 @@ describe('ReportsService', () => {
       repository.findActiveEmployees.mockResolvedValue([mockEmployee]);
       repository.findAttendanceLogsByDateRange.mockResolvedValue(logs);
 
-      const result = await service.getAttendanceReport(TENANT_ID, query);
+      const result = await service.getAttendanceReport(TENANT_ID, query, OWNER_ACTOR);
       const row = result.employees[0];
 
       expect(row.activeDays).toBe(30);
@@ -524,7 +549,7 @@ describe('ReportsService', () => {
       repository.findActiveEmployees.mockResolvedValue([mockEmployee]);
       repository.findAttendanceLogsByDateRange.mockResolvedValue(logs);
 
-      const result = await service.getAttendanceReport(TENANT_ID, query);
+      const result = await service.getAttendanceReport(TENANT_ID, query, OWNER_ACTOR);
       const row = result.employees[0];
 
       expect(row.activeDays).toBe(15);
@@ -538,7 +563,7 @@ describe('ReportsService', () => {
         excessOvertimeDayLogs('emp-1', '2025-06-01'),
       );
 
-      const result = await service.getAttendanceReport(TENANT_ID, query);
+      const result = await service.getAttendanceReport(TENANT_ID, query, OWNER_ACTOR);
       expect(result.employees[0].exceededLegalOvertimeLimit).toBe(true);
     });
 
@@ -552,7 +577,7 @@ describe('ReportsService', () => {
       repository.findActiveEmployees.mockResolvedValue([mockEmployee]);
       repository.findAttendanceLogsByDateRange.mockResolvedValue(logs);
 
-      const result = await service.getAttendanceReport(TENANT_ID, query);
+      const result = await service.getAttendanceReport(TENANT_ID, query, OWNER_ACTOR);
       expect(result.employees[0].exceededLegalOvertimeLimit).toBe(false);
     });
 
@@ -565,16 +590,24 @@ describe('ReportsService', () => {
       repository.findActiveEmployees.mockResolvedValue([mockEmployee]);
       repository.findAttendanceLogsByDateRange.mockResolvedValue(logs);
 
-      const result = await service.getAttendanceReport(TENANT_ID, {
-        from: '2025-06-01',
-        to: '2025-06-30',
-      });
+      const result = await service.getAttendanceReport(
+        TENANT_ID,
+        {
+          from: '2025-06-01',
+          to: '2025-06-30',
+        },
+        OWNER_ACTOR,
+      );
       expect(result.employees[0].exceededLegalOvertimeLimit).toBe(true);
     });
 
     it('throws BadRequestException when from > to', async () => {
       await expect(
-        service.getAttendanceReport(TENANT_ID, { from: '2025-06-30', to: '2025-06-01' }),
+        service.getAttendanceReport(
+          TENANT_ID,
+          { from: '2025-06-30', to: '2025-06-01' },
+          OWNER_ACTOR,
+        ),
       ).rejects.toThrow(BadRequestException);
     });
 
@@ -582,7 +615,7 @@ describe('ReportsService', () => {
       repository.findActiveEmployees.mockResolvedValue([]);
       repository.findAttendanceLogsByDateRange.mockResolvedValue([]);
 
-      await service.getAttendanceReport(TENANT_ID, { ...query, locationId: 'loc-1' });
+      await service.getAttendanceReport(TENANT_ID, { ...query, locationId: 'loc-1' }, OWNER_ACTOR);
 
       expect(repository.findActiveEmployees).toHaveBeenCalledWith(
         TENANT_ID,
@@ -600,7 +633,7 @@ describe('ReportsService', () => {
       repository.findActiveEmployees.mockResolvedValue([]);
       repository.findAttendanceLogsByDateRange.mockResolvedValue([]);
 
-      const result = await service.getSocialSecurityReport(TENANT_ID, query);
+      const result = await service.getSocialSecurityReport(TENANT_ID, query, OWNER_ACTOR);
 
       expect(result.tenantId).toBe(TENANT_ID);
       expect(result.period).toEqual({ year: 2025, month: 6 });
@@ -618,7 +651,7 @@ describe('ReportsService', () => {
       repository.findActiveEmployees.mockResolvedValue([mockEmployee, mockEmployee2]);
       repository.findAttendanceLogsByDateRange.mockResolvedValue(logs);
 
-      const result = await service.getSocialSecurityReport(TENANT_ID, query);
+      const result = await service.getSocialSecurityReport(TENANT_ID, query, OWNER_ACTOR);
 
       const expected = result.employees.reduce((s, r) => s + r.totalEmployerContribution, 0);
       expect(result.totalPILAContribution).toBe(expected);
@@ -640,7 +673,7 @@ describe('ReportsService', () => {
       repository.findActiveEmployees.mockResolvedValue([emp as EmployeeWithUserAndLocation]);
       repository.findAttendanceLogsByDateRange.mockResolvedValue(logs);
 
-      const result = await service.getSocialSecurityReport(TENANT_ID, query);
+      const result = await service.getSocialSecurityReport(TENANT_ID, query, OWNER_ACTOR);
       const row = result.employees[0];
 
       expect(row.healthEmployer).toBeGreaterThan(0);
@@ -671,7 +704,7 @@ describe('ReportsService', () => {
         ).flat(),
       );
 
-      const result = await service.getSocialSecurityReport(TENANT_ID, query);
+      const result = await service.getSocialSecurityReport(TENANT_ID, query, OWNER_ACTOR);
       const row = result.employees[0];
 
       expect(row.totalEmployerContribution).toBe(0);

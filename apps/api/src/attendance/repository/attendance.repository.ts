@@ -95,7 +95,11 @@ export class AttendanceRepository implements IAttendanceRepository {
     const where: Record<string, unknown> = { tenantId: filters.tenantId, isActive: true };
 
     if (filters.employeeId) where.employeeId = filters.employeeId;
-    if (filters.locationId) where.locationId = filters.locationId;
+    if (filters.locationId) {
+      where.locationId = filters.locationId;
+    } else if (filters.allowedLocationIds) {
+      where.locationId = { in: filters.allowedLocationIds };
+    }
 
     if (filters.dateFrom || filters.dateTo) {
       const workDate: Record<string, Date> = {};

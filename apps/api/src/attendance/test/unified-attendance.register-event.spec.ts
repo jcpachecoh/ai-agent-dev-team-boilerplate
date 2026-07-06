@@ -7,6 +7,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AttendanceService } from '../service/attendance.service';
 import { AttendanceRepository } from '../repository/attendance.repository';
 import { AuthService } from '../../auth/service/auth.service';
+import { UserLocationsService } from '../../locations/service/user-locations.service';
 
 describe('ASIS-UNI — convivencia APP_MOVIL + MANUAL', () => {
   let service: AttendanceService;
@@ -24,6 +25,13 @@ describe('ASIS-UNI — convivencia APP_MOVIL + MANUAL', () => {
         AttendanceService,
         { provide: AttendanceRepository, useValue: repoMock },
         { provide: AuthService, useValue: { issueKioskAuthTokens: jest.fn() } },
+        {
+          provide: UserLocationsService,
+          useValue: {
+            resolveAllowedLocationIds: jest.fn().mockResolvedValue(null),
+            assertLocationAllowed: jest.fn(),
+          },
+        },
       ],
     }).compile();
 

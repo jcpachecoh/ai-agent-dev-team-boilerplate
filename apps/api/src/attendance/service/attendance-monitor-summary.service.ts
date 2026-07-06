@@ -1,12 +1,14 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { AttendanceEventType, AttendanceLog } from '@prisma/client';
 import type {
+  AttendanceActingUser,
   AttendanceMonitorEmployee,
   AttendanceMonitorSummary,
   AttendanceMonitorSummaryInput,
   EmployeeWithUser,
 } from '../interfaces/attendance.interfaces';
 import { AttendanceRepository } from '../repository/attendance.repository';
+import { UserLocationsService } from '../../locations/service/user-locations.service';
 import {
   calculateDaySummary,
   getBogotaHour,
@@ -36,12 +38,22 @@ interface EmployeeAggregate {
 
 @Injectable()
 export class AttendanceMonitorSummaryService {
-  constructor(private readonly attendanceRepository: AttendanceRepository) {}
+  constructor(
+    private readonly attendanceRepository: AttendanceRepository,
+    private readonly userLocationsService: UserLocationsService,
+  ) {}
 
   async getMonitorSummary(
     input: AttendanceMonitorSummaryInput,
     tenantId: string,
+    actor: AttendanceActingUser,
   ): Promise<AttendanceMonitorSummary> {
+    const allowedLocationIds = await this.userLocationsService.resolveAllowedLocationIds(tenantId, {
+      userId: actor.sub,
+      roleCode: actor.roleCode,
+    });
+    this.userLocationsService.assertLocationAllowed(allowedLocationIds, input.locationId);
+
     const location = await this.attendanceRepository.findLocationById(input.locationId, tenantId);
     if (!location) {
       throw new NotFoundException(`Sede ${input.locationId} no encontrada`);

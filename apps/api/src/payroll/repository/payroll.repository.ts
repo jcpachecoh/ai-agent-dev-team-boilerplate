@@ -89,6 +89,8 @@ export class PayrollRepository implements IPayrollRepository {
 
     if (filters.locationId) {
       where.locationId = filters.locationId;
+    } else if (filters.allowedLocationIds) {
+      where.locationId = { in: filters.allowedLocationIds };
     }
 
     if (filters.contractType) {
@@ -258,6 +260,8 @@ export class PayrollRepository implements IPayrollRepository {
 
     if (filters.locationId) {
       where.locationId = filters.locationId;
+    } else if (filters.allowedLocationIds) {
+      where.locationId = { in: filters.allowedLocationIds };
     }
 
     if (filters.contractType) {

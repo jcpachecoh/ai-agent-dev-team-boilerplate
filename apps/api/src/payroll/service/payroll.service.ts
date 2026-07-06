@@ -27,6 +27,8 @@ import { StorageDomain } from '../../storage/enums/storage.enums';
 import { AuditService } from '../../audit/service/audit.service';
 import { EmployeeSocialProfileService } from '../../employee-social-profile/service/employee-social-profile.service';
 import type { CreateBeneficiaryDto } from '../controller/dto/create-beneficiary.dto';
+import { UserLocationsService } from '../../locations/service/user-locations.service';
+import type { PayrollActor } from '../interfaces/payroll.interfaces';
 
 const SALT_ROUNDS = 12;
 
@@ -56,7 +58,24 @@ export class PayrollService implements IPayrollService {
     private readonly storageService: StorageService,
     private readonly auditService: AuditService,
     private readonly socialProfileService: EmployeeSocialProfileService,
+    private readonly userLocationsService: UserLocationsService,
   ) {}
+
+  /** Sedes permitidas para lectura: null = sin restricción; valida `requestedLocationId` si se pidió una sede puntual. */
+  private async resolveLocationScope(
+    tenantId: string,
+    actor: PayrollActor,
+    requestedLocationId?: string,
+  ): Promise<string[] | null> {
+    const allowedLocationIds = await this.userLocationsService.resolveAllowedLocationIds(
+      tenantId,
+      actor,
+    );
+    if (requestedLocationId) {
+      this.userLocationsService.assertLocationAllowed(allowedLocationIds, requestedLocationId);
+    }
+    return allowedLocationIds;
+  }
 
   async create(
     tenantId: string,
@@ -187,14 +206,38 @@ export class PayrollService implements IPayrollService {
     return linkedUser.id;
   }
 
-  async findAll(tenantId: string, filters: any): Promise<(EmployeeDetails & { user: User })[]> {
+  async findAll(
+    tenantId: string,
+    filters: any,
+    actor: PayrollActor,
+  ): Promise<(EmployeeDetails & { user: User })[]> {
+    const allowedLocationIds = await this.resolveLocationScope(
+      tenantId,
+      actor,
+      filters?.locationId,
+    );
     return this.payrollRepository.findAll({
       ...filters,
       tenantId,
+      allowedLocationIds,
     });
   }
 
-  async findOne(tenantId: string, userId: string): Promise<EmployeeDetails & { user: User }> {
+  async findOne(
+    tenantId: string,
+    userId: string,
+    actor: PayrollActor,
+  ): Promise<EmployeeDetails & { user: User }> {
+    const employee = await this.findEmployeeOrThrow(tenantId, userId);
+    await this.resolveLocationScope(tenantId, actor, employee.locationId);
+    return employee;
+  }
+
+  /** Búsqueda sin scoping de sede: uso interno de `update`/`remove` (escritura, ya acotada por PAYROLL_WRITE_ROLES). */
+  private async findEmployeeOrThrow(
+    tenantId: string,
+    userId: string,
+  ): Promise<EmployeeDetails & { user: User }> {
     const employee = await this.payrollRepository.findByUserId(userId);
     if (!employee || employee.tenantId !== tenantId) {
       throw new NotFoundException(`Employee with userId "${userId}" not found`);
@@ -208,7 +251,7 @@ export class PayrollService implements IPayrollService {
     data: any,
     changedBy?: string,
   ): Promise<EmployeeDetails & { user: User; location?: { id: string; name: string } }> {
-    const employee = await this.findOne(tenantId, userId);
+    const employee = await this.findEmployeeOrThrow(tenantId, userId);
     const nextPositionId = data.positionId as string | undefined;
 
     if (nextPositionId !== undefined) {
@@ -298,22 +341,26 @@ export class PayrollService implements IPayrollService {
   }
 
   async remove(tenantId: string, userId: string): Promise<void> {
-    await this.findOne(tenantId, userId);
+    await this.findEmployeeOrThrow(tenantId, userId);
     await this.payrollRepository.softDelete(userId);
   }
 
   async findByLocation(
     tenantId: string,
     locationId: string,
+    actor: PayrollActor,
   ): Promise<(EmployeeDetails & { user: User })[]> {
+    await this.resolveLocationScope(tenantId, actor, locationId);
     return this.payrollRepository.findAll({ tenantId, locationId });
   }
 
   async findByContractType(
     tenantId: string,
     contractType: EmployeeContractType,
+    actor: PayrollActor,
   ): Promise<(EmployeeDetails & { user: User })[]> {
-    return this.payrollRepository.findAll({ tenantId, contractType });
+    const allowedLocationIds = await this.resolveLocationScope(tenantId, actor);
+    return this.payrollRepository.findAll({ tenantId, contractType, allowedLocationIds });
   }
 
   private async resolvePositionForEmployee(

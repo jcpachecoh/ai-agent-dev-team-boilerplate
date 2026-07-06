@@ -20,6 +20,18 @@ import { AttendanceComparisonQueryDto } from '../controller/dto/attendance-compa
 import { AttendanceCardQueryDto } from '../controller/dto/attendance-card-query.dto';
 import { UpsertAttendanceObservationDto } from '../controller/dto/upsert-attendance-observation.dto';
 import { CreateManualMarkingDto } from '../controller/dto/create-manual-marking.dto';
+import type { JwtPayload } from '../../auth/interfaces/auth.interfaces';
+
+function makeJwtUser(overrides?: Partial<JwtPayload>): JwtPayload {
+  return {
+    sub: 'user-001',
+    email: 'user@test.dev',
+    tenantId: 'test-tenant',
+    roleId: 'role-1',
+    roleCode: 'OWNER',
+    ...overrides,
+  };
+}
 
 const serviceMock = {
   kioskAuth: jest.fn(),
@@ -160,26 +172,37 @@ describe('AttendanceController', () => {
 
   describe('listHistory', () => {
     it('usa tenantId del JWT cuando está disponible', async () => {
-      const user = { tenantId: TENANT };
+      const user = makeJwtUser();
       serviceMock.listHistory.mockResolvedValue([]);
 
       await controller.listHistory(user, '', new ListAttendanceQueryDto());
 
-      expect(serviceMock.listHistory).toHaveBeenCalledWith(expect.anything(), TENANT);
+      expect(serviceMock.listHistory).toHaveBeenCalledWith(expect.anything(), TENANT, {
+        sub: user.sub,
+        roleCode: user.roleCode,
+      });
     });
 
     it('usa tenantId del header cuando no hay JWT', async () => {
       serviceMock.listHistory.mockResolvedValue([]);
 
-      await controller.listHistory(null, TENANT, new ListAttendanceQueryDto());
+      await controller.listHistory(
+        null as unknown as JwtPayload,
+        TENANT,
+        new ListAttendanceQueryDto(),
+      );
 
-      expect(serviceMock.listHistory).toHaveBeenCalledWith(expect.anything(), TENANT);
+      expect(serviceMock.listHistory).toHaveBeenCalledWith(
+        expect.anything(),
+        TENANT,
+        expect.anything(),
+      );
     });
 
     it('lanza BadRequestException cuando no hay tenantId en JWT ni en header', () => {
-      expect(() => controller.listHistory(null, '', new ListAttendanceQueryDto())).toThrow(
-        BadRequestException,
-      );
+      expect(() =>
+        controller.listHistory(null as unknown as JwtPayload, '', new ListAttendanceQueryDto()),
+      ).toThrow(BadRequestException);
     });
   });
 
@@ -187,7 +210,7 @@ describe('AttendanceController', () => {
 
   describe('listActive', () => {
     it('lanza BadRequestException cuando no se provee locationId', () => {
-      const user = { tenantId: TENANT };
+      const user = makeJwtUser();
       const query = new ActiveAttendanceQueryDto();
       // locationId not set → undefined
 
@@ -196,19 +219,22 @@ describe('AttendanceController', () => {
     });
 
     it('delega al service cuando locationId está presente', async () => {
-      const user = { tenantId: TENANT };
+      const user = makeJwtUser();
       const query = Object.assign(new ActiveAttendanceQueryDto(), { locationId: 'loc-001' });
       serviceMock.listActive.mockResolvedValue([]);
 
       await controller.listActive(user, '', query);
 
-      expect(serviceMock.listActive).toHaveBeenCalledWith('loc-001', TENANT);
+      expect(serviceMock.listActive).toHaveBeenCalledWith('loc-001', TENANT, {
+        sub: 'user-001',
+        roleCode: 'OWNER',
+      });
     });
   });
 
   describe('getMonitorSummary', () => {
     it('delega al monitor summary service', async () => {
-      const user = { tenantId: TENANT };
+      const user = makeJwtUser();
       const query = Object.assign(new MonitorSummaryQueryDto(), {
         period: 'day',
         anchorDate: '2026-06-18',
@@ -221,6 +247,7 @@ describe('AttendanceController', () => {
       expect(monitorSummaryServiceMock.getMonitorSummary).toHaveBeenCalledWith(
         { locationId: 'loc-001', period: 'day', anchorDate: '2026-06-18' },
         TENANT,
+        { sub: 'user-001', roleCode: 'OWNER' },
       );
       expect(result).toEqual(summary);
     });
@@ -228,7 +255,7 @@ describe('AttendanceController', () => {
 
   describe('getControlPanel', () => {
     it('delega al control panel service con el userId del JWT', async () => {
-      const user = { tenantId: TENANT, sub: 'user-001' };
+      const user = makeJwtUser({ sub: 'user-001' });
       const query = Object.assign(new ControlPanelQueryDto(), {
         anchorDate: '2026-07-01',
         period: 'day',
@@ -242,20 +269,21 @@ describe('AttendanceController', () => {
         TENANT,
         'user-001',
         query,
+        { sub: 'user-001', roleCode: 'OWNER' },
       );
       expect(result).toEqual(summary);
     });
 
     it('lanza BadRequestException cuando no hay tenantId', () => {
-      expect(() => controller.getControlPanel(null, '', new ControlPanelQueryDto())).toThrow(
-        BadRequestException,
-      );
+      expect(() =>
+        controller.getControlPanel(null as unknown as JwtPayload, '', new ControlPanelQueryDto()),
+      ).toThrow(BadRequestException);
     });
   });
 
   describe('dismissControlPanelAlert', () => {
     it('delega al control panel service con tenantId, userId y alertKey', async () => {
-      const user = { tenantId: TENANT, sub: 'user-001' };
+      const user = makeJwtUser({ sub: 'user-001' });
       const dto = Object.assign(new DismissAlertDto(), { alertKey: 'geo-log-1' });
       const dismissResult = { alertKey: 'geo-log-1', dismissedAt: '2026-07-02T10:00:00.000Z' };
       controlPanelServiceMock.dismissAlert.mockResolvedValue(dismissResult);
@@ -272,13 +300,15 @@ describe('AttendanceController', () => {
 
     it('lanza BadRequestException cuando no hay tenantId', () => {
       const dto = Object.assign(new DismissAlertDto(), { alertKey: 'geo-log-1' });
-      expect(() => controller.dismissControlPanelAlert(null, '', dto)).toThrow(BadRequestException);
+      expect(() =>
+        controller.dismissControlPanelAlert(null as unknown as JwtPayload, '', dto),
+      ).toThrow(BadRequestException);
     });
   });
 
   describe('getControlPanelComparison', () => {
     it('delega al comparison service', async () => {
-      const user = { tenantId: TENANT };
+      const user = makeJwtUser();
       const query = Object.assign(new AttendanceComparisonQueryDto(), {
         anchorDate: '2026-07-01',
         period: 'week',
@@ -288,7 +318,10 @@ describe('AttendanceController', () => {
 
       const result = await controller.getControlPanelComparison(user, '', query);
 
-      expect(comparisonServiceMock.getComparison).toHaveBeenCalledWith(TENANT, query);
+      expect(comparisonServiceMock.getComparison).toHaveBeenCalledWith(TENANT, query, {
+        sub: 'user-001',
+        roleCode: 'OWNER',
+      });
       expect(result).toEqual(summary);
     });
 
@@ -298,9 +331,12 @@ describe('AttendanceController', () => {
       });
       comparisonServiceMock.getComparison.mockResolvedValue({ period: 'day', points: [] });
 
-      await controller.getControlPanelComparison(null, TENANT, query);
+      await controller.getControlPanelComparison(null as unknown as JwtPayload, TENANT, query);
 
-      expect(comparisonServiceMock.getComparison).toHaveBeenCalledWith(TENANT, query);
+      expect(comparisonServiceMock.getComparison).toHaveBeenCalledWith(TENANT, query, {
+        sub: '',
+        roleCode: '',
+      });
     });
   });
 
@@ -308,20 +344,21 @@ describe('AttendanceController', () => {
 
   describe('getAttendanceCard', () => {
     it('delega al AttendanceCardService con userId + tenantId + rango', async () => {
-      const user = { tenantId: TENANT };
+      const user = makeJwtUser();
       const query = Object.assign(new AttendanceCardQueryDto(), {
         dateFrom: '2026-06-01',
         dateTo: '2026-06-30',
       });
       cardServiceMock.getCard.mockResolvedValue({ logs: [], observations: [] });
 
-      const result = await controller.getAttendanceCard(user as never, '', 'user-1', query);
+      const result = await controller.getAttendanceCard(user, '', 'user-1', query);
 
       expect(cardServiceMock.getCard).toHaveBeenCalledWith(
         'user-1',
         TENANT,
         '2026-06-01',
         '2026-06-30',
+        { sub: 'user-001', roleCode: 'OWNER', locationId: undefined },
       );
       expect(result).toEqual({ logs: [], observations: [] });
     });
@@ -329,7 +366,7 @@ describe('AttendanceController', () => {
 
   describe('getObservations', () => {
     it('devuelve solo las observaciones de la tarjeta', async () => {
-      const user = { tenantId: TENANT };
+      const user = makeJwtUser();
       const query = Object.assign(new AttendanceCardQueryDto(), {
         dateFrom: '2026-06-01',
         dateTo: '2026-06-30',
@@ -339,7 +376,7 @@ describe('AttendanceController', () => {
         observations: [{ id: 'obs-1' }],
       });
 
-      const result = await controller.getObservations(user as never, '', 'user-1', query);
+      const result = await controller.getObservations(user, '', 'user-1', query);
 
       expect(result).toEqual([{ id: 'obs-1' }]);
     });
@@ -347,14 +384,14 @@ describe('AttendanceController', () => {
 
   describe('upsertObservation', () => {
     it('delega al AttendanceCardService pasando el JwtPayload completo (para scoping de sede)', async () => {
-      const user = { sub: 'actor-1', roleCode: 'OWNER', tenantId: TENANT, locationId: 'loc-1' };
+      const user = makeJwtUser({ sub: 'actor-1', locationId: 'loc-1' });
       const dto = Object.assign(new UpsertAttendanceObservationDto(), {
         workDate: '2026-06-10',
         note: 'Llegó tarde',
       });
       cardServiceMock.upsertObservation.mockResolvedValue({ id: 'obs-1' });
 
-      const result = await controller.upsertObservation(user as never, '', 'user-1', dto);
+      const result = await controller.upsertObservation(user, '', 'user-1', dto);
 
       expect(cardServiceMock.upsertObservation).toHaveBeenCalledWith('user-1', TENANT, user, dto);
       expect(result).toEqual({ id: 'obs-1' });
@@ -363,12 +400,7 @@ describe('AttendanceController', () => {
 
   describe('createManualMarking', () => {
     it('delega al AttendanceCardService pasando el JwtPayload completo (para scoping de sede)', async () => {
-      const user = {
-        sub: 'actor-1',
-        roleCode: 'SUPERVISOR',
-        tenantId: TENANT,
-        locationId: 'loc-1',
-      };
+      const user = makeJwtUser({ sub: 'actor-1', roleCode: 'SUPERVISOR', locationId: 'loc-1' });
       const dto = Object.assign(new CreateManualMarkingDto(), {
         workDate: '2026-06-10',
         eventType: 'ENTRY',
@@ -377,7 +409,7 @@ describe('AttendanceController', () => {
       });
       cardServiceMock.createManualMarking.mockResolvedValue({ id: 'log-manual-1' });
 
-      const result = await controller.createManualMarking(user as never, '', 'user-1', dto);
+      const result = await controller.createManualMarking(user, '', 'user-1', dto);
 
       expect(cardServiceMock.createManualMarking).toHaveBeenCalledWith('user-1', TENANT, user, dto);
       expect(result).toEqual({ id: 'log-manual-1' });
@@ -386,10 +418,10 @@ describe('AttendanceController', () => {
 
   describe('deleteManualMarking', () => {
     it('delega al AttendanceCardService con id + tenantId + JwtPayload completo', async () => {
-      const user = { sub: 'actor-1', roleCode: 'OWNER', tenantId: TENANT, locationId: 'loc-1' };
+      const user = makeJwtUser({ sub: 'actor-1', locationId: 'loc-1' });
       cardServiceMock.deleteManualMarking.mockResolvedValue(undefined);
 
-      await controller.deleteManualMarking(user as never, '', 'log-manual-1');
+      await controller.deleteManualMarking(user, '', 'log-manual-1');
 
       expect(cardServiceMock.deleteManualMarking).toHaveBeenCalledWith(
         'log-manual-1',
@@ -401,13 +433,13 @@ describe('AttendanceController', () => {
 
   describe('getCollaborators', () => {
     it('delega al AttendanceCollaboratorsService con el actor resuelto del JWT y defaults de paginación', async () => {
-      const user = { sub: 'actor-1', roleCode: 'SUPERVISOR', tenantId: TENANT };
+      const user = makeJwtUser({ sub: 'actor-1', roleCode: 'SUPERVISOR' });
       collaboratorsServiceMock.list.mockResolvedValue({
         items: [],
         pagination: { page: 1, pageSize: 20, total: 0, totalPages: 1 },
       });
 
-      const result = await controller.getCollaborators(user as never, '', {});
+      const result = await controller.getCollaborators(user, '', {});
 
       expect(collaboratorsServiceMock.list).toHaveBeenCalledWith(
         TENANT,
@@ -418,13 +450,13 @@ describe('AttendanceController', () => {
     });
 
     it('propaga los filtros de la query al service sin transformarlos', async () => {
-      const user = { sub: 'actor-1', roleCode: 'OWNER', tenantId: TENANT };
+      const user = makeJwtUser({ sub: 'actor-1' });
       collaboratorsServiceMock.list.mockResolvedValue({
         items: [],
         pagination: { page: 2, pageSize: 50, total: 0, totalPages: 1 },
       });
 
-      await controller.getCollaborators(user as never, '', {
+      await controller.getCollaborators(user, '', {
         search: 'josé',
         positionId: 'pos-1',
         supervisorUserId: 'sup-1',
@@ -452,12 +484,12 @@ describe('AttendanceController', () => {
 
   describe('getCollaboratorSupervisors', () => {
     it('delega al AttendanceCollaboratorsService con el actor resuelto del JWT', async () => {
-      const user = { sub: 'actor-1', roleCode: 'MANAGER', tenantId: TENANT };
+      const user = makeJwtUser({ sub: 'actor-1', roleCode: 'MANAGER' });
       collaboratorsServiceMock.listSupervisorOptions.mockResolvedValue([
         { id: 'sup-1', name: 'Sup Uno', email: 'sup1@example.com' },
       ]);
 
-      const result = await controller.getCollaboratorSupervisors(user as never, '');
+      const result = await controller.getCollaboratorSupervisors(user, '');
 
       expect(collaboratorsServiceMock.listSupervisorOptions).toHaveBeenCalledWith(TENANT, {
         userId: 'actor-1',
@@ -469,12 +501,12 @@ describe('AttendanceController', () => {
 
   describe('setCollaboratorPortalWorker', () => {
     it('delega al service con tenantId/employeeDetailsId/enabled/actorUserId', async () => {
-      const user = { sub: 'actor-1', roleCode: 'OWNER', tenantId: TENANT };
+      const user = makeJwtUser({ sub: 'actor-1' });
       collaboratorsServiceMock.setPortalWorkerEnabled.mockResolvedValue({
         portalWorkerEnabled: true,
       });
 
-      const result = await controller.setCollaboratorPortalWorker(user as never, '', 'emp-1', {
+      const result = await controller.setCollaboratorPortalWorker(user, '', 'emp-1', {
         enabled: true,
       } as never);
 
@@ -490,19 +522,14 @@ describe('AttendanceController', () => {
 
   describe('exportCollaborators', () => {
     it('escribe Content-Type/Content-Disposition y envía el buffer', async () => {
-      const user = { sub: 'actor-1', roleCode: 'OWNER', tenantId: TENANT };
+      const user = makeJwtUser({ sub: 'actor-1' });
       collaboratorsServiceMock.exportFile.mockResolvedValue({
         buffer: Buffer.from('data'),
         filename: 'colaboradores_asistencia_2026-07-06.xlsx',
       });
       const res = { setHeader: jest.fn(), send: jest.fn() };
 
-      await controller.exportCollaborators(
-        user as never,
-        '',
-        { format: 'excel' } as never,
-        res as never,
-      );
+      await controller.exportCollaborators(user, '', { format: 'excel' } as never, res as never);
 
       expect(collaboratorsServiceMock.exportFile).toHaveBeenCalledWith(
         TENANT,
@@ -525,10 +552,10 @@ describe('AttendanceController', () => {
 
   describe('emailExportCollaborators', () => {
     it('delega al service con recipients/format/filters y el email del actor', async () => {
-      const user = { sub: 'actor-1', roleCode: 'OWNER', tenantId: TENANT, email: 'owner@x.com' };
+      const user = makeJwtUser({ sub: 'actor-1', email: 'owner@x.com' });
       collaboratorsServiceMock.emailExport.mockResolvedValue(undefined);
 
-      const result = await controller.emailExportCollaborators(user as never, '', {
+      const result = await controller.emailExportCollaborators(user, '', {
         recipients: ['a@example.com'],
         format: 'pdf',
         filters: { area: 'Cocina' },
@@ -551,7 +578,7 @@ describe('AttendanceController', () => {
 
   describe('getCollaboratorAudit', () => {
     it('delega al service y envuelve el resultado en { items }', async () => {
-      const user = { sub: 'actor-1', roleCode: 'SUPER_ADMIN', tenantId: TENANT };
+      const user = makeJwtUser({ sub: 'actor-1', roleCode: 'SUPER_ADMIN' });
       collaboratorsServiceMock.getAuditHistory.mockResolvedValue([
         {
           id: 'audit-1',
@@ -563,7 +590,7 @@ describe('AttendanceController', () => {
         },
       ]);
 
-      const result = await controller.getCollaboratorAudit(user as never, '', 'emp-1');
+      const result = await controller.getCollaboratorAudit(user, '', 'emp-1');
 
       expect(collaboratorsServiceMock.getAuditHistory).toHaveBeenCalledWith(TENANT, 'emp-1');
       expect(result.items).toHaveLength(1);

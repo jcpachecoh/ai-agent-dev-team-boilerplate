@@ -14,6 +14,7 @@ import type {
   EmployeeWithUser,
   UpsertObservationInput,
 } from '../interfaces/attendance.interfaces';
+import { UserLocationsService } from '../../locations/service/user-locations.service';
 import { AttendanceRepository, normalizeWorkDate } from '../repository/attendance.repository';
 import { AttendanceService } from './attendance.service';
 import {
@@ -21,15 +22,13 @@ import {
   parseCalendarDate,
 } from '../utils/attendance-calculation.util';
 
-const UNRESTRICTED_ROLES = new Set(['OWNER', 'SUPER_ADMIN']);
-const SEDE_SCOPED_ROLES = new Set(['SUPERVISOR', 'MANAGER']);
-
 @Injectable()
 export class AttendanceCardService {
   constructor(
     private readonly attendanceRepository: AttendanceRepository,
     private readonly auditService: AuditService,
     private readonly attendanceService: AttendanceService,
+    private readonly userLocationsService: UserLocationsService,
   ) {}
 
   async getCard(
@@ -37,8 +36,10 @@ export class AttendanceCardService {
     tenantId: string,
     dateFrom: string,
     dateTo: string,
+    actor: AttendanceActingUser,
   ): Promise<AttendanceCardResult> {
     const employee = await this.requireEmployee(userId, tenantId);
+    await this.assertEmployeeLocationAllowed(tenantId, actor, employee.locationId);
     const from = parseCalendarDate(dateFrom);
     const to = parseCalendarDate(dateTo);
     this.assertDateRange(from, to);
@@ -64,7 +65,7 @@ export class AttendanceCardService {
     input: UpsertObservationInput,
   ): Promise<AttendanceObservation> {
     const employee = await this.requireEmployee(userId, tenantId);
-    this.assertLocationScope(actingUser, employee);
+    await this.assertEmployeeLocationAllowed(tenantId, actingUser, employee.locationId);
 
     const workDate = parseCalendarDate(input.workDate);
     const existing = await this.attendanceRepository.findObservation(
@@ -102,7 +103,7 @@ export class AttendanceCardService {
     input: CreateManualMarkingInput,
   ): Promise<AttendanceLog> {
     const employee = await this.requireEmployee(userId, tenantId);
-    this.assertLocationScope(actingUser, employee);
+    await this.assertEmployeeLocationAllowed(tenantId, actingUser, employee.locationId);
 
     const workDate = parseCalendarDate(input.workDate);
     const timestamp = new Date(input.timestamp);
@@ -162,7 +163,7 @@ export class AttendanceCardService {
       throw new ForbiddenException('Solo se pueden eliminar marcaciones manuales (source=MANUAL)');
     }
 
-    this.assertLocationScope(actingUser, log.employee);
+    await this.assertEmployeeLocationAllowed(tenantId, actingUser, log.employee.locationId);
 
     await this.attendanceRepository.deleteManualLog(logId, tenantId);
 
@@ -185,16 +186,16 @@ export class AttendanceCardService {
     return employee;
   }
 
-  private assertLocationScope(
-    actingUser: AttendanceActingUser,
-    employee: { locationId: string },
-  ): void {
-    if (UNRESTRICTED_ROLES.has(actingUser.roleCode)) return;
-    if (SEDE_SCOPED_ROLES.has(actingUser.roleCode)) {
-      if (actingUser.locationId && actingUser.locationId === employee.locationId) return;
-      throw new ForbiddenException('No tienes permisos sobre la sede de este colaborador');
-    }
-    throw new ForbiddenException('No tienes permisos para editar marcaciones u observaciones');
+  private async assertEmployeeLocationAllowed(
+    tenantId: string,
+    actor: AttendanceActingUser,
+    employeeLocationId: string,
+  ): Promise<void> {
+    const allowedLocationIds = await this.userLocationsService.resolveAllowedLocationIds(tenantId, {
+      userId: actor.sub,
+      roleCode: actor.roleCode,
+    });
+    this.userLocationsService.assertLocationAllowed(allowedLocationIds, employeeLocationId);
   }
 
   private assertDateRange(from: Date, to: Date): void {

@@ -60,6 +60,7 @@ const repositoryMock = {
   deleteAssignment: jest.fn(),
   findUsersByLocation: jest.fn(),
   findLocationsByUser: jest.fn(),
+  findActiveLocationsByUser: jest.fn(),
   findUserForTenant: jest.fn(),
   findLocationForTenant: jest.fn(),
 };
@@ -185,5 +186,83 @@ describe('UserLocationsService', () => {
     repositoryMock.findLocationsByUser.mockResolvedValue([baseLocation]);
 
     await expect(service.getUserLocations('tenant-1', 'user-1')).resolves.toEqual([baseLocation]);
+  });
+
+  describe('resolveAllowedLocationIds', () => {
+    it('returns null (sin restricción) for OWNER', async () => {
+      await expect(
+        service.resolveAllowedLocationIds('tenant-1', { userId: 'user-1', roleCode: 'OWNER' }),
+      ).resolves.toBeNull();
+      expect(repositoryMock.findActiveLocationsByUser).not.toHaveBeenCalled();
+    });
+
+    it('returns null (sin restricción) for SUPER_ADMIN', async () => {
+      await expect(
+        service.resolveAllowedLocationIds('tenant-1', {
+          userId: 'user-1',
+          roleCode: 'SUPER_ADMIN',
+        }),
+      ).resolves.toBeNull();
+    });
+
+    it('returns null (sin restricción) for NOMINA', async () => {
+      await expect(
+        service.resolveAllowedLocationIds('tenant-1', { userId: 'user-1', roleCode: 'NOMINA' }),
+      ).resolves.toBeNull();
+    });
+
+    it('returns assigned location ids for SUPERVISOR', async () => {
+      repositoryMock.findUserForTenant.mockResolvedValue(baseUser);
+      repositoryMock.findActiveLocationsByUser.mockResolvedValue([
+        baseLocation,
+        { ...baseLocation, id: 'loc-2' },
+      ]);
+
+      await expect(
+        service.resolveAllowedLocationIds('tenant-1', {
+          userId: 'user-1',
+          roleCode: 'SUPERVISOR',
+        }),
+      ).resolves.toEqual(['loc-1', 'loc-2']);
+    });
+
+    it('returns assigned location ids for MANAGER', async () => {
+      repositoryMock.findUserForTenant.mockResolvedValue(baseUser);
+      repositoryMock.findActiveLocationsByUser.mockResolvedValue([baseLocation]);
+
+      await expect(
+        service.resolveAllowedLocationIds('tenant-1', { userId: 'user-1', roleCode: 'MANAGER' }),
+      ).resolves.toEqual(['loc-1']);
+    });
+
+    it('returns empty array for SUPERVISOR without sedes asignadas (no ve ninguna sede)', async () => {
+      repositoryMock.findUserForTenant.mockResolvedValue(baseUser);
+      repositoryMock.findActiveLocationsByUser.mockResolvedValue([]);
+
+      await expect(
+        service.resolveAllowedLocationIds('tenant-1', {
+          userId: 'user-1',
+          roleCode: 'SUPERVISOR',
+        }),
+      ).resolves.toEqual([]);
+    });
+  });
+
+  describe('assertLocationAllowed', () => {
+    it('no lanza cuando allowedLocationIds es null (sin restricción)', () => {
+      expect(() => service.assertLocationAllowed(null, 'loc-1')).not.toThrow();
+    });
+
+    it('no lanza cuando la sede solicitada está en la lista permitida', () => {
+      expect(() => service.assertLocationAllowed(['loc-1', 'loc-2'], 'loc-1')).not.toThrow();
+    });
+
+    it('lanza ForbiddenException cuando la sede solicitada no está permitida', () => {
+      expect(() => service.assertLocationAllowed(['loc-2'], 'loc-1')).toThrow(ForbiddenException);
+    });
+
+    it('lanza ForbiddenException cuando la lista de sedes permitidas está vacía', () => {
+      expect(() => service.assertLocationAllowed([], 'loc-1')).toThrow(ForbiddenException);
+    });
   });
 });

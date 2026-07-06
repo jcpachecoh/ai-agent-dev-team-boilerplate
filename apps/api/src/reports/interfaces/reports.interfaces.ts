@@ -19,8 +19,16 @@ export type ReportEmployeeWithLocation = EmployeeDetails & {
 
 export interface ActiveEmployeeFilters {
   locationId?: string;
+  /** Sedes permitidas cuando el actor está acotado por rol (SUPERVISOR/MANAGER) y no pidió una sede puntual. */
+  allowedLocationIds?: string[] | null;
   contractType?: EmployeeContractType;
   employeeId?: string;
+}
+
+/** Subconjunto del JwtPayload necesario para scoping de sede en reportes. */
+export interface ReportsActor {
+  userId: string;
+  roleCode: string;
 }
 
 // ── Repository contract ───────────────────────────────────────────────────────
@@ -42,15 +50,21 @@ export interface IReportsRepository {
 // ── Service contract ──────────────────────────────────────────────────────────
 
 export interface IReportsService {
-  getPayrollReport(tenantId: string, query: PeriodQueryDto): Promise<PayrollReportResponseDto>;
+  getPayrollReport(
+    tenantId: string,
+    query: PeriodQueryDto,
+    actor: ReportsActor,
+  ): Promise<PayrollReportResponseDto>;
 
   getAttendanceReport(
     tenantId: string,
     query: AttendanceQueryDto,
+    actor: ReportsActor,
   ): Promise<AttendanceReportResponseDto>;
 
   getSocialSecurityReport(
     tenantId: string,
     query: PeriodQueryDto,
+    actor: ReportsActor,
   ): Promise<SocialSecurityReportResponseDto>;
 }

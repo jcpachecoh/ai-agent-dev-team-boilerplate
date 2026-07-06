@@ -25,6 +25,7 @@ import {
 } from '../attendance.constants';
 import type {
   ActiveAttendanceEntry,
+  AttendanceActingUser,
   AttendanceLogFull,
   EntryResult,
   ExitResult,
@@ -41,6 +42,7 @@ import { AttendanceRepository, normalizeWorkDate } from '../repository/attendanc
 import { calculateDaySummary, getBogotaHour } from '../utils/attendance-calculation.util';
 import { validateGeofence } from '../utils/attendance-geofence.util';
 import { AuthService } from '../../auth/service/auth.service';
+import { UserLocationsService } from '../../locations/service/user-locations.service';
 
 // Kiosk-auth security model:
 //   • Tenant scope: tenantId required on every call
@@ -60,6 +62,7 @@ export class AttendanceService implements IAttendanceService {
   constructor(
     private readonly attendanceRepository: AttendanceRepository,
     private readonly authService: AuthService,
+    private readonly userLocationsService: UserLocationsService,
   ) {}
 
   async kioskAuth(dto: KioskAuthInput, tenantId: string): Promise<KioskAuthResult> {
@@ -288,7 +291,11 @@ export class AttendanceService implements IAttendanceService {
     return log;
   }
 
-  async listHistory(query: ListHistoryInput, tenantId: string): Promise<AttendanceLogFull[]> {
+  async listHistory(
+    query: ListHistoryInput,
+    tenantId: string,
+    actor: AttendanceActingUser,
+  ): Promise<AttendanceLogFull[]> {
     let employeeId: string | undefined;
 
     if (query.userId) {
@@ -299,10 +306,19 @@ export class AttendanceService implements IAttendanceService {
       employeeId = employee.id;
     }
 
+    const allowedLocationIds = await this.userLocationsService.resolveAllowedLocationIds(tenantId, {
+      userId: actor.sub,
+      roleCode: actor.roleCode,
+    });
+    if (query.locationId) {
+      this.userLocationsService.assertLocationAllowed(allowedLocationIds, query.locationId);
+    }
+
     return this.attendanceRepository.listHistory({
       tenantId,
       employeeId,
       locationId: query.locationId,
+      allowedLocationIds,
       dateFrom: query.dateFrom ? new Date(query.dateFrom) : undefined,
       dateTo: query.dateTo ? new Date(query.dateTo) : undefined,
       limit: query.limit,
@@ -310,7 +326,17 @@ export class AttendanceService implements IAttendanceService {
     });
   }
 
-  async listActive(locationId: string, tenantId: string): Promise<ActiveAttendanceEntry[]> {
+  async listActive(
+    locationId: string,
+    tenantId: string,
+    actor: AttendanceActingUser,
+  ): Promise<ActiveAttendanceEntry[]> {
+    const allowedLocationIds = await this.userLocationsService.resolveAllowedLocationIds(tenantId, {
+      userId: actor.sub,
+      roleCode: actor.roleCode,
+    });
+    this.userLocationsService.assertLocationAllowed(allowedLocationIds, locationId);
+
     const logs = await this.attendanceRepository.listActiveAtLocation(locationId, tenantId);
 
     return logs.map((log) => ({
@@ -328,12 +354,19 @@ export class AttendanceService implements IAttendanceService {
   async getOvertimeSummary(
     userId: string,
     tenantId: string,
+    actor: AttendanceActingUser,
     date?: Date,
   ): Promise<OvertimeSummary> {
     const employee = await this.attendanceRepository.findEmployeeByUserId(userId, tenantId);
     if (!employee) {
       throw new NotFoundException(`Empleado con userId "${userId}" no encontrado`);
     }
+
+    const allowedLocationIds = await this.userLocationsService.resolveAllowedLocationIds(tenantId, {
+      userId: actor.sub,
+      roleCode: actor.roleCode,
+    });
+    this.userLocationsService.assertLocationAllowed(allowedLocationIds, employee.locationId);
 
     const workDate = date ? normalizeWorkDate(date) : normalizeWorkDate(new Date());
     const logs = await this.attendanceRepository.findAllForDay(employee.id, workDate);

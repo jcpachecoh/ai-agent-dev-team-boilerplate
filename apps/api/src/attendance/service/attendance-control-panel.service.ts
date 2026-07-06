@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { AttendanceEventType, AttendanceLogSource } from '@prisma/client';
 import type {
+  AttendanceActingUser,
   AttendanceLogFull,
   ControlPanelAlert,
   ControlPanelQuery,
@@ -8,6 +9,7 @@ import type {
   ControlPanelTimelineRow,
 } from '../interfaces/attendance.interfaces';
 import { AttendanceRepository } from '../repository/attendance.repository';
+import { UserLocationsService } from '../../locations/service/user-locations.service';
 import { calculateDaySummary } from '../utils/attendance-calculation.util';
 import { resolveClasificacionFilter } from '../utils/clasificacion.util';
 import {
@@ -37,20 +39,31 @@ type EnrichedEmployee = AttendanceLogFull['employee'] & {
 
 @Injectable()
 export class AttendanceControlPanelService {
-  constructor(private readonly repository: AttendanceRepository) {}
+  constructor(
+    private readonly repository: AttendanceRepository,
+    private readonly userLocationsService: UserLocationsService,
+  ) {}
 
   async getControlPanel(
     tenantId: string,
     userId: string,
     query: ControlPanelQuery,
+    actor: AttendanceActingUser,
   ): Promise<ControlPanelSummary> {
     const anchorDate = query.anchorDate ?? getTodayAnchorDate();
     const period = query.period ?? 'day';
     const laborClassifications = resolveClasificacionFilter(query.clasificacion);
     const tenantName = await this.repository.findTenantLabel(tenantId);
+    const allowedLocationIds = await this.userLocationsService.resolveAllowedLocationIds(tenantId, {
+      userId: actor.sub,
+      roleCode: actor.roleCode,
+    });
+    if (query.locationId) {
+      this.userLocationsService.assertLocationAllowed(allowedLocationIds, query.locationId);
+    }
     const locations = await this.repository.listActiveLocations(
       tenantId,
-      query.locationId ? [query.locationId] : undefined,
+      query.locationId ? [query.locationId] : (allowedLocationIds ?? undefined),
     );
     const locationIds = locations.map((location) => location.id);
 

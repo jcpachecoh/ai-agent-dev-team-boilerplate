@@ -2,13 +2,25 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { EmployeesResolver } from '../resolver/employees.resolver';
 import { PayrollService } from '../service/payroll.service';
 import { EmployeeContractType, SalaryType, ArlRiskLevel, DocumentType } from '@prisma/client';
+import type { JwtPayload } from '../../auth/interfaces/auth.interfaces';
+
+function makeJwtUser(overrides?: Partial<JwtPayload>): JwtPayload {
+  return {
+    sub: 'user-id',
+    email: 'test@example.com',
+    tenantId: 'tenant-1',
+    roleId: 'role-1',
+    roleCode: 'OWNER',
+    ...overrides,
+  };
+}
 
 describe('EmployeesResolver', () => {
   let resolver: EmployeesResolver;
   let service: PayrollService;
 
   const mockTenantId = 'tenant-1';
-  const mockUser = { tenantId: mockTenantId, sub: 'user-id' };
+  const mockUser = makeJwtUser();
   const mockContext = { req: { headers: { 'x-tenant-id': mockTenantId } } };
 
   beforeEach(async () => {
@@ -44,6 +56,7 @@ describe('EmployeesResolver', () => {
       expect(service.findAll).toHaveBeenCalledWith(
         mockTenantId,
         expect.objectContaining({ locationId: 'loc-1' }),
+        { userId: 'user-id', roleCode: 'OWNER' },
       );
     });
   });
@@ -53,7 +66,10 @@ describe('EmployeesResolver', () => {
       (service.findOne as jest.Mock).mockResolvedValue({ id: 'emp-1', salaryAmount: '1000' });
       const result = await resolver.employee(mockUser, mockContext, 'user-1');
       expect(result).toBeDefined();
-      expect(service.findOne).toHaveBeenCalledWith(mockTenantId, 'user-1');
+      expect(service.findOne).toHaveBeenCalledWith(mockTenantId, 'user-1', {
+        userId: 'user-id',
+        roleCode: 'OWNER',
+      });
     });
   });
 

@@ -3,6 +3,7 @@ import { AuthModule } from '../auth/auth.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { AuditModule } from '../audit/audit.module';
 import { EmployeeSocialProfileModule } from '../employee-social-profile/employee-social-profile.module';
+import { LocationsModule } from '../locations/locations.module';
 import { PayrollController } from './controller/payroll.controller';
 import { EmployeeCatalogController } from './controller/employee-catalog.controller';
 import { EmployeePositionsController } from './controller/employee-positions.controller';
@@ -17,7 +18,7 @@ import { EmployeePositionsResolver } from './resolver/employee-positions.resolve
 import { PayrollCalculationService } from './service/payroll-calculation.service';
 
 @Module({
-  imports: [PrismaModule, AuthModule, AuditModule, EmployeeSocialProfileModule],
+  imports: [PrismaModule, AuthModule, AuditModule, EmployeeSocialProfileModule, LocationsModule],
   controllers: [PayrollController, EmployeeCatalogController, EmployeePositionsController],
   providers: [
     PayrollService,

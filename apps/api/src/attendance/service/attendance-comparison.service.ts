@@ -2,12 +2,14 @@ import { Injectable } from '@nestjs/common';
 
 import { COLOMBIA_TZ } from '../attendance.constants';
 import type {
+  AttendanceActingUser,
   AttendanceComparisonPoint,
   AttendanceComparisonQuery,
   AttendanceComparisonSummary,
   AttendanceLogFull,
 } from '../interfaces/attendance.interfaces';
 import { AttendanceRepository } from '../repository/attendance.repository';
+import { UserLocationsService } from '../../locations/service/user-locations.service';
 import {
   enumerateWorkDates,
   getTodayAnchorDate,
@@ -20,20 +22,31 @@ const WEEKDAY_LABELS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 
 @Injectable()
 export class AttendanceComparisonService {
-  constructor(private readonly repository: AttendanceRepository) {}
+  constructor(
+    private readonly repository: AttendanceRepository,
+    private readonly userLocationsService: UserLocationsService,
+  ) {}
 
   async getComparison(
     tenantId: string,
     query: AttendanceComparisonQuery,
+    actor: AttendanceActingUser,
   ): Promise<AttendanceComparisonSummary> {
     const anchorDate = query.anchorDate ?? getTodayAnchorDate();
     const period = query.period ?? 'day';
     const currentRange = resolveAttendancePeriodRange(period, anchorDate);
     const previousRange = resolvePreviousAttendancePeriodRange(period, anchorDate);
 
+    const allowedLocationIds = await this.userLocationsService.resolveAllowedLocationIds(tenantId, {
+      userId: actor.sub,
+      roleCode: actor.roleCode,
+    });
+    if (query.locationId) {
+      this.userLocationsService.assertLocationAllowed(allowedLocationIds, query.locationId);
+    }
     const locations = await this.repository.listActiveLocations(
       tenantId,
-      query.locationId ? [query.locationId] : undefined,
+      query.locationId ? [query.locationId] : (allowedLocationIds ?? undefined),
     );
     const locationIds = locations.map((location) => location.id);
 

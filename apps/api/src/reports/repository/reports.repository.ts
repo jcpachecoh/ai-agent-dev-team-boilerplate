@@ -23,6 +23,7 @@ export class ReportsRepository implements IReportsRepository {
     tenantId: string,
     options: {
       locationId?: string;
+      allowedLocationIds?: string[] | null;
       contractType?: EmployeeContractType;
       employeeId?: string;
     } = {},
@@ -32,7 +33,11 @@ export class ReportsRepository implements IReportsRepository {
       isActive: true,
       deletedAt: null,
     };
-    if (options.locationId) where.locationId = options.locationId;
+    if (options.locationId) {
+      where.locationId = options.locationId;
+    } else if (options.allowedLocationIds) {
+      where.locationId = { in: options.allowedLocationIds };
+    }
     if (options.contractType) where.contractType = options.contractType;
     if (options.employeeId) where.id = options.employeeId;
 

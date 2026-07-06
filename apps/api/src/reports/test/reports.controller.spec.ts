@@ -6,9 +6,25 @@ import { ReportPdfService } from '../service/report-pdf.service';
 import { ReportExcelService } from '../service/report-excel.service';
 import { AttendanceQueryDto, PeriodQueryDto } from '../controller/dto/report-query.dto';
 import { ExportFormat, ExportPayrollReportDto } from '../controller/dto/export-payroll-report.dto';
+import type { JwtPayload } from '../../auth/interfaces/auth.interfaces';
 
 const TENANT_ID = 'tenant-1';
-const mockUser = { tenantId: TENANT_ID };
+const MOCK_REPORTS_ACTOR = { userId: 'user-1', roleCode: 'OWNER' };
+
+function makeJwtUser(overrides?: Partial<JwtPayload>): JwtPayload {
+  return {
+    sub: 'user-1',
+    email: 'user@test.dev',
+    tenantId: TENANT_ID,
+    roleId: 'role-1',
+    roleCode: 'OWNER',
+    ...overrides,
+  };
+}
+
+const mockUser = makeJwtUser();
+const mockActor = MOCK_REPORTS_ACTOR;
+const mockActorEmpty = { userId: '', roleCode: '' };
 
 const mockPayrollReport: any = {
   tenantId: TENANT_ID,
@@ -94,20 +110,22 @@ describe('ReportsController', () => {
 
       const result = await controller.getPayrollReport(mockUser, '', query);
 
-      expect(service.getPayrollReport).toHaveBeenCalledWith(TENANT_ID, query);
+      expect(service.getPayrollReport).toHaveBeenCalledWith(TENANT_ID, query, mockActor);
       expect(result).toBe(mockPayrollReport);
     });
 
     it('uses header tenantId when JWT tenantId is absent', async () => {
       service.getPayrollReport.mockResolvedValue(mockPayrollReport);
 
-      await controller.getPayrollReport({}, TENANT_ID, query);
+      await controller.getPayrollReport({} as unknown as JwtPayload, TENANT_ID, query);
 
-      expect(service.getPayrollReport).toHaveBeenCalledWith(TENANT_ID, query);
+      expect(service.getPayrollReport).toHaveBeenCalledWith(TENANT_ID, query, mockActorEmpty);
     });
 
     it('throws BadRequestException when both JWT and header tenantId are absent', async () => {
-      await expect(controller.getPayrollReport({}, '', query)).rejects.toThrow(BadRequestException);
+      await expect(
+        controller.getPayrollReport({} as unknown as JwtPayload, '', query),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('propagates service errors', async () => {
@@ -129,22 +147,22 @@ describe('ReportsController', () => {
 
       const result = await controller.getAttendanceReport(mockUser, '', query);
 
-      expect(service.getAttendanceReport).toHaveBeenCalledWith(TENANT_ID, query);
+      expect(service.getAttendanceReport).toHaveBeenCalledWith(TENANT_ID, query, mockActor);
       expect(result).toBe(mockAttendanceReport);
     });
 
     it('uses header tenantId when JWT tenantId is absent', async () => {
       service.getAttendanceReport.mockResolvedValue(mockAttendanceReport);
 
-      await controller.getAttendanceReport({}, TENANT_ID, query);
+      await controller.getAttendanceReport({} as unknown as JwtPayload, TENANT_ID, query);
 
-      expect(service.getAttendanceReport).toHaveBeenCalledWith(TENANT_ID, query);
+      expect(service.getAttendanceReport).toHaveBeenCalledWith(TENANT_ID, query, mockActorEmpty);
     });
 
     it('throws BadRequestException when both tenantId sources are absent', async () => {
-      await expect(controller.getAttendanceReport({}, '', query)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(
+        controller.getAttendanceReport({} as unknown as JwtPayload, '', query),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 
@@ -158,22 +176,26 @@ describe('ReportsController', () => {
 
       const result = await controller.getSocialSecurityReport(mockUser, '', query);
 
-      expect(service.getSocialSecurityReport).toHaveBeenCalledWith(TENANT_ID, query);
+      expect(service.getSocialSecurityReport).toHaveBeenCalledWith(TENANT_ID, query, mockActor);
       expect(result).toBe(mockSocialSecurityReport);
     });
 
     it('uses header tenantId when JWT tenantId is absent', async () => {
       service.getSocialSecurityReport.mockResolvedValue(mockSocialSecurityReport);
 
-      await controller.getSocialSecurityReport({}, TENANT_ID, query);
+      await controller.getSocialSecurityReport({} as unknown as JwtPayload, TENANT_ID, query);
 
-      expect(service.getSocialSecurityReport).toHaveBeenCalledWith(TENANT_ID, query);
+      expect(service.getSocialSecurityReport).toHaveBeenCalledWith(
+        TENANT_ID,
+        query,
+        mockActorEmpty,
+      );
     });
 
     it('throws BadRequestException when both tenantId sources are absent', async () => {
-      await expect(controller.getSocialSecurityReport({}, '', query)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(
+        controller.getSocialSecurityReport({} as unknown as JwtPayload, '', query),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 
@@ -203,7 +225,7 @@ describe('ReportsController', () => {
       await controller.exportPayrollReport(mockUser, '', pdfBody, mockRes as any);
 
       // Assert
-      expect(service.getPayrollReport).toHaveBeenCalledWith(TENANT_ID, pdfBody);
+      expect(service.getPayrollReport).toHaveBeenCalledWith(TENANT_ID, pdfBody, mockActor);
       expect(pdfService.generatePayrollPdf).toHaveBeenCalledWith(mockPayrollReport);
       expect(excelService.generatePayrollXlsx).not.toHaveBeenCalled();
       expect(mockRes.setHeader).toHaveBeenCalledWith('Content-Type', 'application/pdf');
@@ -223,7 +245,7 @@ describe('ReportsController', () => {
       await controller.exportPayrollReport(mockUser, '', xlsxBody, mockRes as any);
 
       // Assert
-      expect(service.getPayrollReport).toHaveBeenCalledWith(TENANT_ID, xlsxBody);
+      expect(service.getPayrollReport).toHaveBeenCalledWith(TENANT_ID, xlsxBody, mockActor);
       expect(excelService.generatePayrollXlsx).toHaveBeenCalledWith(mockPayrollReport);
       expect(pdfService.generatePayrollPdf).not.toHaveBeenCalled();
       expect(mockRes.setHeader).toHaveBeenCalledWith(
@@ -243,10 +265,15 @@ describe('ReportsController', () => {
       pdfService.generatePayrollPdf.mockResolvedValue(mockPdfBuffer);
 
       // Act
-      await controller.exportPayrollReport({}, TENANT_ID, pdfBody, mockRes as any);
+      await controller.exportPayrollReport(
+        {} as unknown as JwtPayload,
+        TENANT_ID,
+        pdfBody,
+        mockRes as any,
+      );
 
       // Assert
-      expect(service.getPayrollReport).toHaveBeenCalledWith(TENANT_ID, pdfBody);
+      expect(service.getPayrollReport).toHaveBeenCalledWith(TENANT_ID, pdfBody, mockActorEmpty);
     });
 
     it('uses header tenantId when JWT tenantId is absent (XLSX)', async () => {
@@ -255,16 +282,21 @@ describe('ReportsController', () => {
       excelService.generatePayrollXlsx.mockResolvedValue(mockXlsxBuffer);
 
       // Act
-      await controller.exportPayrollReport({}, TENANT_ID, xlsxBody, mockRes as any);
+      await controller.exportPayrollReport(
+        {} as unknown as JwtPayload,
+        TENANT_ID,
+        xlsxBody,
+        mockRes as any,
+      );
 
       // Assert
-      expect(service.getPayrollReport).toHaveBeenCalledWith(TENANT_ID, xlsxBody);
+      expect(service.getPayrollReport).toHaveBeenCalledWith(TENANT_ID, xlsxBody, mockActorEmpty);
     });
 
     it('throws BadRequestException when both tenantId sources are absent', async () => {
-      await expect(controller.exportPayrollReport({}, '', pdfBody, mockRes as any)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(
+        controller.exportPayrollReport({} as unknown as JwtPayload, '', pdfBody, mockRes as any),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 });

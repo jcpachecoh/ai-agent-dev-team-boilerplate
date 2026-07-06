@@ -72,6 +72,8 @@ const employee: EmployeeWithUser = {
 
 const defaultClasificacionCounts = { cocina: 2, servicio: 3, administrativo: 1 };
 
+const actor = { sub: 'actor-1', roleCode: 'OWNER' };
+
 const repositoryMock = {
   findLocationById: jest.fn(),
   findEmployeesAtLocation: jest.fn(),
@@ -80,12 +82,21 @@ const repositoryMock = {
   countByLaborClassification: jest.fn(),
 };
 
+const userLocationsServiceMock = {
+  resolveAllowedLocationIds: jest.fn().mockResolvedValue(null),
+  assertLocationAllowed: jest.fn(),
+};
+
 describe('AttendanceMonitorSummaryService', () => {
   let service: AttendanceMonitorSummaryService;
 
   beforeEach(() => {
-    service = new AttendanceMonitorSummaryService(repositoryMock as never);
+    service = new AttendanceMonitorSummaryService(
+      repositoryMock as never,
+      userLocationsServiceMock as never,
+    );
     jest.clearAllMocks();
+    userLocationsServiceMock.resolveAllowedLocationIds.mockResolvedValue(null);
     repositoryMock.findLocationById.mockResolvedValue({ id: locationId, tenantId, name: 'Sede 1' });
     repositoryMock.findEmployeesAtLocation.mockResolvedValue([employee]);
     repositoryMock.listHistory.mockResolvedValue([]);
@@ -97,7 +108,11 @@ describe('AttendanceMonitorSummaryService', () => {
     repositoryMock.findLocationById.mockResolvedValue(null);
 
     await expect(
-      service.getMonitorSummary({ locationId, period: 'day', anchorDate: '2026-06-18' }, tenantId),
+      service.getMonitorSummary(
+        { locationId, period: 'day', anchorDate: '2026-06-18' },
+        tenantId,
+        actor,
+      ),
     ).rejects.toThrow(NotFoundException);
   });
 
@@ -108,6 +123,7 @@ describe('AttendanceMonitorSummaryService', () => {
     const result = await service.getMonitorSummary(
       { locationId, period: 'day', anchorDate: '2026-06-18' },
       tenantId,
+      actor,
     );
 
     expect(result.metrics.absent).toBe(1);
@@ -163,6 +179,7 @@ describe('AttendanceMonitorSummaryService', () => {
     const result = await service.getMonitorSummary(
       { locationId, period: 'day', anchorDate: today },
       tenantId,
+      actor,
     );
 
     expect(result.isLive).toBe(true);
@@ -208,6 +225,7 @@ describe('AttendanceMonitorSummaryService', () => {
     const result = await service.getMonitorSummary(
       { locationId, period: 'week', anchorDate: '2026-06-10' },
       tenantId,
+      actor,
     );
 
     expect(result.isLive).toBe(false);
@@ -225,6 +243,7 @@ describe('AttendanceMonitorSummaryService', () => {
     const result = await service.getMonitorSummary(
       { locationId, period: 'day', anchorDate: '2026-06-18' },
       tenantId,
+      actor,
     );
 
     // Assert
@@ -237,6 +256,7 @@ describe('AttendanceMonitorSummaryService', () => {
       await service.getMonitorSummary(
         { locationId, period: 'day', anchorDate: '2026-06-18' },
         tenantId,
+        actor,
       );
 
       // Assert
@@ -252,6 +272,7 @@ describe('AttendanceMonitorSummaryService', () => {
       await service.getMonitorSummary(
         { locationId, period: 'day', anchorDate: '2026-06-18', clasificacion: 'todos' },
         tenantId,
+        actor,
       );
 
       // Assert
@@ -267,6 +288,7 @@ describe('AttendanceMonitorSummaryService', () => {
       await service.getMonitorSummary(
         { locationId, period: 'day', anchorDate: '2026-06-18', clasificacion: 'administrativo' },
         tenantId,
+        actor,
       );
 
       // Assert
@@ -280,6 +302,7 @@ describe('AttendanceMonitorSummaryService', () => {
       await service.getMonitorSummary(
         { locationId, period: 'day', anchorDate: '2026-06-18', clasificacion: 'operaciones' },
         tenantId,
+        actor,
       );
 
       // Assert
@@ -294,6 +317,7 @@ describe('AttendanceMonitorSummaryService', () => {
       await service.getMonitorSummary(
         { locationId, period: 'day', anchorDate: '2026-06-18', clasificacion: 'administrativo' },
         tenantId,
+        actor,
       );
 
       // Assert
@@ -305,6 +329,7 @@ describe('AttendanceMonitorSummaryService', () => {
       const result = await service.getMonitorSummary(
         { locationId, period: 'day', anchorDate: '2026-06-18' },
         tenantId,
+        actor,
       );
 
       // Assert
@@ -316,6 +341,7 @@ describe('AttendanceMonitorSummaryService', () => {
       const result = await service.getMonitorSummary(
         { locationId, period: 'day', anchorDate: '2026-06-18', clasificacion: 'operaciones' },
         tenantId,
+        actor,
       );
 
       // Assert
@@ -330,6 +356,7 @@ describe('AttendanceMonitorSummaryService', () => {
       const result = await service.getMonitorSummary(
         { locationId, period: 'day', anchorDate: '2026-06-18', clasificacion: 'administrativo' },
         tenantId,
+        actor,
       );
 
       // Assert

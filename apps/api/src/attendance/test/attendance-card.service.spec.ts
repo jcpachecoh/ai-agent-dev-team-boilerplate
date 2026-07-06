@@ -6,6 +6,7 @@ import type { AttendanceActingUser } from '../interfaces/attendance.interfaces';
 import { AttendanceRepository } from '../repository/attendance.repository';
 import { AttendanceCardService } from '../service/attendance-card.service';
 import { AttendanceService } from '../service/attendance.service';
+import { UserLocationsService } from '../../locations/service/user-locations.service';
 
 const TENANT = 'tenant-1';
 const LOCATION_A = 'loc-A';
@@ -37,6 +38,7 @@ describe('AttendanceCardService', () => {
   let repo: jest.Mocked<AttendanceRepository>;
   let audit: jest.Mocked<AuditService>;
   let attendanceService: jest.Mocked<AttendanceService>;
+  let userLocationsService: jest.Mocked<UserLocationsService>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -56,6 +58,13 @@ describe('AttendanceCardService', () => {
         },
         { provide: AuditService, useValue: { log: jest.fn() } },
         { provide: AttendanceService, useValue: { registerEvent: jest.fn() } },
+        {
+          provide: UserLocationsService,
+          useValue: {
+            resolveAllowedLocationIds: jest.fn().mockResolvedValue(null),
+            assertLocationAllowed: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -63,6 +72,7 @@ describe('AttendanceCardService', () => {
     repo = module.get(AttendanceRepository);
     audit = module.get(AuditService);
     attendanceService = module.get(AttendanceService);
+    userLocationsService = module.get(UserLocationsService);
   });
 
   describe('getCard', () => {
@@ -72,7 +82,13 @@ describe('AttendanceCardService', () => {
       repo.listHistory.mockResolvedValue([{ id: 'log-1' }] as never);
       repo.listObservationsInRange.mockResolvedValue([{ id: 'obs-1' }] as never);
 
-      const result = await service.getCard('user-1', TENANT, '2026-06-01', '2026-06-30');
+      const result = await service.getCard(
+        'user-1',
+        TENANT,
+        '2026-06-01',
+        '2026-06-30',
+        makeActingUser(),
+      );
 
       expect(result.logs).toEqual([{ id: 'log-1' }]);
       expect(result.observations).toEqual([{ id: 'obs-1' }]);
@@ -81,17 +97,40 @@ describe('AttendanceCardService', () => {
     it('empleado fuera de tenant falla', async () => {
       repo.findEmployeeByUserId.mockResolvedValue(null);
 
-      await expect(service.getCard('user-x', TENANT, '2026-06-01', '2026-06-30')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.getCard('user-x', TENANT, '2026-06-01', '2026-06-30', makeActingUser()),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('rango mayor a 3 meses falla', async () => {
       repo.findEmployeeByUserId.mockResolvedValue(makeEmployee() as never);
 
-      await expect(service.getCard('user-1', TENANT, '2026-01-01', '2026-06-30')).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(
+        service.getCard('user-1', TENANT, '2026-01-01', '2026-06-30', makeActingUser()),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('supervisor fuera de sede falla en lectura', async () => {
+      const employee = makeEmployee({ locationId: LOCATION_B });
+      repo.findEmployeeByUserId.mockResolvedValue(employee as never);
+      userLocationsService.resolveAllowedLocationIds.mockResolvedValue([LOCATION_A]);
+      userLocationsService.assertLocationAllowed.mockImplementation((allowed, locationId) => {
+        if (allowed && !allowed.includes(locationId)) {
+          throw new ForbiddenException('No tiene acceso a esta sede');
+        }
+      });
+
+      await expect(
+        service.getCard(
+          'user-1',
+          TENANT,
+          '2026-06-01',
+          '2026-06-30',
+          makeActingUser({ roleCode: 'SUPERVISOR' }),
+        ),
+      ).rejects.toThrow(ForbiddenException);
+
+      expect(repo.listHistory).not.toHaveBeenCalled();
     });
   });
 
@@ -147,14 +186,18 @@ describe('AttendanceCardService', () => {
     it('supervisor fuera de sede falla', async () => {
       const employee = makeEmployee({ locationId: LOCATION_B });
       repo.findEmployeeByUserId.mockResolvedValue(employee as never);
+      userLocationsService.resolveAllowedLocationIds.mockResolvedValue([LOCATION_A]);
+      userLocationsService.assertLocationAllowed.mockImplementation((allowed, locationId) => {
+        if (allowed && !allowed.includes(locationId)) {
+          throw new ForbiddenException('No tiene acceso a esta sede');
+        }
+      });
 
       await expect(
-        service.upsertObservation(
-          'user-1',
-          TENANT,
-          makeActingUser({ roleCode: 'SUPERVISOR', locationId: LOCATION_A }),
-          { workDate: '2026-06-10', note: 'nota' },
-        ),
+        service.upsertObservation('user-1', TENANT, makeActingUser({ roleCode: 'SUPERVISOR' }), {
+          workDate: '2026-06-10',
+          note: 'nota',
+        }),
       ).rejects.toThrow(ForbiddenException);
 
       expect(repo.upsertObservation).not.toHaveBeenCalled();
@@ -285,12 +328,18 @@ describe('AttendanceCardService', () => {
     it('supervisor fuera de sede falla', async () => {
       const employee = makeEmployee({ locationId: LOCATION_B });
       repo.findEmployeeByUserId.mockResolvedValue(employee as never);
+      userLocationsService.resolveAllowedLocationIds.mockResolvedValue([LOCATION_A]);
+      userLocationsService.assertLocationAllowed.mockImplementation((allowed, locationId) => {
+        if (allowed && !allowed.includes(locationId)) {
+          throw new ForbiddenException('No tiene acceso a esta sede');
+        }
+      });
 
       await expect(
         service.createManualMarking(
           'user-1',
           TENANT,
-          makeActingUser({ roleCode: 'SUPERVISOR', locationId: LOCATION_A }),
+          makeActingUser({ roleCode: 'SUPERVISOR' }),
           baseInput,
         ),
       ).rejects.toThrow(ForbiddenException);
@@ -361,12 +410,18 @@ describe('AttendanceCardService', () => {
     it('supervisor fuera de sede falla', async () => {
       const log = makeManualLog({ locationId: LOCATION_B });
       repo.findLogById.mockResolvedValue(log as never);
+      userLocationsService.resolveAllowedLocationIds.mockResolvedValue([LOCATION_A]);
+      userLocationsService.assertLocationAllowed.mockImplementation((allowed, locationId) => {
+        if (allowed && !allowed.includes(locationId)) {
+          throw new ForbiddenException('No tiene acceso a esta sede');
+        }
+      });
 
       await expect(
         service.deleteManualMarking(
           'log-manual-1',
           TENANT,
-          makeActingUser({ roleCode: 'SUPERVISOR', locationId: LOCATION_A }),
+          makeActingUser({ roleCode: 'SUPERVISOR' }),
         ),
       ).rejects.toThrow(ForbiddenException);
 

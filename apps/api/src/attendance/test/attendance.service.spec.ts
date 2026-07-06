@@ -17,6 +17,7 @@ import * as bcrypt from 'bcrypt';
 import { AttendanceService } from '../service/attendance.service';
 import { AttendanceRepository } from '../repository/attendance.repository';
 import { AuthService } from '../../auth/service/auth.service';
+import { UserLocationsService } from '../../locations/service/user-locations.service';
 
 jest.mock('bcrypt', () => ({
   compare: jest.fn(),
@@ -112,6 +113,13 @@ const authServiceMock = {
   issueKioskAuthTokens: jest.fn(),
 };
 
+const userLocationsServiceMock = {
+  resolveAllowedLocationIds: jest.fn().mockResolvedValue(null),
+  assertLocationAllowed: jest.fn(),
+};
+
+const ACTOR = { sub: 'user-001', roleCode: 'OWNER' };
+
 describe('AttendanceService', () => {
   let service: AttendanceService;
 
@@ -121,6 +129,7 @@ describe('AttendanceService', () => {
         AttendanceService,
         { provide: AttendanceRepository, useValue: repoMock },
         { provide: AuthService, useValue: authServiceMock },
+        { provide: UserLocationsService, useValue: userLocationsServiceMock },
       ],
     }).compile();
 
@@ -130,6 +139,7 @@ describe('AttendanceService', () => {
       accessToken: 'access-token',
       refreshToken: 'refresh-token',
     });
+    userLocationsServiceMock.resolveAllowedLocationIds.mockResolvedValue(null);
   });
 
   // ── kioskAuth ──────────────────────────────────────────────────────────────
@@ -529,7 +539,7 @@ describe('AttendanceService', () => {
     it('delega al repositorio sin filtro de empleado cuando no se provee userId', async () => {
       repoMock.listHistory.mockResolvedValue([]);
 
-      const result = await service.listHistory({}, TENANT);
+      const result = await service.listHistory({}, TENANT, ACTOR);
 
       expect(repoMock.findEmployeeByUserId).not.toHaveBeenCalled();
       expect(repoMock.listHistory).toHaveBeenCalledWith(
@@ -543,7 +553,7 @@ describe('AttendanceService', () => {
       repoMock.findEmployeeByUserId.mockResolvedValue(emp);
       repoMock.listHistory.mockResolvedValue([]);
 
-      await service.listHistory({ userId: 'user-001' }, TENANT);
+      await service.listHistory({ userId: 'user-001' }, TENANT, ACTOR);
 
       expect(repoMock.findEmployeeByUserId).toHaveBeenCalledWith('user-001', TENANT);
       expect(repoMock.listHistory).toHaveBeenCalledWith(
@@ -554,7 +564,7 @@ describe('AttendanceService', () => {
     it('lanza NotFoundException cuando userId no corresponde a ningún empleado', async () => {
       repoMock.findEmployeeByUserId.mockResolvedValue(null);
 
-      await expect(service.listHistory({ userId: 'user-ghost' }, TENANT)).rejects.toThrow(
+      await expect(service.listHistory({ userId: 'user-ghost' }, TENANT, ACTOR)).rejects.toThrow(
         NotFoundException,
       );
       expect(repoMock.listHistory).not.toHaveBeenCalled();
@@ -575,7 +585,7 @@ describe('AttendanceService', () => {
 
       repoMock.listActiveAtLocation.mockResolvedValue([logFull]);
 
-      const result = await service.listActive(LOCATION_ID, TENANT);
+      const result = await service.listActive(LOCATION_ID, TENANT, ACTOR);
 
       expect(result).toHaveLength(1);
       expect(result[0].logId).toBe('log-active-1');
@@ -587,7 +597,7 @@ describe('AttendanceService', () => {
     it('retorna array vacío cuando no hay empleados activos', async () => {
       repoMock.listActiveAtLocation.mockResolvedValue([]);
 
-      const result = await service.listActive(LOCATION_ID, TENANT);
+      const result = await service.listActive(LOCATION_ID, TENANT, ACTOR);
 
       expect(result).toEqual([]);
     });
@@ -601,7 +611,9 @@ describe('AttendanceService', () => {
     it('lanza NotFoundException cuando el empleado no existe', async () => {
       repoMock.findEmployeeByUserId.mockResolvedValue(null);
 
-      await expect(service.getOvertimeSummary(USER_ID, TENANT)).rejects.toThrow(NotFoundException);
+      await expect(service.getOvertimeSummary(USER_ID, TENANT, ACTOR)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('devuelve resumen con pares y overtimeMinutes para jornada completada', async () => {
@@ -617,6 +629,7 @@ describe('AttendanceService', () => {
       const result = await service.getOvertimeSummary(
         USER_ID,
         TENANT,
+        ACTOR,
         new Date('2026-06-10T20:00:00.000Z'),
       );
 
@@ -639,6 +652,7 @@ describe('AttendanceService', () => {
       const result = await service.getOvertimeSummary(
         USER_ID,
         TENANT,
+        ACTOR,
         new Date('2026-06-10T20:00:00.000Z'),
       );
 

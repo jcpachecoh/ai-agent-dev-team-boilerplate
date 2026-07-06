@@ -29,6 +29,14 @@ const repositoryMock = {
 
 const USER_ID = 'user-current';
 
+const userLocationsServiceMock = {
+  resolveAllowedLocationIds: jest.fn().mockResolvedValue(null),
+  assertLocationAllowed: jest.fn(),
+  getActiveUserLocations: jest.fn().mockResolvedValue([]),
+};
+
+const actor = { sub: USER_ID, roleCode: 'OWNER' };
+
 const baseEmployee: TestEmployee = {
   id: 'emp-1',
   userId: 'user-1',
@@ -80,8 +88,12 @@ describe('AttendanceControlPanelService', () => {
   const originalPublicDomain = process.env.R2_PUBLIC_DOMAIN;
 
   beforeEach(() => {
-    service = new AttendanceControlPanelService(repositoryMock as never);
+    service = new AttendanceControlPanelService(
+      repositoryMock as never,
+      userLocationsServiceMock as never,
+    );
     jest.clearAllMocks();
+    userLocationsServiceMock.resolveAllowedLocationIds.mockResolvedValue(null);
     delete process.env.R2_PUBLIC_DOMAIN;
     repositoryMock.findTenantLabel.mockResolvedValue('INVERSIONES LLANES S.A.S');
     repositoryMock.listActiveLocations.mockResolvedValue([
@@ -106,11 +118,16 @@ describe('AttendanceControlPanelService', () => {
       return [];
     });
 
-    const result = await service.getControlPanel('tenant-1', USER_ID, {
-      anchorDate: '2026-07-01',
-      page: 1,
-      pageSize: 20,
-    });
+    const result = await service.getControlPanel(
+      'tenant-1',
+      USER_ID,
+      {
+        anchorDate: '2026-07-01',
+        page: 1,
+        pageSize: 20,
+      },
+      actor,
+    );
 
     expect(result.metrics.workingNow).toBe(1);
     expect(result.metrics.attendanceToday).toBe(1);
@@ -151,12 +168,17 @@ describe('AttendanceControlPanelService', () => {
       return [];
     });
 
-    const result = await service.getControlPanel('tenant-1', USER_ID, {
-      anchorDate: '2026-07-01',
-      period: 'week',
-      page: 1,
-      pageSize: 20,
-    });
+    const result = await service.getControlPanel(
+      'tenant-1',
+      USER_ID,
+      {
+        anchorDate: '2026-07-01',
+        period: 'week',
+        page: 1,
+        pageSize: 20,
+      },
+      actor,
+    );
 
     expect(result.period).toBe('week');
     expect(result.dateFrom).toBe('2026-06-29');
@@ -197,16 +219,21 @@ describe('AttendanceControlPanelService', () => {
       }),
     ]);
 
-    const result = await service.getControlPanel('tenant-1', USER_ID, {
-      anchorDate: '2026-07-01',
-      area: 'Cocina',
-      contractType: EmployeeContractType.FIJO,
-      search: 'ana',
-      page: 1,
-      pageSize: 20,
-      sortBy: 'documentNumber',
-      sortDir: 'asc',
-    });
+    const result = await service.getControlPanel(
+      'tenant-1',
+      USER_ID,
+      {
+        anchorDate: '2026-07-01',
+        area: 'Cocina',
+        contractType: EmployeeContractType.FIJO,
+        search: 'ana',
+        page: 1,
+        pageSize: 20,
+        sortBy: 'documentNumber',
+        sortDir: 'asc',
+      },
+      actor,
+    );
 
     expect(result.timeline.total).toBe(1);
     expect(result.timeline.items[0]?.documentNumber).toBe('55667788');
@@ -235,11 +262,16 @@ describe('AttendanceControlPanelService', () => {
       }),
     ]);
 
-    const result = await service.getControlPanel('tenant-1', USER_ID, {
-      anchorDate: '2026-07-01',
-      page: 1,
-      pageSize: 20,
-    });
+    const result = await service.getControlPanel(
+      'tenant-1',
+      USER_ID,
+      {
+        anchorDate: '2026-07-01',
+        page: 1,
+        pageSize: 20,
+      },
+      actor,
+    );
 
     expect(result.alerts.some((alert) => alert.type === 'geofence')).toBe(true);
     expect(result.alerts.some((alert) => alert.type === 'no-geo')).toBe(true);
@@ -258,11 +290,16 @@ describe('AttendanceControlPanelService', () => {
       }),
     ]);
 
-    const result = await service.getControlPanel('tenant-1', USER_ID, {
-      anchorDate: '2026-07-01',
-      page: 1,
-      pageSize: 20,
-    });
+    const result = await service.getControlPanel(
+      'tenant-1',
+      USER_ID,
+      {
+        anchorDate: '2026-07-01',
+        page: 1,
+        pageSize: 20,
+      },
+      actor,
+    );
 
     expect(result.timeline.items[0]?.nombres).toBe('Maria Elena');
     expect(result.timeline.items[0]?.primerApellido).toBe('Lopez');
@@ -299,14 +336,19 @@ describe('AttendanceControlPanelService', () => {
       return [];
     });
 
-    const result = await service.getControlPanel('tenant-1', USER_ID, {
-      anchorDate: '2026-07-01',
-      period: 'month',
-      page: 2,
-      pageSize: 1,
-      sortBy: 'hasGeo',
-      sortDir: 'desc',
-    });
+    const result = await service.getControlPanel(
+      'tenant-1',
+      USER_ID,
+      {
+        anchorDate: '2026-07-01',
+        period: 'month',
+        page: 2,
+        pageSize: 1,
+        sortBy: 'hasGeo',
+        sortDir: 'desc',
+      },
+      actor,
+    );
 
     expect(result.period).toBe('month');
     expect(result.timeline.total).toBe(3);
@@ -343,11 +385,16 @@ describe('AttendanceControlPanelService', () => {
     it.each([20, 50, 100])(
       'respeta pageSize=%i en la paginación de la línea de tiempo',
       async (pageSize) => {
-        const result = await service.getControlPanel('tenant-1', USER_ID, {
-          anchorDate: '2026-07-01',
-          page: 1,
-          pageSize,
-        });
+        const result = await service.getControlPanel(
+          'tenant-1',
+          USER_ID,
+          {
+            anchorDate: '2026-07-01',
+            page: 1,
+            pageSize,
+          },
+          actor,
+        );
 
         expect(result.timeline.pageSize).toBe(pageSize);
         expect(result.timeline.items).toHaveLength(pageSize);
@@ -364,24 +411,34 @@ describe('AttendanceControlPanelService', () => {
     });
 
     it('clasificacion=todos: no forwarding de laborClassifications', async () => {
-      await service.getControlPanel('tenant-1', USER_ID, {
-        anchorDate: '2026-07-01',
-        clasificacion: 'todos',
-        page: 1,
-        pageSize: 20,
-      });
+      await service.getControlPanel(
+        'tenant-1',
+        USER_ID,
+        {
+          anchorDate: '2026-07-01',
+          clasificacion: 'todos',
+          page: 1,
+          pageSize: 20,
+        },
+        actor,
+      );
 
       const call = repositoryMock.listControlPanelLogs.mock.calls[0][0];
       expect(call.laborClassifications).toBeUndefined();
     });
 
     it('clasificacion=administrativo: forwarding [ADMINISTRATIVO] a logs', async () => {
-      const result = await service.getControlPanel('tenant-1', USER_ID, {
-        anchorDate: '2026-07-01',
-        clasificacion: 'administrativo',
-        page: 1,
-        pageSize: 20,
-      });
+      const result = await service.getControlPanel(
+        'tenant-1',
+        USER_ID,
+        {
+          anchorDate: '2026-07-01',
+          clasificacion: 'administrativo',
+          page: 1,
+          pageSize: 20,
+        },
+        actor,
+      );
 
       const call = repositoryMock.listControlPanelLogs.mock.calls[0][0];
       expect(call.laborClassifications).toEqual(['ADMINISTRATIVO']);
@@ -389,12 +446,17 @@ describe('AttendanceControlPanelService', () => {
     });
 
     it('clasificacion=operaciones: forwarding [COCINA, SERVICIO] a logs', async () => {
-      const result = await service.getControlPanel('tenant-1', USER_ID, {
-        anchorDate: '2026-07-01',
-        clasificacion: 'operaciones',
-        page: 1,
-        pageSize: 20,
-      });
+      const result = await service.getControlPanel(
+        'tenant-1',
+        USER_ID,
+        {
+          anchorDate: '2026-07-01',
+          clasificacion: 'operaciones',
+          page: 1,
+          pageSize: 20,
+        },
+        actor,
+      );
 
       const call = repositoryMock.listControlPanelLogs.mock.calls[0][0];
       expect(call.laborClassifications).toEqual(['COCINA', 'SERVICIO']);
@@ -449,11 +511,16 @@ describe('AttendanceControlPanelService', () => {
         userId === USER_ID ? new Set(['geo-log-geo']) : new Set(),
       );
 
-      const result = await service.getControlPanel('tenant-1', USER_ID, {
-        anchorDate: '2026-07-01',
-        page: 1,
-        pageSize: 20,
-      });
+      const result = await service.getControlPanel(
+        'tenant-1',
+        USER_ID,
+        {
+          anchorDate: '2026-07-01',
+          page: 1,
+          pageSize: 20,
+        },
+        actor,
+      );
 
       expect(result.alerts.some((alert) => alert.id === 'geo-log-geo')).toBe(false);
     });
@@ -463,11 +530,16 @@ describe('AttendanceControlPanelService', () => {
         userId === USER_ID ? new Set(['geo-log-geo']) : new Set(),
       );
 
-      const result = await service.getControlPanel('tenant-1', 'other-user', {
-        anchorDate: '2026-07-01',
-        page: 1,
-        pageSize: 20,
-      });
+      const result = await service.getControlPanel(
+        'tenant-1',
+        'other-user',
+        {
+          anchorDate: '2026-07-01',
+          page: 1,
+          pageSize: 20,
+        },
+        actor,
+      );
 
       expect(result.alerts.some((alert) => alert.id === 'geo-log-geo')).toBe(true);
     });

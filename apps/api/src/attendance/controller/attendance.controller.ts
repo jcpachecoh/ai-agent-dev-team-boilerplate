@@ -154,12 +154,15 @@ export class AttendanceController {
   @ApiOperation({ summary: 'Historial de asistencia con filtros (tenant + JWT)' })
   @ApiResponse({ status: 200, description: 'Array de AttendanceLog' })
   listHistory(
-    @CurrentUser() user: any,
+    @CurrentUser() user: JwtPayload,
     @Headers('x-tenant-id') headerTenantId: string,
     @Query() query: ListAttendanceQueryDto,
   ) {
     const tenantId = this.resolveTenantId(user, headerTenantId);
-    return this.attendanceService.listHistory(query, tenantId);
+    return this.attendanceService.listHistory(query, tenantId, {
+      sub: user?.sub ?? '',
+      roleCode: user?.roleCode ?? '',
+    });
   }
 
   @ApiBearerAuth()
@@ -169,7 +172,7 @@ export class AttendanceController {
   @ApiOperation({ summary: 'Empleados con entrada activa (sin salida) en una sede' })
   @ApiResponse({ status: 200, type: [ActiveAttendanceEntryDto] })
   listActive(
-    @CurrentUser() user: any,
+    @CurrentUser() user: JwtPayload,
     @Headers('x-tenant-id') headerTenantId: string,
     @Query() query: ActiveAttendanceQueryDto,
   ): Promise<ActiveAttendanceEntryDto[]> {
@@ -177,9 +180,10 @@ export class AttendanceController {
     if (!query.locationId) {
       throw new BadRequestException('locationId es requerido');
     }
-    return this.attendanceService.listActive(query.locationId, tenantId) as Promise<
-      ActiveAttendanceEntryDto[]
-    >;
+    return this.attendanceService.listActive(query.locationId, tenantId, {
+      sub: user?.sub ?? '',
+      roleCode: user?.roleCode ?? '',
+    }) as Promise<ActiveAttendanceEntryDto[]>;
   }
 
   @ApiBearerAuth()
@@ -190,7 +194,7 @@ export class AttendanceController {
   @ApiResponse({ status: 200, type: AttendanceMonitorSummaryDto })
   @ApiResponse({ status: 404, description: 'Sede no encontrada' })
   getMonitorSummary(
-    @CurrentUser() user: any,
+    @CurrentUser() user: JwtPayload,
     @Headers('x-tenant-id') headerTenantId: string,
     @Param('locationId') locationId: string,
     @Query() query: MonitorSummaryQueryDto,
@@ -204,6 +208,7 @@ export class AttendanceController {
         clasificacion: query.clasificacion,
       },
       tenantId,
+      { sub: user?.sub ?? '', roleCode: user.roleCode },
     ) as Promise<AttendanceMonitorSummaryDto>;
   }
 
@@ -214,15 +219,15 @@ export class AttendanceController {
   @ApiOperation({ summary: 'Comparativo de asistencias (periodo actual vs anterior)' })
   @ApiResponse({ status: 200, type: AttendanceComparisonSummaryDto })
   getControlPanelComparison(
-    @CurrentUser() user: any,
+    @CurrentUser() user: JwtPayload,
     @Headers('x-tenant-id') headerTenantId: string,
     @Query() query: AttendanceComparisonQueryDto,
   ): Promise<AttendanceComparisonSummaryDto> {
     const tenantId = this.resolveTenantId(user, headerTenantId);
-    return this.comparisonService.getComparison(
-      tenantId,
-      query,
-    ) as Promise<AttendanceComparisonSummaryDto>;
+    return this.comparisonService.getComparison(tenantId, query, {
+      sub: user?.sub ?? '',
+      roleCode: user?.roleCode ?? '',
+    }) as Promise<AttendanceComparisonSummaryDto>;
   }
 
   @ApiBearerAuth()
@@ -234,16 +239,15 @@ export class AttendanceController {
   })
   @ApiResponse({ status: 200, type: ControlPanelSummaryDto })
   getControlPanel(
-    @CurrentUser() user: any,
+    @CurrentUser() user: JwtPayload,
     @Headers('x-tenant-id') headerTenantId: string,
     @Query() query: ControlPanelQueryDto,
   ): Promise<ControlPanelSummaryDto> {
     const tenantId = this.resolveTenantId(user, headerTenantId);
-    return this.controlPanelService.getControlPanel(
-      tenantId,
-      user?.sub,
-      query,
-    ) as Promise<ControlPanelSummaryDto>;
+    return this.controlPanelService.getControlPanel(tenantId, user.sub, query, {
+      sub: user?.sub ?? '',
+      roleCode: user?.roleCode ?? '',
+    }) as Promise<ControlPanelSummaryDto>;
   }
 
   @ApiBearerAuth()
@@ -256,7 +260,7 @@ export class AttendanceController {
   })
   @ApiResponse({ status: 200, type: DismissAlertResponseDto })
   dismissControlPanelAlert(
-    @CurrentUser() user: any,
+    @CurrentUser() user: JwtPayload,
     @Headers('x-tenant-id') headerTenantId: string,
     @Body() dto: DismissAlertDto,
   ): Promise<DismissAlertResponseDto> {
@@ -276,7 +280,7 @@ export class AttendanceController {
   @ApiResponse({ status: 200, type: OvertimeSummaryDto })
   @ApiResponse({ status: 404, description: 'Empleado no encontrado' })
   getOvertimeSummary(
-    @CurrentUser() user: any,
+    @CurrentUser() user: JwtPayload,
     @Headers('x-tenant-id') headerTenantId: string,
     @Param('userId') userId: string,
     @Query() query: OvertimeSummaryQueryDto,
@@ -286,6 +290,10 @@ export class AttendanceController {
     return this.attendanceService.getOvertimeSummary(
       userId,
       tenantId,
+      {
+        sub: user.sub,
+        roleCode: user.roleCode,
+      },
       date,
     ) as Promise<OvertimeSummaryDto>;
   }
@@ -305,12 +313,11 @@ export class AttendanceController {
     @Query() query: AttendanceCardQueryDto,
   ): Promise<AttendanceCardResponseDto> {
     const tenantId = this.resolveTenantId(user, headerTenantId);
-    return this.attendanceCardService.getCard(
-      userId,
-      tenantId,
-      query.dateFrom,
-      query.dateTo,
-    ) as unknown as Promise<AttendanceCardResponseDto>;
+    return this.attendanceCardService.getCard(userId, tenantId, query.dateFrom, query.dateTo, {
+      sub: user.sub,
+      roleCode: user.roleCode,
+      locationId: user.locationId,
+    }) as unknown as Promise<AttendanceCardResponseDto>;
   }
 
   @ApiBearerAuth()
@@ -331,6 +338,7 @@ export class AttendanceController {
       tenantId,
       query.dateFrom,
       query.dateTo,
+      { sub: user.sub, roleCode: user.roleCode, locationId: user.locationId },
     );
     return card.observations as unknown as AttendanceObservationResponseDto[];
   }
@@ -500,7 +508,7 @@ export class AttendanceController {
     const tenantId = this.resolveTenantId(user, headerTenantId);
     const { buffer, filename } = await this.collaboratorsService.exportFile(
       tenantId,
-      { userId: user.sub, roleCode: user.roleCode },
+      { userId: user?.sub ?? '', roleCode: user.roleCode },
       {
         search: query.search,
         positionId: query.positionId,
@@ -544,7 +552,7 @@ export class AttendanceController {
     const tenantId = this.resolveTenantId(user, headerTenantId);
     await this.collaboratorsService.emailExport(
       tenantId,
-      { userId: user.sub, roleCode: user.roleCode },
+      { userId: user?.sub ?? '', roleCode: user.roleCode },
       user.email,
       {
         recipients: dto.recipients,
@@ -584,7 +592,7 @@ export class AttendanceController {
 
   // ── Helpers ────────────────────────────────────────────────────────────────
 
-  private resolveTenantId(user: any, headerTenantId: string): string {
+  private resolveTenantId(user: JwtPayload, headerTenantId: string): string {
     const tenantId = user?.tenantId || headerTenantId;
     if (!tenantId) {
       throw new BadRequestException('Tenant ID requerido (JWT o x-tenant-id header)');

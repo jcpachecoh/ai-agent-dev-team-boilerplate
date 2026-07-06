@@ -21,6 +21,7 @@ import { EmployeePositionsService } from '../service/employee-positions.service'
 import { StorageService } from '../../storage/service/storage.service';
 import { AuditService } from '../../audit/service/audit.service';
 import { EmployeeSocialProfileService } from '../../employee-social-profile/service/employee-social-profile.service';
+import { UserLocationsService } from '../../locations/service/user-locations.service';
 import { SMLV_2025 } from '../payroll.constants';
 import { StorageDomain } from '../../storage/enums/storage.enums';
 
@@ -35,6 +36,7 @@ describe('PayrollService', () => {
   const mockTenantId = 'tenant-1';
   const mockLocationId = 'loc-1';
   const mockRoleId = 'role-1';
+  const mockActor = { userId: 'actor-1', roleCode: 'OWNER' };
 
   const mockEmployeeData = {
     cedula: '123456',
@@ -129,6 +131,13 @@ describe('PayrollService', () => {
             findAllByEmployee: jest.fn().mockResolvedValue([]),
             remove: jest.fn().mockResolvedValue(undefined),
             create: jest.fn().mockResolvedValue({}),
+          },
+        },
+        {
+          provide: UserLocationsService,
+          useValue: {
+            resolveAllowedLocationIds: jest.fn().mockResolvedValue(null),
+            assertLocationAllowed: jest.fn(),
           },
         },
       ],
@@ -339,16 +348,23 @@ describe('PayrollService', () => {
     it('should return all employees for a tenant', async () => {
       (repository.findAll as jest.Mock).mockResolvedValue([{ tenantId: mockTenantId }]);
 
-      const result = await service.findAll(mockTenantId, {});
+      const result = await service.findAll(mockTenantId, {}, mockActor);
       expect(result).toHaveLength(1);
-      expect(repository.findAll).toHaveBeenCalledWith({ tenantId: mockTenantId });
+      expect(repository.findAll).toHaveBeenCalledWith({
+        tenantId: mockTenantId,
+        allowedLocationIds: null,
+      });
     });
 
     it('should pass extra filters through to the repository', async () => {
       (repository.findAll as jest.Mock).mockResolvedValue([]);
 
-      await service.findAll(mockTenantId, { isActive: true });
-      expect(repository.findAll).toHaveBeenCalledWith({ isActive: true, tenantId: mockTenantId });
+      await service.findAll(mockTenantId, { isActive: true }, mockActor);
+      expect(repository.findAll).toHaveBeenCalledWith({
+        isActive: true,
+        tenantId: mockTenantId,
+        allowedLocationIds: null,
+      });
     });
   });
 
@@ -699,7 +715,7 @@ describe('PayrollService', () => {
     it('should return employees at a given location', async () => {
       (repository.findAll as jest.Mock).mockResolvedValue([{ tenantId: mockTenantId }]);
 
-      const result = await service.findByLocation(mockTenantId, mockLocationId);
+      const result = await service.findByLocation(mockTenantId, mockLocationId, mockActor);
       expect(result).toHaveLength(1);
       expect(repository.findAll).toHaveBeenCalledWith({
         tenantId: mockTenantId,
@@ -715,11 +731,13 @@ describe('PayrollService', () => {
       const result = await service.findByContractType(
         mockTenantId,
         EmployeeContractType.INDEFINIDO,
+        mockActor,
       );
       expect(result).toHaveLength(1);
       expect(repository.findAll).toHaveBeenCalledWith({
         tenantId: mockTenantId,
         contractType: EmployeeContractType.INDEFINIDO,
+        allowedLocationIds: null,
       });
     });
   });
@@ -727,13 +745,15 @@ describe('PayrollService', () => {
   describe('findOne', () => {
     it('should return an employee', async () => {
       (repository.findByUserId as jest.Mock).mockResolvedValue({ tenantId: mockTenantId });
-      const result = await service.findOne(mockTenantId, 'user-1');
+      const result = await service.findOne(mockTenantId, 'user-1', mockActor);
       expect(result).toBeDefined();
     });
 
     it('should throw NotFoundException if not found or different tenant', async () => {
       (repository.findByUserId as jest.Mock).mockResolvedValue({ tenantId: 'other' });
-      await expect(service.findOne(mockTenantId, 'user-1')).rejects.toThrow(NotFoundException);
+      await expect(service.findOne(mockTenantId, 'user-1', mockActor)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -749,7 +769,7 @@ describe('PayrollService', () => {
     it('findByLocation delegates to repository', async () => {
       (repository.findAll as jest.Mock).mockResolvedValue([]);
 
-      await service.findByLocation(mockTenantId, mockLocationId);
+      await service.findByLocation(mockTenantId, mockLocationId, mockActor);
 
       expect(repository.findAll).toHaveBeenCalledWith({
         tenantId: mockTenantId,
@@ -760,11 +780,12 @@ describe('PayrollService', () => {
     it('findByContractType delegates to repository', async () => {
       (repository.findAll as jest.Mock).mockResolvedValue([]);
 
-      await service.findByContractType(mockTenantId, EmployeeContractType.OBRA);
+      await service.findByContractType(mockTenantId, EmployeeContractType.OBRA, mockActor);
 
       expect(repository.findAll).toHaveBeenCalledWith({
         tenantId: mockTenantId,
         contractType: EmployeeContractType.OBRA,
+        allowedLocationIds: null,
       });
     });
   });

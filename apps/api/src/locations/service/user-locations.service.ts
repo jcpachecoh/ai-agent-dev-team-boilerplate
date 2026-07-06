@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import type { Location, User, UserLocation } from '@prisma/client';
 import { Prisma } from '@prisma/client';
+import { LOCATION_SCOPED_ROLES } from '../../common/config/rbac.config';
 import type { IUserLocationsService } from '../interfaces/user-locations.interfaces';
 import { UserLocationsRepository } from '../repository/user-locations.repository';
 
@@ -79,5 +80,30 @@ export class UserLocationsService implements IUserLocationsService {
     }
 
     return this.repository.findActiveLocationsByUser(tenantId, userId);
+  }
+
+  /**
+   * Sedes permitidas para un actor: `null` = sin restricción (admin/nómina),
+   * array = sedes asignadas en `UserLocation` (SUPERVISOR/MANAGER). Mismo
+   * patrón que `TurnoAssignmentsService.resolveScope`, reutilizable por
+   * cualquier módulo que necesite acotar lecturas por sede (attendance, payroll, reports).
+   */
+  async resolveAllowedLocationIds(
+    tenantId: string,
+    actor: { userId: string; roleCode: string },
+  ): Promise<string[] | null> {
+    const isLocationScoped = (LOCATION_SCOPED_ROLES as readonly string[]).includes(actor.roleCode);
+    if (!isLocationScoped) {
+      return null;
+    }
+
+    const locations = await this.getActiveUserLocations(tenantId, actor.userId);
+    return locations.map((location): string => location.id);
+  }
+
+  assertLocationAllowed(allowedLocationIds: string[] | null, locationId: string): void {
+    if (allowedLocationIds && !allowedLocationIds.includes(locationId)) {
+      throw new ForbiddenException('No tiene acceso a esta sede');
+    }
   }
 }

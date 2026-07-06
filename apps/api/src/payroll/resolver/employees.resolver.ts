@@ -32,6 +32,7 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { PAYROLL_MODULE_ROLES, PAYROLL_WRITE_ROLES } from '../../common/config/rbac.config';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import type { JwtPayload } from '../../auth/interfaces/auth.interfaces';
 
 // Register Enums
 registerEnumType(EmployeeContractType, { name: 'EmployeeContractType' });
@@ -216,7 +217,7 @@ export class EmployeesResolver {
 
   @Query(() => EmployeePaginatedResultType)
   async employees(
-    @CurrentUser() user: any,
+    @CurrentUser() user: JwtPayload,
     @Context() context: any,
     @Args('locationId', { type: () => ID, nullable: true }) locationId?: string,
     @Args('contractType', { type: () => EmployeeContractType, nullable: true })
@@ -226,13 +227,17 @@ export class EmployeesResolver {
     @Args('offset', { type: () => Int, nullable: true }) offset?: number,
   ): Promise<EmployeePaginatedResultType> {
     const tenantId = this.resolveTenantId(user, context);
-    const employees = await this.employeesService.findAll(tenantId, {
-      locationId,
-      contractType,
-      includeInactive,
-      limit,
-      offset,
-    });
+    const employees = await this.employeesService.findAll(
+      tenantId,
+      {
+        locationId,
+        contractType,
+        includeInactive,
+        limit,
+        offset,
+      },
+      { userId: user?.sub ?? '', roleCode: user.roleCode },
+    );
 
     // In a real scenario, we might need a separate count method in the service
     // For now, returning the items.
@@ -244,12 +249,15 @@ export class EmployeesResolver {
 
   @Query(() => EmployeeDetailsType, { nullable: true })
   async employee(
-    @CurrentUser() user: any,
+    @CurrentUser() user: JwtPayload,
     @Context() context: any,
     @Args('userId', { type: () => ID }) userId: string,
   ): Promise<EmployeeDetailsType> {
     const tenantId = this.resolveTenantId(user, context);
-    const employee = await this.employeesService.findOne(tenantId, userId);
+    const employee = await this.employeesService.findOne(tenantId, userId, {
+      userId: user?.sub ?? '',
+      roleCode: user?.roleCode ?? '',
+    });
     return toEmployeeResponse(employee) as any;
   }
 

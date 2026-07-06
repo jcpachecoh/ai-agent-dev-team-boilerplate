@@ -23,6 +23,7 @@ import { ListEmployeesQueryDto } from './dto/list-employees-query.dto';
 import { EmployeeContractType } from '@prisma/client';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { toEmployeeResponse, EmployeeResponseDto } from '../mapper/employees.mapper';
+import type { JwtPayload } from '../../auth/interfaces/auth.interfaces';
 
 @ApiTags('employees')
 @ApiBearerAuth()
@@ -51,12 +52,15 @@ export class PayrollController {
   @ApiResponse({ status: 200, type: [EmployeeResponseDto] })
   @Get()
   async findAll(
-    @CurrentUser() user: any,
+    @CurrentUser() user: JwtPayload,
     @Headers('x-tenant-id') headerTenantId: string,
     @Query() query: ListEmployeesQueryDto,
   ) {
     const tenantId = this.resolveTenantId(user, headerTenantId);
-    const employees = await this.payrollService.findAll(tenantId, query);
+    const employees = await this.payrollService.findAll(tenantId, query, {
+      userId: user?.sub ?? '',
+      roleCode: user?.roleCode ?? '',
+    });
     return employees.map(toEmployeeResponse);
   }
 
@@ -64,12 +68,15 @@ export class PayrollController {
   @ApiResponse({ status: 200, type: EmployeeResponseDto })
   @Get(':userId')
   async findOne(
-    @CurrentUser() user: any,
+    @CurrentUser() user: JwtPayload,
     @Headers('x-tenant-id') headerTenantId: string,
     @Param('userId') userId: string,
   ) {
     const tenantId = this.resolveTenantId(user, headerTenantId);
-    const employee = await this.payrollService.findOne(tenantId, userId);
+    const employee = await this.payrollService.findOne(tenantId, userId, {
+      userId: user?.sub ?? '',
+      roleCode: user?.roleCode ?? '',
+    });
     return toEmployeeResponse(employee);
   }
 
@@ -106,12 +113,15 @@ export class PayrollController {
   @ApiResponse({ status: 200, type: [EmployeeResponseDto] })
   @Get('location/:locationId')
   async findByLocation(
-    @CurrentUser() user: any,
+    @CurrentUser() user: JwtPayload,
     @Headers('x-tenant-id') headerTenantId: string,
     @Param('locationId') locationId: string,
   ) {
     const tenantId = this.resolveTenantId(user, headerTenantId);
-    const employees = await this.payrollService.findByLocation(tenantId, locationId);
+    const employees = await this.payrollService.findByLocation(tenantId, locationId, {
+      userId: user?.sub ?? '',
+      roleCode: user?.roleCode ?? '',
+    });
     return employees.map(toEmployeeResponse);
   }
 
@@ -119,16 +129,19 @@ export class PayrollController {
   @ApiResponse({ status: 200, type: [EmployeeResponseDto] })
   @Get('contract-type/:type')
   async findByContractType(
-    @CurrentUser() user: any,
+    @CurrentUser() user: JwtPayload,
     @Headers('x-tenant-id') headerTenantId: string,
     @Param('type') type: EmployeeContractType,
   ) {
     const tenantId = this.resolveTenantId(user, headerTenantId);
-    const employees = await this.payrollService.findByContractType(tenantId, type);
+    const employees = await this.payrollService.findByContractType(tenantId, type, {
+      userId: user?.sub ?? '',
+      roleCode: user?.roleCode ?? '',
+    });
     return employees.map(toEmployeeResponse);
   }
 
-  private resolveTenantId(user: any, headerTenantId: string): string {
+  private resolveTenantId(user: JwtPayload, headerTenantId: string): string {
     const tenantId = user?.tenantId || headerTenantId;
     if (!tenantId) {
       throw new BadRequestException('Tenant ID is required (JWT or x-tenant-id header)');

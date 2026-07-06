@@ -27,4 +27,9 @@ export interface IUserLocationsService {
   getUserLocations(tenantId: string, userId: string): Promise<Location[]>;
   getActiveUserLocations(tenantId: string, userId: string): Promise<Location[]>;
   assertTenantAccess(jwtTenantId: string, requestedRestaurantId: string): void;
+  resolveAllowedLocationIds(
+    tenantId: string,
+    actor: { userId: string; roleCode: string },
+  ): Promise<string[] | null>;
+  assertLocationAllowed(allowedLocationIds: string[] | null, locationId: string): void;
 }

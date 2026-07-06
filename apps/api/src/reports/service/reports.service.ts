@@ -7,7 +7,8 @@ import {
 } from '../../attendance/attendance.constants';
 import { AttendanceOvertimeType } from '../../payroll/payroll.constants';
 import { isColombianHoliday } from './colombia-holidays.util';
-import { IReportsService } from '../interfaces/reports.interfaces';
+import { IReportsService, ReportsActor } from '../interfaces/reports.interfaces';
+import { UserLocationsService } from '../../locations/service/user-locations.service';
 import {
   AttendanceMonthSummary,
   EmployeePayrollInput,
@@ -274,21 +275,40 @@ export class ReportsService implements IReportsService {
   constructor(
     private readonly reportsRepository: ReportsRepository,
     private readonly payrollCalculationService: PayrollCalculationService,
+    private readonly userLocationsService: UserLocationsService,
   ) {}
+
+  private async resolveLocationScope(
+    tenantId: string,
+    actor: ReportsActor,
+    requestedLocationId?: string,
+  ): Promise<string[] | null> {
+    const allowedLocationIds = await this.userLocationsService.resolveAllowedLocationIds(
+      tenantId,
+      actor,
+    );
+    if (requestedLocationId) {
+      this.userLocationsService.assertLocationAllowed(allowedLocationIds, requestedLocationId);
+    }
+    return allowedLocationIds;
+  }
 
   // ── Payroll report ─────────────────────────────────────────────────────────
 
   async getPayrollReport(
     tenantId: string,
     query: PeriodQueryDto,
+    actor: ReportsActor,
   ): Promise<PayrollReportResponseDto> {
     const period = parsePeriod(query.period);
     const from = firstDayOfMonth(period.year, period.month);
     const to = lastDayOfMonth(period.year, period.month);
     const calendarDays = new Date(Date.UTC(period.year, period.month, 0)).getUTCDate();
 
+    const allowedLocationIds = await this.resolveLocationScope(tenantId, actor, query.locationId);
     const employees = await this.reportsRepository.findActiveEmployees(tenantId, {
       locationId: query.locationId,
+      allowedLocationIds,
       contractType: query.contractType,
       employeeId: query.employeeId,
     });
@@ -336,6 +356,7 @@ export class ReportsService implements IReportsService {
   async getAttendanceReport(
     tenantId: string,
     query: AttendanceQueryDto,
+    actor: ReportsActor,
   ): Promise<AttendanceReportResponseDto> {
     if (query.from > query.to) {
       throw new BadRequestException('from must be before or equal to to');
@@ -348,8 +369,10 @@ export class ReportsService implements IReportsService {
       parseDateArgToUtcStart(query.to),
     );
 
+    const allowedLocationIds = await this.resolveLocationScope(tenantId, actor, query.locationId);
     const employees = await this.reportsRepository.findActiveEmployees(tenantId, {
       locationId: query.locationId,
+      allowedLocationIds,
     });
 
     const employeeIds = employees.map((e) => e.id);
@@ -400,9 +423,10 @@ export class ReportsService implements IReportsService {
   async getSocialSecurityReport(
     tenantId: string,
     query: PeriodQueryDto,
+    actor: ReportsActor,
   ): Promise<SocialSecurityReportResponseDto> {
     // Reuse payroll calculation; extract only employer contribution fields
-    const payrollReport = await this.getPayrollReport(tenantId, query);
+    const payrollReport = await this.getPayrollReport(tenantId, query, actor);
 
     const employees: SocialSecurityEmployeeRowDto[] = payrollReport.employees.map((row) => ({
       employeeId: row.employeeId,

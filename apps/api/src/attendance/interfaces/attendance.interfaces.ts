@@ -186,6 +186,8 @@ export interface AttendanceHistoryFilters {
   tenantId: string;
   employeeId?: string;
   locationId?: string;
+  /** Sedes permitidas cuando el actor está acotado por rol (SUPERVISOR/MANAGER) y no pidió una sede puntual. */
+  allowedLocationIds?: string[] | null;
   dateFrom?: Date;
   dateTo?: Date;
   limit?: number;
@@ -449,7 +451,20 @@ export interface IAttendanceService {
   registerEntry(dto: RegisterEntryInput, tenantId: string): Promise<EntryResult>;
   registerExit(dto: RegisterExitInput, tenantId: string): Promise<ExitResult>;
   registerEvent(input: RegisterEventInput): Promise<AttendanceLog>;
-  listHistory(query: ListHistoryInput, tenantId: string): Promise<AttendanceLogFull[]>;
-  listActive(locationId: string, tenantId: string): Promise<ActiveAttendanceEntry[]>;
-  getOvertimeSummary(userId: string, tenantId: string, date?: Date): Promise<OvertimeSummary>;
+  listHistory(
+    query: ListHistoryInput,
+    tenantId: string,
+    actor: AttendanceActingUser,
+  ): Promise<AttendanceLogFull[]>;
+  listActive(
+    locationId: string,
+    tenantId: string,
+    actor: AttendanceActingUser,
+  ): Promise<ActiveAttendanceEntry[]>;
+  getOvertimeSummary(
+    userId: string,
+    tenantId: string,
+    actor: AttendanceActingUser,
+    date?: Date,
+  ): Promise<OvertimeSummary>;
 }

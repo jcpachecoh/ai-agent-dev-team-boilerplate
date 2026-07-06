@@ -93,6 +93,8 @@ export interface UpdateEmployeePayload {
 export interface ListEmployeesFilters {
   tenantId: string;
   locationId?: string;
+  /** Sedes permitidas cuando el actor está acotado por rol (SUPERVISOR/MANAGER) y no pidió una sede puntual. */
+  allowedLocationIds?: string[] | null;
   contractType?: EmployeeContractType;
   isActive?: boolean;
   includeInactive?: boolean;
@@ -129,10 +131,24 @@ export interface IPayrollRepository {
   ): Promise<void>;
 }
 
+/** Subconjunto del JwtPayload necesario para scoping de sede en lectura de nómina. */
+export interface PayrollActor {
+  userId: string;
+  roleCode: string;
+}
+
 export interface IPayrollService {
   create(tenantId: string, data: any): Promise<EmployeeDetails & { user: User }>;
-  findAll(tenantId: string, filters: any): Promise<(EmployeeDetails & { user: User })[]>;
-  findOne(tenantId: string, userId: string): Promise<EmployeeDetails & { user: User }>;
+  findAll(
+    tenantId: string,
+    filters: any,
+    actor: PayrollActor,
+  ): Promise<(EmployeeDetails & { user: User })[]>;
+  findOne(
+    tenantId: string,
+    userId: string,
+    actor: PayrollActor,
+  ): Promise<EmployeeDetails & { user: User }>;
   update(
     tenantId: string,
     userId: string,
@@ -142,9 +158,11 @@ export interface IPayrollService {
   findByLocation(
     tenantId: string,
     locationId: string,
+    actor: PayrollActor,
   ): Promise<(EmployeeDetails & { user: User })[]>;
   findByContractType(
     tenantId: string,
     contractType: EmployeeContractType,
+    actor: PayrollActor,
   ): Promise<(EmployeeDetails & { user: User })[]>;
 }
