@@ -19,6 +19,7 @@ import {
   AssignmentCellModal,
   type AssignmentCellModalTarget,
 } from '../components/turno-assignments/AssignmentCellModal';
+import { BulkAssignmentModal } from '../components/turno-assignments/BulkAssignmentModal';
 import { TurnosSubNav } from '../components/turnos/TurnosSubNav';
 import {
   useAssignTurnoMutation,
@@ -76,6 +77,7 @@ export function AsignacionTurnosScreen(): React.JSX.Element {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [modalTarget, setModalTarget] = useState<AssignmentCellModalTarget | null>(null);
   const [submittingCell, setSubmittingCell] = useState(false);
+  const [bulkModalOpen, setBulkModalOpen] = useState(false);
 
   const dates = weeklyQuery.data?.dates ?? [];
   const colaboradores = weeklyQuery.data?.colaboradores ?? [];
@@ -89,6 +91,22 @@ export function AsignacionTurnosScreen(): React.JSX.Element {
         next.delete(employeeId);
       } else {
         next.add(employeeId);
+      }
+      return next;
+    });
+  };
+
+  const allVisibleSelected =
+    colaboradores.length > 0 &&
+    colaboradores.every((colaborador) => selectedIds.has(colaborador.id));
+
+  const toggleSelectAll = (): void => {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (allVisibleSelected) {
+        colaboradores.forEach((colaborador) => next.delete(colaborador.id));
+      } else {
+        colaboradores.forEach((colaborador) => next.add(colaborador.id));
       }
       return next;
     });
@@ -235,10 +253,15 @@ export function AsignacionTurnosScreen(): React.JSX.Element {
             <button
               type="button"
               className={styles.downloadButton}
-              disabled
-              title="Disponible en Asignación masiva de turnos (OS-583)"
+              disabled={selectedIds.size === 0 || !canWrite}
+              title={
+                selectedIds.size === 0
+                  ? 'Selecciona al menos un colaborador para asignación masiva'
+                  : undefined
+              }
+              onClick={() => setBulkModalOpen(true)}
             >
-              Descargar formato
+              Asignación masiva
             </button>
           </div>
         </div>
@@ -266,7 +289,19 @@ export function AsignacionTurnosScreen(): React.JSX.Element {
             <table className={styles.table}>
               <thead>
                 <tr>
-                  <th className={styles.fixedHeaderCell}>Colaborador</th>
+                  <th className={styles.fixedHeaderCell}>
+                    <div className={styles.colaboradorHeaderRow}>
+                      <Checkbox
+                        theme={cargoTheme}
+                        size="sm"
+                        checked={allVisibleSelected}
+                        onChange={toggleSelectAll}
+                        label=""
+                        aria-label="Seleccionar todos los colaboradores"
+                      />
+                      <span>Colaborador</span>
+                    </div>
+                  </th>
                   {dates.map((fecha, index) => (
                     <th
                       key={fecha}
@@ -293,6 +328,7 @@ export function AsignacionTurnosScreen(): React.JSX.Element {
                           checked={selectedIds.has(colaborador.id)}
                           onChange={() => toggleSelected(colaborador.id)}
                           label=""
+                          aria-label={`Seleccionar a ${colaborador.nombre}`}
                         />
                         <div className={styles.colaboradorInfo}>
                           <span className={styles.colaboradorNombre}>
@@ -347,6 +383,14 @@ export function AsignacionTurnosScreen(): React.JSX.Element {
         onAssign={(turnoId) => void handleAssign(turnoId)}
         onMarkRest={() => void handleMarkRest()}
         onRemove={() => void handleRemove()}
+      />
+
+      <BulkAssignmentModal
+        open={bulkModalOpen}
+        selectedEmployeeIds={Array.from(selectedIds)}
+        canOverridePastDate={canOverridePastDate}
+        theme={cargoTheme}
+        onClose={() => setBulkModalOpen(false)}
       />
     </CargoPage>
   );

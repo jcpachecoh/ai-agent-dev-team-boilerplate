@@ -5,6 +5,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import type {
   AssignAssignmentData,
   AssignmentAuditChangeSet,
+  EmployeeDirectoryEntry,
   EmployeeScopeInfo,
   ITurnoAssignmentsRepository,
   TurnoAssignmentRecord,
@@ -27,13 +28,7 @@ export class TurnoAssignmentsRepository implements ITurnoAssignmentsRepository {
       allowedLocationIds?: string[] | null;
     },
   ): Promise<{
-    employees: Array<{
-      id: string;
-      userId: string;
-      nombre: string;
-      documento: string;
-      locationId: string;
-    }>;
+    employees: EmployeeDirectoryEntry[];
     total: number;
   }> {
     const where: Prisma.EmployeeDetailsWhereInput = {
@@ -78,15 +73,7 @@ export class TurnoAssignmentsRepository implements ITurnoAssignmentsRepository {
     return {
       total,
       employees: rows.map(
-        (
-          row,
-        ): {
-          id: string;
-          userId: string;
-          nombre: string;
-          documento: string;
-          locationId: string;
-        } => ({
+        (row): EmployeeDirectoryEntry => ({
           id: row.id,
           userId: row.userId,
           nombre: row.name,
@@ -145,6 +132,48 @@ export class TurnoAssignmentsRepository implements ITurnoAssignmentsRepository {
       select: { id: true, locationId: true, isActive: true },
     });
     return row ?? null;
+  }
+
+  async findEmployeeByDocument(
+    tenantId: string,
+    documento: string,
+  ): Promise<EmployeeScopeInfo | null> {
+    const row = await this.prisma.employeeDetails.findFirst({
+      where: { tenantId, deletedAt: null, user: { cedula: documento } },
+      select: { id: true, locationId: true, isActive: true },
+    });
+    return row ?? null;
+  }
+
+  async findEmployeesByIds(
+    tenantId: string,
+    employeeIds: string[],
+  ): Promise<Array<EmployeeDirectoryEntry & { isActive: boolean }>> {
+    if (employeeIds.length === 0) {
+      return [];
+    }
+
+    const rows = await this.prisma.employeeDetails.findMany({
+      where: { tenantId, deletedAt: null, id: { in: employeeIds } },
+      orderBy: { name: 'asc' },
+      select: {
+        id: true,
+        userId: true,
+        name: true,
+        locationId: true,
+        isActive: true,
+        user: { select: { cedula: true } },
+      },
+    });
+
+    return rows.map((row): EmployeeDirectoryEntry & { isActive: boolean } => ({
+      id: row.id,
+      userId: row.userId,
+      nombre: row.name,
+      documento: row.user.cedula,
+      locationId: row.locationId,
+      isActive: row.isActive,
+    }));
   }
 
   async findTurnoScope(tenantId: string, turnoId: string): Promise<TurnoScopeInfo | null> {
@@ -232,6 +261,24 @@ export class TurnoAssignmentsRepository implements ITurnoAssignmentsRepository {
           newValue: (auditChanges.newValue ?? Prisma.JsonNull) as Prisma.InputJsonValue,
         },
       });
+    });
+  }
+
+  /** OS-583 — descarga de plantilla Excel de asignación masiva. */
+  async logTemplateExportAudit(
+    tenantId: string,
+    actorUserId: string,
+    payload: Record<string, unknown>,
+  ): Promise<void> {
+    await this.prisma.auditLog.create({
+      data: {
+        tenantId,
+        action: AuditAction.EXPORT,
+        entityType: 'TurnoAssignment',
+        entityId: tenantId,
+        actorUserId,
+        payload: payload as Prisma.InputJsonValue,
+      },
     });
   }
 

@@ -23,11 +23,20 @@ vi.mock('@/lib/auth-token', async (importOriginal) => {
   return { ...actual, getRoleCodeFromToken: () => 'OWNER' };
 });
 
-vi.mock('../api/turno-assignments.api', () => ({
-  getWeeklyAssignments: (...args: unknown[]) => getWeeklyAssignmentsMock(...args),
-  assignTurno: (...args: unknown[]) => assignTurnoMock(...args),
-  deleteAssignment: (...args: unknown[]) => deleteAssignmentMock(...args),
-}));
+const getAssignmentTemplateMock = vi.fn();
+const importAssignmentsMock = vi.fn();
+
+vi.mock('../api/turno-assignments.api', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../api/turno-assignments.api')>();
+  return {
+    ...actual,
+    getWeeklyAssignments: (...args: unknown[]) => getWeeklyAssignmentsMock(...args),
+    assignTurno: (...args: unknown[]) => assignTurnoMock(...args),
+    deleteAssignment: (...args: unknown[]) => deleteAssignmentMock(...args),
+    getAssignmentTemplate: (...args: unknown[]) => getAssignmentTemplateMock(...args),
+    importAssignments: (...args: unknown[]) => importAssignmentsMock(...args),
+  };
+});
 
 vi.mock('../api/turnos.api', () => ({
   listTurnos: (...args: unknown[]) => listTurnosMock(...args),
@@ -234,12 +243,54 @@ describe('AsignacionTurnosScreen', () => {
 
     expect(screen.getByText('Seleccionados (0)')).toBeInTheDocument();
 
-    const checkbox = screen.getByRole('checkbox');
+    const checkbox = screen.getByRole('checkbox', { name: 'Seleccionar a ana perez' });
     fireEvent.click(checkbox);
 
     expect(screen.getByText('Seleccionados (1)')).toBeInTheDocument();
 
     fireEvent.click(checkbox);
+    expect(screen.getByText('Seleccionados (0)')).toBeInTheDocument();
+  });
+
+  it('el botón de Asignación masiva está deshabilitado sin colaboradores seleccionados', async () => {
+    renderScreen();
+    await screen.findByText('ANA PEREZ');
+
+    expect(screen.getByRole('button', { name: 'Asignación masiva' })).toBeDisabled();
+  });
+
+  it('habilita el botón de Asignación masiva y abre el modal al seleccionar un colaborador', async () => {
+    renderScreen();
+    await screen.findByText('ANA PEREZ');
+
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Seleccionar a ana perez' }));
+
+    const bulkButton = screen.getByRole('button', { name: 'Asignación masiva' });
+    expect(bulkButton).toBeEnabled();
+
+    fireEvent.click(bulkButton);
+
+    expect(
+      await screen.findByRole('heading', { name: 'Asignación masiva de Turnos' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Colaboradores seleccionados: 1')).toBeInTheDocument();
+  });
+
+  it('el checkbox "seleccionar todos" selecciona y deselecciona a todos los colaboradores visibles', async () => {
+    renderScreen();
+    await screen.findByText('ANA PEREZ');
+
+    expect(screen.getByText('Seleccionados (0)')).toBeInTheDocument();
+
+    const selectAllCheckbox = screen.getByRole('checkbox', {
+      name: 'Seleccionar todos los colaboradores',
+    });
+    fireEvent.click(selectAllCheckbox);
+
+    expect(screen.getByText('Seleccionados (1)')).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: 'Seleccionar a ana perez' })).toBeChecked();
+
+    fireEvent.click(selectAllCheckbox);
     expect(screen.getByText('Seleccionados (0)')).toBeInTheDocument();
   });
 });

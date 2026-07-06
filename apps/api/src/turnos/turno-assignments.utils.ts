@@ -25,3 +25,33 @@ export function buildWeekDates(weekStart: Date): Date[] {
     return date;
   });
 }
+
+/** Día ISO de la semana (1=lunes ... 7=domingo), en UTC. */
+export function toIsoWeekday(date: Date): number {
+  const day = date.getUTCDay();
+  return day === 0 ? 7 : day;
+}
+
+export function addDaysUtc(date: Date, days: number): Date {
+  const result = new Date(date);
+  result.setUTCDate(result.getUTCDate() + days);
+  return result;
+}
+
+/** OS-583 — expande un rango [from, to] a las fechas cuyo día ISO está en weekdaysIso. */
+export function expandDatesInRange(from: Date, to: Date, weekdaysIso: number[]): Date[] {
+  const allowed = new Set(weekdaysIso);
+  const dates: Date[] = [];
+  let cursor = from;
+  while (cursor.getTime() <= to.getTime()) {
+    if (allowed.has(toIsoWeekday(cursor))) {
+      dates.push(cursor);
+    }
+    cursor = addDaysUtc(cursor, 1);
+  }
+  return dates;
+}
+
+export function daysBetween(from: Date, to: Date): number {
+  return Math.round((to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24));
+}

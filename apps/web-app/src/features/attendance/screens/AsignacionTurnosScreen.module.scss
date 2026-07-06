@@ -180,7 +180,8 @@
   min-width: 14rem;
 }
 
-.colaboradorRow {
+.colaboradorRow,
+.colaboradorHeaderRow {
   display: flex;
   align-items: center;
   gap: 0.6rem;

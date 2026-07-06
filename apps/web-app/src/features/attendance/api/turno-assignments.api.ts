@@ -3,6 +3,8 @@ import { getTenantId } from '@/lib/tenant';
 
 import type {
   AssignTurnoInput,
+  BulkImportResult,
+  BulkTemplateQuery,
   TurnoAssignmentResponse,
   WeeklyAssignmentsQuery,
   WeeklyAssignmentsResponse,
@@ -70,7 +72,9 @@ function buildHeaders(init?: RequestInit): HeadersInit {
     typeof init.headers === 'object' &&
     ('Content-Type' in init.headers || 'content-type' in init.headers);
 
-  if (!hasContentType && init?.body) {
+  const isFormData = typeof FormData !== 'undefined' && init?.body instanceof FormData;
+
+  if (!hasContentType && init?.body && !isFormData) {
     (headers as Record<string, string>)['Content-Type'] = 'application/json';
   }
 
@@ -106,6 +110,30 @@ async function assignmentsFetch<T>(path: string, init?: RequestInit): Promise<T>
   return JSON.parse(body) as T;
 }
 
+async function assignmentsFetchBlob(path: string, init?: RequestInit): Promise<Blob | null> {
+  const response = await fetch(buildApiUrl(path), {
+    ...init,
+    headers: buildHeaders(init),
+  });
+
+  if (response.status === 401) {
+    window.location.href = '/login';
+    throw new TurnoAssignmentsApiError('No autorizado', 401);
+  }
+
+  if (response.status === 204) {
+    return null;
+  }
+
+  if (!response.ok) {
+    const body = await response.text();
+    const { message, parsed } = await parseErrorBody(body);
+    throw new TurnoAssignmentsApiError(message, response.status, parsed);
+  }
+
+  return response.blob();
+}
+
 export function getWeeklyAssignments(
   query: WeeklyAssignmentsQuery,
 ): Promise<WeeklyAssignmentsResponse> {
@@ -128,4 +156,23 @@ export function assignTurno(input: AssignTurnoInput): Promise<TurnoAssignmentRes
 
 export function deleteAssignment(id: string): Promise<void> {
   return assignmentsFetch<void>(`/turnos/asignaciones/${id}`, { method: 'DELETE' });
+}
+
+export function getAssignmentTemplate(query: BulkTemplateQuery): Promise<Blob | null> {
+  const params = toQueryString({
+    from: query.from,
+    to: query.to,
+    weekdays: query.weekdays,
+    employeeIds: query.employeeIds,
+  });
+  return assignmentsFetchBlob(`/turnos/asignaciones/template${params}`);
+}
+
+export function importAssignments(file: File): Promise<BulkImportResult> {
+  const formData = new FormData();
+  formData.append('file', file);
+  return assignmentsFetch<BulkImportResult>('/turnos/asignaciones/import', {
+    method: 'POST',
+    body: formData,
+  });
 }

@@ -4,14 +4,19 @@ import * as ExcelJS from 'exceljs';
 import type { TurnoRecord } from '../interfaces/turnos.interfaces';
 import { TURNO_EXPORT_COLUMNS } from '../turnos.constants';
 
-const DARK_BLUE = { argb: 'FF1A3A5C' };
-const WHITE = { argb: 'FFFFFFFF' };
+/** Colores compartidos con otros generadores de Excel del módulo Turnos (ver turno-assignments-template.service.ts). */
+export const TURNOS_EXCEL_DARK_BLUE = { argb: 'FF1A3A5C' };
+export const TURNOS_EXCEL_WHITE = { argb: 'FFFFFFFF' };
 
-const SOLID = (fgColor: { argb: string }): ExcelJS.Fill => ({
+export const solidFill = (fgColor: { argb: string }): ExcelJS.Fill => ({
   type: 'pattern',
   pattern: 'solid',
   fgColor: fgColor as ExcelJS.Color,
 });
+
+const DARK_BLUE = TURNOS_EXCEL_DARK_BLUE;
+const WHITE = TURNOS_EXCEL_WHITE;
+const SOLID = solidFill;
 
 @Injectable()
 export class TurnosExcelService {
@@ -24,7 +29,7 @@ export class TurnosExcelService {
       pageSetup: { orientation: 'landscape', fitToPage: true, fitToWidth: 1 },
     });
 
-    sheet.columns = TURNO_EXPORT_COLUMNS.map((label) => ({
+    sheet.columns = TURNO_EXPORT_COLUMNS.map((label): { header: string; width: number } => ({
       header: label,
       width: label === 'Nombre' ? 32 : 18,
     }));

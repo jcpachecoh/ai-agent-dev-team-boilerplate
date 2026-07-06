@@ -10705,6 +10705,311 @@
           ]
         }
       ]
+    },
+    {
+      "name": "OS-583 Bulk Shift Assignment",
+      "description": "Asignación masiva de Turnos (plantilla Excel + importación). Depende de OS-582 (colaborador/employeeId real del tenant, capturado en os582EmployeeId). Ejecutar en orden: 1) GET Template (descarga el .xlsx real — guardar el archivo, editarlo con siglas de turno válidas en al menos una celda de fecha, y adjuntarlo manualmente en los requests de import siguientes), 2) POST Import — Valid Excel, 3) POST Import — Invalid Extension, 4) POST Import — Invalid Turno Sigla, 5) POST Import — Employee Outside Scope, 6) POST Import — All Rows Invalid.\n\nIMPORTANTE: Postman no puede generar ni editar un archivo .xlsx desde un script de test — los requests de 'POST Import' requieren adjuntar manualmente un archivo real en el campo 'file' (formdata). Usa el .xlsx descargado en 'GET Template' como base para los distintos escenarios (editar celdas con una sigla válida, una sigla inexistente, un colaborador fuera de sede, o forzar que todas las filas fallen).",
+      "item": [
+        {
+          "name": "GET Template",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/turnos/asignaciones/template?from={{shiftAssignmentFrom}}&to={{shiftAssignmentTo}}&weekdays={{shiftAssignmentWeekdays}}&employeeIds={{shiftAssignmentEmployeeIds}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "turnos", "asignaciones", "template"],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "{{shiftAssignmentFrom}}"
+                },
+                {
+                  "key": "to",
+                  "value": "{{shiftAssignmentTo}}"
+                },
+                {
+                  "key": "weekdays",
+                  "value": "{{shiftAssignmentWeekdays}}"
+                },
+                {
+                  "key": "employeeIds",
+                  "value": "{{shiftAssignmentEmployeeIds}}"
+                }
+              ]
+            },
+            "description": "Genera y descarga la plantilla .xlsx para los colaboradores/fechas indicados. shiftAssignmentEmployeeIds debe contener al menos el os582EmployeeId capturado en el folder OS-582 (CSV de uno o más employeeId). En Postman, usar 'Send and Download' para guardar el archivo y editarlo antes de usarlo en los requests de import."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('template: status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('template: content-type xlsx', () => {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('spreadsheetml.sheet');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Import — Valid Excel",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": [],
+                  "description": "Selecciona un .xlsx basado en la plantilla de 'GET Template' con al menos una celda de fecha con una sigla de turno activo válida."
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/turnos/asignaciones/import",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "turnos", "asignaciones", "import"]
+            },
+            "description": "Import exitoso — al menos una celda válida procesada."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('import valido: status 201', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code === 201) {",
+                  "    const body = pm.response.json();",
+                  "    pm.test('import valido: totalAssignments > 0', () => {",
+                  "        pm.expect(body.totalAssignments).to.be.above(0);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Import — Invalid Extension (expect 400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": [],
+                  "description": "Selecciona un archivo .csv o .txt cualquiera (extensión no permitida)."
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/turnos/asignaciones/import",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "turnos", "asignaciones", "import"]
+            },
+            "description": "ExcelFileValidationPipe rechaza extensiones distintas de .xlsx/.xls — espera 400."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('extension invalida: status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Import — Invalid Turno Sigla (partial error)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": [],
+                  "description": "Selecciona un .xlsx con al menos dos filas: una con una sigla de turno inexistente (ej. 'XYZ') en una celda de fecha, y otra fila con una celda válida (para que totalAssignments > 0 y no dispare el caso 'todas las filas fallaron')."
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/turnos/asignaciones/import",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "turnos", "asignaciones", "import"]
+            },
+            "description": "Sigla inexistente en una celda — error parcial, el resto del archivo se procesa igual."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('sigla invalida: status 201 (error parcial)', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code === 201) {",
+                  "    const body = pm.response.json();",
+                  "    pm.test('sigla invalida: reporta al menos 1 error', () => {",
+                  "        pm.expect(body.errorCount).to.be.above(0);",
+                  "    });",
+                  "    pm.test('sigla invalida: igual procesa filas validas', () => {",
+                  "        pm.expect(body.totalAssignments).to.be.above(0);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Import — Employee Outside Scope (excluded)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenSupervisor}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": [],
+                  "description": "Selecciona un .xlsx que incluya un colaborador fuera de las sedes asignadas a {{accessTokenSupervisor}} (UserLocation) junto con al menos un colaborador dentro de sus sedes."
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/turnos/asignaciones/import",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "turnos", "asignaciones", "import"]
+            },
+            "description": "Requiere {{accessTokenSupervisor}} (SUPERVISOR/MANAGER con sede asignada). El colaborador fuera de sede se reporta como excluido (excluded), no como error."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('fuera de sede: status 201', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code === 201) {",
+                  "    const body = pm.response.json();",
+                  "    pm.test('fuera de sede: excluded > 0', () => {",
+                  "        pm.expect(body.excluded).to.be.above(0);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Import — All Rows Invalid (expect 400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": [],
+                  "description": "Selecciona un .xlsx donde todas las celdas de fecha con datos usan siglas de turno inexistentes (ninguna fila se procesa con éxito)."
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/turnos/asignaciones/import",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "turnos", "asignaciones", "import"]
+            },
+            "description": "Todas las filas fallan (totalAssignments=0, errorCount>0) — espera 400 con el detalle completo en el body."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('todas invalidas: status 400', () => pm.response.to.have.status(400));",
+                  "const body = pm.response.json();",
+                  "pm.test('todas invalidas: body incluye detalle de errores', () => {",
+                  "    pm.expect(body.errors).to.be.an('array').with.length.above(0);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
     }
   ]
 }

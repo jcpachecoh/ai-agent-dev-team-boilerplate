@@ -25,6 +25,8 @@ import {
   parseDateOnly,
 } from '../turno-assignments.utils';
 import {
+  PAST_DATE_FORBIDDEN_MESSAGE,
+  SCOPE_FORBIDDEN_MESSAGE,
   TURNO_ASSIGNMENTS_LOCATION_SCOPED_ROLES,
   TURNO_ASSIGNMENTS_PAST_DATE_OVERRIDE_ROLES,
 } from '../turnos.constants';
@@ -184,7 +186,7 @@ export class TurnoAssignmentsService implements ITurnoAssignmentsService {
       actor.roleCode,
     );
     if (isPast && !canOverride) {
-      throw new ForbiddenException('No se pueden modificar asignaciones de fechas pasadas');
+      throw new ForbiddenException(PAST_DATE_FORBIDDEN_MESSAGE);
     }
   }
 
@@ -195,13 +197,12 @@ export class TurnoAssignmentsService implements ITurnoAssignmentsService {
   ): Promise<void> {
     const allowedLocationIds = await this.resolveScope(tenantId, actor);
     if (allowedLocationIds && !allowedLocationIds.includes(employeeLocationId)) {
-      throw new ForbiddenException(
-        'El colaborador no pertenece a una sede asignada a este usuario',
-      );
+      throw new ForbiddenException(SCOPE_FORBIDDEN_MESSAGE);
     }
   }
 
-  private async resolveScope(tenantId: string, actor: ActorContext): Promise<string[] | null> {
+  /** Público: OS-583 (import masivo) lo reutiliza para pre-filtrar filas sin llamar assign()/remove() por cada una. */
+  async resolveScope(tenantId: string, actor: ActorContext): Promise<string[] | null> {
     const isLocationScoped = (
       TURNO_ASSIGNMENTS_LOCATION_SCOPED_ROLES as readonly string[]
     ).includes(actor.roleCode);

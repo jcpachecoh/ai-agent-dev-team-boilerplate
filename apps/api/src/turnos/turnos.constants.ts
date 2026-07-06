@@ -46,3 +46,34 @@ export const TURNO_EXPORT_COLUMNS = [
   'Hora Fin',
   'Estado',
 ] as const;
+
+/** Mensajes de ForbiddenException lanzados por TurnoAssignmentsService.
+ * Exportados para que el import masivo (OS-583) pueda clasificar el motivo
+ * de un rechazo sin duplicar la regla de negocio ni frágil string-matching ad-hoc. */
+export const SCOPE_FORBIDDEN_MESSAGE =
+  'El colaborador no pertenece a una sede asignada a este usuario';
+export const PAST_DATE_FORBIDDEN_MESSAGE = 'No se pueden modificar asignaciones de fechas pasadas';
+
+// OS-583 — Asignación masiva de Turnos
+export const BULK_TEMPLATE_MAX_RANGE_DAYS = 90;
+export const BULK_IMPORT_MAX_ASSIGNMENTS = 5000;
+export const BULK_IMPORT_MAX_FILE_BYTES = 5 * 1024 * 1024;
+export const BULK_IMPORT_SHEET_NAME = 'Turnos';
+export const BULK_AVAILABLE_TURNOS_SHEET_NAME = 'Turnos Disponibles';
+export const BULK_BASE_VALUE = 'BASE';
+export const BULK_REST_VALUE = 'DESCANSO';
+export const BULK_REST_VALUE_ALIASES = ['DESCANSO', 'REST'] as const;
+
+export const BULK_TEMPLATE_COLUMNS = {
+  documento: 'Documento',
+  nombre: 'Nombre Colaborador',
+  employeeId: 'Employee ID',
+} as const;
+
+export const BULK_AVAILABLE_TURNOS_COLUMNS = [
+  'Nombre',
+  'Sigla',
+  'Hora Inicio',
+  'Hora Fin',
+  'Jornada',
+] as const;

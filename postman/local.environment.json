@@ -679,6 +679,10 @@
     { "key": "os582LocationId", "value": "", "type": "default", "enabled": true },
     { "key": "os582TurnoId", "value": "", "type": "default", "enabled": true },
     { "key": "os582AssignmentId", "value": "", "type": "default", "enabled": true },
+    { "key": "shiftAssignmentFrom", "value": "2026-08-03", "type": "default", "enabled": true },
+    { "key": "shiftAssignmentTo", "value": "2026-08-09", "type": "default", "enabled": true },
+    { "key": "shiftAssignmentWeekdays", "value": "1,2,3,4,5", "type": "default", "enabled": true },
+    { "key": "shiftAssignmentEmployeeIds", "value": "", "type": "default", "enabled": true },
     { "key": "accessTokenSupervisor", "value": "", "type": "default", "enabled": true }
   ],
   "_postman_variable_scope": "environment",

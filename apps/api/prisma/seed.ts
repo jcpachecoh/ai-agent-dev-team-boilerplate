@@ -996,8 +996,8 @@ const EMPLOYEE_POSITIONS_PDL = [
 async function seedEmployeePositions(tenantId: string) {
   for (const pos of EMPLOYEE_POSITIONS_PDL) {
     await prisma.employeePosition.upsert({
-      where: { id: pos.id },
-      update: { title: pos.title, area: pos.area, isActive: true },
+      where: { tenantId_title: { tenantId, title: pos.title } },
+      update: { area: pos.area, baseSalaryRange: pos.baseSalaryRange, isActive: true },
       create: {
         id: pos.id,
         tenantId,

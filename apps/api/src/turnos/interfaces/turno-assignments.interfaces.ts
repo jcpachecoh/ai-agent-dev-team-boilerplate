@@ -71,6 +71,14 @@ export interface EmployeeScopeInfo {
   isActive: boolean;
 }
 
+export interface EmployeeDirectoryEntry {
+  id: string;
+  userId: string;
+  nombre: string;
+  documento: string;
+  locationId: string;
+}
+
 export interface TurnoScopeInfo {
   id: string;
   nombre: string;
@@ -116,13 +124,7 @@ export interface ITurnoAssignmentsRepository {
       allowedLocationIds?: string[] | null;
     },
   ): Promise<{
-    employees: Array<{
-      id: string;
-      userId: string;
-      nombre: string;
-      documento: string;
-      locationId: string;
-    }>;
+    employees: EmployeeDirectoryEntry[];
     total: number;
   }>;
   findAssignmentsForEmployeesInRange(
@@ -138,6 +140,11 @@ export interface ITurnoAssignmentsRepository {
     workDate: Date,
   ): Promise<TurnoAssignmentRecord | null>;
   findEmployeeScope(tenantId: string, employeeId: string): Promise<EmployeeScopeInfo | null>;
+  findEmployeeByDocument(tenantId: string, documento: string): Promise<EmployeeScopeInfo | null>;
+  findEmployeesByIds(
+    tenantId: string,
+    employeeIds: string[],
+  ): Promise<Array<EmployeeDirectoryEntry & { isActive: boolean }>>;
   findTurnoScope(tenantId: string, turnoId: string): Promise<TurnoScopeInfo | null>;
   upsertWithAudit(
     tenantId: string,
@@ -150,6 +157,11 @@ export interface ITurnoAssignmentsRepository {
     id: string,
     actorUserId: string,
     auditChanges: AssignmentAuditChangeSet,
+  ): Promise<void>;
+  logTemplateExportAudit(
+    tenantId: string,
+    actorUserId: string,
+    payload: Record<string, unknown>,
   ): Promise<void>;
 }
 

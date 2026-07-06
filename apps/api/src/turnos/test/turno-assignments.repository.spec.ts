@@ -41,6 +41,9 @@ describe('TurnoAssignmentsRepository', () => {
       findMany: jest.fn(),
       findFirst: jest.fn(),
     },
+    auditLog: {
+      create: jest.fn(),
+    },
     $transaction: jest.fn(),
   };
 
@@ -315,6 +318,88 @@ describe('TurnoAssignmentsRepository', () => {
           data: expect.objectContaining({ action: AuditAction.ASSIGN, entityId: 'assignment-1' }),
         }),
       );
+    });
+  });
+
+  describe('findEmployeesByIds (OS-583)', () => {
+    it('retorna vacío sin consultar prisma si no hay ids', async () => {
+      const result = await repository.findEmployeesByIds(TENANT, []);
+
+      expect(result).toEqual([]);
+      expect(prismaMock.employeeDetails.findMany).not.toHaveBeenCalled();
+    });
+
+    it('mapea empleados con documento e isActive', async () => {
+      prismaMock.employeeDetails.findMany.mockResolvedValue([
+        {
+          id: 'emp-1',
+          userId: 'user-1',
+          name: 'Ana Pérez',
+          locationId: 'loc-1',
+          isActive: true,
+          user: { cedula: '123' },
+        },
+      ]);
+
+      const result = await repository.findEmployeesByIds(TENANT, ['emp-1']);
+
+      expect(prismaMock.employeeDetails.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { tenantId: TENANT, deletedAt: null, id: { in: ['emp-1'] } },
+        }),
+      );
+      expect(result).toEqual([
+        {
+          id: 'emp-1',
+          userId: 'user-1',
+          nombre: 'Ana Pérez',
+          documento: '123',
+          locationId: 'loc-1',
+          isActive: true,
+        },
+      ]);
+    });
+  });
+
+  describe('findEmployeeByDocument (OS-583)', () => {
+    it('busca por cedula del usuario asociado', async () => {
+      prismaMock.employeeDetails.findFirst.mockResolvedValue({
+        id: 'emp-1',
+        locationId: 'loc-1',
+        isActive: true,
+      });
+
+      const result = await repository.findEmployeeByDocument(TENANT, '123456');
+
+      expect(prismaMock.employeeDetails.findFirst).toHaveBeenCalledWith({
+        where: { tenantId: TENANT, deletedAt: null, user: { cedula: '123456' } },
+        select: { id: true, locationId: true, isActive: true },
+      });
+      expect(result?.id).toBe('emp-1');
+    });
+
+    it('retorna null si no existe', async () => {
+      prismaMock.employeeDetails.findFirst.mockResolvedValue(null);
+
+      const result = await repository.findEmployeeByDocument(TENANT, 'missing');
+
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('logTemplateExportAudit (OS-583)', () => {
+    it('registra AuditLog EXPORT para la entidad TurnoAssignment', async () => {
+      await repository.logTemplateExportAudit(TENANT, USER, { employeeCount: 3 });
+
+      expect(prismaMock.auditLog.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          tenantId: TENANT,
+          action: AuditAction.EXPORT,
+          entityType: 'TurnoAssignment',
+          actorUserId: USER,
+          payload: { employeeCount: 3 },
+        }),
+      });
     });
   });
 });

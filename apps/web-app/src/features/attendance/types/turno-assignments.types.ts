@@ -67,3 +67,30 @@ export interface TurnoAssignmentResponse {
   createdAt: string;
   updatedAt: string;
 }
+
+// OS-583 — Asignación masiva de Turnos
+
+export interface BulkTemplateQuery {
+  from: string;
+  to: string;
+  weekdays: string;
+  employeeIds: string;
+}
+
+export interface BulkImportRowError {
+  row: number;
+  employee?: string;
+  date?: string;
+  reason: string;
+}
+
+export interface BulkImportResult {
+  totalRows: number;
+  totalAssignments: number;
+  createdOrUpdated: number;
+  returnedToBase: number;
+  restDays: number;
+  excluded: number;
+  errorCount: number;
+  errors: BulkImportRowError[];
+}

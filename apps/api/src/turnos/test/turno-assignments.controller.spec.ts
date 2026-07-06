@@ -1,18 +1,30 @@
 import { BadRequestException, type CanActivate } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { TurnoAssignmentType, TurnoJornada } from '@prisma/client';
+import type { Response } from 'express';
 
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../../common/guards/permissions.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { TurnoAssignmentsController } from '../controller/turno-assignments.controller';
+import { TurnoAssignmentsImportService } from '../service/turno-assignments-import.service';
+import { TurnoAssignmentsTemplateService } from '../service/turno-assignments-template.service';
 import { TurnoAssignmentsService } from '../service/turno-assignments.service';
 
 const allowGuard: CanActivate = { canActivate: (): boolean => true };
 
+function buildMockResponse(): jest.Mocked<Response> {
+  return {
+    setHeader: jest.fn(),
+    send: jest.fn(),
+  } as unknown as jest.Mocked<Response>;
+}
+
 describe('TurnoAssignmentsController', () => {
   let controller: TurnoAssignmentsController;
   let service: jest.Mocked<TurnoAssignmentsService>;
+  let templateService: jest.Mocked<TurnoAssignmentsTemplateService>;
+  let importService: jest.Mocked<TurnoAssignmentsImportService>;
 
   const tenantId = 'tenant-1';
   const user = { tenantId, sub: 'user-1', roleCode: 'SUPERVISOR' } as const;
@@ -57,6 +69,18 @@ describe('TurnoAssignmentsController', () => {
             remove: jest.fn(),
           },
         },
+        {
+          provide: TurnoAssignmentsTemplateService,
+          useValue: {
+            generateTemplate: jest.fn(),
+          },
+        },
+        {
+          provide: TurnoAssignmentsImportService,
+          useValue: {
+            importFromExcel: jest.fn(),
+          },
+        },
       ],
     })
       .overrideGuard(JwtAuthGuard)
@@ -69,6 +93,8 @@ describe('TurnoAssignmentsController', () => {
 
     controller = module.get(TurnoAssignmentsController);
     service = module.get(TurnoAssignmentsService);
+    templateService = module.get(TurnoAssignmentsTemplateService);
+    importService = module.get(TurnoAssignmentsImportService);
   });
 
   it('resuelve tenantId del JWT y delega la vista semanal al service', async (): Promise<void> => {
@@ -117,5 +143,69 @@ describe('TurnoAssignmentsController', () => {
       { userId: user.sub, roleCode: user.roleCode },
       'assignment-1',
     );
+  });
+
+  describe('downloadTemplate (OS-583)', () => {
+    it('parsea los query params CSV y responde con el buffer del Excel', async (): Promise<void> => {
+      templateService.generateTemplate.mockResolvedValue({
+        buffer: Buffer.from('xlsx'),
+        filename: 'plantilla_turnos_2026-08-01_2026-08-31.xlsx',
+      });
+      const res = buildMockResponse();
+
+      await controller.downloadTemplate(
+        { ...user } as never,
+        tenantId,
+        {
+          from: '2026-08-01',
+          to: '2026-08-31',
+          weekdays: '1,2,3,4,5',
+          employeeIds: 'emp-1,emp-2',
+        },
+        res,
+      );
+
+      expect(templateService.generateTemplate).toHaveBeenCalledWith(
+        tenantId,
+        { userId: user.sub, roleCode: user.roleCode },
+        {
+          from: new Date('2026-08-01T00:00:00.000Z'),
+          to: new Date('2026-08-31T00:00:00.000Z'),
+          weekdaysIso: [1, 2, 3, 4, 5],
+          employeeIds: ['emp-1', 'emp-2'],
+        },
+      );
+      expect(res.setHeader).toHaveBeenCalledWith(
+        'Content-Disposition',
+        expect.stringContaining('plantilla_turnos_2026-08-01_2026-08-31.xlsx'),
+      );
+      expect(res.send).toHaveBeenCalledWith(Buffer.from('xlsx'));
+    });
+  });
+
+  describe('importAssignments (OS-583)', () => {
+    it('delega el buffer del archivo al import service', async (): Promise<void> => {
+      const importResult = {
+        totalRows: 1,
+        totalAssignments: 1,
+        createdOrUpdated: 1,
+        returnedToBase: 0,
+        restDays: 0,
+        excluded: 0,
+        errorCount: 0,
+        errors: [],
+      };
+      importService.importFromExcel.mockResolvedValue(importResult);
+
+      const file = { buffer: Buffer.from('xlsx-content') } as never;
+      const result = await controller.importAssignments({ ...user } as never, tenantId, file);
+
+      expect(importService.importFromExcel).toHaveBeenCalledWith(
+        tenantId,
+        { userId: user.sub, roleCode: user.roleCode },
+        Buffer.from('xlsx-content'),
+      );
+      expect(result).toEqual(importResult);
+    });
   });
 });
