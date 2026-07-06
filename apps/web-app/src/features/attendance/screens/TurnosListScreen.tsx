@@ -24,6 +24,7 @@ import { TurnosApiError, downloadBlob } from '../api/turnos.api';
 import { TurnosCreateModal } from '../components/turnos/TurnosCreateModal';
 import { TurnosDeactivateDialog } from '../components/turnos/TurnosDeactivateDialog';
 import { TurnosEditModal } from '../components/turnos/TurnosEditModal';
+import { TurnosSubNav } from '../components/turnos/TurnosSubNav';
 import { TURNOS_PAGE_SIZE_OPTIONS, useTurnosFilters } from '../hooks/useTurnosFilters';
 import {
   useCreateTurnoMutation,
@@ -222,6 +223,7 @@ export function TurnosListScreen(): React.JSX.Element {
   return (
     <CargoPage theme={cargoTheme} className={styles.screen}>
       <CargoPageSection theme={cargoTheme} divider variant="header">
+        <TurnosSubNav />
         <CargoPageHeader
           title="Detalle de turnos"
           subtitle="Consulta, filtra y administra los turnos configurados"

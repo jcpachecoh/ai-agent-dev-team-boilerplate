@@ -671,7 +671,15 @@
       "type": "default",
       "enabled": true,
       "description": "OS-499 Mobile Attendance — Resultado textual del reconocimiento facial (match|no_match). Informativo; no determina el status."
-    }
+    },
+    { "key": "os582WeekStart", "value": "2026-07-06", "type": "default", "enabled": true },
+    { "key": "os582FutureDate", "value": "2026-08-10", "type": "default", "enabled": true },
+    { "key": "os582FutureDateRest", "value": "2026-08-11", "type": "default", "enabled": true },
+    { "key": "os582EmployeeId", "value": "", "type": "default", "enabled": true },
+    { "key": "os582LocationId", "value": "", "type": "default", "enabled": true },
+    { "key": "os582TurnoId", "value": "", "type": "default", "enabled": true },
+    { "key": "os582AssignmentId", "value": "", "type": "default", "enabled": true },
+    { "key": "accessTokenSupervisor", "value": "", "type": "default", "enabled": true }
   ],
   "_postman_variable_scope": "environment",
   "_postman_exported_at": "2026-06-16T00:00:00.000Z",

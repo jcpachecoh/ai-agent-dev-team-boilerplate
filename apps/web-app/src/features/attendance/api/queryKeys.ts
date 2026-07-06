@@ -4,6 +4,7 @@ import type {
   AttendanceHistoryFilters,
   AttendanceMonitorPeriod,
 } from '../types/attendance.types';
+import type { WeeklyAssignmentsQuery } from '../types/turno-assignments.types';
 import type { TurnosListQuery } from '../types/turnos.types';
 
 export const attendanceKeys = {
@@ -23,5 +24,10 @@ export const attendanceKeys = {
   turnos: {
     all: () => [...attendanceKeys.all, 'turnos'] as const,
     list: (filters: TurnosListQuery) => [...attendanceKeys.turnos.all(), 'list', filters] as const,
+  },
+  turnoAssignments: {
+    all: () => [...attendanceKeys.all, 'turno-assignments'] as const,
+    weekly: (filters: WeeklyAssignmentsQuery) =>
+      [...attendanceKeys.turnoAssignments.all(), 'weekly', filters] as const,
   },
 };

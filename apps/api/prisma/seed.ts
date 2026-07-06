@@ -355,6 +355,46 @@ const PERMISSION_SEEDS = [
     resource: 'financial.history',
     action: 'read',
   },
+  // OS-582 — Asignación de Turnos (vista semanal colaborador x día)
+  {
+    id: 'cccccccc-0000-0000-0000-000000000054',
+    code: 'attendance.turnos.assignment.read',
+    name: 'Read turno assignments',
+    description: 'View the weekly shift assignment calendar for employees',
+    module: 'attendance',
+    resource: 'turnos.assignment',
+    action: 'read',
+  },
+  {
+    id: 'cccccccc-0000-0000-0000-000000000055',
+    code: 'attendance.turnos.assignment.write',
+    name: 'Write turno assignments',
+    description: 'Create, reassign, mark rest, and delete shift assignments',
+    module: 'attendance',
+    resource: 'turnos.assignment',
+    action: 'write',
+  },
+  // OS-582 follow-up — NOM-08 catalog permissions (attendance.turnos.*) were referenced by
+  // TurnosController but never seeded, so PermissionsGuard blocked every role, including
+  // OWNER/SUPER_ADMIN, in any environment where the seed runs. Fixing the gap here.
+  {
+    id: 'cccccccc-0000-0000-0000-000000000056',
+    code: 'attendance.turnos.read',
+    name: 'Read turnos catalog',
+    description: 'List, view, and export the shift catalog (Turnos)',
+    module: 'attendance',
+    resource: 'turnos',
+    action: 'read',
+  },
+  {
+    id: 'cccccccc-0000-0000-0000-000000000057',
+    code: 'attendance.turnos.write',
+    name: 'Write turnos catalog',
+    description: 'Create, edit, and toggle status of shifts in the catalog (Turnos)',
+    module: 'attendance',
+    resource: 'turnos',
+    action: 'write',
+  },
   // OS-560 — Employee Social Profile (familiares directos)
   {
     id: 'cccccccc-0000-0000-0000-000000000023',
@@ -563,6 +603,13 @@ const FINANCIAL_WRITE_PERMISSION_CODES = [
   'nomina.financial.tax.write',
 ] as const;
 
+// OS-582 — Asignación de Turnos (supervisor/manager leen y escriben, acotado a sus sedes en el service)
+const TURNO_ASSIGNMENT_READ_CODES = ['attendance.turnos.assignment.read'] as const;
+const TURNO_ASSIGNMENT_WRITE_CODES = ['attendance.turnos.assignment.write'] as const;
+
+// OS-582 follow-up — catálogo de Turnos (NOM-08): SUPERVISOR/MANAGER/NOMINA solo lectura.
+const TURNOS_CATALOG_READ_CODES = ['attendance.turnos.read'] as const;
+
 const ALL_PERMISSION_CODES = PERMISSION_SEEDS.map((permissionSeed) => permissionSeed.code);
 
 const ROLE_PERMISSION_MATRIX: Record<string, readonly string[]> = {
@@ -575,6 +622,9 @@ const ROLE_PERMISSION_MATRIX: Record<string, readonly string[]> = {
     ...FINANCIAL_TAX_READ_PERMISSION_CODES,
     ...MOBILE_ATTENDANCE_CREATE_CODES,
     ...MOBILE_ATTENDANCE_READ_CODES,
+    ...TURNO_ASSIGNMENT_READ_CODES,
+    ...TURNO_ASSIGNMENT_WRITE_CODES,
+    ...TURNOS_CATALOG_READ_CODES,
   ],
   MANAGER: [
     ...MANAGER_PERMISSION_CODES,
@@ -584,6 +634,9 @@ const ROLE_PERMISSION_MATRIX: Record<string, readonly string[]> = {
     ...FINANCIAL_WRITE_PERMISSION_CODES,
     ...MOBILE_ATTENDANCE_CREATE_CODES,
     ...MOBILE_ATTENDANCE_READ_CODES,
+    ...TURNO_ASSIGNMENT_READ_CODES,
+    ...TURNO_ASSIGNMENT_WRITE_CODES,
+    ...TURNOS_CATALOG_READ_CODES,
   ],
   OPERATOR: [...OPERATOR_PERMISSION_CODES, ...MOBILE_ATTENDANCE_CREATE_CODES],
   OPERATIONS_ADMIN: OPERATIONS_ADMIN_PERMISSION_CODES,
@@ -592,6 +645,8 @@ const ROLE_PERMISSION_MATRIX: Record<string, readonly string[]> = {
     ...FINANCIAL_READ_PERMISSION_CODES,
     ...MOBILE_ATTENDANCE_CREATE_CODES,
     ...MOBILE_ATTENDANCE_READ_CODES,
+    ...TURNO_ASSIGNMENT_READ_CODES,
+    ...TURNOS_CATALOG_READ_CODES,
   ],
 };
 

@@ -3,6 +3,7 @@ export const ATTENDANCE_ROUTES = {
   panel: '/asistencia',
   collaborators: '/asistencia/colaboradores',
   shifts: '/asistencia/turnos',
+  shiftsAssignment: '/asistencia/turnos/asignacion',
   monitor: '/asistencia/asistencias',
   reports: '/asistencia/reportes',
   locationDetail: (locationId: string) => `/asistencia/asistencias/${locationId}`,

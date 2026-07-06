@@ -9679,6 +9679,456 @@
           ]
         }
       ]
+    },
+    {
+      "name": "OS-582 Shift Assignment",
+      "description": "Asignación de Turnos (vista semanal colaborador x día). Depende del catálogo de Turnos (NOM-08/OS-581). Ejecutar en orden: 1) GET semanal (captura employeeId/locationId de un colaborador real del tenant), 2) Setup: crear turno de prueba, 3) asignar/reasignar, 4) marcar descanso, 5) eliminar asignación, 6-8) casos negativos.\n\nIMPORTANTE: los requests 'Negative: Supervisor Outside Location' y 'Negative: Past Date' requieren un token de un usuario global con rol SUPERVISOR o MANAGER, con al menos una sede asignada (UserLocation) que NO sea la sede del colaborador usado en la prueba. El seed de desarrollo no incluye una cuenta global SUPERVISOR lista para usar — crear una manualmente (o vía admin.users) y guardar su token en la variable de entorno {{accessTokenSupervisor}}.",
+      "item": [
+        {
+          "name": "GET Week Assignments",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/turnos/asignaciones?weekStart={{os582WeekStart}}&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "turnos", "asignaciones"],
+              "query": [
+                {
+                  "key": "weekStart",
+                  "value": "{{os582WeekStart}}"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Vista semanal paginada. weekStart se normaliza al lunes de esa semana. Captura el primer colaborador de la respuesta para usarlo en los siguientes requests."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('weekly: status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) {",
+                  "    const body = pm.response.json();",
+                  "    pm.test('weekly: estructura correcta', () => {",
+                  "        pm.expect(body.dates).to.be.an('array').with.lengthOf(7);",
+                  "        pm.expect(body.colaboradores).to.be.an('array');",
+                  "    });",
+                  "    if (body.colaboradores.length > 0) {",
+                  "        const colaborador = body.colaboradores[0];",
+                  "        pm.environment.set('os582EmployeeId', colaborador.id);",
+                  "        pm.environment.set('os582LocationId', colaborador.locationId);",
+                  "        pm.test('weekly: colaborador trae 7 celdas', () => {",
+                  "            pm.expect(colaborador.turnos).to.be.an('array').with.lengthOf(7);",
+                  "        });",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Setup: Crear Turno de Prueba",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Turno OS-582 QA\",\n  \"sigla\": \"OS582\",\n  \"tipo\": \"VARIABLE\",\n  \"jornada\": \"DIURNO\",\n  \"horaInicio\": \"07:00\",\n  \"horaFin\": \"15:00\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/turnos",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "turnos"]
+            },
+            "description": "Crea el turno activo que se usará para las pruebas de asignación (reutiliza el catálogo NOM-08)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const body = pm.response.json();",
+                  "    pm.environment.set('os582TurnoId', body.id);",
+                  "    pm.test('turno: creado con estado activo', () => {",
+                  "        pm.expect(body.estado).to.equal(true);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Assign Shift",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": \"{{os582EmployeeId}}\",\n  \"workDate\": \"{{os582FutureDate}}\",\n  \"turnoId\": \"{{os582TurnoId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/turnos/asignaciones",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "turnos", "asignaciones"]
+            },
+            "description": "Upsert por (tenantId, employeeId, workDate). type por defecto es ASSIGNED."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('assign: status 201', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code === 201) {",
+                  "    const body = pm.response.json();",
+                  "    pm.environment.set('os582AssignmentId', body.id);",
+                  "    pm.test('assign: type ASSIGNED con turno', () => {",
+                  "        pm.expect(body.type).to.equal('ASSIGNED');",
+                  "        pm.expect(body.turno.id).to.equal(pm.environment.get('os582TurnoId'));",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Mark Rest",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": \"{{os582EmployeeId}}\",\n  \"workDate\": \"{{os582FutureDateRest}}\",\n  \"type\": \"REST\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/turnos/asignaciones",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "turnos", "asignaciones"]
+            },
+            "description": "Marca descanso explícito para otro día de la misma semana (turnoId debe omitirse)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('rest: status 201', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code === 201) {",
+                  "    const body = pm.response.json();",
+                  "    pm.test('rest: type REST sin turno', () => {",
+                  "        pm.expect(body.type).to.equal('REST');",
+                  "        pm.expect(body.turno).to.equal(null);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE Assignment",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/turnos/asignaciones/{{os582AssignmentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "turnos", "asignaciones", "{{os582AssignmentId}}"]
+            },
+            "description": "Elimina la asignación explícita creada en 'POST Assign Shift'. La celda debe volver a BASE en el próximo GET."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('delete: status 204', () => pm.response.to.have.status(204));"]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Negative: Deactivate + Assign Inactive Turno",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"estado\": false}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/turnos/{{os582TurnoId}}/estado",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "turnos", "{{os582TurnoId}}", "estado"]
+            },
+            "description": "Paso 1 de 2: desactiva el turno de prueba. Ejecutar luego 'POST Assign Shift' de nuevo manualmente (o ver el segundo request de este folder) y esperar 409."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('deactivate: status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Negative: Assign Inactive Turno (expect 409)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": \"{{os582EmployeeId}}\",\n  \"workDate\": \"{{os582FutureDate}}\",\n  \"turnoId\": \"{{os582TurnoId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/turnos/asignaciones",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "turnos", "asignaciones"]
+            },
+            "description": "Debe ejecutarse después de 'Negative: Deactivate + Assign Inactive Turno'. Espera 409 (turno inactivo)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('assign inactive turno: status 409', () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Negative: Supervisor Outside Location (expect 403)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenSupervisor}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": \"{{os582EmployeeId}}\",\n  \"workDate\": \"{{os582FutureDate}}\",\n  \"turnoId\": \"{{os582TurnoId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/turnos/asignaciones",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "turnos", "asignaciones"]
+            },
+            "description": "Requiere {{accessTokenSupervisor}} de un SUPERVISOR/MANAGER SIN la sede {{os582LocationId}} asignada en UserLocation. Espera 403."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('supervisor fuera de sede: status 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Negative: Past Date Not Allowed (expect 403)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenSupervisor}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": \"{{os582EmployeeId}}\",\n  \"workDate\": \"2020-01-01\",\n  \"turnoId\": \"{{os582TurnoId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/turnos/asignaciones",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "turnos", "asignaciones"]
+            },
+            "description": "Requiere {{accessTokenSupervisor}} (rol distinto de OWNER/SUPER_ADMIN). Fecha muy en el pasado — espera 403 por restricción de fecha pasada."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('fecha pasada sin permiso: status 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Negative: OPERATOR Sin Acceso (expect 403)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenOperator}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/turnos/asignaciones?weekStart={{os582WeekStart}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "turnos", "asignaciones"],
+              "query": [
+                {
+                  "key": "weekStart",
+                  "value": "{{os582WeekStart}}"
+                }
+              ]
+            },
+            "description": "OPERATOR no está en TURNO_ASSIGNMENTS_READ_ROLES ni WRITE_ROLES — espera 403."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('operator sin acceso: status 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
     }
   ]
 }

@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes, useParams } from 'react-router-dom';
 
 import {
+  AsignacionTurnosScreen,
   AttendanceCardScreen,
   AttendanceCollaboratorsScreen,
   AttendanceDashboardScreen,
@@ -26,10 +27,7 @@ export default function AttendancePage(): React.JSX.Element {
       <Route index element={<AttendanceDashboardScreen />} />
       <Route path="colaboradores" element={<AttendanceCollaboratorsScreen />} />
       <Route path="turnos" element={<TurnosListScreen />} />
-      <Route
-        path="turnos/asignacion"
-        element={<Navigate to={ATTENDANCE_ROUTES.shifts} replace />}
-      />
+      <Route path="turnos/asignacion" element={<AsignacionTurnosScreen />} />
       <Route path="asistencias" element={<AttendanceMonitorScreen />} />
       <Route path="asistencias/:locationId" element={<AttendanceLocationDetailScreen />} />
       <Route

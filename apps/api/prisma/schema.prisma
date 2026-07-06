@@ -457,6 +457,8 @@ model User {
   committeeMemberships ProductionCommitteeMember[]
   turnosCreated        Turno[]                     @relation("TurnoCreatedBy")
   turnosUpdated        Turno[]                     @relation("TurnoUpdatedBy")
+  turnoAssignmentsCreated TurnoAssignment[]         @relation("TurnoAssignmentCreatedBy")
+  turnoAssignmentsUpdated TurnoAssignment[]         @relation("TurnoAssignmentUpdatedBy")
 
   @@unique([tenantId, email])
   @@unique([tenantId, cedula])
@@ -1728,17 +1730,29 @@ model Turno {
   @@map("turnos")
 }
 
+enum TurnoAssignmentType {
+  ASSIGNED
+  REST
+}
+
 model TurnoAssignment {
-  id         String   @id @default(cuid())
-  tenantId   String
-  turnoId    String
-  employeeId String
-  workDate   DateTime @db.Date
-  createdAt  DateTime @default(now())
+  id              String              @id @default(cuid())
+  tenantId        String
+  turnoId         String?
+  employeeId      String
+  workDate        DateTime            @db.Date
+  type            TurnoAssignmentType @default(ASSIGNED)
+  createdByUserId String?
+  updatedByUserId String?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
 
-  turno    Turno           @relation(fields: [turnoId], references: [id])
-  employee EmployeeDetails @relation(fields: [employeeId], references: [id])
+  turno     Turno?          @relation(fields: [turnoId], references: [id])
+  employee  EmployeeDetails @relation(fields: [employeeId], references: [id])
+  createdBy User?           @relation("TurnoAssignmentCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  updatedBy User?           @relation("TurnoAssignmentUpdatedBy", fields: [updatedByUserId], references: [id], onDelete: SetNull)
 
+  @@unique([tenantId, employeeId, workDate])
   @@index([tenantId, turnoId, workDate])
   @@index([tenantId, employeeId, workDate])
   @@map("turno_assignments")
