@@ -11,7 +11,7 @@ const GLOBAL_MES_OPERATOR_USER_ID = '11111111-0000-0000-0000-000000000005';
 const GLOBAL_MES_OPERATOR2_USER_ID = '11111111-0000-0000-0000-000000000006';
 const GLOBAL_MES_OPERATIONS_ADMIN_USER_ID = '11111111-0000-0000-0000-000000000007';
 
-function getTodayWorkDate(): Date {
+export function getTodayWorkDate(): Date {
   const dateStr = new Intl.DateTimeFormat('en-CA', {
     timeZone: 'America/Bogota',
     year: 'numeric',
@@ -25,7 +25,7 @@ function getTodayWorkDate(): Date {
  * Detecta el turno a partir de un timestamp, usando la hora local en Bogotá.
  * Usada en seedAttendance y seedMonitorOvertime para logs con timestamps dinámicos.
  */
-function detectShiftForTs(ts: Date): AttendanceShift {
+export function detectShiftForTs(ts: Date): AttendanceShift {
   const hour = parseInt(
     new Intl.DateTimeFormat('en', {
       timeZone: 'America/Bogota',

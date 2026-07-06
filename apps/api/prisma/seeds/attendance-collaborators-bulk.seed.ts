@@ -1,5 +1,6 @@
 import {
   ArlRiskLevel,
+  AttendanceEventType,
   CostCenter,
   DocumentType,
   EmployeeContractType,
@@ -8,11 +9,13 @@ import {
   SalaryType,
 } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { detectShiftForTs, getTodayWorkDate } from './attendance.seed';
 
 const SALT_ROUNDS = 12;
 const TENANT_ID = 'palos-de-lena';
 /** Same role as the demo `mes-operator` user — plain operational employees, no admin access. */
 const ROLE_OPERATOR_ID = 'aaaaaaaa-0000-0000-0000-000000000004';
+const ATTENDANCE_LOG_NOTES = 'attendance-seed-bulk-collaborators';
 
 /** Enough rows to exercise pagination (pageSize options up to 50) with 2+ pages to spare. */
 const BULK_COUNT = 100;
@@ -122,8 +125,14 @@ export async function seedBulkAttendanceCollaborators(prisma: PrismaClient): Pro
   }
 
   const passwordHash = await bcrypt.hash('TestPass123!', SALT_ROUNDS);
+  const workDate = getTodayWorkDate();
+  // Bogotá day starts at midnight Bogotá = workDate + 5h UTC; cap keeps all timestamps today
+  const todayStartUtc = new Date(workDate.getTime() + 5 * 60 * 60_000);
+  const cap = todayStartUtc.getTime() + 60_000;
+  const nowMs = Date.now();
   let created = 0;
   let inactiveCount = 0;
+  let attendanceLogsCreated = 0;
 
   for (let i = 1; i <= BULK_COUNT; i++) {
     const index = i.toString().padStart(3, '0');
@@ -236,12 +245,54 @@ export async function seedBulkAttendanceCollaborators(prisma: PrismaClient): Pro
       },
     });
 
+    // Marcación de HOY (solo activos — un inactivo no debería estar marcando asistencia)
+    // para poblar "Línea de tiempo hoy" del panel de control (una fila por empleado/día).
+    if (isActive) {
+      const entryTs = new Date(Math.max(nowMs - i * 5 * 60_000, cap));
+      if (entryTs.getTime() > nowMs) {
+        throw new Error(
+          `seedBulkAttendanceCollaborators: future timestamp — ts=${entryTs.toISOString()}`,
+        );
+      }
+
+      await prisma.attendanceLog.upsert({
+        where: { id: `55555555-0000-0000-0000-${padded(i)}` },
+        update: {
+          tenantId: TENANT_ID,
+          employeeId: employee.id,
+          locationId: location.id,
+          eventType: AttendanceEventType.ENTRY,
+          shift: detectShiftForTs(entryTs),
+          timestamp: entryTs,
+          workDate,
+          notes: ATTENDANCE_LOG_NOTES,
+          isActive: true,
+        },
+        create: {
+          id: `55555555-0000-0000-0000-${padded(i)}`,
+          tenantId: TENANT_ID,
+          employeeId: employee.id,
+          locationId: location.id,
+          eventType: AttendanceEventType.ENTRY,
+          shift: detectShiftForTs(entryTs),
+          timestamp: entryTs,
+          workDate,
+          notes: ATTENDANCE_LOG_NOTES,
+          isActive: true,
+        },
+      });
+      attendanceLogsCreated++;
+    }
+
     created++;
   }
 
   console.log(
     `✅ Bulk attendance collaborators seed: ${created} colaboradores (${inactiveCount} inactivos), ` +
       `repartidos entre ${locations.length} sedes y ${positions.length} cargos.`,
+  );
+  console.log(
+    `  Marcaciones de HOY creadas: ${attendanceLogsCreated} (una por colaborador activo, todas ENTRY).`,
   );
   console.log('  Login de ejemplo: colaborador001@palos-de-lena.dev / TestPass123!');
   console.log('  GET /api/attendance/collaborators?page=1&pageSize=20');
