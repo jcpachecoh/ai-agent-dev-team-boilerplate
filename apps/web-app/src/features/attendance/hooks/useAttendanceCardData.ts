@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 
-import { useAttendanceHistoryQuery } from './useAttendanceHistoryQuery';
+import { useAttendanceCardQuery } from './useAttendanceCardQuery';
 import {
   buildAttendanceCardRows,
   buildAttendanceCardSummaryMetrics,
@@ -8,40 +8,33 @@ import {
 
 interface UseAttendanceCardDataParams {
   userId: string;
-  employeeId: string;
-  locationId: string;
   fromIso: string;
   toIso: string;
   enabled?: boolean;
-  revision?: number;
 }
 
 export function useAttendanceCardData({
   userId,
-  employeeId,
-  locationId,
   fromIso,
   toIso,
   enabled = true,
-  revision = 0,
 }: UseAttendanceCardDataParams) {
-  const historyQuery = useAttendanceHistoryQuery({
-    userId,
-    locationId,
-    dateFrom: fromIso,
-    dateTo: toIso,
-    limit: 100,
-  });
+  const cardQuery = useAttendanceCardQuery({ userId, dateFrom: fromIso, dateTo: toIso, enabled });
 
   const rows = useMemo(() => {
-    if (!enabled || !historyQuery.data) return [];
-    return buildAttendanceCardRows(employeeId, fromIso, toIso, historyQuery.data);
-  }, [enabled, employeeId, fromIso, toIso, historyQuery.data, revision]);
+    if (!enabled || !cardQuery.data) return [];
+    return buildAttendanceCardRows(
+      fromIso,
+      toIso,
+      cardQuery.data.logs,
+      cardQuery.data.observations,
+    );
+  }, [enabled, fromIso, toIso, cardQuery.data]);
 
   const summary = useMemo(() => buildAttendanceCardSummaryMetrics(rows), [rows]);
 
   return {
-    historyQuery,
+    cardQuery,
     rows,
     summary,
   };

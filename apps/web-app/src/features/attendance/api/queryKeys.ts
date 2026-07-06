@@ -13,6 +13,8 @@ export const attendanceKeys = {
   historyList: (filters: AttendanceHistoryFilters) =>
     [...attendanceKeys.history(), filters] as const,
   active: (locationId: string) => [...attendanceKeys.all, 'active', locationId] as const,
+  card: (userId: string, dateFrom: string, dateTo: string) =>
+    [...attendanceKeys.all, 'card', userId, dateFrom, dateTo] as const,
   overtime: (userId: string, date?: string) =>
     [...attendanceKeys.all, 'overtime', userId, date ?? 'today'] as const,
   monitorSummary: (locationId: string, period: AttendanceMonitorPeriod, anchorDate: string) =>

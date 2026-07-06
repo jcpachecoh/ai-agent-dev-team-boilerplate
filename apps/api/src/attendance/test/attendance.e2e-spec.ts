@@ -172,4 +172,163 @@ describe('AttendanceController (e2e)', () => {
 
     expect(res.status).toBe(400);
   });
+
+  // ── OS-551 — Tarjeta de Asistencia (marcaciones manuales + observaciones) ──
+
+  describe('OS-551: card, observations, manual markings', () => {
+    const dateFrom = '2026-06-01';
+    const dateTo = '2026-06-30';
+
+    it('GET card devuelve logs + observations del rango', async () => {
+      const res = await request(app.getHttpServer())
+        .get(`/api/attendance/employees/${OPERATOR_USER_ID}/card`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .query({ dateFrom, dateTo });
+
+      expect(res.status).toBe(200);
+      expect(Array.isArray(res.body.logs)).toBe(true);
+      expect(Array.isArray(res.body.observations)).toBe(true);
+    });
+
+    it('GET card con rango mayor a 3 meses devuelve 400', async () => {
+      const res = await request(app.getHttpServer())
+        .get(`/api/attendance/employees/${OPERATOR_USER_ID}/card`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .query({ dateFrom: '2026-01-01', dateTo: '2026-06-30' });
+
+      expect(res.status).toBe(400);
+    });
+
+    it('PUT observation crea/edita y GET observations la refleja', async () => {
+      const putRes = await request(app.getHttpServer())
+        .put(`/api/attendance/employees/${OPERATOR_USER_ID}/observations`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ workDate: '2026-06-10', note: 'Llegó tarde por transporte público' });
+
+      expect(putRes.status).toBe(200);
+      expect(putRes.body.note).toBe('Llegó tarde por transporte público');
+
+      const getRes = await request(app.getHttpServer())
+        .get(`/api/attendance/employees/${OPERATOR_USER_ID}/observations`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .query({ dateFrom, dateTo });
+
+      expect(getRes.status).toBe(200);
+      expect(
+        getRes.body.some((o: { note: string }) => o.note === 'Llegó tarde por transporte público'),
+      ).toBe(true);
+    });
+
+    it('PUT observation con note > 500 caracteres devuelve 400', async () => {
+      const res = await request(app.getHttpServer())
+        .put(`/api/attendance/employees/${OPERATOR_USER_ID}/observations`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ workDate: '2026-06-10', note: 'a'.repeat(501) });
+
+      expect(res.status).toBe(400);
+    });
+
+    it('POST manual-markings crea un AttendanceLog con source=MANUAL', async () => {
+      const res = await request(app.getHttpServer())
+        .post(`/api/attendance/employees/${OPERATOR_USER_ID}/manual-markings`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          workDate: '2026-06-15',
+          eventType: 'ENTRY',
+          timestamp: '2026-06-15T08:00:00.000Z',
+          reason: 'FORGOT',
+        });
+
+      expect(res.status).toBe(201);
+      expect(res.body.source).toBe('MANUAL');
+      expect(res.body.manualReason).toBe('FORGOT');
+    });
+
+    it('POST manual-markings con parentLogId inexistente devuelve 400', async () => {
+      const res = await request(app.getHttpServer())
+        .post(`/api/attendance/employees/${OPERATOR_USER_ID}/manual-markings`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          workDate: '2026-06-15',
+          eventType: 'EXIT',
+          timestamp: '2026-06-15T17:00:00.000Z',
+          reason: 'SUPERVISOR_CORRECTION',
+          parentLogId: 'non-existent-log-id',
+        });
+
+      expect(res.status).toBe(400);
+    });
+
+    it('POST manual-markings con reason inválido (fuera del catálogo) devuelve 400', async () => {
+      const res = await request(app.getHttpServer())
+        .post(`/api/attendance/employees/${OPERATOR_USER_ID}/manual-markings`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          workDate: '2026-06-15',
+          eventType: 'ENTRY',
+          timestamp: '2026-06-15T08:00:00.000Z',
+          reason: 'Porque sí',
+        });
+
+      expect(res.status).toBe(400);
+    });
+  });
+
+  describe('OS-553: DELETE manual marking', () => {
+    it('elimina una marcación manual y ya no aparece en el historial', async () => {
+      const createRes = await request(app.getHttpServer())
+        .post(`/api/attendance/employees/${OPERATOR_USER_ID}/manual-markings`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          workDate: '2026-06-20',
+          eventType: 'ENTRY',
+          timestamp: '2026-06-20T08:00:00.000Z',
+          reason: 'DEVICE_FAILURE',
+        });
+      expect(createRes.status).toBe(201);
+      const manualLogId = createRes.body.id;
+
+      const deleteRes = await request(app.getHttpServer())
+        .delete(`/api/attendance/manual-markings/${manualLogId}`)
+        .set('Authorization', `Bearer ${accessToken}`);
+
+      expect(deleteRes.status).toBe(204);
+
+      const historyRes = await request(app.getHttpServer())
+        .get('/api/attendance')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .query({ userId: OPERATOR_USER_ID });
+
+      expect(historyRes.body.some((log: { id: string }) => log.id === manualLogId)).toBe(false);
+    });
+
+    it('eliminar un log DEVICE devuelve 403 (AttendanceLog es inmutable)', async () => {
+      const entryRes = await request(app.getHttpServer())
+        .post('/api/attendance/entry')
+        .set('x-tenant-id', TENANT)
+        .send({ userId: OPERATOR_USER_ID, locationId });
+      expect(entryRes.status).toBe(201);
+      const deviceLogId = entryRes.body.logId;
+
+      const deleteRes = await request(app.getHttpServer())
+        .delete(`/api/attendance/manual-markings/${deviceLogId}`)
+        .set('Authorization', `Bearer ${accessToken}`);
+
+      expect(deleteRes.status).toBe(403);
+
+      // cleanup: cerrar la entrada abierta para no afectar otros tests
+      await request(app.getHttpServer())
+        .post('/api/attendance/exit')
+        .set('x-tenant-id', TENANT)
+        .send({ userId: OPERATOR_USER_ID, locationId });
+    });
+
+    it('eliminar una marcación inexistente devuelve 404', async () => {
+      const res = await request(app.getHttpServer())
+        .delete('/api/attendance/manual-markings/non-existent-log-id')
+        .set('Authorization', `Bearer ${accessToken}`);
+
+      expect(res.status).toBe(404);
+    });
+  });
 });

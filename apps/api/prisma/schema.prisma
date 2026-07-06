@@ -448,17 +448,20 @@ model User {
 
   role Role @relation(fields: [roleId], references: [id])
 
-  employeeDetails      EmployeeDetails?
-  operationalProfile   OperationalUser?
-  userPermissions      UserPermission[]
-  userLocations        UserLocation[]
-  loginAudits          LoginAudit[]
-  auditLogs            AuditLog[]
-  committeeMemberships ProductionCommitteeMember[]
-  turnosCreated        Turno[]                     @relation("TurnoCreatedBy")
-  turnosUpdated        Turno[]                     @relation("TurnoUpdatedBy")
-  turnoAssignmentsCreated TurnoAssignment[]         @relation("TurnoAssignmentCreatedBy")
-  turnoAssignmentsUpdated TurnoAssignment[]         @relation("TurnoAssignmentUpdatedBy")
+  employeeDetails               EmployeeDetails?
+  operationalProfile            OperationalUser?
+  userPermissions               UserPermission[]
+  userLocations                 UserLocation[]
+  loginAudits                   LoginAudit[]
+  auditLogs                     AuditLog[]
+  committeeMemberships          ProductionCommitteeMember[]
+  turnosCreated                 Turno[]                     @relation("TurnoCreatedBy")
+  turnosUpdated                 Turno[]                     @relation("TurnoUpdatedBy")
+  turnoAssignmentsCreated       TurnoAssignment[]           @relation("TurnoAssignmentCreatedBy")
+  turnoAssignmentsUpdated       TurnoAssignment[]           @relation("TurnoAssignmentUpdatedBy")
+  attendanceLogsCreated         AttendanceLog[]             @relation("AttendanceLogCreatedBy")
+  attendanceObservationsCreated AttendanceObservation[]     @relation("AttendanceObservationCreatedBy")
+  attendanceObservationsUpdated AttendanceObservation[]     @relation("AttendanceObservationUpdatedBy")
 
   @@unique([tenantId, email])
   @@unique([tenantId, cedula])
@@ -608,17 +611,18 @@ model EmployeeDetails {
   updatedAt            DateTime             @updatedAt
   deletedAt            DateTime?
 
-  user                 User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  location             Location                  @relation(fields: [locationId], references: [id])
-  positionRef          EmployeePosition?         @relation(fields: [positionId], references: [id], onDelete: SetNull)
-  photoStorageObject   StorageObject?            @relation(fields: [photoStorageObjectId], references: [id], onDelete: SetNull)
-  positionHistory      EmployeePositionHistory[]
-  attendanceLogs       AttendanceLog[]
-  mobileAttendanceLogs MobileAttendanceLog[]
-  socialProfiles       EmployeeSocialProfile[]
-  financialProfile     EmployeeFinancialProfile?
-  personalData         EmployeePersonalData?
-  turnoAssignments     TurnoAssignment[]
+  user                   User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  location               Location                  @relation(fields: [locationId], references: [id])
+  positionRef            EmployeePosition?         @relation(fields: [positionId], references: [id], onDelete: SetNull)
+  photoStorageObject     StorageObject?            @relation(fields: [photoStorageObjectId], references: [id], onDelete: SetNull)
+  positionHistory        EmployeePositionHistory[]
+  attendanceLogs         AttendanceLog[]
+  attendanceObservations AttendanceObservation[]
+  mobileAttendanceLogs   MobileAttendanceLog[]
+  socialProfiles         EmployeeSocialProfile[]
+  financialProfile       EmployeeFinancialProfile?
+  personalData           EmployeePersonalData?
+  turnoAssignments       TurnoAssignment[]
 
   @@index([tenantId])
   @@index([locationId])
@@ -1664,6 +1668,14 @@ enum AttendanceOvertimeType {
   FESTIVO_NOCTURNO // Trabajo en festivo nocturno — recargo 150% CST art. 179
 }
 
+// OS-551 — origen de la marcación. AttendanceLog es inmutable: las marcaciones
+// manuales NUNCA editan una fila DEVICE existente, se insertan como una fila
+// MANUAL nueva (opcionalmente referenciando la fila que corrigen vía manualParentLogId).
+enum AttendanceLogSource {
+  DEVICE
+  MANUAL
+}
+
 model AttendanceLog {
   id         String              @id @default(cuid())
   tenantId   String
@@ -1681,13 +1693,48 @@ model AttendanceLog {
   createdAt  DateTime            @default(now())
   updatedAt  DateTime            @updatedAt
 
+  // OS-551 — trazabilidad de marcaciones manuales (source=MANUAL)
+  source            AttendanceLogSource @default(DEVICE)
+  createdByUserId   String?
+  manualReason      String?
+  manualParentLogId String?
+
   employee EmployeeDetails @relation(fields: [employeeId], references: [id])
   location Location        @relation(fields: [locationId], references: [id])
+
+  createdBy       User?           @relation("AttendanceLogCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  manualParentLog AttendanceLog?  @relation("AttendanceLogManualParent", fields: [manualParentLogId], references: [id], onDelete: SetNull)
+  manualChildLogs AttendanceLog[] @relation("AttendanceLogManualParent")
 
   @@index([tenantId, employeeId, workDate])
   @@index([tenantId, locationId, workDate])
   @@index([tenantId, workDate])
+  @@index([manualParentLogId])
   @@map("attendance_logs")
+}
+
+// OS-551 — una observación por empleado + fecha de jornada, persistida y auditada
+// (ver AuditLog para el historial de creación/edición).
+model AttendanceObservation {
+  id         String   @id @default(cuid())
+  tenantId   String
+  employeeId String
+  workDate   DateTime @db.Date
+  note       String   @db.VarChar(500)
+
+  createdByUserId String?
+  updatedByUserId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  employee  EmployeeDetails @relation(fields: [employeeId], references: [id])
+  createdBy User?           @relation("AttendanceObservationCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  updatedBy User?           @relation("AttendanceObservationUpdatedBy", fields: [updatedByUserId], references: [id], onDelete: SetNull)
+
+  @@unique([tenantId, employeeId, workDate])
+  @@index([tenantId, employeeId, workDate])
+  @@map("attendance_observations")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

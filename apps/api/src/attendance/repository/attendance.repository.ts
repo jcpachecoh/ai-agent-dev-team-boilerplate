@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import {
   AttendanceEventType,
   AttendanceLog,
+  AttendanceLogSource,
+  AttendanceObservation,
   EmployeeDetails,
   LaborClassification,
   Location,
@@ -12,7 +14,10 @@ import type {
   AlertDismissalRecord,
   AttendanceHistoryFilters,
   AttendanceLogFull,
+  AttendanceLogWithEmployee,
+  AttendanceObservationFull,
   CreateAttendanceLogData,
+  CreateManualLogData,
   EmployeeWithUser,
   IAttendanceRepository,
   LaborClassificationCounts,
@@ -103,6 +108,7 @@ export class AttendanceRepository implements IAttendanceRepository {
       include: {
         employee: { include: { user: true } },
         location: true,
+        createdBy: { select: { email: true } },
       },
       orderBy: { timestamp: 'desc' },
       take: filters.limit ?? 500,
@@ -312,6 +318,103 @@ export class AttendanceRepository implements IAttendanceRepository {
 
   private getTodayWorkDate(): Date {
     return normalizeWorkDate(new Date());
+  }
+
+  // ── OS-551 — Tarjeta de Asistencia ────────────────────────────────────────
+
+  findLogById(id: string, tenantId: string): Promise<AttendanceLogWithEmployee | null> {
+    return this.prisma.attendanceLog.findFirst({
+      where: { id, tenantId },
+      include: { employee: true },
+    }) as Promise<AttendanceLogWithEmployee | null>;
+  }
+
+  createManualLog(data: CreateManualLogData): Promise<AttendanceLog> {
+    return this.prisma.attendanceLog.create({
+      data: {
+        tenantId: data.tenantId,
+        employeeId: data.employeeId,
+        locationId: data.locationId,
+        eventType: data.eventType,
+        workDate: data.workDate,
+        timestamp: data.timestamp,
+        source: AttendanceLogSource.MANUAL,
+        createdByUserId: data.createdByUserId,
+        manualReason: data.manualReason,
+        manualParentLogId: data.manualParentLogId ?? null,
+      },
+    });
+  }
+
+  // OS-553 — la condición source=MANUAL se valida en el service antes de llamar
+  // este método; aquí se repite en el `where` como defensa adicional a nivel de
+  // datos (si no matchea, Prisma lanza P2025 "record not found").
+  deleteManualLog(id: string, tenantId: string): Promise<AttendanceLog> {
+    return this.prisma.attendanceLog.delete({
+      where: { id, tenantId, source: AttendanceLogSource.MANUAL },
+    });
+  }
+
+  listObservationsInRange(
+    tenantId: string,
+    employeeId: string,
+    dateFrom: Date,
+    dateTo: Date,
+  ): Promise<AttendanceObservationFull[]> {
+    return this.prisma.attendanceObservation.findMany({
+      where: {
+        tenantId,
+        employeeId,
+        workDate: { gte: dateFrom, lte: dateTo },
+      },
+      include: {
+        createdBy: { select: { email: true } },
+        updatedBy: { select: { email: true } },
+      },
+      orderBy: { workDate: 'asc' },
+    });
+  }
+
+  findObservation(
+    tenantId: string,
+    employeeId: string,
+    workDate: Date,
+  ): Promise<AttendanceObservationFull | null> {
+    return this.prisma.attendanceObservation.findUnique({
+      where: { tenantId_employeeId_workDate: { tenantId, employeeId, workDate } },
+      include: {
+        createdBy: { select: { email: true } },
+        updatedBy: { select: { email: true } },
+      },
+    });
+  }
+
+  upsertObservation(
+    tenantId: string,
+    employeeId: string,
+    workDate: Date,
+    note: string,
+    actorUserId: string,
+  ): Promise<AttendanceObservationFull> {
+    return this.prisma.attendanceObservation.upsert({
+      where: { tenantId_employeeId_workDate: { tenantId, employeeId, workDate } },
+      create: {
+        tenantId,
+        employeeId,
+        workDate,
+        note,
+        createdByUserId: actorUserId,
+        updatedByUserId: actorUserId,
+      },
+      update: {
+        note,
+        updatedByUserId: actorUserId,
+      },
+      include: {
+        createdBy: { select: { email: true } },
+        updatedBy: { select: { email: true } },
+      },
+    });
   }
 }
 

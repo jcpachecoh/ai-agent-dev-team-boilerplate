@@ -1,5 +1,6 @@
 import { AttendanceEventType, AttendanceLog, AttendanceShift } from '@prisma/client';
 import {
+  ATTENDANCE_CARD_MAX_RANGE_MONTHS,
   COLOMBIA_TZ,
   LATE_ARRIVAL_TOLERANCE_MINUTES,
   NOCTURNO_START_HOUR,
@@ -89,4 +90,26 @@ export function calculateDaySummary(
   const overtimeMinutes = Math.max(0, totalMinutes - REGULAR_DAY_MINUTES);
 
   return { totalMinutes, overtimeMinutes, isNocturno, pairs };
+}
+
+/**
+ * OS-551 — espeja `validateAttendanceDateRange` del frontend (attendance-card-dates.ts)
+ * para que el límite de 3 meses de la Tarjeta de Asistencia también se exija en el servidor.
+ */
+export function isCardDateRangeWithinLimit(dateFrom: Date, dateTo: Date): boolean {
+  if (dateFrom > dateTo) return false;
+  const maxTo = new Date(dateFrom);
+  maxTo.setMonth(maxTo.getMonth() + ATTENDANCE_CARD_MAX_RANGE_MONTHS);
+  return dateTo <= maxTo;
+}
+
+/**
+ * Parsea una fecha de calendario ("YYYY-MM-DD") tal cual, sin reinterpretarla
+ * por zona horaria. A diferencia de `normalizeWorkDate` (que convierte un
+ * INSTANTE real a su día calendario en Bogotá), esto es para valores que ya
+ * son un día calendario (dateFrom/dateTo/workDate de la Tarjeta de Asistencia).
+ */
+export function parseCalendarDate(isoDate: string): Date {
+  const datePart = isoDate.slice(0, 10);
+  return new Date(`${datePart}T00:00:00.000Z`);
 }

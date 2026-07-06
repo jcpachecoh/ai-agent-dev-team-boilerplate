@@ -12,7 +12,7 @@ import type {
 
 import type { PayrollEmployee } from '@/features/payroll/types/payroll.types';
 
-import type { AttendanceHistoryItem } from '../types/attendance.types';
+import type { AttendanceHistoryItem, AttendanceObservationDto } from '../types/attendance.types';
 import {
   formatMinutesAsHours,
   formatTimeLabel,
@@ -25,7 +25,6 @@ import {
   isWeekend,
   listIsoDatesInRange,
 } from '../utils/attendance-card-dates';
-import { getDayMarkings, getObservation } from '../utils/attendance-card-storage';
 
 const CONTRACT_LABELS: Record<string, string> = {
   FIJO: 'Término fijo',
@@ -128,39 +127,40 @@ function parseDuration(value: string): number {
   return (h ?? 0) * 60 + (m ?? 0);
 }
 
+function groupObservationsByWorkDate(
+  observations: AttendanceObservationDto[],
+): Map<string, AttendanceObservationDto> {
+  const map = new Map<string, AttendanceObservationDto>();
+  for (const observation of observations) {
+    map.set(observation.workDate.slice(0, 10), observation);
+  }
+  return map;
+}
+
 export function buildAttendanceCardRows(
-  employeeId: string,
   fromIso: string,
   toIso: string,
   logs: AttendanceHistoryItem[],
+  observations: AttendanceObservationDto[] = [],
 ): AsistenciaTarjetaDayRow[] {
   const grouped = groupLogsByWorkDate(logs);
+  const observationsByDate = groupObservationsByWorkDate(observations);
   const dates = listIsoDatesInRange(fromIso, toIso);
 
   return dates.map((isoDate) => {
     const dayGroup = grouped.get(isoDate);
     const entry = dayGroup?.entries[0];
     const exit = dayGroup?.exits[0];
-    const dayMarkings = getDayMarkings(employeeId, isoDate);
-    const manualMarks = dayMarkings?.marks ?? [];
-    const observation = getObservation(employeeId, isoDate);
+    const observation = observationsByDate.get(isoDate);
 
-    let entryTimestamp = entry?.timestamp;
-    let exitTimestamp = exit?.timestamp;
+    const entryTimestamp = entry?.timestamp;
+    const exitTimestamp = exit?.timestamp;
 
-    for (const mark of manualMarks) {
-      if (mark.type === 'ENTRY') entryTimestamp = mark.timestamp;
-      if (mark.type === 'EXIT') exitTimestamp = mark.timestamp;
-    }
-
-    const hasManualEntry = manualMarks.some((mark) => mark.type === 'ENTRY');
-    const hasManualExit = manualMarks.some((mark) => mark.type === 'EXIT');
+    const hasManualEntry = entry?.source === 'MANUAL';
+    const hasManualExit = exit?.source === 'MANUAL';
 
     const hasAttendance = Boolean(entryTimestamp || exitTimestamp);
-    const workedMinutes = computeWorkedMinutes(
-      entryTimestamp ? { ...entry!, timestamp: entryTimestamp } : undefined,
-      exitTimestamp ? { ...exit!, timestamp: exitTimestamp } : undefined,
-    );
+    const workedMinutes = computeWorkedMinutes(entry, exit);
     const { ordinaryMinutes, overtimeMinutes } = splitWorkedMinutes(workedMinutes);
     const shift = shiftLabel(entry?.shift ?? exit?.shift);
     const isWorkday = !isRestOrFestiveDay(isoDate);
@@ -196,8 +196,8 @@ export function buildAttendanceCardRows(
       targetHours: isWorkday ? '08:00:00' : '—',
       permissions: '00:00:00',
       variant,
-      hasObservation: Boolean(observation?.text?.trim()),
-      hasManualMarking: manualMarks.length > 0,
+      hasObservation: Boolean(observation?.note?.trim()),
+      hasManualMarking: hasManualEntry || hasManualExit,
       isAutomaticEntry: Boolean(entry && !hasManualEntry),
       isAutomaticExit: Boolean(exit && !hasManualExit),
     };

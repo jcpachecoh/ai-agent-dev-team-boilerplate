@@ -7,6 +7,7 @@ import {
   AsistenciaTarjetaModalTextarea,
   toast,
   type AsistenciaTarjetaDayRow,
+  type AsistenciaTarjetaExistingMark,
   type AsistenciaTarjetaMarkDraft,
   type AsistenciaTarjetaMarkType,
   type AsistenciaTarjetaRowAction,
@@ -21,11 +22,17 @@ import { useTheme } from '@/providers/ThemeProvider';
 
 import { ATTENDANCE_ROUTES } from '../constants/routes';
 import { useAttendanceCardData } from '../hooks/useAttendanceCardData';
+import {
+  useCreateManualMarkingMutation,
+  useDeleteManualMarkingMutation,
+  useUpsertObservationMutation,
+} from '../hooks/useAttendanceMutations';
 import { usePayrollEmployeeQuery } from '../hooks/usePayrollEmployeeQuery';
 import {
   mapPayrollEmployeeToCardHeader,
   sortAttendanceCardRows,
 } from '../mappers/attendance-card.mapper';
+import { formatTimeLabel } from '../utils/attendance-card-calculations';
 import {
   ATTENDANCE_CARD_PAGE_SIZE,
   formatDisplayDate,
@@ -33,21 +40,12 @@ import {
   toIsoDate,
   validateAttendanceDateRange,
 } from '../utils/attendance-card-dates';
-import {
-  createMarkDraft,
-  draftsToMarkEntries,
-  getDayMarkings,
-  getObservation,
-  marksToDrafts,
-  nextMarkType,
-  saveDayMarkings,
-  saveObservation,
-} from '../utils/attendance-card-storage';
+import { createMarkDraft, nextMarkType } from '../utils/attendance-card-drafts';
 
 import styles from './AttendanceCardScreen.module.scss';
 
 const SUPER_ROLES = new Set(['OWNER', 'SUPER_ADMIN', 'ADMIN']);
-const MARKING_ROLES = new Set(['OWNER', 'SUPER_ADMIN', 'SUPERVISOR']);
+const MARKING_ROLES = new Set(['OWNER', 'SUPER_ADMIN', 'SUPERVISOR', 'MANAGER']);
 
 interface LocationState {
   employeeId?: string;
@@ -70,15 +68,12 @@ export function AttendanceCardScreen(): React.JSX.Element {
   const [sortKey, setSortKey] = useState<AsistenciaTarjetaSortKey>('dateLabel');
   const [sortDirection, setSortDirection] = useState<AsistenciaTarjetaSortDirection>('asc');
   const [page, setPage] = useState(1);
-  const [refreshToken, setRefreshToken] = useState(0);
   const [openMenuRowId, setOpenMenuRowId] = useState<string | null>(null);
   const [observationRow, setObservationRow] = useState<AsistenciaTarjetaDayRow | null>(null);
   const [observationText, setObservationText] = useState('');
   const [markingRow, setMarkingRow] = useState<AsistenciaTarjetaDayRow | null>(null);
   const [markDrafts, setMarkDrafts] = useState<AsistenciaTarjetaMarkDraft[]>([]);
   const [changeReason, setChangeReason] = useState('');
-  const [initialMarkDrafts, setInitialMarkDrafts] = useState<AsistenciaTarjetaMarkDraft[]>([]);
-  const [initialChangeReason, setInitialChangeReason] = useState('');
   const menuRef = useRef<HTMLDivElement | null>(null);
 
   const employeeQuery = usePayrollEmployeeQuery(userId);
@@ -90,15 +85,16 @@ export function AttendanceCardScreen(): React.JSX.Element {
   const canEditMarking = MARKING_ROLES.has(roleCode);
   const hasLocationAccess = canAccessAnyLocation || !employee || employee.locationId === locationId;
 
-  const { historyQuery, rows, summary } = useAttendanceCardData({
+  const { cardQuery, rows, summary } = useAttendanceCardData({
     userId,
-    employeeId,
-    locationId,
     fromIso: appliedFrom,
     toIso: appliedTo,
     enabled: Boolean(userId && employeeId && locationId && hasLocationAccess),
-    revision: refreshToken,
   });
+
+  const upsertObservationMutation = useUpsertObservationMutation();
+  const createManualMarkingMutation = useCreateManualMarkingMutation();
+  const deleteManualMarkingMutation = useDeleteManualMarkingMutation();
 
   const sortedRows = useMemo(
     () => sortAttendanceCardRows(rows, sortKey, sortDirection),
@@ -113,6 +109,33 @@ export function AttendanceCardScreen(): React.JSX.Element {
       : sortedRows;
 
   const header = mapPayrollEmployeeToCardHeader(employee);
+
+  const existingObservation = useMemo(
+    () =>
+      observationRow
+        ? cardQuery.data?.observations.find(
+            (observation) => observation.workDate.slice(0, 10) === observationRow.id,
+          )
+        : undefined,
+    [cardQuery.data, observationRow],
+  );
+
+  const existingMarksForDay = useMemo((): AsistenciaTarjetaExistingMark[] => {
+    if (!markingRow) return [];
+    return (cardQuery.data?.logs ?? [])
+      .filter((log) => log.workDate.slice(0, 10) === markingRow.id)
+      .map((log) => ({
+        id: log.id,
+        type: log.eventType,
+        timeLabel: formatTimeLabel(log.timestamp),
+        source: log.source === 'MANUAL' ? 'MANUAL' : 'DEVICE',
+        reason: log.manualReason,
+        createdByEmail: log.createdBy?.email,
+        createdAtLabel: log.createdAt
+          ? `registrada el ${formatDisplayDate(log.createdAt.slice(0, 10))} ${formatTimeLabel(log.createdAt)}`
+          : undefined,
+      }));
+  }, [cardQuery.data, markingRow]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -149,7 +172,10 @@ export function AttendanceCardScreen(): React.JSX.Element {
     if (action === 'observation') {
       setOpenMenuRowId(null);
       setObservationRow(row);
-      setObservationText(getObservation(employeeId, row.id)?.text ?? '');
+      const existing = cardQuery.data?.observations.find(
+        (observation) => observation.workDate.slice(0, 10) === row.id,
+      );
+      setObservationText(existing?.note ?? '');
       return;
     }
 
@@ -159,56 +185,82 @@ export function AttendanceCardScreen(): React.JSX.Element {
     }
 
     setOpenMenuRowId(null);
-    const existing = getDayMarkings(employeeId, row.id);
-    const drafts = marksToDrafts(row.id, existing);
     setMarkingRow(row);
-    setMarkDrafts(drafts);
-    setChangeReason(existing?.changeReason ?? '');
-    setInitialMarkDrafts(drafts);
-    setInitialChangeReason(existing?.changeReason ?? '');
+    setMarkDrafts([createMarkDraft(row.id, 'ENTRY')]);
+    setChangeReason('');
   };
 
-  const saveObservationModal = () => {
+  const saveObservationModal = async () => {
     if (!observationRow) return;
     if (observationText.length > 500) {
       toast.error('La observación acepta hasta 500 caracteres.');
       return;
     }
-    saveObservation(employeeId, observationRow.id, observationText.trim());
-    setObservationRow(null);
-    setRefreshToken((value) => value + 1);
-    toast.success('Observación guardada');
+    try {
+      await upsertObservationMutation.mutateAsync({
+        userId,
+        input: { workDate: observationRow.id, note: observationText.trim() },
+      });
+      setObservationRow(null);
+      toast.success('Observación guardada');
+    } catch {
+      toast.error('No se pudo guardar la observación.');
+    }
   };
 
   const closeMarkingModal = () => {
     setMarkingRow(null);
     setMarkDrafts([]);
     setChangeReason('');
-    setInitialMarkDrafts([]);
-    setInitialChangeReason('');
   };
 
   const resetMarkingModal = () => {
-    setMarkDrafts(initialMarkDrafts);
-    setChangeReason(initialChangeReason);
+    if (!markingRow) return;
+    setMarkDrafts([createMarkDraft(markingRow.id, 'ENTRY')]);
+    setChangeReason('');
   };
 
-  const saveMarkingModal = () => {
-    if (!markingRow || !meQuery.data) return;
+  const saveMarkingModal = async () => {
+    if (!markingRow) return;
 
     if (!changeReason.trim()) {
       toast.error('Seleccione un motivo de cambio.');
       return;
     }
 
-    saveDayMarkings(employeeId, markingRow.id, {
-      marks: draftsToMarkEntries(markDrafts),
-      changeReason: changeReason.trim(),
-      updatedBy: meQuery.data.email,
-    });
-    closeMarkingModal();
-    setRefreshToken((value) => value + 1);
-    toast.success('Marcación guardada');
+    try {
+      for (const draft of markDrafts) {
+        await createManualMarkingMutation.mutateAsync({
+          userId,
+          input: {
+            workDate: markingRow.id,
+            eventType: draft.type,
+            timestamp: new Date(draft.datetimeLocal).toISOString(),
+            reason: changeReason.trim(),
+          },
+        });
+      }
+      closeMarkingModal();
+      toast.success('Marcación guardada');
+    } catch {
+      toast.error('No se pudo guardar la marcación.');
+    }
+  };
+
+  const handleDeleteExistingMark = async (markId: string) => {
+    if (!canEditMarking) {
+      toast.error('No tienes permisos para eliminar marcaciones.');
+      return;
+    }
+    if (!window.confirm('¿Eliminar esta marcación manual? Esta acción no se puede deshacer.')) {
+      return;
+    }
+    try {
+      await deleteManualMarkingMutation.mutateAsync(markId);
+      toast.success('Marcación eliminada');
+    } catch {
+      toast.error('No se pudo eliminar la marcación.');
+    }
   };
 
   const addMarkDraft = () => {
@@ -265,9 +317,9 @@ export function AttendanceCardScreen(): React.JSX.Element {
       sortDirection={sortDirection}
       openMenuRowId={openMenuRowId}
       rangeError={rangeError ?? undefined}
-      loading={employeeQuery.isLoading || historyQuery.isLoading}
+      loading={employeeQuery.isLoading || cardQuery.isLoading}
       errorMessage={
-        employeeQuery.isError || historyQuery.isError
+        employeeQuery.isError || cardQuery.isError
           ? 'No se pudo cargar la tarjeta de asistencia.'
           : undefined
       }
@@ -317,6 +369,13 @@ export function AttendanceCardScreen(): React.JSX.Element {
             onClose={() => setObservationRow(null)}
             onConfirm={saveObservationModal}
           >
+            {existingObservation ? (
+              <p className={styles.observationMeta}>
+                Última edición por {existingObservation.updatedBy?.email ?? 'N/A'} el{' '}
+                {formatDisplayDate(existingObservation.updatedAt.slice(0, 10))}{' '}
+                {formatTimeLabel(existingObservation.updatedAt)}
+              </p>
+            ) : null}
             <AsistenciaTarjetaModalField label="Nota (máx. 500 caracteres)" htmlFor="obs-text">
               <AsistenciaTarjetaModalTextarea
                 id="obs-text"
@@ -332,6 +391,7 @@ export function AttendanceCardScreen(): React.JSX.Element {
             dateLabel={markingRow?.dateLabel ?? ''}
             marks={markDrafts}
             changeReason={changeReason}
+            existingMarks={existingMarksForDay}
             theme={asistenciaTheme}
             onClose={closeMarkingModal}
             onReset={resetMarkingModal}
@@ -341,6 +401,7 @@ export function AttendanceCardScreen(): React.JSX.Element {
             onMarkTypeChange={updateMarkDraftType}
             onMarkDatetimeChange={updateMarkDraftDatetime}
             onChangeReasonChange={setChangeReason}
+            onDeleteExistingMark={handleDeleteExistingMark}
           />
         </>
       }

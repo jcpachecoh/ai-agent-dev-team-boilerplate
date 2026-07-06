@@ -2,6 +2,7 @@ import { BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AttendanceController } from '../controller/attendance.controller';
 import { AttendanceService } from '../service/attendance.service';
+import { AttendanceCardService } from '../service/attendance-card.service';
 import { AttendanceMonitorSummaryService } from '../service/attendance-monitor-summary.service';
 import { AttendanceControlPanelService } from '../service/attendance-control-panel.service';
 import { AttendanceComparisonService } from '../service/attendance-comparison.service';
@@ -15,6 +16,9 @@ import { MonitorSummaryQueryDto } from '../controller/dto/monitor-summary-query.
 import { ControlPanelQueryDto } from '../controller/dto/control-panel-query.dto';
 import { DismissAlertDto } from '../controller/dto/dismiss-alert.dto';
 import { AttendanceComparisonQueryDto } from '../controller/dto/attendance-comparison-query.dto';
+import { AttendanceCardQueryDto } from '../controller/dto/attendance-card-query.dto';
+import { UpsertAttendanceObservationDto } from '../controller/dto/upsert-attendance-observation.dto';
+import { CreateManualMarkingDto } from '../controller/dto/create-manual-marking.dto';
 
 const serviceMock = {
   kioskAuth: jest.fn(),
@@ -23,6 +27,13 @@ const serviceMock = {
   listHistory: jest.fn(),
   listActive: jest.fn(),
   getOvertimeSummary: jest.fn(),
+};
+
+const cardServiceMock = {
+  getCard: jest.fn(),
+  upsertObservation: jest.fn(),
+  createManualMarking: jest.fn(),
+  deleteManualMarking: jest.fn(),
 };
 
 const monitorSummaryServiceMock = {
@@ -57,6 +68,7 @@ describe('AttendanceController', () => {
       controllers: [AttendanceController],
       providers: [
         { provide: AttendanceService, useValue: serviceMock },
+        { provide: AttendanceCardService, useValue: cardServiceMock },
         { provide: AttendanceMonitorSummaryService, useValue: monitorSummaryServiceMock },
         { provide: AttendanceControlPanelService, useValue: controlPanelServiceMock },
         { provide: AttendanceComparisonService, useValue: comparisonServiceMock },
@@ -278,6 +290,101 @@ describe('AttendanceController', () => {
       await controller.getControlPanelComparison(null, TENANT, query);
 
       expect(comparisonServiceMock.getComparison).toHaveBeenCalledWith(TENANT, query);
+    });
+  });
+
+  // ── OS-551 — Tarjeta de Asistencia ───────────────────────────────────────
+
+  describe('getAttendanceCard', () => {
+    it('delega al AttendanceCardService con userId + tenantId + rango', async () => {
+      const user = { tenantId: TENANT };
+      const query = Object.assign(new AttendanceCardQueryDto(), {
+        dateFrom: '2026-06-01',
+        dateTo: '2026-06-30',
+      });
+      cardServiceMock.getCard.mockResolvedValue({ logs: [], observations: [] });
+
+      const result = await controller.getAttendanceCard(user as never, '', 'user-1', query);
+
+      expect(cardServiceMock.getCard).toHaveBeenCalledWith(
+        'user-1',
+        TENANT,
+        '2026-06-01',
+        '2026-06-30',
+      );
+      expect(result).toEqual({ logs: [], observations: [] });
+    });
+  });
+
+  describe('getObservations', () => {
+    it('devuelve solo las observaciones de la tarjeta', async () => {
+      const user = { tenantId: TENANT };
+      const query = Object.assign(new AttendanceCardQueryDto(), {
+        dateFrom: '2026-06-01',
+        dateTo: '2026-06-30',
+      });
+      cardServiceMock.getCard.mockResolvedValue({
+        logs: [{ id: 'log-1' }],
+        observations: [{ id: 'obs-1' }],
+      });
+
+      const result = await controller.getObservations(user as never, '', 'user-1', query);
+
+      expect(result).toEqual([{ id: 'obs-1' }]);
+    });
+  });
+
+  describe('upsertObservation', () => {
+    it('delega al AttendanceCardService pasando el JwtPayload completo (para scoping de sede)', async () => {
+      const user = { sub: 'actor-1', roleCode: 'OWNER', tenantId: TENANT, locationId: 'loc-1' };
+      const dto = Object.assign(new UpsertAttendanceObservationDto(), {
+        workDate: '2026-06-10',
+        note: 'Llegó tarde',
+      });
+      cardServiceMock.upsertObservation.mockResolvedValue({ id: 'obs-1' });
+
+      const result = await controller.upsertObservation(user as never, '', 'user-1', dto);
+
+      expect(cardServiceMock.upsertObservation).toHaveBeenCalledWith('user-1', TENANT, user, dto);
+      expect(result).toEqual({ id: 'obs-1' });
+    });
+  });
+
+  describe('createManualMarking', () => {
+    it('delega al AttendanceCardService pasando el JwtPayload completo (para scoping de sede)', async () => {
+      const user = {
+        sub: 'actor-1',
+        roleCode: 'SUPERVISOR',
+        tenantId: TENANT,
+        locationId: 'loc-1',
+      };
+      const dto = Object.assign(new CreateManualMarkingDto(), {
+        workDate: '2026-06-10',
+        eventType: 'ENTRY',
+        timestamp: '2026-06-10T08:00:00.000Z',
+        reason: 'Olvidó marcar',
+      });
+      cardServiceMock.createManualMarking.mockResolvedValue({ id: 'log-manual-1' });
+
+      const result = await controller.createManualMarking(user as never, '', 'user-1', dto);
+
+      expect(cardServiceMock.createManualMarking).toHaveBeenCalledWith('user-1', TENANT, user, dto);
+      expect(result).toEqual({ id: 'log-manual-1' });
+    });
+  });
+
+  describe('deleteManualMarking', () => {
+    it('delega al AttendanceCardService con id + tenantId + JwtPayload completo', async () => {
+      const user = { sub: 'actor-1', roleCode: 'OWNER', tenantId: TENANT, locationId: 'loc-1' };
+      cardServiceMock.deleteManualMarking.mockResolvedValue(undefined);
+
+      await controller.deleteManualMarking(user as never, '', 'log-manual-1');
+
+      expect(cardServiceMock.deleteManualMarking).toHaveBeenCalledWith(
+        'log-manual-1',
+        TENANT,
+        user,
+      );
     });
   });
 });

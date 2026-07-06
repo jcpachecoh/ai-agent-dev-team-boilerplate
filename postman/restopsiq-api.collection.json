@@ -518,6 +518,18 @@
       "value": "",
       "type": "string",
       "description": "Location id para NOM-03 attendance endpoints. Auto-poblada por el pre-request del folder OS-578 via myLocations GraphQL, o manualmente con el id de PL-01 (primer resultado del seed)."
+    },
+    {
+      "key": "attendanceManualLogId",
+      "value": ""
+    },
+    {
+      "key": "attendanceManualLogIdToDelete",
+      "value": ""
+    },
+    {
+      "key": "attendanceUserLastEntryLogId",
+      "value": ""
     }
   ],
   "item": [
@@ -8302,6 +8314,9 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    pm.environment.set('attendanceUserLastEntryLogId', pm.response.json().logId);",
+                  "}",
                   "pm.test('entry: logId presente', () => {",
                   "    if (pm.response.code === 201) {",
                   "        pm.expect(pm.response.json().logId).to.be.a('string');",
@@ -8496,8 +8511,14 @@
               "request": {
                 "method": "GET",
                 "header": [
-                  { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-                  { "key": "x-tenant-id", "value": "{{tenantId}}" }
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  },
+                  {
+                    "key": "x-tenant-id",
+                    "value": "{{tenantId}}"
+                  }
                 ],
                 "url": {
                   "raw": "{{baseUrl}}/api/attendance/locations/{{attendanceLocationId}}/monitor-summary?period=day&anchorDate={{monitorAnchorDate}}",
@@ -8510,8 +8531,14 @@
                     "monitor-summary"
                   ],
                   "query": [
-                    { "key": "period", "value": "day" },
-                    { "key": "anchorDate", "value": "{{monitorAnchorDate}}" }
+                    {
+                      "key": "period",
+                      "value": "day"
+                    },
+                    {
+                      "key": "anchorDate",
+                      "value": "{{monitorAnchorDate}}"
+                    }
                   ]
                 }
               },
@@ -8550,8 +8577,14 @@
               "request": {
                 "method": "GET",
                 "header": [
-                  { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-                  { "key": "x-tenant-id", "value": "{{tenantId}}" }
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  },
+                  {
+                    "key": "x-tenant-id",
+                    "value": "{{tenantId}}"
+                  }
                 ],
                 "url": {
                   "raw": "{{baseUrl}}/api/attendance/locations/{{attendanceLocationId}}/monitor-summary?period=day&anchorDate={{monitorAnchorDate}}&clasificacion=administrativo",
@@ -8564,9 +8597,18 @@
                     "monitor-summary"
                   ],
                   "query": [
-                    { "key": "period", "value": "day" },
-                    { "key": "anchorDate", "value": "{{monitorAnchorDate}}" },
-                    { "key": "clasificacion", "value": "administrativo" }
+                    {
+                      "key": "period",
+                      "value": "day"
+                    },
+                    {
+                      "key": "anchorDate",
+                      "value": "{{monitorAnchorDate}}"
+                    },
+                    {
+                      "key": "clasificacion",
+                      "value": "administrativo"
+                    }
                   ]
                 }
               },
@@ -8598,8 +8640,14 @@
               "request": {
                 "method": "GET",
                 "header": [
-                  { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-                  { "key": "x-tenant-id", "value": "{{tenantId}}" }
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  },
+                  {
+                    "key": "x-tenant-id",
+                    "value": "{{tenantId}}"
+                  }
                 ],
                 "url": {
                   "raw": "{{baseUrl}}/api/attendance/locations/{{attendanceLocationId}}/monitor-summary?period=day&anchorDate={{monitorAnchorDate}}&clasificacion=operaciones",
@@ -8612,9 +8660,18 @@
                     "monitor-summary"
                   ],
                   "query": [
-                    { "key": "period", "value": "day" },
-                    { "key": "anchorDate", "value": "{{monitorAnchorDate}}" },
-                    { "key": "clasificacion", "value": "operaciones" }
+                    {
+                      "key": "period",
+                      "value": "day"
+                    },
+                    {
+                      "key": "anchorDate",
+                      "value": "{{monitorAnchorDate}}"
+                    },
+                    {
+                      "key": "clasificacion",
+                      "value": "operaciones"
+                    }
                   ]
                 }
               },
@@ -8646,8 +8703,14 @@
               "request": {
                 "method": "GET",
                 "header": [
-                  { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-                  { "key": "x-tenant-id", "value": "{{tenantId}}" }
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  },
+                  {
+                    "key": "x-tenant-id",
+                    "value": "{{tenantId}}"
+                  }
                 ],
                 "url": {
                   "raw": "{{baseUrl}}/api/attendance/locations/{{attendanceLocationId}}/monitor-summary?period=day&anchorDate={{monitorAnchorDate}}&clasificacion=todos",
@@ -8660,9 +8723,18 @@
                     "monitor-summary"
                   ],
                   "query": [
-                    { "key": "period", "value": "day" },
-                    { "key": "anchorDate", "value": "{{monitorAnchorDate}}" },
-                    { "key": "clasificacion", "value": "todos" }
+                    {
+                      "key": "period",
+                      "value": "day"
+                    },
+                    {
+                      "key": "anchorDate",
+                      "value": "{{monitorAnchorDate}}"
+                    },
+                    {
+                      "key": "clasificacion",
+                      "value": "todos"
+                    }
                   ]
                 }
               },
@@ -8688,8 +8760,14 @@
               "request": {
                 "method": "GET",
                 "header": [
-                  { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-                  { "key": "x-tenant-id", "value": "{{tenantId}}" }
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  },
+                  {
+                    "key": "x-tenant-id",
+                    "value": "{{tenantId}}"
+                  }
                 ],
                 "url": {
                   "raw": "{{baseUrl}}/api/attendance/locations/{{attendanceLocationId}}/monitor-summary?period=day&anchorDate={{monitorAnchorDate}}&clasificacion=invalido",
@@ -8702,9 +8780,18 @@
                     "monitor-summary"
                   ],
                   "query": [
-                    { "key": "period", "value": "day" },
-                    { "key": "anchorDate", "value": "{{monitorAnchorDate}}" },
-                    { "key": "clasificacion", "value": "invalido" }
+                    {
+                      "key": "period",
+                      "value": "day"
+                    },
+                    {
+                      "key": "anchorDate",
+                      "value": "{{monitorAnchorDate}}"
+                    },
+                    {
+                      "key": "clasificacion",
+                      "value": "invalido"
+                    }
                   ]
                 }
               },
@@ -11004,6 +11091,626 @@
                   "pm.test('todas invalidas: body incluye detalle de errores', () => {",
                   "    pm.expect(body.errors).to.be.an('array').with.length.above(0);",
                   "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "OS-551 Attendance Card",
+      "description": "Tarjeta de Asistencia: historial + observaciones agregados, observaciones persistidas (AttendanceObservation) y marcaciones manuales inmutables (AttendanceLog.source=MANUAL). Requiere 'NOM-03 Attendance' ejecutado antes (captura attendanceUserId). Lectura: PAYROLL_MODULE_ROLES. Escritura: PAYROLL_WRITE_ROLES (OWNER, SUPER_ADMIN, SUPERVISOR, MANAGER) con scoping de sede para SUPERVISOR/MANAGER. DELETE de marcación manual queda pendiente para OS-553. OS-553: agrega validación de reason (@IsIn) y DELETE de marcaciones manuales (source=MANUAL únicamente; DEVICE es inmutable).",
+      "item": [
+        {
+          "name": "GET Card (historial + observaciones del rango)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/employees/{{attendanceUserId}}/card?dateFrom=2026-01-01&dateTo=2026-03-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "employees", "{{attendanceUserId}}", "card"],
+              "query": [
+                {
+                  "key": "dateFrom",
+                  "value": "2026-01-01"
+                },
+                {
+                  "key": "dateTo",
+                  "value": "2026-03-31"
+                }
+              ]
+            },
+            "description": "Endpoint agregado OS-551: historial (AttendanceLog, DEVICE+MANUAL) + observaciones del rango en una sola respuesta. Rango máximo 3 meses."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('card: status 200 y shape logs/observations', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.logs).to.be.an('array');",
+                  "    pm.expect(body.observations).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Card — rango > 3 meses devuelve 400",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/employees/{{attendanceUserId}}/card?dateFrom=2026-01-01&dateTo=2026-08-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "employees", "{{attendanceUserId}}", "card"],
+              "query": [
+                {
+                  "key": "dateFrom",
+                  "value": "2026-01-01"
+                },
+                {
+                  "key": "dateTo",
+                  "value": "2026-08-31"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('card: rango > 3 meses -> 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Observations",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/employees/{{attendanceUserId}}/observations?dateFrom=2026-01-01&dateTo=2026-03-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "employees", "{{attendanceUserId}}", "observations"],
+              "query": [
+                {
+                  "key": "dateFrom",
+                  "value": "2026-01-01"
+                },
+                {
+                  "key": "dateTo",
+                  "value": "2026-03-31"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('observations: status 200 y array', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json()).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PUT Observation (crear/editar)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workDate\": \"2026-02-10\",\n  \"note\": \"Llegó tarde por transporte público\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/employees/{{attendanceUserId}}/observations",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "employees", "{{attendanceUserId}}", "observations"]
+            },
+            "description": "Upsert por tenantId+employeeId+workDate. Roles permitidos: OWNER, SUPER_ADMIN, SUPERVISOR, MANAGER (PAYROLL_WRITE_ROLES). Genera AuditLog (CREATE o UPDATE)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('observation: guardada con la nota enviada', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json().note).to.eql('Llegó tarde por transporte público');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PUT Observation — note > 500 caracteres devuelve 400",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workDate\": \"2026-02-10\",\n  \"note\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/employees/{{attendanceUserId}}/observations",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "employees", "{{attendanceUserId}}", "observations"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('observation: note > 500 -> 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PUT Observation — rol no autorizado devuelve 403",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenOperator}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workDate\": \"2026-02-10\",\n  \"note\": \"intento no autorizado\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/employees/{{attendanceUserId}}/observations",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "employees", "{{attendanceUserId}}", "observations"]
+            },
+            "description": "OPERATOR no pertenece a PAYROLL_MODULE_ROLES/PAYROLL_WRITE_ROLES -> RolesGuard rechaza con 403 antes de llegar al scoping de sede."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('observation: rol no autorizado -> 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Manual Marking — ENTRY",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workDate\": \"2026-02-10\",\n  \"eventType\": \"ENTRY\",\n  \"timestamp\": \"2026-02-10T08:00:00.000Z\",\n  \"reason\": \"FORGOT\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/employees/{{attendanceUserId}}/manual-markings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "employees", "{{attendanceUserId}}", "manual-markings"]
+            },
+            "description": "Crea un nuevo AttendanceLog con source=MANUAL. Nunca modifica marcaciones DEVICE existentes (AttendanceLog es inmutable). Genera AuditLog (CREATE)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const body = pm.response.json();",
+                  "    pm.environment.set('attendanceManualLogId', body.id);",
+                  "    pm.test('manual marking ENTRY: source=MANUAL', () => {",
+                  "        pm.expect(body.source).to.eql('MANUAL');",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Manual Marking — EXIT (corrige un log DEVICE via parentLogId)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workDate\": \"2026-02-10\",\n  \"eventType\": \"EXIT\",\n  \"timestamp\": \"2026-02-10T17:00:00.000Z\",\n  \"reason\": \"SUPERVISOR_CORRECTION\",\n  \"parentLogId\": \"{{attendanceManualLogId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/employees/{{attendanceUserId}}/manual-markings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "employees", "{{attendanceUserId}}", "manual-markings"]
+            },
+            "description": "parentLogId es opcional: referencia informativa al log que esta marca corrige (debe existir, mismo tenant y mismo empleado). No lo modifica."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('manual marking EXIT: creado', () => {",
+                  "    pm.response.to.have.status(201);",
+                  "    pm.expect(pm.response.json().source).to.eql('MANUAL');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Manual Marking — parentLogId inexistente devuelve 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workDate\": \"2026-02-10\",\n  \"eventType\": \"EXIT\",\n  \"timestamp\": \"2026-02-10T17:00:00.000Z\",\n  \"reason\": \"Corrección de salida\",\n  \"parentLogId\": \"non-existent-log-id\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/employees/{{attendanceUserId}}/manual-markings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "employees", "{{attendanceUserId}}", "manual-markings"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('manual marking: parentLogId inválido -> 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Manual Marking — reason inválido devuelve 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workDate\": \"2026-02-10\",\n  \"eventType\": \"ENTRY\",\n  \"timestamp\": \"2026-02-10T08:00:00.000Z\",\n  \"reason\": \"Porque sí\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/employees/{{attendanceUserId}}/manual-markings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "employees", "{{attendanceUserId}}", "manual-markings"]
+            },
+            "description": "reason debe ser uno de: FORGOT, DEVICE_FAILURE, SUPERVISOR_CORRECTION, SYSTEM_ERROR, OTHER (class-validator @IsIn). Cualquier otro valor -> 400."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('manual marking: reason fuera del catálogo -> 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Manual Marking — para DELETE (crea la marca a borrar)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workDate\": \"2026-02-11\",\n  \"eventType\": \"ENTRY\",\n  \"timestamp\": \"2026-02-11T08:00:00.000Z\",\n  \"reason\": \"DEVICE_FAILURE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/employees/{{attendanceUserId}}/manual-markings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "employees", "{{attendanceUserId}}", "manual-markings"]
+            },
+            "description": "Marca manual dedicada, creada solo para probar el DELETE que sigue (evita consumir attendanceManualLogId usado como parentLogId en el request EXIT anterior)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    pm.environment.set('attendanceManualLogIdToDelete', pm.response.json().id);",
+                  "}",
+                  "pm.test('manual marking creada para borrar', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE Manual Marking — válido (source=MANUAL)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/manual-markings/{{attendanceManualLogIdToDelete}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "manual-markings", "{{attendanceManualLogIdToDelete}}"]
+            },
+            "description": "Elimina físicamente el AttendanceLog (source=MANUAL). Genera AuditLog action=DELETE."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('delete manual marking: 204 No Content', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE Manual Marking — sobre DEVICE devuelve 403",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/manual-markings/{{attendanceUserLastEntryLogId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "manual-markings", "{{attendanceUserLastEntryLogId}}"]
+            },
+            "description": "logId capturado automáticamente por 'NOM-03 Attendance' -> POST /api/attendance/entry (debe ejecutarse esa carpeta antes de esta, en el orden normal de la colección). AttendanceLog con source=DEVICE es inmutable: nunca se puede eliminar, sin importar el rol."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('delete sobre DEVICE -> 403 (inmutable)', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE Manual Marking — inexistente devuelve 404",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/manual-markings/non-existent-log-id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "manual-markings", "non-existent-log-id"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('delete inexistente -> 404', () => pm.response.to.have.status(404));"
                 ]
               }
             }

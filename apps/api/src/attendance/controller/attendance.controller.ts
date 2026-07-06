@@ -2,12 +2,14 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Delete,
   Get,
   Headers,
   HttpCode,
   HttpStatus,
   Param,
   Post,
+  Put,
   Query,
   UseGuards,
 } from '@nestjs/common';
@@ -16,8 +18,10 @@ import { Public } from '../../common/decorators/public.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
-import { PAYROLL_MODULE_ROLES } from '../../common/config/rbac.config';
+import { PAYROLL_MODULE_ROLES, PAYROLL_WRITE_ROLES } from '../../common/config/rbac.config';
+import type { JwtPayload } from '../../auth/interfaces/auth.interfaces';
 import { AttendanceService } from '../service/attendance.service';
+import { AttendanceCardService } from '../service/attendance-card.service';
 import { AttendanceMonitorSummaryService } from '../service/attendance-monitor-summary.service';
 import { AttendanceControlPanelService } from '../service/attendance-control-panel.service';
 import { AttendanceComparisonService } from '../service/attendance-comparison.service';
@@ -42,6 +46,11 @@ import { ControlPanelSummaryDto, DismissAlertResponseDto } from './dto/control-p
 import { DismissAlertDto } from './dto/dismiss-alert.dto';
 import { AttendanceComparisonQueryDto } from './dto/attendance-comparison-query.dto';
 import { AttendanceComparisonSummaryDto } from './dto/attendance-comparison.response';
+import { AttendanceCardQueryDto } from './dto/attendance-card-query.dto';
+import { AttendanceCardResponseDto } from './dto/attendance-card.response';
+import { UpsertAttendanceObservationDto } from './dto/upsert-attendance-observation.dto';
+import { AttendanceObservationResponseDto } from './dto/attendance-observation.response';
+import { CreateManualMarkingDto } from './dto/create-manual-marking.dto';
 
 @ApiTags('attendance')
 @ApiHeader({
@@ -53,6 +62,7 @@ import { AttendanceComparisonSummaryDto } from './dto/attendance-comparison.resp
 export class AttendanceController {
   constructor(
     private readonly attendanceService: AttendanceService,
+    private readonly attendanceCardService: AttendanceCardService,
     private readonly monitorSummaryService: AttendanceMonitorSummaryService,
     private readonly controlPanelService: AttendanceControlPanelService,
     private readonly comparisonService: AttendanceComparisonService,
@@ -260,6 +270,113 @@ export class AttendanceController {
       tenantId,
       date,
     ) as Promise<OvertimeSummaryDto>;
+  }
+
+  // ── OS-551 — Tarjeta de Asistencia (marcaciones manuales + observaciones) ──
+
+  @ApiBearerAuth()
+  @UseGuards(RolesGuard)
+  @Roles(...PAYROLL_MODULE_ROLES)
+  @Get('employees/:userId/card')
+  @ApiOperation({ summary: 'Tarjeta de asistencia: historial + observaciones del rango' })
+  @ApiResponse({ status: 200, type: AttendanceCardResponseDto })
+  getAttendanceCard(
+    @CurrentUser() user: JwtPayload,
+    @Headers('x-tenant-id') headerTenantId: string,
+    @Param('userId') userId: string,
+    @Query() query: AttendanceCardQueryDto,
+  ): Promise<AttendanceCardResponseDto> {
+    const tenantId = this.resolveTenantId(user, headerTenantId);
+    return this.attendanceCardService.getCard(
+      userId,
+      tenantId,
+      query.dateFrom,
+      query.dateTo,
+    ) as unknown as Promise<AttendanceCardResponseDto>;
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(RolesGuard)
+  @Roles(...PAYROLL_MODULE_ROLES)
+  @Get('employees/:userId/observations')
+  @ApiOperation({ summary: 'Observaciones del colaborador en un rango de fechas' })
+  @ApiResponse({ status: 200, type: [AttendanceObservationResponseDto] })
+  async getObservations(
+    @CurrentUser() user: JwtPayload,
+    @Headers('x-tenant-id') headerTenantId: string,
+    @Param('userId') userId: string,
+    @Query() query: AttendanceCardQueryDto,
+  ): Promise<AttendanceObservationResponseDto[]> {
+    const tenantId = this.resolveTenantId(user, headerTenantId);
+    const card = await this.attendanceCardService.getCard(
+      userId,
+      tenantId,
+      query.dateFrom,
+      query.dateTo,
+    );
+    return card.observations as unknown as AttendanceObservationResponseDto[];
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(RolesGuard)
+  @Roles(...PAYROLL_WRITE_ROLES)
+  @Put('employees/:userId/observations')
+  @ApiOperation({ summary: 'Crear o editar la observación de una fecha' })
+  @ApiResponse({ status: 200, type: AttendanceObservationResponseDto })
+  @ApiResponse({ status: 403, description: 'Sin permisos sobre la sede del colaborador' })
+  upsertObservation(
+    @CurrentUser() user: JwtPayload,
+    @Headers('x-tenant-id') headerTenantId: string,
+    @Param('userId') userId: string,
+    @Body() dto: UpsertAttendanceObservationDto,
+  ): Promise<AttendanceObservationResponseDto> {
+    const tenantId = this.resolveTenantId(user, headerTenantId);
+    return this.attendanceCardService.upsertObservation(
+      userId,
+      tenantId,
+      user,
+      dto,
+    ) as unknown as Promise<AttendanceObservationResponseDto>;
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(RolesGuard)
+  @Roles(...PAYROLL_WRITE_ROLES)
+  @Post('employees/:userId/manual-markings')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Registrar una marcación manual (source=MANUAL, no modifica DEVICE)' })
+  @ApiResponse({ status: 201, description: 'AttendanceLog creado con source=MANUAL' })
+  @ApiResponse({ status: 403, description: 'Sin permisos sobre la sede del colaborador' })
+  @ApiResponse({ status: 400, description: 'parentLogId inválido o timestamp fuera de workDate' })
+  createManualMarking(
+    @CurrentUser() user: JwtPayload,
+    @Headers('x-tenant-id') headerTenantId: string,
+    @Param('userId') userId: string,
+    @Body() dto: CreateManualMarkingDto,
+  ) {
+    const tenantId = this.resolveTenantId(user, headerTenantId);
+    return this.attendanceCardService.createManualMarking(userId, tenantId, user, dto);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(RolesGuard)
+  @Roles(...PAYROLL_WRITE_ROLES)
+  @Delete('manual-markings/:id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Eliminar una marcación manual (source=MANUAL). DEVICE es inmutable.' })
+  @ApiResponse({ status: 204, description: 'Marcación eliminada' })
+  @ApiResponse({
+    status: 403,
+    description: 'Es DEVICE o sin permisos sobre la sede del colaborador',
+  })
+  @ApiResponse({ status: 404, description: 'Marcación no encontrada' })
+  deleteManualMarking(
+    @CurrentUser() user: JwtPayload,
+    @Headers('x-tenant-id') headerTenantId: string,
+    @Param('id') id: string,
+  ): Promise<void> {
+    const tenantId = this.resolveTenantId(user, headerTenantId);
+    return this.attendanceCardService.deleteManualMarking(id, tenantId, user);
   }
 
   // ── Helpers ────────────────────────────────────────────────────────────────

@@ -1,5 +1,6 @@
 import {
   AttendanceLog,
+  AttendanceObservation,
   AttendanceShift,
   AttendanceEventType,
   EmployeeDetails,
@@ -19,6 +20,14 @@ export type EmployeeWithUser = EmployeeDetails & { user: User };
 export type AttendanceLogFull = AttendanceLog & {
   employee: EmployeeWithUser;
   location: Location;
+  createdBy?: { email: string } | null;
+};
+
+export type AttendanceLogWithEmployee = AttendanceLog & { employee: EmployeeDetails };
+
+export type AttendanceObservationFull = AttendanceObservation & {
+  createdBy: { email: string } | null;
+  updatedBy: { email: string } | null;
 };
 
 // ── Input shapes ────────────────────────────────────────────────────────────
@@ -181,6 +190,50 @@ export interface AttendanceHistoryFilters {
   offset?: number;
 }
 
+// ── OS-551 — Tarjeta de Asistencia (marcaciones manuales + observaciones) ──
+
+/** Subconjunto del JwtPayload necesario para scoping de sede en escritura. */
+export interface AttendanceActingUser {
+  sub: string;
+  roleCode: string;
+  locationId?: string | null;
+}
+
+export interface AttendanceCardQuery {
+  dateFrom: string;
+  dateTo: string;
+}
+
+export interface AttendanceCardResult {
+  logs: AttendanceLogFull[];
+  observations: AttendanceObservationFull[];
+}
+
+export interface UpsertObservationInput {
+  workDate: string;
+  note: string;
+}
+
+export interface CreateManualMarkingInput {
+  workDate: string;
+  eventType: AttendanceEventType;
+  timestamp: string;
+  reason: string;
+  parentLogId?: string;
+}
+
+export interface CreateManualLogData {
+  tenantId: string;
+  employeeId: string;
+  locationId: string;
+  eventType: AttendanceEventType;
+  workDate: Date;
+  timestamp: Date;
+  createdByUserId: string;
+  manualReason: string;
+  manualParentLogId?: string | null;
+}
+
 export interface IAttendanceRepository {
   findUserByCedula(cedula: string, tenantId: string): Promise<User | null>;
   findEmployeeByUserAndLocation(
@@ -233,6 +286,27 @@ export interface IAttendanceRepository {
       location: Location;
     }>
   >;
+  findLogById(id: string, tenantId: string): Promise<AttendanceLogWithEmployee | null>;
+  createManualLog(data: CreateManualLogData): Promise<AttendanceLog>;
+  deleteManualLog(id: string, tenantId: string): Promise<AttendanceLog>;
+  listObservationsInRange(
+    tenantId: string,
+    employeeId: string,
+    dateFrom: Date,
+    dateTo: Date,
+  ): Promise<AttendanceObservationFull[]>;
+  findObservation(
+    tenantId: string,
+    employeeId: string,
+    workDate: Date,
+  ): Promise<AttendanceObservationFull | null>;
+  upsertObservation(
+    tenantId: string,
+    employeeId: string,
+    workDate: Date,
+    note: string,
+    actorUserId: string,
+  ): Promise<AttendanceObservationFull>;
 }
 
 export interface ControlPanelQuery {

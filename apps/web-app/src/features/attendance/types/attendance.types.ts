@@ -28,6 +28,8 @@ export interface AttendanceLocationSummary {
   city?: string;
 }
 
+export type AttendanceLogSource = 'DEVICE' | 'MANUAL';
+
 export interface AttendanceHistoryItem {
   id: string;
   employeeId: string;
@@ -38,6 +40,45 @@ export interface AttendanceHistoryItem {
   workDate: string;
   employee?: AttendanceEmployeeSummary;
   location?: AttendanceLocationSummary;
+  source?: AttendanceLogSource;
+  manualReason?: string | null;
+  createdByUserId?: string | null;
+  manualParentLogId?: string | null;
+  createdBy?: { email: string } | null;
+  createdAt?: string;
+}
+
+// OS-551 — Tarjeta de Asistencia
+
+export interface AttendanceObservationDto {
+  id: string;
+  employeeId: string;
+  workDate: string;
+  note: string;
+  createdByUserId?: string | null;
+  updatedByUserId?: string | null;
+  createdBy?: { email: string } | null;
+  updatedBy?: { email: string } | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AttendanceCardResult {
+  logs: AttendanceHistoryItem[];
+  observations: AttendanceObservationDto[];
+}
+
+export interface UpsertAttendanceObservationInput {
+  workDate: string;
+  note: string;
+}
+
+export interface CreateManualMarkingInput {
+  workDate: string;
+  eventType: AttendanceEventType;
+  timestamp: string;
+  reason: string;
+  parentLogId?: string;
 }
 
 export interface AttendanceActiveEntry {

@@ -10,6 +10,12 @@ const prismaMock = {
     findFirst: jest.fn(),
     findMany: jest.fn(),
     create: jest.fn(),
+    delete: jest.fn(),
+  },
+  attendanceObservation: {
+    findMany: jest.fn(),
+    findUnique: jest.fn(),
+    upsert: jest.fn(),
   },
   mobileAttendanceLog: {
     findMany: jest.fn(),
@@ -379,6 +385,125 @@ describe('AttendanceRepository', () => {
         }),
       );
       expect(result.id).toBe('log-created');
+    });
+  });
+
+  // ── OS-551 — Tarjeta de Asistencia ────────────────────────────────────────
+
+  describe('findLogById', () => {
+    it('busca por id + tenantId incluyendo el empleado (para scoping de sede)', async () => {
+      const log = {
+        ...makeLog('log-1', AttendanceEventType.ENTRY, new Date()),
+        employee: { locationId: LOCATION_ID },
+      };
+      prismaMock.attendanceLog.findFirst.mockResolvedValueOnce(log);
+
+      const result = await repo.findLogById('log-1', TENANT);
+
+      expect(prismaMock.attendanceLog.findFirst).toHaveBeenCalledWith({
+        where: { id: 'log-1', tenantId: TENANT },
+        include: { employee: true },
+      });
+      expect(result?.id).toBe('log-1');
+    });
+  });
+
+  describe('deleteManualLog', () => {
+    it('elimina solo si id+tenantId+source=MANUAL coinciden', async () => {
+      const log = makeLog('log-manual-1', AttendanceEventType.ENTRY, new Date());
+      prismaMock.attendanceLog.delete.mockResolvedValueOnce(log);
+
+      const result = await repo.deleteManualLog('log-manual-1', TENANT);
+
+      expect(prismaMock.attendanceLog.delete).toHaveBeenCalledWith({
+        where: { id: 'log-manual-1', tenantId: TENANT, source: 'MANUAL' },
+      });
+      expect(result.id).toBe('log-manual-1');
+    });
+  });
+
+  describe('createManualLog', () => {
+    it('crea un AttendanceLog con source=MANUAL y trazabilidad', async () => {
+      const created = {
+        ...makeLog('log-manual-1', AttendanceEventType.ENTRY, new Date()),
+        source: 'MANUAL',
+      };
+      prismaMock.attendanceLog.create.mockResolvedValueOnce(created);
+
+      const result = await repo.createManualLog({
+        tenantId: TENANT,
+        employeeId: EMPLOYEE_ID,
+        locationId: LOCATION_ID,
+        eventType: AttendanceEventType.ENTRY,
+        workDate: WORK_DATE,
+        timestamp: new Date('2026-06-10T08:00:00.000Z'),
+        createdByUserId: 'actor-1',
+        manualReason: 'Olvidó marcar',
+        manualParentLogId: null,
+      });
+
+      expect(prismaMock.attendanceLog.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          source: 'MANUAL',
+          createdByUserId: 'actor-1',
+          manualReason: 'Olvidó marcar',
+          manualParentLogId: null,
+        }),
+      });
+      expect(result.id).toBe('log-manual-1');
+    });
+  });
+
+  describe('listObservationsInRange', () => {
+    it('filtra por tenantId + employeeId + rango de workDate', async () => {
+      prismaMock.attendanceObservation.findMany.mockResolvedValueOnce([]);
+
+      await repo.listObservationsInRange(TENANT, EMPLOYEE_ID, WORK_DATE, WORK_DATE);
+
+      expect(prismaMock.attendanceObservation.findMany).toHaveBeenCalledWith({
+        where: {
+          tenantId: TENANT,
+          employeeId: EMPLOYEE_ID,
+          workDate: { gte: WORK_DATE, lte: WORK_DATE },
+        },
+        include: expect.objectContaining({
+          createdBy: expect.anything(),
+          updatedBy: expect.anything(),
+        }),
+        orderBy: { workDate: 'asc' },
+      });
+    });
+  });
+
+  describe('upsertObservation', () => {
+    it('hace upsert por la clave única tenantId+employeeId+workDate', async () => {
+      const observation = { id: 'obs-1', note: 'nota' };
+      prismaMock.attendanceObservation.upsert.mockResolvedValueOnce(observation);
+
+      const result = await repo.upsertObservation(
+        TENANT,
+        EMPLOYEE_ID,
+        WORK_DATE,
+        'nota',
+        'actor-1',
+      );
+
+      expect(prismaMock.attendanceObservation.upsert).toHaveBeenCalledWith({
+        where: {
+          tenantId_employeeId_workDate: {
+            tenantId: TENANT,
+            employeeId: EMPLOYEE_ID,
+            workDate: WORK_DATE,
+          },
+        },
+        create: expect.objectContaining({ note: 'nota', createdByUserId: 'actor-1' }),
+        update: expect.objectContaining({ note: 'nota', updatedByUserId: 'actor-1' }),
+        include: expect.objectContaining({
+          createdBy: expect.anything(),
+          updatedBy: expect.anything(),
+        }),
+      });
+      expect(result.id).toBe('obs-1');
     });
   });
 

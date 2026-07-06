@@ -150,11 +150,14 @@ export function AsistenciaTarjetaTable({
                 <td>
                   <div className={styles.menuWrap} ref={openMenuRowId === row.id ? menuRef : null}>
                     {row.hasObservation ? (
-                      <StickyNote
-                        className={styles.observationMark}
-                        size={14}
-                        aria-label="Tiene observación"
-                      />
+                      <button
+                        type="button"
+                        className={styles.observationButton}
+                        aria-label={`Ver observación de ${row.dateLabel}`}
+                        onClick={() => onRowAction?.(row, 'observation')}
+                      >
+                        <StickyNote className={styles.observationMark} size={14} aria-hidden />
+                      </button>
                     ) : null}
                     <button
                       type="button"

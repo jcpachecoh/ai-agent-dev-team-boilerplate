@@ -3,6 +3,7 @@ import { getTenantId } from '@/lib/tenant';
 
 import type {
   AttendanceActiveEntry,
+  AttendanceCardResult,
   AttendanceComparisonFilters,
   AttendanceComparisonSummary,
   AttendanceControlPanelFilters,
@@ -16,7 +17,9 @@ import type {
   AttendanceMonitorSummary,
   AttendanceMonitorSummaryFilters,
   AttendanceOvertimeSummary,
+  CreateManualMarkingInput,
   DismissAlertResult,
+  UpsertAttendanceObservationInput,
 } from '../types/attendance.types';
 
 export class AttendanceApiError extends Error {
@@ -200,6 +203,38 @@ export function getAttendanceControlPanel(
     sortDir: filters.sortDir,
   });
   return attendanceFetch<AttendanceControlPanelSummary>(`/attendance/control-panel${query}`);
+}
+
+export function getAttendanceCard(
+  userId: string,
+  dateFrom: string,
+  dateTo: string,
+): Promise<AttendanceCardResult> {
+  const query = toQueryString({ dateFrom, dateTo });
+  return attendanceFetch<AttendanceCardResult>(`/attendance/employees/${userId}/card${query}`);
+}
+
+export function upsertAttendanceObservation(
+  userId: string,
+  input: UpsertAttendanceObservationInput,
+) {
+  return attendanceFetch(`/attendance/employees/${userId}/observations`, {
+    method: 'PUT',
+    body: JSON.stringify(input),
+  });
+}
+
+export function createManualMarking(userId: string, input: CreateManualMarkingInput) {
+  return attendanceFetch(`/attendance/employees/${userId}/manual-markings`, {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export function deleteManualMarking(logId: string): Promise<void> {
+  return attendanceFetch<void>(`/attendance/manual-markings/${logId}`, {
+    method: 'DELETE',
+  });
 }
 
 export function dismissAttendanceAlert(alertKey: string): Promise<DismissAlertResult> {
