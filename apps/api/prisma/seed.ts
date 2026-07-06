@@ -356,8 +356,10 @@ const PERMISSION_SEEDS = [
     action: 'read',
   },
   // OS-582 — Asignación de Turnos (vista semanal colaborador x día)
+  // IDs 061-062: prod already had 054-055 occupied by attendance.turnos.read/write
+  // (seeded 2026-07-02, before this block existed), which caused P2002 on create.
   {
-    id: 'cccccccc-0000-0000-0000-000000000054',
+    id: 'cccccccc-0000-0000-0000-000000000061',
     code: 'attendance.turnos.assignment.read',
     name: 'Read turno assignments',
     description: 'View the weekly shift assignment calendar for employees',
@@ -366,7 +368,7 @@ const PERMISSION_SEEDS = [
     action: 'read',
   },
   {
-    id: 'cccccccc-0000-0000-0000-000000000055',
+    id: 'cccccccc-0000-0000-0000-000000000062',
     code: 'attendance.turnos.assignment.write',
     name: 'Write turno assignments',
     description: 'Create, reassign, mark rest, and delete shift assignments',
@@ -1872,6 +1874,9 @@ async function main() {
   await seedEmployeePositions(OPERATIONAL_TENANT_ID);
   await seedEmployeeDetails(ownerGlobalUser.id, operatorGlobalUser.id, firstLocationId);
   await seedEmployeeSocialProfiles(ownerGlobalUser.id, operatorGlobalUser.id);
+  const { seedBulkAttendanceCollaborators } =
+    await import('./seeds/attendance-collaborators-bulk.seed');
+  await seedBulkAttendanceCollaborators(prisma);
   const { seedEmployeeFinancialProfiles } = await import('./seeds/employee-financial-profile.seed');
   await seedEmployeeFinancialProfiles(prisma, ownerGlobalUser.id, operatorGlobalUser.id);
   await seedUserLocationAssignments([
