@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { AttendanceEventType, AttendanceShift } from '@prisma/client';
+import { AttendanceEventType, AttendanceShift, LaborClassification } from '@prisma/client';
 import { AttendanceRepository, normalizeWorkDate } from '../repository/attendance.repository';
 import { PrismaService } from '../../prisma/prisma.service';
 
@@ -10,6 +10,13 @@ const prismaMock = {
     findFirst: jest.fn(),
     findMany: jest.fn(),
     create: jest.fn(),
+  },
+  mobileAttendanceLog: {
+    findMany: jest.fn(),
+  },
+  alertDismissal: {
+    upsert: jest.fn(),
+    findMany: jest.fn(),
   },
   user: { findFirst: jest.fn() },
   employeeDetails: { findFirst: jest.fn() },
@@ -372,6 +379,112 @@ describe('AttendanceRepository', () => {
         }),
       );
       expect(result.id).toBe('log-created');
+    });
+  });
+
+  // ── listControlPanelLogs (OS-548 clasificacion filter) ──────────────────────
+
+  describe('listControlPanelLogs', () => {
+    it('sin laborClassifications: no agrega filtro de employee al where', async () => {
+      prismaMock.attendanceLog.findMany.mockResolvedValueOnce([]);
+
+      await repo.listControlPanelLogs({ tenantId: TENANT });
+
+      const call = prismaMock.attendanceLog.findMany.mock.calls[0][0];
+      expect(call.where).not.toHaveProperty('employee');
+    });
+
+    it('con laborClassifications: agrega where.employee.laborClassification.in', async () => {
+      prismaMock.attendanceLog.findMany.mockResolvedValueOnce([]);
+
+      await repo.listControlPanelLogs({
+        tenantId: TENANT,
+        laborClassifications: [LaborClassification.ADMINISTRATIVO],
+      });
+
+      const call = prismaMock.attendanceLog.findMany.mock.calls[0][0];
+      expect(call.where.employee).toEqual({
+        laborClassification: { in: [LaborClassification.ADMINISTRATIVO] },
+      });
+    });
+  });
+
+  // ── listMobileLogsForRange (OS-548 clasificacion filter) ─────────────────────
+
+  describe('listMobileLogsForRange', () => {
+    it('sin laborClassifications: no agrega filtro de employee al where', async () => {
+      prismaMock.mobileAttendanceLog.findMany.mockResolvedValueOnce([]);
+
+      await repo.listMobileLogsForRange(TENANT, WORK_DATE, WORK_DATE);
+
+      const call = prismaMock.mobileAttendanceLog.findMany.mock.calls[0][0];
+      expect(call.where).not.toHaveProperty('employee');
+    });
+
+    it('con laborClassifications operaciones: filtra por COCINA y SERVICIO', async () => {
+      prismaMock.mobileAttendanceLog.findMany.mockResolvedValueOnce([]);
+
+      await repo.listMobileLogsForRange(TENANT, WORK_DATE, WORK_DATE, undefined, [
+        LaborClassification.COCINA,
+        LaborClassification.SERVICIO,
+      ]);
+
+      const call = prismaMock.mobileAttendanceLog.findMany.mock.calls[0][0];
+      expect(call.where.employee).toEqual({
+        laborClassification: { in: [LaborClassification.COCINA, LaborClassification.SERVICIO] },
+      });
+    });
+  });
+
+  // ── dismissAlert / listDismissedAlertKeys (OS-548) ──────────────────────────
+
+  describe('dismissAlert', () => {
+    it('hace upsert por la clave compuesta tenantId_userId_alertKey', async () => {
+      const record = {
+        id: 'dismiss-1',
+        tenantId: TENANT,
+        userId: 'user-1',
+        alertKey: 'geo-log-1',
+        dismissedAt: new Date('2026-07-02T10:00:00.000Z'),
+        createdAt: new Date('2026-07-02T10:00:00.000Z'),
+      };
+      prismaMock.alertDismissal.upsert.mockResolvedValueOnce(record);
+
+      const result = await repo.dismissAlert(TENANT, 'user-1', 'geo-log-1');
+
+      expect(prismaMock.alertDismissal.upsert).toHaveBeenCalledWith({
+        where: {
+          tenantId_userId_alertKey: { tenantId: TENANT, userId: 'user-1', alertKey: 'geo-log-1' },
+        },
+        update: { dismissedAt: expect.any(Date) },
+        create: { tenantId: TENANT, userId: 'user-1', alertKey: 'geo-log-1' },
+      });
+      expect(result).toEqual(record);
+    });
+  });
+
+  describe('listDismissedAlertKeys', () => {
+    it('retorna un Set con las alertKey descartadas por ese tenant+usuario', async () => {
+      prismaMock.alertDismissal.findMany.mockResolvedValueOnce([
+        { alertKey: 'geo-log-1' },
+        { alertKey: 'no-geo-log-2' },
+      ]);
+
+      const result = await repo.listDismissedAlertKeys(TENANT, 'user-1');
+
+      expect(prismaMock.alertDismissal.findMany).toHaveBeenCalledWith({
+        where: { tenantId: TENANT, userId: 'user-1' },
+        select: { alertKey: true },
+      });
+      expect(result).toEqual(new Set(['geo-log-1', 'no-geo-log-2']));
+    });
+
+    it('retorna un Set vacío cuando no hay descartes', async () => {
+      prismaMock.alertDismissal.findMany.mockResolvedValueOnce([]);
+
+      const result = await repo.listDismissedAlertKeys(TENANT, 'user-2');
+
+      expect(result).toEqual(new Set());
     });
   });
 });

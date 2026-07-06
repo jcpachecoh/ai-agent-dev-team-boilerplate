@@ -16,6 +16,7 @@ import type {
   AttendanceMonitorSummary,
   AttendanceMonitorSummaryFilters,
   AttendanceOvertimeSummary,
+  DismissAlertResult,
 } from '../types/attendance.types';
 
 export class AttendanceApiError extends Error {
@@ -191,6 +192,7 @@ export function getAttendanceControlPanel(
     locationId: filters.locationId,
     area: filters.area,
     contractType: filters.contractType,
+    clasificacion: filters.clasificacion,
     search: filters.search,
     page: filters.page,
     pageSize: filters.pageSize,
@@ -198,6 +200,13 @@ export function getAttendanceControlPanel(
     sortDir: filters.sortDir,
   });
   return attendanceFetch<AttendanceControlPanelSummary>(`/attendance/control-panel${query}`);
+}
+
+export function dismissAttendanceAlert(alertKey: string): Promise<DismissAlertResult> {
+  return attendanceFetch<DismissAlertResult>('/attendance/control-panel/alerts/dismiss', {
+    method: 'POST',
+    body: JSON.stringify({ alertKey }),
+  });
 }
 
 export function getAttendanceComparison(

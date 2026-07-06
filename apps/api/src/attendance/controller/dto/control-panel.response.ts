@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { AttendanceEventType } from '@prisma/client';
+import type { AttendanceClasificacion } from '../../interfaces/attendance.interfaces';
 
 export class ControlPanelMetricsDto {
   @ApiProperty() workingNow!: number;
@@ -59,8 +60,15 @@ export class ControlPanelSummaryDto {
   @ApiProperty() dateTo!: string;
   @ApiProperty() tenantName!: string;
   @ApiProperty() isLive!: boolean;
+  @ApiPropertyOptional({ enum: ['administrativo', 'operaciones', 'todos'] })
+  clasificacion?: AttendanceClasificacion;
   @ApiProperty({ type: ControlPanelMetricsDto }) metrics!: ControlPanelMetricsDto;
   @ApiProperty({ type: ControlPanelTimelinePageDto }) timeline!: ControlPanelTimelinePageDto;
   @ApiProperty({ type: [ControlPanelAlertDto] }) alerts!: ControlPanelAlertDto[];
   @ApiProperty({ type: ControlPanelFiltersDto }) filters!: ControlPanelFiltersDto;
+}
+
+export class DismissAlertResponseDto {
+  @ApiProperty() alertKey!: string;
+  @ApiProperty() dismissedAt!: string;
 }

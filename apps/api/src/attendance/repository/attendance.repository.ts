@@ -9,6 +9,7 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import type {
+  AlertDismissalRecord,
   AttendanceHistoryFilters,
   AttendanceLogFull,
   CreateAttendanceLogData,
@@ -207,13 +208,19 @@ export class AttendanceRepository implements IAttendanceRepository {
   }
 
   async listControlPanelLogs(
-    filters: AttendanceHistoryFilters & { locationIds?: string[] },
+    filters: AttendanceHistoryFilters & {
+      locationIds?: string[];
+      laborClassifications?: LaborClassification[];
+    },
   ): Promise<AttendanceLogFull[]> {
     const where: Record<string, unknown> = { tenantId: filters.tenantId, isActive: true };
 
     if (filters.employeeId) where.employeeId = filters.employeeId;
     if (filters.locationId) where.locationId = filters.locationId;
     if (filters.locationIds?.length) where.locationId = { in: filters.locationIds };
+    if (filters.laborClassifications?.length) {
+      where.employee = { laborClassification: { in: filters.laborClassifications } };
+    }
 
     if (filters.dateFrom || filters.dateTo) {
       const workDate: Record<string, Date> = {};
@@ -242,17 +249,37 @@ export class AttendanceRepository implements IAttendanceRepository {
     }) as Promise<AttendanceLogFull[]>;
   }
 
-  listMobileLogsForDay(tenantId: string, workDate: Date, locationIds?: string[]) {
-    return this.listMobileLogsForRange(tenantId, workDate, workDate, locationIds);
+  listMobileLogsForDay(
+    tenantId: string,
+    workDate: Date,
+    locationIds?: string[],
+    laborClassifications?: LaborClassification[],
+  ) {
+    return this.listMobileLogsForRange(
+      tenantId,
+      workDate,
+      workDate,
+      locationIds,
+      laborClassifications,
+    );
   }
 
-  listMobileLogsForRange(tenantId: string, dateFrom: Date, dateTo: Date, locationIds?: string[]) {
+  listMobileLogsForRange(
+    tenantId: string,
+    dateFrom: Date,
+    dateTo: Date,
+    locationIds?: string[],
+    laborClassifications?: LaborClassification[],
+  ) {
     return this.prisma.mobileAttendanceLog.findMany({
       where: {
         tenantId,
         deletedAt: null,
         workDate: { gte: dateFrom, lte: dateTo },
         ...(locationIds?.length ? { locationId: { in: locationIds } } : {}),
+        ...(laborClassifications?.length
+          ? { employee: { laborClassification: { in: laborClassifications } } }
+          : {}),
       },
       include: {
         employee: { include: { user: true } },
@@ -261,6 +288,26 @@ export class AttendanceRepository implements IAttendanceRepository {
       orderBy: { timestamp: 'desc' },
       take: 5000,
     });
+  }
+
+  async dismissAlert(
+    tenantId: string,
+    userId: string,
+    alertKey: string,
+  ): Promise<AlertDismissalRecord> {
+    return this.prisma.alertDismissal.upsert({
+      where: { tenantId_userId_alertKey: { tenantId, userId, alertKey } },
+      update: { dismissedAt: new Date() },
+      create: { tenantId, userId, alertKey },
+    });
+  }
+
+  async listDismissedAlertKeys(tenantId: string, userId: string): Promise<Set<string>> {
+    const rows = await this.prisma.alertDismissal.findMany({
+      where: { tenantId, userId },
+      select: { alertKey: true },
+    });
+    return new Set(rows.map((row) => row.alertKey));
   }
 
   private getTodayWorkDate(): Date {

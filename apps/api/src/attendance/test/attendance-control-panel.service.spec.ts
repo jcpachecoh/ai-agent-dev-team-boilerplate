@@ -25,7 +25,11 @@ const repositoryMock = {
   listControlPanelLogs: jest.fn(),
   listMobileLogsForDay: jest.fn(),
   listMobileLogsForRange: jest.fn(),
+  listDismissedAlertKeys: jest.fn(),
+  dismissAlert: jest.fn(),
 };
+
+const USER_ID = 'user-current';
 
 const baseEmployee: TestEmployee = {
   id: 'emp-1',
@@ -77,6 +81,7 @@ describe('AttendanceControlPanelService', () => {
     ]);
     repositoryMock.listMobileLogsForDay.mockResolvedValue([]);
     repositoryMock.listMobileLogsForRange.mockResolvedValue([]);
+    repositoryMock.listDismissedAlertKeys.mockResolvedValue(new Set());
   });
 
   afterEach(() => {
@@ -95,7 +100,7 @@ describe('AttendanceControlPanelService', () => {
       return [];
     });
 
-    const result = await service.getControlPanel('tenant-1', {
+    const result = await service.getControlPanel('tenant-1', USER_ID, {
       anchorDate: '2026-07-01',
       page: 1,
       pageSize: 20,
@@ -140,7 +145,7 @@ describe('AttendanceControlPanelService', () => {
       return [];
     });
 
-    const result = await service.getControlPanel('tenant-1', {
+    const result = await service.getControlPanel('tenant-1', USER_ID, {
       anchorDate: '2026-07-01',
       period: 'week',
       page: 1,
@@ -187,7 +192,7 @@ describe('AttendanceControlPanelService', () => {
       }),
     ]);
 
-    const result = await service.getControlPanel('tenant-1', {
+    const result = await service.getControlPanel('tenant-1', USER_ID, {
       anchorDate: '2026-07-01',
       area: 'Cocina',
       contractType: EmployeeContractType.FIJO,
@@ -220,7 +225,7 @@ describe('AttendanceControlPanelService', () => {
       },
     ]);
 
-    const result = await service.getControlPanel('tenant-1', {
+    const result = await service.getControlPanel('tenant-1', USER_ID, {
       anchorDate: '2026-07-01',
       page: 1,
       pageSize: 20,
@@ -243,7 +248,7 @@ describe('AttendanceControlPanelService', () => {
       }),
     ]);
 
-    const result = await service.getControlPanel('tenant-1', {
+    const result = await service.getControlPanel('tenant-1', USER_ID, {
       anchorDate: '2026-07-01',
       page: 1,
       pageSize: 20,
@@ -284,7 +289,7 @@ describe('AttendanceControlPanelService', () => {
       return [];
     });
 
-    const result = await service.getControlPanel('tenant-1', {
+    const result = await service.getControlPanel('tenant-1', USER_ID, {
       anchorDate: '2026-07-01',
       period: 'month',
       page: 2,
@@ -298,5 +303,185 @@ describe('AttendanceControlPanelService', () => {
     expect(result.timeline.page).toBe(2);
     expect(result.timeline.items).toHaveLength(1);
     expect(repositoryMock.listMobileLogsForRange).toHaveBeenCalled();
+  });
+
+  // ── OS-548: pageSize 20/50/100 ───────────────────────────────────────────────
+
+  describe('pageSize', () => {
+    beforeEach(() => {
+      repositoryMock.listControlPanelLogs.mockResolvedValue(
+        Array.from({ length: 120 }, (_, index) =>
+          buildLog({
+            id: `log-${index}`,
+            employeeId: `emp-${index}`,
+            timestamp: `2026-07-01T${String(8 + (index % 10)).padStart(2, '0')}:00:00.000Z`,
+            employee: {
+              ...baseEmployee,
+              id: `emp-${index}`,
+              userId: `user-${index}`,
+              user: { cedula: `9000${index}`, documentType: DocumentType.CC },
+              personalData: {
+                nombres: `Emp${index}`,
+                primerApellido: 'Test',
+                segundoApellido: null,
+              },
+            },
+          }),
+        ),
+      );
+    });
+
+    it.each([20, 50, 100])(
+      'respeta pageSize=%i en la paginación de la línea de tiempo',
+      async (pageSize) => {
+        const result = await service.getControlPanel('tenant-1', USER_ID, {
+          anchorDate: '2026-07-01',
+          page: 1,
+          pageSize,
+        });
+
+        expect(result.timeline.pageSize).toBe(pageSize);
+        expect(result.timeline.items).toHaveLength(pageSize);
+        expect(result.timeline.total).toBe(120);
+      },
+    );
+  });
+
+  // ── OS-548: filtro clasificacion (reutiliza mapeo OS-578) ───────────────────
+
+  describe('filtro clasificacion', () => {
+    beforeEach(() => {
+      repositoryMock.listControlPanelLogs.mockResolvedValue([buildLog()]);
+    });
+
+    it('clasificacion=todos: no forwarding de laborClassifications', async () => {
+      await service.getControlPanel('tenant-1', USER_ID, {
+        anchorDate: '2026-07-01',
+        clasificacion: 'todos',
+        page: 1,
+        pageSize: 20,
+      });
+
+      const call = repositoryMock.listControlPanelLogs.mock.calls[0][0];
+      expect(call.laborClassifications).toBeUndefined();
+      expect(repositoryMock.listMobileLogsForDay).toHaveBeenCalledWith(
+        'tenant-1',
+        expect.any(Date),
+        expect.any(Array),
+        undefined,
+      );
+    });
+
+    it('clasificacion=administrativo: forwarding [ADMINISTRATIVO] a logs y mobile logs', async () => {
+      const result = await service.getControlPanel('tenant-1', USER_ID, {
+        anchorDate: '2026-07-01',
+        clasificacion: 'administrativo',
+        page: 1,
+        pageSize: 20,
+      });
+
+      const call = repositoryMock.listControlPanelLogs.mock.calls[0][0];
+      expect(call.laborClassifications).toEqual(['ADMINISTRATIVO']);
+      expect(repositoryMock.listMobileLogsForDay).toHaveBeenCalledWith(
+        'tenant-1',
+        expect.any(Date),
+        expect.any(Array),
+        ['ADMINISTRATIVO'],
+      );
+      expect(result.clasificacion).toBe('administrativo');
+    });
+
+    it('clasificacion=operaciones: forwarding [COCINA, SERVICIO] a logs y mobile logs', async () => {
+      const result = await service.getControlPanel('tenant-1', USER_ID, {
+        anchorDate: '2026-07-01',
+        clasificacion: 'operaciones',
+        page: 1,
+        pageSize: 20,
+      });
+
+      const call = repositoryMock.listControlPanelLogs.mock.calls[0][0];
+      expect(call.laborClassifications).toEqual(['COCINA', 'SERVICIO']);
+      expect(repositoryMock.listMobileLogsForDay).toHaveBeenCalledWith(
+        'tenant-1',
+        expect.any(Date),
+        expect.any(Array),
+        ['COCINA', 'SERVICIO'],
+      );
+      expect(result.clasificacion).toBe('operaciones');
+    });
+  });
+
+  // ── OS-548: descarte de alertas persistido ──────────────────────────────────
+
+  describe('dismissAlert', () => {
+    it('delega en el repositorio y retorna alertKey + dismissedAt', async () => {
+      repositoryMock.dismissAlert.mockResolvedValue({
+        id: 'dismiss-1',
+        tenantId: 'tenant-1',
+        userId: USER_ID,
+        alertKey: 'geo-mobile-geo',
+        dismissedAt: new Date('2026-07-01T18:00:00.000Z'),
+        createdAt: new Date('2026-07-01T18:00:00.000Z'),
+      });
+
+      const result = await service.dismissAlert('tenant-1', USER_ID, 'geo-mobile-geo');
+
+      expect(repositoryMock.dismissAlert).toHaveBeenCalledWith(
+        'tenant-1',
+        USER_ID,
+        'geo-mobile-geo',
+      );
+      expect(result).toEqual({
+        alertKey: 'geo-mobile-geo',
+        dismissedAt: '2026-07-01T18:00:00.000Z',
+      });
+    });
+  });
+
+  describe('alertas descartadas', () => {
+    const mobileLogRejected = {
+      id: 'mobile-geo',
+      employeeId: 'emp-geo',
+      timestamp: new Date('2026-07-01T16:00:00.000Z'),
+      status: 'REJECTED',
+      distanceMeters: 120,
+      clientLatitude: 4.6,
+      clientLongitude: -74.1,
+      employee: { ...baseEmployee, id: 'emp-geo', name: 'Luis Rojas' },
+      location: { id: 'loc-1', name: 'Gran Estación' },
+    };
+
+    beforeEach(() => {
+      repositoryMock.listControlPanelLogs.mockResolvedValue([buildLog()]);
+      repositoryMock.listMobileLogsForDay.mockResolvedValue([mobileLogRejected]);
+    });
+
+    it('una alerta descartada por el usuario actual no reaparece para ese mismo usuario', async () => {
+      repositoryMock.listDismissedAlertKeys.mockImplementation(async (_tenantId, userId) =>
+        userId === USER_ID ? new Set(['geo-mobile-geo']) : new Set(),
+      );
+
+      const result = await service.getControlPanel('tenant-1', USER_ID, {
+        anchorDate: '2026-07-01',
+        page: 1,
+        pageSize: 20,
+      });
+
+      expect(result.alerts.some((alert) => alert.id === 'geo-mobile-geo')).toBe(false);
+    });
+
+    it('una alerta descartada por un usuario sí aparece para otro usuario', async () => {
+      repositoryMock.listDismissedAlertKeys.mockImplementation(async (_tenantId, userId) =>
+        userId === USER_ID ? new Set(['geo-mobile-geo']) : new Set(),
+      );
+
+      const result = await service.getControlPanel('tenant-1', 'other-user', {
+        anchorDate: '2026-07-01',
+        page: 1,
+        pageSize: 20,
+      });
+
+      expect(result.alerts.some((alert) => alert.id === 'geo-mobile-geo')).toBe(true);
+    });
   });
 });

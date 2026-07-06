@@ -2,6 +2,7 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 import { EmployeeContractType } from '@prisma/client';
 import { Transform } from 'class-transformer';
 import { IsEnum, IsIn, IsOptional, IsString, Matches } from 'class-validator';
+import type { AttendanceClasificacion } from '../../interfaces/attendance.interfaces';
 
 export class ControlPanelQueryDto {
   @ApiPropertyOptional({ example: '2026-07-01' })
@@ -28,6 +29,16 @@ export class ControlPanelQueryDto {
   @IsOptional()
   @IsEnum(EmployeeContractType)
   contractType?: EmployeeContractType;
+
+  @ApiPropertyOptional({
+    enum: ['administrativo', 'operaciones', 'todos'],
+    description: 'Filtro por clasificación de mano de obra (reutiliza mapeo de OS-578)',
+  })
+  @IsOptional()
+  @IsEnum(['administrativo', 'operaciones', 'todos'], {
+    message: 'clasificacion debe ser administrativo, operaciones o todos',
+  })
+  clasificacion?: AttendanceClasificacion;
 
   @ApiPropertyOptional()
   @IsOptional()

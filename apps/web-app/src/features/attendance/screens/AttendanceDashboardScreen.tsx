@@ -16,16 +16,14 @@ import { useUiTheme } from '@/hooks/useUiTheme';
 import { useTheme } from '@/providers/ThemeProvider';
 import { getErrorMessage } from '@/lib/graphql-client';
 
+import { dismissAttendanceAlert } from '../api/attendance.client';
 import { formatLastSyncLabel } from '../mappers/monitor.mappers';
 import { useAttendanceComparisonQuery } from '../hooks/useAttendanceComparisonQuery';
 import { useAttendanceControlPanelQuery } from '../hooks/useAttendanceControlPanelQuery';
 import { useAttendanceScopeLocations } from '../hooks/useAttendanceScopeLocations';
-import {
-  dismissAlertId,
-  getDismissedAlertIds,
-  getTodayIsoDateBogota,
-} from '../utils/attendance-storage';
+import { getTodayIsoDateBogota } from '../utils/attendance-storage';
 import type {
+  AttendanceClasificacion,
   AttendanceControlPanelPeriod,
   AttendanceControlPanelTimelineRow,
 } from '../types/attendance.types';
@@ -35,6 +33,14 @@ const TIMELINE_PERIOD_OPTIONS: Array<{ id: AttendanceControlPanelPeriod; label: 
   { id: 'day', label: 'Hoy' },
   { id: 'week', label: 'Semana' },
   { id: 'month', label: 'Mes' },
+];
+
+const PAGE_SIZE_OPTIONS = [20, 50, 100] as const;
+
+const CLASIFICACION_OPTIONS: Array<{ value: AttendanceClasificacion; label: string }> = [
+  { value: 'todos', label: 'Todas las clasificaciones' },
+  { value: 'administrativo', label: 'Administrativo' },
+  { value: 'operaciones', label: 'Operaciones' },
 ];
 
 const TIMELINE_PERIOD_TITLES: Record<AttendanceControlPanelPeriod, string> = {
@@ -106,11 +112,13 @@ export function AttendanceDashboardScreen(): React.JSX.Element {
   const [locationId, setLocationId] = useState('');
   const [area, setArea] = useState('');
   const [contractType, setContractType] = useState('');
+  const [clasificacion, setClasificacion] = useState<AttendanceClasificacion>('todos');
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState<(typeof PAGE_SIZE_OPTIONS)[number]>(20);
   const [timelinePeriod, setTimelinePeriod] = useState<AttendanceControlPanelPeriod>('day');
   const [sortBy, setSortBy] = useState<SortableColumn>('lastRecordAt');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
-  const [dismissedAlerts, setDismissedAlerts] = useState(() => getDismissedAlertIds());
+  const [dismissingAlertIds, setDismissingAlertIds] = useState<Set<string>>(new Set());
   const [mobileTab, setMobileTab] = useState<'timeline' | 'alerts'>('timeline');
 
   const query = useAttendanceControlPanelQuery({
@@ -119,9 +127,10 @@ export function AttendanceDashboardScreen(): React.JSX.Element {
     locationId: locationId || scopedLocationId || undefined,
     area: area || undefined,
     contractType: contractType || undefined,
+    clasificacion,
     search: search.trim() || undefined,
     page,
-    pageSize: 20,
+    pageSize,
     sortBy,
     sortDir,
   });
@@ -174,9 +183,12 @@ export function AttendanceDashboardScreen(): React.JSX.Element {
   }, [timelinePeriod]);
 
   const data = query.data;
+  // El backend ya excluye las alertas descartadas por este usuario (persistidas en
+  // AlertDismissal); dismissingAlertIds solo oculta al instante mientras el POST
+  // de descarte y el refetch siguiente todavía no confirman el cambio en el server.
   const visibleAlerts = useMemo(
-    () => (data?.alerts ?? []).filter((alert) => !dismissedAlerts.has(alert.id)),
-    [data?.alerts, dismissedAlerts],
+    () => (data?.alerts ?? []).filter((alert) => !dismissingAlertIds.has(alert.id)),
+    [data?.alerts, dismissingAlertIds],
   );
 
   const totalPages = data
@@ -193,11 +205,25 @@ export function AttendanceDashboardScreen(): React.JSX.Element {
     setSortDir('asc');
   };
 
+  const handleDismissAlert = (alertKey: string) => {
+    setDismissingAlertIds((current) => new Set(current).add(alertKey));
+    void dismissAttendanceAlert(alertKey)
+      .then(() => query.refetch())
+      .catch(() => {
+        setDismissingAlertIds((current) => {
+          const next = new Set(current);
+          next.delete(alertKey);
+          return next;
+        });
+      });
+  };
+
   const clearFilters = () => {
     setSearch('');
     setLocationId('');
     setArea('');
     setContractType('');
+    setClasificacion('todos');
     setPage(1);
   };
 
@@ -369,6 +395,17 @@ export function AttendanceDashboardScreen(): React.JSX.Element {
             setPage(1);
           }}
         />
+        <RecetaFilterSelect
+          theme={uiTheme}
+          size="md"
+          placeholder="Todas las clasificaciones"
+          value={clasificacion}
+          options={CLASIFICACION_OPTIONS}
+          onChange={(value) => {
+            setClasificacion(value as AttendanceClasificacion);
+            setPage(1);
+          }}
+        />
         <button type="button" className={styles.clearButton} onClick={clearFilters}>
           Limpiar filtros
         </button>
@@ -519,6 +556,23 @@ export function AttendanceDashboardScreen(): React.JSX.Element {
             >
               Siguiente
             </button>
+            <div className={styles.pageSizeControl}>
+              <span className={styles.pageSizeLabel}>Filas por página</span>
+              <RecetaFilterSelect
+                theme={uiTheme}
+                size="sm"
+                aria-label="Filas por página"
+                value={String(pageSize)}
+                options={PAGE_SIZE_OPTIONS.map((size) => ({
+                  value: String(size),
+                  label: String(size),
+                }))}
+                onChange={(value) => {
+                  setPageSize(Number(value) as (typeof PAGE_SIZE_OPTIONS)[number]);
+                  setPage(1);
+                }}
+              />
+            </div>
           </div>
         </section>
 
@@ -549,10 +603,7 @@ export function AttendanceDashboardScreen(): React.JSX.Element {
                     type="button"
                     className={styles.dismissButton}
                     aria-label={`Descartar alerta de ${alert.employeeName ?? 'colaborador'}`}
-                    onClick={() => {
-                      dismissAlertId(alert.id);
-                      setDismissedAlerts(getDismissedAlertIds());
-                    }}
+                    onClick={() => handleDismissAlert(alert.id)}
                   >
                     <X size={14} aria-hidden />
                   </button>

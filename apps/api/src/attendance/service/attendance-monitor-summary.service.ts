@@ -1,7 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { AttendanceEventType, AttendanceLog, LaborClassification } from '@prisma/client';
+import { AttendanceEventType, AttendanceLog } from '@prisma/client';
 import type {
-  AttendanceClasificacion,
   AttendanceMonitorEmployee,
   AttendanceMonitorSummary,
   AttendanceMonitorSummaryInput,
@@ -15,6 +14,7 @@ import {
   getShiftStartHour,
   isLateEntry,
 } from '../utils/attendance-calculation.util';
+import { resolveClasificacionFilter } from '../utils/clasificacion.util';
 import {
   enumerateWorkDates,
   isLiveAttendancePeriod,
@@ -242,13 +242,4 @@ export class AttendanceMonitorSummaryService {
     }
     return Array.from(map.values());
   }
-}
-
-function resolveClasificacionFilter(
-  clasificacion?: AttendanceClasificacion,
-): LaborClassification[] | undefined {
-  if (!clasificacion || clasificacion === 'todos') return undefined;
-  if (clasificacion === 'administrativo') return [LaborClassification.ADMINISTRATIVO];
-  if (clasificacion === 'operaciones')
-    return [LaborClassification.COCINA, LaborClassification.SERVICIO];
 }

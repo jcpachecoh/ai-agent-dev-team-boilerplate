@@ -148,6 +148,8 @@ export interface AttendanceMonitorSummaryFilters {
 
 export type AttendanceControlPanelPeriod = 'day' | 'week' | 'month';
 
+export type AttendanceClasificacion = 'administrativo' | 'operaciones' | 'todos';
+
 export interface AttendanceComparisonFilters {
   anchorDate?: string;
   period?: AttendanceControlPanelPeriod;
@@ -184,6 +186,7 @@ export interface AttendanceControlPanelFilters {
   locationId?: string;
   area?: string;
   contractType?: string;
+  clasificacion?: AttendanceClasificacion;
   search?: string;
   page?: number;
   pageSize?: number;
@@ -228,6 +231,7 @@ export interface AttendanceControlPanelSummary {
   dateTo: string;
   tenantName: string;
   isLive: boolean;
+  clasificacion?: AttendanceClasificacion;
   metrics: {
     workingNow: number;
     attendanceToday: number;
@@ -246,4 +250,9 @@ export interface AttendanceControlPanelSummary {
     contractTypes: string[];
     locations: Array<{ id: string; name: string }>;
   };
+}
+
+export interface DismissAlertResult {
+  alertKey: string;
+  dismissedAt: string;
 }

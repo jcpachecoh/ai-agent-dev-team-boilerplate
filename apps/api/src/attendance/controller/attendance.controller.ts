@@ -38,7 +38,8 @@ import {
 import { MonitorSummaryQueryDto } from './dto/monitor-summary-query.dto';
 import { AttendanceMonitorSummaryDto } from './dto/monitor-summary.response';
 import { ControlPanelQueryDto } from './dto/control-panel-query.dto';
-import { ControlPanelSummaryDto } from './dto/control-panel.response';
+import { ControlPanelSummaryDto, DismissAlertResponseDto } from './dto/control-panel.response';
+import { DismissAlertDto } from './dto/dismiss-alert.dto';
 import { AttendanceComparisonQueryDto } from './dto/attendance-comparison-query.dto';
 import { AttendanceComparisonSummaryDto } from './dto/attendance-comparison.response';
 
@@ -212,8 +213,31 @@ export class AttendanceController {
     const tenantId = this.resolveTenantId(user, headerTenantId);
     return this.controlPanelService.getControlPanel(
       tenantId,
+      user?.sub,
       query,
     ) as Promise<ControlPanelSummaryDto>;
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(RolesGuard)
+  @Roles(...PAYROLL_MODULE_ROLES)
+  @Post('control-panel/alerts/dismiss')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Descartar una alerta del panel de control para el usuario autenticado',
+  })
+  @ApiResponse({ status: 200, type: DismissAlertResponseDto })
+  dismissControlPanelAlert(
+    @CurrentUser() user: any,
+    @Headers('x-tenant-id') headerTenantId: string,
+    @Body() dto: DismissAlertDto,
+  ): Promise<DismissAlertResponseDto> {
+    const tenantId = this.resolveTenantId(user, headerTenantId);
+    return this.controlPanelService.dismissAlert(
+      tenantId,
+      user?.sub,
+      dto.alertKey,
+    ) as Promise<DismissAlertResponseDto>;
   }
 
   @ApiBearerAuth()

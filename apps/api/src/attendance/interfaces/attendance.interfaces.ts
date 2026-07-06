@@ -208,12 +208,16 @@ export interface IAttendanceRepository {
   findTenantLabel(tenantId: string): Promise<string>;
   listActiveLocations(tenantId: string, locationIds?: string[]): Promise<Location[]>;
   listControlPanelLogs(
-    filters: AttendanceHistoryFilters & { locationIds?: string[] },
+    filters: AttendanceHistoryFilters & {
+      locationIds?: string[];
+      laborClassifications?: LaborClassification[];
+    },
   ): Promise<AttendanceLogFull[]>;
   listMobileLogsForDay(
     tenantId: string,
     workDate: Date,
     locationIds?: string[],
+    laborClassifications?: LaborClassification[],
   ): Promise<
     Array<{
       id: string;
@@ -237,11 +241,21 @@ export interface ControlPanelQuery {
   locationId?: string;
   area?: string;
   contractType?: string;
+  clasificacion?: AttendanceClasificacion;
   search?: string;
   page?: number;
   pageSize?: number;
   sortBy?: string;
   sortDir?: 'asc' | 'desc';
+}
+
+export interface AlertDismissalRecord {
+  id: string;
+  tenantId: string;
+  userId: string;
+  alertKey: string;
+  dismissedAt: Date;
+  createdAt: Date;
 }
 
 export interface ControlPanelTimelineRow {
@@ -281,6 +295,7 @@ export interface ControlPanelSummary {
   dateTo: string;
   tenantName: string;
   isLive: boolean;
+  clasificacion?: AttendanceClasificacion;
   metrics: {
     workingNow: number;
     attendanceToday: number;

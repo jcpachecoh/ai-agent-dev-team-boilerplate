@@ -13,7 +13,7 @@
 
 .filters {
   display: grid;
-  grid-template-columns: minmax(220px, 1.4fr) repeat(3, minmax(160px, 1fr)) auto;
+  grid-template-columns: minmax(220px, 1.4fr) repeat(4, minmax(160px, 1fr)) auto;
   gap: 0.75rem;
   align-items: center;
 }
@@ -150,6 +150,19 @@
   white-space: nowrap;
 }
 
+.table td {
+  color: var(--asistencia-text);
+}
+
+.table th {
+  background: var(--asistencia-surface-raised, var(--asistencia-surface));
+  color: var(--asistencia-table-header, var(--asistencia-muted));
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
 .sortButton {
   border: 0;
   background: transparent;
@@ -169,8 +182,22 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 0.75rem;
   margin-top: 0.85rem;
+}
+
+.pageSizeControl {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+.pageSizeLabel {
+  color: var(--asistencia-muted, #94a3b8);
+  font-size: 0.8125rem;
+  white-space: nowrap;
 }
 
 .pageButton {

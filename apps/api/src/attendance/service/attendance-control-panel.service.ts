@@ -9,6 +9,7 @@ import type {
 } from '../interfaces/attendance.interfaces';
 import { AttendanceRepository } from '../repository/attendance.repository';
 import { calculateDaySummary } from '../utils/attendance-calculation.util';
+import { resolveClasificacionFilter } from '../utils/clasificacion.util';
 import {
   getTodayAnchorDate,
   isLiveAttendancePeriod,
@@ -38,9 +39,14 @@ type EnrichedEmployee = AttendanceLogFull['employee'] & {
 export class AttendanceControlPanelService {
   constructor(private readonly repository: AttendanceRepository) {}
 
-  async getControlPanel(tenantId: string, query: ControlPanelQuery): Promise<ControlPanelSummary> {
+  async getControlPanel(
+    tenantId: string,
+    userId: string,
+    query: ControlPanelQuery,
+  ): Promise<ControlPanelSummary> {
     const anchorDate = query.anchorDate ?? getTodayAnchorDate();
     const period = query.period ?? 'day';
+    const laborClassifications = resolveClasificacionFilter(query.clasificacion);
     const tenantName = await this.repository.findTenantLabel(tenantId);
     const locations = await this.repository.listActiveLocations(
       tenantId,
@@ -56,6 +62,7 @@ export class AttendanceControlPanelService {
       dateFrom: workDateFromIso(dayRange.dateFrom),
       dateTo: workDateFromIso(dayRange.dateTo),
       locationIds,
+      laborClassifications,
       limit: 5000,
     });
 
@@ -67,6 +74,7 @@ export class AttendanceControlPanelService {
             dateFrom: workDateFromIso(timelineRange.dateFrom),
             dateTo: workDateFromIso(timelineRange.dateTo),
             locationIds,
+            laborClassifications,
             limit: 10000,
           });
 
@@ -76,6 +84,7 @@ export class AttendanceControlPanelService {
       dateFrom: workDateFromIso(monthRange.dateFrom),
       dateTo: workDateFromIso(monthRange.dateTo),
       locationIds,
+      laborClassifications,
       limit: 10000,
     });
 
@@ -83,6 +92,7 @@ export class AttendanceControlPanelService {
       tenantId,
       workDateFromIso(dayRange.dateFrom),
       locationIds,
+      laborClassifications,
     );
     const mobileLogsForTimeline =
       period === 'day'
@@ -92,6 +102,7 @@ export class AttendanceControlPanelService {
             workDateFromIso(timelineRange.dateFrom),
             workDateFromIso(timelineRange.dateTo),
             locationIds,
+            laborClassifications,
           );
 
     const latestMobileByEmployee = new Map<string, (typeof mobileLogsForTimeline)[number]>();
@@ -157,6 +168,8 @@ export class AttendanceControlPanelService {
 
     const filterOptions = this.buildFilterOptions(timelineLogs);
     const alerts = this.buildAlerts(dayLogs, mobileLogsDay, latestDayMobileByEmployee);
+    const dismissedAlertKeys = await this.repository.listDismissedAlertKeys(tenantId, userId);
+    const visibleAlerts = alerts.filter((alert) => !dismissedAlertKeys.has(alert.id));
 
     return {
       anchorDate,
@@ -165,6 +178,7 @@ export class AttendanceControlPanelService {
       dateTo: timelineRange.dateTo,
       tenantName,
       isLive: isLiveAttendancePeriod(period, anchorDate),
+      clasificacion: query.clasificacion,
       metrics: {
         workingNow,
         attendanceToday,
@@ -177,13 +191,22 @@ export class AttendanceControlPanelService {
         page,
         pageSize,
       },
-      alerts,
+      alerts: visibleAlerts,
       filters: {
         areas: filterOptions.areas,
         contractTypes: filterOptions.contractTypes,
         locations: locations.map((location) => ({ id: location.id, name: location.name })),
       },
     };
+  }
+
+  async dismissAlert(
+    tenantId: string,
+    userId: string,
+    alertKey: string,
+  ): Promise<{ alertKey: string; dismissedAt: string }> {
+    const record = await this.repository.dismissAlert(tenantId, userId, alertKey);
+    return { alertKey: record.alertKey, dismissedAt: record.dismissedAt.toISOString() };
   }
 
   private toTimelineRow(

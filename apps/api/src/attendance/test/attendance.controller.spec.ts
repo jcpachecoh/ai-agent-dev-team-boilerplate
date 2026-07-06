@@ -13,6 +13,7 @@ import {
 } from '../controller/dto/list-attendance-query.dto';
 import { MonitorSummaryQueryDto } from '../controller/dto/monitor-summary-query.dto';
 import { ControlPanelQueryDto } from '../controller/dto/control-panel-query.dto';
+import { DismissAlertDto } from '../controller/dto/dismiss-alert.dto';
 import { AttendanceComparisonQueryDto } from '../controller/dto/attendance-comparison-query.dto';
 
 const serviceMock = {
@@ -30,6 +31,7 @@ const monitorSummaryServiceMock = {
 
 const controlPanelServiceMock = {
   getControlPanel: jest.fn(),
+  dismissAlert: jest.fn(),
 };
 
 const comparisonServiceMock = {
@@ -202,8 +204,8 @@ describe('AttendanceController', () => {
   });
 
   describe('getControlPanel', () => {
-    it('delega al control panel service', async () => {
-      const user = { tenantId: TENANT };
+    it('delega al control panel service con el userId del JWT', async () => {
+      const user = { tenantId: TENANT, sub: 'user-001' };
       const query = Object.assign(new ControlPanelQueryDto(), {
         anchorDate: '2026-07-01',
         period: 'day',
@@ -213,7 +215,11 @@ describe('AttendanceController', () => {
 
       const result = await controller.getControlPanel(user, '', query);
 
-      expect(controlPanelServiceMock.getControlPanel).toHaveBeenCalledWith(TENANT, query);
+      expect(controlPanelServiceMock.getControlPanel).toHaveBeenCalledWith(
+        TENANT,
+        'user-001',
+        query,
+      );
       expect(result).toEqual(summary);
     });
 
@@ -221,6 +227,29 @@ describe('AttendanceController', () => {
       expect(() => controller.getControlPanel(null, '', new ControlPanelQueryDto())).toThrow(
         BadRequestException,
       );
+    });
+  });
+
+  describe('dismissControlPanelAlert', () => {
+    it('delega al control panel service con tenantId, userId y alertKey', async () => {
+      const user = { tenantId: TENANT, sub: 'user-001' };
+      const dto = Object.assign(new DismissAlertDto(), { alertKey: 'geo-log-1' });
+      const dismissResult = { alertKey: 'geo-log-1', dismissedAt: '2026-07-02T10:00:00.000Z' };
+      controlPanelServiceMock.dismissAlert.mockResolvedValue(dismissResult);
+
+      const result = await controller.dismissControlPanelAlert(user, '', dto);
+
+      expect(controlPanelServiceMock.dismissAlert).toHaveBeenCalledWith(
+        TENANT,
+        'user-001',
+        'geo-log-1',
+      );
+      expect(result).toEqual(dismissResult);
+    });
+
+    it('lanza BadRequestException cuando no hay tenantId', () => {
+      const dto = Object.assign(new DismissAlertDto(), { alertKey: 'geo-log-1' });
+      expect(() => controller.dismissControlPanelAlert(null, '', dto)).toThrow(BadRequestException);
     });
   });
 

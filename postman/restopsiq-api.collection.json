@@ -8726,6 +8726,582 @@
               ]
             }
           ]
+        },
+        {
+          "name": "OS-548 Control Panel — small fixes",
+          "description": "Pruebas de los fixes puntuales de OS-548 sobre GET /api/attendance/control-panel:\n- pageSize seleccionable (20/50/100, backend ya lo soportaba)\n- filtro clasificacion (reutiliza el mapeo de OS-578: administrativo -> ADMINISTRATIVO, operaciones -> COCINA+SERVICIO, todos -> sin filtro)\n- descarte de alertas persistido en backend (POST /api/attendance/control-panel/alerts/dismiss)\n\nPrerrequisito: {{accessTokenOwner}} y {{tenantId}} seteados (correr NOM-05 login primero).",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Compute today's date in Bogotá timezone for anchorDate",
+                  "const today = new Intl.DateTimeFormat('en-CA', {",
+                  "  timeZone: 'America/Bogota',",
+                  "  year: 'numeric', month: '2-digit', day: '2-digit'",
+                  "}).format(new Date());",
+                  "pm.collectionVariables.set('controlPanelAnchorDate', today);"
+                ]
+              }
+            }
+          ],
+          "item": [
+            {
+              "name": "Control Panel — pageSize=20",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessTokenOwner}}"
+                  },
+                  {
+                    "key": "x-tenant-id",
+                    "value": "{{tenantId}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/attendance/control-panel?anchorDate={{controlPanelAnchorDate}}&page=1&pageSize=20",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "attendance", "control-panel"],
+                  "query": [
+                    {
+                      "key": "anchorDate",
+                      "value": "{{controlPanelAnchorDate}}"
+                    },
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "pageSize",
+                      "value": "20"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                      "pm.test('timeline.pageSize refleja el valor solicitado', () => {",
+                      "    pm.expect(pm.response.json().timeline.pageSize).to.eql(20);",
+                      "});",
+                      "pm.test('timeline.items.length <= pageSize', () => {",
+                      "    const body = pm.response.json();",
+                      "    pm.expect(body.timeline.items.length).to.be.at.most(body.timeline.pageSize);",
+                      "});"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Control Panel — pageSize=50",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessTokenOwner}}"
+                  },
+                  {
+                    "key": "x-tenant-id",
+                    "value": "{{tenantId}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/attendance/control-panel?anchorDate={{controlPanelAnchorDate}}&page=1&pageSize=50",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "attendance", "control-panel"],
+                  "query": [
+                    {
+                      "key": "anchorDate",
+                      "value": "{{controlPanelAnchorDate}}"
+                    },
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "pageSize",
+                      "value": "50"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                      "pm.test('timeline.pageSize refleja el valor solicitado', () => {",
+                      "    pm.expect(pm.response.json().timeline.pageSize).to.eql(50);",
+                      "});",
+                      "pm.test('timeline.items.length <= pageSize', () => {",
+                      "    const body = pm.response.json();",
+                      "    pm.expect(body.timeline.items.length).to.be.at.most(body.timeline.pageSize);",
+                      "});"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Control Panel — pageSize=100",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessTokenOwner}}"
+                  },
+                  {
+                    "key": "x-tenant-id",
+                    "value": "{{tenantId}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/attendance/control-panel?anchorDate={{controlPanelAnchorDate}}&page=1&pageSize=100",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "attendance", "control-panel"],
+                  "query": [
+                    {
+                      "key": "anchorDate",
+                      "value": "{{controlPanelAnchorDate}}"
+                    },
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "pageSize",
+                      "value": "100"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                      "pm.test('timeline.pageSize refleja el valor solicitado', () => {",
+                      "    pm.expect(pm.response.json().timeline.pageSize).to.eql(100);",
+                      "});",
+                      "pm.test('timeline.items.length <= pageSize', () => {",
+                      "    const body = pm.response.json();",
+                      "    pm.expect(body.timeline.items.length).to.be.at.most(body.timeline.pageSize);",
+                      "});"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Control Panel — clasificacion=todos",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessTokenOwner}}"
+                  },
+                  {
+                    "key": "x-tenant-id",
+                    "value": "{{tenantId}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/attendance/control-panel?anchorDate={{controlPanelAnchorDate}}&page=1&pageSize=20&clasificacion=todos",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "attendance", "control-panel"],
+                  "query": [
+                    {
+                      "key": "anchorDate",
+                      "value": "{{controlPanelAnchorDate}}"
+                    },
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "pageSize",
+                      "value": "20"
+                    },
+                    {
+                      "key": "clasificacion",
+                      "value": "todos"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                      "pm.test('shape base: metrics, timeline, alerts, filters', () => {",
+                      "    const b = pm.response.json();",
+                      "    pm.expect(b.metrics).to.be.an('object');",
+                      "    pm.expect(b.timeline).to.be.an('object');",
+                      "    pm.expect(b.alerts).to.be.an('array');",
+                      "    pm.expect(b.filters).to.be.an('object');",
+                      "});",
+                      "pm.test(\"clasificacion echo = 'todos'\", () => {",
+                      "    pm.expect(pm.response.json().clasificacion).to.eql('todos');",
+                      "});"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Control Panel — clasificacion=administrativo",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessTokenOwner}}"
+                  },
+                  {
+                    "key": "x-tenant-id",
+                    "value": "{{tenantId}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/attendance/control-panel?anchorDate={{controlPanelAnchorDate}}&page=1&pageSize=20&clasificacion=administrativo",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "attendance", "control-panel"],
+                  "query": [
+                    {
+                      "key": "anchorDate",
+                      "value": "{{controlPanelAnchorDate}}"
+                    },
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "pageSize",
+                      "value": "20"
+                    },
+                    {
+                      "key": "clasificacion",
+                      "value": "administrativo"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                      "pm.test('shape base: metrics, timeline, alerts, filters', () => {",
+                      "    const b = pm.response.json();",
+                      "    pm.expect(b.metrics).to.be.an('object');",
+                      "    pm.expect(b.timeline).to.be.an('object');",
+                      "    pm.expect(b.alerts).to.be.an('array');",
+                      "    pm.expect(b.filters).to.be.an('object');",
+                      "});",
+                      "pm.test(\"clasificacion echo = 'administrativo'\", () => {",
+                      "    pm.expect(pm.response.json().clasificacion).to.eql('administrativo');",
+                      "});"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Control Panel — clasificacion=operaciones",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessTokenOwner}}"
+                  },
+                  {
+                    "key": "x-tenant-id",
+                    "value": "{{tenantId}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/attendance/control-panel?anchorDate={{controlPanelAnchorDate}}&page=1&pageSize=20&clasificacion=operaciones",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "attendance", "control-panel"],
+                  "query": [
+                    {
+                      "key": "anchorDate",
+                      "value": "{{controlPanelAnchorDate}}"
+                    },
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "pageSize",
+                      "value": "20"
+                    },
+                    {
+                      "key": "clasificacion",
+                      "value": "operaciones"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                      "pm.test('shape base: metrics, timeline, alerts, filters', () => {",
+                      "    const b = pm.response.json();",
+                      "    pm.expect(b.metrics).to.be.an('object');",
+                      "    pm.expect(b.timeline).to.be.an('object');",
+                      "    pm.expect(b.alerts).to.be.an('array');",
+                      "    pm.expect(b.filters).to.be.an('object');",
+                      "});",
+                      "pm.test(\"clasificacion echo = 'operaciones'\", () => {",
+                      "    pm.expect(pm.response.json().clasificacion).to.eql('operaciones');",
+                      "});"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "❌ Control Panel — clasificacion inválida (400)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessTokenOwner}}"
+                  },
+                  {
+                    "key": "x-tenant-id",
+                    "value": "{{tenantId}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/attendance/control-panel?anchorDate={{controlPanelAnchorDate}}&clasificacion=invalido",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "attendance", "control-panel"],
+                  "query": [
+                    {
+                      "key": "anchorDate",
+                      "value": "{{controlPanelAnchorDate}}"
+                    },
+                    {
+                      "key": "clasificacion",
+                      "value": "invalido"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": ["pm.test('400 Bad Request', () => pm.response.to.have.status(400));"]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Control Panel — baseline (captura alertKey si hay alertas)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessTokenOwner}}"
+                  },
+                  {
+                    "key": "x-tenant-id",
+                    "value": "{{tenantId}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/attendance/control-panel?anchorDate={{controlPanelAnchorDate}}&page=1&pageSize=20",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "attendance", "control-panel"],
+                  "query": [
+                    {
+                      "key": "anchorDate",
+                      "value": "{{controlPanelAnchorDate}}"
+                    },
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "pageSize",
+                      "value": "20"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                      "const body = pm.response.json();",
+                      "if (body.alerts && body.alerts.length > 0) {",
+                      "    pm.collectionVariables.set('controlPanelAlertKey', body.alerts[0].id);",
+                      "    console.log('[OS-548] controlPanelAlertKey capturado:', body.alerts[0].id);",
+                      "} else {",
+                      "    console.log('[OS-548] No hay alertas activas en este tenant/seed — el flujo de dismiss se omitira.');",
+                      "}"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Dismiss alert (descartar alerta)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessTokenOwner}}"
+                  },
+                  {
+                    "key": "x-tenant-id",
+                    "value": "{{tenantId}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"alertKey\": \"{{controlPanelAlertKey}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/attendance/control-panel/alerts/dismiss",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "attendance", "control-panel", "alerts", "dismiss"]
+                }
+              },
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const alertKey = pm.collectionVariables.get('controlPanelAlertKey');",
+                      "if (!alertKey) {",
+                      "    console.log('[OS-548] Sin alertKey capturado - este request no tiene alerta real que descartar.');",
+                      "}"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const alertKey = pm.collectionVariables.get('controlPanelAlertKey');",
+                      "if (!alertKey) {",
+                      "    console.log('[OS-548] Skip: no habia alertKey capturado.');",
+                      "} else {",
+                      "    pm.test('200 OK', () => pm.response.to.have.status(200));",
+                      "    pm.test('retorna alertKey y dismissedAt', () => {",
+                      "        const b = pm.response.json();",
+                      "        pm.expect(b.alertKey).to.eql(alertKey);",
+                      "        pm.expect(b.dismissedAt).to.be.a('string');",
+                      "    });",
+                      "}"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Control Panel — verificar alerta descartada (no reaparece)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessTokenOwner}}"
+                  },
+                  {
+                    "key": "x-tenant-id",
+                    "value": "{{tenantId}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/attendance/control-panel?anchorDate={{controlPanelAnchorDate}}&page=1&pageSize=20",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "attendance", "control-panel"],
+                  "query": [
+                    {
+                      "key": "anchorDate",
+                      "value": "{{controlPanelAnchorDate}}"
+                    },
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "pageSize",
+                      "value": "20"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                      "const alertKey = pm.collectionVariables.get('controlPanelAlertKey');",
+                      "if (!alertKey) {",
+                      "    console.log('[OS-548] Skip: no habia alertKey capturado en el request baseline.');",
+                      "} else {",
+                      "    pm.test('la alerta descartada ya no aparece en la respuesta', () => {",
+                      "        const ids = pm.response.json().alerts.map((a) => a.id);",
+                      "        pm.expect(ids).to.not.include(alertKey);",
+                      "    });",
+                      "}"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
         }
       ]
     },

@@ -1757,3 +1757,19 @@ model TurnoAssignment {
   @@index([tenantId, employeeId, workDate])
   @@map("turno_assignments")
 }
+
+// OS-548: descarte persistido de alertas del panel de control de asistencia.
+// alertKey reutiliza el id ya generado por ControlPanelAlert (ej. "geo-<mobileLogId>",
+// "no-geo-<attendanceLogId>") — sin FK Prisma, igual que storageObjectId en MobileAttendanceLog.
+model AlertDismissal {
+  id          String   @id @default(cuid())
+  tenantId    String
+  userId      String
+  alertKey    String
+  dismissedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  @@unique([tenantId, userId, alertKey])
+  @@index([tenantId, userId])
+  @@map("attendance_alert_dismissals")
+}

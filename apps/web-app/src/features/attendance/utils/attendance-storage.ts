@@ -29,26 +29,3 @@ export function getTodayIsoDateBogota(): string {
     day: '2-digit',
   }).format(new Date());
 }
-
-const DISMISSED_ALERTS_KEY = 'restopsiq.attendance.dismissedAlerts';
-
-export function getDismissedAlertIds(): Set<string> {
-  try {
-    const raw = localStorage.getItem(DISMISSED_ALERTS_KEY);
-    if (!raw) return new Set();
-    const parsed = JSON.parse(raw) as string[];
-    return new Set(parsed);
-  } catch {
-    return new Set();
-  }
-}
-
-export function dismissAlertId(alertId: string): void {
-  const current = getDismissedAlertIds();
-  current.add(alertId);
-  localStorage.setItem(DISMISSED_ALERTS_KEY, JSON.stringify(Array.from(current)));
-}
-
-export function clearDismissedAlerts(): void {
-  localStorage.removeItem(DISMISSED_ALERTS_KEY);
-}
