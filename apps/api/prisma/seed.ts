@@ -880,151 +880,165 @@ async function seedUserLocationAssignments(
 // ─── OS-563: EmployeePosition catalog for Palos de Leña (lista oficial cliente) ─
 const EMPLOYEE_POSITIONS_PDL = [
   // Gerencia
-  { id: 'pos-pdl-001', title: 'Administrador', area: 'Gerencia', baseSalaryRange: 5000000 },
-  { id: 'pos-pdl-002', title: 'Administrador junior', area: 'Gerencia', baseSalaryRange: 3000000 },
+  // NOTE: titles must match prod's casing exactly (ALL CAPS) — the upsert `where` matches
+  // by `tenantId_title`, and prod's employee_positions rows were normalized to uppercase
+  // outside of this seed. A casing mismatch here makes upsert miss the match-by-title and
+  // fall into create with an id that's already taken by the uppercase row → P2002 on id.
+  { id: 'pos-pdl-001', title: 'ADMINISTRADOR', area: 'Gerencia', baseSalaryRange: 5000000 },
+  { id: 'pos-pdl-002', title: 'ADMINISTRADOR JUNIOR', area: 'Gerencia', baseSalaryRange: 3000000 },
   {
     id: 'pos-pdl-003',
-    title: 'Director de operaciones',
+    title: 'DIRECTOR DE OPERACIONES',
     area: 'Gerencia',
     baseSalaryRange: 8000000,
   },
-  { id: 'pos-pdl-004', title: 'Directora comercial', area: 'Gerencia', baseSalaryRange: 7000000 },
+  { id: 'pos-pdl-004', title: 'DIRECTORA COMERCIAL', area: 'Gerencia', baseSalaryRange: 7000000 },
   {
     id: 'pos-pdl-005',
-    title: 'Gerente administrativa',
+    title: 'GERENTE ADMINISTRATIVA',
     area: 'Gerencia',
     baseSalaryRange: 6000000,
   },
   {
     id: 'pos-pdl-006',
-    title: 'Gerente de punto de venta',
+    title: 'GERENTE DE PUNTO DE VENTA',
     area: 'Gerencia',
     baseSalaryRange: 4500000,
   },
-  { id: 'pos-pdl-007', title: 'Gerente general', area: 'Gerencia', baseSalaryRange: 15000000 },
+  { id: 'pos-pdl-007', title: 'GERENTE GENERAL', area: 'Gerencia', baseSalaryRange: 15000000 },
   // Cocina
   {
     id: 'pos-pdl-008',
-    title: 'Auxiliar de cocina y produccion',
+    title: 'AUXILIAR DE COCINA Y PRODUCCION',
     area: 'Cocina',
     baseSalaryRange: 1423500,
   },
   {
     id: 'pos-pdl-009',
-    title: 'Auxliar de cocina y produccion',
+    title: 'AUXLIAR DE COCINA Y PRODUCCION',
     area: 'Cocina',
     baseSalaryRange: 1423500,
   },
-  { id: 'pos-pdl-010', title: 'Chef coorporativo', area: 'Cocina', baseSalaryRange: 6000000 },
-  { id: 'pos-pdl-011', title: 'Cocina', area: 'Cocina', baseSalaryRange: 1800000 },
-  { id: 'pos-pdl-012', title: 'Cocina fin de semana', area: 'Cocina', baseSalaryRange: 1423500 },
-  { id: 'pos-pdl-013', title: 'Parrillero', area: 'Cocina', baseSalaryRange: 2200000 },
-  { id: 'pos-pdl-014', title: 'Parrillero junior', area: 'Cocina', baseSalaryRange: 1600000 },
+  { id: 'pos-pdl-010', title: 'CHEF COORPORATIVO', area: 'Cocina', baseSalaryRange: 6000000 },
+  { id: 'pos-pdl-011', title: 'COCINA', area: 'Cocina', baseSalaryRange: 1800000 },
+  { id: 'pos-pdl-012', title: 'COCINA FIN DE SEMANA', area: 'Cocina', baseSalaryRange: 1423500 },
+  { id: 'pos-pdl-013', title: 'PARRILLERO', area: 'Cocina', baseSalaryRange: 2200000 },
+  { id: 'pos-pdl-014', title: 'PARRILLERO JUNIOR', area: 'Cocina', baseSalaryRange: 1600000 },
   // Servicio
-  { id: 'pos-pdl-015', title: 'Asesor de ventas', area: 'Servicio', baseSalaryRange: 1800000 },
+  { id: 'pos-pdl-015', title: 'ASESOR DE VENTAS', area: 'Servicio', baseSalaryRange: 1800000 },
   {
     id: 'pos-pdl-016',
-    title: 'Asesora de ventas fin de semana',
+    title: 'ASESORA DE VENTAS FIN DE SEMANA',
     area: 'Servicio',
     baseSalaryRange: 1423500,
   },
-  { id: 'pos-pdl-017', title: 'Bartender', area: 'Servicio', baseSalaryRange: 1800000 },
-  { id: 'pos-pdl-018', title: 'Ejecutivo comercial', area: 'Servicio', baseSalaryRange: 3000000 },
+  { id: 'pos-pdl-017', title: 'BARTENDER', area: 'Servicio', baseSalaryRange: 1800000 },
+  { id: 'pos-pdl-018', title: 'EJECUTIVO COMERCIAL', area: 'Servicio', baseSalaryRange: 3000000 },
   {
     id: 'pos-pdl-019',
-    title: 'Hotess fin de semana',
+    title: 'HOTESS FIN DE SEMANA',
     area: 'Servicio',
     baseSalaryRange: 1423500,
   },
-  { id: 'pos-pdl-020', title: 'Impulsador', area: 'Servicio', baseSalaryRange: 1600000 },
+  { id: 'pos-pdl-020', title: 'IMPULSADOR', area: 'Servicio', baseSalaryRange: 1600000 },
   {
     id: 'pos-pdl-021',
-    title: 'Impulsador fin de semana',
+    title: 'IMPULSADOR FIN DE SEMANA',
     area: 'Servicio',
     baseSalaryRange: 1423500,
   },
   // Planta / Producción
   {
     id: 'pos-pdl-022',
-    title: 'Lider de planta de produccion',
+    title: 'LIDER DE PLANTA DE PRODUCCION',
     area: 'Planta',
     baseSalaryRange: 3500000,
   },
   // Administrativo
   {
     id: 'pos-pdl-023',
-    title: 'Analista de compras',
+    title: 'ANALISTA DE COMPRAS',
     area: 'Administrativo',
     baseSalaryRange: 3000000,
   },
   {
     id: 'pos-pdl-024',
-    title: 'Analista de gestión humana',
+    title: 'ANALISTA DE GESTIÓN HUMANA',
     area: 'Administrativo',
     baseSalaryRange: 3000000,
   },
   {
     id: 'pos-pdl-025',
-    title: 'Analista financiera y contable',
+    title: 'ANALISTA FINANCIERA Y CONTABLE',
     area: 'Administrativo',
     baseSalaryRange: 3500000,
   },
-  { id: 'pos-pdl-026', title: 'Aprendiz sena', area: 'Administrativo', baseSalaryRange: 711750 },
-  { id: 'pos-pdl-027', title: 'Auditor', area: 'Administrativo', baseSalaryRange: 4000000 },
+  { id: 'pos-pdl-026', title: 'APRENDIZ SENA', area: 'Administrativo', baseSalaryRange: 711750 },
+  { id: 'pos-pdl-027', title: 'AUDITOR', area: 'Administrativo', baseSalaryRange: 4000000 },
   {
     id: 'pos-pdl-028',
-    title: 'Auxiliar administrativo',
+    title: 'AUXILIAR ADMINISTRATIVO',
     area: 'Administrativo',
     baseSalaryRange: 1800000,
   },
   {
     id: 'pos-pdl-029',
-    title: 'Auxiliar talento humano',
+    title: 'AUXILIAR TALENTO HUMANO',
     area: 'Administrativo',
     baseSalaryRange: 1800000,
   },
-  { id: 'pos-pdl-030', title: 'Contador', area: 'Administrativo', baseSalaryRange: 4500000 },
+  { id: 'pos-pdl-030', title: 'CONTADOR', area: 'Administrativo', baseSalaryRange: 4500000 },
   {
     id: 'pos-pdl-031',
-    title: 'Jefe de compras',
+    title: 'JEFE DE COMPRAS',
     area: 'Administrativo',
     baseSalaryRange: 4000000,
   },
   {
     id: 'pos-pdl-032',
-    title: 'Jefe de taleno humano',
+    title: 'JEFE DE TALENO HUMANO',
     area: 'Administrativo',
     baseSalaryRange: 4000000,
   },
-  { id: 'pos-pdl-033', title: 'Programador', area: 'Administrativo', baseSalaryRange: 3500000 },
+  { id: 'pos-pdl-033', title: 'PROGRAMADOR', area: 'Administrativo', baseSalaryRange: 3500000 },
   {
     id: 'pos-pdl-034',
-    title: 'Servicios generales',
+    title: 'SERVICIOS GENERALES',
     area: 'Administrativo',
     baseSalaryRange: 1423500,
   },
   // Logística
-  { id: 'pos-pdl-035', title: 'Almacenista', area: 'Logística', baseSalaryRange: 1800000 },
+  { id: 'pos-pdl-035', title: 'ALMACENISTA', area: 'Logística', baseSalaryRange: 1800000 },
   {
     id: 'pos-pdl-036',
-    title: 'Auxiliar de conduccion',
+    title: 'AUXILIAR DE CONDUCCION',
     area: 'Logística',
     baseSalaryRange: 1800000,
   },
   {
     id: 'pos-pdl-037',
-    title: 'Auxiliar de conduccion y mantenimiento',
+    title: 'AUXILIAR DE CONDUCCION Y MANTENIMIENTO',
     area: 'Logística',
     baseSalaryRange: 2000000,
   },
-  { id: 'pos-pdl-038', title: 'Conductor', area: 'Logística', baseSalaryRange: 2200000 },
+  { id: 'pos-pdl-038', title: 'CONDUCTOR', area: 'Logística', baseSalaryRange: 2200000 },
 ] as const;
 
 async function seedEmployeePositions(tenantId: string) {
+  // Matched by `id` (not `tenantId_title`): `id` is the stable identity we control here —
+  // positionId FKs point at it — while `title` is just display text that has drifted out of
+  // band between environments (e.g. prod rows got normalized to uppercase directly in the DB).
+  // Matching by title made upsert miss the existing row on any drift and crash trying to
+  // create a duplicate `id`. Matching by `id` finds the row regardless of title and heals it.
   for (const pos of EMPLOYEE_POSITIONS_PDL) {
     await prisma.employeePosition.upsert({
-      where: { tenantId_title: { tenantId, title: pos.title } },
-      update: { area: pos.area, baseSalaryRange: pos.baseSalaryRange, isActive: true },
+      where: { id: pos.id },
+      update: {
+        title: pos.title,
+        area: pos.area,
+        baseSalaryRange: pos.baseSalaryRange,
+        isActive: true,
+      },
       create: {
         id: pos.id,
         tenantId,
