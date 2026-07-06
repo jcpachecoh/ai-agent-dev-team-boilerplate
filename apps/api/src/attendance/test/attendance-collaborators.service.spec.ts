@@ -452,6 +452,11 @@ describe('AttendanceCollaboratorsService', () => {
       );
       expect(sendArgs.attachments).toHaveLength(1);
       expect(sendArgs.attachments?.[0].filename).toMatch(/\.xlsx$/);
+      // El contenido debe ser un string base64 (JSON-safe a través de BullMQ/Redis),
+      // nunca un ArrayBuffer — un ArrayBuffer se serializa como `{}` al encolar el
+      // job, causando "The attachment content is empty." en Resend (bug real).
+      expect(typeof sendArgs.attachments?.[0].content).toBe('string');
+      expect(sendArgs.attachments?.[0].content).toBe(Buffer.from('xlsx').toString('base64'));
 
       expect(auditService.log).toHaveBeenCalledTimes(1);
       expect(auditService.log).toHaveBeenCalledWith(

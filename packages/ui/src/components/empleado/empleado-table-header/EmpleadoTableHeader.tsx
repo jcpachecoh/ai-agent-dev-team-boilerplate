@@ -1,11 +1,7 @@
 import type { CSSProperties, JSX } from 'react';
 
 import { TableSortIcon } from '../../table-sort-icon';
-import {
-  defaultEmpleadoColumns,
-  getEmpleadoGridTemplate,
-  type EmpleadoColumnDef,
-} from '../shared/empleado-columns';
+import { defaultEmpleadoColumns, type EmpleadoColumnDef } from '../shared/empleado-columns';
 import type { EmpleadoSize, EmpleadoTheme } from '../shared/empleado-types';
 import styles from './EmpleadoTableHeader.module.scss';
 
@@ -30,7 +26,10 @@ export function EmpleadoTableHeader({
   size = 'md',
   className,
 }: EmpleadoTableHeaderProps): JSX.Element {
-  const showActions = columns.some((column) => column.key === 'actions');
+  // Se deriva directamente de `columns` (no se recalcula por separado vía
+  // getEmpleadoGridTemplate) para que el grid-template-columns del header
+  // nunca pueda desincronizarse del número real de celdas renderizadas abajo.
+  const gridTemplate = columns.map((column) => column.width ?? '1fr').join(' ');
 
   return (
     <div
@@ -38,7 +37,7 @@ export function EmpleadoTableHeader({
         .filter(Boolean)
         .join(' ')}
       role="row"
-      style={{ '--empleado-columns': getEmpleadoGridTemplate(showActions) } as CSSProperties}
+      style={{ '--empleado-columns': gridTemplate } as CSSProperties}
     >
       {columns.map((column) => {
         const isSortable = Boolean(column.sortable && column.onSort);

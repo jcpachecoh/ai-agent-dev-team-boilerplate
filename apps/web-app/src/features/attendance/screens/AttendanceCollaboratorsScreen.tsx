@@ -7,6 +7,7 @@ import {
   EmpleadoPageSection,
   EmpleadoTable,
   EmpleadoTableItem,
+  InventarioPrimaryButton,
   Modal,
   RecetaFilterSelect,
   RecetaMetricCard,
@@ -16,6 +17,7 @@ import {
   type EmpleadoSortColumnKey,
   type EmpleadoSortDirection,
 } from '@restopsiq/ui';
+import { Eraser, FileSpreadsheet, FileText, Mail } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -514,46 +516,48 @@ export function AttendanceCollaboratorsScreen(): React.JSX.Element {
               size="md"
             />
           </label>
-          <Button
-            type="button"
-            variant="secondary"
-            size="small"
+        </div>
+        <div className={styles.actionsRow}>
+          <InventarioPrimaryButton
+            label="Limpiar filtros"
+            variant="ghost"
+            icon={<Eraser aria-hidden />}
+            theme={empleadoTheme}
+            size="sm"
             onClick={() => {
               handleClearFilters();
               setSortColumn(null);
               setSortDirection('asc');
             }}
-          >
-            Limpiar filtros
-          </Button>
-        </div>
-        <div className={styles.exportActions}>
-          <Button
-            type="button"
-            variant="secondary"
-            size="small"
-            disabled={exportCollaborators.isPending}
-            onClick={() => void handleExport('excel')}
-          >
-            Exportar Excel
-          </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            size="small"
-            disabled={exportCollaborators.isPending}
-            onClick={() => void handleExport('pdf')}
-          >
-            Exportar PDF
-          </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            size="small"
-            onClick={() => setEmailModalOpen(true)}
-          >
-            Enviar por correo
-          </Button>
+          />
+          <div className={styles.exportActions}>
+            <InventarioPrimaryButton
+              label="Exportar Excel"
+              variant="success"
+              icon={<FileSpreadsheet aria-hidden />}
+              theme={empleadoTheme}
+              size="sm"
+              disabled={exportCollaborators.isPending}
+              onClick={() => void handleExport('excel')}
+            />
+            <InventarioPrimaryButton
+              label="Exportar PDF"
+              variant="danger"
+              icon={<FileText aria-hidden />}
+              theme={empleadoTheme}
+              size="sm"
+              disabled={exportCollaborators.isPending}
+              onClick={() => void handleExport('pdf')}
+            />
+            <InventarioPrimaryButton
+              label="Enviar por correo"
+              variant="primary"
+              icon={<Mail aria-hidden />}
+              theme={empleadoTheme}
+              size="sm"
+              onClick={() => setEmailModalOpen(true)}
+            />
+          </div>
         </div>
       </EmpleadoPageSection>
 

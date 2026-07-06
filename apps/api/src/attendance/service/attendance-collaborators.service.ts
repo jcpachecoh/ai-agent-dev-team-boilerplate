@@ -172,10 +172,10 @@ export class AttendanceCollaboratorsService {
 
     const attachment: EmailAttachment = {
       filename,
-      content: buffer.buffer.slice(
-        buffer.byteOffset,
-        buffer.byteOffset + buffer.byteLength,
-      ) as ArrayBuffer,
+      // BullMQ serializa el payload del job a JSON al encolarlo en Redis — un
+      // ArrayBuffer no sobrevive ese round-trip (se convierte en `{}`), lo que
+      // causaba "The attachment content is empty." en Resend. base64 sí es JSON-safe.
+      content: buffer.toString('base64'),
       contentType:
         input.format === 'excel'
           ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'

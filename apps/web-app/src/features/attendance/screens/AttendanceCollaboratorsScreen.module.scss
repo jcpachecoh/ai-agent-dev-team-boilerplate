@@ -40,11 +40,21 @@
   font-size: 0.875rem;
 }
 
+.actionsRow {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
 .exportActions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
-  align-items: flex-end;
+  align-items: center;
+  margin-left: auto;
 }
 
 .historyList {

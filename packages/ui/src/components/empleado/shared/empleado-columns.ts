@@ -50,12 +50,22 @@ export const defaultEmpleadoColumns: EmpleadoColumnDef[] = [
  * 'actions' (después de 'status').
  */
 export const attendanceApellidoColumns: EmpleadoColumnDef[] = [
-  { key: 'primerApellido', label: 'Primer apellido', width: 'minmax(120px, 0.9fr)' },
-  { key: 'segundoApellido', label: 'Segundo apellido', width: 'minmax(120px, 0.9fr)' },
+  {
+    key: 'primerApellido',
+    label: 'Primer apellido',
+    width: 'minmax(120px, 0.9fr)',
+    align: 'center',
+  },
+  {
+    key: 'segundoApellido',
+    label: 'Segundo apellido',
+    width: 'minmax(120px, 0.9fr)',
+    align: 'center',
+  },
 ];
 
 export const attendanceTrailingColumns: EmpleadoColumnDef[] = [
-  { key: 'supervisor', label: 'Supervisor', width: 'minmax(140px, 1fr)' },
+  { key: 'supervisor', label: 'Supervisor', width: 'minmax(140px, 1fr)', align: 'center' },
   { key: 'turno', label: 'Turno', width: 'minmax(140px, 0.9fr)', align: 'center' },
   {
     key: 'portalTrabajador',
