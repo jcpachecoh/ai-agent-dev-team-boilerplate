@@ -14,6 +14,7 @@ export enum StorageDomain {
   PRODUCTION = 'PRODUCTION',
   RECIPES = 'RECIPES',
   PAYROLL = 'PAYROLL',
+  SUPPLIERS = 'SUPPLIERS',
   USERS = 'USERS',
 }
 

@@ -16,6 +16,7 @@ export * from './components/feedback/error-boundary';
 export * from './components/feedback/progress';
 export * from './components/feedback/skeleton';
 export * from './components/feedback/toast';
+export * from './components/Spinner/Spinner';
 
 export * from './components/Modal';
 
@@ -125,6 +126,9 @@ export * from './components/proveedor/proveedor-oc-history-table-row';
 export * from './components/proveedor/proveedor-oc-history-table';
 export * from './components/proveedor/proveedor-quality-table-row';
 export * from './components/proveedor/proveedor-quality-table';
+export * from './components/proveedor/proveedor-documentation-table-row';
+export * from './components/proveedor/proveedor-documentation-table';
+export * from './components/proveedor/proveedor-documentation-icon-button';
 export * from './components/proveedor/proveedor-certifications-panel';
 export * from './components/proveedor/proveedor-payable-table-row';
 export * from './components/proveedor/proveedor-payable-table';

@@ -31,6 +31,7 @@ enum StorageDomain {
   PRODUCTION
   RECIPES
   PAYROLL
+  SUPPLIERS
   USERS
 }
 
@@ -61,7 +62,8 @@ model StorageObject {
   updatedAt    DateTime            @updatedAt
   deletedAt    DateTime?
 
-  employeePhotos EmployeeDetails[]
+  employeePhotos           EmployeeDetails[]
+  supplierDocumentVersions SupplierDocumentVersion[]
 
   @@index([tenantId])
   @@index([tenantId, domain])
@@ -171,31 +173,123 @@ enum CondicionPago {
   DIAS_60
 }
 
-model Supplier {
-  id             String        @id @default(cuid())
-  tenantId       String
-  razonSocial    String
-  nit            String
-  dv             String?
-  tipo           SupplierTipo
-  direccion      String?
-  departamento   String?
-  ciudad         String?
-  telefono       String?
-  email          String?
-  contactoNombre String?
-  condicionPago  CondicionPago
-  cupoCredito    Int
-  calificacion   Decimal
-  isActive       Boolean       @default(true)
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+enum SupplierDocumentType {
+  RUT
+  CAMARA_COMERCIO
+  CEDULA_REPRESENTANTE_LEGAL
+  CERTIFICACION_BANCARIA
+  LISTA_PRECIOS
+  CONTRATO_COMERCIAL
+  POLIZAS
+  CERTIFICACION_SANITARIA
+  CONCEPTO_SANITARIO_INVIMA
+  FICHA_TECNICA_PRODUCTO
+  HOJA_SEGURIDAD
+  CERTIFICADO_BPM
+  ACUERDO_CONFIDENCIALIDAD
+  TRATAMIENTO_DATOS_PERSONALES
+}
 
-  products SupplierProduct[]
+enum SupplierDocumentStatus {
+  PENDING
+  UPLOADED
+  EXPIRING
+  EXPIRED
+}
+
+model Supplier {
+  id                     String        @id @default(cuid())
+  tenantId               String
+  razonSocial            String
+  nit                    String
+  dv                     String?
+  tipo                   SupplierTipo
+  direccion              String?
+  departamento           String?
+  ciudad                 String?
+  telefono               String?
+  email                  String?
+  contactoNombre         String?
+  condicionPago          CondicionPago
+  cupoCredito            Int
+  calificacion           Decimal
+  isCritical             Boolean       @default(false)
+  sellsRecurrentProducts Boolean       @default(false)
+  isFoodSupplier         Boolean       @default(false)
+  handlesChemicals       Boolean       @default(false)
+  isRawMaterialSupplier  Boolean       @default(false)
+  isActive               Boolean       @default(true)
+  createdAt              DateTime      @default(now())
+  updatedAt              DateTime      @updatedAt
+
+  products  SupplierProduct[]
+  documents SupplierDocument[]
 
   @@unique([tenantId, nit])
   @@index([tenantId, isActive])
   @@map("suppliers")
+}
+
+model SupplierDocument {
+  id               String                 @id @default(cuid())
+  tenantId         String
+  supplierId       String
+  documentType     SupplierDocumentType
+  status           SupplierDocumentStatus @default(PENDING)
+  issuedAt         DateTime?              @db.Date
+  expiresAt        DateTime?              @db.Date
+  lastUploadedAt   DateTime?
+  uploadedByUserId String?
+  currentVersionId String?                @unique
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+  deletedAt        DateTime?
+
+  supplier       Supplier                  @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  uploadedBy     User?                     @relation("SupplierDocumentUploadedBy", fields: [uploadedByUserId], references: [id], onDelete: SetNull)
+  currentVersion SupplierDocumentVersion?  @relation("SupplierDocumentCurrentVersion", fields: [currentVersionId], references: [id], onDelete: SetNull)
+  versions       SupplierDocumentVersion[] @relation("SupplierDocumentVersions")
+
+  @@unique([tenantId, supplierId, documentType])
+  @@index([tenantId, supplierId])
+  @@index([tenantId, expiresAt])
+  @@index([tenantId, status])
+  @@index([tenantId, deletedAt])
+  @@map("supplier_documents")
+}
+
+model SupplierDocumentVersion {
+  id                 String    @id @default(cuid())
+  tenantId           String
+  supplierDocumentId String
+  storageObjectId    String
+  versionNumber      Int
+  uploadedByUserId   String?
+  uploadedAt         DateTime  @default(now())
+  deletedAt          DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  supplierDocument   SupplierDocument   @relation("SupplierDocumentVersions", fields: [supplierDocumentId], references: [id], onDelete: Cascade)
+  storageObject      StorageObject      @relation(fields: [storageObjectId], references: [id], onDelete: Restrict)
+  uploadedBy         User?              @relation("SupplierDocumentVersionUploadedBy", fields: [uploadedByUserId], references: [id], onDelete: SetNull)
+  currentForDocument SupplierDocument[] @relation("SupplierDocumentCurrentVersion")
+
+  @@unique([tenantId, supplierDocumentId, versionNumber])
+  @@index([tenantId, supplierDocumentId])
+  @@index([tenantId, uploadedAt])
+  @@index([tenantId, deletedAt])
+  @@map("supplier_document_versions")
+}
+
+model SupplierDocumentPolicy {
+  tenantId                   String   @id
+  camaraComercioValidityDays Int      @default(30)
+  rutAnnualReviewMonths      Int      @default(11)
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
+
+  @@map("supplier_document_policies")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -448,17 +542,19 @@ model User {
 
   role Role @relation(fields: [roleId], references: [id])
 
-  employeeDetails               EmployeeDetails?
-  operationalProfile            OperationalUser?
-  userPermissions               UserPermission[]
-  userLocations                 UserLocation[]
-  loginAudits                   LoginAudit[]
-  auditLogs                     AuditLog[]
-  committeeMemberships          ProductionCommitteeMember[]
-  turnosCreated                 Turno[]                     @relation("TurnoCreatedBy")
-  turnosUpdated                 Turno[]                     @relation("TurnoUpdatedBy")
-  turnoAssignmentsCreated       TurnoAssignment[]           @relation("TurnoAssignmentCreatedBy")
-  turnoAssignmentsUpdated       TurnoAssignment[]           @relation("TurnoAssignmentUpdatedBy")
+  employeeDetails                  EmployeeDetails?
+  operationalProfile               OperationalUser?
+  userPermissions                  UserPermission[]
+  userLocations                    UserLocation[]
+  loginAudits                      LoginAudit[]
+  auditLogs                        AuditLog[]
+  committeeMemberships             ProductionCommitteeMember[]
+  turnosCreated                    Turno[]                     @relation("TurnoCreatedBy")
+  turnosUpdated                    Turno[]                     @relation("TurnoUpdatedBy")
+  turnoAssignmentsCreated          TurnoAssignment[]           @relation("TurnoAssignmentCreatedBy")
+  turnoAssignmentsUpdated          TurnoAssignment[]           @relation("TurnoAssignmentUpdatedBy")
+  supplierDocumentsUploaded        SupplierDocument[]          @relation("SupplierDocumentUploadedBy")
+  supplierDocumentVersionsUploaded SupplierDocumentVersion[]   @relation("SupplierDocumentVersionUploadedBy")
   attendanceLogsCreated         AttendanceLog[]             @relation("AttendanceLogCreatedBy")
   attendanceObservationsCreated AttendanceObservation[]     @relation("AttendanceObservationCreatedBy")
   attendanceObservationsUpdated AttendanceObservation[]     @relation("AttendanceObservationUpdatedBy")

@@ -35,6 +35,7 @@ import { AdminModule } from './admin/admin.module';
 import { LocationsModule } from './locations/locations.module';
 import { AttendanceModule } from './attendance/attendance.module';
 import { TurnosModule } from './turnos/turnos.module';
+import { SupplierDocumentsModule } from './supplier-documents/supplier-documents.module';
 const conditionalModules = process.env.NODE_ENV !== 'production' ? [DevModule] : [];
 import { ReportsModule } from './reports/reports.module';
 
@@ -70,6 +71,7 @@ import { ReportsModule } from './reports/reports.module';
     LocationsModule,
     AttendanceModule,
     TurnosModule,
+    SupplierDocumentsModule,
     ReportsModule,
   ],
   controllers: [AppController],

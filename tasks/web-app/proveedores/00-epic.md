@@ -15,10 +15,12 @@ Entregar el módulo de **administración de proveedores** en `web-app`: lista co
 
 ## Subtareas
 
-| #   | Archivo                                                                  | Descripción                                             | Depende de                                 |
-| --- | ------------------------------------------------------------------------ | ------------------------------------------------------- | ------------------------------------------ |
-| 1   | [01-ui-proveedores-module.md](./01-ui-proveedores-module.md)             | UI con `@restopsiq/ui`, datos mock, rutas y formularios | `tasks/web-app/01-layout-shell-sidebar.md` |
-| 2   | [02-api-integration-react-query.md](./02-api-integration-react-query.md) | React Query + GraphQL/REST, catálogo inline, precios    | Tarea 1 + gateway extendido                |
+| #   | Archivo                                                                                                | Descripción                                                          | Depende de                                 |
+| --- | ------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------- | ------------------------------------------ |
+| 1   | [01-ui-proveedores-module.md](./01-ui-proveedores-module.md)                                           | UI con `@restopsiq/ui`, datos mock, rutas y formularios              | `tasks/web-app/01-layout-shell-sidebar.md` |
+| 2   | [02-api-integration-react-query.md](./02-api-integration-react-query.md)                               | React Query + GraphQL/REST, catálogo inline, precios                 | Tarea 1 + gateway extendido                |
+| 3   | [documentacion-proveedor/00-epic-and-decisions.md](./documentacion-proveedor/00-epic-and-decisions.md) | Pestaña Documentación (reemplaza Calidad), carga archivos, vigencias | Tarea 2 + StorageModule                    |
+| 4   | [logistica-proveedor/00-epic-and-decisions.md](./logistica-proveedor/00-epic-and-decisions.md)         | Bloque Información logística en alta/edición de proveedor            | Tarea 2 + `Location` / `User`              |
 
 ## Referencias visuales
 

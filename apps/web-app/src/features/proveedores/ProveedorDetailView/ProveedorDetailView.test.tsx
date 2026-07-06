@@ -24,6 +24,47 @@ vi.mock('../api/proveedores.queries', () => ({
   fetchSupplyItems: vi.fn(),
 }));
 
+vi.mock('../hooks/useSupplierDocuments', () => ({
+  useSupplierDocuments: vi.fn(() => ({
+    data: {
+      completeness: { loaded: 0, total: 1, requiredPending: ['RUT'] },
+      documents: [
+        {
+          documentType: 'RUT',
+          label: 'RUT actualizado',
+          requirement: 'REQUIRED',
+          status: 'PENDING',
+          issuedAt: null,
+          expiresAt: null,
+          lastUploadedAt: null,
+          uploadedByUserId: null,
+          needsReview: false,
+          alertLevel: 'NONE',
+          currentVersion: null,
+          previousVersion: null,
+        },
+      ],
+    },
+    isPending: false,
+    isError: false,
+    refetch: vi.fn(),
+  })),
+  useUploadSupplierDocument: vi.fn(() => ({ mutateAsync: vi.fn() })),
+  useDeleteSupplierDocument: vi.fn(() => ({ mutateAsync: vi.fn() })),
+}));
+
+vi.mock('@/config/rbac.config', () => ({
+  canWriteSupplierDocuments: () => false,
+}));
+
+vi.mock('@/features/auth/hooks/useMe', () => ({
+  useMe: () => ({ data: { roleCode: 'SUPERVISOR' } }),
+}));
+
+vi.mock('@/lib/auth-token', () => ({
+  getRoleCodeFromToken: () => 'SUPERVISOR',
+}));
+
 function renderDetail(initialEntry = '/proveedores/sup-test-001'): void {
   render(
     <TestQueryProvider>
@@ -62,5 +103,12 @@ describe('ProveedorDetailView', () => {
     renderDetail('/proveedores/sup-test-001?tab=history');
 
     expect(await screen.findByText(/historial de órdenes de compra/i)).toBeInTheDocument();
+  });
+
+  it('shows documentation tab content', async () => {
+    renderDetail('/proveedores/sup-test-001?tab=documentation');
+
+    expect(await screen.findByText(/0 de 1 documentos cargados/i)).toBeInTheDocument();
+    expect(screen.getByText('RUT actualizado')).toBeInTheDocument();
   });
 });

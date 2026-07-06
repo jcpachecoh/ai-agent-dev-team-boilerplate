@@ -1,6 +1,7 @@
 import { ProveedorActionButton, ProveedorDetailHeader, ProveedorDetailTabBar } from '@restopsiq/ui';
 import { useUiTheme } from '@/hooks/useUiTheme';
 import { Mail, Pencil } from 'lucide-react';
+import { useEffect } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
 import { isGraphqlConfigured } from '@/lib/graphql-client';
@@ -11,12 +12,22 @@ import { formatNit } from '../mappers/display';
 import styles from '../proveedores.module.scss';
 import type { ProveedorDetailTabId } from '../types';
 import ProveedorCatalogTab from './tabs/ProveedorCatalogTab';
+import ProveedorDocumentationTab from './tabs/ProveedorDocumentationTab';
 import ProveedorInfoTab from './tabs/ProveedorInfoTab';
 import ProveedorPlaceholderTab from './tabs/ProveedorPlaceholderTab';
 
-const VALID_TABS: ProveedorDetailTabId[] = ['info', 'catalog', 'history', 'quality', 'payables'];
+const VALID_TABS: ProveedorDetailTabId[] = [
+  'info',
+  'catalog',
+  'history',
+  'documentation',
+  'payables',
+];
 
 function parseTab(value: string | null): ProveedorDetailTabId {
+  if (value === 'quality') {
+    return 'documentation';
+  }
   if (value && VALID_TABS.includes(value as ProveedorDetailTabId)) {
     return value as ProveedorDetailTabId;
   }
@@ -31,6 +42,12 @@ export default function ProveedorDetailView(): React.JSX.Element {
   const { data: supplier, isPending, isError } = useSupplier(supplierId);
 
   const activeTab = parseTab(searchParams.get('tab'));
+
+  useEffect(() => {
+    if (searchParams.get('tab') === 'quality') {
+      setSearchParams({ tab: 'documentation' }, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   if (!supplierId) {
     return (
@@ -131,12 +148,7 @@ export default function ProveedorDetailView(): React.JSX.Element {
             description="Próximamente — conectaremos las órdenes de compra de este proveedor."
           />
         )}
-        {activeTab === 'quality' && (
-          <ProveedorPlaceholderTab
-            title="Evaluaciones de calidad"
-            description="Próximamente — registro de evaluaciones y auditorías de calidad."
-          />
-        )}
+        {activeTab === 'documentation' && <ProveedorDocumentationTab supplierId={supplierId} />}
         {activeTab === 'payables' && (
           <ProveedorPlaceholderTab
             title="Cuentas por pagar"

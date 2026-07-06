@@ -156,6 +156,17 @@ export function canWriteTurnos(roleCode: string | null | undefined): boolean {
   return (TURNOS_WRITE_ROLES as readonly string[]).includes(roleCode);
 }
 
+/** PROV-DOC — carga y eliminación de documentos de proveedor (MANAGER + admins). */
+export const SUPPLIER_DOCUMENTS_WRITE_ROLES: readonly RoleCode[] = [
+  ...SYSTEM_ADMIN_ROLES,
+  'MANAGER',
+];
+
+export function canWriteSupplierDocuments(roleCode: string | null | undefined): boolean {
+  if (!roleCode) return false;
+  return (SUPPLIER_DOCUMENTS_WRITE_ROLES as readonly string[]).includes(roleCode);
+}
+
 /** OS-582 — asignar/reasignar/marcar descanso (acotado a sedes propias para SUPERVISOR/MANAGER en backend). */
 export const TURNO_ASSIGNMENTS_WRITE_ROLES: readonly RoleCode[] = [
   ...SYSTEM_ADMIN_ROLES,

@@ -33,4 +33,16 @@ export const payableColumns: ProveedorColumnDef[] = [
 
 export const ocHistoryGridTemplate = ocHistoryColumns.map((c) => c.width ?? '1fr').join(' ');
 export const qualityGridTemplate = qualityColumns.map((c) => c.width ?? '1fr').join(' ');
+export const documentationColumns: ProveedorColumnDef[] = [
+  { key: 'document', label: 'DOCUMENTO', width: 'minmax(180px, 1.6fr)' },
+  { key: 'required', label: 'OBLIGATORIO', width: '110px', align: 'center' },
+  { key: 'validity', label: 'VIGENCIA', width: 'minmax(120px, 1fr)' },
+  { key: 'status', label: 'ESTADO', width: '120px', align: 'center' },
+  { key: 'uploadedAt', label: 'ÚLTIMA CARGA', width: '120px' },
+  { key: 'actions', label: 'ACCIONES', width: '132px', align: 'right' },
+];
+
+export const documentationGridTemplate = documentationColumns
+  .map((c) => c.width ?? '1fr')
+  .join(' ');
 export const payableGridTemplate = payableColumns.map((c) => c.width ?? '1fr').join(' ');

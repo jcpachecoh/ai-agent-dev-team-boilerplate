@@ -1,6 +1,12 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Supplier } from '@prisma/client';
 import { validate, CreateSupplierSchema, UpdateSupplierSchema } from '../../utils/validation';
+import { SupplierDocumentsService } from '../../supplier-documents/service/supplier-documents.service';
 import { SupplierRepository } from '../repository/supplier.repository';
 import type {
   ISupplierService,
@@ -10,7 +16,10 @@ import type {
 
 @Injectable()
 export class SupplierService implements ISupplierService {
-  constructor(private readonly supplierRepository: SupplierRepository) {}
+  constructor(
+    private readonly supplierRepository: SupplierRepository,
+    private readonly supplierDocumentsService: SupplierDocumentsService,
+  ) {}
 
   async findAll(
     tenantId: string,
@@ -51,6 +60,15 @@ export class SupplierService implements ISupplierService {
   async update(id: string, tenantId: string, data: unknown): Promise<Supplier> {
     await this.findById(id, tenantId);
     const validated = validate(UpdateSupplierSchema, data);
+
+    const requiredPending = await this.supplierDocumentsService.getRequiredPending(tenantId, id);
+    if (requiredPending.length > 0) {
+      throw new BadRequestException({
+        message: 'Faltan documentos obligatorios del proveedor',
+        requiredPending,
+      });
+    }
+
     return this.supplierRepository.update(id, validated as any);
   }
 

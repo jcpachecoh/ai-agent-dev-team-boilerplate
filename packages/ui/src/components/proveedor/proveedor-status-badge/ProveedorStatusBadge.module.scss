@@ -90,8 +90,27 @@
 
 .domain--oc-history.status--cancelled,
 .domain--quality.status--non-conform,
-.domain--payable.status--overdue {
+.domain--payable.status--overdue,
+.domain--documentation.status--expired {
   color: proveedor.$proveedor-danger;
   background: rgba(proveedor.$proveedor-danger, 0.14);
   border-color: rgba(proveedor.$proveedor-danger, 0.35);
+}
+
+.domain--documentation.status--uploaded {
+  color: proveedor.$proveedor-teal;
+  background: rgba(proveedor.$proveedor-teal, 0.14);
+  border-color: rgba(proveedor.$proveedor-teal, 0.35);
+}
+
+.domain--documentation.status--expiring {
+  color: proveedor.$proveedor-warning;
+  background: rgba(proveedor.$proveedor-warning, 0.14);
+  border-color: rgba(proveedor.$proveedor-warning, 0.35);
+}
+
+.domain--documentation.status--pending {
+  color: var(--proveedor-muted);
+  background: rgba($color-white, 0.06);
+  border-color: var(--proveedor-border);
 }

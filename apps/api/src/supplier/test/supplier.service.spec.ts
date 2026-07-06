@@ -1,6 +1,7 @@
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import type { Supplier } from '@prisma/client';
+import { SupplierDocumentsService } from '../../supplier-documents/service/supplier-documents.service';
 import { SupplierRepository } from '../repository/supplier.repository';
 import { SupplierService } from '../service/supplier.service';
 
@@ -21,6 +22,11 @@ const mockSupplier: Supplier = {
   condicionPago: 'CONTADO' as any,
   cupoCredito: 0,
   calificacion: 3 as any,
+  isCritical: false,
+  sellsRecurrentProducts: false,
+  isFoodSupplier: false,
+  handlesChemicals: false,
+  isRawMaterialSupplier: false,
   isActive: true,
   createdAt: new Date(),
   updatedAt: new Date(),
@@ -37,12 +43,20 @@ const repoMock = {
   countProducts: jest.fn(),
 };
 
+const documentsServiceMock = {
+  getRequiredPending: jest.fn().mockResolvedValue([]),
+};
+
 describe('SupplierService', () => {
   let service: SupplierService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [SupplierService, { provide: SupplierRepository, useValue: repoMock }],
+      providers: [
+        SupplierService,
+        { provide: SupplierRepository, useValue: repoMock },
+        { provide: SupplierDocumentsService, useValue: documentsServiceMock },
+      ],
     }).compile();
 
     service = module.get<SupplierService>(SupplierService);
@@ -141,6 +155,7 @@ describe('SupplierService', () => {
   it('updates supplier with departamento', async () => {
     // Arrange
     repoMock.findById.mockResolvedValue(mockSupplier);
+    documentsServiceMock.getRequiredPending.mockResolvedValue([]);
     repoMock.update.mockResolvedValue({
       ...mockSupplier,
       departamento: 'Valle del Cauca',
@@ -156,6 +171,17 @@ describe('SupplierService', () => {
     // Assert
     expect(result.departamento).toBe('Valle del Cauca');
     expect(result.ciudad).toBe('Cali');
+  });
+
+  it('blocks update when required supplier documents are pending', async () => {
+    repoMock.findById.mockResolvedValue(mockSupplier);
+    documentsServiceMock.getRequiredPending.mockResolvedValue(['RUT']);
+
+    await expect(
+      service.update('sup-1', tenantId, {
+        razonSocial: 'Updated Supplier',
+      }),
+    ).rejects.toThrow(BadRequestException);
   });
 
   it('supplier response includes departamento field', async () => {

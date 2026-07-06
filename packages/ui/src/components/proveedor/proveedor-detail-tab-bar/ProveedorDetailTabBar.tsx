@@ -1,4 +1,4 @@
-import { CreditCard, FileText, Info, Package, Star } from 'lucide-react';
+import { CreditCard, FileText, Info, Package } from 'lucide-react';
 import React, { type JSX, type ReactNode } from 'react';
 
 import { ProveedorDetailTab } from '../proveedor-detail-tab/ProveedorDetailTab';
@@ -24,7 +24,7 @@ const defaultTabs: ProveedorDetailTabItem[] = [
   { id: 'info', label: 'INFORMACIÓN', icon: <Info aria-hidden /> },
   { id: 'catalog', label: 'CATÁLOGO', icon: <Package aria-hidden /> },
   { id: 'history', label: 'HISTORIAL OCs', icon: <FileText aria-hidden /> },
-  { id: 'quality', label: 'CALIDAD', icon: <Star aria-hidden /> },
+  { id: 'documentation', label: 'DOCUMENTACIÓN', icon: <FileText aria-hidden /> },
   { id: 'payables', label: 'CUENTAS X PAGAR', icon: <CreditCard aria-hidden /> },
 ];
 
@@ -32,7 +32,7 @@ const defaultIcons: Record<string, ReactNode> = {
   info: <Info aria-hidden />,
   catalog: <Package aria-hidden />,
   history: <FileText aria-hidden />,
-  quality: <Star aria-hidden />,
+  documentation: <FileText aria-hidden />,
   payables: <CreditCard aria-hidden />,
 };
 

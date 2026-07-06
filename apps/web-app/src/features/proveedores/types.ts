@@ -10,7 +10,7 @@ export type StockUnit = 'UNIT' | 'GRAMS' | 'KILOGRAMS' | 'ML' | 'LITERS';
 
 export type SupplierStatusFilter = 'all' | ProveedorSupplierStatus;
 export type CondicionPagoFilter = 'all' | CondicionPago;
-export type ProveedorDetailTabId = 'info' | 'catalog' | 'history' | 'quality' | 'payables';
+export type ProveedorDetailTabId = 'info' | 'catalog' | 'history' | 'documentation' | 'payables';
 
 export interface SupplierListFilters {
   search?: string;

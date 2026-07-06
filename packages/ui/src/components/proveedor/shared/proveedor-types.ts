@@ -18,3 +18,5 @@ export type ProveedorPriceTrend = 'up' | 'down' | 'neutral';
 export type ProveedorOcHistoryStatus = 'delivered' | 'pending' | 'cancelled';
 export type ProveedorQualityComplianceStatus = 'conform' | 'non-conform';
 export type ProveedorPayableStatus = 'pending' | 'paid' | 'overdue';
+export type ProveedorDocumentStatus = 'pending' | 'uploaded' | 'expiring' | 'expired';
+export type ProveedorDocumentRequirement = 'required' | 'conditional' | 'recommended';

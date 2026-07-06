@@ -395,6 +395,25 @@ const PERMISSION_SEEDS = [
     resource: 'turnos',
     action: 'write',
   },
+  // PROV-DOC — documentación de proveedores
+  {
+    id: 'cccccccc-0000-0000-0000-000000000058',
+    code: 'suppliers.documents.read',
+    name: 'Read supplier documents',
+    description: 'View and download supplier legal and compliance documents',
+    module: 'suppliers',
+    resource: 'documents',
+    action: 'read',
+  },
+  {
+    id: 'cccccccc-0000-0000-0000-000000000059',
+    code: 'suppliers.documents.write',
+    name: 'Write supplier documents',
+    description: 'Upload, replace, and remove supplier legal and compliance documents',
+    module: 'suppliers',
+    resource: 'documents',
+    action: 'write',
+  },
   // OS-560 — Employee Social Profile (familiares directos)
   {
     id: 'cccccccc-0000-0000-0000-000000000023',
@@ -609,6 +628,8 @@ const TURNO_ASSIGNMENT_WRITE_CODES = ['attendance.turnos.assignment.write'] as c
 
 // OS-582 follow-up — catálogo de Turnos (NOM-08): SUPERVISOR/MANAGER/NOMINA solo lectura.
 const TURNOS_CATALOG_READ_CODES = ['attendance.turnos.read'] as const;
+const SUPPLIER_DOCUMENT_READ_CODES = ['suppliers.documents.read'] as const;
+const SUPPLIER_DOCUMENT_WRITE_CODES = ['suppliers.documents.write'] as const;
 
 const ALL_PERMISSION_CODES = PERMISSION_SEEDS.map((permissionSeed) => permissionSeed.code);
 
@@ -625,6 +646,7 @@ const ROLE_PERMISSION_MATRIX: Record<string, readonly string[]> = {
     ...TURNO_ASSIGNMENT_READ_CODES,
     ...TURNO_ASSIGNMENT_WRITE_CODES,
     ...TURNOS_CATALOG_READ_CODES,
+    ...SUPPLIER_DOCUMENT_READ_CODES,
   ],
   MANAGER: [
     ...MANAGER_PERMISSION_CODES,
@@ -637,6 +659,8 @@ const ROLE_PERMISSION_MATRIX: Record<string, readonly string[]> = {
     ...TURNO_ASSIGNMENT_READ_CODES,
     ...TURNO_ASSIGNMENT_WRITE_CODES,
     ...TURNOS_CATALOG_READ_CODES,
+    ...SUPPLIER_DOCUMENT_READ_CODES,
+    ...SUPPLIER_DOCUMENT_WRITE_CODES,
   ],
   OPERATOR: [...OPERATOR_PERMISSION_CODES, ...MOBILE_ATTENDANCE_CREATE_CODES],
   OPERATIONS_ADMIN: OPERATIONS_ADMIN_PERMISSION_CODES,
@@ -647,6 +671,7 @@ const ROLE_PERMISSION_MATRIX: Record<string, readonly string[]> = {
     ...MOBILE_ATTENDANCE_READ_CODES,
     ...TURNO_ASSIGNMENT_READ_CODES,
     ...TURNOS_CATALOG_READ_CODES,
+    ...SUPPLIER_DOCUMENT_READ_CODES,
   ],
 };
 

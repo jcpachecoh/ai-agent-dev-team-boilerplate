@@ -1,0 +1,74 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/proveedor-theme' as proveedor;
+
+.row {
+  @include proveedor.proveedor-theme-classes;
+
+  display: grid;
+  grid-template-columns: var(--proveedor-columns);
+  align-items: center;
+  width: min(100%, var(--row-width));
+  min-height: var(--row-height);
+  padding: 0 var(--row-padding-x);
+  border-bottom: $border-width solid var(--proveedor-border);
+  background: var(--proveedor-surface);
+  color: var(--proveedor-text);
+  box-sizing: border-box;
+  overflow: visible;
+  position: relative;
+}
+
+.size--sm {
+  --row-width: 720px;
+  --row-height: 48px;
+  --row-padding-x: #{$spacing-sm};
+}
+
+.size--md {
+  --row-width: 960px;
+  --row-height: 54px;
+  --row-padding-x: #{$spacing-md};
+}
+
+.size--xl {
+  --row-width: 100%;
+  --row-height: 54px;
+  --row-padding-x: 16px;
+}
+
+.document {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+}
+
+.muted {
+  font-family: $font-family-mono;
+  font-size: $font-size-sm;
+  color: var(--proveedor-text-secondary);
+}
+
+.center {
+  text-align: center;
+  font-size: $font-size-sm;
+  color: var(--proveedor-text-secondary);
+}
+
+.status {
+  justify-self: center;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  min-width: 0;
+  overflow: visible;
+  position: relative;
+  z-index: 0;
+
+  &:hover {
+    z-index: 2;
+  }
+}

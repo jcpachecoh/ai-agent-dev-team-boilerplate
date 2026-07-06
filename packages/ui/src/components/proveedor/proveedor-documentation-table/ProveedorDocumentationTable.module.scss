@@ -1,0 +1,43 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/proveedor-theme' as proveedor;
+
+.wrapper {
+  @include proveedor.proveedor-theme-classes;
+}
+
+.completeness {
+  margin: 0 0 $spacing-md;
+  font-size: $font-size-sm;
+  color: var(--proveedor-text-secondary);
+}
+
+.tableShell {
+  @include proveedor.proveedor-theme-classes;
+  @include proveedor.proveedor-size-vars;
+
+  display: flex;
+  flex-direction: column;
+  width: min(100%, var(--control-width));
+  min-width: 0;
+  border: 1px solid var(--proveedor-border);
+  border-radius: var(--control-radius);
+  overflow: visible;
+  background: var(--proveedor-surface);
+}
+
+.tableBody {
+  display: flex;
+  flex-direction: column;
+  overflow-x: auto;
+  overflow-y: visible;
+}
+
+.empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 120px;
+  padding: var(--control-padding-y) var(--control-padding-x);
+  color: var(--proveedor-muted);
+  font-size: var(--control-font-size);
+}

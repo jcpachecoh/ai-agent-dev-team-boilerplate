@@ -3,6 +3,7 @@ import React, { type JSX } from 'react';
 import { ActiveInactiveStatusBadge } from '../../active-inactive-status-badge';
 import type {
   ProveedorCatalogStatus,
+  ProveedorDocumentStatus,
   ProveedorOcHistoryStatus,
   ProveedorPayableStatus,
   ProveedorQualityComplianceStatus,
@@ -17,6 +18,7 @@ export type ProveedorStatusBadgeDomain =
   | 'catalog'
   | 'oc-history'
   | 'quality'
+  | 'documentation'
   | 'payable';
 
 export type ProveedorStatusBadgeStatus =
@@ -24,6 +26,7 @@ export type ProveedorStatusBadgeStatus =
   | ProveedorCatalogStatus
   | ProveedorOcHistoryStatus
   | ProveedorQualityComplianceStatus
+  | ProveedorDocumentStatus
   | ProveedorPayableStatus;
 
 export interface ProveedorStatusBadgeProps {
@@ -57,6 +60,13 @@ const qualityLabels: Record<ProveedorQualityComplianceStatus, string> = {
   'non-conform': 'NO CONFORME',
 };
 
+const documentationLabels: Record<ProveedorDocumentStatus, string> = {
+  pending: 'PENDIENTE',
+  uploaded: 'CARGADO',
+  expiring: 'POR VENCER',
+  expired: 'VENCIDO',
+};
+
 const payableLabels: Record<ProveedorPayableStatus, string> = {
   pending: 'PENDIENTE',
   paid: 'PAGADO',
@@ -76,6 +86,8 @@ function resolveLabel(
       return ocHistoryLabels[status as ProveedorOcHistoryStatus];
     case 'quality':
       return qualityLabels[status as ProveedorQualityComplianceStatus];
+    case 'documentation':
+      return documentationLabels[status as ProveedorDocumentStatus];
     case 'payable':
       return payableLabels[status as ProveedorPayableStatus];
     default:
