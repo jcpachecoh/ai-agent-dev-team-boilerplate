@@ -15,6 +15,7 @@ import type {
   UpsertObservationInput,
 } from '../interfaces/attendance.interfaces';
 import { AttendanceRepository, normalizeWorkDate } from '../repository/attendance.repository';
+import { AttendanceService } from './attendance.service';
 import {
   isCardDateRangeWithinLimit,
   parseCalendarDate,
@@ -28,6 +29,7 @@ export class AttendanceCardService {
   constructor(
     private readonly attendanceRepository: AttendanceRepository,
     private readonly auditService: AuditService,
+    private readonly attendanceService: AttendanceService,
   ) {}
 
   async getCard(
@@ -120,11 +122,12 @@ export class AttendanceCardService {
       }
     }
 
-    const created = await this.attendanceRepository.createManualLog({
+    const created = await this.attendanceService.registerEvent({
       tenantId,
       employeeId: employee.id,
       locationId: employee.locationId,
       eventType: input.eventType,
+      source: AttendanceLogSource.MANUAL,
       workDate,
       timestamp,
       createdByUserId: actingUser.sub,

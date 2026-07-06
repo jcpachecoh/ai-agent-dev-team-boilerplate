@@ -5,9 +5,14 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { MobileAttendanceStatus, StorageDomain } from '@prisma/client';
+import {
+  AttendanceEventType,
+  AttendanceLogSource,
+  AttendanceValidationStatus,
+  StorageDomain,
+} from '@prisma/client';
 import { StorageService } from '../../../storage/service/storage.service';
-import { normalizeWorkDate } from '../../repository/attendance.repository';
+import { AttendanceService } from '../../service/attendance.service';
 import type {
   IMobileAttendanceService,
   FacialReferenceResult,
@@ -32,6 +37,7 @@ export class MobileAttendanceService implements IMobileAttendanceService {
   constructor(
     private readonly repo: MobileAttendanceRepository,
     private readonly storageService: StorageService,
+    private readonly attendanceService: AttendanceService,
   ) {}
 
   async registrarMarcacion(
@@ -39,7 +45,6 @@ export class MobileAttendanceService implements IMobileAttendanceService {
     userId: string,
     tenantId: string,
   ): Promise<MarcacionResult> {
-    // 1 — Resolve employee from JWT userId
     const employee = await this.repo.findEmployeeByUserId(userId, tenantId);
     if (!employee) {
       throw new NotFoundException('Empleado no encontrado para este tenant');
@@ -48,25 +53,21 @@ export class MobileAttendanceService implements IMobileAttendanceService {
       throw new ForbiddenException('Empleado inactivo');
     }
 
-    // 2 — Validate location belongs to tenant
     const location = await this.repo.findLocationById(input.locationId, tenantId);
     if (!location) {
       throw new NotFoundException(`Sede ${input.locationId} no encontrada`);
     }
 
-    // 3 — Validate employee assignment to this location
     if (employee.locationId !== input.locationId) {
       throw new ForbiddenException('El empleado no está asignado a esta sede');
     }
 
-    // 4 — Validate timestamp (max 5 min drift to prevent replay)
     const now = new Date();
     const timestamp = input.timestamp ?? now;
     if (Math.abs(timestamp.getTime() - now.getTime()) > MAX_TIMESTAMP_DRIFT_MS) {
       throw new BadRequestException('Timestamp demasiado desfasado (máximo 5 minutos)');
     }
 
-    // 5 — Validate storageObjectId ownership and domain
     let photoUrl: string | null = null;
     if (input.storageObjectId) {
       const storageObj = await this.storageService.findById(input.storageObjectId, tenantId);
@@ -79,45 +80,33 @@ export class MobileAttendanceService implements IMobileAttendanceService {
       photoUrl = storageObj.publicUrl;
     }
 
-    // 6 — Calculate distance and determine status
-    const workDate = normalizeWorkDate(timestamp);
-    const { status, distanceMeters, rejectionReason, radiusMeters } = this.validateGeofence(
-      input.clientLatitude,
-      input.clientLongitude,
-      location.geoLatitude,
-      location.geoLongitude,
-      location.checkInRadiusMeters,
-    );
-
-    const log = await this.repo.create({
+    const log = await this.attendanceService.registerEvent({
       tenantId,
       employeeId: employee.id,
       locationId: input.locationId,
-      eventType: input.eventType,
-      status,
+      eventType: input.eventType as AttendanceEventType,
+      source: AttendanceLogSource.APP_MOVIL,
       timestamp,
-      workDate,
+      notes: input.notes ?? null,
       clientLatitude: input.clientLatitude,
       clientLongitude: input.clientLongitude,
-      distanceMeters,
-      radiusMeters,
       storageObjectId: input.storageObjectId ?? null,
       photoUrl,
       facialMatchScore: input.facialMatchScore ?? null,
       facialMatchResult: input.facialMatchResult ?? null,
-      rejectionReason,
-      notes: input.notes ?? null,
     });
 
+    const status = log.validationStatus ?? AttendanceValidationStatus.PENDING;
+
     this.logger.log(
-      `MOBILE ${input.eventType}: employeeId=${employee.id} locationId=${input.locationId} status=${status} dist=${distanceMeters?.toFixed(0) ?? 'n/a'}m`,
+      `MOBILE ${input.eventType}: employeeId=${employee.id} locationId=${input.locationId} status=${status} dist=${log.distanceMeters?.toFixed(0) ?? 'n/a'}m`,
     );
 
     return {
       id: log.id,
       status,
-      distanceMeters,
-      rejectionReason,
+      distanceMeters: log.distanceMeters,
+      rejectionReason: log.rejectionReason,
       timestamp: log.timestamp,
       workDate: log.workDate,
     };
@@ -225,8 +214,6 @@ export class MobileAttendanceService implements IMobileAttendanceService {
     return this.toSedeMarcacionConfig(location);
   }
 
-  // ── Pure helpers ────────────────────────────────────────────────────────────
-
   private toSedeMarcacionConfig(location: {
     id: string;
     name: string;
@@ -243,61 +230,7 @@ export class MobileAttendanceService implements IMobileAttendanceService {
       requiresPhoto: location.checkInRadiusMeters != null,
     };
   }
-
-  private validateGeofence(
-    clientLat: number,
-    clientLng: number,
-    sedeLat: number | null,
-    sedeLng: number | null,
-    radiusMeters: number | null,
-  ): {
-    status: MobileAttendanceStatus;
-    distanceMeters: number | null;
-    rejectionReason: string | null;
-    radiusMeters: number | null;
-  } {
-    if (sedeLat == null || sedeLng == null || radiusMeters == null) {
-      return {
-        status: MobileAttendanceStatus.PENDING,
-        distanceMeters: null,
-        rejectionReason: null,
-        radiusMeters: null,
-      };
-    }
-
-    const dist = haversineDistanceMeters(clientLat, clientLng, sedeLat, sedeLng);
-
-    if (dist > radiusMeters) {
-      return {
-        status: MobileAttendanceStatus.REJECTED,
-        distanceMeters: dist,
-        rejectionReason: 'OUTSIDE_RADIUS',
-        radiusMeters,
-      };
-    }
-
-    return {
-      status: MobileAttendanceStatus.VALID,
-      distanceMeters: dist,
-      rejectionReason: null,
-      radiusMeters,
-    };
-  }
 }
 
-// ── Pure function — no side effects ────────────────────────────────────────
-
-export function haversineDistanceMeters(
-  lat1: number,
-  lon1: number,
-  lat2: number,
-  lon2: number,
-): number {
-  const R = 6371000;
-  const φ1 = (lat1 * Math.PI) / 180;
-  const φ2 = (lat2 * Math.PI) / 180;
-  const Δφ = ((lat2 - lat1) * Math.PI) / 180;
-  const Δλ = ((lon2 - lon1) * Math.PI) / 180;
-  const a = Math.sin(Δφ / 2) ** 2 + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
+// Re-export for tests that import haversine from this module.
+export { haversineDistanceMeters } from '../../utils/attendance-geofence.util';

@@ -7,7 +7,12 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { AttendanceEventType, AttendanceShift } from '@prisma/client';
+import {
+  AttendanceEventType,
+  AttendanceLogSource,
+  AttendanceShift,
+  AttendanceValidationStatus,
+} from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { AttendanceService } from '../service/attendance.service';
 import { AttendanceRepository } from '../repository/attendance.repository';
@@ -98,6 +103,9 @@ const repoMock = {
   listHistory: jest.fn(),
   listActiveAtLocation: jest.fn(),
   findById: jest.fn(),
+  findDuplicateEvent: jest.fn(),
+  createEventLog: jest.fn(),
+  findLocationById: jest.fn(),
 };
 
 const authServiceMock = {
@@ -378,6 +386,141 @@ describe('AttendanceService', () => {
     });
 
     it.todo('festivo: recargo 75% sobre horas trabajadas en día festivo — pendiente NOM-04');
+  });
+
+  // ── registerEvent (ASIS-UNI) ─────────────────────────────────────────────
+
+  describe('registerEvent', () => {
+    const baseInput = {
+      tenantId: TENANT,
+      employeeId: 'emp-001',
+      locationId: LOCATION_ID,
+      eventType: AttendanceEventType.ENTRY,
+      timestamp: new Date('2026-06-10T13:00:00.000Z'),
+    };
+
+    beforeEach(() => {
+      repoMock.findDuplicateEvent.mockResolvedValue(null);
+      repoMock.findOpenEntry.mockResolvedValue(null);
+      repoMock.findLocationById.mockResolvedValue({
+        id: LOCATION_ID,
+        geoLatitude: 4.6097,
+        geoLongitude: -74.0817,
+        checkInRadiusMeters: 100,
+      });
+    });
+
+    it('lanza ConflictException si hay marcación duplicada en la misma ventana y source', async () => {
+      repoMock.findDuplicateEvent.mockResolvedValue(
+        makeAttendanceLog('dup', AttendanceEventType.ENTRY, new Date()),
+      );
+
+      await expect(
+        service.registerEvent({
+          ...baseInput,
+          source: AttendanceLogSource.APP_MOVIL,
+          clientLatitude: 4.6097,
+          clientLongitude: -74.0817,
+        }),
+      ).rejects.toThrow(ConflictException);
+
+      expect(repoMock.createEventLog).not.toHaveBeenCalled();
+    });
+
+    it('permite APP_MOVIL y MANUAL el mismo día sin conflicto de duplicado', async () => {
+      repoMock.createEventLog.mockResolvedValue(
+        makeAttendanceLog('log-manual', AttendanceEventType.ENTRY, new Date()),
+      );
+
+      await service.registerEvent({
+        ...baseInput,
+        source: AttendanceLogSource.MANUAL,
+        workDate: WORK_DATE,
+        createdByUserId: 'actor-1',
+        manualReason: 'FORGOT',
+      });
+
+      expect(repoMock.findDuplicateEvent).toHaveBeenCalledWith(
+        expect.objectContaining({ source: AttendanceLogSource.MANUAL }),
+      );
+      expect(repoMock.createEventLog).toHaveBeenCalled();
+    });
+
+    it('aplica geocerca solo para source=APP_MOVIL', async () => {
+      repoMock.createEventLog.mockResolvedValue(
+        makeAttendanceLog('log-app', AttendanceEventType.ENTRY, new Date()),
+      );
+
+      await service.registerEvent({
+        ...baseInput,
+        source: AttendanceLogSource.APP_MOVIL,
+        clientLatitude: 4.7,
+        clientLongitude: -74.0817,
+      });
+
+      expect(repoMock.findLocationById).toHaveBeenCalledWith(LOCATION_ID, TENANT);
+      expect(repoMock.createEventLog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          source: AttendanceLogSource.APP_MOVIL,
+          validationStatus: AttendanceValidationStatus.REJECTED,
+          rejectionReason: 'OUTSIDE_RADIUS',
+        }),
+      );
+    });
+
+    it('MANUAL no consulta geocerca ni persiste validationStatus', async () => {
+      repoMock.createEventLog.mockResolvedValue(
+        makeAttendanceLog('log-manual-geo', AttendanceEventType.ENTRY, new Date()),
+      );
+
+      await service.registerEvent({
+        ...baseInput,
+        source: AttendanceLogSource.MANUAL,
+        workDate: WORK_DATE,
+        createdByUserId: 'actor-1',
+        manualReason: 'FORGOT',
+        clientLatitude: 4.7,
+        clientLongitude: -74.0817,
+      });
+
+      expect(repoMock.findLocationById).not.toHaveBeenCalled();
+      expect(repoMock.createEventLog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          source: AttendanceLogSource.MANUAL,
+          validationStatus: null,
+        }),
+      );
+    });
+
+    it('APP_MOVIL EXIT hereda workDate del ENTRY abierto (turno nocturno)', async () => {
+      const openEntry = makeAttendanceLog(
+        'log-open',
+        AttendanceEventType.ENTRY,
+        new Date('2026-06-10T13:00:00.000Z'),
+      );
+      repoMock.findOpenEntry.mockResolvedValue(openEntry);
+      repoMock.createEventLog.mockResolvedValue(
+        makeAttendanceLog(
+          'log-exit',
+          AttendanceEventType.EXIT,
+          new Date('2026-06-11T02:00:00.000Z'),
+          WORK_DATE,
+        ),
+      );
+
+      await service.registerEvent({
+        ...baseInput,
+        eventType: AttendanceEventType.EXIT,
+        timestamp: new Date('2026-06-11T02:00:00.000Z'),
+        source: AttendanceLogSource.APP_MOVIL,
+        clientLatitude: 4.6097,
+        clientLongitude: -74.0817,
+      });
+
+      expect(repoMock.createEventLog).toHaveBeenCalledWith(
+        expect.objectContaining({ workDate: openEntry.workDate, shift: openEntry.shift }),
+      );
+    });
   });
 
   // ── listHistory ───────────────────────────────────────────────────────────

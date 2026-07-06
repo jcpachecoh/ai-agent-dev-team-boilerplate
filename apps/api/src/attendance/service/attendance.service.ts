@@ -8,9 +8,15 @@ import {
   UnauthorizedException,
   UnprocessableEntityException,
 } from '@nestjs/common';
-import { AttendanceEventType, AttendanceShift } from '@prisma/client';
+import {
+  AttendanceEventType,
+  AttendanceLog,
+  AttendanceLogSource,
+  AttendanceShift,
+} from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import {
+  ATTENDANCE_DUPLICATE_WINDOW_MS,
   KIOSK_LOCK_DURATION_MS,
   KIOSK_MAX_ATTEMPTS,
   SHIFT_AFTERNOON_END,
@@ -29,9 +35,11 @@ import type {
   OvertimeSummary,
   RegisterEntryInput,
   RegisterExitInput,
+  RegisterEventInput,
 } from '../interfaces/attendance.interfaces';
 import { AttendanceRepository, normalizeWorkDate } from '../repository/attendance.repository';
 import { calculateDaySummary, getBogotaHour } from '../utils/attendance-calculation.util';
+import { validateGeofence } from '../utils/attendance-geofence.util';
 import { AuthService } from '../../auth/service/auth.service';
 
 // Kiosk-auth security model:
@@ -196,6 +204,88 @@ export class AttendanceService implements IAttendanceService {
       overtimeMinutes: summary.overtimeMinutes,
       isNocturno: summary.isNocturno,
     };
+  }
+
+  async registerEvent(input: RegisterEventInput): Promise<AttendanceLog> {
+    const duplicate = await this.attendanceRepository.findDuplicateEvent({
+      employeeId: input.employeeId,
+      eventType: input.eventType,
+      source: input.source,
+      timestamp: input.timestamp,
+      windowMs: ATTENDANCE_DUPLICATE_WINDOW_MS,
+    });
+    if (duplicate) {
+      throw new ConflictException('Marcación duplicada');
+    }
+
+    let workDate = input.workDate ?? normalizeWorkDate(input.timestamp);
+    let shift = input.shift ?? null;
+
+    if (input.source === AttendanceLogSource.APP_MOVIL) {
+      if (input.eventType === AttendanceEventType.ENTRY) {
+        const openEntry = await this.attendanceRepository.findOpenEntry(input.employeeId);
+        if (openEntry) {
+          throw new ConflictException('Ya existe una entrada activa sin salida registrada');
+        }
+        shift = shift ?? detectShift(input.timestamp);
+      } else {
+        const openEntry = await this.attendanceRepository.findOpenEntry(input.employeeId);
+        if (!openEntry) {
+          throw new BadRequestException('No hay entrada activa para registrar la salida');
+        }
+        workDate = openEntry.workDate;
+        shift = openEntry.shift;
+      }
+    } else if (input.source === AttendanceLogSource.MANUAL) {
+      shift = shift ?? detectShift(input.timestamp);
+    }
+
+    let validationStatus = null;
+    let distanceMeters: number | null = null;
+    let radiusMeters: number | null = null;
+    let rejectionReason: string | null = null;
+
+    if (
+      input.source === AttendanceLogSource.APP_MOVIL &&
+      input.clientLatitude != null &&
+      input.clientLongitude != null
+    ) {
+      const location = await this.attendanceRepository.findLocationById(
+        input.locationId,
+        input.tenantId,
+      );
+      if (!location) {
+        throw new NotFoundException(`Sede ${input.locationId} no encontrada`);
+      }
+
+      const geo = validateGeofence(
+        input.clientLatitude,
+        input.clientLongitude,
+        location.geoLatitude,
+        location.geoLongitude,
+        location.checkInRadiusMeters,
+      );
+      validationStatus = geo.validationStatus;
+      distanceMeters = geo.distanceMeters;
+      radiusMeters = geo.radiusMeters;
+      rejectionReason = geo.rejectionReason;
+    }
+
+    const log = await this.attendanceRepository.createEventLog({
+      ...input,
+      workDate,
+      shift,
+      validationStatus,
+      distanceMeters,
+      radiusMeters,
+      rejectionReason,
+    });
+
+    this.logger.log(
+      `EVENT ${input.eventType} source=${input.source}: employeeId=${input.employeeId} workDate=${workDate.toISOString()}`,
+    );
+
+    return log;
   }
 
   async listHistory(query: ListHistoryInput, tenantId: string): Promise<AttendanceLogFull[]> {

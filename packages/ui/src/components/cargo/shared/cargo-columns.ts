@@ -40,10 +40,12 @@ export function getCargoColumns(showActions = true): CargoColumnDef[] {
   return defaultCargoColumns.filter((column) => column.key !== 'actions');
 }
 
+export function getGridTemplateFromColumns(columns: CargoColumnDef[]): string {
+  return columns.map((column) => column.width ?? '1fr').join(' ');
+}
+
 export function getCargoGridTemplate(showActions = true): string {
-  return getCargoColumns(showActions)
-    .map((column) => column.width ?? '1fr')
-    .join(' ');
+  return getGridTemplateFromColumns(getCargoColumns(showActions));
 }
 
 function getColumnMinWidthPx(width?: string): number {
@@ -73,12 +75,15 @@ function getColumnMinWidthPx(width?: string): number {
   return 80;
 }
 
-export function getCargoTableMinWidthPx(showActions = true): number {
-  const columns = getCargoColumns(showActions);
+export function getTableMinWidthPxFromColumns(columns: CargoColumnDef[]): number {
   const columnsWidth = columns.reduce((sum, column) => sum + getColumnMinWidthPx(column.width), 0);
   const gaps = Math.max(columns.length - 1, 0) * CARGO_TABLE_COLUMN_GAP_PX;
 
   return columnsWidth + gaps + 24;
+}
+
+export function getCargoTableMinWidthPx(showActions = true): number {
+  return getTableMinWidthPxFromColumns(getCargoColumns(showActions));
 }
 
 export function buildCargoHeaderColumns(

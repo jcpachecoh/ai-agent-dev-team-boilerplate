@@ -3,10 +3,13 @@ import type { CSSProperties, JSX, ReactNode } from 'react';
 import styles from './CargoTable.module.scss';
 import { CargoPagination, type CargoPaginationProps } from '../cargo-pagination';
 import { CargoTableHeader } from '../cargo-table-header';
+import { CargoTableGridTemplateProvider } from './CargoTableGridContext';
 import {
   buildCargoHeaderColumns,
   getCargoColumns,
-  getCargoTableMinWidthPx,
+  getGridTemplateFromColumns,
+  getTableMinWidthPxFromColumns,
+  type CargoColumnDef,
   type CargoSortColumnKey,
   type CargoSortDirection,
 } from '../shared/cargo-columns';
@@ -16,6 +19,8 @@ export interface CargoTableProps {
   children?: ReactNode;
   footer?: ReactNode;
   pagination?: CargoPaginationProps;
+  columns?: CargoColumnDef[];
+  ariaLabel?: string;
   showActions?: boolean;
   sortColumn?: CargoSortColumnKey | null;
   sortDirection?: CargoSortDirection;
@@ -30,6 +35,8 @@ export function CargoTable({
   children,
   footer,
   pagination,
+  columns: columnsOverride,
+  ariaLabel = 'Listado de cargos',
   showActions = true,
   sortColumn = null,
   sortDirection = 'asc',
@@ -39,10 +46,13 @@ export function CargoTable({
   size = 'md',
   className,
 }: CargoTableProps): JSX.Element {
-  const columns = enableSorting
-    ? buildCargoHeaderColumns(showActions, sortColumn, sortDirection, onSortColumn)
-    : getCargoColumns(showActions).map((column) => ({ ...column, sortable: false }));
-  const tableMinWidthPx = getCargoTableMinWidthPx(showActions);
+  const headerColumns =
+    columnsOverride ??
+    (enableSorting
+      ? buildCargoHeaderColumns(showActions, sortColumn, sortDirection, onSortColumn)
+      : getCargoColumns(showActions).map((column) => ({ ...column, sortable: false })));
+  const gridTemplate = getGridTemplateFromColumns(headerColumns);
+  const tableMinWidthPx = getTableMinWidthPxFromColumns(headerColumns);
 
   return (
     <section
@@ -50,7 +60,7 @@ export function CargoTable({
         .filter(Boolean)
         .join(' ')}
       role="table"
-      aria-label="Listado de cargos"
+      aria-label={ariaLabel}
     >
       <div className={styles.scrollRegion}>
         <div
@@ -62,14 +72,16 @@ export function CargoTable({
           }
         >
           <CargoTableHeader
-            columns={columns}
+            columns={headerColumns}
             theme={theme}
             size={size}
             className={styles.desktopHeader}
           />
-          <div className={styles.body} role="rowgroup">
-            {children}
-          </div>
+          <CargoTableGridTemplateProvider value={gridTemplate}>
+            <div className={styles.body} role="rowgroup">
+              {children}
+            </div>
+          </CargoTableGridTemplateProvider>
         </div>
       </div>
       {footer ??

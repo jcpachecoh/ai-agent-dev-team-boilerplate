@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { AttendanceEventType } from '@prisma/client';
+import { AttendanceEventType, AttendanceLogSource } from '@prisma/client';
 import type {
   AttendanceLogFull,
   ControlPanelAlert,
@@ -88,39 +88,6 @@ export class AttendanceControlPanelService {
       limit: 10000,
     });
 
-    const mobileLogsDay = await this.repository.listMobileLogsForDay(
-      tenantId,
-      workDateFromIso(dayRange.dateFrom),
-      locationIds,
-      laborClassifications,
-    );
-    const mobileLogsForTimeline =
-      period === 'day'
-        ? mobileLogsDay
-        : await this.repository.listMobileLogsForRange(
-            tenantId,
-            workDateFromIso(timelineRange.dateFrom),
-            workDateFromIso(timelineRange.dateTo),
-            locationIds,
-            laborClassifications,
-          );
-
-    const latestMobileByEmployee = new Map<string, (typeof mobileLogsForTimeline)[number]>();
-    for (const log of mobileLogsForTimeline) {
-      const current = latestMobileByEmployee.get(log.employeeId);
-      if (!current || log.timestamp > current.timestamp) {
-        latestMobileByEmployee.set(log.employeeId, log);
-      }
-    }
-
-    const latestDayMobileByEmployee = new Map<string, (typeof mobileLogsDay)[number]>();
-    for (const log of mobileLogsDay) {
-      const current = latestDayMobileByEmployee.get(log.employeeId);
-      if (!current || log.timestamp > current.timestamp) {
-        latestDayMobileByEmployee.set(log.employeeId, log);
-      }
-    }
-
     const dayLastLogByEmployee = new Map<string, AttendanceLogFull>();
     for (const log of dayLogs) {
       const current = dayLastLogByEmployee.get(log.employeeId);
@@ -157,7 +124,7 @@ export class AttendanceControlPanelService {
     const attendanceToday = dayLastLogByEmployee.size;
 
     const rows = Array.from(lastLogByEmployee.values())
-      .map((log) => this.toTimelineRow(log, latestMobileByEmployee.get(log.employeeId)))
+      .map((log) => this.toTimelineRow(log))
       .filter((row) => this.matchesFilters(row, query));
 
     const sortedRows = this.sortRows(rows, query.sortBy, query.sortDir);
@@ -167,7 +134,7 @@ export class AttendanceControlPanelService {
     const paginated = sortedRows.slice(start, start + pageSize);
 
     const filterOptions = this.buildFilterOptions(timelineLogs);
-    const alerts = this.buildAlerts(dayLogs, mobileLogsDay, latestDayMobileByEmployee);
+    const alerts = this.buildAlerts(dayLogs);
     const dismissedAlertKeys = await this.repository.listDismissedAlertKeys(tenantId, userId);
     const visibleAlerts = alerts.filter((alert) => !dismissedAlertKeys.has(alert.id));
 
@@ -209,20 +176,13 @@ export class AttendanceControlPanelService {
     return { alertKey: record.alertKey, dismissedAt: record.dismissedAt.toISOString() };
   }
 
-  private toTimelineRow(
-    log: AttendanceLogFull,
-    mobileLog?: {
-      clientLatitude: number;
-      clientLongitude: number;
-      status: string;
-      distanceMeters: number | null;
-    },
-  ): ControlPanelTimelineRow {
+  private toTimelineRow(log: AttendanceLogFull): ControlPanelTimelineRow {
     const employee = log.employee as EnrichedEmployee;
     const names = this.resolveNames(employee);
     const domain = PUBLIC_STORAGE_DOMAIN();
     const photoKey = employee.photoStorageObject?.key;
     const photoUrl = domain && photoKey ? `${domain}/${photoKey}` : null;
+    const hasGeo = log.clientLatitude != null && log.clientLongitude != null;
 
     return {
       employeeId: log.employeeId,
@@ -238,10 +198,11 @@ export class AttendanceControlPanelService {
       locationName: log.location.name,
       lastRecordAt: log.timestamp.toISOString(),
       lastEventType: log.eventType,
-      latitude: mobileLog?.clientLatitude ?? null,
-      longitude: mobileLog?.clientLongitude ?? null,
-      hasGeo: Boolean(mobileLog),
-      isOutOfGeofence: mobileLog?.status === 'REJECTED',
+      source: log.source,
+      latitude: log.clientLatitude ?? null,
+      longitude: log.clientLongitude ?? null,
+      hasGeo,
+      isOutOfGeofence: log.validationStatus === 'REJECTED',
     };
   }
 
@@ -311,36 +272,38 @@ export class AttendanceControlPanelService {
     };
   }
 
-  private buildAlerts(
-    dayLogs: AttendanceLogFull[],
-    mobileLogs: Awaited<ReturnType<AttendanceRepository['listMobileLogsForDay']>>,
-    latestMobileByEmployee: Map<string, (typeof mobileLogs)[number]>,
-  ): ControlPanelAlert[] {
+  private buildAlerts(dayLogs: AttendanceLogFull[]): ControlPanelAlert[] {
     const alerts: ControlPanelAlert[] = [];
 
-    for (const mobileLog of mobileLogs) {
-      if (mobileLog.status === 'REJECTED') {
+    for (const log of dayLogs) {
+      if (log.source === AttendanceLogSource.APP_MOVIL && log.validationStatus === 'REJECTED') {
         alerts.push({
-          id: `geo-${mobileLog.id}`,
+          id: `geo-${log.id}`,
           type: 'geofence',
-          title: `${mobileLog.employee.name} registró fuera de geocerca`,
-          subtitle: `${mobileLog.location.name} · ${Math.round(mobileLog.distanceMeters ?? 0)} m fuera del radio`,
-          generatedAt: mobileLog.timestamp.toISOString(),
-          employeeId: mobileLog.employeeId,
-          employeeName: mobileLog.employee.name,
+          title: `${log.employee.name} registró fuera de geocerca`,
+          subtitle: `${log.location.name} · ${Math.round(log.distanceMeters ?? 0)} m fuera del radio`,
+          generatedAt: log.timestamp.toISOString(),
+          employeeId: log.employeeId,
+          employeeName: log.employee.name,
         });
       }
     }
 
     for (const log of dayLogs) {
       if (log.eventType === AttendanceEventType.EXIT) continue;
-      const mobile = latestMobileByEmployee.get(log.employeeId);
-      if (!mobile) {
+      if (log.source === AttendanceLogSource.MANUAL) continue;
+
+      const hasGeo = log.clientLatitude != null && log.clientLongitude != null;
+      if (!hasGeo) {
+        const sourceLabel =
+          log.source === AttendanceLogSource.APP_MOVIL
+            ? 'app móvil sin geo'
+            : 'marcación automática';
         alerts.push({
           id: `no-geo-${log.id}`,
           type: 'no-geo',
           title: `${log.employee.name} sin geolocalización`,
-          subtitle: `${log.location.name} · marcación desde kiosko`,
+          subtitle: `${log.location.name} · ${sourceLabel}`,
           generatedAt: log.timestamp.toISOString(),
           employeeId: log.employeeId,
           employeeName: log.employee.name,

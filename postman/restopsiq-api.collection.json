@@ -9776,7 +9776,7 @@
     },
     {
       "name": "NOM-05 Mobile Attendance (OS-499/OS-505)",
-      "description": "Marcaciones de entrada/salida desde app móvil.\n\nFlujo de 2 pasos:\n1. POST /api/storage/upload (domain=PAYROLL) → obtener mobileStorageObjectId\n2. mutation registrarMarcacion con storageObjectId\n\nVariables de entorno usadas:\n- accessToken: JWT de cualquier usuario autenticado del tenant\n- accessTokenOwner: JWT OWNER para queries admin\n- locationId: ID de la sede\n- attendanceEmployeeId: EmployeeDetails.id (capturado de NOM-03 kiosk-auth)\n- mobileStorageObjectId: capturado de request 1 (Upload foto)\n- mobileAttendanceId: capturado de request 2 (registrarMarcacion)\n\nPrerrequisito: ejecutar NOM-03 kiosk-auth primero para capturar attendanceEmployeeId.",
+      "description": "Marcaciones de entrada/salida desde app móvil (ASIS-UNI: persiste en AttendanceLog con source=APP_MOVIL).\n\nFlujo de 2 pasos:\n1. POST /api/storage/upload (domain=PAYROLL) → obtener mobileStorageObjectId\n2. mutation registrarMarcacion con storageObjectId\n\nVariables de entorno usadas:\n- accessToken: JWT de cualquier usuario autenticado del tenant\n- accessTokenOwner: JWT OWNER para queries admin\n- locationId: ID de la sede\n- attendanceEmployeeId: EmployeeDetails.id (capturado de NOM-03 kiosk-auth)\n- mobileStorageObjectId: capturado de request 1 (Upload foto)\n- mobileAttendanceId: capturado de request 2 (registrarMarcacion) — mismo id en attendance_logs\n\nPrerrequisito: ejecutar NOM-03 kiosk-auth primero para capturar attendanceEmployeeId.",
       "item": [
         {
           "name": "1 — Upload foto marcación",

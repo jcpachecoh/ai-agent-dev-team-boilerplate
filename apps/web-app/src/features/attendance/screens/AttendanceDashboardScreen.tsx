@@ -8,6 +8,7 @@ import {
   RecetaMetricCard,
   RecetaTextInput,
   resolveEmpleadoInitials,
+  Spinner,
 } from '@restopsiq/ui';
 import { MapPin, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
@@ -28,6 +29,17 @@ import type {
   AttendanceControlPanelTimelineRow,
 } from '../types/attendance.types';
 import styles from './AttendanceDashboardScreen.module.scss';
+
+function formatAttendanceSourceLabel(source: AttendanceControlPanelTimelineRow['source']): string {
+  switch (source) {
+    case 'APP_MOVIL':
+      return 'App móvil';
+    case 'MANUAL':
+      return 'Manual';
+    default:
+      return 'Automática';
+  }
+}
 
 const TIMELINE_PERIOD_OPTIONS: Array<{ id: AttendanceControlPanelPeriod; label: string }> = [
   { id: 'day', label: 'Hoy' },
@@ -511,19 +523,23 @@ export function AttendanceDashboardScreen(): React.JSX.Element {
                       Último registro
                     </button>
                   </th>
+                  <th scope="col">Origen</th>
                   <th scope="col">Geo</th>
                 </tr>
               </thead>
               <tbody>
                 {query.isLoading ? (
                   <tr>
-                    <td colSpan={9} className={styles.emptyCell}>
-                      Cargando línea de tiempo…
+                    <td colSpan={10} className={styles.emptyCell}>
+                      <div className={styles.loadingState} role="status" aria-live="polite">
+                        <Spinner size="lg" theme={asistenciaTheme === 'light' ? 'light' : 'dark'} />
+                        <p className={styles.loadingText}>Cargando línea de tiempo…</p>
+                      </div>
                     </td>
                   </tr>
                 ) : (data?.timeline.items.length ?? 0) === 0 ? (
                   <tr>
-                    <td colSpan={9} className={styles.emptyCell}>
+                    <td colSpan={10} className={styles.emptyCell}>
                       No hay marcaciones registradas en el periodo con los filtros actuales.
                     </td>
                   </tr>
@@ -647,6 +663,7 @@ function TimelineRow({
       <td>{row.area}</td>
       <td>{row.contrato}</td>
       <td>{formatRecordDate(row.lastRecordAt)}</td>
+      <td>{formatAttendanceSourceLabel(row.source)}</td>
       <td>
         {mapUrl ? (
           <a

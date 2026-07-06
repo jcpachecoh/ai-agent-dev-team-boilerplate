@@ -720,7 +720,6 @@ model Location {
   users                     UserLocation[]
   employeeDetails           EmployeeDetails[]
   attendanceLogs            AttendanceLog[]
-  mobileAttendanceLogs      MobileAttendanceLog[]
   productionIncidents       ProductionIncident[]
   supplyItems               SupplyItem[]
   productionRecipes         ProductionRecipeLocation[]
@@ -792,7 +791,6 @@ model EmployeeDetails {
   positionHistory        EmployeePositionHistory[]
   attendanceLogs         AttendanceLog[]
   attendanceObservations AttendanceObservation[]
-  mobileAttendanceLogs   MobileAttendanceLog[]
   socialProfiles         EmployeeSocialProfile[]
   financialProfile       EmployeeFinancialProfile?
   personalData           EmployeePersonalData?
@@ -1657,51 +1655,7 @@ model ProductionLog {
   @@map("production_logs")
 }
 
-// ── Mobile Attendance (OS-499 / OS-505) ──────────────────────────────────────
-
-enum MobileAttendanceEventType {
-  ENTRY
-  EXIT
-}
-
-enum MobileAttendanceStatus {
-  VALID // Distancia dentro del radio configurado
-  REJECTED // Fuera de radio, empleado inactivo u otro rechazo de validación
-  PENDING // Sede sin geofence configurado — requiere revisión manual
-}
-
-model MobileAttendanceLog {
-  id                String                    @id @default(cuid())
-  tenantId          String
-  employeeId        String
-  locationId        String
-  eventType         MobileAttendanceEventType
-  status            MobileAttendanceStatus    @default(PENDING)
-  timestamp         DateTime                  @default(now())
-  workDate          DateTime
-  clientLatitude    Float
-  clientLongitude   Float
-  distanceMeters    Float?
-  radiusMeters      Int?
-  storageObjectId   String?
-  photoUrl          String?
-  facialMatchScore  Float?
-  facialMatchResult String?
-  rejectionReason   String?
-  notes             String?
-  createdAt         DateTime                  @default(now())
-  updatedAt         DateTime                  @updatedAt
-  deletedAt         DateTime?
-
-  employee EmployeeDetails @relation(fields: [employeeId], references: [id])
-  location Location        @relation(fields: [locationId], references: [id])
-
-  @@index([tenantId, employeeId, workDate])
-  @@index([tenantId, locationId, workDate])
-  @@index([tenantId, status])
-  @@index([deletedAt])
-  @@map("mobile_attendance_logs")
-}
+// ── Mobile Attendance removed (ASIS-UNI Task 05) — data lives in AttendanceLog ─
 
 model ProductionOrderMaterial {
   id               String    @id @default(cuid())
@@ -1842,12 +1796,22 @@ enum AttendanceOvertimeType {
   FESTIVO_NOCTURNO // Trabajo en festivo nocturno — recargo 150% CST art. 179
 }
 
-// OS-551 — origen de la marcación. AttendanceLog es inmutable: las marcaciones
-// manuales NUNCA editan una fila DEVICE existente, se insertan como una fila
-// MANUAL nueva (opcionalmente referenciando la fila que corrigen vía manualParentLogId).
+// ASIS-UNI — origen de la marcación (fuente de verdad única).
+// APP_MOVIL: app móvil (facial + geo, OS-499/OS-505).
+// MANUAL: registro/corrección por administrador (OS-551/OS-554); insert-only vía manualParentLogId.
+// DEVICE: legacy kiosko NOM-03 — deprecado; en migración ASIS-UNI se mapea semánticamente a APP_MOVIL
+// (UPDATE opcional en backfill); no registrar nuevos DEVICE en producto final.
 enum AttendanceLogSource {
-  DEVICE
+  DEVICE // @deprecated legacy — usar APP_MOVIL
+  APP_MOVIL
   MANUAL
+}
+
+// Estado de validación geo/facial (principalmente source=APP_MOVIL).
+enum AttendanceValidationStatus {
+  VALID // Dentro del radio configurado
+  REJECTED // Fuera de radio u otro rechazo
+  PENDING // Sede sin geofence — revisión manual
 }
 
 model AttendanceLog {
@@ -1867,11 +1831,22 @@ model AttendanceLog {
   createdAt  DateTime            @default(now())
   updatedAt  DateTime            @updatedAt
 
-  // OS-551 — trazabilidad de marcaciones manuales (source=MANUAL)
   source            AttendanceLogSource @default(DEVICE)
   createdByUserId   String?
   manualReason      String?
   manualParentLogId String?
+
+  // ASIS-UNI — metadata app móvil (source=APP_MOVIL); opcional en MANUAL/DEVICE legacy
+  validationStatus  AttendanceValidationStatus?
+  clientLatitude    Float?
+  clientLongitude   Float?
+  distanceMeters    Float?
+  radiusMeters      Int?
+  storageObjectId   String?
+  photoUrl          String?
+  facialMatchScore  Float?
+  facialMatchResult String?
+  rejectionReason   String?
 
   employee EmployeeDetails @relation(fields: [employeeId], references: [id])
   location Location        @relation(fields: [locationId], references: [id])
@@ -1883,6 +1858,7 @@ model AttendanceLog {
   @@index([tenantId, employeeId, workDate])
   @@index([tenantId, locationId, workDate])
   @@index([tenantId, workDate])
+  @@index([tenantId, validationStatus])
   @@index([manualParentLogId])
   @@map("attendance_logs")
 }

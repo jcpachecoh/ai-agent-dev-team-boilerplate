@@ -128,7 +128,8 @@ export function AttendanceCardScreen(): React.JSX.Element {
         id: log.id,
         type: log.eventType,
         timeLabel: formatTimeLabel(log.timestamp),
-        source: log.source === 'MANUAL' ? 'MANUAL' : 'DEVICE',
+        source:
+          log.source === 'MANUAL' ? 'MANUAL' : log.source === 'APP_MOVIL' ? 'APP_MOVIL' : 'DEVICE',
         reason: log.manualReason,
         createdByEmail: log.createdBy?.email,
         createdAtLabel: log.createdAt

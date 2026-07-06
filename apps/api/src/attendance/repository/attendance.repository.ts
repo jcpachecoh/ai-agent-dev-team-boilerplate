@@ -21,6 +21,7 @@ import type {
   EmployeeWithUser,
   IAttendanceRepository,
   LaborClassificationCounts,
+  RegisterEventLogData,
 } from '../interfaces/attendance.interfaces';
 
 @Injectable()
@@ -255,44 +256,53 @@ export class AttendanceRepository implements IAttendanceRepository {
     }) as Promise<AttendanceLogFull[]>;
   }
 
-  listMobileLogsForDay(
-    tenantId: string,
-    workDate: Date,
-    locationIds?: string[],
-    laborClassifications?: LaborClassification[],
-  ) {
-    return this.listMobileLogsForRange(
-      tenantId,
-      workDate,
-      workDate,
-      locationIds,
-      laborClassifications,
-    );
+  async findDuplicateEvent(params: {
+    employeeId: string;
+    eventType: AttendanceEventType;
+    source: AttendanceLogSource;
+    timestamp: Date;
+    windowMs: number;
+  }): Promise<AttendanceLog | null> {
+    const from = new Date(params.timestamp.getTime() - params.windowMs);
+    const to = new Date(params.timestamp.getTime() + params.windowMs);
+
+    return this.prisma.attendanceLog.findFirst({
+      where: {
+        employeeId: params.employeeId,
+        eventType: params.eventType,
+        source: params.source,
+        isActive: true,
+        timestamp: { gte: from, lte: to },
+      },
+    });
   }
 
-  listMobileLogsForRange(
-    tenantId: string,
-    dateFrom: Date,
-    dateTo: Date,
-    locationIds?: string[],
-    laborClassifications?: LaborClassification[],
-  ) {
-    return this.prisma.mobileAttendanceLog.findMany({
-      where: {
-        tenantId,
-        deletedAt: null,
-        workDate: { gte: dateFrom, lte: dateTo },
-        ...(locationIds?.length ? { locationId: { in: locationIds } } : {}),
-        ...(laborClassifications?.length
-          ? { employee: { laborClassification: { in: laborClassifications } } }
-          : {}),
+  createEventLog(data: RegisterEventLogData): Promise<AttendanceLog> {
+    return this.prisma.attendanceLog.create({
+      data: {
+        tenantId: data.tenantId,
+        employeeId: data.employeeId,
+        locationId: data.locationId,
+        eventType: data.eventType,
+        shift: data.shift ?? null,
+        workDate: data.workDate,
+        timestamp: data.timestamp,
+        notes: data.notes ?? null,
+        source: data.source,
+        createdByUserId: data.createdByUserId ?? null,
+        manualReason: data.manualReason ?? null,
+        manualParentLogId: data.manualParentLogId ?? null,
+        validationStatus: data.validationStatus ?? null,
+        clientLatitude: data.clientLatitude ?? null,
+        clientLongitude: data.clientLongitude ?? null,
+        distanceMeters: data.distanceMeters ?? null,
+        radiusMeters: data.radiusMeters ?? null,
+        storageObjectId: data.storageObjectId ?? null,
+        photoUrl: data.photoUrl ?? null,
+        facialMatchScore: data.facialMatchScore ?? null,
+        facialMatchResult: data.facialMatchResult ?? null,
+        rejectionReason: data.rejectionReason ?? null,
       },
-      include: {
-        employee: { include: { user: true } },
-        location: true,
-      },
-      orderBy: { timestamp: 'desc' },
-      take: 5000,
     });
   }
 
@@ -330,19 +340,17 @@ export class AttendanceRepository implements IAttendanceRepository {
   }
 
   createManualLog(data: CreateManualLogData): Promise<AttendanceLog> {
-    return this.prisma.attendanceLog.create({
-      data: {
-        tenantId: data.tenantId,
-        employeeId: data.employeeId,
-        locationId: data.locationId,
-        eventType: data.eventType,
-        workDate: data.workDate,
-        timestamp: data.timestamp,
-        source: AttendanceLogSource.MANUAL,
-        createdByUserId: data.createdByUserId,
-        manualReason: data.manualReason,
-        manualParentLogId: data.manualParentLogId ?? null,
-      },
+    return this.createEventLog({
+      tenantId: data.tenantId,
+      employeeId: data.employeeId,
+      locationId: data.locationId,
+      eventType: data.eventType,
+      workDate: data.workDate,
+      timestamp: data.timestamp,
+      source: AttendanceLogSource.MANUAL,
+      createdByUserId: data.createdByUserId,
+      manualReason: data.manualReason,
+      manualParentLogId: data.manualParentLogId ?? null,
     });
   }
 

@@ -1,14 +1,27 @@
 import type {
+  AttendanceEventType,
+  AttendanceValidationStatus,
   EmployeeDetails,
   Location,
-  MobileAttendanceEventType,
-  MobileAttendanceLog,
-  MobileAttendanceStatus,
 } from '@prisma/client';
 
 // ── Composed types ──────────────────────────────────────────────────────────
 
-export type MobileAttendanceLogFull = MobileAttendanceLog & {
+export type MobileAttendanceLogFull = {
+  id: string;
+  tenantId: string;
+  employeeId: string;
+  locationId: string;
+  eventType: AttendanceEventType;
+  status: AttendanceValidationStatus;
+  timestamp: Date;
+  workDate: Date;
+  distanceMeters: number | null;
+  photoUrl: string | null;
+  facialMatchScore: number | null;
+  rejectionReason: string | null;
+  notes: string | null;
+  createdAt: Date;
   employee: EmployeeDetails;
   location: Pick<Location, 'id' | 'name' | 'geoLatitude' | 'geoLongitude' | 'checkInRadiusMeters'>;
 };
@@ -17,7 +30,7 @@ export type MobileAttendanceLogFull = MobileAttendanceLog & {
 
 export interface RegistrarMarcacionInput {
   locationId: string;
-  eventType: MobileAttendanceEventType;
+  eventType: AttendanceEventType;
   clientLatitude: number;
   clientLongitude: number;
   storageObjectId?: string | null;
@@ -38,7 +51,7 @@ export interface MarcacionesPorSedeInput {
   locationId: string;
   dateFrom: string;
   dateTo: string;
-  status?: MobileAttendanceStatus | null;
+  status?: AttendanceValidationStatus | null;
   cursor?: string | null;
   take?: number;
 }
@@ -47,7 +60,7 @@ export interface MarcacionesPorEmpleadoInput {
   employeeId: string;
   dateFrom: string;
   dateTo: string;
-  status?: MobileAttendanceStatus | null;
+  status?: AttendanceValidationStatus | null;
   cursor?: string | null;
   take?: number;
 }
@@ -56,7 +69,7 @@ export interface MarcacionesPorEmpleadoInput {
 
 export interface MarcacionResult {
   id: string;
-  status: MobileAttendanceStatus;
+  status: AttendanceValidationStatus;
   distanceMeters: number | null;
   rejectionReason: string | null;
   timestamp: Date;
@@ -95,28 +108,6 @@ export interface MarcacionConnection {
   pageInfo: PageInfo;
 }
 
-// ── Create data ─────────────────────────────────────────────────────────────
-
-export interface CreateMobileAttendanceData {
-  tenantId: string;
-  employeeId: string;
-  locationId: string;
-  eventType: MobileAttendanceEventType;
-  status: MobileAttendanceStatus;
-  timestamp: Date;
-  workDate: Date;
-  clientLatitude: number;
-  clientLongitude: number;
-  distanceMeters: number | null;
-  radiusMeters: number | null;
-  storageObjectId: string | null;
-  photoUrl: string | null;
-  facialMatchScore: number | null;
-  facialMatchResult: string | null;
-  rejectionReason: string | null;
-  notes: string | null;
-}
-
 // ── Repository contract ─────────────────────────────────────────────────────
 
 export interface IMobileAttendanceRepository {
@@ -126,7 +117,6 @@ export interface IMobileAttendanceRepository {
     tenantId: string,
   ): Promise<EmployeeWithFacialReference | null>;
   findLocationById(locationId: string, tenantId: string): Promise<Location | null>;
-  create(data: CreateMobileAttendanceData): Promise<MobileAttendanceLog>;
   findByEmployeeId(
     employeeId: string,
     tenantId: string,
@@ -138,7 +128,7 @@ export interface IMobileAttendanceRepository {
     filters: {
       dateFrom: Date;
       dateTo: Date;
-      status?: MobileAttendanceStatus | null;
+      status?: AttendanceValidationStatus | null;
       cursor?: string;
       take: number;
     },
@@ -149,7 +139,7 @@ export interface IMobileAttendanceRepository {
     filters: {
       dateFrom: Date;
       dateTo: Date;
-      status?: MobileAttendanceStatus | null;
+      status?: AttendanceValidationStatus | null;
       cursor?: string;
       take: number;
     },

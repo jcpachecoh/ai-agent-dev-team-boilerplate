@@ -1,16 +1,16 @@
 import { Injectable } from '@nestjs/common';
-import type {
-  EmployeeDetails,
-  Location,
-  MobileAttendanceLog,
-  MobileAttendanceStatus,
+import type { EmployeeDetails, Location } from '@prisma/client';
+import {
+  AttendanceEventType,
+  AttendanceLogSource,
+  AttendanceValidationStatus,
 } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
 import type {
-  CreateMobileAttendanceData,
   EmployeeWithFacialReference,
   IMobileAttendanceRepository,
   MarcacionConnection,
+  MobileAttendanceLogFull,
 } from '../interfaces/mobile-attendance.interfaces';
 
 const LOCATION_SELECT = {
@@ -20,6 +20,50 @@ const LOCATION_SELECT = {
   geoLongitude: true,
   checkInRadiusMeters: true,
 } as const;
+
+function mapLogRow(log: {
+  id: string;
+  tenantId: string;
+  employeeId: string;
+  locationId: string;
+  eventType: AttendanceEventType;
+  validationStatus: AttendanceValidationStatus | null;
+  timestamp: Date;
+  workDate: Date;
+  distanceMeters: number | null;
+  photoUrl: string | null;
+  facialMatchScore: number | null;
+  rejectionReason: string | null;
+  notes: string | null;
+  createdAt: Date;
+  employee: EmployeeDetails;
+  location: {
+    id: string;
+    name: string;
+    geoLatitude: number | null;
+    geoLongitude: number | null;
+    checkInRadiusMeters: number | null;
+  };
+}): MobileAttendanceLogFull {
+  return {
+    id: log.id,
+    tenantId: log.tenantId,
+    employeeId: log.employeeId,
+    locationId: log.locationId,
+    eventType: log.eventType,
+    status: log.validationStatus ?? AttendanceValidationStatus.PENDING,
+    timestamp: log.timestamp,
+    workDate: log.workDate,
+    distanceMeters: log.distanceMeters,
+    photoUrl: log.photoUrl,
+    facialMatchScore: log.facialMatchScore,
+    rejectionReason: log.rejectionReason,
+    notes: log.notes,
+    createdAt: log.createdAt,
+    employee: log.employee,
+    location: log.location,
+  };
+}
 
 @Injectable()
 export class MobileAttendanceRepository implements IMobileAttendanceRepository {
@@ -54,10 +98,6 @@ export class MobileAttendanceRepository implements IMobileAttendanceRepository {
     });
   }
 
-  create(data: CreateMobileAttendanceData): Promise<MobileAttendanceLog> {
-    return this.prisma.mobileAttendanceLog.create({ data });
-  }
-
   async findByEmployeeId(
     employeeId: string,
     tenantId: string,
@@ -67,7 +107,8 @@ export class MobileAttendanceRepository implements IMobileAttendanceRepository {
       {
         tenantId,
         employeeId,
-        deletedAt: null,
+        source: AttendanceLogSource.APP_MOVIL,
+        isActive: true,
         ...(filters.dateFrom || filters.dateTo
           ? {
               workDate: {
@@ -87,7 +128,7 @@ export class MobileAttendanceRepository implements IMobileAttendanceRepository {
     filters: {
       dateFrom: Date;
       dateTo: Date;
-      status?: MobileAttendanceStatus | null;
+      status?: AttendanceValidationStatus | null;
       cursor?: string;
       take: number;
     },
@@ -96,9 +137,10 @@ export class MobileAttendanceRepository implements IMobileAttendanceRepository {
       {
         tenantId,
         locationId,
-        deletedAt: null,
+        source: AttendanceLogSource.APP_MOVIL,
+        isActive: true,
         workDate: { gte: filters.dateFrom, lte: filters.dateTo },
-        ...(filters.status ? { status: filters.status } : {}),
+        ...(filters.status ? { validationStatus: filters.status } : {}),
       },
       filters,
     );
@@ -110,7 +152,7 @@ export class MobileAttendanceRepository implements IMobileAttendanceRepository {
     filters: {
       dateFrom: Date;
       dateTo: Date;
-      status?: MobileAttendanceStatus | null;
+      status?: AttendanceValidationStatus | null;
       cursor?: string;
       take: number;
     },
@@ -119,9 +161,10 @@ export class MobileAttendanceRepository implements IMobileAttendanceRepository {
       {
         tenantId,
         employeeId,
-        deletedAt: null,
+        source: AttendanceLogSource.APP_MOVIL,
+        isActive: true,
         workDate: { gte: filters.dateFrom, lte: filters.dateTo },
-        ...(filters.status ? { status: filters.status } : {}),
+        ...(filters.status ? { validationStatus: filters.status } : {}),
       },
       filters,
     );
@@ -131,7 +174,7 @@ export class MobileAttendanceRepository implements IMobileAttendanceRepository {
     where: Record<string, unknown>,
     filters: { cursor?: string; take: number },
   ): Promise<MarcacionConnection> {
-    const items = await this.prisma.mobileAttendanceLog.findMany({
+    const items = await this.prisma.attendanceLog.findMany({
       where,
       take: filters.take + 1,
       cursor: filters.cursor ? { id: filters.cursor } : undefined,
@@ -146,6 +189,9 @@ export class MobileAttendanceRepository implements IMobileAttendanceRepository {
     const edges = hasNextPage ? items.slice(0, -1) : items;
     const endCursor = edges.at(-1)?.id ?? null;
 
-    return { edges, pageInfo: { hasNextPage, endCursor } };
+    return {
+      edges: edges.map((log) => mapLogRow(log)),
+      pageInfo: { hasNextPage, endCursor },
+    };
   }
 }

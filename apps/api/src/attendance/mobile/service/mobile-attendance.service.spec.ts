@@ -1,7 +1,13 @@
 import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { MobileAttendanceEventType, MobileAttendanceStatus, StorageDomain } from '@prisma/client';
+import {
+  AttendanceEventType,
+  AttendanceLogSource,
+  AttendanceValidationStatus,
+  StorageDomain,
+} from '@prisma/client';
 import { StorageService } from '../../../storage/service/storage.service';
+import { AttendanceService } from '../../service/attendance.service';
 import { MobileAttendanceRepository } from '../repository/mobile-attendance.repository';
 import { haversineDistanceMeters, MobileAttendanceService } from './mobile-attendance.service';
 
@@ -36,8 +42,8 @@ const mockLog = {
   tenantId: TENANT_ID,
   employeeId: EMPLOYEE_ID,
   locationId: LOCATION_ID,
-  eventType: MobileAttendanceEventType.ENTRY,
-  status: MobileAttendanceStatus.VALID,
+  eventType: AttendanceEventType.ENTRY,
+  validationStatus: AttendanceValidationStatus.VALID,
   timestamp: new Date(),
   workDate: new Date(),
   clientLatitude: 4.6097,
@@ -52,6 +58,8 @@ describe('MobileAttendanceService', () => {
   let repo: jest.Mocked<MobileAttendanceRepository>;
   let storageService: jest.Mocked<StorageService>;
 
+  let attendanceService: jest.Mocked<AttendanceService>;
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -62,7 +70,6 @@ describe('MobileAttendanceService', () => {
             findEmployeeByUserId: jest.fn(),
             findEmployeeWithFacialReference: jest.fn(),
             findLocationById: jest.fn(),
-            create: jest.fn(),
             findByEmployeeId: jest.fn(),
             findByLocationId: jest.fn(),
             findByEmployeeIdAdmin: jest.fn(),
@@ -75,12 +82,14 @@ describe('MobileAttendanceService', () => {
             getPresignedUrl: jest.fn(),
           },
         },
+        { provide: AttendanceService, useValue: { registerEvent: jest.fn() } },
       ],
     }).compile();
 
     service = module.get<MobileAttendanceService>(MobileAttendanceService);
     repo = module.get(MobileAttendanceRepository);
     storageService = module.get(StorageService);
+    attendanceService = module.get(AttendanceService);
   });
 
   // ── registrarMarcacion ─────────────────────────────────────────────────────
@@ -88,64 +97,56 @@ describe('MobileAttendanceService', () => {
   describe('registrarMarcacion', () => {
     const validInput = {
       locationId: LOCATION_ID,
-      eventType: MobileAttendanceEventType.ENTRY,
+      eventType: AttendanceEventType.ENTRY,
       clientLatitude: 4.6097,
       clientLongitude: -74.0817,
     };
 
-    it('crea marcación VALID cuando el empleado está dentro del radio', async () => {
-      // Arrange
+    it('delega en registerEvent con source=APP_MOVIL y retorna VALID', async () => {
       repo.findEmployeeByUserId.mockResolvedValue(mockEmployee);
       repo.findLocationById.mockResolvedValue(mockLocation);
-      repo.create.mockResolvedValue({ ...mockLog, status: MobileAttendanceStatus.VALID });
+      attendanceService.registerEvent.mockResolvedValue({
+        ...mockLog,
+        validationStatus: AttendanceValidationStatus.VALID,
+      });
 
-      // Act
       const result = await service.registrarMarcacion(validInput, USER_ID, TENANT_ID);
 
-      // Assert
-      expect(result.status).toBe(MobileAttendanceStatus.VALID);
-      expect(repo.create).toHaveBeenCalledWith(
+      expect(result.status).toBe(AttendanceValidationStatus.VALID);
+      expect(attendanceService.registerEvent).toHaveBeenCalledWith(
         expect.objectContaining({
           tenantId: TENANT_ID,
           employeeId: EMPLOYEE_ID,
           locationId: LOCATION_ID,
-          status: MobileAttendanceStatus.VALID,
-          rejectionReason: null,
+          source: AttendanceLogSource.APP_MOVIL,
+          clientLatitude: 4.6097,
+          clientLongitude: -74.0817,
         }),
       );
     });
 
-    it('crea marcación REJECTED cuando el empleado está fuera del radio', async () => {
-      // Arrange
+    it('retorna REJECTED cuando registerEvent persiste validación fuera de radio', async () => {
       repo.findEmployeeByUserId.mockResolvedValue(mockEmployee);
       repo.findLocationById.mockResolvedValue(mockLocation);
-      repo.create.mockResolvedValue({
+      attendanceService.registerEvent.mockResolvedValue({
         ...mockLog,
-        status: MobileAttendanceStatus.REJECTED,
+        validationStatus: AttendanceValidationStatus.REJECTED,
         rejectionReason: 'OUTSIDE_RADIUS',
       });
 
       const inputFuera = {
         ...validInput,
-        clientLatitude: 4.7, // ~10 km lejos de la sede
+        clientLatitude: 4.7,
         clientLongitude: -74.0817,
       };
 
-      // Act
       const result = await service.registrarMarcacion(inputFuera, USER_ID, TENANT_ID);
 
-      // Assert
-      expect(result.status).toBe(MobileAttendanceStatus.REJECTED);
-      expect(repo.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          status: MobileAttendanceStatus.REJECTED,
-          rejectionReason: 'OUTSIDE_RADIUS',
-        }),
-      );
+      expect(result.status).toBe(AttendanceValidationStatus.REJECTED);
+      expect(attendanceService.registerEvent).toHaveBeenCalled();
     });
 
-    it('crea marcación PENDING cuando la sede no tiene geofence configurado', async () => {
-      // Arrange
+    it('retorna PENDING cuando registerEvent no tiene geofence', async () => {
       const locationSinGeo = {
         ...mockLocation,
         geoLatitude: null,
@@ -154,50 +155,43 @@ describe('MobileAttendanceService', () => {
       };
       repo.findEmployeeByUserId.mockResolvedValue(mockEmployee);
       repo.findLocationById.mockResolvedValue(locationSinGeo);
-      repo.create.mockResolvedValue({ ...mockLog, status: MobileAttendanceStatus.PENDING });
+      attendanceService.registerEvent.mockResolvedValue({
+        ...mockLog,
+        validationStatus: AttendanceValidationStatus.PENDING,
+        distanceMeters: null,
+      });
 
-      // Act
       const result = await service.registrarMarcacion(validInput, USER_ID, TENANT_ID);
 
-      // Assert
-      expect(result.status).toBe(MobileAttendanceStatus.PENDING);
-      expect(repo.create).toHaveBeenCalledWith(
-        expect.objectContaining({ status: MobileAttendanceStatus.PENDING, distanceMeters: null }),
-      );
+      expect(result.status).toBe(AttendanceValidationStatus.PENDING);
     });
 
     it('rechaza si el empleado no existe en el tenant', async () => {
-      // Arrange
       repo.findEmployeeByUserId.mockResolvedValue(null);
 
-      // Act & Assert
       await expect(service.registrarMarcacion(validInput, USER_ID, TENANT_ID)).rejects.toThrow(
         NotFoundException,
       );
-      expect(repo.create).not.toHaveBeenCalled();
+      expect(attendanceService.registerEvent).not.toHaveBeenCalled();
     });
 
     it('rechaza si el empleado está inactivo', async () => {
-      // Arrange
       repo.findEmployeeByUserId.mockResolvedValue({ ...mockEmployee, isActive: false });
 
-      // Act & Assert
       await expect(service.registrarMarcacion(validInput, USER_ID, TENANT_ID)).rejects.toThrow(
         ForbiddenException,
       );
-      expect(repo.create).not.toHaveBeenCalled();
+      expect(attendanceService.registerEvent).not.toHaveBeenCalled();
     });
 
     it('rechaza si la sede no pertenece al tenant', async () => {
-      // Arrange
       repo.findEmployeeByUserId.mockResolvedValue(mockEmployee);
       repo.findLocationById.mockResolvedValue(null);
 
-      // Act & Assert
       await expect(service.registrarMarcacion(validInput, USER_ID, TENANT_ID)).rejects.toThrow(
         NotFoundException,
       );
-      expect(repo.create).not.toHaveBeenCalled();
+      expect(attendanceService.registerEvent).not.toHaveBeenCalled();
     });
 
     it('rechaza si el empleado no está asignado a la sede solicitada', async () => {
@@ -212,7 +206,7 @@ describe('MobileAttendanceService', () => {
       await expect(service.registrarMarcacion(validInput, USER_ID, TENANT_ID)).rejects.toThrow(
         ForbiddenException,
       );
-      expect(repo.create).not.toHaveBeenCalled();
+      expect(attendanceService.registerEvent).not.toHaveBeenCalled();
     });
 
     it('rechaza si el timestamp está desfasado más de 5 minutos', async () => {
@@ -276,18 +270,15 @@ describe('MobileAttendanceService', () => {
     });
 
     it('no permite pasar employeeId desde el input — siempre lo deriva del userId JWT', async () => {
-      // Arrange
       repo.findEmployeeByUserId.mockResolvedValue(mockEmployee);
       repo.findLocationById.mockResolvedValue(mockLocation);
-      repo.create.mockResolvedValue(mockLog);
+      attendanceService.registerEvent.mockResolvedValue(mockLog);
 
-      // Act
       await service.registrarMarcacion(validInput, USER_ID, TENANT_ID);
 
-      // Assert — employeeId viene del repo lookup, no del input
       expect(repo.findEmployeeByUserId).toHaveBeenCalledWith(USER_ID, TENANT_ID);
-      expect(repo.create).toHaveBeenCalledWith(
-        expect.objectContaining({ employeeId: EMPLOYEE_ID }),
+      expect(attendanceService.registerEvent).toHaveBeenCalledWith(
+        expect.objectContaining({ employeeId: EMPLOYEE_ID, source: AttendanceLogSource.APP_MOVIL }),
       );
     });
   });

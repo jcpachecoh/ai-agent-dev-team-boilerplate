@@ -23,8 +23,6 @@ const repositoryMock = {
   findTenantLabel: jest.fn(),
   listActiveLocations: jest.fn(),
   listControlPanelLogs: jest.fn(),
-  listMobileLogsForDay: jest.fn(),
-  listMobileLogsForRange: jest.fn(),
   listDismissedAlertKeys: jest.fn(),
   dismissAlert: jest.fn(),
 };
@@ -53,6 +51,11 @@ function buildLog(
     timestamp: string;
     workDate: string;
     employee: TestEmployee;
+    source: string;
+    validationStatus: string;
+    distanceMeters: number;
+    clientLatitude: number | null;
+    clientLongitude: number | null;
   }> = {},
 ) {
   return {
@@ -60,6 +63,11 @@ function buildLog(
     employeeId: overrides.employeeId ?? 'emp-1',
     locationId: 'loc-1',
     eventType: overrides.eventType ?? AttendanceEventType.ENTRY,
+    source: overrides.source ?? 'APP_MOVIL',
+    validationStatus: overrides.validationStatus ?? null,
+    distanceMeters: overrides.distanceMeters ?? null,
+    clientLatitude: overrides.clientLatitude === undefined ? 4.6 : overrides.clientLatitude,
+    clientLongitude: overrides.clientLongitude === undefined ? -74.1 : overrides.clientLongitude,
     timestamp: new Date(overrides.timestamp ?? '2026-07-01T17:07:45.000Z'),
     workDate: new Date(overrides.workDate ?? '2026-07-01T00:00:00.000Z'),
     employee: overrides.employee ?? baseEmployee,
@@ -79,8 +87,6 @@ describe('AttendanceControlPanelService', () => {
     repositoryMock.listActiveLocations.mockResolvedValue([
       { id: 'loc-1', name: 'Gran Estación', tenantId: 'tenant-1' },
     ]);
-    repositoryMock.listMobileLogsForDay.mockResolvedValue([]);
-    repositoryMock.listMobileLogsForRange.mockResolvedValue([]);
     repositoryMock.listDismissedAlertKeys.mockResolvedValue(new Set());
   });
 
@@ -157,7 +163,6 @@ describe('AttendanceControlPanelService', () => {
     expect(result.dateTo).toBe('2026-07-05');
     expect(result.timeline.items).toHaveLength(1);
     expect(result.timeline.items[0]?.documentNumber).toBe('11223344');
-    expect(repositoryMock.listMobileLogsForRange).toHaveBeenCalled();
   });
 
   it('pagina, filtra y ordena la línea de tiempo', async () => {
@@ -210,19 +215,24 @@ describe('AttendanceControlPanelService', () => {
   });
 
   it('genera alertas de geocerca y sin geolocalización', async () => {
-    repositoryMock.listControlPanelLogs.mockResolvedValue([buildLog()]);
-    repositoryMock.listMobileLogsForDay.mockResolvedValue([
-      {
-        id: 'mobile-geo',
+    repositoryMock.listControlPanelLogs.mockResolvedValue([
+      buildLog({
+        id: 'log-no-geo',
+        employeeId: 'emp-1',
+        source: 'DEVICE',
+        clientLatitude: null,
+        clientLongitude: null,
+      }),
+      buildLog({
+        id: 'log-geo',
         employeeId: 'emp-geo',
-        timestamp: new Date('2026-07-01T16:00:00.000Z'),
-        status: 'REJECTED',
+        source: 'APP_MOVIL',
+        validationStatus: 'REJECTED',
         distanceMeters: 120,
         clientLatitude: 4.6,
         clientLongitude: -74.1,
         employee: { ...baseEmployee, id: 'emp-geo', name: 'Luis Rojas' },
-        location: { id: 'loc-1', name: 'Gran Estación' },
-      },
+      }),
     ]);
 
     const result = await service.getControlPanel('tenant-1', USER_ID, {
@@ -302,7 +312,6 @@ describe('AttendanceControlPanelService', () => {
     expect(result.timeline.total).toBe(3);
     expect(result.timeline.page).toBe(2);
     expect(result.timeline.items).toHaveLength(1);
-    expect(repositoryMock.listMobileLogsForRange).toHaveBeenCalled();
   });
 
   // ── OS-548: pageSize 20/50/100 ───────────────────────────────────────────────
@@ -364,15 +373,9 @@ describe('AttendanceControlPanelService', () => {
 
       const call = repositoryMock.listControlPanelLogs.mock.calls[0][0];
       expect(call.laborClassifications).toBeUndefined();
-      expect(repositoryMock.listMobileLogsForDay).toHaveBeenCalledWith(
-        'tenant-1',
-        expect.any(Date),
-        expect.any(Array),
-        undefined,
-      );
     });
 
-    it('clasificacion=administrativo: forwarding [ADMINISTRATIVO] a logs y mobile logs', async () => {
+    it('clasificacion=administrativo: forwarding [ADMINISTRATIVO] a logs', async () => {
       const result = await service.getControlPanel('tenant-1', USER_ID, {
         anchorDate: '2026-07-01',
         clasificacion: 'administrativo',
@@ -382,16 +385,10 @@ describe('AttendanceControlPanelService', () => {
 
       const call = repositoryMock.listControlPanelLogs.mock.calls[0][0];
       expect(call.laborClassifications).toEqual(['ADMINISTRATIVO']);
-      expect(repositoryMock.listMobileLogsForDay).toHaveBeenCalledWith(
-        'tenant-1',
-        expect.any(Date),
-        expect.any(Array),
-        ['ADMINISTRATIVO'],
-      );
       expect(result.clasificacion).toBe('administrativo');
     });
 
-    it('clasificacion=operaciones: forwarding [COCINA, SERVICIO] a logs y mobile logs', async () => {
+    it('clasificacion=operaciones: forwarding [COCINA, SERVICIO] a logs', async () => {
       const result = await service.getControlPanel('tenant-1', USER_ID, {
         anchorDate: '2026-07-01',
         clasificacion: 'operaciones',
@@ -401,12 +398,6 @@ describe('AttendanceControlPanelService', () => {
 
       const call = repositoryMock.listControlPanelLogs.mock.calls[0][0];
       expect(call.laborClassifications).toEqual(['COCINA', 'SERVICIO']);
-      expect(repositoryMock.listMobileLogsForDay).toHaveBeenCalledWith(
-        'tenant-1',
-        expect.any(Date),
-        expect.any(Array),
-        ['COCINA', 'SERVICIO'],
-      );
       expect(result.clasificacion).toBe('operaciones');
     });
   });
@@ -439,26 +430,23 @@ describe('AttendanceControlPanelService', () => {
   });
 
   describe('alertas descartadas', () => {
-    const mobileLogRejected = {
-      id: 'mobile-geo',
-      employeeId: 'emp-geo',
-      timestamp: new Date('2026-07-01T16:00:00.000Z'),
-      status: 'REJECTED',
-      distanceMeters: 120,
-      clientLatitude: 4.6,
-      clientLongitude: -74.1,
-      employee: { ...baseEmployee, id: 'emp-geo', name: 'Luis Rojas' },
-      location: { id: 'loc-1', name: 'Gran Estación' },
-    };
-
     beforeEach(() => {
-      repositoryMock.listControlPanelLogs.mockResolvedValue([buildLog()]);
-      repositoryMock.listMobileLogsForDay.mockResolvedValue([mobileLogRejected]);
+      repositoryMock.listControlPanelLogs.mockResolvedValue([
+        buildLog(),
+        buildLog({
+          id: 'log-geo',
+          employeeId: 'emp-geo',
+          source: 'APP_MOVIL',
+          validationStatus: 'REJECTED',
+          distanceMeters: 120,
+          employee: { ...baseEmployee, id: 'emp-geo', name: 'Luis Rojas' },
+        }),
+      ]);
     });
 
     it('una alerta descartada por el usuario actual no reaparece para ese mismo usuario', async () => {
       repositoryMock.listDismissedAlertKeys.mockImplementation(async (_tenantId, userId) =>
-        userId === USER_ID ? new Set(['geo-mobile-geo']) : new Set(),
+        userId === USER_ID ? new Set(['geo-log-geo']) : new Set(),
       );
 
       const result = await service.getControlPanel('tenant-1', USER_ID, {
@@ -467,12 +455,12 @@ describe('AttendanceControlPanelService', () => {
         pageSize: 20,
       });
 
-      expect(result.alerts.some((alert) => alert.id === 'geo-mobile-geo')).toBe(false);
+      expect(result.alerts.some((alert) => alert.id === 'geo-log-geo')).toBe(false);
     });
 
     it('una alerta descartada por un usuario sí aparece para otro usuario', async () => {
       repositoryMock.listDismissedAlertKeys.mockImplementation(async (_tenantId, userId) =>
-        userId === USER_ID ? new Set(['geo-mobile-geo']) : new Set(),
+        userId === USER_ID ? new Set(['geo-log-geo']) : new Set(),
       );
 
       const result = await service.getControlPanel('tenant-1', 'other-user', {
@@ -481,7 +469,7 @@ describe('AttendanceControlPanelService', () => {
         pageSize: 20,
       });
 
-      expect(result.alerts.some((alert) => alert.id === 'geo-mobile-geo')).toBe(true);
+      expect(result.alerts.some((alert) => alert.id === 'geo-log-geo')).toBe(true);
     });
   });
 });

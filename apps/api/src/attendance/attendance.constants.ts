@@ -29,3 +29,6 @@ export const ATTENDANCE_MANUAL_MARKING_REASONS = [
 ] as const;
 
 export type AttendanceManualMarkingReason = (typeof ATTENDANCE_MANUAL_MARKING_REASONS)[number];
+
+// ASIS-UNI — ventana para detectar marcaciones duplicadas (mismo empleado, tipo, source y timestamp)
+export const ATTENDANCE_DUPLICATE_WINDOW_MS = 60_000;

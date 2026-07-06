@@ -4,7 +4,7 @@ import styles from './CargoTableHeader.module.scss';
 import { TableSortIcon } from '../../table-sort-icon';
 import {
   defaultCargoColumns as defaultCargoHeaderColumns,
-  getCargoGridTemplate,
+  getGridTemplateFromColumns,
   type CargoColumnDef,
 } from '../shared/cargo-columns';
 import type { CargoSize, CargoTheme } from '../shared/cargo-types';
@@ -30,15 +30,13 @@ export function CargoTableHeader({
   size = 'md',
   className,
 }: CargoTableHeaderProps): JSX.Element {
-  const showActions = columns.some((column) => column.key === 'actions');
-
   return (
     <div
       className={[styles.header, styles[`theme--${theme}`], styles[`size--${size}`], className]
         .filter(Boolean)
         .join(' ')}
       role="row"
-      style={{ '--cargo-columns': getCargoGridTemplate(showActions) } as CSSProperties}
+      style={{ '--cargo-columns': getGridTemplateFromColumns(columns) } as CSSProperties}
     >
       {columns.map((column) => {
         const isSortable = Boolean(column.sortable && column.onSort);

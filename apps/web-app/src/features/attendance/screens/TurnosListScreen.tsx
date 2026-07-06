@@ -1,4 +1,5 @@
 import {
+  type CargoColumnDef,
   CargoActionButton,
   CargoPage,
   CargoPageHeader,
@@ -61,6 +62,21 @@ const JORNADA_LABELS: Record<TurnoJornada, string> = {
   NOCTURNO: 'Nocturno',
   MIXTO: 'Mixto',
 };
+
+const TURNOS_TABLE_COLUMNS: CargoColumnDef[] = [
+  { key: 'title', label: 'Nombre del turno', width: 'minmax(200px, 1.4fr)', align: 'center' },
+  { key: 'area', label: 'Sigla', width: 'minmax(140px, 1fr)', align: 'center' },
+  { key: 'salary', label: 'Horario', width: 'minmax(220px, 1.4fr)', align: 'center' },
+  { key: 'status', label: 'Estado', width: 'minmax(108px, max-content)', align: 'center' },
+  { key: 'actions', label: 'Acciones', width: '72px', align: 'center' },
+];
+
+function getTurnosTableColumns(showActions: boolean): CargoColumnDef[] {
+  if (showActions) {
+    return TURNOS_TABLE_COLUMNS;
+  }
+  return TURNOS_TABLE_COLUMNS.filter((column) => column.key !== 'actions');
+}
 
 function getErrorMessage(error: unknown): string {
   if (error instanceof TurnosApiError) {
@@ -355,6 +371,8 @@ export function TurnosListScreen(): React.JSX.Element {
           <CargoTable
             theme={cargoTheme}
             showActions={canWrite}
+            columns={getTurnosTableColumns(canWrite)}
+            ariaLabel="Listado de turnos"
             enableSorting={false}
             pagination={{
               page,

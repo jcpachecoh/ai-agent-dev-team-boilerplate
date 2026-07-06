@@ -14,10 +14,21 @@ export interface AsistenciaTarjetaExistingMark {
   id: string;
   type: AsistenciaTarjetaMarkType;
   timeLabel: string;
-  source: 'DEVICE' | 'MANUAL';
+  source: 'APP_MOVIL' | 'MANUAL' | 'DEVICE';
   reason?: string | null;
   createdByEmail?: string | null;
   createdAtLabel?: string | null;
+}
+
+export function attendanceSourceLabel(source: AsistenciaTarjetaExistingMark['source']): string {
+  switch (source) {
+    case 'MANUAL':
+      return 'Manual';
+    case 'APP_MOVIL':
+      return 'App móvil';
+    default:
+      return 'Automática';
+  }
 }
 
 export interface AsistenciaTarjetaMarkingModalProps {
@@ -104,7 +115,8 @@ export function AsistenciaTarjetaMarkingModal({
                   <li key={mark.id} className={styles.existingMarksItem}>
                     <div className={styles.existingMarksInfo}>
                       <span className={styles.existingMarksType}>
-                        {mark.type === 'ENTRY' ? 'Entrada' : 'Salida'} · {mark.timeLabel}
+                        {mark.type === 'ENTRY' ? 'Entrada' : 'Salida'} · {mark.timeLabel} ·{' '}
+                        {attendanceSourceLabel(mark.source)}
                       </span>
                       {mark.reason ? (
                         <span className={styles.existingMarksReason}>Motivo: {mark.reason}</span>

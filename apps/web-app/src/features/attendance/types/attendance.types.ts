@@ -28,7 +28,7 @@ export interface AttendanceLocationSummary {
   city?: string;
 }
 
-export type AttendanceLogSource = 'DEVICE' | 'MANUAL';
+export type AttendanceLogSource = 'APP_MOVIL' | 'MANUAL' | 'DEVICE';
 
 export interface AttendanceHistoryItem {
   id: string;
@@ -249,6 +249,7 @@ export interface AttendanceControlPanelTimelineRow {
   locationName: string;
   lastRecordAt: string;
   lastEventType: AttendanceEventType;
+  source: AttendanceLogSource;
   latitude: number | null;
   longitude: number | null;
   hasGeo: boolean;

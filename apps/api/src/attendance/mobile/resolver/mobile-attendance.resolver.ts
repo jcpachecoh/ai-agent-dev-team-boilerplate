@@ -13,7 +13,7 @@ import {
   Resolver,
   registerEnumType,
 } from '@nestjs/graphql';
-import { MobileAttendanceEventType, MobileAttendanceStatus } from '@prisma/client';
+import { AttendanceEventType, AttendanceValidationStatus } from '@prisma/client';
 import { IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
 import type { JwtPayload } from '../../../auth/interfaces/auth.interfaces';
 import { PAYROLL_MODULE_ROLES } from '../../../common/config/rbac.config';
@@ -36,12 +36,12 @@ import type {
 } from '../interfaces/mobile-attendance.interfaces';
 import { MobileAttendanceService } from '../service/mobile-attendance.service';
 
-registerEnumType(MobileAttendanceEventType, {
+registerEnumType(AttendanceEventType, {
   name: 'MobileAttendanceEventType',
   description: 'Tipo de marcación móvil',
 });
 
-registerEnumType(MobileAttendanceStatus, {
+registerEnumType(AttendanceValidationStatus, {
   name: 'MobileAttendanceStatus',
   description: 'Estado de validación de la marcación',
 });
@@ -55,9 +55,9 @@ export class RegistrarMarcacionInputType {
   @IsNotEmpty()
   locationId!: string;
 
-  @Field(() => MobileAttendanceEventType)
-  @IsEnum(MobileAttendanceEventType)
-  eventType!: MobileAttendanceEventType;
+  @Field(() => AttendanceEventType)
+  @IsEnum(AttendanceEventType)
+  eventType!: AttendanceEventType;
 
   @Field(() => Float)
   @IsNumber()
@@ -115,10 +115,10 @@ export class MarcacionesPorSedeInputType {
   @IsNotEmpty()
   dateTo!: string;
 
-  @Field(() => MobileAttendanceStatus, { nullable: true })
-  @IsEnum(MobileAttendanceStatus)
+  @Field(() => AttendanceValidationStatus, { nullable: true })
+  @IsEnum(AttendanceValidationStatus)
   @IsOptional()
-  status?: MobileAttendanceStatus;
+  status?: AttendanceValidationStatus;
 
   @Field(() => ID, { nullable: true })
   @IsString()
@@ -147,10 +147,10 @@ export class MarcacionesPorEmpleadoInputType {
   @IsNotEmpty()
   dateTo!: string;
 
-  @Field(() => MobileAttendanceStatus, { nullable: true })
-  @IsEnum(MobileAttendanceStatus)
+  @Field(() => AttendanceValidationStatus, { nullable: true })
+  @IsEnum(AttendanceValidationStatus)
   @IsOptional()
-  status?: MobileAttendanceStatus;
+  status?: AttendanceValidationStatus;
 
   @Field(() => ID, { nullable: true })
   @IsString()
@@ -167,7 +167,7 @@ export class MarcacionesPorEmpleadoInputType {
 @ObjectType('RegistrarMarcacionResult')
 export class RegistrarMarcacionResultType implements MarcacionResult {
   @Field(() => ID) id!: string;
-  @Field(() => MobileAttendanceStatus) status!: MobileAttendanceStatus;
+  @Field(() => AttendanceValidationStatus) status!: AttendanceValidationStatus;
   @Field(() => Float, { nullable: true }) distanceMeters!: number | null;
   @Field(() => String, { nullable: true }) rejectionReason!: string | null;
   @Field() timestamp!: Date;
@@ -181,8 +181,8 @@ export class MobileAttendanceLogType {
   @Field(() => ID) employeeId!: string;
   @Field(() => ID) locationId!: string;
   @Field() locationName!: string;
-  @Field(() => MobileAttendanceEventType) eventType!: MobileAttendanceEventType;
-  @Field(() => MobileAttendanceStatus) status!: MobileAttendanceStatus;
+  @Field(() => AttendanceEventType) eventType!: AttendanceEventType;
+  @Field(() => AttendanceValidationStatus) status!: AttendanceValidationStatus;
   @Field() timestamp!: Date;
   @Field() workDate!: Date;
   @Field(() => Float, { nullable: true }) distanceMeters?: number | null;

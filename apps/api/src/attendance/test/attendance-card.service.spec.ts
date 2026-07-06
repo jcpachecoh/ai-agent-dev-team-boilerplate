@@ -5,6 +5,7 @@ import { AuditService } from '../../audit/service/audit.service';
 import type { AttendanceActingUser } from '../interfaces/attendance.interfaces';
 import { AttendanceRepository } from '../repository/attendance.repository';
 import { AttendanceCardService } from '../service/attendance-card.service';
+import { AttendanceService } from '../service/attendance.service';
 
 const TENANT = 'tenant-1';
 const LOCATION_A = 'loc-A';
@@ -35,6 +36,7 @@ describe('AttendanceCardService', () => {
   let service: AttendanceCardService;
   let repo: jest.Mocked<AttendanceRepository>;
   let audit: jest.Mocked<AuditService>;
+  let attendanceService: jest.Mocked<AttendanceService>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -49,17 +51,18 @@ describe('AttendanceCardService', () => {
             findObservation: jest.fn(),
             upsertObservation: jest.fn(),
             findLogById: jest.fn(),
-            createManualLog: jest.fn(),
             deleteManualLog: jest.fn(),
           },
         },
         { provide: AuditService, useValue: { log: jest.fn() } },
+        { provide: AttendanceService, useValue: { registerEvent: jest.fn() } },
       ],
     }).compile();
 
     service = module.get(AttendanceCardService);
     repo = module.get(AttendanceRepository);
     audit = module.get(AuditService);
+    attendanceService = module.get(AttendanceService);
   });
 
   describe('getCard', () => {
@@ -185,13 +188,17 @@ describe('AttendanceCardService', () => {
     it('crea marcación manual ENTRY con source=MANUAL', async () => {
       const employee = makeEmployee();
       repo.findEmployeeByUserId.mockResolvedValue(employee as never);
-      repo.createManualLog.mockResolvedValue({ id: 'log-manual-1', source: 'MANUAL' } as never);
+      attendanceService.registerEvent.mockResolvedValue({
+        id: 'log-manual-1',
+        source: 'MANUAL',
+      } as never);
 
       await service.createManualMarking('user-1', TENANT, makeActingUser(), baseInput);
 
-      expect(repo.createManualLog).toHaveBeenCalledWith(
+      expect(attendanceService.registerEvent).toHaveBeenCalledWith(
         expect.objectContaining({
           eventType: AttendanceEventType.ENTRY,
+          source: 'MANUAL',
           createdByUserId: 'actor-1',
           manualReason: 'Olvidó marcar entrada',
           manualParentLogId: null,
@@ -205,7 +212,10 @@ describe('AttendanceCardService', () => {
     it('crea marcación manual EXIT que cruza medianoche (turno nocturno)', async () => {
       const employee = makeEmployee();
       repo.findEmployeeByUserId.mockResolvedValue(employee as never);
-      repo.createManualLog.mockResolvedValue({ id: 'log-manual-2', source: 'MANUAL' } as never);
+      attendanceService.registerEvent.mockResolvedValue({
+        id: 'log-manual-2',
+        source: 'MANUAL',
+      } as never);
 
       await service.createManualMarking('user-1', TENANT, makeActingUser(), {
         ...baseInput,
@@ -213,8 +223,8 @@ describe('AttendanceCardService', () => {
         timestamp: '2026-06-11T02:00:00.000Z',
       });
 
-      expect(repo.createManualLog).toHaveBeenCalledWith(
-        expect.objectContaining({ eventType: AttendanceEventType.EXIT }),
+      expect(attendanceService.registerEvent).toHaveBeenCalledWith(
+        expect.objectContaining({ eventType: AttendanceEventType.EXIT, source: 'MANUAL' }),
       );
     });
 
@@ -223,7 +233,10 @@ describe('AttendanceCardService', () => {
       const parentLog = { id: 'log-device-1', employeeId: employee.id, tenantId: TENANT };
       repo.findEmployeeByUserId.mockResolvedValue(employee as never);
       repo.findLogById.mockResolvedValue(parentLog as never);
-      repo.createManualLog.mockResolvedValue({ id: 'log-manual-3', source: 'MANUAL' } as never);
+      attendanceService.registerEvent.mockResolvedValue({
+        id: 'log-manual-3',
+        source: 'MANUAL',
+      } as never);
 
       await service.createManualMarking('user-1', TENANT, makeActingUser(), {
         ...baseInput,
@@ -231,8 +244,8 @@ describe('AttendanceCardService', () => {
       });
 
       expect(repo.findLogById).toHaveBeenCalledWith('log-device-1', TENANT);
-      expect(repo.createManualLog).toHaveBeenCalledWith(
-        expect.objectContaining({ manualParentLogId: 'log-device-1' }),
+      expect(attendanceService.registerEvent).toHaveBeenCalledWith(
+        expect.objectContaining({ manualParentLogId: 'log-device-1', source: 'MANUAL' }),
       );
       // No existe ningún método de repositorio que edite un log existente.
       expect((repo as unknown as Record<string, unknown>).updateLog).toBeUndefined();
@@ -250,7 +263,7 @@ describe('AttendanceCardService', () => {
         }),
       ).rejects.toThrow(BadRequestException);
 
-      expect(repo.createManualLog).not.toHaveBeenCalled();
+      expect(attendanceService.registerEvent).not.toHaveBeenCalled();
     });
 
     it('parentLogId de otro empleado falla', async () => {
@@ -266,7 +279,7 @@ describe('AttendanceCardService', () => {
         }),
       ).rejects.toThrow(BadRequestException);
 
-      expect(repo.createManualLog).not.toHaveBeenCalled();
+      expect(attendanceService.registerEvent).not.toHaveBeenCalled();
     });
 
     it('supervisor fuera de sede falla', async () => {
@@ -282,7 +295,7 @@ describe('AttendanceCardService', () => {
         ),
       ).rejects.toThrow(ForbiddenException);
 
-      expect(repo.createManualLog).not.toHaveBeenCalled();
+      expect(attendanceService.registerEvent).not.toHaveBeenCalled();
     });
 
     it('empleado fuera de tenant falla', async () => {

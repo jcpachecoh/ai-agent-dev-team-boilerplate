@@ -17,9 +17,6 @@ const prismaMock = {
     findUnique: jest.fn(),
     upsert: jest.fn(),
   },
-  mobileAttendanceLog: {
-    findMany: jest.fn(),
-  },
   alertDismissal: {
     upsert: jest.fn(),
     findMany: jest.fn(),
@@ -534,30 +531,59 @@ describe('AttendanceRepository', () => {
     });
   });
 
-  // ── listMobileLogsForRange (OS-548 clasificacion filter) ─────────────────────
+  describe('findDuplicateEvent', () => {
+    it('busca marcaciones duplicadas por empleado, tipo, source y ventana de timestamp', async () => {
+      prismaMock.attendanceLog.findFirst.mockResolvedValueOnce(null);
 
-  describe('listMobileLogsForRange', () => {
-    it('sin laborClassifications: no agrega filtro de employee al where', async () => {
-      prismaMock.mobileAttendanceLog.findMany.mockResolvedValueOnce([]);
-
-      await repo.listMobileLogsForRange(TENANT, WORK_DATE, WORK_DATE);
-
-      const call = prismaMock.mobileAttendanceLog.findMany.mock.calls[0][0];
-      expect(call.where).not.toHaveProperty('employee');
-    });
-
-    it('con laborClassifications operaciones: filtra por COCINA y SERVICIO', async () => {
-      prismaMock.mobileAttendanceLog.findMany.mockResolvedValueOnce([]);
-
-      await repo.listMobileLogsForRange(TENANT, WORK_DATE, WORK_DATE, undefined, [
-        LaborClassification.COCINA,
-        LaborClassification.SERVICIO,
-      ]);
-
-      const call = prismaMock.mobileAttendanceLog.findMany.mock.calls[0][0];
-      expect(call.where.employee).toEqual({
-        laborClassification: { in: [LaborClassification.COCINA, LaborClassification.SERVICIO] },
+      await repo.findDuplicateEvent({
+        employeeId: EMPLOYEE_ID,
+        eventType: AttendanceEventType.ENTRY,
+        source: 'APP_MOVIL',
+        timestamp: new Date('2026-06-10T08:00:00.000Z'),
+        windowMs: 60_000,
       });
+
+      expect(prismaMock.attendanceLog.findFirst).toHaveBeenCalledWith({
+        where: expect.objectContaining({
+          employeeId: EMPLOYEE_ID,
+          eventType: AttendanceEventType.ENTRY,
+          source: 'APP_MOVIL',
+          isActive: true,
+        }),
+      });
+    });
+  });
+
+  describe('createEventLog', () => {
+    it('persiste metadata móvil en AttendanceLog con source=APP_MOVIL', async () => {
+      const created = {
+        ...makeLog('log-app-1', AttendanceEventType.ENTRY, new Date()),
+        source: 'APP_MOVIL',
+        validationStatus: 'VALID',
+      };
+      prismaMock.attendanceLog.create.mockResolvedValueOnce(created);
+
+      const result = await repo.createEventLog({
+        tenantId: TENANT,
+        employeeId: EMPLOYEE_ID,
+        locationId: LOCATION_ID,
+        eventType: AttendanceEventType.ENTRY,
+        source: 'APP_MOVIL',
+        workDate: WORK_DATE,
+        timestamp: new Date('2026-06-10T08:00:00.000Z'),
+        validationStatus: 'VALID',
+        clientLatitude: 4.6,
+        clientLongitude: -74.08,
+      });
+
+      expect(prismaMock.attendanceLog.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          source: 'APP_MOVIL',
+          validationStatus: 'VALID',
+          clientLatitude: 4.6,
+        }),
+      });
+      expect(result.id).toBe('log-app-1');
     });
   });
 

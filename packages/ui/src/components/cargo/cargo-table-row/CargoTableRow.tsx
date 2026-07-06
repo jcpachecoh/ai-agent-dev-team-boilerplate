@@ -3,6 +3,7 @@ import type { CSSProperties, JSX } from 'react';
 import { CargoRowActionButton } from '../cargo-row-action-button';
 import { CargoStatusBadge } from '../cargo-status-badge';
 import styles from './CargoTableRow.module.scss';
+import { useCargoTableGridTemplate } from '../cargo-table/CargoTableGridContext';
 import { getCargoGridTemplate } from '../shared/cargo-columns';
 import type { CargoSize, CargoTheme } from '../shared/cargo-types';
 import { formatCargoSalary } from '../shared/cargo-utils';
@@ -37,6 +38,7 @@ export function CargoTableRow({
   className,
 }: CargoTableRowProps): JSX.Element {
   const showActions = showActionsProp ?? Boolean(onEdit || onToggleStatus);
+  const gridTemplate = useCargoTableGridTemplate(getCargoGridTemplate(showActions));
 
   return (
     <div
@@ -45,7 +47,7 @@ export function CargoTableRow({
         .join(' ')}
       role="row"
       data-cargo-id={id}
-      style={{ '--cargo-columns': getCargoGridTemplate(showActions) } as CSSProperties}
+      style={{ '--cargo-columns': gridTemplate } as CSSProperties}
     >
       <span className={styles.titleCell} role="cell">
         {title}

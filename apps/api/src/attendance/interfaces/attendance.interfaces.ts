@@ -1,8 +1,10 @@
 import {
   AttendanceLog,
+  AttendanceLogSource,
   AttendanceObservation,
   AttendanceShift,
   AttendanceEventType,
+  AttendanceValidationStatus,
   EmployeeDetails,
   LaborClassification,
   Location,
@@ -234,6 +236,37 @@ export interface CreateManualLogData {
   manualParentLogId?: string | null;
 }
 
+/** ASIS-UNI — entrada unificada para toda marcación (app móvil, manual, legacy). */
+export interface RegisterEventInput {
+  tenantId: string;
+  employeeId: string;
+  locationId: string;
+  eventType: AttendanceEventType;
+  source: AttendanceLogSource;
+  timestamp: Date;
+  workDate?: Date;
+  shift?: AttendanceShift | null;
+  notes?: string | null;
+  createdByUserId?: string | null;
+  manualReason?: string | null;
+  manualParentLogId?: string | null;
+  clientLatitude?: number | null;
+  clientLongitude?: number | null;
+  storageObjectId?: string | null;
+  photoUrl?: string | null;
+  facialMatchScore?: number | null;
+  facialMatchResult?: string | null;
+}
+
+export interface RegisterEventLogData extends RegisterEventInput {
+  workDate: Date;
+  shift?: AttendanceShift | null;
+  validationStatus?: AttendanceValidationStatus | null;
+  distanceMeters?: number | null;
+  radiusMeters?: number | null;
+  rejectionReason?: string | null;
+}
+
 export interface IAttendanceRepository {
   findUserByCedula(cedula: string, tenantId: string): Promise<User | null>;
   findEmployeeByUserAndLocation(
@@ -266,27 +299,15 @@ export interface IAttendanceRepository {
       laborClassifications?: LaborClassification[];
     },
   ): Promise<AttendanceLogFull[]>;
-  listMobileLogsForDay(
-    tenantId: string,
-    workDate: Date,
-    locationIds?: string[],
-    laborClassifications?: LaborClassification[],
-  ): Promise<
-    Array<{
-      id: string;
-      employeeId: string;
-      locationId: string;
-      status: string;
-      timestamp: Date;
-      clientLatitude: number;
-      clientLongitude: number;
-      distanceMeters: number | null;
-      rejectionReason: string | null;
-      employee: EmployeeWithUser;
-      location: Location;
-    }>
-  >;
   findLogById(id: string, tenantId: string): Promise<AttendanceLogWithEmployee | null>;
+  findDuplicateEvent(params: {
+    employeeId: string;
+    eventType: AttendanceEventType;
+    source: AttendanceLogSource;
+    timestamp: Date;
+    windowMs: number;
+  }): Promise<AttendanceLog | null>;
+  createEventLog(data: RegisterEventLogData): Promise<AttendanceLog>;
   createManualLog(data: CreateManualLogData): Promise<AttendanceLog>;
   deleteManualLog(id: string, tenantId: string): Promise<AttendanceLog>;
   listObservationsInRange(
@@ -346,6 +367,7 @@ export interface ControlPanelTimelineRow {
   locationName: string;
   lastRecordAt: string;
   lastEventType: AttendanceEventType;
+  source: AttendanceLogSource;
   latitude: number | null;
   longitude: number | null;
   hasGeo: boolean;
@@ -426,6 +448,7 @@ export interface IAttendanceService {
   kioskAuth(dto: KioskAuthInput, tenantId: string): Promise<KioskAuthResult>;
   registerEntry(dto: RegisterEntryInput, tenantId: string): Promise<EntryResult>;
   registerExit(dto: RegisterExitInput, tenantId: string): Promise<ExitResult>;
+  registerEvent(input: RegisterEventInput): Promise<AttendanceLog>;
   listHistory(query: ListHistoryInput, tenantId: string): Promise<AttendanceLogFull[]>;
   listActive(locationId: string, tenantId: string): Promise<ActiveAttendanceEntry[]>;
   getOvertimeSummary(userId: string, tenantId: string, date?: Date): Promise<OvertimeSummary>;

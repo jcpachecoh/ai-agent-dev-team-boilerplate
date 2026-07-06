@@ -158,6 +158,8 @@ export function buildAttendanceCardRows(
 
     const hasManualEntry = entry?.source === 'MANUAL';
     const hasManualExit = exit?.source === 'MANUAL';
+    const isAutomaticSource = (source?: AttendanceHistoryItem['source']) =>
+      source === 'APP_MOVIL' || source === 'DEVICE';
 
     const hasAttendance = Boolean(entryTimestamp || exitTimestamp);
     const workedMinutes = computeWorkedMinutes(entry, exit);
@@ -198,8 +200,8 @@ export function buildAttendanceCardRows(
       variant,
       hasObservation: Boolean(observation?.note?.trim()),
       hasManualMarking: hasManualEntry || hasManualExit,
-      isAutomaticEntry: Boolean(entry && !hasManualEntry),
-      isAutomaticExit: Boolean(exit && !hasManualExit),
+      isAutomaticEntry: Boolean(entry && isAutomaticSource(entry.source)),
+      isAutomaticExit: Boolean(exit && isAutomaticSource(exit.source)),
     };
   });
 }
