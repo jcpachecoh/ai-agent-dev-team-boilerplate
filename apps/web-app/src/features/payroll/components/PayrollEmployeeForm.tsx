@@ -46,6 +46,7 @@ export interface PayrollEmployeeFormProps {
   layout?: PayrollEmployeeFormLayout;
   controlledValues?: PayrollEmployeeFormValues;
   onControlledValuesChange?: (values: PayrollEmployeeFormValues) => void;
+  sectionScope?: 'default' | 'employment-only';
 }
 
 const EMPTY_BENEFICIARY: BeneficiaryFormRow = { relationshipType: 'CHILD', fullName: '', age: '' };
@@ -213,6 +214,7 @@ export function PayrollEmployeeForm({
   layout = 'default',
   controlledValues,
   onControlledValuesChange,
+  sectionScope = 'default',
 }: PayrollEmployeeFormProps): React.JSX.Element {
   const formStyles = layout === 'wizard' ? wizardStyles : defaultStyles;
   const theme = useUiTheme();
@@ -246,6 +248,7 @@ export function PayrollEmployeeForm({
 
   const showPersonalFields = !wizardStep || wizardStep === 'personal';
   const showSocialFields = !wizardStep || wizardStep === 'social-security';
+  const showPersonalIdentityFields = showPersonalFields && sectionScope !== 'employment-only';
 
   const hasActivePositions = (positionsQuery.data ?? []).some((p) => p.isActive);
 
@@ -516,84 +519,88 @@ export function PayrollEmployeeForm({
         <div className={formStyles.formGrid}>
           {showPersonalFields ? (
             <>
-              {/* ── Datos personales ─────────────────────────────────────────── */}
-              <div className={formStyles.field}>
-                <span className={formStyles.fieldLabel}>Tipo de documento</span>
-                <RecetaFilterSelect
-                  aria-label="Tipo de documento"
-                  options={DOCUMENT_TYPE_OPTIONS}
-                  value={values.documentType}
-                  onChange={(value) => update({ documentType: value as DocumentType })}
-                  theme={theme}
-                  size="md"
-                />
-              </div>
-              <label className={formStyles.field}>
-                <span className={formStyles.fieldLabel}>Cédula *</span>
-                <input
-                  aria-label="Cédula"
-                  className={formStyles.input}
-                  value={values.cedula}
-                  onChange={(event) => update({ cedula: event.target.value })}
-                />
-              </label>
-              <label className={formStyles.field}>
-                <span className={formStyles.fieldLabel}>Nombres *</span>
-                <input
-                  aria-label="Nombres"
-                  className={formStyles.input}
-                  value={values.nombres}
-                  onChange={(event) => update({ nombres: event.target.value })}
-                />
-              </label>
-              <label className={formStyles.field}>
-                <span className={formStyles.fieldLabel}>Primer apellido *</span>
-                <input
-                  aria-label="Primer apellido"
-                  className={formStyles.input}
-                  value={values.primerApellido}
-                  onChange={(event) => update({ primerApellido: event.target.value })}
-                />
-              </label>
-              <label className={formStyles.field}>
-                <span className={formStyles.fieldLabel}>Segundo apellido</span>
-                <input
-                  aria-label="Segundo apellido"
-                  className={formStyles.input}
-                  value={values.segundoApellido}
-                  onChange={(event) => update({ segundoApellido: event.target.value })}
-                />
-              </label>
-              <label className={formStyles.field}>
-                <span className={formStyles.fieldLabel}>Correo *</span>
-                <input
-                  aria-label="Correo"
-                  className={formStyles.input}
-                  type="email"
-                  value={values.email}
-                  onChange={(event) => update({ email: event.target.value })}
-                />
-              </label>
-              <label className={formStyles.field}>
-                <span className={formStyles.fieldLabel}>Barrio</span>
-                <input
-                  aria-label="Barrio"
-                  className={formStyles.input}
-                  maxLength={100}
-                  value={values.barrio}
-                  onChange={(event) => update({ barrio: event.target.value })}
-                />
-              </label>
-              <label className={formStyles.field}>
-                <span className={formStyles.fieldLabel}>Localidad / Ciudad</span>
-                <input
-                  aria-label="Localidad"
-                  className={formStyles.input}
-                  maxLength={100}
-                  value={values.localidad}
-                  onChange={(event) => update({ localidad: event.target.value })}
-                />
-              </label>
+              {showPersonalIdentityFields ? (
+                <>
+                  {/* ── Datos personales ─────────────────────────────────────────── */}
+                  <div className={formStyles.field}>
+                    <span className={formStyles.fieldLabel}>Tipo de documento</span>
+                    <RecetaFilterSelect
+                      aria-label="Tipo de documento"
+                      options={DOCUMENT_TYPE_OPTIONS}
+                      value={values.documentType}
+                      onChange={(value) => update({ documentType: value as DocumentType })}
+                      theme={theme}
+                      size="md"
+                    />
+                  </div>
+                  <label className={formStyles.field}>
+                    <span className={formStyles.fieldLabel}>Cédula *</span>
+                    <input
+                      aria-label="Cédula"
+                      className={formStyles.input}
+                      value={values.cedula}
+                      onChange={(event) => update({ cedula: event.target.value })}
+                    />
+                  </label>
+                  <label className={formStyles.field}>
+                    <span className={formStyles.fieldLabel}>Nombres *</span>
+                    <input
+                      aria-label="Nombres"
+                      className={formStyles.input}
+                      value={values.nombres}
+                      onChange={(event) => update({ nombres: event.target.value })}
+                    />
+                  </label>
+                  <label className={formStyles.field}>
+                    <span className={formStyles.fieldLabel}>Primer apellido *</span>
+                    <input
+                      aria-label="Primer apellido"
+                      className={formStyles.input}
+                      value={values.primerApellido}
+                      onChange={(event) => update({ primerApellido: event.target.value })}
+                    />
+                  </label>
+                  <label className={formStyles.field}>
+                    <span className={formStyles.fieldLabel}>Segundo apellido</span>
+                    <input
+                      aria-label="Segundo apellido"
+                      className={formStyles.input}
+                      value={values.segundoApellido}
+                      onChange={(event) => update({ segundoApellido: event.target.value })}
+                    />
+                  </label>
+                  <label className={formStyles.field}>
+                    <span className={formStyles.fieldLabel}>Correo *</span>
+                    <input
+                      aria-label="Correo"
+                      className={formStyles.input}
+                      type="email"
+                      value={values.email}
+                      onChange={(event) => update({ email: event.target.value })}
+                    />
+                  </label>
+                  <label className={formStyles.field}>
+                    <span className={formStyles.fieldLabel}>Barrio</span>
+                    <input
+                      aria-label="Barrio"
+                      className={formStyles.input}
+                      maxLength={100}
+                      value={values.barrio}
+                      onChange={(event) => update({ barrio: event.target.value })}
+                    />
+                  </label>
+                  <label className={formStyles.field}>
+                    <span className={formStyles.fieldLabel}>Localidad / Ciudad</span>
+                    <input
+                      aria-label="Localidad"
+                      className={formStyles.input}
+                      maxLength={100}
+                      value={values.localidad}
+                      onChange={(event) => update({ localidad: event.target.value })}
+                    />
+                  </label>
+                </>
+              ) : null}
 
               {/* ── Rol del sistema (auth) y clasificación operacional ────────── */}
               <div className={formStyles.field}>

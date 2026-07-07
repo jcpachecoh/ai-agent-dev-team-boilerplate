@@ -8,22 +8,34 @@ import {
 } from '@restopsiq/ui';
 import { useEffect, useMemo, useState } from 'react';
 
+import { canWritePayrollEmployee } from '@/config/rbac.config';
+import { useMe } from '@/features/auth/hooks/useMe';
+import { useAdminRolesForSelect } from '@/features/usuarios/hooks/useAdminUsers';
 import { useUiTheme } from '@/hooks/useUiTheme';
+import { getRoleCodeFromToken } from '@/lib/auth-token';
 
 import {
   getColombiaCities,
   getColombiaDepartments,
   updateEmployeePersonalData,
 } from '../api/personal-data.client';
+import { PayrollApiError } from '../api/payroll.client';
 import { useEmployeePersonalDataQuery } from '../hooks/useEmployeePersonalDataQuery';
+import { useUpdatePayrollEmployeeMutation } from '../hooks/usePayrollEmployeeMutations';
 import { usePayrollEmployeeQuery } from '../hooks/usePayrollEmployeeQuery';
 import type {
   EmployeePersonalData,
   PersonalDataFieldKey,
   UpdateEmployeePersonalDataInput,
 } from '../types/personal-data.types';
-import { PayrollApiError } from '../api/payroll.client';
+import type { PayrollEmployeeFormValues } from '../types/payroll.types';
+import {
+  buildEmploymentDetailFields,
+  formatBeneficiaryType,
+} from '../utils/payroll-employee-display.utils';
+import { payrollEmployeeFormValuesToUpdateInput } from '../utils/payroll-employee-form-mappers';
 import { EmployeePhotoUploader } from './EmployeePhotoUploader';
+import { PayrollEmployeeForm } from './PayrollEmployeeForm';
 import { PayrollEmployeeProfileTabLoading } from './PayrollEmployeeProfileTabLoading';
 import styles from './PayrollEmployeePersonalDataTab.module.scss';
 
@@ -115,13 +127,34 @@ export function PayrollEmployeePersonalDataTab({
   theme,
 }: PayrollEmployeePersonalDataTabProps): React.JSX.Element {
   const uiTheme = useUiTheme();
+  const { data: me } = useMe();
+  const roleCode = me?.roleCode ?? getRoleCodeFromToken();
+  const canEditEmployment = canWritePayrollEmployee(roleCode);
+
   const query = useEmployeePersonalDataQuery(userId);
   const employeeQuery = usePayrollEmployeeQuery(userId);
+  const rolesQuery = useAdminRolesForSelect();
+  const updateEmploymentMutation = useUpdatePayrollEmployeeMutation();
+
   const [values, setValues] = useState<UpdateEmployeePersonalDataInput | null>(null);
   const [errors, setErrors] = useState<Partial<Record<string, string>>>({});
   const [departments, setDepartments] = useState<Array<{ value: string; label: string }>>([]);
   const [cities, setCities] = useState<Array<{ value: string; label: string }>>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [editingEmployment, setEditingEmployment] = useState(false);
+  const [submittingEmployment, setSubmittingEmployment] = useState(false);
+
+  const employee = employeeQuery.data;
+
+  const roleName = useMemo(() => {
+    if (!employee?.user?.roleId) return undefined;
+    return rolesQuery.data?.find((role) => role.id === employee.user?.roleId)?.name;
+  }, [employee?.user?.roleId, rolesQuery.data]);
+
+  const employmentFields = useMemo(
+    () => (employee ? buildEmploymentDetailFields(employee, roleName) : []),
+    [employee, roleName],
+  );
 
   useEffect(() => {
     if (query.data) {
@@ -195,6 +228,31 @@ export function PayrollEmployeePersonalDataTab({
     }
   };
 
+  const handleEmploymentCancel = () => {
+    setEditingEmployment(false);
+  };
+
+  const handleEmploymentSubmit = async (formValues: PayrollEmployeeFormValues) => {
+    setSubmittingEmployment(true);
+    try {
+      await updateEmploymentMutation.mutateAsync({
+        userId,
+        input: payrollEmployeeFormValuesToUpdateInput(formValues),
+      });
+      toast.success('Datos laborales actualizados');
+      setEditingEmployment(false);
+      await employeeQuery.refetch();
+    } catch (error) {
+      const message =
+        error instanceof PayrollApiError
+          ? error.message
+          : 'No se pudieron guardar los datos laborales';
+      toast.error(message);
+    } finally {
+      setSubmittingEmployment(false);
+    }
+  };
+
   if (query.isLoading || !values) {
     return <PayrollEmployeeProfileTabLoading />;
   }
@@ -210,288 +268,361 @@ export function PayrollEmployeePersonalDataTab({
     );
   }
 
-  const employee = employeeQuery.data;
-
   return (
-    <form
-      className={styles.form}
-      onSubmit={(event) => {
-        event.preventDefault();
-        void handleSubmit();
-      }}
-    >
-      <div className={styles.photoRow}>
-        {employee && canEdit('profilePhotoStorageObjectId') ? (
-          <EmployeePhotoUploader
-            employee={employee}
-            onPhotoUpdated={() => {
-              void employeeQuery.refetch();
-              void query.refetch();
-            }}
+    <div className={styles.panel}>
+      <form
+        className={styles.form}
+        onSubmit={(event) => {
+          event.preventDefault();
+          void handleSubmit();
+        }}
+      >
+        <div className={styles.photoRow}>
+          {employee && canEdit('profilePhotoStorageObjectId') ? (
+            <EmployeePhotoUploader
+              employee={employee}
+              onPhotoUpdated={() => {
+                void employeeQuery.refetch();
+                void query.refetch();
+              }}
+            />
+          ) : (
+            <EmpleadoAvatar
+              initials={resolveEmpleadoInitials(fullName || employee?.name || 'Empleado')}
+              photoUrl={employee?.photoUrl ?? undefined}
+              theme={theme}
+              size="md"
+            />
+          )}
+        </div>
+
+        <p className={styles.sectionTitle}>Identificación</p>
+        <div className={styles.grid}>
+          <Field label="Tipo de documento" error={errors.tipoDocumento}>
+            {canEdit('tipoDocumento') ? (
+              <RecetaFilterSelect
+                theme={uiTheme}
+                size="md"
+                value={values.tipoDocumento ?? ''}
+                options={DOCUMENT_OPTIONS}
+                onChange={(value) => updateField('tipoDocumento', value)}
+              />
+            ) : (
+              <Readonly value={displayValue(values.tipoDocumento)} />
+            )}
+          </Field>
+          <Field label="Número de documento" error={errors.numeroDocumento}>
+            {canEdit('numeroDocumento') ? (
+              <RecetaTextInput
+                theme={uiTheme}
+                className={styles.controlMd}
+                value={values.numeroDocumento ?? ''}
+                onChange={(event) =>
+                  updateField('numeroDocumento', event.target.value.replace(/\D/g, ''))
+                }
+              />
+            ) : (
+              <Readonly value={displayValue(values.numeroDocumento)} />
+            )}
+          </Field>
+          <Field label="Nombres" error={errors.nombres}>
+            {canEdit('nombres') ? (
+              <RecetaTextInput
+                theme={uiTheme}
+                className={styles.controlMd}
+                value={values.nombres ?? ''}
+                onChange={(event) => updateField('nombres', event.target.value)}
+              />
+            ) : (
+              <Readonly value={displayValue(values.nombres)} />
+            )}
+          </Field>
+          <Field label="Primer apellido" error={errors.primerApellido}>
+            {canEdit('primerApellido') ? (
+              <RecetaTextInput
+                theme={uiTheme}
+                className={styles.controlMd}
+                value={values.primerApellido ?? ''}
+                onChange={(event) => updateField('primerApellido', event.target.value)}
+              />
+            ) : (
+              <Readonly value={displayValue(values.primerApellido)} />
+            )}
+          </Field>
+          <Field label="Segundo apellido">
+            {canEdit('segundoApellido') ? (
+              <RecetaTextInput
+                theme={uiTheme}
+                className={styles.controlMd}
+                value={values.segundoApellido ?? ''}
+                onChange={(event) => updateField('segundoApellido', event.target.value)}
+              />
+            ) : (
+              <Readonly value={displayValue(values.segundoApellido)} />
+            )}
+          </Field>
+          <Field label="Fecha de nacimiento" error={errors.fechaNacimiento}>
+            {canEdit('fechaNacimiento') ? (
+              <RecetaTextInput
+                theme={uiTheme}
+                className={styles.controlMd}
+                type="date"
+                value={values.fechaNacimiento ?? ''}
+                onChange={(event) => updateField('fechaNacimiento', event.target.value)}
+              />
+            ) : (
+              <Readonly value={displayValue(values.fechaNacimiento)} />
+            )}
+          </Field>
+          <Field label="Estado civil">
+            {canEdit('estadoCivil') ? (
+              <RecetaFilterSelect
+                theme={uiTheme}
+                size="md"
+                value={values.estadoCivil ?? ''}
+                options={MARITAL_OPTIONS}
+                onChange={(value) =>
+                  updateField(
+                    'estadoCivil',
+                    value as UpdateEmployeePersonalDataInput['estadoCivil'],
+                  )
+                }
+              />
+            ) : (
+              <Readonly value={displayValue(values.estadoCivil)} />
+            )}
+          </Field>
+          <Field label="Sexo">
+            {canEdit('sexo') ? (
+              <RecetaFilterSelect
+                theme={uiTheme}
+                size="md"
+                value={values.sexo ?? ''}
+                options={GENDER_OPTIONS}
+                onChange={(value) =>
+                  updateField('sexo', value as UpdateEmployeePersonalDataInput['sexo'])
+                }
+              />
+            ) : (
+              <Readonly value={displayValue(values.sexo)} />
+            )}
+          </Field>
+        </div>
+
+        <p className={styles.sectionTitle}>Ubicación y contacto</p>
+        <div className={styles.grid}>
+          <Field label="Departamento">
+            {canEdit('departamento') ? (
+              <RecetaFilterSelect
+                theme={uiTheme}
+                size="md"
+                value={values.departamento ?? ''}
+                options={departments}
+                onChange={(value) => updateField('departamento', value)}
+              />
+            ) : (
+              <Readonly value={displayValue(values.departamento)} />
+            )}
+          </Field>
+          <Field label="Ciudad">
+            {canEdit('ciudad') ? (
+              <RecetaFilterSelect
+                theme={uiTheme}
+                size="md"
+                value={values.ciudad ?? ''}
+                options={cities}
+                onChange={(value) => updateField('ciudad', value)}
+                disabled={!values.departamento}
+              />
+            ) : (
+              <Readonly value={displayValue(values.ciudad)} />
+            )}
+          </Field>
+          <Field label="Localidad">
+            {canEdit('localidad') ? (
+              <RecetaTextInput
+                theme={uiTheme}
+                className={styles.controlMd}
+                value={values.localidad ?? ''}
+                onChange={(event) => updateField('localidad', event.target.value)}
+              />
+            ) : (
+              <Readonly value={displayValue(values.localidad)} />
+            )}
+          </Field>
+          <Field label="Barrio">
+            {canEdit('barrio') ? (
+              <RecetaTextInput
+                theme={uiTheme}
+                className={styles.controlMd}
+                value={values.barrio ?? ''}
+                onChange={(event) => updateField('barrio', event.target.value)}
+              />
+            ) : (
+              <Readonly value={displayValue(values.barrio)} />
+            )}
+          </Field>
+          <Field label="Dirección" className={styles.fieldFull}>
+            {canEdit('direccion') ? (
+              <RecetaTextInput
+                theme={uiTheme}
+                className={styles.controlMd}
+                value={values.direccion ?? ''}
+                onChange={(event) => updateField('direccion', event.target.value)}
+              />
+            ) : (
+              <Readonly value={displayValue(values.direccion)} />
+            )}
+          </Field>
+          <Field label="Teléfono" error={errors.telefono}>
+            {canEdit('telefono') ? (
+              <RecetaTextInput
+                theme={uiTheme}
+                className={styles.controlMd}
+                value={values.telefono ?? ''}
+                onChange={(event) => updateField('telefono', event.target.value.replace(/\D/g, ''))}
+              />
+            ) : (
+              <Readonly value={displayValue(values.telefono)} />
+            )}
+          </Field>
+          <Field label="Correo" error={errors.correo}>
+            {canEdit('correo') ? (
+              <RecetaTextInput
+                theme={uiTheme}
+                className={styles.controlMd}
+                type="email"
+                value={values.correo ?? ''}
+                onChange={(event) => updateField('correo', event.target.value)}
+              />
+            ) : (
+              <Readonly value={displayValue(values.correo)} />
+            )}
+          </Field>
+        </div>
+
+        <p className={styles.sectionTitle}>Contacto de emergencia</p>
+        <div className={styles.grid}>
+          <Field label="Nombre">
+            {canEdit('contactoEmergenciaNombre') ? (
+              <RecetaTextInput
+                theme={uiTheme}
+                className={styles.controlMd}
+                value={values.contactoEmergenciaNombre ?? ''}
+                onChange={(event) => updateField('contactoEmergenciaNombre', event.target.value)}
+              />
+            ) : (
+              <Readonly value={displayValue(values.contactoEmergenciaNombre)} />
+            )}
+          </Field>
+          <Field label="Parentesco">
+            {canEdit('contactoEmergenciaParentesco') ? (
+              <RecetaTextInput
+                theme={uiTheme}
+                className={styles.controlMd}
+                value={values.contactoEmergenciaParentesco ?? ''}
+                onChange={(event) =>
+                  updateField('contactoEmergenciaParentesco', event.target.value)
+                }
+              />
+            ) : (
+              <Readonly value={displayValue(values.contactoEmergenciaParentesco)} />
+            )}
+          </Field>
+          <Field label="Teléfono" error={errors.contactoEmergenciaTelefono}>
+            {canEdit('contactoEmergenciaTelefono') ? (
+              <RecetaTextInput
+                theme={uiTheme}
+                className={styles.controlMd}
+                value={values.contactoEmergenciaTelefono ?? ''}
+                onChange={(event) =>
+                  updateField('contactoEmergenciaTelefono', event.target.value.replace(/\D/g, ''))
+                }
+              />
+            ) : (
+              <Readonly value={displayValue(values.contactoEmergenciaTelefono)} />
+            )}
+          </Field>
+        </div>
+
+        <div className={styles.actions}>
+          <RecetaFormButton
+            type="submit"
+            theme={uiTheme}
+            label="Guardar cambios"
+            disabled={submitting}
+          />
+        </div>
+      </form>
+
+      <section className={styles.employmentSection}>
+        <div className={styles.employmentHeader}>
+          <p className={styles.sectionTitle}>Datos laborales</p>
+          {canEditEmployment && !editingEmployment && employee ? (
+            <RecetaFormButton
+              type="button"
+              theme={theme}
+              variant="add"
+              label="Editar"
+              onClick={() => setEditingEmployment(true)}
+            />
+          ) : null}
+        </div>
+
+        {employeeQuery.isLoading ? (
+          <PayrollEmployeeProfileTabLoading />
+        ) : employeeQuery.isError || !employee ? (
+          <div className={styles.state}>
+            <p>No se pudieron cargar los datos laborales.</p>
+            <button type="button" onClick={() => void employeeQuery.refetch()}>
+              Reintentar
+            </button>
+          </div>
+        ) : editingEmployment ? (
+          <PayrollEmployeeForm
+            mode="edit"
+            initialValues={employee}
+            wizardStep="personal"
+            sectionScope="employment-only"
+            submitting={submittingEmployment}
+            onCancel={handleEmploymentCancel}
+            onSubmit={(formValues) => void handleEmploymentSubmit(formValues)}
           />
         ) : (
-          <EmpleadoAvatar
-            initials={resolveEmpleadoInitials(fullName || employee?.name || 'Empleado')}
-            photoUrl={employee?.photoUrl ?? undefined}
-            theme={theme}
-            size="md"
-          />
+          <>
+            <div className={styles.grid}>
+              {employmentFields.map((field) => (
+                <Field key={field.label} label={field.label}>
+                  <Readonly value={field.value} />
+                </Field>
+              ))}
+            </div>
+
+            <div className={styles.beneficiariesSection}>
+              <p className={styles.sectionTitle}>Beneficiarios</p>
+              {employee.beneficiaries && employee.beneficiaries.length > 0 ? (
+                <div className={styles.beneficiaryTable}>
+                  <div className={styles.beneficiaryHeader}>
+                    <span>Tipo</span>
+                    <span>Nombre completo</span>
+                    <span>Edad</span>
+                  </div>
+                  {employee.beneficiaries.map((beneficiary) => (
+                    <div key={beneficiary.id} className={styles.beneficiaryRow}>
+                      <span>{formatBeneficiaryType(beneficiary.relationshipType)}</span>
+                      <span>{beneficiary.fullName}</span>
+                      <span>{beneficiary.age}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className={styles.emptyHint}>Sin beneficiarios registrados.</p>
+              )}
+            </div>
+          </>
         )}
-      </div>
-
-      <p className={styles.sectionTitle}>Identificación</p>
-      <div className={styles.grid}>
-        <Field label="Tipo de documento" error={errors.tipoDocumento}>
-          {canEdit('tipoDocumento') ? (
-            <RecetaFilterSelect
-              theme={uiTheme}
-              size="md"
-              value={values.tipoDocumento ?? ''}
-              options={DOCUMENT_OPTIONS}
-              onChange={(value) => updateField('tipoDocumento', value)}
-            />
-          ) : (
-            <Readonly value={displayValue(values.tipoDocumento)} />
-          )}
-        </Field>
-        <Field label="Número de documento" error={errors.numeroDocumento}>
-          {canEdit('numeroDocumento') ? (
-            <RecetaTextInput
-              theme={uiTheme}
-              className={styles.controlMd}
-              value={values.numeroDocumento ?? ''}
-              onChange={(event) =>
-                updateField('numeroDocumento', event.target.value.replace(/\D/g, ''))
-              }
-            />
-          ) : (
-            <Readonly value={displayValue(values.numeroDocumento)} />
-          )}
-        </Field>
-        <Field label="Nombres" error={errors.nombres}>
-          {canEdit('nombres') ? (
-            <RecetaTextInput
-              theme={uiTheme}
-              className={styles.controlMd}
-              value={values.nombres ?? ''}
-              onChange={(event) => updateField('nombres', event.target.value)}
-            />
-          ) : (
-            <Readonly value={displayValue(values.nombres)} />
-          )}
-        </Field>
-        <Field label="Primer apellido" error={errors.primerApellido}>
-          {canEdit('primerApellido') ? (
-            <RecetaTextInput
-              theme={uiTheme}
-              className={styles.controlMd}
-              value={values.primerApellido ?? ''}
-              onChange={(event) => updateField('primerApellido', event.target.value)}
-            />
-          ) : (
-            <Readonly value={displayValue(values.primerApellido)} />
-          )}
-        </Field>
-        <Field label="Segundo apellido">
-          {canEdit('segundoApellido') ? (
-            <RecetaTextInput
-              theme={uiTheme}
-              className={styles.controlMd}
-              value={values.segundoApellido ?? ''}
-              onChange={(event) => updateField('segundoApellido', event.target.value)}
-            />
-          ) : (
-            <Readonly value={displayValue(values.segundoApellido)} />
-          )}
-        </Field>
-        <Field label="Fecha de nacimiento" error={errors.fechaNacimiento}>
-          {canEdit('fechaNacimiento') ? (
-            <RecetaTextInput
-              theme={uiTheme}
-              className={styles.controlMd}
-              type="date"
-              value={values.fechaNacimiento ?? ''}
-              onChange={(event) => updateField('fechaNacimiento', event.target.value)}
-            />
-          ) : (
-            <Readonly value={displayValue(values.fechaNacimiento)} />
-          )}
-        </Field>
-        <Field label="Estado civil">
-          {canEdit('estadoCivil') ? (
-            <RecetaFilterSelect
-              theme={uiTheme}
-              size="md"
-              value={values.estadoCivil ?? ''}
-              options={MARITAL_OPTIONS}
-              onChange={(value) =>
-                updateField('estadoCivil', value as UpdateEmployeePersonalDataInput['estadoCivil'])
-              }
-            />
-          ) : (
-            <Readonly value={displayValue(values.estadoCivil)} />
-          )}
-        </Field>
-        <Field label="Sexo">
-          {canEdit('sexo') ? (
-            <RecetaFilterSelect
-              theme={uiTheme}
-              size="md"
-              value={values.sexo ?? ''}
-              options={GENDER_OPTIONS}
-              onChange={(value) =>
-                updateField('sexo', value as UpdateEmployeePersonalDataInput['sexo'])
-              }
-            />
-          ) : (
-            <Readonly value={displayValue(values.sexo)} />
-          )}
-        </Field>
-      </div>
-
-      <p className={styles.sectionTitle}>Ubicación y contacto</p>
-      <div className={styles.grid}>
-        <Field label="Departamento">
-          {canEdit('departamento') ? (
-            <RecetaFilterSelect
-              theme={uiTheme}
-              size="md"
-              value={values.departamento ?? ''}
-              options={departments}
-              onChange={(value) => updateField('departamento', value)}
-            />
-          ) : (
-            <Readonly value={displayValue(values.departamento)} />
-          )}
-        </Field>
-        <Field label="Ciudad">
-          {canEdit('ciudad') ? (
-            <RecetaFilterSelect
-              theme={uiTheme}
-              size="md"
-              value={values.ciudad ?? ''}
-              options={cities}
-              onChange={(value) => updateField('ciudad', value)}
-              disabled={!values.departamento}
-            />
-          ) : (
-            <Readonly value={displayValue(values.ciudad)} />
-          )}
-        </Field>
-        <Field label="Localidad">
-          {canEdit('localidad') ? (
-            <RecetaTextInput
-              theme={uiTheme}
-              className={styles.controlMd}
-              value={values.localidad ?? ''}
-              onChange={(event) => updateField('localidad', event.target.value)}
-            />
-          ) : (
-            <Readonly value={displayValue(values.localidad)} />
-          )}
-        </Field>
-        <Field label="Barrio">
-          {canEdit('barrio') ? (
-            <RecetaTextInput
-              theme={uiTheme}
-              className={styles.controlMd}
-              value={values.barrio ?? ''}
-              onChange={(event) => updateField('barrio', event.target.value)}
-            />
-          ) : (
-            <Readonly value={displayValue(values.barrio)} />
-          )}
-        </Field>
-        <Field label="Dirección" className={styles.fieldFull}>
-          {canEdit('direccion') ? (
-            <RecetaTextInput
-              theme={uiTheme}
-              className={styles.controlMd}
-              value={values.direccion ?? ''}
-              onChange={(event) => updateField('direccion', event.target.value)}
-            />
-          ) : (
-            <Readonly value={displayValue(values.direccion)} />
-          )}
-        </Field>
-        <Field label="Teléfono" error={errors.telefono}>
-          {canEdit('telefono') ? (
-            <RecetaTextInput
-              theme={uiTheme}
-              className={styles.controlMd}
-              value={values.telefono ?? ''}
-              onChange={(event) => updateField('telefono', event.target.value.replace(/\D/g, ''))}
-            />
-          ) : (
-            <Readonly value={displayValue(values.telefono)} />
-          )}
-        </Field>
-        <Field label="Correo" error={errors.correo}>
-          {canEdit('correo') ? (
-            <RecetaTextInput
-              theme={uiTheme}
-              className={styles.controlMd}
-              type="email"
-              value={values.correo ?? ''}
-              onChange={(event) => updateField('correo', event.target.value)}
-            />
-          ) : (
-            <Readonly value={displayValue(values.correo)} />
-          )}
-        </Field>
-      </div>
-
-      <p className={styles.sectionTitle}>Contacto de emergencia</p>
-      <div className={styles.grid}>
-        <Field label="Nombre">
-          {canEdit('contactoEmergenciaNombre') ? (
-            <RecetaTextInput
-              theme={uiTheme}
-              className={styles.controlMd}
-              value={values.contactoEmergenciaNombre ?? ''}
-              onChange={(event) => updateField('contactoEmergenciaNombre', event.target.value)}
-            />
-          ) : (
-            <Readonly value={displayValue(values.contactoEmergenciaNombre)} />
-          )}
-        </Field>
-        <Field label="Parentesco">
-          {canEdit('contactoEmergenciaParentesco') ? (
-            <RecetaTextInput
-              theme={uiTheme}
-              className={styles.controlMd}
-              value={values.contactoEmergenciaParentesco ?? ''}
-              onChange={(event) => updateField('contactoEmergenciaParentesco', event.target.value)}
-            />
-          ) : (
-            <Readonly value={displayValue(values.contactoEmergenciaParentesco)} />
-          )}
-        </Field>
-        <Field label="Teléfono" error={errors.contactoEmergenciaTelefono}>
-          {canEdit('contactoEmergenciaTelefono') ? (
-            <RecetaTextInput
-              theme={uiTheme}
-              className={styles.controlMd}
-              value={values.contactoEmergenciaTelefono ?? ''}
-              onChange={(event) =>
-                updateField('contactoEmergenciaTelefono', event.target.value.replace(/\D/g, ''))
-              }
-            />
-          ) : (
-            <Readonly value={displayValue(values.contactoEmergenciaTelefono)} />
-          )}
-        </Field>
-      </div>
-
-      <div className={styles.actions}>
-        <RecetaFormButton
-          type="submit"
-          theme={uiTheme}
-          label="Guardar cambios"
-          disabled={submitting}
-        />
-      </div>
-    </form>
+      </section>
+    </div>
   );
 }
 

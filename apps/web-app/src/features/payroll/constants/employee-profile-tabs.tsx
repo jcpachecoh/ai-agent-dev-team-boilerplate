@@ -30,11 +30,11 @@ const iconProps = { size: 14, 'aria-hidden': true as const };
 export const PAYROLL_EMPLOYEE_PROFILE_TABS: PayrollEmployeeProfileTabDefinition[] = [
   {
     id: 'personal',
-    label: 'Datos personales',
+    label: 'Datos personales y laborales',
     icon: <UserRound {...iconProps} />,
-    placeholderTitle: 'Datos personales',
+    placeholderTitle: 'Datos personales y laborales',
     placeholderDescription:
-      'Próximamente — nombre, documento, contacto, dirección y foto del colaborador.',
+      'Identificación, contacto, foto, rol, contrato, salario y beneficiarios del colaborador.',
   },
 
   {
@@ -81,6 +81,9 @@ export const PAYROLL_EMPLOYEE_PROFILE_TABS: PayrollEmployeeProfileTabDefinition[
 export const PAYROLL_EMPLOYEE_PROFILE_TAB_IDS = PAYROLL_EMPLOYEE_PROFILE_TABS.map((tab) => tab.id);
 
 export function parsePayrollEmployeeProfileTab(value: string | null): PayrollEmployeeProfileTabId {
+  if (value === 'employment') {
+    return 'personal';
+  }
   if (value && PAYROLL_EMPLOYEE_PROFILE_TAB_IDS.includes(value as PayrollEmployeeProfileTabId)) {
     return value as PayrollEmployeeProfileTabId;
   }

@@ -40,49 +40,19 @@ import { PayrollApiError } from '../api/payroll.client';
 import type { PayrollEmployeeCreateWizardPayload } from '../types/payroll-employee-create-wizard.types';
 import { applyPayrollEmployeeCreateFinancialProfile } from '../utils/applyPayrollEmployeeCreateFinancialProfile';
 import { applyPayrollEmployeeCreatePersonalData } from '../utils/applyPayrollEmployeeCreatePersonalData';
-import { buildEmployeeFullName } from '../utils/employee-name';
+import {
+  payrollEmployeeFormValuesToCreateInput,
+  payrollEmployeeFormValuesToUpdateInput,
+} from '../utils/payroll-employee-form-mappers';
 import { sortPayrollEmployees } from '../utils/sortPayrollEmployees';
 import styles from './PayrollEmployeesListScreen.module.scss';
 
 function toCreateInput(values: PayrollEmployeeFormValues): CreatePayrollEmployeeInput {
-  return {
-    cedula: values.cedula.trim(),
-    documentType: values.documentType,
-    email: values.email.trim(),
-    roleId: values.roleId.trim(),
-    locationId: values.locationId.trim(),
-    name: buildEmployeeFullName(values),
-    positionId: values.positionId.trim() || undefined,
-    area: values.area.trim(),
-    department: values.department.trim(),
-    contractType: values.contractType,
-    hireDate: values.hireDate,
-    contractStart: values.contractStart,
-    contractEnd: values.contractEnd.trim() || undefined,
-    salaryType: values.salaryType,
-    salaryAmount: Number(values.salaryAmount),
-    epsName: values.epsName.trim(),
-    pensionFundName: values.pensionFundName.trim(),
-    cesantiasFundName: values.cesantiasFundName.trim(),
-    arlName: values.arlName.trim(),
-    arlRiskLevel: values.arlRiskLevel,
-    cajaCompensacion: values.cajaCompensacion.trim(),
-    barrio: values.barrio.trim() || undefined,
-    localidad: values.localidad.trim() || undefined,
-    costCenter: values.costCenter,
-    laborClassification: values.laborClassification,
-    nonSalaryAmount:
-      values.nonSalaryAmount.trim() !== '' ? Number(values.nonSalaryAmount) : undefined,
-    beneficiaries: values.beneficiaries.map((b) => ({
-      fullName: b.fullName.trim(),
-      relationshipType: b.relationshipType,
-      age: Number(b.age),
-    })),
-  };
+  return payrollEmployeeFormValuesToCreateInput(values);
 }
 
 function toUpdateInput(values: PayrollEmployeeFormValues): UpdatePayrollEmployeeInput {
-  return toCreateInput(values);
+  return payrollEmployeeFormValuesToUpdateInput(values);
 }
 
 function getErrorMessage(error: unknown): string {

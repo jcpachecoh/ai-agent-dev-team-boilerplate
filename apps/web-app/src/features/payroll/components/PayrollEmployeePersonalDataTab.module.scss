@@ -2,6 +2,12 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
   padding: 20px 24px 24px;
 }
 
@@ -118,12 +124,78 @@
   text-align: center;
 }
 
+.employmentSection {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-top: 8px;
+  border-top: 1px solid var(--empleado-border);
+}
+
+.employmentHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.beneficiariesSection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.beneficiaryTable {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.beneficiaryHeader,
+.beneficiaryRow {
+  display: grid;
+  grid-template-columns: 1fr 2fr 80px;
+  gap: 12px;
+  align-items: center;
+}
+
+.beneficiaryHeader {
+  color: var(--empleado-muted);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.beneficiaryRow {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--empleado-border);
+  border-radius: 4px;
+  background: var(--empleado-input);
+  color: var(--empleado-text);
+  font-size: 0.875rem;
+}
+
+.emptyHint {
+  margin: 0;
+  color: var(--empleado-subtle);
+  font-size: 0.875rem;
+}
+
 @media (max-width: 767px) {
   .grid {
     grid-template-columns: 1fr;
   }
 
-  .form {
+  .panel {
     padding: 16px;
+  }
+
+  .beneficiaryHeader,
+  .beneficiaryRow {
+    grid-template-columns: 1fr;
+    gap: 4px;
   }
 }

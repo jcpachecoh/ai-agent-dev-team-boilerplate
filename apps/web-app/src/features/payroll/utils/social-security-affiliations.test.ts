@@ -48,13 +48,14 @@ describe('resolveAffiliationStatus', () => {
 });
 
 describe('buildSocialSecurityAffiliations', () => {
-  it('devuelve las 4 afiliaciones con fecha de vinculación', () => {
+  it('devuelve las 5 afiliaciones con fecha de vinculación', () => {
     const affiliations = buildSocialSecurityAffiliations(baseEmployee);
 
-    expect(affiliations).toHaveLength(4);
+    expect(affiliations).toHaveLength(5);
     expect(affiliations.map((item) => item.key)).toEqual([
       'health',
       'pension',
+      'cesantias',
       'arl',
       'compensationFund',
     ]);

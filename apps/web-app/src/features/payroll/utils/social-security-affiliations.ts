@@ -1,6 +1,11 @@
 import type { ArlRiskLevel, PayrollEmployee } from '../types/payroll.types';
 
-export type SocialSecurityAffiliationKey = 'health' | 'pension' | 'arl' | 'compensationFund';
+export type SocialSecurityAffiliationKey =
+  | 'health'
+  | 'pension'
+  | 'cesantias'
+  | 'arl'
+  | 'compensationFund';
 
 export type AffiliationStatus = 'ACTIVE' | 'INACTIVE';
 
@@ -17,6 +22,7 @@ export interface SocialSecurityAffiliation {
 export type SocialSecurityAffiliationFieldKey =
   | 'epsName'
   | 'pensionFundName'
+  | 'cesantiasFundName'
   | 'arlName'
   | 'arlRiskLevel'
   | 'cajaCompensacion';
@@ -59,6 +65,13 @@ export function buildSocialSecurityAffiliations(
       label: 'Pensión',
       entityName: employee.pensionFundName,
       status: resolveAffiliationStatus(employee.isActive, employee.pensionFundName),
+      linkedAt,
+    },
+    {
+      key: 'cesantias',
+      label: 'Cesantías',
+      entityName: employee.cesantiasFundName,
+      status: resolveAffiliationStatus(employee.isActive, employee.cesantiasFundName),
       linkedAt,
     },
     {

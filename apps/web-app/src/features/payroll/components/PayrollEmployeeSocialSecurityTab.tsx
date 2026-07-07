@@ -33,6 +33,7 @@ const ARL_LEVEL_OPTIONS: Array<{ value: ArlRiskLevel; label: string }> = [
 interface SocialSecurityFormValues {
   epsName: string;
   pensionFundName: string;
+  cesantiasFundName: string;
   arlName: string;
   arlRiskLevel: ArlRiskLevel;
   cajaCompensacion: string;
@@ -41,6 +42,7 @@ interface SocialSecurityFormValues {
 function toFormValues(employee: {
   epsName: string;
   pensionFundName: string;
+  cesantiasFundName: string;
   arlName: string;
   arlRiskLevel: ArlRiskLevel;
   cajaCompensacion: string;
@@ -48,6 +50,7 @@ function toFormValues(employee: {
   return {
     epsName: employee.epsName,
     pensionFundName: employee.pensionFundName,
+    cesantiasFundName: employee.cesantiasFundName,
     arlName: employee.arlName,
     arlRiskLevel: employee.arlRiskLevel,
     cajaCompensacion: employee.cajaCompensacion,
@@ -58,6 +61,7 @@ function validateForm(values: SocialSecurityFormValues): Partial<Record<string, 
   const errors: Partial<Record<string, string>> = {};
   if (!values.epsName.trim()) errors.epsName = 'Requerido';
   if (!values.pensionFundName.trim()) errors.pensionFundName = 'Requerido';
+  if (!values.cesantiasFundName.trim()) errors.cesantiasFundName = 'Requerido';
   if (!values.arlName.trim()) errors.arlName = 'Requerido';
   if (!values.cajaCompensacion.trim()) errors.cajaCompensacion = 'Requerido';
   return errors;
@@ -111,6 +115,14 @@ export function PayrollEmployeeSocialSecurityTab({
       ),
     [catalogsQuery.grouped, values?.pensionFundName],
   );
+  const cesantiasSelectOptions = useMemo(
+    () =>
+      buildCatalogSelectOptions(
+        catalogsQuery.grouped.CESANTIAS_FUND ?? [],
+        values?.cesantiasFundName ?? '',
+      ),
+    [catalogsQuery.grouped, values?.cesantiasFundName],
+  );
   const arlSelectOptions = useMemo(
     () => buildCatalogSelectOptions(catalogsQuery.grouped.ARL ?? [], values?.arlName ?? ''),
     [catalogsQuery.grouped, values?.arlName],
@@ -160,6 +172,7 @@ export function PayrollEmployeeSocialSecurityTab({
     const input: UpdatePayrollEmployeeInput = {
       epsName: values.epsName.trim(),
       pensionFundName: values.pensionFundName.trim(),
+      cesantiasFundName: values.cesantiasFundName.trim(),
       arlName: values.arlName.trim(),
       arlRiskLevel: values.arlRiskLevel,
       cajaCompensacion: values.cajaCompensacion.trim(),
@@ -279,6 +292,23 @@ export function PayrollEmployeeSocialSecurityTab({
               />
               {errors.pensionFundName ? (
                 <p className={styles.error}>{errors.pensionFundName}</p>
+              ) : null}
+            </label>
+
+            <label className={styles.field}>
+              <span className={styles.label}>Cesantías</span>
+              <RecetaFilterSelect
+                aria-label="Fondo de cesantías"
+                options={cesantiasSelectOptions}
+                value={values.cesantiasFundName}
+                disabled={catalogsQuery.isLoading || cesantiasSelectOptions.length === 0}
+                placeholder={catalogPlaceholder(cesantiasSelectOptions.length > 0)}
+                onChange={(value) => updateField('cesantiasFundName', value)}
+                theme={theme}
+                size="md"
+              />
+              {errors.cesantiasFundName ? (
+                <p className={styles.error}>{errors.cesantiasFundName}</p>
               ) : null}
             </label>
 
