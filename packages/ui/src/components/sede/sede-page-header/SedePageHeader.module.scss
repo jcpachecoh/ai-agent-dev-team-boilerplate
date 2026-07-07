@@ -1,0 +1,70 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../../../styles/abstracts/page-header-title' as ph;
+@use '../shared/sede-theme' as sede;
+
+$mobile-breakpoint: 768px;
+
+.header {
+  @include sede.sede-theme-classes;
+  @include ph.page-header-shell;
+  align-items: center;
+}
+
+.leading {
+  @include ph.page-header-titles-stack;
+}
+
+.iconWrap {
+  display: none;
+}
+
+.titles {
+  @include ph.page-header-titles-stack;
+}
+
+.title {
+  @include ph.page-header-title;
+  color: var(--sede-text);
+}
+
+.subtitle {
+  @include ph.page-header-subtitle;
+  color: var(--sede-text-secondary);
+}
+
+.theme--dark .subtitle {
+  color: var(--sede-subtle);
+}
+
+.theme--light .subtitle {
+  color: var(--sede-text);
+  opacity: 0.72;
+}
+
+.action {
+  flex-shrink: 0;
+}
+
+.size--sm .title {
+  font-size: 1.125rem;
+}
+
+.size--xl .title {
+  font-size: 1.625rem;
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .header {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .title {
+    font-size: 1.25rem;
+  }
+
+  .action {
+    width: 100%;
+  }
+}

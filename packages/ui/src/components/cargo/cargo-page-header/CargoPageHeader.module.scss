@@ -1,0 +1,62 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../../../styles/abstracts/page-header-title' as ph;
+@use '../shared/cargo-theme' as emp;
+
+.header {
+  @include emp.cargo-theme-classes;
+  @include ph.page-header-shell;
+}
+
+.leading {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+}
+
+.iconWrap {
+  display: none;
+}
+
+.titles {
+  @include ph.page-header-titles-stack;
+}
+
+.title {
+  @include ph.page-header-title;
+  color: var(--cargo-text);
+}
+
+.subtitle {
+  @include ph.page-header-subtitle;
+  color: var(--cargo-subtle);
+}
+
+.size--sm {
+  .title {
+    font-size: 1.125rem;
+  }
+
+  .subtitle {
+    font-size: $font-size-xs;
+  }
+}
+
+.action {
+  flex-shrink: 0;
+}
+
+@media (max-width: 767px) {
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .action {
+    width: 100%;
+
+    > * {
+      width: 100%;
+    }
+  }
+}

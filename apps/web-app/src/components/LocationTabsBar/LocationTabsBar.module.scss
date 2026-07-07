@@ -1,0 +1,36 @@
+@use '@/styles/tokens' as t;
+
+.bar {
+  width: 100%;
+  min-width: 0;
+  padding: t.$space-3 t.$space-6;
+  background: var(--color-bg-header);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.tabs {
+  display: flex !important;
+  width: 100% !important;
+  max-width: 100%;
+  overflow: hidden;
+
+  button[role='tab'] {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    overflow: hidden;
+
+    span {
+      display: block;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+}
+
+@media (max-width: 1023px) {
+  .bar {
+    padding: t.$space-3 t.$space-4;
+  }
+}

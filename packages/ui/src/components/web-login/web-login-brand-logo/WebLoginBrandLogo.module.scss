@@ -1,0 +1,26 @@
+.logoWrap {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.logo {
+  display: block;
+  width: min(100%, 220px);
+  height: auto;
+  object-fit: contain;
+}
+
+.size--sm .logo {
+  width: min(100%, 180px);
+}
+
+.size--xl .logo {
+  width: min(100%, 260px);
+}
+
+@media (max-width: 900px) {
+  .logo {
+    width: min(100%, 200px);
+  }
+}

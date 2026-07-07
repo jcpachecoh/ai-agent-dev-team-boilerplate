@@ -1,0 +1,199 @@
+@use '../../../styles/abstracts/variables' as *;
+
+.container {
+  --control-width: 320px;
+
+  width: min(100%, var(--control-width));
+}
+
+.size--sm {
+  --control-width: 220px;
+}
+.size--md {
+  --control-width: 320px;
+}
+.size--xl {
+  --control-width: 480px;
+}
+
+.size--sm .inputWrapper {
+  height: 32px;
+}
+.size--md .inputWrapper {
+  height: 40px;
+}
+.size--xl .inputWrapper {
+  height: 52px;
+  padding: 0 $spacing-md;
+}
+
+.size--sm .input {
+  font-size: $font-size-xs;
+}
+.size--xl .input {
+  font-size: $font-size-base;
+}
+
+.inputWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 40px;
+  border-radius: $border-radius-md;
+  padding: 0 $spacing-sm;
+  background-color: transparent;
+  border: $border-width solid rgba($color-black, 0.16);
+  transition: all $transition-fast;
+}
+
+.input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  font-family: $font-family-base;
+  font-size: $font-size-sm;
+  color: inherit;
+  outline: none;
+
+  &::placeholder {
+    color: $color-text-secondary;
+    opacity: 0.6;
+  }
+}
+
+.trigger {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: $spacing-xs;
+  color: $color-text-secondary;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover:not(:disabled) {
+    color: $color-primary;
+  }
+}
+
+.popoverContent {
+  z-index: 1000;
+  border-radius: $border-radius-lg;
+  border: $border-width solid $color-border;
+  box-shadow: $shadow-lg;
+  padding: $spacing-md;
+  animation: slideDownAndFade 0.2s ease-out;
+}
+
+.popoverContentLight {
+  background-color: $color-white;
+  color: $color-text-primary;
+
+  --rdp-accent-color: #{$color-primary};
+  --rdp-today-color: #{$color-primary};
+  --rdp-day_button-border-radius: #{$border-radius-sm};
+}
+
+.popoverContentDark {
+  background-color: $color-gray-900;
+  border-color: rgba($color-white, 0.1);
+  color: $color-text-inverse;
+
+  --rdp-accent-color: #d4a017;
+  --rdp-accent-background-color: rgba(212, 160, 23, 0.15);
+  --rdp-today-color: #d4a017;
+  --rdp-day_button-border-radius: #{$border-radius-sm};
+  --rdp-selected-border: 2px solid #d4a017;
+
+  :global(.rdp-weekday) {
+    color: rgba($color-white, 0.55);
+    opacity: 1;
+  }
+
+  :global(.rdp-caption_label) {
+    color: $color-text-inverse;
+  }
+
+  :global(.rdp-day_button) {
+    color: $color-text-inverse;
+
+    &:hover {
+      background-color: rgba($color-white, 0.1);
+    }
+  }
+
+  :global(.rdp-button_previous),
+  :global(.rdp-button_next) {
+    color: $color-text-inverse;
+    border-color: rgba($color-white, 0.15);
+
+    &:hover:not(:disabled) {
+      background-color: rgba($color-white, 0.1);
+    }
+  }
+
+  :global(.rdp-chevron) {
+    fill: #d4a017;
+  }
+
+  :global(.rdp-selected .rdp-day_button) {
+    background-color: #d4a017;
+    color: $color-black;
+  }
+}
+
+@keyframes slideDownAndFade {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.embedded .inputWrapper {
+  height: 100%;
+  min-height: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+
+  &:focus-within {
+    border: none;
+    box-shadow: none;
+  }
+}
+
+.theme--dark {
+  .inputWrapper {
+    background-color: rgba($color-white, 0.05);
+    border-color: rgba($color-white, 0.1);
+    color: $color-text-inverse;
+
+    &:focus-within {
+      border-color: #d4a017;
+    }
+  }
+
+  .trigger {
+    color: rgba($color-white, 0.55);
+
+    &:hover:not(:disabled) {
+      color: #d4a017;
+    }
+  }
+}
+
+.theme--light {
+  .inputWrapper {
+    background-color: $color-white;
+    border-color: rgba($color-black, 0.16);
+    color: $color-text-primary;
+
+    &:focus-within {
+      border-color: #d4a017;
+    }
+  }
+}

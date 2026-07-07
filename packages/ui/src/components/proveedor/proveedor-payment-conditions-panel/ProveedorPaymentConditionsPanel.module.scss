@@ -1,0 +1,79 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/proveedor-theme' as proveedor;
+
+.panel {
+  @include proveedor.proveedor-control-base;
+  @include proveedor.proveedor-theme-classes;
+  @include proveedor.proveedor-size-vars;
+
+  display: flex;
+  flex-direction: column;
+  gap: var(--panel-gap);
+  padding: var(--panel-padding);
+  background: var(--proveedor-surface-raised);
+}
+
+.title {
+  margin: 0;
+  font-family: $font-family-mono;
+  font-size: var(--panel-title-size);
+  font-weight: $font-weight-bold;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: proveedor.$proveedor-enterprise;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--panel-grid-gap);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.label {
+  font-family: $font-family-mono;
+  font-size: var(--panel-label-size);
+  font-weight: $font-weight-medium;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--proveedor-text-secondary);
+}
+
+.value {
+  font-size: var(--panel-value-size);
+  font-weight: $font-weight-semibold;
+  color: var(--proveedor-text);
+}
+
+.size--sm {
+  --panel-padding: #{$spacing-md};
+  --panel-gap: #{$spacing-sm};
+  --panel-grid-gap: 16px;
+  --panel-title-size: 0.625rem;
+  --panel-label-size: 0.5625rem;
+  --panel-value-size: #{$font-size-sm};
+}
+
+.size--md {
+  --panel-padding: 20px 24px;
+  --panel-gap: 16px;
+  --panel-grid-gap: 24px;
+  --panel-title-size: 0.6875rem;
+  --panel-label-size: 0.625rem;
+  --panel-value-size: #{$font-size-sm};
+}
+
+.size--xl {
+  --control-width: 100%;
+  --panel-padding: 20px 24px;
+  --panel-gap: 16px;
+  --panel-grid-gap: 32px;
+  --panel-title-size: 0.6875rem;
+  --panel-label-size: 0.625rem;
+  --panel-value-size: #{$font-size-sm};
+}

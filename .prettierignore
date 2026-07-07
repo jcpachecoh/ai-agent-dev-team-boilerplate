@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.next/
+.expo/
+coverage/
+*.min.js
+*.d.ts

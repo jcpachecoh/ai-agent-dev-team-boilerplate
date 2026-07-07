@@ -1,0 +1,80 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/cargo-theme' as cargo;
+
+.card {
+  @include cargo.cargo-theme-classes;
+
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--cargo-border);
+  border-radius: 4px;
+  background: var(--cargo-surface);
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.titleWrap {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: $font-weight-semibold;
+  color: var(--cargo-text);
+}
+
+.area {
+  margin: 2px 0 0;
+  font-size: 0.625rem;
+  color: var(--cargo-faint);
+}
+
+.details {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.detailRow {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 8px;
+  align-items: start;
+
+  dt {
+    margin: 0;
+    font-family: 'IBM Plex Mono', $font-family-mono, monospace;
+    font-size: 0.56rem;
+    font-weight: $font-weight-bold;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--cargo-dim);
+  }
+
+  dd {
+    margin: 0;
+    font-size: 0.75rem;
+    color: var(--cargo-text-secondary);
+  }
+}
+
+.salary {
+  font-family: 'IBM Plex Mono', $font-family-mono, monospace;
+  color: var(--cargo-secondary) !important;
+}
+
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 5px;
+}

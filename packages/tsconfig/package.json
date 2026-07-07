@@ -1,0 +1,12 @@
+{
+  "name": "@restopsiq/tsconfig",
+  "version": "0.0.0",
+  "private": true,
+  "files": [
+    "base.json",
+    "nextjs.json",
+    "nestjs.json",
+    "react-library.json",
+    "expo.json"
+  ]
+}

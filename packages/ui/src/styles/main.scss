@@ -1,0 +1,13 @@
+// ==========================================================================
+// Main SCSS Entry Point — 7-1 Architecture
+// ==========================================================================
+// Import all partials in the correct order.
+// Abstracts are NOT imported here because they contain no output—
+// components import them directly via @use.
+
+@use 'base';
+@use 'vendors';
+@use 'layout';
+@use 'components';
+@use 'pages';
+@use 'themes';

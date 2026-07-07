@@ -1,0 +1,25 @@
+@use '../shared/sede-theme' as sede;
+
+.section {
+  @include sede.sede-theme-classes;
+
+  width: 100%;
+  padding: 1rem 1.25rem;
+  box-sizing: border-box;
+}
+
+.variant--header {
+  padding: 1.1rem 1.25rem 1rem;
+}
+
+.variant--toolbar {
+  padding: 0.85rem 1.25rem;
+}
+
+.divider {
+  border-bottom: 1px solid var(--sede-border);
+}
+
+.section:last-child {
+  padding-bottom: 1.25rem;
+}

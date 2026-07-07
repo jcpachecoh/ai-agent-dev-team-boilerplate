@@ -1,0 +1,117 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/produccion-theme' as produccion;
+.panel {
+  @include produccion.produccion-theme-classes;
+  @include produccion.produccion-size-vars;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: min(100%, var(--panel-width));
+  min-height: 100%;
+  height: 100%;
+  padding: 16px;
+  border-left: 0;
+  background: var(--produccion-row);
+  color: var(--produccion-text);
+}
+.header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.eyebrow {
+  margin: 0 0 3px;
+  font-family: $font-family-mono;
+  font-size: 0.625rem;
+  color: produccion.$produccion-gold;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--produccion-text);
+}
+.subtle {
+  color: var(--produccion-muted);
+}
+.close {
+  background: transparent;
+  border: 0;
+  color: var(--produccion-subtle);
+  cursor: pointer;
+}
+.close svg {
+  width: 16px;
+  height: 16px;
+}
+.sectionTitle {
+  margin: 0 0 8px;
+  font-family: $font-family-mono;
+  font-size: 0.625rem;
+  color: var(--produccion-subtle);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.card {
+  padding: 12px;
+  background: var(--produccion-surface-raised);
+  border: $border-width solid var(--produccion-border);
+  border-radius: $border-radius-sm;
+}
+.empty {
+  font-size: 0.75rem;
+  color: var(--produccion-muted);
+}
+.size--sm {
+  --panel-width: 280px;
+}
+.size--md {
+  --panel-width: 320px;
+}
+.size--xl {
+  --panel-width: 360px;
+}
+
+.meta {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+.meta div {
+  display: grid;
+  align-items: center;
+  gap: 10px;
+  grid-template-columns: 82px 1fr;
+}
+dt {
+  font-family: $font-family-mono;
+  font-size: 0.625rem;
+  color: var(--produccion-subtle);
+  text-transform: uppercase;
+}
+dd {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--produccion-muted);
+}
+.card strong {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--produccion-text);
+}
+.card p {
+  margin: 4px 0 0;
+  font-size: 0.6875rem;
+  color: var(--produccion-muted);
+}
+.card p::before {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  margin-right: 6px;
+  background: produccion.$produccion-teal;
+  border-radius: 999px;
+  content: '';
+  vertical-align: middle;
+}

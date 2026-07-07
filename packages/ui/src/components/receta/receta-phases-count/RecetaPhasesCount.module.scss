@@ -1,0 +1,25 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/receta-theme' as receta;
+
+.wrap {
+  @include receta.receta-theme-classes;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+
+.icon {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  color: var(--receta-muted);
+}
+
+.count {
+  font-family: $font-family-mono;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--receta-muted);
+}

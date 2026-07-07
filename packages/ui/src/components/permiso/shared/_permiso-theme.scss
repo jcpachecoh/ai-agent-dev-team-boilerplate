@@ -1,0 +1,46 @@
+@use '../../../styles/abstracts/variables' as *;
+
+$permiso-accent: #2ec4a0;
+
+$permiso-dark-surface: #111111;
+$permiso-dark-border: #2e2e2e;
+$permiso-dark-text: #f5f5f0;
+
+@mixin permiso-theme-dark {
+  --permiso-surface: #{$permiso-dark-surface};
+  --permiso-surface-raised: #141414;
+  --permiso-border: #{$permiso-dark-border};
+  --permiso-text: #{$permiso-dark-text};
+  --permiso-text-secondary: #bbbbbb;
+  --permiso-muted: #888888;
+  --permiso-hover: #{rgba($color-white, 0.06)};
+  --permiso-accent: #{$permiso-accent};
+  --permiso-zebra: #{rgba($color-white, 0.03)};
+}
+
+@mixin permiso-theme-light {
+  --permiso-surface: #ffffff;
+  --permiso-surface-raised: #fbfaf6;
+  --permiso-border: #{rgba($color-black, 0.12)};
+  --permiso-text: #{$color-gray-900};
+  --permiso-text-secondary: #{$color-gray-700};
+  --permiso-muted: #{$color-gray-600};
+  --permiso-hover: #{rgba($color-black, 0.04)};
+  --permiso-accent: #{$permiso-accent};
+  --permiso-zebra: #{rgba($color-black, 0.02)};
+}
+
+@mixin permiso-focus-ring {
+  outline: 2px solid rgba($permiso-accent, 0.65);
+  outline-offset: 2px;
+}
+
+@mixin permiso-theme-classes {
+  &.theme--dark {
+    @include permiso-theme-dark;
+  }
+
+  &.theme--light {
+    @include permiso-theme-light;
+  }
+}

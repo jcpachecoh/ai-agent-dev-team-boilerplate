@@ -1,0 +1,76 @@
+@use '../../styles/abstracts/variables' as *;
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+  align-items: flex-start;
+}
+
+.title {
+  font-weight: $font-weight-semibold;
+  font-size: $font-size-xl;
+  line-height: $font-size-3xl;
+  letter-spacing: -0.4px;
+  margin: 0;
+}
+
+.subtitle {
+  margin: 0;
+  font-weight: $font-weight-regular;
+  font-size: 12.8px;
+  line-height: 19.2px;
+}
+
+.subtitle {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+.statusDot {
+  width: 6px;
+  height: 6px;
+  border-radius: $border-radius-full;
+  display: inline-block;
+  flex: 0 0 auto;
+}
+.subtitleText {
+  display: inline-block;
+}
+
+.dark .title {
+  color: #ededf5;
+}
+.dark .subtitle {
+  color: #8888a0;
+}
+
+.light .title {
+  color: $color-gray-900;
+}
+.light .subtitle {
+  color: rgba($color-black, 0.6);
+}
+
+/* Size modifiers applied on container */
+.size-sm .title {
+  font-size: $font-size-sm;
+  line-height: $font-size-lg;
+}
+.size-sm .subtitle {
+  font-size: 11px;
+}
+.size-md .title {
+  font-size: $font-size-lg;
+  line-height: $font-size-2xl;
+}
+.size-md .subtitle {
+  font-size: 12.8px;
+}
+.size-lg .title {
+  font-size: 22px;
+  line-height: $font-size-3xl;
+}
+.size-lg .subtitle {
+  font-size: $font-size-sm;
+}

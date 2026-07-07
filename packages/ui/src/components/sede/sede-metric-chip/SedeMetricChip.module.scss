@@ -1,0 +1,59 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/sede-theme' as sede;
+
+.chip {
+  @include sede.sede-theme-classes;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 45px;
+  padding: 9px 17px;
+  border: $border-width solid var(--sede-border);
+  border-radius: 4px;
+  background: var(--sede-surface);
+}
+
+.value {
+  font-family: $font-family-mono;
+  font-size: 1.125rem;
+  font-weight: $font-weight-bold;
+  line-height: 1;
+  color: var(--metric-value-color, var(--sede-text));
+}
+
+.label {
+  font-family: $font-family-base;
+  font-size: 0.75rem;
+  color: var(--sede-subtle);
+  white-space: nowrap;
+}
+
+.color--primary {
+  --metric-value-color: var(--sede-primary);
+}
+
+.color--success {
+  --metric-value-color: var(--sede-teal);
+}
+
+.color--muted {
+  --metric-value-color: var(--sede-muted);
+}
+
+.color--default {
+  --metric-value-color: var(--sede-text);
+}
+
+.size--sm {
+  min-height: 38px;
+  padding: 7px 12px;
+
+  .value {
+    font-size: 1rem;
+  }
+
+  .label {
+    font-size: 0.6875rem;
+  }
+}

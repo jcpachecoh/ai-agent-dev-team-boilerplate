@@ -1,0 +1,59 @@
+@use '../../styles/abstracts/variables' as *;
+
+.wrapper {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.number {
+  font-weight: $font-weight-bold;
+  line-height: $line-height-tight;
+  display: block;
+}
+
+.label {
+  display: block;
+  margin-top: 6px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-weight: $font-weight-semibold;
+}
+
+/* Sizes */
+.sm .number {
+  font-size: $font-size-xl;
+}
+.sm .label {
+  font-size: 10px;
+}
+.md .number {
+  font-size: $font-size-4xl;
+}
+.md .label {
+  font-size: $font-size-xs;
+}
+.lg .number {
+  font-size: 56px;
+}
+.lg .label {
+  font-size: $font-size-sm;
+}
+
+.light .number {
+  color: #2f82ff;
+}
+
+.light .label {
+  color: #72729a;
+}
+
+.dark .number {
+  color: #6ba3ff;
+}
+
+.dark .label {
+  color: #8888a0;
+}

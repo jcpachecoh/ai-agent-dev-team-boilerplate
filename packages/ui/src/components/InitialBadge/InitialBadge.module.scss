@@ -1,0 +1,51 @@
+@use '../../styles/abstracts/variables' as *;
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: $border-radius-md;
+  padding: $spacing-xs $spacing-sm;
+  box-sizing: border-box;
+  background-image: linear-gradient(135deg, #d4a017 0%, #f0c040 100%);
+}
+
+.label {
+  font-weight: $font-weight-bold;
+  font-size: 9.6px;
+  line-height: 14.4px;
+  color: $color-gray-900;
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* Sizes */
+.sm {
+  padding: $spacing-xs 6px;
+  font-size: 8px;
+}
+.md {
+  padding: 6px $spacing-sm;
+  font-size: 9.6px;
+}
+.lg {
+  padding: $spacing-sm 10px;
+  font-size: $font-size-xs;
+}
+
+.light {
+  background-image: linear-gradient(135deg, #d4a017 0%, #f0c040 100%);
+
+  .label {
+    color: $color-gray-900;
+  }
+}
+
+.dark {
+  background-image: linear-gradient(135deg, #8a6510 0%, #d4a017 100%);
+  border: $border-width solid rgba($color-white, 0.08);
+
+  .label {
+    color: #ededf5;
+  }
+}

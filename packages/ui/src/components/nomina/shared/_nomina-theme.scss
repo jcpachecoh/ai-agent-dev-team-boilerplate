@@ -1,0 +1,28 @@
+@use '../../asistencia/shared/asistencia-theme' as asistencia;
+
+@mixin nomina-theme-classes {
+  @include asistencia.asistencia-theme-classes;
+}
+
+@mixin nomina-panel {
+  border: 1px solid var(--asistencia-border);
+  border-radius: 4px;
+  background: var(--asistencia-surface);
+  overflow: hidden;
+}
+
+@mixin nomina-panel-header {
+  padding: 10px 16px 11px;
+  border-bottom: 1px solid var(--asistencia-border-subtle);
+  background: var(--asistencia-input);
+}
+
+@mixin nomina-eyebrow {
+  margin: 0;
+  font-family: var(--font-family-mono, 'IBM Plex Mono', monospace);
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--asistencia-faint);
+}

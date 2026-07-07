@@ -1,0 +1,66 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../../../styles/abstracts/mixins' as *;
+@use '../shared/field-ops-theme' as fo;
+
+.button {
+  @include fo.field-ops-control-sizes;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--control-gap);
+  box-sizing: border-box;
+  width: min(100%, var(--control-width));
+  min-height: var(--control-min-height);
+  padding: var(--control-padding-y) var(--control-padding-x);
+  border-radius: $border-radius-md;
+  border: $border-width solid var(--fo-border-strong);
+  background-color: transparent;
+  color: var(--fo-text-secondary);
+  font-family: $font-family-base;
+  font-size: var(--control-font-size);
+  font-weight: $font-weight-semibold;
+  cursor: pointer;
+  transition:
+    background-color $transition-fast,
+    border-color $transition-fast,
+    color $transition-fast;
+
+  &:hover:not(:disabled) {
+    background-color: var(--fo-key-bg);
+    color: var(--fo-text-primary);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--fo-focus-ring);
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.size--xl {
+  width: 100%;
+}
+
+.icon {
+  flex-shrink: 0;
+}
+
+.label {
+  line-height: 1.2;
+}
+
+.loading {
+  @include flex-center;
+}
+
+.theme--dark {
+  @include fo.field-ops-theme-dark;
+}
+
+.theme--light {
+  @include fo.field-ops-theme-light;
+}

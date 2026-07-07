@@ -1,0 +1,13 @@
+@use '../shared/inventario-theme' as inventario;
+
+.actions {
+  @include inventario.inventario-theme-classes;
+  @include inventario.inventario-size-vars;
+
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  width: 100%;
+}

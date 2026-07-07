@@ -1,0 +1,127 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/sede-theme' as sede;
+
+.backdrop {
+  @include sede.sede-theme-dark;
+
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--sede-overlay);
+}
+
+.theme--light {
+  @include sede.sede-theme-light;
+}
+
+.modal {
+  @include sede.sede-theme-classes;
+
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 920px);
+  max-height: min(92vh, 900px);
+  border: 1px solid var(--sede-border);
+  border-radius: 8px;
+  background: var(--sede-surface-raised);
+  box-shadow: 0 24px 64px rgba($color-black, 0.35);
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: $spacing-md;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid var(--sede-border);
+  background: var(--sede-input);
+}
+
+.titles {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: $font-weight-bold;
+  color: var(--sede-text);
+}
+
+.subtitle {
+  margin: 0;
+  font-family: $font-family-mono;
+  font-size: 0.6875rem;
+  color: var(--sede-faint);
+}
+
+.closeButton {
+  border: 1px solid var(--sede-border);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--sede-muted);
+  padding: 8px 12px;
+  font-size: 0.75rem;
+  font-weight: $font-weight-semibold;
+  cursor: pointer;
+
+  &:focus-visible {
+    @include sede.sede-focus-ring;
+  }
+}
+
+.body {
+  flex: 1;
+  overflow: auto;
+  padding: 18px 20px;
+}
+
+.errorMessage {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--sede-coral);
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.main,
+.side {
+  min-width: 0;
+}
+
+.statusField {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.statusLabel {
+  @include sede.sede-mono-label;
+}
+
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 14px 20px 18px;
+  border-top: 1px solid var(--sede-border);
+  background: var(--sede-input);
+}
+
+@media (max-width: 768px) {
+  .layout {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}

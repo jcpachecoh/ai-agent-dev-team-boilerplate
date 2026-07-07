@@ -1,0 +1,44 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/empleado-theme' as emp;
+
+.badge {
+  @include emp.empleado-theme-classes;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  max-width: 100%;
+  border-radius: 3px;
+  border: 1px solid transparent;
+  font-family: 'IBM Plex Mono', $font-family-mono, monospace;
+  font-weight: $font-weight-bold;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.size--sm {
+  min-height: 19.5px;
+  padding: 2px 5px;
+  font-size: 0.56rem;
+}
+
+.size--md {
+  min-height: 22px;
+  padding: 3px 6px;
+  font-size: 0.625rem;
+}
+
+.variant--indefinido {
+  color: var(--empleado-teal);
+  background: rgba(emp.$empleado-teal, 0.08);
+  border-color: rgba(emp.$empleado-teal, 0.19);
+}
+
+.variant--servicios,
+.variant--default {
+  color: var(--empleado-faint);
+  background: var(--empleado-hover);
+  border-color: var(--empleado-border);
+}

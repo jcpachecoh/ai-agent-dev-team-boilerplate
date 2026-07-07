@@ -1,0 +1,40 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../../../styles/abstracts/page-header-title' as ph;
+@use '../shared/nomina-theme' as nomina;
+
+.root {
+  @include nomina.nomina-theme-classes;
+  @include ph.page-header-shell;
+  flex-wrap: wrap;
+}
+
+.copy {
+  @include ph.page-header-titles-stack;
+}
+
+.eyebrow {
+  @include nomina.nomina-eyebrow;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.title {
+  @include ph.page-header-title;
+  color: var(--asistencia-text);
+}
+
+.subtitle {
+  @include ph.page-header-subtitle;
+  color: var(--asistencia-muted);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}

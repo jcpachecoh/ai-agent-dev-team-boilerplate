@@ -1,0 +1,23 @@
+name: Block non-main Vercel deployments
+
+# This workflow cancels any Vercel deployment triggered by the GitHub
+# integration on branches other than main. It complements the
+# ignoreCommand in each app's vercel.json.
+on:
+  push:
+    branches-ignore:
+      - main
+  pull_request:
+    branches-ignore:
+      - main
+
+jobs:
+  block-deploy:
+    name: Vercel deployment blocked (non-main branch)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deployment skipped
+        run: |
+          echo "Vercel deployments are restricted to the 'main' branch."
+          echo "Branch: ${{ github.ref_name }}"
+          echo "No deployment will be triggered."

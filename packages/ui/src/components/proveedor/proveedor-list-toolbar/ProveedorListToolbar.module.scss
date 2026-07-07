@@ -1,0 +1,50 @@
+@use '../shared/proveedor-theme' as proveedor;
+
+.toolbar {
+  @include proveedor.proveedor-theme-classes;
+  @include proveedor.proveedor-size-vars;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--control-gap);
+  width: min(100%, var(--control-width));
+  min-height: var(--control-min-height);
+  padding: var(--control-padding-y) var(--control-padding-x);
+  border: 1px solid var(--proveedor-border);
+  border-radius: var(--control-radius);
+  background: var(--proveedor-surface-raised);
+  box-sizing: border-box;
+}
+
+.filters {
+  display: flex;
+  align-items: center;
+  gap: var(--control-gap);
+  flex: 1;
+  min-width: 0;
+}
+
+.search {
+  width: min(320px, 100%);
+  flex-shrink: 0;
+}
+
+.filterSlot {
+  flex-shrink: 0;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--control-gap);
+  flex-shrink: 0;
+}
+
+.size--xl .filters {
+  flex-wrap: wrap;
+}
+
+.size--xl .search {
+  width: min(320px, 40%);
+}

@@ -1,0 +1,26 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../../../styles/abstracts/page-header-title' as ph;
+@use '../shared/rol-theme' as rol;
+
+.header {
+  @include rol.rol-theme-classes;
+  @include ph.page-header-shell;
+}
+
+.titles {
+  @include ph.page-header-titles-stack;
+}
+
+.title {
+  @include ph.page-header-title;
+  color: var(--rol-text);
+}
+
+.subtitle {
+  @include ph.page-header-subtitle;
+  color: var(--rol-text-secondary);
+}
+
+.action {
+  flex-shrink: 0;
+}

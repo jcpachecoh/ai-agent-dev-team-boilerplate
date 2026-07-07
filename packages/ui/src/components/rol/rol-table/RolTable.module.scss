@@ -1,0 +1,30 @@
+@use '../shared/rol-theme' as rol;
+
+$table-mobile-breakpoint: 640px;
+
+.table {
+  @include rol.rol-theme-classes;
+
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  border: 1px solid var(--rol-border);
+  border-radius: 4px;
+  background: var(--rol-surface);
+  overflow: hidden;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+}
+
+@media (max-width: $table-mobile-breakpoint) {
+  .table {
+    overflow-x: auto;
+  }
+
+  .body {
+    min-width: 560px;
+  }
+}

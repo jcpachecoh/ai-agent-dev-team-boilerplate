@@ -1,0 +1,30 @@
+@use '../shared/proveedor-theme' as proveedor;
+
+.bar {
+  @include proveedor.proveedor-theme-classes;
+  @include proveedor.proveedor-size-vars;
+
+  display: grid;
+  grid-template-columns: repeat(var(--tab-count, 5), minmax(0, 1fr));
+  width: min(100%, var(--control-width));
+  border-bottom: 1px solid var(--proveedor-border);
+  background: var(--proveedor-surface);
+}
+
+.size--xl {
+  --control-width: 100%;
+}
+
+@media (max-width: 639px) {
+  .bar {
+    display: flex;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+}

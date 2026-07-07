@@ -1,0 +1,20 @@
+@use '../shared/sede-theme' as sede;
+
+.group {
+  @include sede.sede-theme-classes;
+
+  display: inline-flex;
+  align-items: center;
+}
+
+.overlap {
+  margin-left: -8px;
+}
+
+.empty {
+  @include sede.sede-theme-classes;
+
+  font-family: inherit;
+  font-size: 0.6875rem;
+  color: var(--sede-faint);
+}

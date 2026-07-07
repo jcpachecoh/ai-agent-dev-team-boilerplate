@@ -1,0 +1,55 @@
+@use '../shared/rol-theme' as rol;
+
+.row {
+  @include rol.rol-theme-classes;
+
+  display: grid;
+  grid-template-columns: var(--rol-columns);
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--rol-border);
+  cursor: pointer;
+  transition: background 120ms ease;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &:hover {
+    background: var(--rol-hover);
+  }
+}
+
+.selected {
+  background: var(--rol-row-selected);
+
+  &:hover {
+    background: var(--rol-row-selected-hover);
+  }
+}
+
+.cell {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.85rem;
+  color: var(--rol-text);
+}
+
+.metricCell {
+  justify-self: center;
+}
+
+.statusCell {
+  justify-self: center;
+}
+
+.actionsCell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  justify-self: end;
+  gap: 8px;
+  min-width: 0;
+}

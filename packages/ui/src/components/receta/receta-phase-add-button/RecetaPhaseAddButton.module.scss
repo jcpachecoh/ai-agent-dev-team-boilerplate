@@ -1,0 +1,100 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/receta-theme' as receta;
+
+.button {
+  --button-height: 30px;
+  --button-min-width: 137px;
+  --button-padding-x: 12px;
+  --button-font-size: 0.75rem;
+  --button-icon-size: 14px;
+
+  @include receta.receta-control-base;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: auto;
+  min-width: var(--button-min-width);
+  min-height: var(--button-height);
+  padding: 0 var(--button-padding-x);
+  border-radius: 3px;
+  border-color: receta.$receta-purple;
+  background: rgba(receta.$receta-purple, 0.12);
+  color: receta.$receta-purple;
+  font-size: var(--button-font-size);
+  font-weight: $font-weight-semibold;
+  line-height: 1.5;
+  cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    transform 120ms ease;
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  &:hover:not(:disabled) {
+    background: rgba(receta.$receta-purple, 0.2);
+    border-color: rgba(receta.$receta-purple, 0.9);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+
+  &:focus-visible {
+    @include receta.receta-focus-ring;
+  }
+}
+
+.themeLight {
+  @include receta.receta-theme-light;
+}
+
+.themeDark {
+  @include receta.receta-theme-dark;
+}
+
+.sizeSm {
+  --button-height: 28px;
+  --button-min-width: 120px;
+  --button-padding-x: 10px;
+  --button-font-size: 0.6875rem;
+  --button-icon-size: 12px;
+}
+
+.sizeMd {
+  --button-height: 30px;
+  --button-min-width: 137px;
+  --button-padding-x: 12px;
+  --button-font-size: 0.75rem;
+  --button-icon-size: 14px;
+}
+
+.sizeXl {
+  --button-height: 36px;
+  --button-min-width: 164px;
+  --button-padding-x: 14px;
+  --button-font-size: 0.8125rem;
+  --button-icon-size: 16px;
+}
+
+.icon,
+.icon svg {
+  width: var(--button-icon-size);
+  height: var(--button-icon-size);
+}
+
+.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.label {
+  white-space: nowrap;
+}

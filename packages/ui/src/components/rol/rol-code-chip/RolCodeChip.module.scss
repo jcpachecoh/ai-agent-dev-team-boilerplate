@@ -1,0 +1,26 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/rol-theme' as rol;
+
+.chip {
+  @include rol.rol-theme-classes;
+
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--rol-border);
+  border-radius: 4px;
+  background: var(--rol-surface-raised);
+  color: var(--rol-text-secondary);
+  font-family: 'IBM Plex Mono', $font-family-mono, monospace;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.size--sm {
+  padding: 0.15rem 0.4rem;
+  font-size: 0.7rem;
+}
+
+.size--md {
+  padding: 0.2rem 0.5rem;
+  font-size: 0.72rem;
+}

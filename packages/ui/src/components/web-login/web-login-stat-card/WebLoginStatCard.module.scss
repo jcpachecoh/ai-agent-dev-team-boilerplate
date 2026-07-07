@@ -1,0 +1,59 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/web-login-theme' as login;
+
+.card {
+  @include login.web-login-root;
+  @include login.web-login-theme-classes;
+
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: var(--web-login-padding-y) var(--web-login-padding-x);
+  background: var(--web-login-surface-raised);
+  border: 1px solid var(--web-login-border);
+  border-radius: 12px;
+  min-height: var(--web-login-stat-min-height);
+  width: min(100%, 280px);
+  color: var(--web-login-text);
+}
+
+.label {
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: $font-weight-bold;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--web-login-muted);
+}
+
+.value {
+  margin: 0;
+  font-family: $font-family-mono;
+  font-size: var(--web-login-stat-value-size);
+  font-weight: $font-weight-bold;
+  line-height: 1.1;
+  color: var(--web-login-text);
+  letter-spacing: -0.02em;
+}
+
+.trend {
+  margin: auto 0 0;
+  font-size: 0.75rem;
+  font-weight: $font-weight-medium;
+}
+
+.trend--success {
+  color: var(--web-login-success);
+}
+
+.trend--warning {
+  color: #f0c040;
+}
+
+.trend--danger {
+  color: #e85d4a;
+}
+
+.trend--neutral {
+  color: var(--web-login-subtle);
+}

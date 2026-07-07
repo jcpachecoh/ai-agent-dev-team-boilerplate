@@ -1,0 +1,50 @@
+@use '../shared/rol-theme' as rol;
+
+$split-breakpoint: 900px;
+
+.layout {
+  @include rol.rol-theme-classes;
+
+  display: grid;
+  height: 100%;
+  min-height: 0;
+}
+
+.withPanel {
+  grid-template-columns: minmax(0, 1fr) 340px;
+}
+
+.fullWidth {
+  grid-template-columns: 1fr;
+}
+
+.tablePane {
+  overflow-y: auto;
+  border-right: 1px solid var(--rol-border);
+}
+
+.tablePaneFull {
+  border-right: none;
+}
+
+.panelPane {
+  overflow: hidden;
+  min-height: 0;
+}
+
+@media (max-width: $split-breakpoint) {
+  .withPanel {
+    grid-template-columns: 1fr;
+    overflow-y: auto;
+  }
+
+  .tablePane {
+    border-right: none;
+    overflow-y: visible;
+  }
+
+  .panelPane {
+    height: 480px;
+    border-top: 1px solid var(--rol-border);
+  }
+}

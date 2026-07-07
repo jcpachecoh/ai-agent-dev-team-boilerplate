@@ -1,0 +1,100 @@
+@use '../../../styles/abstracts/variables' as *;
+
+$receta-purple: #8b5cf6;
+$receta-teal: #2ec4a0;
+$receta-gold: #d4a017;
+$receta-orange: #e8943a;
+$receta-warning: #f0c040;
+$receta-failed: #e85d4a;
+$receta-dark-surface: #1c1c1c;
+$receta-dark-surface-raised: #202020;
+$receta-dark-border: #2e2e2e;
+$receta-dark-text: #f5f5f0;
+$receta-dark-muted: #888888;
+
+@mixin receta-theme-dark {
+  --receta-surface: #{$receta-dark-surface};
+  --receta-surface-raised: #{$receta-dark-surface-raised};
+  --receta-border: #{$receta-dark-border};
+  --receta-border-strong: #{rgba($color-white, 0.14)};
+  --receta-text: #{$receta-dark-text};
+  --receta-text-secondary: #cccccc;
+  --receta-muted: #{$receta-dark-muted};
+  --receta-subtle: #666666;
+  --receta-input: #{$receta-dark-surface};
+  --receta-hover: #{rgba($color-white, 0.04)};
+}
+
+@mixin receta-theme-light {
+  --receta-surface: #f6f4ef;
+  --receta-surface-raised: #fbfaf6;
+  --receta-border: #{rgba($color-black, 0.12)};
+  --receta-border-strong: #{rgba($color-black, 0.18)};
+  --receta-text: #{$color-gray-900};
+  --receta-text-secondary: #{$color-gray-700};
+  --receta-muted: #{$color-gray-600};
+  --receta-subtle: #{$color-gray-500};
+  --receta-input: #ffffff;
+  --receta-hover: #{rgba($color-black, 0.04)};
+}
+
+@mixin receta-focus-ring {
+  outline: 2px solid rgba($receta-teal, 0.65);
+  outline-offset: 2px;
+}
+
+@mixin receta-control-base {
+  width: min(100%, var(--control-width));
+  min-height: var(--control-min-height);
+  border-radius: var(--control-radius);
+  border: $border-width solid var(--receta-border);
+  background: var(--receta-surface);
+  color: var(--receta-text);
+  box-sizing: border-box;
+  font-family: $font-family-base;
+}
+
+@mixin receta-size-vars {
+  &.size--sm {
+    --control-width: 220px;
+    --control-min-height: 34px;
+    --control-padding-x: #{$spacing-sm};
+    --control-padding-y: 0.375rem;
+    --control-gap: #{$spacing-xs};
+    --control-radius: #{$border-radius-sm};
+    --control-font-size: #{$font-size-xs};
+    --control-icon-size: 14px;
+  }
+
+  &.size--md {
+    --control-width: 320px;
+    --control-min-height: 44px;
+    --control-padding-x: #{$spacing-md};
+    --control-padding-y: #{$spacing-sm};
+    --control-gap: #{$spacing-sm};
+    --control-radius: #{$border-radius-sm};
+    --control-font-size: #{$font-size-sm};
+    --control-icon-size: 16px;
+  }
+
+  &.size--xl {
+    --control-width: 100%;
+    --control-min-height: 52px;
+    --control-padding-x: #{$spacing-lg};
+    --control-padding-y: #{$spacing-md};
+    --control-gap: #{$spacing-md};
+    --control-radius: #{$border-radius-md};
+    --control-font-size: #{$font-size-base};
+    --control-icon-size: 18px;
+  }
+}
+
+@mixin receta-theme-classes {
+  &.theme--dark {
+    @include receta-theme-dark;
+  }
+
+  &.theme--light {
+    @include receta-theme-light;
+  }
+}

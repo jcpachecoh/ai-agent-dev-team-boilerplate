@@ -13,6 +13,7 @@
 ## Context
 
 > Provide the background information the agent needs before starting this task. Include:
+>
 > - What problem this task solves
 > - Any prior decisions from `memory/decisions.md` that apply
 > - Links to relevant specs in `specs/`

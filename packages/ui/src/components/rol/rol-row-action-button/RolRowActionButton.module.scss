@@ -1,0 +1,57 @@
+@use '../shared/rol-theme' as rol;
+
+.button {
+  @include rol.rol-theme-classes;
+
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--rol-border);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--rol-text-secondary);
+  cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease;
+
+  &:hover:not(:disabled) {
+    background: var(--rol-hover);
+    color: var(--rol-text);
+  }
+
+  &:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+
+  &:focus-visible {
+    @include rol.rol-focus-ring;
+  }
+}
+
+.size--sm {
+  width: 26px;
+  height: 26px;
+}
+
+.size--md {
+  width: 30px;
+  height: 30px;
+}
+
+.icon {
+  display: inline-flex;
+
+  svg {
+    width: 12px;
+    height: 12px;
+  }
+}
+
+.variant--deactivate:hover:not(:disabled) {
+  background: var(--rol-red-soft);
+  border-color: var(--rol-red-text);
+  color: var(--rol-red-text);
+}

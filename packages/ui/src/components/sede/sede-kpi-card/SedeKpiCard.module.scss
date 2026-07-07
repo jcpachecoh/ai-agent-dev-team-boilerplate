@@ -1,0 +1,68 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/sede-theme' as sede;
+
+.card {
+  @include sede.sede-theme-classes;
+
+  display: flex;
+  flex: 1 1 0;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  min-height: 72px;
+  padding: 12px 17px;
+  border: $border-width solid var(--sede-border);
+  border-radius: 4px;
+  background: var(--sede-surface);
+  box-sizing: border-box;
+}
+
+.value {
+  margin: 0;
+  font-family: $font-family-mono;
+  font-size: 1.125rem;
+  font-weight: $font-weight-bold;
+  line-height: 1;
+  color: var(--kpi-value-color, var(--sede-text));
+}
+
+.label {
+  margin: 0;
+  font-family: $font-family-base;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: var(--sede-subtle);
+}
+
+.color--primary {
+  --kpi-value-color: var(--sede-primary);
+}
+
+.color--success {
+  --kpi-value-color: var(--sede-teal);
+}
+
+.color--muted {
+  --kpi-value-color: var(--sede-muted);
+}
+
+.color--default {
+  --kpi-value-color: var(--sede-text);
+}
+
+.size--sm {
+  min-height: 64px;
+  padding: 10px 14px;
+
+  .value {
+    font-size: 1rem;
+  }
+
+  .label {
+    font-size: 0.6875rem;
+  }
+}
+
+.size--xl {
+  min-height: 80px;
+}

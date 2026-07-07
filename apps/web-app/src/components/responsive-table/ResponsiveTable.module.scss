@@ -1,0 +1,108 @@
+@use '../../styles/breakpoints' as bp;
+@use '../../styles/tokens' as t;
+
+.wrap {
+  width: 100%;
+  min-width: 0;
+}
+
+.tableMode {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.tableBody {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.cardList {
+  display: flex;
+  flex-direction: column;
+  gap: t.$space-3;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: t.$space-3;
+  width: 100%;
+  padding: t.$space-4;
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  background: var(--color-bg-surface);
+  text-align: left;
+}
+
+.cardInteractive {
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+
+  &:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+}
+
+.cardHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: t.$space-3;
+}
+
+.cardTitle {
+  font-size: t.$font-size-md;
+  font-weight: t.$font-weight-semibold;
+  color: var(--color-text-primary);
+  line-height: t.$line-height-tight;
+}
+
+.cardBadge {
+  flex-shrink: 0;
+}
+
+.cardBody {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: t.$space-2;
+  margin: 0;
+}
+
+.cardField {
+  display: grid;
+  grid-template-columns: minmax(0, 38%) minmax(0, 1fr);
+  gap: t.$space-2;
+  align-items: baseline;
+}
+
+.cardLabel {
+  margin: 0;
+  font-size: t.$font-size-xs;
+  font-weight: t.$font-weight-medium;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.cardValue {
+  margin: 0;
+  font-size: t.$font-size-sm;
+  color: var(--color-text-primary);
+  word-break: break-word;
+}
+
+.cardFooter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: t.$space-2;
+  padding-top: t.$space-2;
+  border-top: 1px solid var(--color-border);
+}
+
+@include bp.tablet-up {
+  .cardField {
+    grid-template-columns: minmax(0, 32%) minmax(0, 1fr);
+  }
+}

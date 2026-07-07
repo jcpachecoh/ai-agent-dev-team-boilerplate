@@ -1,0 +1,22 @@
+.screen {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  height: 100%;
+}
+
+.bodySection {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.state {
+  border: 1px solid var(--usuario-border, #2e2e2e);
+  border-radius: 4px;
+  background: var(--usuario-surface, #111);
+  color: var(--usuario-subtle, #666);
+  padding: 1.5rem;
+  text-align: center;
+  font-size: 0.875rem;
+}

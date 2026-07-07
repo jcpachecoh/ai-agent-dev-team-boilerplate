@@ -1,0 +1,94 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 16px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.fieldFull {
+  grid-column: 1 / -1;
+}
+
+.label {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--receta-muted, #525252);
+}
+
+.input {
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid var(--receta-border, rgb(0 0 0 / 12%));
+  border-radius: 8px;
+  background: var(--receta-input, #fff);
+  color: var(--receta-text, #171717);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  box-sizing: border-box;
+
+  &:focus-visible {
+    outline: 2px solid rgb(46 196 160 / 55%);
+    outline-offset: 1px;
+  }
+}
+
+.readonly {
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  font-size: 0.8125rem;
+  color: var(--receta-text-secondary, #404040);
+}
+
+.timeRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.timeSep {
+  font-size: 0.75rem;
+  color: var(--receta-muted, #737373);
+}
+
+.shelfUnit {
+  min-width: 120px;
+}
+
+.checkboxList {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--receta-border, rgb(0 0 0 / 12%));
+  border-radius: 8px;
+  background: var(--receta-surface-raised, #fbfaf6);
+}
+
+.hint {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px dashed var(--receta-border, rgb(0 0 0 / 12%));
+  color: var(--receta-muted, #737373);
+  font-size: 0.8125rem;
+}
+
+.error {
+  font-size: 0.6875rem;
+  color: #dc2626;
+}
+
+@media (width <= 720px) {
+  .grid,
+  .checkboxList {
+    grid-template-columns: 1fr;
+  }
+}

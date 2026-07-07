@@ -1,0 +1,79 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/produccion-theme' as produccion;
+
+.badge {
+  @include produccion.produccion-theme-classes;
+  @include produccion.produccion-size-vars;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-width: var(--badge-min-width);
+  min-height: var(--badge-height);
+  padding: 0 var(--badge-padding-x);
+  border: $border-width solid transparent;
+  border-radius: $border-radius-sm;
+  font-family: $font-family-mono;
+  font-size: var(--badge-font-size);
+  font-weight: $font-weight-bold;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.badge::before {
+  width: 6px;
+  height: 6px;
+  background: currentcolor;
+  border-radius: 999px;
+  content: '';
+}
+
+.size--sm {
+  --badge-height: 18px;
+  --badge-padding-x: 7px;
+  --badge-font-size: 0.5625rem;
+  --badge-min-width: 52px;
+}
+.size--md {
+  --badge-height: 21px;
+  --badge-padding-x: 9px;
+  --badge-font-size: 0.625rem;
+  --badge-min-width: 62px;
+}
+.size--xl {
+  --badge-height: 24px;
+  --badge-padding-x: 12px;
+  --badge-font-size: 0.6875rem;
+  --badge-min-width: 74px;
+}
+
+.status--active,
+.status--published {
+  background: rgba(produccion.$produccion-teal, 0.1);
+  color: produccion.$produccion-teal;
+  border-color: rgba(produccion.$produccion-teal, 0.35);
+}
+
+.status--inactive,
+.status--archived {
+  background: rgba($color-white, 0.04);
+  color: var(--produccion-muted);
+  border-color: var(--produccion-border);
+}
+.status--maintenance {
+  background: rgba(produccion.$produccion-warning, 0.1);
+  color: produccion.$produccion-warning;
+  border-color: rgba(produccion.$produccion-warning, 0.35);
+}
+.status--draft {
+  background: rgba($color-white, 0.04);
+  color: var(--produccion-subtle);
+  border-color: var(--produccion-border-muted);
+}
+
+.status--draft::before,
+.status--archived::before {
+  display: none;
+}

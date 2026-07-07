@@ -1,0 +1,36 @@
+.screen {
+  min-height: 100%;
+  min-width: 0;
+}
+
+.metrics {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 8px;
+  overflow-x: auto;
+}
+
+.metrics > * {
+  flex: 1 1 0;
+  min-width: 120px;
+  max-width: none;
+}
+
+.state {
+  border: 1px solid var(--empleado-border, #2e2e2e);
+  border-radius: 4px;
+  background: var(--empleado-surface, #111);
+  color: var(--empleado-subtle, #666);
+  padding: 1rem;
+}
+
+.readOnlyBanner {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border: 1px solid rgba(14, 165, 233, 0.35);
+  border-radius: 4px;
+  background: rgba(14, 165, 233, 0.08);
+  color: inherit;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+}

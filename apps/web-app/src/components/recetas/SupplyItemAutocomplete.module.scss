@@ -1,0 +1,108 @@
+.root {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.input {
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid var(--receta-border, rgb(0 0 0 / 12%));
+  border-radius: 8px;
+  background: var(--receta-input, #fff);
+  color: var(--receta-text, #171717);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  box-sizing: border-box;
+
+  &::placeholder {
+    color: rgb(17 17 17 / 42%);
+  }
+
+  &:focus-visible {
+    outline: 2px solid rgb(46 196 160 / 55%);
+    outline-offset: 1px;
+    border-color: rgb(46 196 160 / 45%);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.inputError {
+  border-color: #dc2626;
+}
+
+.error {
+  font-size: 0.6875rem;
+  line-height: 1.35;
+  color: #dc2626;
+}
+
+.list {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 30;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  border: 1px solid var(--receta-border, rgb(0 0 0 / 12%));
+  border-radius: 8px;
+  background: var(--receta-surface-raised, #fff);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 10%);
+  max-height: 220px;
+  overflow: auto;
+}
+
+.option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--receta-text, #171717);
+  text-align: left;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--receta-hover, rgb(0 0 0 / 4%));
+  }
+}
+
+.code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.name {
+  font-size: 0.75rem;
+  color: var(--receta-muted, #737373);
+}
+
+.empty {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 30;
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid rgb(234 179 8 / 45%);
+  border-radius: 8px;
+  background: rgb(254 249 195 / 95%);
+  color: #92400e;
+  font-size: 0.75rem;
+}
