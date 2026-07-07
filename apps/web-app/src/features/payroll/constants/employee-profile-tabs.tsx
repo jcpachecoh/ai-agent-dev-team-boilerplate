@@ -1,7 +1,8 @@
 import {
-  Building2,
   Clock3,
+  FileText,
   Landmark,
+  Package,
   Receipt,
   ShieldCheck,
   UserRound,
@@ -15,7 +16,9 @@ export type PayrollEmployeeProfileTabId =
   | 'social-security'
   | 'attendance'
   | 'bank-accounts'
-  | 'taxes';
+  // | 'taxes'
+  | 'assets'
+  | 'documents';
 
 export interface PayrollEmployeeProfileTabDefinition {
   id: PayrollEmployeeProfileTabId;
@@ -61,13 +64,13 @@ export const PAYROLL_EMPLOYEE_PROFILE_TABS: PayrollEmployeeProfileTabDefinition[
     placeholderDescription:
       'Próximamente — cuentas para dispersión de nómina con datos enmascarados.',
   },
-  {
-    id: 'taxes',
-    label: 'Impuestos',
-    icon: <Building2 {...iconProps} />,
-    placeholderTitle: 'Información de impuestos',
-    placeholderDescription: 'Próximamente — retención en la fuente y certificados tributarios.',
-  },
+  // {
+  //   id: 'taxes',
+  //   label: 'Impuestos',
+  //   icon: <Building2 {...iconProps} />,
+  //   placeholderTitle: 'Información de impuestos',
+  //   placeholderDescription: 'Próximamente — retención en la fuente y certificados tributarios.',
+  // },
   {
     id: 'payments',
     label: 'Pagos',
@@ -75,6 +78,20 @@ export const PAYROLL_EMPLOYEE_PROFILE_TABS: PayrollEmployeeProfileTabDefinition[
     placeholderTitle: 'Pagos y liquidaciones',
     placeholderDescription:
       'Próximamente — historial de pagos, salario base, novedades y comprobantes.',
+  },
+  {
+    id: 'assets',
+    label: 'Activos',
+    icon: <Package {...iconProps} />,
+    placeholderTitle: 'Activos del colaborador',
+    placeholderDescription: 'Equipos y recursos asignados al colaborador.',
+  },
+  {
+    id: 'documents',
+    label: 'Documentos',
+    icon: <FileText {...iconProps} />,
+    placeholderTitle: 'Documentos del colaborador',
+    placeholderDescription: 'Identificación, licencias, certificados y documentos de dependientes.',
   },
 ];
 

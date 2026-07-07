@@ -1,4 +1,10 @@
-export type PayrollEmployeeCreateWizardStepId = 'personal' | 'social-security' | 'banks' | 'taxes';
+export type PayrollEmployeeCreateWizardStepId =
+  | 'personal'
+  | 'social-security'
+  | 'banks'
+  | 'taxes'
+  | 'assets'
+  | 'documents';
 
 export const PAYROLL_EMPLOYEE_CREATE_WIZARD_STEPS: Array<{
   id: PayrollEmployeeCreateWizardStepId;
@@ -8,6 +14,8 @@ export const PAYROLL_EMPLOYEE_CREATE_WIZARD_STEPS: Array<{
   { id: 'social-security', label: 'Seg. social' },
   { id: 'banks', label: 'Bancos' },
   { id: 'taxes', label: 'Impuestos' },
+  { id: 'assets', label: 'Activos' },
+  { id: 'documents', label: 'Documentos' },
 ];
 
 export function payrollEmployeeCreateWizardStepIndex(

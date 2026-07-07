@@ -15,6 +15,7 @@ import type {
   PayrollEmployeeCreateBankDraft,
   PayrollEmployeeCreateWizardPayload,
 } from '../types/payroll-employee-create-wizard.types';
+import type { EmployeeAssetDraft } from '../types/employee-asset.types';
 import {
   validatePayrollEmployeeBankStep,
   validatePayrollEmployeePersonalStep,
@@ -28,6 +29,8 @@ import {
 } from '../utils/payroll-employee-wizard-form-values';
 import { EmployeePhotoUploader } from './EmployeePhotoUploader';
 import { PAYROLL_EMPLOYEE_FORM_EMPTY_VALUES, PayrollEmployeeForm } from './PayrollEmployeeForm';
+import { PayrollEmployeeDocumentsTab } from './PayrollEmployeeDocumentsTab';
+import { PayrollEmployeeWizardAssetsStep } from './PayrollEmployeeWizardAssetsStep';
 import { PayrollEmployeeWizardBankStep } from './PayrollEmployeeWizardBankStep';
 import { PayrollEmployeeWizardTaxStep } from './PayrollEmployeeWizardTaxStep';
 import styles from './PayrollEmployeeCreateWizard.module.scss';
@@ -88,6 +91,7 @@ export function PayrollEmployeeWizard({
   );
   const [bankDraft, setBankDraft] = useState(EMPTY_BANK_DRAFT);
   const [taxDraft, setTaxDraft] = useState(EMPTY_TAX_DRAFT);
+  const [assetDrafts, setAssetDrafts] = useState<EmployeeAssetDraft[]>([]);
   const [bankErrors, setBankErrors] = useState<Partial<Record<string, string>>>({});
   const [taxErrors, setTaxErrors] = useState<Partial<Record<string, string>>>({});
   const [error, setError] = useState<string | null>(null);
@@ -100,9 +104,10 @@ export function PayrollEmployeeWizard({
     if (!open) return;
 
     setCurrentStep('personal');
-    setMaxReachedStep(isEditMode ? 'taxes' : 'personal');
+    setMaxReachedStep(isEditMode ? 'documents' : 'personal');
     setBankDraft(EMPTY_BANK_DRAFT);
     setTaxDraft(EMPTY_TAX_DRAFT);
+    setAssetDrafts([]);
     setBankErrors({});
     setTaxErrors({});
     setError(null);
@@ -135,12 +140,16 @@ export function PayrollEmployeeWizard({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [open, onClose, submitting]);
 
-  const currentIndex = payrollEmployeeCreateWizardStepIndex(currentStep);
-  const maxIndex = payrollEmployeeCreateWizardStepIndex(maxReachedStep);
+  const visibleSteps = isEditMode
+    ? PAYROLL_EMPLOYEE_CREATE_WIZARD_STEPS
+    : PAYROLL_EMPLOYEE_CREATE_WIZARD_STEPS.filter((s) => s.id !== 'documents');
+
+  const currentIndex = visibleSteps.findIndex((s) => s.id === currentStep);
+  const maxIndex = visibleSteps.findIndex((s) => s.id === maxReachedStep);
 
   const steps = useMemo(
     () =>
-      PAYROLL_EMPLOYEE_CREATE_WIZARD_STEPS.map((step, index) => ({
+      visibleSteps.map((step, index) => ({
         ...step,
         status: isEditMode
           ? step.id === currentStep
@@ -152,6 +161,7 @@ export function PayrollEmployeeWizard({
               ? ('completed' as const)
               : ('pending' as const),
       })) as unknown as RecetaWizardStepItem[],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [currentIndex, currentStep, isEditMode, maxIndex],
   );
 
@@ -211,16 +221,21 @@ export function PayrollEmployeeWizard({
       return null;
     }
 
-    const taxError = validatePayrollEmployeeTaxStep(taxDraft);
-    if (taxError) {
-      if (taxError.includes('NIT')) {
-        setTaxErrors({ taxId: taxError });
-      } else {
-        setTaxErrors({ withholdingRatePercent: taxError });
+    if (currentStep === 'taxes') {
+      const taxError = validatePayrollEmployeeTaxStep(taxDraft);
+      if (taxError) {
+        if (taxError.includes('NIT')) {
+          setTaxErrors({ taxId: taxError });
+        } else {
+          setTaxErrors({ withholdingRatePercent: taxError });
+        }
+        return taxError;
       }
-      return taxError;
+      setTaxErrors({});
+      return null;
     }
-    setTaxErrors({});
+
+    // assets step is optional — no validation
     return null;
   };
 
@@ -235,9 +250,7 @@ export function PayrollEmployeeWizard({
       return;
     }
 
-    const targetIndex = payrollEmployeeCreateWizardStepIndex(
-      stepId as PayrollEmployeeCreateWizardStepId,
-    );
+    const targetIndex = visibleSteps.findIndex((s) => s.id === stepId);
     if (targetIndex <= maxIndex) {
       goToStep(stepId as PayrollEmployeeCreateWizardStepId);
     }
@@ -251,10 +264,10 @@ export function PayrollEmployeeWizard({
     }
 
     setError(null);
-    const nextStep = PAYROLL_EMPLOYEE_CREATE_WIZARD_STEPS[currentIndex + 1];
+    const nextStep = visibleSteps[currentIndex + 1];
     if (!nextStep) return;
 
-    const nextIndex = payrollEmployeeCreateWizardStepIndex(nextStep.id);
+    const nextIndex = visibleSteps.findIndex((s) => s.id === nextStep.id);
     setCurrentStep(nextStep.id);
     if (nextIndex > maxIndex) {
       setMaxReachedStep(nextStep.id);
@@ -263,7 +276,7 @@ export function PayrollEmployeeWizard({
 
   const handlePrevious = () => {
     setError(null);
-    const previousStep = PAYROLL_EMPLOYEE_CREATE_WIZARD_STEPS[currentIndex - 1];
+    const previousStep = visibleSteps[currentIndex - 1];
     if (previousStep) {
       setCurrentStep(previousStep.id);
     }
@@ -303,6 +316,11 @@ export function PayrollEmployeeWizard({
       };
     }
 
+    const validDrafts = assetDrafts.filter((d) => d.assetName.trim() && d.type && d.value.trim());
+    if (validDrafts.length > 0) {
+      payload.assetDrafts = validDrafts;
+    }
+
     onSubmit(payload);
   };
 
@@ -313,7 +331,7 @@ export function PayrollEmployeeWizard({
   const employeeWithPhoto: PayrollEmployee =
     localPhotoUrl && employee ? { ...employee, photoUrl: localPhotoUrl } : employee!;
 
-  const isLastStep = currentStep === 'taxes';
+  const isLastStep = currentStep === 'documents';
   const isFirstStep = currentStep === 'personal';
   const saveLabel = isEditMode ? 'Guardar' : 'Crear empleado';
 
@@ -446,6 +464,18 @@ export function PayrollEmployeeWizard({
                   setError(null);
                 }}
               />
+            ) : null}
+
+            {currentStep === 'assets' ? (
+              <PayrollEmployeeWizardAssetsStep
+                theme={theme}
+                drafts={assetDrafts}
+                onChange={setAssetDrafts}
+              />
+            ) : null}
+
+            {currentStep === 'documents' && employee?.userId ? (
+              <PayrollEmployeeDocumentsTab userId={employee.userId} theme={theme} />
             ) : null}
           </div>
         </RecetaWizardShell>

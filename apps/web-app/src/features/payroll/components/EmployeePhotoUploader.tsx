@@ -97,8 +97,6 @@ export function EmployeePhotoUploader({ employee, onPhotoUpdated }: EmployeePhot
         onChange={handleFileChange}
         aria-hidden
       />
-
-      <span className={styles.hint}>JPG, PNG o WebP · máx. 2 MB</span>
     </div>
   );
 }

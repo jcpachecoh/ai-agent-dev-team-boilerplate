@@ -1,4 +1,5 @@
 import type { BankAccountType } from './bank-account.types';
+import type { EmployeeAssetDraft } from './employee-asset.types';
 import type { PayrollEmployeeFormValues } from './payroll.types';
 
 export interface PayrollEmployeeCreateBankDraft {
@@ -18,4 +19,5 @@ export interface PayrollEmployeeCreateWizardPayload {
   employee: PayrollEmployeeFormValues;
   bankAccount?: PayrollEmployeeCreateBankDraft;
   taxInformation?: PayrollEmployeeCreateTaxDraft;
+  assetDrafts?: EmployeeAssetDraft[];
 }

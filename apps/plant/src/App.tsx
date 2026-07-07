@@ -16,8 +16,14 @@ export function App() {
   const [view, setView] = useState<'active' | 'complete'>('active');
   const [showLocationPicker, setShowLocationPicker] = useState(false);
   const isAuthenticated = useSessionStore((s) => s.isAuthenticated);
-  const operator = useSessionStore((s) => s.operator);
-  const canOperate = useSessionStore((s) => s.canOperate);
+  const operator = useSessionStore((s) => {
+    return s.operator;
+  });
+  console.log('🚀 ~ App ~ operator:', operator);
+  const canOperate = useSessionStore((s) => {
+    console.log('🚀 ~ App ~ canOperate:', canOperate);
+    return s.canOperate;
+  });
   const getActiveLocation = useSessionStore((s) => s.getActiveLocation);
   const logout = useSessionStore((s) => s.logout);
   const queryClient = useQueryClient();

@@ -1,6 +1,7 @@
 import { RecetaFilterSelect, RecetaFormButton } from '@restopsiq/ui';
 import { useEffect, useMemo, useState } from 'react';
 
+import { ThousandsInput } from '@/components/shared/ThousandsInput';
 import { useUiTheme } from '@/hooks/useUiTheme';
 import { useLocations } from '@/features/sedes/hooks/useLocations';
 import { useAdminRolesForSelect } from '@/features/usuarios/hooks/useAdminUsers';
@@ -783,26 +784,22 @@ export function PayrollEmployeeForm({
               </div>
               <label className={formStyles.field}>
                 <span className={formStyles.fieldLabel}>Salario</span>
-                <input
+                <ThousandsInput
                   aria-label="Salario"
                   className={formStyles.input}
-                  type="number"
-                  min="0"
+                  placeholder="0"
                   value={values.salaryAmount}
-                  onChange={(event) => update({ salaryAmount: event.target.value })}
+                  onChange={(num) => update({ salaryAmount: String(num) })}
                 />
               </label>
               <label className={formStyles.field}>
                 <span className={formStyles.fieldLabel}>No salariales (COP)</span>
-                <input
+                <ThousandsInput
                   aria-label="No salariales"
                   className={formStyles.input}
-                  type="number"
-                  min="0"
-                  step="0.01"
+                  placeholder="0"
                   value={values.nonSalaryAmount}
-                  placeholder="0.00"
-                  onChange={(event) => update({ nonSalaryAmount: event.target.value })}
+                  onChange={(num) => update({ nonSalaryAmount: String(num) })}
                 />
               </label>
             </>

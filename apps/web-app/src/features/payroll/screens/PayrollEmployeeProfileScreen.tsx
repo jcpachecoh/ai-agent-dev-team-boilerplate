@@ -13,6 +13,8 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
 import { useTheme } from '@/providers/ThemeProvider';
 
+import { PayrollEmployeeAssetsTab } from '../components/PayrollEmployeeAssetsTab';
+import { PayrollEmployeeDocumentsTab } from '../components/PayrollEmployeeDocumentsTab';
 import { PayrollEmployeeAttendanceTab } from '../components/PayrollEmployeeAttendanceTab';
 import { PayrollEmployeeBankAccountsTab } from '../components/PayrollEmployeeBankAccountsTab';
 import { PayrollEmployeePaymentsTab } from '../components/PayrollEmployeePaymentsTab';
@@ -158,8 +160,16 @@ function ProfileTabPanel({
     return <PayrollEmployeePaymentsTab userId={userId} theme={theme} />;
   }
 
-  if (tabId === 'taxes') {
-    return <PayrollEmployeeTaxTab userId={userId} theme={theme} />;
+  // if (tabId === 'taxes') {
+  //   return <PayrollEmployeeTaxTab userId={userId} theme={theme} />;
+  // }
+
+  if (tabId === 'assets') {
+    return <PayrollEmployeeAssetsTab userId={userId} theme={theme} />;
+  }
+
+  if (tabId === 'documents') {
+    return <PayrollEmployeeDocumentsTab userId={userId} theme={theme} />;
   }
 
   return (

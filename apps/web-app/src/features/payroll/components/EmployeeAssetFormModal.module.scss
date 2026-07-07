@@ -1,0 +1,143 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label {
+  color: var(--receta-muted);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.input {
+  min-height: 40px;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--receta-border);
+  border-radius: 4px;
+  background: var(--receta-input);
+  color: var(--receta-text);
+  font-size: 0.875rem;
+  box-sizing: border-box;
+
+  &::placeholder {
+    color: var(--receta-muted);
+  }
+
+  &:focus-visible {
+    outline: 2px solid rgba(46, 196, 160, 0.65);
+    outline-offset: 2px;
+  }
+}
+
+.textarea {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--receta-border);
+  border-radius: 4px;
+  background: var(--receta-input);
+  color: var(--receta-text);
+  font-size: 0.875rem;
+  resize: vertical;
+  font-family: inherit;
+  box-sizing: border-box;
+
+  &::placeholder {
+    color: var(--receta-muted);
+  }
+
+  &:focus-visible {
+    outline: 2px solid rgba(46, 196, 160, 0.65);
+    outline-offset: 2px;
+  }
+}
+
+.error {
+  margin: 0;
+  color: #e05a44;
+  font-size: 0.75rem;
+}
+
+.fileInput {
+  display: none;
+}
+
+.fileButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border: 1px dashed var(--receta-border);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--receta-muted);
+  font-size: 0.8125rem;
+  cursor: pointer;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
+  align-self: flex-start;
+
+  &:hover:not(:disabled) {
+    color: var(--receta-text);
+    border-color: var(--receta-border-strong, var(--receta-border));
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.fileSelected {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1px solid var(--receta-border);
+  border-radius: 4px;
+  background: var(--receta-surface-raised, rgba(255, 255, 255, 0.03));
+  color: var(--receta-muted);
+  align-self: flex-start;
+  max-width: 100%;
+}
+
+.fileName {
+  font-size: 0.8125rem;
+  color: var(--receta-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 260px;
+}
+
+.fileClearButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--receta-muted);
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+
+  &:hover:not(:disabled) {
+    color: #e85d4a;
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}

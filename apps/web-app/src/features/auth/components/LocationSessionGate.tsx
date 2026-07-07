@@ -50,6 +50,7 @@ export function LocationSessionGate({ children }: { children: ReactNode }): Reac
       </div>
     );
   }
+  console.log('asociation locati', assignedLocations);
 
   if (assignedLocations.length === 0) {
     return <NoLocationView />;

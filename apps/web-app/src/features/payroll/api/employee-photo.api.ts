@@ -41,6 +41,7 @@ export async function uploadEmployeePhoto(
 
   const headers: Record<string, string> = {
     'x-tenant-id': getTenantId(),
+    'apollo-require-preflight': '1',
   };
 
   const token = getGraphqlAuthToken();

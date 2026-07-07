@@ -1,7 +1,9 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Checkbox, RecetaFilterSelect, RecetaFormButton } from '@restopsiq/ui';
 import { useEffect, useMemo } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
+
+import { ThousandsInput } from '@/components/shared/ThousandsInput';
 
 import { useUiTheme } from '@/hooks/useUiTheme';
 
@@ -59,6 +61,7 @@ export function EmployeePositionForm({
     reset,
     setValue,
     watch,
+    control,
     formState: { errors },
   } = useForm<EmployeePositionFormSchema>({
     resolver: zodResolver(employeePositionFormSchema),
@@ -122,14 +125,18 @@ export function EmployeePositionForm({
 
         <label className={styles.field}>
           <span className={styles.fieldLabel}>Salario base (COP)</span>
-          <input
-            className={styles.input}
-            type="number"
-            min={1}
-            step={1000}
-            inputMode="numeric"
-            disabled={submitting}
-            {...register('baseSalaryRange')}
+          <Controller
+            name="baseSalaryRange"
+            control={control}
+            render={({ field }) => (
+              <ThousandsInput
+                className={styles.input}
+                placeholder="0"
+                disabled={submitting}
+                value={field.value}
+                onChange={field.onChange}
+              />
+            )}
           />
           {errors.baseSalaryRange ? (
             <span className={styles.error}>{errors.baseSalaryRange.message}</span>

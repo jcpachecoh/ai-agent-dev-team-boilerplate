@@ -1,0 +1,231 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px 24px 24px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--empleado-muted);
+}
+
+.headerTitle {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--empleado-text);
+}
+
+.count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: var(--empleado-surface-raised, rgba(255, 255, 255, 0.08));
+  color: var(--empleado-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.addButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 7px 14px;
+  border: 1px solid var(--empleado-border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--empleado-text);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+  white-space: nowrap;
+
+  &:hover:not(:disabled) {
+    background: var(--empleado-hover, rgba(255, 255, 255, 0.05));
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
+.errorState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 32px;
+  color: var(--empleado-muted);
+  font-size: 0.875rem;
+  text-align: center;
+
+  button {
+    padding: 6px 12px;
+    border: 1px solid var(--empleado-border);
+    border-radius: 4px;
+    background: transparent;
+    color: var(--empleado-text);
+    font-size: 0.8125rem;
+    cursor: pointer;
+  }
+}
+
+.tableWrapper {
+  overflow-x: auto;
+  border: 1px solid var(--empleado-border);
+  border-radius: 8px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+
+.th {
+  padding: 10px 14px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--empleado-muted);
+  text-align: left;
+  border-bottom: 1px solid var(--empleado-border);
+  white-space: nowrap;
+}
+
+.tr {
+  border-bottom: 1px solid var(--empleado-border);
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &:hover {
+    background: var(--empleado-hover, rgba(255, 255, 255, 0.02));
+  }
+}
+
+.td {
+  padding: 10px 14px;
+  vertical-align: middle;
+  color: var(--empleado-text);
+}
+
+.assetName {
+  display: block;
+  font-weight: 500;
+}
+
+.assetNotes {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--empleado-muted);
+  margin-top: 2px;
+}
+
+.typeBadge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--empleado-surface-raised, rgba(255, 255, 255, 0.06));
+  color: var(--empleado-text-secondary, var(--empleado-muted));
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.value {
+  font-variant-numeric: tabular-nums;
+  color: var(--empleado-text);
+}
+
+.date {
+  color: var(--empleado-muted);
+  font-size: 0.8125rem;
+  white-space: nowrap;
+}
+
+.statusBadge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.statusACTIVO {
+  background: rgba(46, 196, 160, 0.15);
+  color: #2ec4a0;
+}
+
+.statusRETORNADO {
+  background: rgba(250, 176, 5, 0.15);
+  color: #fab005;
+}
+
+.statusDADO_DE_BAJA {
+  background: rgba(232, 93, 74, 0.15);
+  color: #e85d4a;
+}
+
+.downloadButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--empleado-border);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--empleado-muted);
+  cursor: pointer;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
+
+  &:hover:not(:disabled) {
+    color: var(--empleado-text);
+    border-color: var(--empleado-border-strong, var(--empleado-border));
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
+.statusSelect {
+  padding: 4px 6px;
+  border: 1px solid var(--empleado-border);
+  border-radius: 4px;
+  background: var(--empleado-input);
+  color: var(--empleado-text);
+  font-size: 0.75rem;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}

@@ -22,6 +22,9 @@ export const payrollKeys = {
   positions: () => [...payrollKeys.all, 'employee-positions'] as const,
   positionList: (filters: ListEmployeePositionsFilters = {}) =>
     [...payrollKeys.positions(), filters] as const,
+  assets: (employeeId: string) => [...payrollKeys.all, 'employee-assets', employeeId] as const,
+  documents: (employeeId: string) =>
+    [...payrollKeys.all, 'employee-documents', employeeId] as const,
   reports: () => [...payrollKeys.all, 'reports'] as const,
   payrollReport: (query: PayrollReportQuery) =>
     [...payrollKeys.reports(), 'payroll', query] as const,
