@@ -216,3 +216,156 @@ Sin migración adicional más allá del campo `portalWorkerEnabled` (ver arriba)
 ## Postman
 
 Carpeta `OS-550 Attendance Collaborators` extendida: PATCH portal (true/false + rol no autorizado), GET export excel/pdf (con filtros, sin datos → 400), POST export/email (válido, email inválido → 400, >10 destinatarios → 400), GET audit (rol no autorizado, tenant isolation → 404).
+
+---
+
+# OS-550 follow-up — Organigrama de supervisión por cargo
+
+**Status:** `implemented`
+
+## Alcance
+
+Fuente: Excel `Organigrama_Palos_de_Lena_Supervision.xlsx` (hoja "Organigrama Palos de Leña"), 32 cargos con su cargo supervisor directo.
+
+1. Modelo Prisma nuevo `EmployeePositionSupervisor` (Cargo → Cargo supervisor).
+2. Seed idempotente: 8 cargos nuevos del organigrama (directivos, no existían en el catálogo operativo) + 31 relaciones Cargo → Cargo supervisor.
+3. Filtro Supervisor del listado de colaboradores (`AttendanceCollaboratorsService.list`) ahora acota además por cargos subordinados al cargo del supervisor filtrado, cuando existe jerarquía configurada — con fallback explícito a solo sede si no.
+4. Columna Supervisor expone también `supervisorPositionName` (título del/los cargo(s) supervisor(es) del cargo del colaborador), sin tocar el cálculo existente de `supervisors` (por sede).
+
+## Decisión de producto: **Supervisor = sede (`UserLocation`) + jerarquía de cargo (`EmployeePositionSupervisor`)**
+
+Se mantiene la decisión original (ver sección OS-550 principal, arriba): **no existe supervisor directo por empleado** (`EmployeeDetails.supervisorId` sigue sin existir). El Excel entregado define jerarquía **Cargo → Cargo supervisor**, no persona → persona — un cambio de titular en un cargo (ej. rotación del "Jefe de Compras") no requiere reasignar nada, la jerarquía sigue siendo válida porque está atada al cargo, no a la persona que lo ocupa hoy.
+
+El filtro Supervisor (`supervisorUserId`) sigue resolviendo **sedes** vía `UserLocation` exactamente igual que antes (sin cambios en ese cálculo). Lo nuevo: si el usuario filtrado como supervisor tiene `EmployeeDetails.positionId` **y** ese cargo tiene subordinados configurados en `EmployeePositionSupervisor`, el listado _además_ se acota a esos cargos subordinados. Si el supervisor no tiene cargo asignado, o su cargo no tiene ninguna fila de jerarquía configurada, `allowedPositionIds` queda en `null` (sin restricción por cargo) — **fallback explícito a solo sede**, el comportamiento exacto que ya existía antes de este follow-up. Nunca rompe el filtro actual: es una restricción adicional, opcional, que solo se activa cuando hay datos de jerarquía que la sustenten.
+
+## Decisión: alias cuando el nombre del Excel no coincide con el cargo ya sembrado
+
+El organigrama nombra varios cargos con texto distinto al ya sembrado en `EMPLOYEE_POSITIONS_PDL` (`apps/api/prisma/seed.ts`) para el mismo puesto real — típicamente typos ya existentes en el catálogo (`"Chef Corporativo"` → `CHEF COORPORATIVO`), abreviaturas (`"Gerente PDV/Administrador"` → `GERENTE DE PUNTO DE VENTA`, PDV = Punto De Venta; `"Administrador Jr"` → `ADMINISTRADOR JUNIOR`), o plural/singular (`"Impulsadores"` → `IMPULSADOR`). Confirmado explícitamente con producto (no se adivinó):
+
+- **"Jefe/Analista de Abastecimiento"** (Excel) = **"Jefe/Analista de Compras"** (catálogo ya sembrado) — mismo cargo, nombre distinto. No se creó un cargo "Abastecimiento" separado.
+- **"Líder de Talento Humano"** (Excel) = **"Jefe de Taleno Humano"** (catálogo ya sembrado, typo existente) — mismo cargo, nombre distinto. No se creó un cargo "Líder de Talento Humano" separado.
+
+El mapeo completo Excel → `id` de `EmployeePosition` vive en `ORG_CHART_POSITION_IDS` (`apps/api/prisma/seeds/employee-org-chart.seed.ts`), con un comentario por cada alias explicando la equivalencia. Esto evita duplicar cargos (AC explícito: "no duplicar cargos").
+
+## Decisión: 8 cargos nuevos, no 32
+
+De los 32 cargos del Excel, 24 ya existían (vía match exacto o alias) en `EMPLOYEE_POSITIONS_PDL`. Los 8 restantes son niveles directivos que el catálogo operativo (enfocado en línea/servicio) nunca había necesitado: `FUNDADORES`, `REVISORÍA FISCAL`, `DIRECTOR JURÍDICO - EXTERNO`, `DIRECTOR ADMINISTRATIVO - FINANCIERO`, `COORDINADOR DE PLANTA`, `COCINA PLANTA` (cocina de la planta central de producción, distinta del área "Cocina" de punto de venta), `ANALISTA TALENTO HUMANO`, `SST EXTERNO`. IDs `pos-pdl-039`..`046`, continuando la secuencia del catálogo principal (que llega hasta `038`).
+
+## Decisión: upsert de `EmployeePositionSupervisor` por la unique compuesta, cargos nuevos upsert por `id`
+
+Mismo criterio ya establecido para `EmployeePosition` (ver seed principal): los 8 cargos nuevos se upsertean por `id` (identidad estable que controlamos), no por `title` — evita el mismo bug de P2002 que ya se dio una vez con el catálogo existente. Las relaciones de jerarquía se upsertean por la unique compuesta `tenantId_positionId_supervisorPositionId` con `update: {}` (no-op si ya existe) — correr el seed repetidas veces no duplica filas ni falla (verificado corriendo el seed dos veces seguidas: 31 relaciones antes y después).
+
+## Decisión: `EmployeePositionSupervisor` soporta múltiples supervisores por cargo (no se usó en el organigrama actual)
+
+La unique es `[tenantId, positionId, supervisorPositionId]`, no `[tenantId, positionId]` — un cargo _podría_ tener más de un cargo supervisor (ej. una línea de asesoría externa además del jefe directo). El Excel actual no tiene ningún caso real de doble jerarquía (las anotaciones "línea de asesoría externa" de `Revisoría Fiscal`/`Director Jurídico - Externo`/`SST Externo` se modelaron como una sola relación jerárquica normal, igual que cualquier otra — el modelo no distingue jerárquico vs. asesoría), pero el schema ya soporta el caso sin necesitar otra migración si se necesita en el futuro.
+
+## Decisión: no se tocaron exportaciones (Excel/PDF) ni `CollaboratorExportRow`
+
+El AC pide mostrar `supervisorPositionName` en el listado (columna Supervisor); no menciona las exportaciones. Se agregó únicamente a `AttendanceCollaboratorItem`/`AttendanceCollaboratorsResult` (respuesta del listado), no a `CollaboratorExportRow`/`attendance-collaborators-excel.service.ts`/`attendance-collaborators-pdf.service.ts`. Si se necesita en el export, es un cambio aditivo aislado a esos dos servicios — no afecta lo ya implementado aquí.
+
+## Backend
+
+- **Schema**: `EmployeePositionSupervisor` (`prisma/schema.prisma`) — `id`, `tenantId`, `positionId`, `supervisorPositionId`, `createdAt`, `updatedAt`, dos relaciones nombradas a `EmployeePosition` (`PositionSupervisorPositions`/`SupervisorPositionSubordinates`), unique `[tenantId, positionId, supervisorPositionId]`, índices por `[tenantId, positionId]` y `[tenantId, supervisorPositionId]`.
+- **Migración**: `prisma/migrations/20260706160000_os550_employee_position_supervisor/` — escrita con `prisma migrate diff --from-url <db> --to-schema-datamodel schema.prisma --script` (entorno de agente no soporta `migrate dev` interactivo, mismo precedente que la migración de `portalWorkerEnabled` más arriba) y aplicada con `migrate deploy`.
+- **Seed** (`prisma/seeds/employee-org-chart.seed.ts`, nuevo): `NEW_ORG_CHART_POSITIONS` (8 cargos), `ORG_CHART_POSITION_IDS` (mapeo Excel → `EmployeePosition.id`, con alias documentados inline), `ORG_CHART_EDGES` (31 relaciones Cargo → Cargo supervisor). Se ejecuta en `seed.ts` justo después de `seedEmployeePositions` (requiere que el catálogo principal ya exista) y antes de `seedEmployeeDetails`.
+- **Interfaces** (`interfaces/attendance-collaborators.interfaces.ts`): `ListCollaboratorsFilters.allowedPositionIds: string[] | null` (mismo patrón que `allowedLocationIds`, interno — no expuesto en `ListCollaboratorsInput`, se calcula en el service); `AttendanceCollaboratorItem.supervisorPositionName: string | null`; `IAttendanceCollaboratorsRepository.findSupervisorUser` ahora devuelve también `positionId`; nuevos `findSubordinatePositionIds`/`findSupervisorPositionNamesByPosition`.
+- **Repository** (`repository/attendance-collaborators.repository.ts`): `findPage` — el filtro `positionId` pasó de asignación directa a `intersectPositionFilter(allowedPositionIds, positionId)` (mismo patrón que `intersectLocationFilter`, incluida la intersección vacía → 0 filas sin consultar Prisma); nuevos `findSubordinatePositionIds` (cargos que reportan a un `supervisorPositionId`) y `findSupervisorPositionNamesByPosition` (título del/los cargo(s) supervisor(es) por `positionId`, para la columna Supervisor).
+- **Service** (`service/attendance-collaborators.service.ts`): `resolveEffectiveScope` ahora devuelve `{ allowedLocationIds, allowedPositionIds }` (antes solo sede) — el cálculo de sede es exactamente el mismo de antes; se agregó el cálculo de cargo subordinado solo si `supervisor.positionId` existe y `findSubordinatePositionIds` devuelve resultados no vacíos. `list()` calcula `supervisorPositionName` por colaborador vía `findSupervisorPositionNamesByPosition`, una sola query batched para todos los `positionId` de la página (mismo patrón que `findSupervisorsForLocations`/`findTodayAssignments`, sin N+1).
+
+## Riesgos
+
+- **`supervisorPositionName` no distingue jerárquico vs. asesoría externa** — las anotaciones del Excel ("línea de asesoría externa") no se persisten, solo el vínculo Cargo → Cargo supervisor.
+- **Cargos nuevos (`baseSalaryRange` de los 8 directivos) son estimaciones del seed**, no salarios reales — mismo criterio que el resto del catálogo de seed (datos de desarrollo/demo, no nómina real).
+
+## Tests
+
+- Backend: `test/attendance-collaborators.repository.spec.ts` extendido — `findSupervisorUser` ahora incluye `positionId` (con y sin `EmployeeDetails`); nuevos `findSubordinatePositionIds` (con/sin subordinados, recursivo multinivel, ciclo) y `findSupervisorPositionNamesByPosition` (mapa vacío, título único, varios títulos unidos con ", "); `findPage` extendido con `allowedPositionIds` (sin `positionId` explícito, con `positionId` dentro/fuera del scope, `allowedPositionIds:null` sin restricción — fallback).
+- Backend: `test/attendance-collaborators.service.spec.ts` extendido — supervisor sin `positionId` (fallback a solo sede, no consulta jerarquía), supervisor con `positionId` sin jerarquía configurada (fallback), supervisor con `positionId` y jerarquía configurada (restringe por cargos subordinados, preservando el scoping de sede existente), sin `supervisorUserId` (no consulta jerarquía), y `supervisorPositionName` en sus 3 casos (con jerarquía, sin jerarquía, sin `positionId`). Todos los tests de scoping de sede/UserLocation ya existentes se mantienen sin cambios de comportamiento (solo se les agregó `positionId: null` al mock de `findSupervisorUser` donde aplicaba).
+- Seed: idempotencia verificada manualmente corriendo `npx tsx prisma/seed.ts` dos veces seguidas contra Postgres local — 31 relaciones antes y después, sin duplicados ni errores (no hay infraestructura de test automatizado para scripts de seed en este repo; se sigue el mismo criterio que el resto de `prisma/seed.ts`).
+
+---
+
+# OS-550 follow-up — Jerarquía de cargo recursiva (transitiva), no solo un nivel
+
+**Status:** `implemented`
+
+## Bug/gap
+
+`findSubordinatePositionIds` solo traía los hijos **directos** del cargo del supervisor filtrado (`WHERE supervisorPositionId = X`, un solo nivel). Ejemplo real del organigrama: filtrar por "Gerente General" solo mostraba a quienes reportan _directamente_ a él (Director de Operaciones, Director Administrativo-Financiero, Chef Corporativo, etc.) — pero no a Administrador, Administrador Junior, Cocina, Parrillero, y todo lo que cuelga más abajo en el árbol. Confirmado explícitamente con producto que el filtro debía ser recursivo: filtrar por un cargo debe traer **todo su subárbol**, no un solo nivel.
+
+## Decisión: BFS nivel por nivel en TypeScript, no un `WITH RECURSIVE` en SQL
+
+Se evaluó un CTE recursivo (una sola query), pero se descartó por dos razones:
+
+1. **`EmployeePositionSupervisor` no valida ciclos** a nivel de base de datos ni de servicio (ej. A supervisa a B y B supervisa a A). Un `WITH RECURSIVE` sin guarda de ciclo explícita puede loopear indefinidamente si alguna vez se crea uno por error de datos — el organigrama real es un árbol sin ciclos, pero el modelo no lo impide.
+2. **Testabilidad**: el resto del repositorio se testea mockeando llamadas a `prisma.<model>.findMany()` (patrón ya establecido en todo `attendance-collaborators.repository.spec.ts`). Un CTE recursivo se testearía como una sola llamada a `$queryRaw` opaca — mucho más difícil de verificar por nivel/caso que una secuencia de `findMany` con `mockResolvedValueOnce` encadenados.
+
+`findSubordinatePositionIds` ahora hace **BFS por niveles**: arranca con `[supervisorPositionId]` como frontier, en cada vuelta consulta `supervisorPositionId: { in: frontier }` (todos los cargos del nivel actual en una sola query batched, no una por nodo), agrega los hijos no visitados al resultado y al siguiente frontier, y termina cuando el frontier queda vacío. Costo: una query por nivel de profundidad del árbol (~5-6 niveles en el organigrama real), no por nodo — despreciable.
+
+## Bug encontrado y corregido durante la implementación: la raíz no se marcaba como visitada
+
+La primera versión sembraba `visited` vacío y solo agregaba cargos _encontrados_ (nunca la raíz `supervisorPositionId` en sí). Un ciclo que volviera a apuntar a la raíz (A→B→A) nunca se cortaba, porque `visited.has('A')` daba `false` en la vuelta donde B "supervisa" de nuevo a A — loop infinito. Se detectó con un test dedicado (`no entra en loop infinito si hay un ciclo en los datos`) que hacía explotar el mock por falta de llamadas encoladas, confirmando el loop. Fix: `visited` se siembra con `[supervisorPositionId]` desde el inicio — la raíz nunca se re-agrega ni se re-consulta, cortando cualquier ciclo que vuelva a ella. `result` se mantiene como un `Set` separado de `visited` para no incluir la raíz en la respuesta (un cargo no es subordinado de sí mismo).
+
+## Verificación contra los datos reales del organigrama
+
+Filtrar por `GERENTE GENERAL` (`pos-pdl-007`) contra el seed real trae **30 cargos** (todo el organigrama excepto Fundadores y el propio Gerente General) — verificado con un `WITH RECURSIVE` de SQL directo contra Postgres local y con un script standalone corriendo el mismo `findSubordinatePositionIds` de la implementación: ambos coinciden exactamente.
+
+## Tests
+
+- `findSubordinatePositionIds`: 1 nivel (directo), recursivo multinivel (Gerente General → Director de Operaciones → Administrador → Administrador Junior → Cocina, mismo ejemplo del organigrama real), varios hijos en el mismo nivel resueltos en una sola query batched, y ciclo en los datos (A→B→A) sin loop infinito.
+
+---
+
+# OS-550 follow-up — Renombrar sedes oficiales Palos de Leña en seed
+
+**Status:** `implemented`
+
+## Alcance
+
+Cambio puramente de datos de seed (sin migración, sin lógica de negocio, sin endpoints ni frontend tocados): reemplazar los nombres genéricos `"Sede Palos de Leña N"` por las 14 sedes oficiales reales de Palos de Leña.
+
+## Decisión: `code` (`PL-01`..`PL-14`) se mantiene estable, solo cambia `name`
+
+Todo lo que referencia una sede en el resto del seed lo hace por **`code`**, nunca por `name` (`attendance.seed.ts`: `where: { code: 'PL-01' }`; `plant-supervisor.seed.ts`: `where: { code: 'PL-01' }` para el incidente SAFETY; `seedSignupUserLocations`: `targetCodes = ['PL-01', 'PL-02', 'PL-03']`). Cambiar `name` no afecta ninguno de esos lookups — verificado que sigue funcionando corriendo el seed completo (todos los fixtures de asistencia/plant-supervisor que dependen de `PL-01` se generaron igual que antes).
+
+## Mapping — 10 sedes existentes renombradas + 4 nuevas agregadas
+
+El listado oficial entregado ya viene en orden alfabético, así que se asignó 1:1 en ese mismo orden (sin reordenar por ningún criterio semántico — evita una decisión arbitraria no pedida):
+
+| code    | name antes              | name ahora       |
+| ------- | ----------------------- | ---------------- |
+| `PL-01` | `Sede Palos de Leña 1`  | `ADMINISTRATIVO` |
+| `PL-02` | `Sede Palos de Leña 2`  | `CAFAM`          |
+| `PL-03` | `Sede Palos de Leña 3`  | `CALLE 85`       |
+| `PL-04` | `Sede Palos de Leña 4`  | `CENTRO`         |
+| `PL-05` | `Sede Palos de Leña 5`  | `FONTIBON`       |
+| `PL-06` | `Sede Palos de Leña 6`  | `GRAN ESTACION`  |
+| `PL-07` | `Sede Palos de Leña 7`  | `JIMENEZ`        |
+| `PL-08` | `Sede Palos de Leña 8`  | `MALL PLAZA`     |
+| `PL-09` | `Sede Palos de Leña 9`  | `MULTIPLAZA`     |
+| `PL-10` | `Sede Palos de Leña 10` | `NUESTRO BOGOTA` |
+| `PL-11` | _(no existía)_          | `PLANTA`         |
+| `PL-12` | _(no existía)_          | `PUENTE ARANDA`  |
+| `PL-13` | _(no existía)_          | `QUINTA PAREDES` |
+| `PL-14` | _(no existía)_          | `SALITRE PLAZA`  |
+
+`PL-01` conserva su geocerca real (`geoLatitude/geoLongitude/checkInRadiusMeters`, usada por el QA de marcación móvil VALID/REJECTED) — el cambio de nombre no la toca. Las 4 sedes nuevas (`PL-11`..`14`) siguen exactamente el mismo patrón de generación que las demás (`Calle N # 10-20, Bogotá`, teléfono secuencial, sin geocerca, mismo `businessHours`), simplemente extendiendo el loop existente de 10 a 14 iteraciones — no se agregó código nuevo, solo se subió el límite del `for` (`OFFICIAL_LOCATION_NAMES.length`).
+
+## Verificación de integridad referencial
+
+Tras correr el seed (dos veces, para confirmar idempotencia — mismos 14 `id` en ambas corridas, sin duplicados), se verificó con queries directas que no quedó ningún registro huérfano apuntando a un `locationId` inexistente: `employee_details` (109 filas, 0 huérfanas), `user_locations` (37 filas, 0 huérfanas), `attendance_logs` (105 filas, 0 huérfanas), `production_incidents` (0 huérfanas). Como el `upsert` matchea por `code` (identidad estable) y nunca cambia el `id`, ninguna FK existente se vio afectada — los primeros 10 `id` de sede son idénticos a los de antes del cambio.
+
+## Referencias hardcodeadas revisadas (ninguna requirió cambio)
+
+- `apps/api/src/auth/test/auth-global-user-login.regression.spec.ts` y `apps/plant/src/stores/session.store.test.ts`/`auth.service.test.ts`: usan nombres de sede como fixture (`'Sede Palos de Leña 1'`, `'Sede 1'`) en mocks completamente aislados de Prisma/DB — no llaman al seed real, así que no se rompen ni necesitan actualizarse.
+- `apps/api/src/mes/auth/controller/dto/mes-location-summary.dto.ts`: `@ApiProperty({ example: 'Sede Palos de Leña 1' })` — solo un ejemplo de documentación Swagger, cosmético, no afecta ningún test ni comportamiento. No se tocó (fuera del alcance pedido: "no modificar lógica de negocio").
+- `apps/web-app`/`apps/plant`: sin constantes hardcodeadas de nombres de sede fuera de fixtures de test ya cubiertas arriba.
+
+## Riesgos
+
+- Ninguno funcional identificado — cambio de datos puro, codes estables, 0 filas huérfanas verificadas, todos los fixtures dependientes de `PL-01`/`PL-02`/`PL-03` (por code) siguen funcionando igual.
+- El mapping nombre↔code es arbitrario dentro de lo alfabético (ej. `PLANTA` cayó en `PL-11`, no en `PL-01` pese a que `PL-01` es la única sede con geocerca real) — si el negocio necesita que una sede _específica_ tenga la geocerca real, es un cambio de una sola línea en `seed.ts` (mover `PL01_GEO` a otro índice), no arquitectural.
+
+## Tests
+
+- Sin tests automatizados nuevos (cambio de datos de seed, no de lógica) — verificado manualmente: `npx tsx prisma/seed.ts` corrido dos veces contra Postgres local (idempotente, mismos 14 ids), `pnpm typecheck` limpio, `pnpm --filter api test:cov` (2349 tests — único fallo fue un flake de carga en un suite no relacionado, `production-order-pdf.service.spec.ts`, confirmado pasando limpio en aislado), `pnpm --filter api build` limpio.

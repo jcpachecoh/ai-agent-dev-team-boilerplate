@@ -31,7 +31,7 @@ import { AttendanceCollaboratorsPdfService } from './attendance-collaborators-pd
 
 export type ListCollaboratorsInput = Omit<
   ListCollaboratorsFilters,
-  'allowedLocationIds' | 'tenantId'
+  'allowedLocationIds' | 'allowedPositionIds' | 'tenantId'
 >;
 
 export type ExportFiltersInput = Omit<
@@ -62,22 +62,39 @@ export class AttendanceCollaboratorsService {
     actor: ActorContext,
     filters: ListCollaboratorsInput,
   ): Promise<AttendanceCollaboratorsResult> {
-    const allowedLocationIds = await this.resolveEffectiveScope(tenantId, actor, filters);
+    const { allowedLocationIds, allowedPositionIds } = await this.resolveEffectiveScope(
+      tenantId,
+      actor,
+      filters,
+    );
 
-    const page = await this.repository.findPage({ ...filters, tenantId, allowedLocationIds });
+    const page = await this.repository.findPage({
+      ...filters,
+      tenantId,
+      allowedLocationIds,
+      allowedPositionIds,
+    });
     const employeeIds = page.items.map((item) => item.id);
     const locationIds = [...new Set(page.items.map((item) => item.locationId))];
+    const positionIds = [
+      ...new Set(page.items.flatMap((item) => (item.positionId ? [item.positionId] : []))),
+    ];
 
-    const [supervisorsByLocation, shiftsByEmployee] = await Promise.all([
-      this.repository.findSupervisorsForLocations(tenantId, locationIds),
-      this.repository.findTodayAssignments(tenantId, employeeIds, normalizeWorkDate(new Date())),
-    ]);
+    const [supervisorsByLocation, shiftsByEmployee, supervisorPositionNamesByPosition] =
+      await Promise.all([
+        this.repository.findSupervisorsForLocations(tenantId, locationIds),
+        this.repository.findTodayAssignments(tenantId, employeeIds, normalizeWorkDate(new Date())),
+        this.repository.findSupervisorPositionNamesByPosition(tenantId, positionIds),
+      ]);
 
     const today = normalizeWorkDate(new Date());
     const items: AttendanceCollaboratorItem[] = await Promise.all(
       page.items.map(async (item) => ({
         ...item,
         supervisors: supervisorsByLocation.get(item.locationId) ?? [],
+        supervisorPositionName: item.positionId
+          ? (supervisorPositionNamesByPosition.get(item.positionId) ?? null)
+          : null,
         todayShift:
           shiftsByEmployee.get(item.id) ??
           (await this.resolveTodayShiftFromAssignment(tenantId, item.id, item.locationId, today)),
@@ -340,16 +357,22 @@ export class AttendanceCollaboratorsService {
    * Resuelve el scope del caller y, si viene `supervisorUserId`, lo intersecta con las
    * sedes de ese supervisor (instrucción explícita: nunca ignorar el filtro — una
    * intersección vacía debe devolver 0 filas, no el scope completo del caller).
+   *
+   * OS-550 follow-up — además de sede, si el supervisor filtrado tiene `positionId` y ese
+   * cargo tiene jerarquía configurada (`EmployeePositionSupervisor`), también acota por los
+   * cargos subordinados a ese cargo. Si el supervisor no tiene cargo asignado, o su cargo no
+   * tiene jerarquía configurada, `allowedPositionIds` queda en `null` (sin restricción por
+   * cargo) — fallback explícito a solo sede, para no romper el comportamiento ya existente.
    */
   private async resolveEffectiveScope(
     tenantId: string,
     actor: ActorContext,
     filters: ListCollaboratorsInput,
-  ): Promise<string[] | null> {
+  ): Promise<{ allowedLocationIds: string[] | null; allowedPositionIds: string[] | null }> {
     const callerScope = await this.resolveScope(tenantId, actor);
 
     if (!filters.supervisorUserId) {
-      return callerScope;
+      return { allowedLocationIds: callerScope, allowedPositionIds: null };
     }
 
     const supervisor = await this.repository.findSupervisorUser(tenantId, filters.supervisorUserId);
@@ -367,12 +390,23 @@ export class AttendanceCollaboratorsService {
       filters.supervisorUserId,
     );
     const supervisorLocationIds = supervisorLocations.map((location) => location.id);
+    const supervisorLocationSet = new Set(supervisorLocationIds);
 
-    if (!callerScope) {
-      return supervisorLocationIds;
+    const allowedLocationIds = !callerScope
+      ? supervisorLocationIds
+      : callerScope.filter((locationId) => supervisorLocationSet.has(locationId));
+
+    let allowedPositionIds: string[] | null = null;
+    if (supervisor.positionId) {
+      const subordinatePositionIds = await this.repository.findSubordinatePositionIds(
+        tenantId,
+        supervisor.positionId,
+      );
+      if (subordinatePositionIds.length > 0) {
+        allowedPositionIds = subordinatePositionIds;
+      }
     }
 
-    const supervisorSet = new Set(supervisorLocationIds);
-    return callerScope.filter((locationId) => supervisorSet.has(locationId));
+    return { allowedLocationIds, allowedPositionIds };
   }
 }

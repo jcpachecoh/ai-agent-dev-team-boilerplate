@@ -94,6 +94,10 @@ const MES_OPERATOR2_ID = 'eeeeeeee-0000-0000-0000-000000000006';
 const GLOBAL_MES_OPERATOR2_USER_ID = '11111111-0000-0000-0000-000000000006';
 const GLOBAL_MES_OPERATIONS_ADMIN_USER_ID = '11111111-0000-0000-0000-000000000007';
 const GLOBAL_NOMINA_USER_ID = '11111111-0000-0000-0000-000000000008';
+// Bug fix OS-550 — filtro Supervisor sin opciones: el seed nunca creaba usuarios con rol
+// SUPERVISOR/MANAGER, así que `findSupervisorOptions` (correctamente) siempre devolvía [].
+const GLOBAL_MES_SUPERVISOR_USER_ID = '11111111-0000-0000-0000-000000000010';
+const GLOBAL_MES_MANAGER_USER_ID = '11111111-0000-0000-0000-000000000011';
 
 const ROLE_SEEDS = [
   { id: ROLE_OWNER_ID, code: 'OWNER', name: 'Owner' },
@@ -811,10 +815,35 @@ const DEFAULT_BUSINESS_HOURS = {
 // mobileClientLatitudeOutside=4.7100 / mobileClientLongitudeOutside=-74.0817 → REJECTED (~11 km away)
 const PL01_GEO = { geoLatitude: 4.6097, geoLongitude: -74.0817, checkInRadiusMeters: 100 } as const;
 
+/**
+ * OS-550 follow-up — sedes oficiales de Palos de Leña (reemplaza los nombres genéricos
+ * "Sede Palos de Leña N"). Los `code` PL-01.. se mantienen estables (usados en otros seeds
+ * por code, nunca por name — ver attendance.seed.ts/plant-supervisor.seed.ts/seedSignupUserLocations
+ * más abajo, todos hacen `where: { code: 'PL-01' }` etc.), solo cambia el `name` mostrado.
+ * Iban 10 sedes demo antes; el listado oficial tiene 14 — las 4 nuevas (PL-11..14) se agregan
+ * al final, en el mismo orden (alfabético) en que se entregó el listado oficial.
+ */
+const OFFICIAL_LOCATION_NAMES = [
+  'ADMINISTRATIVO',
+  'CAFAM',
+  'CALLE 85',
+  'CENTRO',
+  'FONTIBON',
+  'GRAN ESTACION',
+  'JIMENEZ',
+  'MALL PLAZA',
+  'MULTIPLAZA',
+  'NUESTRO BOGOTA',
+  'PLANTA',
+  'PUENTE ARANDA',
+  'QUINTA PAREDES',
+  'SALITRE PLAZA',
+] as const;
+
 async function seedLocations() {
   const locations: Location[] = [];
-  for (let i = 1; i <= 10; i++) {
-    const name = `Sede Palos de Leña ${i}`;
+  for (let i = 1; i <= OFFICIAL_LOCATION_NAMES.length; i++) {
+    const name = OFFICIAL_LOCATION_NAMES[i - 1]!;
     const code = `PL-${i.toString().padStart(2, '0')}`;
     const address = `Calle ${i} # 10-20, Bogotá`;
     const city = 'Bogotá';
@@ -1150,6 +1179,98 @@ async function seedEmployeeDetails(
   });
 
   console.log('EmployeeDetails: Seeded for owner and operator');
+}
+
+/**
+ * Bug fix OS-550 — EmployeeDetails para los usuarios demo SUPERVISOR/MANAGER, con `positionId`
+ * real (cargos del organigrama con subordinados configurados en EmployeePositionSupervisor)
+ * para que el filtro Supervisor del listado de colaboradores tenga datos con los que probar
+ * tanto el scoping por sede (UserLocation, ver seedUserLocationAssignments) como el de cargo.
+ */
+async function seedSupervisorManagerDemoUsers(
+  supervisorUserId: string,
+  managerUserId: string,
+  supervisorLocationId: string,
+  managerLocationId: string,
+) {
+  const supervisorPosition = await prisma.employeePosition.findUniqueOrThrow({
+    where: { id: 'pos-pdl-006' }, // GERENTE DE PUNTO DE VENTA — supervisa ADMINISTRADOR JUNIOR
+  });
+  const managerPosition = await prisma.employeePosition.findUniqueOrThrow({
+    where: { id: 'pos-pdl-031' }, // JEFE DE COMPRAS — supervisa ANALISTA DE COMPRAS/FINANCIERA
+  });
+
+  await prisma.employeeDetails.upsert({
+    where: { userId: supervisorUserId },
+    update: {
+      isActive: true,
+      name: 'Sofía Ramírez',
+      positionId: supervisorPosition.id,
+      position: supervisorPosition.title,
+      area: supervisorPosition.area,
+    },
+    create: {
+      userId: supervisorUserId,
+      tenantId: OPERATIONAL_TENANT_ID,
+      name: 'Sofía Ramírez',
+      locationId: supervisorLocationId,
+      positionId: supervisorPosition.id,
+      position: supervisorPosition.title,
+      area: supervisorPosition.area,
+      department: supervisorPosition.area,
+      contractType: EmployeeContractType.INDEFINIDO,
+      hireDate: new Date('2024-03-01'),
+      contractStart: new Date('2024-03-01'),
+      salaryType: SalaryType.ORDINARIO,
+      salaryAmount: supervisorPosition.baseSalaryRange,
+      epsName: 'Sura',
+      pensionFundName: 'Protección',
+      cesantiasFundName: 'Protección',
+      arlName: 'Sura',
+      arlRiskLevel: ArlRiskLevel.RIESGO_I,
+      cajaCompensacion: 'Comfama',
+      costCenter: CostCenter.OPERACIONES,
+      laborClassification: LaborClassification.ADMINISTRATIVO,
+      isActive: true,
+    },
+  });
+
+  await prisma.employeeDetails.upsert({
+    where: { userId: managerUserId },
+    update: {
+      isActive: true,
+      name: 'Diego Torres',
+      positionId: managerPosition.id,
+      position: managerPosition.title,
+      area: managerPosition.area,
+    },
+    create: {
+      userId: managerUserId,
+      tenantId: OPERATIONAL_TENANT_ID,
+      name: 'Diego Torres',
+      locationId: managerLocationId,
+      positionId: managerPosition.id,
+      position: managerPosition.title,
+      area: managerPosition.area,
+      department: managerPosition.area,
+      contractType: EmployeeContractType.INDEFINIDO,
+      hireDate: new Date('2024-03-01'),
+      contractStart: new Date('2024-03-01'),
+      salaryType: SalaryType.ORDINARIO,
+      salaryAmount: managerPosition.baseSalaryRange,
+      epsName: 'Sanitas',
+      pensionFundName: 'Porvenir',
+      cesantiasFundName: 'Porvenir',
+      arlName: 'Sura',
+      arlRiskLevel: ArlRiskLevel.RIESGO_I,
+      cajaCompensacion: 'Compensar',
+      costCenter: CostCenter.ADMINISTRATIVO,
+      laborClassification: LaborClassification.ADMINISTRATIVO,
+      isActive: true,
+    },
+  });
+
+  console.log('EmployeeDetails: Seeded for supervisor and manager demo users');
 }
 
 async function seedEmployeeSocialProfiles(ownerUserId: string, operatorUserId: string) {
@@ -1830,6 +1951,65 @@ async function main() {
     superAdminGlobalUser.id,
   );
 
+  // Bug fix OS-550 — usuarios demo con rol SUPERVISOR/MANAGER para que el filtro Supervisor
+  // del listado de colaboradores tenga opciones reales (antes: 0 usuarios con estos roles).
+  const supervisorGlobalUser = await prisma.user.upsert({
+    where: {
+      tenantId_cedula: { tenantId: OPERATIONAL_TENANT_ID, cedula: '22334455' },
+    },
+    update: {
+      email: 'mes-supervisor@palos-de-lena.dev',
+      passwordHash: mesUserPasswordHash,
+      documentType: DocumentType.CC,
+      roleId: roles.SUPERVISOR.id,
+      isActive: true,
+      emailVerified: true,
+    },
+    create: {
+      id: GLOBAL_MES_SUPERVISOR_USER_ID,
+      tenantId: OPERATIONAL_TENANT_ID,
+      cedula: '22334455',
+      documentType: DocumentType.CC,
+      email: 'mes-supervisor@palos-de-lena.dev',
+      passwordHash: mesUserPasswordHash,
+      roleId: roles.SUPERVISOR.id,
+      isActive: true,
+      emailVerified: true,
+    },
+  });
+  console.log(
+    'Global User (SUPERVISOR):',
+    supervisorGlobalUser.email,
+    '—',
+    supervisorGlobalUser.id,
+  );
+
+  const managerGlobalUser = await prisma.user.upsert({
+    where: {
+      tenantId_cedula: { tenantId: OPERATIONAL_TENANT_ID, cedula: '66778899' },
+    },
+    update: {
+      email: 'mes-manager@palos-de-lena.dev',
+      passwordHash: mesUserPasswordHash,
+      documentType: DocumentType.CC,
+      roleId: roles.MANAGER.id,
+      isActive: true,
+      emailVerified: true,
+    },
+    create: {
+      id: GLOBAL_MES_MANAGER_USER_ID,
+      tenantId: OPERATIONAL_TENANT_ID,
+      cedula: '66778899',
+      documentType: DocumentType.CC,
+      email: 'mes-manager@palos-de-lena.dev',
+      passwordHash: mesUserPasswordHash,
+      roleId: roles.MANAGER.id,
+      isActive: true,
+      emailVerified: true,
+    },
+  });
+  console.log('Global User (MANAGER):', managerGlobalUser.email, '—', managerGlobalUser.id);
+
   console.log('\n✅ Email auth (global User — x-tenant-id: palos-de-lena):');
   console.log('  mes-owner          = mes-owner@palos-de-lena.dev / TestPass123!');
   console.log('  mes-operator       = mes-operator@palos-de-lena.dev / TestPass123!');
@@ -1841,6 +2021,12 @@ async function main() {
   );
   console.log(
     '  superadmin         = superadmin@opssynk.dev / TestPass123!  ← admin de roles/permisos',
+  );
+  console.log(
+    '  mes-supervisor     = mes-supervisor@palos-de-lena.dev / TestPass123!  ← filtro Supervisor',
+  );
+  console.log(
+    '  mes-manager        = mes-manager@palos-de-lena.dev / TestPass123!  ← filtro Supervisor',
   );
   console.log('\n✅ Operational tenant (supply-items, MES, plant):');
   console.log('  tenantId / mesTenantId =', OPERATIONAL_TENANT_ID);
@@ -1886,7 +2072,15 @@ async function main() {
   const { seedEmployeeCatalogOptions } = await import('./seeds/employee-catalog.seed');
   await seedEmployeeCatalogOptions(prisma, OPERATIONAL_TENANT_ID);
   await seedEmployeePositions(OPERATIONAL_TENANT_ID);
+  const { seedEmployeeOrgChart } = await import('./seeds/employee-org-chart.seed');
+  await seedEmployeeOrgChart(prisma);
   await seedEmployeeDetails(ownerGlobalUser.id, operatorGlobalUser.id, firstLocationId);
+  await seedSupervisorManagerDemoUsers(
+    supervisorGlobalUser.id,
+    managerGlobalUser.id,
+    locations[0]!.id,
+    locations[2]!.id,
+  );
   await seedEmployeeSocialProfiles(ownerGlobalUser.id, operatorGlobalUser.id);
   const { seedBulkAttendanceCollaborators } =
     await import('./seeds/attendance-collaborators-bulk.seed');
@@ -1908,6 +2102,16 @@ async function main() {
       locationIds: locations.map((location) => location.id),
     },
     { userId: nominaGlobalUser.id, locationIds: [firstLocationId] },
+    // Bug fix OS-550 — sedes con solapamiento parcial (PL-02) entre supervisor y manager,
+    // para probar la intersección de scope al filtrar colaboradores por supervisorUserId.
+    {
+      userId: supervisorGlobalUser.id,
+      locationIds: [locations[0]!.id, locations[1]!.id], // PL-01, PL-02
+    },
+    {
+      userId: managerGlobalUser.id,
+      locationIds: [locations[1]!.id, locations[2]!.id], // PL-02, PL-03
+    },
   ]);
   const { seedPlantSupervisor } = await import('./seeds/plant-supervisor.seed');
   await seedPlantSupervisor(prisma);

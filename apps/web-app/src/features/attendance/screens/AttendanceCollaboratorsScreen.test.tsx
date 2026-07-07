@@ -167,6 +167,30 @@ describe('AttendanceCollaboratorsScreen', () => {
     );
   });
 
+  it('renderiza las opciones de supervisor cuando el endpoint devuelve resultados', async () => {
+    renderScreen();
+
+    await waitFor(() => expect(screen.getAllByText('Ana Pérez').length).toBeGreaterThan(0));
+
+    const supervisorSelect = screen.getByRole('button', { name: 'Filtrar por supervisor' });
+    expect(supervisorSelect).toHaveTextContent('Todos los supervisores');
+    expect(supervisorSelect).not.toBeDisabled();
+  });
+
+  it('bug OS-550: muestra "No hay supervisores configurados" y deshabilita el filtro si el endpoint devuelve []', async () => {
+    listAttendanceCollaboratorSupervisorsMock.mockResolvedValue([]);
+
+    renderScreen();
+
+    await waitFor(() => expect(screen.getAllByText('Ana Pérez').length).toBeGreaterThan(0));
+
+    const supervisorSelect = await screen.findByRole('button', { name: 'Filtrar por supervisor' });
+    await waitFor(() =>
+      expect(supervisorSelect).toHaveTextContent('No hay supervisores configurados'),
+    );
+    expect(supervisorSelect).toBeDisabled();
+  });
+
   it('"ver tarjeta de asistencia" navega a la ruta correcta', async () => {
     renderScreen();
 

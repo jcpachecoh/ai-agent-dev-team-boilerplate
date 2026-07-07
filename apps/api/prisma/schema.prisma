@@ -853,10 +853,35 @@ model EmployeePosition {
   employees EmployeeDetails[]
   history   EmployeePositionHistory[]
 
+  supervisorLinks  EmployeePositionSupervisor[] @relation("PositionSupervisorPositions")
+  subordinateLinks EmployeePositionSupervisor[] @relation("SupervisorPositionSubordinates")
+
   @@unique([tenantId, title])
   @@index([tenantId, isActive])
   @@index([tenantId, area])
   @@map("employee_positions")
+}
+
+// OS-550 follow-up — Organigrama de supervisión por cargo (Cargo → Cargo supervisor).
+// Decisión de producto: la jerarquía se modela entre CARGOS, no entre personas — no existe
+// `EmployeeDetails.supervisorId`. `findSubordinatePositionIds` (repository) recorre esta tabla
+// para acotar el filtro Supervisor del listado de colaboradores por cargos subordinados,
+// además del scoping de sede ya existente vía UserLocation.
+model EmployeePositionSupervisor {
+  id                   String   @id @default(cuid())
+  tenantId             String
+  positionId           String
+  supervisorPositionId String
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  position           EmployeePosition @relation("PositionSupervisorPositions", fields: [positionId], references: [id], onDelete: Cascade)
+  supervisorPosition EmployeePosition @relation("SupervisorPositionSubordinates", fields: [supervisorPositionId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, positionId, supervisorPositionId])
+  @@index([tenantId, positionId])
+  @@index([tenantId, supervisorPositionId])
+  @@map("employee_position_supervisors")
 }
 
 model EmployeePositionHistory {

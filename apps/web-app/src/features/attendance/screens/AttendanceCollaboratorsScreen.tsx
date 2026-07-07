@@ -312,13 +312,22 @@ export function AttendanceCollaboratorsScreen(): React.JSX.Element {
       .map((position) => ({ value: position.id, label: position.title })),
   ];
 
-  const supervisorOptions = [
-    { value: 'all', label: 'Todos los supervisores' },
-    ...(supervisorsQuery.data ?? []).map((supervisor) => ({
-      value: supervisor.id,
-      label: supervisor.name,
-    })),
-  ];
+  const supervisorList = supervisorsQuery.data ?? [];
+  // Bug fix OS-550: si ya cargó y no hay ningún SUPERVISOR/MANAGER visible en el scope del
+  // caller, decirlo explícitamente en vez de dejar solo "Todos los supervisores" — eso se ve
+  // idéntico a un dropdown roto/sin cargar.
+  const noSupervisorsConfigured =
+    !supervisorsQuery.isLoading && !supervisorsQuery.isError && supervisorList.length === 0;
+
+  const supervisorOptions = noSupervisorsConfigured
+    ? [{ value: 'all', label: 'No hay supervisores configurados' }]
+    : [
+        { value: 'all', label: 'Todos los supervisores' },
+        ...supervisorList.map((supervisor) => ({
+          value: supervisor.id,
+          label: supervisor.name,
+        })),
+      ];
 
   const locationOptions = [
     { value: 'all', label: 'Todas las sedes' },
@@ -490,6 +499,7 @@ export function AttendanceCollaboratorsScreen(): React.JSX.Element {
               onChange={setSupervisorUserId}
               theme={empleadoTheme}
               size="md"
+              disabled={noSupervisorsConfigured}
             />
           </label>
           <label className={styles.field}>

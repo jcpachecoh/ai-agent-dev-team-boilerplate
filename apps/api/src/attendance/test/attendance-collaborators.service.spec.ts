@@ -68,6 +68,8 @@ describe('AttendanceCollaboratorsService', () => {
             findSupervisorOptions: jest.fn(),
             findEmployeeForPortalToggle: jest.fn(),
             updatePortalWorkerEnabled: jest.fn(),
+            findSubordinatePositionIds: jest.fn(),
+            findSupervisorPositionNamesByPosition: jest.fn(),
           },
         },
         {
@@ -115,6 +117,8 @@ describe('AttendanceCollaboratorsService', () => {
     });
     repository.findSupervisorsForLocations.mockResolvedValue(new Map());
     repository.findTodayAssignments.mockResolvedValue(new Map());
+    repository.findSubordinatePositionIds.mockResolvedValue([]);
+    repository.findSupervisorPositionNamesByPosition.mockResolvedValue(new Map());
     excelService.generateXlsx.mockResolvedValue(Buffer.from('xlsx'));
     pdfService.generatePdf.mockResolvedValue(Buffer.from('pdf'));
   });
@@ -155,7 +159,11 @@ describe('AttendanceCollaboratorsService', () => {
     });
 
     it('lanza BadRequestException si el usuario no tiene rol SUPERVISOR/MANAGER', async () => {
-      repository.findSupervisorUser.mockResolvedValue({ id: 'u-1', roleCode: 'OPERATOR' });
+      repository.findSupervisorUser.mockResolvedValue({
+        id: 'u-1',
+        roleCode: 'OPERATOR',
+        positionId: null,
+      });
 
       await expect(
         service.list(TENANT, ownerActor, { ...baseFilters, supervisorUserId: 'u-1' }),
@@ -163,7 +171,11 @@ describe('AttendanceCollaboratorsService', () => {
     });
 
     it('caller sin scope (OWNER) + supervisor válido: usa las sedes del supervisor', async () => {
-      repository.findSupervisorUser.mockResolvedValue({ id: 'sup-2', roleCode: 'MANAGER' });
+      repository.findSupervisorUser.mockResolvedValue({
+        id: 'sup-2',
+        roleCode: 'MANAGER',
+        positionId: null,
+      });
       userLocationsService.getActiveUserLocations.mockResolvedValue([{ id: 'loc-5' } as never]);
 
       await service.list(TENANT, ownerActor, { ...baseFilters, supervisorUserId: 'sup-2' });
@@ -172,7 +184,11 @@ describe('AttendanceCollaboratorsService', () => {
     });
 
     it('caller con scope (SUPERVISOR) + supervisor válido: intersecta ambos scopes', async () => {
-      repository.findSupervisorUser.mockResolvedValue({ id: 'sup-2', roleCode: 'MANAGER' });
+      repository.findSupervisorUser.mockResolvedValue({
+        id: 'sup-2',
+        roleCode: 'MANAGER',
+        positionId: null,
+      });
       userLocationsService.getActiveUserLocations
         .mockResolvedValueOnce([{ id: 'loc-1' } as never, { id: 'loc-2' } as never]) // caller scope
         .mockResolvedValueOnce([{ id: 'loc-2' } as never, { id: 'loc-3' } as never]); // supervisor scope
@@ -186,7 +202,11 @@ describe('AttendanceCollaboratorsService', () => {
     });
 
     it('intersección vacía se pasa como array vacío (0 filas), nunca se ignora el filtro', async () => {
-      repository.findSupervisorUser.mockResolvedValue({ id: 'sup-2', roleCode: 'MANAGER' });
+      repository.findSupervisorUser.mockResolvedValue({
+        id: 'sup-2',
+        roleCode: 'MANAGER',
+        positionId: null,
+      });
       userLocationsService.getActiveUserLocations
         .mockResolvedValueOnce([{ id: 'loc-1' } as never])
         .mockResolvedValueOnce([{ id: 'loc-9' } as never]);
@@ -197,6 +217,105 @@ describe('AttendanceCollaboratorsService', () => {
       });
 
       expect(repository.findPage.mock.calls[0][0].allowedLocationIds).toEqual([]);
+    });
+
+    it('supervisor sin positionId: allowedPositionIds=null (fallback a solo sede)', async () => {
+      repository.findSupervisorUser.mockResolvedValue({
+        id: 'sup-2',
+        roleCode: 'MANAGER',
+        positionId: null,
+      });
+      userLocationsService.getActiveUserLocations.mockResolvedValue([{ id: 'loc-5' } as never]);
+
+      await service.list(TENANT, ownerActor, { ...baseFilters, supervisorUserId: 'sup-2' });
+
+      expect(repository.findSubordinatePositionIds).not.toHaveBeenCalled();
+      expect(repository.findPage.mock.calls[0][0].allowedPositionIds).toBeNull();
+    });
+
+    it('supervisor con positionId pero sin jerarquía configurada: allowedPositionIds=null (fallback)', async () => {
+      repository.findSupervisorUser.mockResolvedValue({
+        id: 'sup-2',
+        roleCode: 'MANAGER',
+        positionId: 'pos-jefe',
+      });
+      userLocationsService.getActiveUserLocations.mockResolvedValue([{ id: 'loc-5' } as never]);
+      repository.findSubordinatePositionIds.mockResolvedValue([]);
+
+      await service.list(TENANT, ownerActor, { ...baseFilters, supervisorUserId: 'sup-2' });
+
+      expect(repository.findSubordinatePositionIds).toHaveBeenCalledWith(TENANT, 'pos-jefe');
+      expect(repository.findPage.mock.calls[0][0].allowedPositionIds).toBeNull();
+    });
+
+    it('supervisor con positionId y jerarquía configurada: restringe por cargos subordinados', async () => {
+      repository.findSupervisorUser.mockResolvedValue({
+        id: 'sup-2',
+        roleCode: 'MANAGER',
+        positionId: 'pos-jefe',
+      });
+      userLocationsService.getActiveUserLocations.mockResolvedValue([{ id: 'loc-5' } as never]);
+      repository.findSubordinatePositionIds.mockResolvedValue(['pos-a', 'pos-b']);
+
+      await service.list(TENANT, ownerActor, { ...baseFilters, supervisorUserId: 'sup-2' });
+
+      expect(repository.findPage.mock.calls[0][0].allowedPositionIds).toEqual(['pos-a', 'pos-b']);
+      // El scoping de sede vía UserLocation se preserva sin cambios, además del de cargo.
+      expect(repository.findPage.mock.calls[0][0].allowedLocationIds).toEqual(['loc-5']);
+    });
+
+    it('sin supervisorUserId: allowedPositionIds=null, no consulta jerarquía de cargo', async () => {
+      await service.list(TENANT, ownerActor, baseFilters);
+
+      expect(repository.findSupervisorUser).not.toHaveBeenCalled();
+      expect(repository.findSubordinatePositionIds).not.toHaveBeenCalled();
+      expect(repository.findPage.mock.calls[0][0].allowedPositionIds).toBeNull();
+    });
+  });
+
+  describe('supervisorPositionName (columna Supervisor por cargo)', () => {
+    it('expone el título del cargo supervisor cuando hay jerarquía configurada para el cargo del colaborador', async () => {
+      repository.findPage.mockResolvedValue({
+        items: [buildRecord({ positionId: 'pos-1' })],
+        total: 1,
+        activeTotal: 1,
+        inactiveTotal: 0,
+      });
+      repository.findSupervisorPositionNamesByPosition.mockResolvedValue(
+        new Map([['pos-1', 'JEFE DE COMPRAS']]),
+      );
+
+      const result = await service.list(TENANT, ownerActor, baseFilters);
+
+      expect(result.items[0].supervisorPositionName).toBe('JEFE DE COMPRAS');
+    });
+
+    it('es null cuando el cargo no tiene jerarquía configurada', async () => {
+      repository.findPage.mockResolvedValue({
+        items: [buildRecord({ positionId: 'pos-1' })],
+        total: 1,
+        activeTotal: 1,
+        inactiveTotal: 0,
+      });
+      repository.findSupervisorPositionNamesByPosition.mockResolvedValue(new Map());
+
+      const result = await service.list(TENANT, ownerActor, baseFilters);
+
+      expect(result.items[0].supervisorPositionName).toBeNull();
+    });
+
+    it('es null cuando el colaborador no tiene positionId, sin consultar la jerarquía para ese caso', async () => {
+      repository.findPage.mockResolvedValue({
+        items: [buildRecord({ positionId: null })],
+        total: 1,
+        activeTotal: 1,
+        inactiveTotal: 0,
+      });
+
+      const result = await service.list(TENANT, ownerActor, baseFilters);
+
+      expect(result.items[0].supervisorPositionName).toBeNull();
+      expect(repository.findSupervisorPositionNamesByPosition).toHaveBeenCalledWith(TENANT, []);
     });
   });
 

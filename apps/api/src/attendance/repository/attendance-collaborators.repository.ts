@@ -28,8 +28,15 @@ export class AttendanceCollaboratorsRepository implements IAttendanceCollaborato
       where.isActive = false;
     }
 
-    if (filters.positionId) {
-      where.positionId = filters.positionId;
+    const positionFilter = this.intersectPositionFilter(
+      filters.allowedPositionIds,
+      filters.positionId,
+    );
+    if (positionFilter === 'EMPTY') {
+      return { items: [], total: 0, activeTotal: 0, inactiveTotal: 0 };
+    }
+    if (positionFilter) {
+      where.positionId = { in: positionFilter };
     }
 
     if (filters.contractType) {
@@ -256,12 +263,92 @@ export class AttendanceCollaboratorsRepository implements IAttendanceCollaborato
   async findSupervisorUser(
     tenantId: string,
     userId: string,
-  ): Promise<{ id: string; roleCode: string } | null> {
+  ): Promise<{ id: string; roleCode: string; positionId: string | null } | null> {
     const user = await this.prisma.user.findFirst({
       where: { id: userId, tenantId, deletedAt: null },
-      select: { id: true, role: { select: { code: true } } },
+      select: {
+        id: true,
+        role: { select: { code: true } },
+        employeeDetails: { select: { positionId: true } },
+      },
     });
-    return user ? { id: user.id, roleCode: user.role.code } : null;
+    return user
+      ? {
+          id: user.id,
+          roleCode: user.role.code,
+          positionId: user.employeeDetails?.positionId ?? null,
+        }
+      : null;
+  }
+
+  /**
+   * OS-550 follow-up — cargos que reportan a `supervisorPositionId`, de forma **transitiva**
+   * (todo el subárbol, no solo los hijos directos). Ej.: filtrar por "Gerente General" debe
+   * traer Director de Operaciones, Administrador, Administrador Junior, Cocina, Parrillero, etc.
+   * — todo lo que cuelga de él en el organigrama, no un solo nivel.
+   *
+   * BFS nivel por nivel (una query por nivel de profundidad, no por nodo) en vez de un CTE
+   * recursivo en SQL: el modelo no valida ciclos (`EmployeePositionSupervisor` no lo impone a
+   * nivel de BD — ver riesgos documentados), y un `WITH RECURSIVE` sin guarda de ciclo puede
+   * loopear indefinidamente si alguna vez se crea uno por error. El `Set` de visitados corta
+   * cualquier ciclo en la primera repetición, y el organigrama real tiene ~5-6 niveles como
+   * máximo, así que el costo de N queries (N = profundidad) es despreciable.
+   */
+  async findSubordinatePositionIds(
+    tenantId: string,
+    supervisorPositionId: string,
+  ): Promise<string[]> {
+    // Sembrado con la propia raíz: si un ciclo en los datos vuelve a apuntar a ella, ya está
+    // en `visited` y el corte ocurre ahí — sin esto, un ciclo A→B→A nunca se corta (B ve a A
+    // como "no visitado" y lo re-encola indefinidamente).
+    const visited = new Set<string>([supervisorPositionId]);
+    const result = new Set<string>();
+    let frontier = [supervisorPositionId];
+
+    while (frontier.length > 0) {
+      const rows = await this.prisma.employeePositionSupervisor.findMany({
+        where: { tenantId, supervisorPositionId: { in: frontier } },
+        select: { positionId: true },
+      });
+
+      const nextFrontier: string[] = [];
+      for (const row of rows) {
+        if (!visited.has(row.positionId)) {
+          visited.add(row.positionId);
+          result.add(row.positionId);
+          nextFrontier.push(row.positionId);
+        }
+      }
+      frontier = nextFrontier;
+    }
+
+    return [...result];
+  }
+
+  /** OS-550 follow-up — título(s) del/los cargo(s) supervisor(es) de cada `positionId`, para la columna Supervisor. */
+  async findSupervisorPositionNamesByPosition(
+    tenantId: string,
+    positionIds: string[],
+  ): Promise<Map<string, string>> {
+    const result = new Map<string, string>();
+    if (positionIds.length === 0) {
+      return result;
+    }
+
+    const rows = await this.prisma.employeePositionSupervisor.findMany({
+      where: { tenantId, positionId: { in: positionIds } },
+      select: { positionId: true, supervisorPosition: { select: { title: true } } },
+    });
+
+    for (const row of rows) {
+      const existing = result.get(row.positionId);
+      result.set(
+        row.positionId,
+        existing ? `${existing}, ${row.supervisorPosition.title}` : row.supervisorPosition.title,
+      );
+    }
+
+    return result;
   }
 
   async findSupervisorOptions(
@@ -321,5 +408,24 @@ export class AttendanceCollaboratorsRepository implements IAttendanceCollaborato
       return allowedLocationIds;
     }
     return allowedLocationIds.includes(requestedLocationId) ? [requestedLocationId] : 'EMPTY';
+  }
+
+  /**
+   * OS-550 follow-up — intersecta los cargos subordinados del supervisor filtrado
+   * (`allowedPositionIds`) con el filtro Especialidad (`positionId`) pedido explícitamente.
+   * Mismo patrón que `intersectLocationFilter`: `allowedPositionIds: null` = sin restricción
+   * por cargo (no se filtró por supervisor, o el supervisor no tiene jerarquía configurada).
+   */
+  private intersectPositionFilter(
+    allowedPositionIds: string[] | null,
+    requestedPositionId: string | undefined,
+  ): string[] | 'EMPTY' | null {
+    if (!allowedPositionIds) {
+      return requestedPositionId ? [requestedPositionId] : null;
+    }
+    if (!requestedPositionId) {
+      return allowedPositionIds;
+    }
+    return allowedPositionIds.includes(requestedPositionId) ? [requestedPositionId] : 'EMPTY';
   }
 }

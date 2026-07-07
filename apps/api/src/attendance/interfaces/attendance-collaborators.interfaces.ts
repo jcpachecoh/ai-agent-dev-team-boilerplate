@@ -32,6 +32,14 @@ export interface ListCollaboratorsFilters {
   pageSize: number;
   /** null = sin restricción de sede (OWNER/SUPER_ADMIN/NOMINA); array = sedes permitidas (SUPERVISOR/MANAGER). */
   allowedLocationIds: string[] | null;
+  /**
+   * OS-550 follow-up — cargos subordinados del `positionId` del supervisor filtrado
+   * (`EmployeePositionSupervisor`). `null` = sin restricción por cargo (no se filtró por
+   * supervisor, o el supervisor no tiene cargo/jerarquía configurada — fallback a solo sede,
+   * mismo comportamiento que antes de esta jerarquía). Array (incluso vacío) = restringe a
+   * esos cargos.
+   */
+  allowedPositionIds: string[] | null;
 }
 
 export interface CollaboratorRecord {
@@ -74,6 +82,14 @@ export interface CollaboratorTodayShift {
 
 export interface AttendanceCollaboratorItem extends CollaboratorRecord {
   supervisors: CollaboratorSupervisorSummary[];
+  /**
+   * OS-550 follow-up — título(s) del/los cargo(s) que supervisa(n) el cargo de este
+   * colaborador (`EmployeePositionSupervisor`), unidos por ", " si hay más de uno.
+   * `null` si el colaborador no tiene cargo asignado o el cargo no tiene jerarquía
+   * configurada en el organigrama. No es un jefe directo individual — es el/los cargo(s)
+   * supervisor(es), consistente con la decisión de no modelar supervisor por persona.
+   */
+  supervisorPositionName: string | null;
   todayShift: CollaboratorTodayShift;
 }
 
@@ -138,7 +154,7 @@ export interface IAttendanceCollaboratorsRepository {
   findSupervisorUser(
     tenantId: string,
     userId: string,
-  ): Promise<{ id: string; roleCode: string } | null>;
+  ): Promise<{ id: string; roleCode: string; positionId: string | null } | null>;
   findSupervisorOptions(
     tenantId: string,
     allowedLocationIds: string[] | null,
@@ -148,4 +164,11 @@ export interface IAttendanceCollaboratorsRepository {
     employeeDetailsId: string,
   ): Promise<{ id: string; portalWorkerEnabled: boolean } | null>;
   updatePortalWorkerEnabled(employeeDetailsId: string, enabled: boolean): Promise<void>;
+  /** OS-550 follow-up — cargos que reportan directamente a `supervisorPositionId` (EmployeePositionSupervisor). */
+  findSubordinatePositionIds(tenantId: string, supervisorPositionId: string): Promise<string[]>;
+  /** OS-550 follow-up — título(s) del/los cargo(s) supervisor(es) de cada `positionId` dado, para la columna Supervisor. */
+  findSupervisorPositionNamesByPosition(
+    tenantId: string,
+    positionIds: string[],
+  ): Promise<Map<string, string>>;
 }

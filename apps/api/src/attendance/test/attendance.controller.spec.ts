@@ -497,6 +497,17 @@ describe('AttendanceController', () => {
       });
       expect(result).toEqual([{ id: 'sup-1', name: 'Sup Uno', email: 'sup1@example.com' }]);
     });
+
+    // Bug OS-550: la respuesta vacía es un caso válido (tenant sin SUPERVISOR/MANAGER
+    // configurados) — el endpoint debe devolver 200 con `[]`, nunca un error.
+    it('devuelve [] sin error cuando el service no encuentra supervisores', async () => {
+      const user = makeJwtUser({ sub: 'actor-1', roleCode: 'OWNER' });
+      collaboratorsServiceMock.listSupervisorOptions.mockResolvedValue([]);
+
+      const result = await controller.getCollaboratorSupervisors(user, '');
+
+      expect(result).toEqual([]);
+    });
   });
 
   describe('setCollaboratorPortalWorker', () => {

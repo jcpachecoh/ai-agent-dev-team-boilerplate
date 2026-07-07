@@ -37,6 +37,7 @@ describe('AttendanceCollaboratorsRepository', () => {
     userLocation: { findMany: jest.Mock };
     turnoAssignment: { findMany: jest.Mock };
     user: { findFirst: jest.Mock; findMany: jest.Mock };
+    employeePositionSupervisor: { findMany: jest.Mock };
     $queryRaw: jest.Mock;
   };
 
@@ -51,6 +52,7 @@ describe('AttendanceCollaboratorsRepository', () => {
       userLocation: { findMany: jest.fn() },
       turnoAssignment: { findMany: jest.fn() },
       user: { findFirst: jest.fn(), findMany: jest.fn() },
+      employeePositionSupervisor: { findMany: jest.fn() },
       $queryRaw: jest.fn(),
     };
 
@@ -71,6 +73,7 @@ describe('AttendanceCollaboratorsRepository', () => {
         page: 1,
         pageSize: 20,
         allowedLocationIds: null,
+        allowedPositionIds: null,
       });
 
       const where = prisma.employeeDetails.count.mock.calls[0][0].where;
@@ -87,6 +90,7 @@ describe('AttendanceCollaboratorsRepository', () => {
         page: 1,
         pageSize: 20,
         allowedLocationIds: null,
+        allowedPositionIds: null,
       });
       expect(prisma.employeeDetails.count.mock.calls[0][0].where.isActive).toBe(true);
 
@@ -97,6 +101,7 @@ describe('AttendanceCollaboratorsRepository', () => {
         page: 1,
         pageSize: 20,
         allowedLocationIds: null,
+        allowedPositionIds: null,
       });
       expect(prisma.employeeDetails.count.mock.calls[0][0].where.isActive).toBe(false);
     });
@@ -111,6 +116,7 @@ describe('AttendanceCollaboratorsRepository', () => {
         page: 1,
         pageSize: 20,
         allowedLocationIds: null,
+        allowedPositionIds: null,
       });
       expect(prisma.employeeDetails.count.mock.calls[0][0].where.laborClassification).toBe(
         'ADMINISTRATIVO',
@@ -123,13 +129,14 @@ describe('AttendanceCollaboratorsRepository', () => {
         page: 1,
         pageSize: 20,
         allowedLocationIds: null,
+        allowedPositionIds: null,
       });
       expect(prisma.employeeDetails.count.mock.calls[0][0].where.laborClassification).toEqual({
         in: ['COCINA', 'SERVICIO'],
       });
     });
 
-    it('positionId/contractType/area se aplican directamente al where', async () => {
+    it('positionId/contractType/area se aplican al where (positionId vía intersect, sin jerarquía)', async () => {
       prisma.employeeDetails.count.mockResolvedValue(0);
       prisma.employeeDetails.findMany.mockResolvedValue([]);
 
@@ -141,10 +148,11 @@ describe('AttendanceCollaboratorsRepository', () => {
         page: 1,
         pageSize: 20,
         allowedLocationIds: null,
+        allowedPositionIds: null,
       });
 
       const where = prisma.employeeDetails.count.mock.calls[0][0].where;
-      expect(where.positionId).toBe('pos-1');
+      expect(where.positionId).toEqual({ in: ['pos-1'] });
       expect(where.contractType).toBe('INDEFINIDO');
       expect(where.area).toBe('Cocina');
     });
@@ -158,6 +166,7 @@ describe('AttendanceCollaboratorsRepository', () => {
         page: 1,
         pageSize: 20,
         allowedLocationIds: ['loc-1', 'loc-2'],
+        allowedPositionIds: null,
       });
 
       expect(prisma.employeeDetails.count.mock.calls[0][0].where.locationId).toEqual({
@@ -175,6 +184,7 @@ describe('AttendanceCollaboratorsRepository', () => {
         page: 1,
         pageSize: 20,
         allowedLocationIds: ['loc-1', 'loc-2'],
+        allowedPositionIds: null,
       });
 
       expect(prisma.employeeDetails.count.mock.calls[0][0].where.locationId).toEqual({
@@ -189,10 +199,75 @@ describe('AttendanceCollaboratorsRepository', () => {
         page: 1,
         pageSize: 20,
         allowedLocationIds: ['loc-1', 'loc-2'],
+        allowedPositionIds: null,
       });
 
       expect(result).toEqual({ items: [], total: 0, activeTotal: 0, inactiveTotal: 0 });
       expect(prisma.employeeDetails.count).not.toHaveBeenCalled();
+    });
+
+    it('sin positionId explícito, usa allowedPositionIds (jerarquía de cargo) tal cual', async () => {
+      prisma.employeeDetails.count.mockResolvedValue(0);
+      prisma.employeeDetails.findMany.mockResolvedValue([]);
+
+      await repository.findPage({
+        tenantId: TENANT,
+        page: 1,
+        pageSize: 20,
+        allowedLocationIds: null,
+        allowedPositionIds: ['pos-a', 'pos-b'],
+      });
+
+      expect(prisma.employeeDetails.count.mock.calls[0][0].where.positionId).toEqual({
+        in: ['pos-a', 'pos-b'],
+      });
+    });
+
+    it('positionId explícito dentro de allowedPositionIds se respeta como único valor', async () => {
+      prisma.employeeDetails.count.mockResolvedValue(0);
+      prisma.employeeDetails.findMany.mockResolvedValue([]);
+
+      await repository.findPage({
+        tenantId: TENANT,
+        positionId: 'pos-b',
+        page: 1,
+        pageSize: 20,
+        allowedLocationIds: null,
+        allowedPositionIds: ['pos-a', 'pos-b'],
+      });
+
+      expect(prisma.employeeDetails.count.mock.calls[0][0].where.positionId).toEqual({
+        in: ['pos-b'],
+      });
+    });
+
+    it('positionId explícito fuera de allowedPositionIds devuelve 0 filas sin consultar Prisma', async () => {
+      const result = await repository.findPage({
+        tenantId: TENANT,
+        positionId: 'pos-9',
+        page: 1,
+        pageSize: 20,
+        allowedLocationIds: null,
+        allowedPositionIds: ['pos-a', 'pos-b'],
+      });
+
+      expect(result).toEqual({ items: [], total: 0, activeTotal: 0, inactiveTotal: 0 });
+      expect(prisma.employeeDetails.count).not.toHaveBeenCalled();
+    });
+
+    it('allowedPositionIds:null (sin jerarquía de cargo) no restringe por cargo — fallback', async () => {
+      prisma.employeeDetails.count.mockResolvedValue(0);
+      prisma.employeeDetails.findMany.mockResolvedValue([]);
+
+      await repository.findPage({
+        tenantId: TENANT,
+        page: 1,
+        pageSize: 20,
+        allowedLocationIds: null,
+        allowedPositionIds: null,
+      });
+
+      expect(prisma.employeeDetails.count.mock.calls[0][0].where.positionId).toBeUndefined();
     });
 
     it('con search, usa los ids resueltos por $queryRaw como filtro id:{in}', async () => {
@@ -206,6 +281,7 @@ describe('AttendanceCollaboratorsRepository', () => {
         page: 1,
         pageSize: 20,
         allowedLocationIds: null,
+        allowedPositionIds: null,
       });
 
       expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
@@ -223,6 +299,7 @@ describe('AttendanceCollaboratorsRepository', () => {
         page: 1,
         pageSize: 20,
         allowedLocationIds: null,
+        allowedPositionIds: null,
       });
 
       expect(result).toEqual({ items: [], total: 0, activeTotal: 0, inactiveTotal: 0 });
@@ -241,6 +318,7 @@ describe('AttendanceCollaboratorsRepository', () => {
         page: 1,
         pageSize: 20,
         allowedLocationIds: null,
+        allowedPositionIds: null,
       });
 
       expect(result).toMatchObject({ total: 45, activeTotal: 40, inactiveTotal: 5 });
@@ -262,6 +340,7 @@ describe('AttendanceCollaboratorsRepository', () => {
         page: 1,
         pageSize: 20,
         allowedLocationIds: null,
+        allowedPositionIds: null,
       });
 
       expect(result.total).toBe(1);
@@ -294,6 +373,7 @@ describe('AttendanceCollaboratorsRepository', () => {
         page: 1,
         pageSize: 20,
         allowedLocationIds: null,
+        allowedPositionIds: null,
       });
 
       expect(prisma.employeeDetails.findMany.mock.calls[0][0].orderBy).toEqual({
@@ -316,6 +396,7 @@ describe('AttendanceCollaboratorsRepository', () => {
         page: 1,
         pageSize: 20,
         allowedLocationIds: null,
+        allowedPositionIds: null,
       });
 
       expect(prisma.employeeDetails.findMany.mock.calls[0][0].orderBy).toEqual({
@@ -333,6 +414,7 @@ describe('AttendanceCollaboratorsRepository', () => {
         page: 1,
         pageSize: 20,
         allowedLocationIds: null,
+        allowedPositionIds: null,
       });
 
       expect(prisma.employeeDetails.findMany.mock.calls[0][0].orderBy).toEqual({ name: 'asc' });
@@ -349,6 +431,7 @@ describe('AttendanceCollaboratorsRepository', () => {
         page: 1,
         pageSize: 20,
         allowedLocationIds: null,
+        allowedPositionIds: null,
       });
 
       expect(result.items[0].primerApellido).toBeNull();
@@ -440,16 +523,140 @@ describe('AttendanceCollaboratorsRepository', () => {
   });
 
   describe('findSupervisorUser', () => {
-    it('devuelve id + roleCode cuando el usuario existe', async () => {
-      prisma.user.findFirst.mockResolvedValue({ id: 'sup-1', role: { code: 'SUPERVISOR' } });
+    it('devuelve id + roleCode + positionId cuando el usuario existe y tiene cargo', async () => {
+      prisma.user.findFirst.mockResolvedValue({
+        id: 'sup-1',
+        role: { code: 'SUPERVISOR' },
+        employeeDetails: { positionId: 'pos-supervisor' },
+      });
       const result = await repository.findSupervisorUser(TENANT, 'sup-1');
-      expect(result).toEqual({ id: 'sup-1', roleCode: 'SUPERVISOR' });
+      expect(result).toEqual({ id: 'sup-1', roleCode: 'SUPERVISOR', positionId: 'pos-supervisor' });
+    });
+
+    it('positionId es null cuando el usuario no tiene EmployeeDetails', async () => {
+      prisma.user.findFirst.mockResolvedValue({
+        id: 'sup-1',
+        role: { code: 'SUPERVISOR' },
+        employeeDetails: null,
+      });
+      const result = await repository.findSupervisorUser(TENANT, 'sup-1');
+      expect(result).toEqual({ id: 'sup-1', roleCode: 'SUPERVISOR', positionId: null });
     });
 
     it('devuelve null cuando el usuario no existe en el tenant', async () => {
       prisma.user.findFirst.mockResolvedValue(null);
       const result = await repository.findSupervisorUser(TENANT, 'ghost');
       expect(result).toBeNull();
+    });
+  });
+
+  describe('findSubordinatePositionIds', () => {
+    it('devuelve los positionId que reportan directamente al supervisorPositionId dado (1 nivel)', async () => {
+      prisma.employeePositionSupervisor.findMany
+        .mockResolvedValueOnce([{ positionId: 'pos-a' }, { positionId: 'pos-b' }])
+        .mockResolvedValueOnce([]); // pos-a/pos-b no tienen subordinados propios
+
+      const result = await repository.findSubordinatePositionIds(TENANT, 'pos-jefe');
+
+      expect(prisma.employeePositionSupervisor.findMany).toHaveBeenNthCalledWith(1, {
+        where: { tenantId: TENANT, supervisorPositionId: { in: ['pos-jefe'] } },
+        select: { positionId: true },
+      });
+      expect(result).toEqual(['pos-a', 'pos-b']);
+    });
+
+    it('devuelve array vacío cuando el cargo no tiene subordinados configurados', async () => {
+      prisma.employeePositionSupervisor.findMany.mockResolvedValueOnce([]);
+      const result = await repository.findSubordinatePositionIds(TENANT, 'pos-sin-subordinados');
+      expect(result).toEqual([]);
+      expect(prisma.employeePositionSupervisor.findMany).toHaveBeenCalledTimes(1);
+    });
+
+    it('es recursivo (transitivo): trae todo el subárbol, no solo los hijos directos', async () => {
+      // Gerente General → Director Operaciones → Administrador → Administrador Junior → Cocina
+      // (mismo ejemplo del organigrama real: filtrar por Gerente General debe traer TODO lo
+      // que cuelga de él, no solo Director Operaciones).
+      prisma.employeePositionSupervisor.findMany
+        .mockResolvedValueOnce([{ positionId: 'director-operaciones' }]) // nivel 1
+        .mockResolvedValueOnce([{ positionId: 'administrador' }]) // nivel 2
+        .mockResolvedValueOnce([{ positionId: 'administrador-junior' }]) // nivel 3
+        .mockResolvedValueOnce([{ positionId: 'cocina' }]) // nivel 4
+        .mockResolvedValueOnce([]); // cocina no tiene subordinados
+
+      const result = await repository.findSubordinatePositionIds(TENANT, 'gerente-general');
+
+      expect(result).toEqual(
+        expect.arrayContaining([
+          'director-operaciones',
+          'administrador',
+          'administrador-junior',
+          'cocina',
+        ]),
+      );
+      expect(result).toHaveLength(4);
+      expect(prisma.employeePositionSupervisor.findMany).toHaveBeenCalledTimes(5);
+      // Nivel 2 consulta por el frontier del nivel 1 (director-operaciones)
+      expect(prisma.employeePositionSupervisor.findMany).toHaveBeenNthCalledWith(2, {
+        where: { tenantId: TENANT, supervisorPositionId: { in: ['director-operaciones'] } },
+        select: { positionId: true },
+      });
+    });
+
+    it('un cargo con varios hijos en el mismo nivel se resuelve en una sola query por nivel', async () => {
+      // Administrador Junior supervisa tanto Cocina como Impulsador — ambos deben consultarse
+      // juntos en la misma query del siguiente nivel (batched), no una query por hijo.
+      prisma.employeePositionSupervisor.findMany
+        .mockResolvedValueOnce([{ positionId: 'cocina' }, { positionId: 'impulsador' }])
+        .mockResolvedValueOnce([]);
+
+      const result = await repository.findSubordinatePositionIds(TENANT, 'administrador-junior');
+
+      expect(result).toEqual(expect.arrayContaining(['cocina', 'impulsador']));
+      expect(prisma.employeePositionSupervisor.findMany).toHaveBeenCalledTimes(2);
+      expect(prisma.employeePositionSupervisor.findMany).toHaveBeenNthCalledWith(2, {
+        where: {
+          tenantId: TENANT,
+          supervisorPositionId: { in: expect.arrayContaining(['cocina', 'impulsador']) },
+        },
+        select: { positionId: true },
+      });
+    });
+
+    it('no entra en loop infinito si hay un ciclo en los datos (A→B→A)', async () => {
+      prisma.employeePositionSupervisor.findMany
+        .mockResolvedValueOnce([{ positionId: 'pos-b' }]) // pos-a supervisa a pos-b
+        .mockResolvedValueOnce([{ positionId: 'pos-a' }]); // pos-b "supervisa" de vuelta a pos-a (ciclo)
+
+      const result = await repository.findSubordinatePositionIds(TENANT, 'pos-a');
+
+      // pos-a ya estaba visitado (es la raíz de la búsqueda) → no se re-agrega ni se vuelve a
+      // consultar; el corte de ciclo se da porque nextFrontier queda vacío tras esa vuelta.
+      expect(result).toEqual(['pos-b']);
+      expect(prisma.employeePositionSupervisor.findMany).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('findSupervisorPositionNamesByPosition', () => {
+    it('devuelve mapa vacío si no hay positionIds', async () => {
+      const result = await repository.findSupervisorPositionNamesByPosition(TENANT, []);
+      expect(result.size).toBe(0);
+      expect(prisma.employeePositionSupervisor.findMany).not.toHaveBeenCalled();
+    });
+
+    it('mapea positionId al título del cargo supervisor, uniendo varios con ", "', async () => {
+      prisma.employeePositionSupervisor.findMany.mockResolvedValue([
+        { positionId: 'pos-a', supervisorPosition: { title: 'JEFE DE COMPRAS' } },
+        { positionId: 'pos-b', supervisorPosition: { title: 'GERENTE GENERAL' } },
+        { positionId: 'pos-b', supervisorPosition: { title: 'DIRECTOR DE OPERACIONES' } },
+      ]);
+
+      const result = await repository.findSupervisorPositionNamesByPosition(TENANT, [
+        'pos-a',
+        'pos-b',
+      ]);
+
+      expect(result.get('pos-a')).toBe('JEFE DE COMPRAS');
+      expect(result.get('pos-b')).toBe('GERENTE GENERAL, DIRECTOR DE OPERACIONES');
     });
   });
 
@@ -466,6 +673,64 @@ describe('AttendanceCollaboratorsRepository', () => {
       expect(prisma.user.findMany.mock.calls[0][0].where.userLocations).toEqual({
         some: { locationId: { in: ['loc-1'] } },
       });
+    });
+
+    // Bug OS-550: el filtro Supervisor solo mostraba "Todos los supervisores" porque el seed
+    // nunca creaba usuarios con rol SUPERVISOR/MANAGER — el query en sí ya filtraba
+    // correctamente por rol, pero no había ningún test que lo dejara explícito. Ver seed.ts
+    // (mes-supervisor@/mes-manager@) para los datos demo agregados.
+    it('siempre filtra por tenantId, isActive, deletedAt:null y role.code IN [SUPERVISOR, MANAGER]', async () => {
+      prisma.user.findMany.mockResolvedValue([]);
+      await repository.findSupervisorOptions(TENANT, null);
+
+      expect(prisma.user.findMany.mock.calls[0][0].where).toEqual(
+        expect.objectContaining({
+          tenantId: TENANT,
+          isActive: true,
+          deletedAt: null,
+          role: { code: { in: ['SUPERVISOR', 'MANAGER'] } },
+        }),
+      );
+    });
+
+    it('mapea id/email siempre, y name con fallback a email cuando no hay EmployeeDetails', async () => {
+      prisma.user.findMany.mockResolvedValue([
+        {
+          id: 'sup-1',
+          email: 'sofia@example.com',
+          employeeDetails: { name: 'Sofía Ramírez' },
+        },
+        {
+          id: 'sup-2',
+          email: 'sin-nombre@example.com',
+          employeeDetails: null,
+        },
+      ]);
+
+      const result = await repository.findSupervisorOptions(TENANT, null);
+
+      expect(result).toEqual([
+        { id: 'sup-1', name: 'Sofía Ramírez', email: 'sofia@example.com' },
+        { id: 'sup-2', name: 'sin-nombre@example.com', email: 'sin-nombre@example.com' },
+      ]);
+    });
+
+    it('devuelve [] (no lanza) cuando no hay ningún usuario SUPERVISOR/MANAGER en el tenant', async () => {
+      prisma.user.findMany.mockResolvedValue([]);
+      const result = await repository.findSupervisorOptions(TENANT, null);
+      expect(result).toEqual([]);
+    });
+
+    it('usuario scoped (allowedLocationIds) solo ve supervisores de sedes compartidas: role + userLocations combinados', async () => {
+      prisma.user.findMany.mockResolvedValue([]);
+      await repository.findSupervisorOptions(TENANT, ['loc-1', 'loc-2']);
+
+      expect(prisma.user.findMany.mock.calls[0][0].where).toEqual(
+        expect.objectContaining({
+          role: { code: { in: ['SUPERVISOR', 'MANAGER'] } },
+          userLocations: { some: { locationId: { in: ['loc-1', 'loc-2'] } } },
+        }),
+      );
     });
   });
 
