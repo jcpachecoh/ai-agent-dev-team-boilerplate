@@ -77,6 +77,11 @@ export interface PayrollEmployeesFilters {
   locationId?: string;
   contractType?: EmployeeContractType;
   includeInactive?: boolean;
+  isActive?: boolean;
+  positionId?: string;
+  area?: string;
+  department?: string;
+  search?: string;
   limit?: number;
   offset?: number;
 }

@@ -47,7 +47,9 @@ export function NominaChartPanel({
     >
       <header className={styles.header}>
         <h2 className={styles.title}>{title}</h2>
-        <NominaPeriodToggle theme={theme} value={period} onChange={onPeriodChange} />
+        {onPeriodChange ? (
+          <NominaPeriodToggle theme={theme} value={period} onChange={onPeriodChange} />
+        ) : null}
       </header>
       <div className={styles.chart}>
         <BarChart

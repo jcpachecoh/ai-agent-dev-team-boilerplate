@@ -4,7 +4,6 @@ import type {
   NominaLegalAlertItem,
   NominaLocationBreakdownRow,
   NominaLocationTone,
-  NominaPeriodMode,
 } from '@restopsiq/ui';
 
 interface NominaBarChartSeries {
@@ -106,6 +105,23 @@ export function formatClosingBadgeLabel(period: PayrollReportResponse['period'])
   return `Cierre: ${lastDay} ${monthLabel}`;
 }
 
+export function formatDateRangeBadgeLabel(to: string): string {
+  const [, month, day] = to.split('-').map(Number);
+  const monthLabel = MONTH_LABELS[(month ?? 1) - 1] ?? 'mes';
+  return `Hasta: ${day} ${monthLabel}`;
+}
+
+function formatShortDate(isoDate: string): string {
+  const [, month, day] = isoDate.split('-').map(Number);
+  const monthLabel = MONTH_LABELS[(month ?? 1) - 1] ?? 'mes';
+  return `${day} ${monthLabel}`;
+}
+
+export function formatDateRangeLabel(from: string, to: string): string {
+  if (from === to) return formatShortDate(from);
+  return `${formatShortDate(from)} – ${formatShortDate(to)}`;
+}
+
 function getLocationTone(index: number): NominaLocationTone {
   return LOCATION_TONES[index % LOCATION_TONES.length] ?? 'accent';
 }
@@ -133,18 +149,22 @@ export function mapLocationRows(report: PayrollReportResponse): NominaLocationBr
 export function mapPayrollKpiMetrics(
   report: PayrollReportResponse,
   attendance: AttendanceReportResponse | undefined,
+  dateRange?: { from: string; to: string },
 ): NominaKpiMetric[] {
   const overtimeMinutes =
     attendance?.employees.reduce((sum, employee) => sum + employee.overtimeMinutes, 0) ?? 0;
   const legalAlerts =
     attendance?.employees.filter((employee) => employee.exceededLegalOvertimeLimit).length ?? 0;
+  const periodLabel = dateRange
+    ? formatDateRangeLabel(dateRange.from, dateRange.to)
+    : 'del periodo';
 
   return [
     {
       id: 'payroll',
-      title: 'Nómina estimada mes',
+      title: 'Nómina estimada',
       value: formatPayrollCurrency(report.tenantTotals.totalPayrollCost),
-      description: `${report.tenantTotals.employeeCount} empleados en liquidación`,
+      description: `${report.tenantTotals.employeeCount} empleados · ${periodLabel}`,
       tone: 'accent',
     },
     {
@@ -224,7 +244,7 @@ function buildLocationChartMeta(report: PayrollReportResponse): {
 
 export function mapPayrollChartData(
   report: PayrollReportResponse,
-  periodMode: NominaPeriodMode,
+  dateRange: { from: string; to: string },
   attendance?: AttendanceReportResponse,
 ): {
   title: string;
@@ -236,26 +256,9 @@ export function mapPayrollChartData(
 } {
   const { series, legend } = buildLocationChartMeta(report);
   const workedByLocation = aggregateMinutesByLocation(attendance, 'totalWorkedMinutes');
+  const rangeLabel = formatDateRangeLabel(dateRange.from, dateRange.to);
 
-  if (periodMode === 'week') {
-    const dataPoint: Record<string, string | number> = { week: 'Semana actual' };
-    for (const location of report.locationTotals) {
-      dataPoint[location.locationId] = minutesToChartHours(
-        workedByLocation.get(location.locationId) ?? 0,
-      );
-    }
-
-    return {
-      title: 'Asistencia por sede (semana)',
-      xDataKey: 'week',
-      data: [dataPoint],
-      series,
-      legend,
-      valueType: 'number',
-    };
-  }
-
-  const dataPoint: Record<string, string | number> = { period: 'Mes actual' };
+  const dataPoint: Record<string, string | number> = { period: rangeLabel };
   for (const location of report.locationTotals) {
     dataPoint[location.locationId] = minutesToChartHours(
       workedByLocation.get(location.locationId) ?? 0,
@@ -263,7 +266,7 @@ export function mapPayrollChartData(
   }
 
   return {
-    title: 'Asistencia por sede (mes)',
+    title: `Asistencia por sede (${rangeLabel})`,
     xDataKey: 'period',
     data: [dataPoint],
     series,

@@ -9,6 +9,9 @@ import type { AttendanceQueryDto, PeriodQueryDto } from '../controller/dto/repor
 import type { PayrollReportResponseDto } from '../controller/dto/payroll-report-response.dto';
 import type { AttendanceReportResponseDto } from '../controller/dto/attendance-report-response.dto';
 import type { SocialSecurityReportResponseDto } from '../controller/dto/social-security-report-response.dto';
+import type { EmployeeListExportQueryDto } from '../controller/dto/employee-list-export-query.dto';
+import type { AttendanceExportQueryDto } from '../controller/dto/attendance-export-query.dto';
+import type { EmployeeListReportResponseDto } from '../controller/dto/employee-list-report-response.dto';
 
 // ── Shared data shapes ────────────────────────────────────────────────────────
 
@@ -29,6 +32,25 @@ export interface ActiveEmployeeFilters {
 export interface ReportsActor {
   userId: string;
   roleCode: string;
+}
+
+export interface ExportColumnDefinition {
+  key: string;
+  header: string;
+  width?: number;
+}
+
+export interface ExportMetadata {
+  tenantId: string;
+  tenantName?: string;
+  generatedAt: string;
+  filtersSummary: string[];
+  rowCount: number;
+}
+
+export interface IExportableReport<T> {
+  data: T;
+  metadata: ExportMetadata;
 }
 
 // ── Repository contract ───────────────────────────────────────────────────────
@@ -67,4 +89,16 @@ export interface IReportsService {
     query: PeriodQueryDto,
     actor: ReportsActor,
   ): Promise<SocialSecurityReportResponseDto>;
+
+  getEmployeeListReport(
+    tenantId: string,
+    query: Omit<EmployeeListExportQueryDto, 'format'>,
+    actor: ReportsActor,
+  ): Promise<EmployeeListReportResponseDto>;
+
+  getAttendanceReportForExport(
+    tenantId: string,
+    query: Omit<AttendanceExportQueryDto, 'format'>,
+    actor: ReportsActor,
+  ): Promise<AttendanceReportResponseDto>;
 }

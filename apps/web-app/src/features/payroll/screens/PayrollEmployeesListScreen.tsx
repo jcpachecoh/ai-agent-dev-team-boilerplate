@@ -7,6 +7,7 @@ import {
   EmpleadoTable,
   EmpleadoTableItem,
   LoadingState,
+  RecetaFilterSelect,
   RecetaMetricCard,
   toast,
   toggleEmpleadoSort,
@@ -19,6 +20,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTheme } from '@/providers/ThemeProvider';
 import { isPayrollReadOnlyRole } from '@/config/rbac.config';
 import { useMe } from '@/features/auth/hooks/useMe';
+import { useLocations } from '@/features/sedes/hooks/useLocations';
 import { getRoleCodeFromToken } from '@/lib/auth-token';
 import {
   useCreatePayrollEmployeeMutation,
@@ -36,8 +38,13 @@ import type {
 import { PayrollDeactivateEmployeeDialog } from '../components/PayrollDeactivateEmployeeDialog';
 import { PayrollEmployeeCreateModal } from '../components/PayrollEmployeeCreateModal';
 import { PayrollEmployeeEditDrawer } from '../components/PayrollEmployeeEditDrawer';
-import { PayrollApiError } from '../api/payroll.client';
+import { PayrollExportMenu } from '../components/PayrollExportMenu';
+import { PayrollFilterBar } from '../components/PayrollFilterBar';
+import { PayrollApiError, exportEmployeeList } from '../api/payroll.client';
 import type { PayrollEmployeeCreateWizardPayload } from '../types/payroll-employee-create-wizard.types';
+import type { EmployeeListExportQuery } from '../types/payroll-reports.types';
+import { useEmployeePositions } from '../hooks/useEmployeePositions';
+import { usePayrollExport } from '../hooks/usePayrollExport';
 import { applyPayrollEmployeeCreateFinancialProfile } from '../utils/applyPayrollEmployeeCreateFinancialProfile';
 import { applyPayrollEmployeeCreatePersonalData } from '../utils/applyPayrollEmployeeCreatePersonalData';
 import {
@@ -46,6 +53,15 @@ import {
 } from '../utils/payroll-employee-form-mappers';
 import { sortPayrollEmployees } from '../utils/sortPayrollEmployees';
 import styles from './PayrollEmployeesListScreen.module.scss';
+
+const CONTRACT_FILTER_OPTIONS = [
+  { value: 'all', label: 'Todos los contratos' },
+  { value: 'FIJO', label: 'Fijo' },
+  { value: 'INDEFINIDO', label: 'Indefinido' },
+  { value: 'OBRA', label: 'Obra o labor' },
+  { value: 'PRESTACION', label: 'Prestación de servicios' },
+  { value: 'APRENDIZAJE', label: 'Aprendizaje' },
+];
 
 function toCreateInput(values: PayrollEmployeeFormValues): CreatePayrollEmployeeInput {
   return payrollEmployeeFormValuesToCreateInput(values);
@@ -73,9 +89,26 @@ export function PayrollEmployeesListScreen(): React.JSX.Element {
   const roleCode = me?.roleCode ?? getRoleCodeFromToken();
   const readOnly = isPayrollReadOnlyRole(roleCode);
 
-  const { state, setSearch, setStatusFilter, setPage, queryFilters } =
-    usePayrollEmployeesFilters(8);
+  const {
+    state,
+    setSearch,
+    setStatusFilter,
+    setLocationId,
+    setContractType,
+    setPositionId,
+    setArea,
+    setPage,
+    queryFilters,
+    exportFilters,
+  } = usePayrollEmployeesFilters(8);
   const employeesQuery = usePayrollEmployeesQuery(queryFilters);
+  const locationsQuery = useLocations();
+  const positionsQuery = useEmployeePositions({ includeInactive: false });
+  const { loading: exportLoading, exportReport } = usePayrollExport<EmployeeListExportQuery>({
+    buildFilename: (format) =>
+      `empleados-${new Date().toISOString().slice(0, 10)}.${format === 'PDF' ? 'pdf' : 'xlsx'}`,
+    exportFn: (filters, format) => exportEmployeeList(filters, format, 'EMPLOYEES'),
+  });
   const createEmployee = useCreatePayrollEmployeeMutation();
   const updateEmployee = useUpdatePayrollEmployeeMutation();
   const removeEmployee = useRemovePayrollEmployeeMutation();
@@ -88,30 +121,25 @@ export function PayrollEmployeesListScreen(): React.JSX.Element {
 
   const employees = employeesQuery.data ?? [];
 
-  const filteredEmployees = useMemo(() => {
-    const search = state.search.trim().toLowerCase();
+  const locationOptions = useMemo(
+    () =>
+      (locationsQuery.data ?? [])
+        .filter((location) => location.isActive !== false)
+        .map((location) => ({ value: location.id, label: location.name })),
+    [locationsQuery.data],
+  );
 
-    return employees.filter((employee) => {
-      const matchesSearch =
-        !search ||
-        [employee.name, employee.user?.cedula, employee.user?.email]
-          .filter(Boolean)
-          .join(' ')
-          .toLowerCase()
-          .includes(search);
-
-      const matchesStatus =
-        state.statusFilter === 'all' ||
-        (state.statusFilter === 'active' && employee.isActive) ||
-        (state.statusFilter === 'inactive' && !employee.isActive);
-
-      return matchesSearch && matchesStatus;
-    });
-  }, [employees, state.search, state.statusFilter]);
+  const positionOptions = useMemo(
+    () =>
+      (positionsQuery.data ?? [])
+        .filter((position) => position.isActive)
+        .map((position) => ({ value: position.id, label: position.title })),
+    [positionsQuery.data],
+  );
 
   const sortedEmployees = useMemo(
-    () => sortPayrollEmployees(filteredEmployees, sortColumn, sortDirection),
-    [filteredEmployees, sortColumn, sortDirection],
+    () => sortPayrollEmployees(employees, sortColumn, sortDirection),
+    [employees, sortColumn, sortDirection],
   );
 
   const handleSortColumn = (column: EmpleadoSortColumnKey) => {
@@ -123,7 +151,7 @@ export function PayrollEmployeesListScreen(): React.JSX.Element {
   const totalCount = employees.length;
   const activeCount = employees.filter((employee) => employee.isActive).length;
   const inactiveCount = totalCount - activeCount;
-  const filteredCount = filteredEmployees.length;
+  const filteredCount = totalCount;
 
   const hasNextPage = employees.length >= state.pageSize;
   const totalPages = Math.max(1, hasNextPage ? state.page + 1 : state.page);
@@ -238,13 +266,62 @@ export function PayrollEmployeesListScreen(): React.JSX.Element {
             contacta a un administrador.
           </p>
         ) : null}
-        <EmpleadoListToolbar
-          searchValue={state.search}
-          statusFilter={state.statusFilter}
-          onSearchChange={setSearch}
-          onStatusFilterChange={setStatusFilter}
-          theme={empleadoTheme}
-        />
+        <div className={styles.searchRow}>
+          <EmpleadoListToolbar
+            searchValue={state.search}
+            statusFilter={state.statusFilter}
+            onSearchChange={setSearch}
+            onStatusFilterChange={setStatusFilter}
+            theme={empleadoTheme}
+          />
+        </div>
+        <PayrollFilterBar>
+          <div className={styles.filterField}>
+            <span className={styles.filterLabel}>Sede</span>
+            <RecetaFilterSelect
+              theme={empleadoTheme}
+              size="md"
+              value={state.locationId}
+              options={[{ value: '', label: 'Todas las sedes' }, ...locationOptions]}
+              onChange={setLocationId}
+            />
+          </div>
+          <div className={styles.filterField}>
+            <span className={styles.filterLabel}>Contrato</span>
+            <RecetaFilterSelect
+              theme={empleadoTheme}
+              size="md"
+              value={state.contractType}
+              options={CONTRACT_FILTER_OPTIONS}
+              onChange={(value) => setContractType(value as typeof state.contractType)}
+            />
+          </div>
+          <div className={styles.filterField}>
+            <span className={styles.filterLabel}>Cargo</span>
+            <RecetaFilterSelect
+              theme={empleadoTheme}
+              size="md"
+              value={state.positionId}
+              options={[{ value: '', label: 'Todos los cargos' }, ...positionOptions]}
+              onChange={setPositionId}
+            />
+          </div>
+          <div className={styles.filterField}>
+            <span className={styles.filterLabel}>Área</span>
+            <input
+              className={styles.filterInput}
+              value={state.area}
+              placeholder="Filtrar por área"
+              onChange={(event) => setArea(event.target.value)}
+            />
+          </div>
+          <PayrollExportMenu
+            theme={empleadoTheme}
+            loading={exportLoading}
+            disabled={employeesQuery.isLoading}
+            onExport={(format) => void exportReport(exportFilters, format)}
+          />
+        </PayrollFilterBar>
       </EmpleadoPageSection>
 
       <EmpleadoPageSection theme={empleadoTheme}>
@@ -265,7 +342,7 @@ export function PayrollEmployeesListScreen(): React.JSX.Element {
           </div>
         ) : null}
 
-        {!employeesQuery.isLoading && !employeesQuery.isError && filteredEmployees.length === 0 ? (
+        {!employeesQuery.isLoading && !employeesQuery.isError && employees.length === 0 ? (
           <div className={styles.state}>No hay empleados para los filtros seleccionados.</div>
         ) : null}
 

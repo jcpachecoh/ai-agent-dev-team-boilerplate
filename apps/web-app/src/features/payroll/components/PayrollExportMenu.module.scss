@@ -1,0 +1,77 @@
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  width: 100%;
+}
+
+.label {
+  color: var(--empleado-muted, #888);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 40px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--empleado-border, #2e2e2e);
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease;
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+}
+
+.themeDark {
+  --empleado-border: #2e2e2e;
+  --empleado-input: #111;
+  --empleado-text: #f5f5f0;
+  --empleado-muted: #888;
+}
+
+.themeLight {
+  --empleado-border: rgba(0, 0, 0, 0.12);
+  --empleado-input: #fff;
+  --empleado-text: #1a1a1a;
+  --empleado-muted: #666;
+}
+
+.buttonPdf {
+  background: #e85d4a;
+  color: #fff;
+  border-color: #e85d4a;
+
+  &:hover:not(:disabled) {
+    background: #d94a36;
+    border-color: #d94a36;
+  }
+}
+
+.buttonExcel {
+  background: #217346;
+  color: #fff;
+  border-color: #217346;
+
+  &:hover:not(:disabled) {
+    background: #1a5c38;
+    border-color: #1a5c38;
+  }
+}

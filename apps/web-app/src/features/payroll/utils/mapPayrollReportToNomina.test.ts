@@ -82,20 +82,15 @@ describe('mapPayrollKpiMetrics', () => {
 });
 
 describe('mapPayrollChartData', () => {
-  it('muestra horas trabajadas por sede en modo mes', () => {
-    const chart = mapPayrollChartData(payrollReport, 'month', attendanceReport);
+  const dateRange = { from: '2025-06-01', to: '2025-06-30' };
 
-    expect(chart.title).toBe('Asistencia por sede (mes)');
+  it('muestra horas trabajadas por sede en el rango seleccionado', () => {
+    const chart = mapPayrollChartData(payrollReport, dateRange, attendanceReport);
+
+    expect(chart.title).toBe('Asistencia por sede (1 jun – 30 jun)');
     expect(chart.valueType).toBe('number');
     expect(chart.data[0]?.['loc-1']).toBe(100);
     expect(chart.data[0]?.['loc-2']).toBe(80);
-  });
-
-  it('muestra horas trabajadas por sede en modo semana', () => {
-    const chart = mapPayrollChartData(payrollReport, 'week', attendanceReport);
-
-    expect(chart.title).toBe('Asistencia por sede (semana)');
-    expect(chart.data[0]?.['loc-1']).toBe(100);
   });
 });
 

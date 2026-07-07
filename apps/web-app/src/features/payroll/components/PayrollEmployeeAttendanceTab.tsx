@@ -3,6 +3,10 @@ import { useMemo, useState } from 'react';
 
 import { getErrorMessage } from '@/lib/graphql-client';
 
+import { exportAttendanceReport } from '../api/payroll.client';
+import type { AttendanceExportQuery } from '../types/payroll-reports.types';
+import { PayrollExportMenu } from './PayrollExportMenu';
+import { usePayrollExport } from '../hooks/usePayrollExport';
 import { useEmployeeMarcacionesQuery } from '../hooks/useEmployeeMarcacionesQuery';
 import { usePayrollEmployeeQuery } from '../hooks/usePayrollEmployeeQuery';
 import type { MobileAttendanceStatus } from '../types/mobile-attendance.types';
@@ -46,6 +50,21 @@ export function PayrollEmployeeAttendanceTab({
     status: statusFilter || null,
   });
 
+  const exportFilters = useMemo(
+    () => ({
+      from: dateFrom,
+      to: dateTo,
+      employeeId: employeeQuery.data?.id,
+    }),
+    [dateFrom, dateTo, employeeQuery.data?.id],
+  );
+
+  const { loading: exportLoading, exportReport } = usePayrollExport<AttendanceExportQuery>({
+    buildFilename: (format, filters) =>
+      `asistencia-${employeeQuery.data?.name ?? userId}-${filters.from}-${filters.to}.${format === 'PDF' ? 'pdf' : 'xlsx'}`,
+    exportFn: (filters, format) => exportAttendanceReport(filters, format),
+  });
+
   const rows = useMemo(
     () => marcacionesQuery.data?.pages.flatMap((page) => page.edges.map((edge) => edge.node)) ?? [],
     [marcacionesQuery.data],
@@ -75,6 +94,12 @@ export function PayrollEmployeeAttendanceTab({
             Marcaciones móviles de entrada y salida registradas en el periodo seleccionado.
           </p>
         </div>
+        <PayrollExportMenu
+          theme={theme}
+          loading={exportLoading}
+          disabled={!employeeQuery.data}
+          onExport={(format) => void exportReport(exportFilters, format)}
+        />
       </div>
 
       <div className={styles.filters}>

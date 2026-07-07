@@ -3,11 +3,21 @@ import {
   NominaKpiGrid,
   NominaLegalAlertsPanel,
   NominaPageHeader,
+  RecetaFilterSelect,
 } from '@restopsiq/ui';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 
 import { useTheme } from '@/providers/ThemeProvider';
+import { useLocations } from '@/features/sedes/hooks/useLocations';
+import { exportAttendanceReport } from '@/features/payroll/api/payroll.client';
+import { PayrollExportMenu } from '@/features/payroll/components/PayrollExportMenu';
+import { PayrollFilterBar } from '@/features/payroll/components/PayrollFilterBar';
+import { usePayrollExport } from '@/features/payroll/hooks/usePayrollExport';
 import { useAttendanceReportQuery } from '@/features/payroll/hooks/usePayrollReportQueries';
+import type {
+  AttendanceExportQuery,
+  AttendanceReportStatusFilter,
+} from '@/features/payroll/types/payroll-reports.types';
 import {
   getCurrentPayrollPeriod,
   getMonthDateRange,
@@ -16,12 +26,48 @@ import {
 
 import styles from './AttendanceReportsScreen.module.scss';
 
+const STATUS_OPTIONS: Array<{ value: AttendanceReportStatusFilter; label: string }> = [
+  { value: 'ALL', label: 'Todos' },
+  { value: 'PRESENT', label: 'Con marcaciones' },
+  { value: 'ABSENT', label: 'Sin marcaciones' },
+  { value: 'LATE', label: 'Alerta legal HE' },
+];
+
 export function AttendanceReportsScreen(): React.JSX.Element {
   const { theme } = useTheme();
   const nominaTheme = theme === 'light' ? 'light' : 'dark';
   const payrollPeriod = useMemo(() => getCurrentPayrollPeriod(), []);
-  const monthRange = useMemo(() => getMonthDateRange(payrollPeriod), [payrollPeriod]);
-  const attendanceQuery = useAttendanceReportQuery(monthRange);
+  const defaultRange = useMemo(() => getMonthDateRange(payrollPeriod), [payrollPeriod]);
+  const [dateFrom, setDateFrom] = useState(defaultRange.from);
+  const [dateTo, setDateTo] = useState(defaultRange.to);
+  const [locationId, setLocationId] = useState('');
+  const [status, setStatus] = useState<AttendanceReportStatusFilter>('ALL');
+  const locationsQuery = useLocations();
+
+  const attendanceQueryFilters = useMemo(
+    () => ({
+      from: dateFrom,
+      to: dateTo,
+      locationId: locationId || undefined,
+      status: status === 'ALL' ? undefined : status,
+    }),
+    [dateFrom, dateTo, locationId, status],
+  );
+
+  const attendanceQuery = useAttendanceReportQuery(attendanceQueryFilters);
+  const { loading: exportLoading, exportReport } = usePayrollExport<AttendanceExportQuery>({
+    buildFilename: (format, filters) =>
+      `asistencia-${filters.from}-${filters.to}.${format === 'PDF' ? 'pdf' : 'xlsx'}`,
+    exportFn: (filters, format) => exportAttendanceReport(filters, format),
+  });
+
+  const locationOptions = useMemo(
+    () =>
+      (locationsQuery.data ?? [])
+        .filter((location) => location.isActive !== false)
+        .map((location) => ({ value: location.id, label: location.name })),
+    [locationsQuery.data],
+  );
 
   const kpiMetrics = useMemo(() => {
     const employees = attendanceQuery.data?.employees ?? [];
@@ -33,14 +79,14 @@ export function AttendanceReportsScreen(): React.JSX.Element {
         id: 'employees',
         title: 'Colaboradores reportados',
         value: String(employees.length),
-        description: `Periodo ${monthRange.from} – ${monthRange.to}`,
+        description: `Periodo ${dateFrom} – ${dateTo}`,
         tone: 'accent' as const,
       },
       {
         id: 'overtime',
         title: 'Horas extra acumuladas',
         value: `${Math.round(overtimeMinutes / 60)}h`,
-        description: 'Total del mes en curso',
+        description: 'Total del periodo',
         tone: 'amber' as const,
       },
       {
@@ -51,7 +97,7 @@ export function AttendanceReportsScreen(): React.JSX.Element {
         tone: 'teal' as const,
       },
     ];
-  }, [attendanceQuery.data, monthRange.from, monthRange.to]);
+  }, [attendanceQuery.data, dateFrom, dateTo]);
 
   const legalAlertItems = useMemo(
     () => mapLegalAlertItems(attendanceQuery.data),
@@ -65,6 +111,53 @@ export function AttendanceReportsScreen(): React.JSX.Element {
         title="Reportes"
         subtitle="Marcaciones, horas extra y cumplimiento legal del periodo"
       />
+
+      <PayrollFilterBar>
+        <div className={styles.filterField}>
+          <span className={styles.filterLabel}>Desde</span>
+          <input
+            className={styles.filterInput}
+            type="date"
+            value={dateFrom}
+            onChange={(event) => setDateFrom(event.target.value)}
+          />
+        </div>
+        <div className={styles.filterField}>
+          <span className={styles.filterLabel}>Hasta</span>
+          <input
+            className={styles.filterInput}
+            type="date"
+            value={dateTo}
+            onChange={(event) => setDateTo(event.target.value)}
+          />
+        </div>
+        <div className={styles.filterField}>
+          <span className={styles.filterLabel}>Sede</span>
+          <RecetaFilterSelect
+            theme={nominaTheme}
+            size="md"
+            value={locationId}
+            options={[{ value: '', label: 'Todas las sedes' }, ...locationOptions]}
+            onChange={setLocationId}
+          />
+        </div>
+        <div className={styles.filterField}>
+          <span className={styles.filterLabel}>Estado</span>
+          <RecetaFilterSelect
+            theme={nominaTheme}
+            size="md"
+            value={status}
+            options={STATUS_OPTIONS}
+            onChange={(value) => setStatus(value as AttendanceReportStatusFilter)}
+          />
+        </div>
+        <PayrollExportMenu
+          theme={nominaTheme}
+          loading={exportLoading}
+          disabled={attendanceQuery.isLoading}
+          onExport={(format) => void exportReport(attendanceQueryFilters, format)}
+        />
+      </PayrollFilterBar>
 
       <NominaKpiGrid theme={nominaTheme} metrics={kpiMetrics} className={styles.kpiGrid} />
 

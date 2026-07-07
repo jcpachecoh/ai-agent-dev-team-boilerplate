@@ -2,8 +2,11 @@ import { getGraphqlAuthToken } from '@/lib/auth-token';
 import { getTenantId } from '@/lib/tenant';
 
 import type {
+  AttendanceExportQuery,
   AttendanceReportQuery,
   AttendanceReportResponse,
+  EmployeeListExportQuery,
+  EmployeeListReportType,
   PayrollReportExportFormat,
   PayrollReportQuery,
   PayrollReportResponse,
@@ -129,6 +132,8 @@ export function getPayrollReport(query: PayrollReportQuery): Promise<PayrollRepo
   const params = toQueryString({
     period: query.period,
     locationId: query.locationId,
+    employeeId: query.employeeId,
+    contractType: query.contractType,
   });
   return payrollFetch<PayrollReportResponse>(`/reports/payroll${params}`);
 }
@@ -140,17 +145,40 @@ export function getAttendanceReport(
     from: query.from,
     to: query.to,
     locationId: query.locationId,
+    employeeId: query.employeeId,
+    status: query.status,
   });
   return payrollFetch<AttendanceReportResponse>(`/reports/attendance${params}`);
 }
 
 export function exportPayrollReport(
-  period: string,
+  query: PayrollReportQuery,
   format: PayrollReportExportFormat,
 ): Promise<Blob> {
   return payrollFetchBlob('/reports/payroll/export', {
     method: 'POST',
-    body: JSON.stringify({ period, format }),
+    body: JSON.stringify({ ...query, format }),
+  });
+}
+
+export function exportEmployeeList(
+  query: EmployeeListExportQuery,
+  format: PayrollReportExportFormat,
+  reportType: EmployeeListReportType = 'EMPLOYEES',
+): Promise<Blob> {
+  return payrollFetchBlob('/reports/employees/export', {
+    method: 'POST',
+    body: JSON.stringify({ ...query, format, reportType }),
+  });
+}
+
+export function exportAttendanceReport(
+  query: AttendanceExportQuery,
+  format: PayrollReportExportFormat,
+): Promise<Blob> {
+  return payrollFetchBlob('/reports/attendance/export', {
+    method: 'POST',
+    body: JSON.stringify({ ...query, format }),
   });
 }
 
@@ -161,6 +189,11 @@ export function listPayrollEmployees(
     locationId: filters.locationId,
     contractType: filters.contractType,
     includeInactive: filters.includeInactive,
+    isActive: filters.isActive,
+    positionId: filters.positionId,
+    area: filters.area,
+    department: filters.department,
+    search: filters.search,
     limit: filters.limit,
     offset: filters.offset,
   });

@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { AttendanceEventType, AttendanceLog } from '@prisma/client';
 import {
   COLOMBIA_TZ,
@@ -16,7 +16,20 @@ import {
 import { PayrollCalculationService } from '../../payroll/service/payroll-calculation.service';
 import { decimalToNumber } from '../../common/utils/decimal.util';
 import { EmployeeWithUserAndLocation, ReportsRepository } from '../repository/reports.repository';
+import { PayrollRepository } from '../../payroll/repository/payroll.repository';
 import { AttendanceQueryDto, PeriodQueryDto } from '../controller/dto/report-query.dto';
+import { EmployeeListExportQueryDto } from '../controller/dto/employee-list-export-query.dto';
+import {
+  AttendanceExportQueryDto,
+  AttendanceReportStatusFilter,
+} from '../controller/dto/attendance-export-query.dto';
+import {
+  EmployeeListReportResponseDto,
+  EmployeeListRowDto,
+} from '../controller/dto/employee-list-report-response.dto';
+import { MAX_EXPORT_ROWS } from '../reports.constants';
+import { buildAttendanceFiltersSummary } from './export-filters-summary.util';
+import { buildEmployeeListFiltersSummary } from './export-filters-summary.util';
 import {
   LocationPayrollTotalsDto,
   PayrollEmployeeRowDto,
@@ -274,6 +287,7 @@ function mapToPayrollEmployeeRow(
 export class ReportsService implements IReportsService {
   constructor(
     private readonly reportsRepository: ReportsRepository,
+    private readonly payrollRepository: PayrollRepository,
     private readonly payrollCalculationService: PayrollCalculationService,
     private readonly userLocationsService: UserLocationsService,
   ) {}
@@ -370,9 +384,10 @@ export class ReportsService implements IReportsService {
     );
 
     const allowedLocationIds = await this.resolveLocationScope(tenantId, actor, query.locationId);
-    const employees = await this.reportsRepository.findActiveEmployees(tenantId, {
+    let employees = await this.reportsRepository.findActiveEmployees(tenantId, {
       locationId: query.locationId,
       allowedLocationIds,
+      employeeId: query.employeeId,
     });
 
     const employeeIds = employees.map((e) => e.id);
@@ -388,7 +403,7 @@ export class ReportsService implements IReportsService {
     // Dummy period for AttendanceMonthSummary (informational only in attendance report)
     const [year, month] = query.from.split('-').map(Number);
 
-    const rows: AttendanceEmployeeRowDto[] = employees.map((emp) => {
+    let rows: AttendanceEmployeeRowDto[] = employees.map((emp) => {
       const empLogs = logsByEmployee.get(emp.id) ?? [];
       const dayRecords = buildDayRecords(empLogs);
 
@@ -415,7 +430,108 @@ export class ReportsService implements IReportsService {
       };
     });
 
+    rows = this.filterAttendanceRows(rows, query.status);
+
     return { tenantId, from: query.from, to: query.to, employees: rows };
+  }
+
+  async getAttendanceReportForExport(
+    tenantId: string,
+    query: Omit<AttendanceExportQueryDto, 'format'>,
+    actor: ReportsActor,
+  ): Promise<AttendanceReportResponseDto> {
+    const report = await this.getAttendanceReport(tenantId, query, actor);
+    const rowCount = report.employees.length;
+    if (rowCount > MAX_EXPORT_ROWS) {
+      throw new BadRequestException(
+        `La exportación supera el límite de ${MAX_EXPORT_ROWS} filas (${rowCount}). Ajusta los filtros.`,
+      );
+    }
+    return report;
+  }
+
+  async getEmployeeListReport(
+    tenantId: string,
+    query: Omit<EmployeeListExportQueryDto, 'format'>,
+    actor: ReportsActor,
+  ): Promise<EmployeeListReportResponseDto> {
+    const allowedLocationIds = await this.resolveLocationScope(tenantId, actor, query.locationId);
+
+    if (query.employeeId) {
+      const employee = await this.payrollRepository.findById(query.employeeId);
+      if (!employee || employee.tenantId !== tenantId) {
+        throw new NotFoundException('Empleado no encontrado');
+      }
+    }
+
+    const filters = {
+      tenantId,
+      allowedLocationIds,
+      locationId: query.locationId,
+      employeeId: query.employeeId,
+      positionId: query.positionId,
+      area: query.area,
+      department: query.department,
+      contractType: query.contractType,
+      isActive: query.isActive,
+      search: query.search,
+      includeInactive: true,
+    };
+
+    const rowCount = await this.payrollRepository.count(filters);
+    if (rowCount > MAX_EXPORT_ROWS) {
+      throw new BadRequestException(
+        `La exportación supera el límite de ${MAX_EXPORT_ROWS} filas (${rowCount}). Ajusta los filtros.`,
+      );
+    }
+
+    const employees = await this.payrollRepository.findAll({
+      ...filters,
+      limit: MAX_EXPORT_ROWS,
+      offset: 0,
+    });
+
+    const rows: EmployeeListRowDto[] = employees.map((employee) => ({
+      employeeId: employee.id,
+      name: employee.name,
+      cedula: employee.user.cedula,
+      email: employee.user.email,
+      position: employee.position,
+      area: employee.area,
+      department: employee.department,
+      contractType: employee.contractType,
+      locationId: employee.locationId,
+      locationName: employee.location?.name ?? employee.locationId,
+      hireDate: employee.hireDate.toISOString().slice(0, 10),
+      contractStart: employee.contractStart
+        ? employee.contractStart.toISOString().slice(0, 10)
+        : null,
+      contractEnd: employee.contractEnd ? employee.contractEnd.toISOString().slice(0, 10) : null,
+      salaryAmount: decimalToNumber(employee.salaryAmount),
+      isActive: employee.isActive,
+    }));
+
+    return {
+      tenantId,
+      filtersSummary: buildEmployeeListFiltersSummary(query),
+      employees: rows,
+    };
+  }
+
+  private filterAttendanceRows(
+    rows: AttendanceEmployeeRowDto[],
+    status?: AttendanceReportStatusFilter,
+  ): AttendanceEmployeeRowDto[] {
+    if (!status || status === AttendanceReportStatusFilter.ALL) {
+      return rows;
+    }
+    if (status === AttendanceReportStatusFilter.PRESENT) {
+      return rows.filter((row) => row.totalWorkedMinutes > 0);
+    }
+    if (status === AttendanceReportStatusFilter.ABSENT) {
+      return rows.filter((row) => row.totalWorkedMinutes === 0);
+    }
+    return rows.filter((row) => row.exceededLegalOvertimeLimit);
   }
 
   // ── Social security report ─────────────────────────────────────────────────

@@ -4,6 +4,40 @@
   gap: 1.5rem;
 }
 
+.filterField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  width: 100%;
+}
+
+.filterField > :not(.filterLabel) {
+  width: 100%;
+  min-width: 0;
+  --control-width: 100%;
+  --control-min-height: 40px;
+}
+
+.filterLabel {
+  color: #94a3b8;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.filterInput {
+  min-height: 40px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid rgb(255 255 255 / 12%);
+  border-radius: 4px;
+  background: rgb(255 255 255 / 4%);
+  color: inherit;
+  font-size: 0.875rem;
+}
+
 .kpiGrid {
   margin-top: 0.5rem;
 }

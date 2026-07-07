@@ -29,9 +29,16 @@ import { PayrollReportResponseDto } from './dto/payroll-report-response.dto';
 import { AttendanceReportResponseDto } from './dto/attendance-report-response.dto';
 import { SocialSecurityReportResponseDto } from './dto/social-security-report-response.dto';
 import { ExportPayrollReportDto, ExportFormat } from './dto/export-payroll-report.dto';
+import { EmployeeListExportQueryDto } from './dto/employee-list-export-query.dto';
+import { AttendanceExportQueryDto } from './dto/attendance-export-query.dto';
 import { ReportsService } from '../service/reports.service';
 import { ReportPdfService } from '../service/report-pdf.service';
 import { ReportExcelService } from '../service/report-excel.service';
+import {
+  buildAttendanceFiltersSummary,
+  buildPayrollFiltersSummary,
+} from '../service/export-filters-summary.util';
+import { EmployeeListReportType } from './dto/employee-list-export-query.dto';
 import type { JwtPayload } from '../../auth/interfaces/auth.interfaces';
 
 @ApiTags('reports')
@@ -107,13 +114,15 @@ export class ReportsController {
     @Res() res: Response,
   ): Promise<void> {
     const tenantId = this.resolveTenantId(user, headerTenantId);
-    const report = await this.reportsService.getPayrollReport(tenantId, body, {
+    const actor = {
       userId: user?.sub ?? '',
       roleCode: user?.roleCode ?? '',
-    });
+    };
+    const filtersSummary = buildPayrollFiltersSummary(body);
+    const report = await this.reportsService.getPayrollReport(tenantId, body, actor);
 
     if (body.format === ExportFormat.XLSX) {
-      const buffer = await this.reportExcelService.generatePayrollXlsx(report);
+      const buffer = await this.reportExcelService.generatePayrollXlsx(report, filtersSummary);
       res.setHeader(
         'Content-Type',
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -124,7 +133,7 @@ export class ReportsController {
       );
       res.send(buffer);
     } else {
-      const buffer = await this.reportPdfService.generatePayrollPdf(report);
+      const buffer = await this.reportPdfService.generatePayrollPdf(report, filtersSummary);
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader(
         'Content-Disposition',
@@ -132,6 +141,87 @@ export class ReportsController {
       );
       res.send(buffer);
     }
+  }
+
+  @ApiOperation({ summary: 'Export employee list as PDF or XLSX' })
+  @ApiConsumes('application/json')
+  @ApiProduces(
+    'application/pdf',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  )
+  @Roles(...PAYROLL_WRITE_ROLES)
+  @Post('employees/export')
+  async exportEmployeeList(
+    @CurrentUser() user: JwtPayload,
+    @Headers('x-tenant-id') headerTenantId: string,
+    @Body() body: EmployeeListExportQueryDto,
+    @Res() res: Response,
+  ): Promise<void> {
+    const tenantId = this.resolveTenantId(user, headerTenantId);
+    const actor = { userId: user?.sub ?? '', roleCode: user?.roleCode ?? '' };
+    const { format, ...query } = body;
+    const report = await this.reportsService.getEmployeeListReport(tenantId, query, actor);
+    const reportType = query.reportType ?? EmployeeListReportType.EMPLOYEES;
+    const suffix = reportType === EmployeeListReportType.CONTRACTS ? 'contratos' : 'empleados';
+
+    if (format === ExportFormat.XLSX) {
+      const buffer = await this.reportExcelService.generateEmployeeListXlsx(report, reportType);
+      res.setHeader(
+        'Content-Type',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      );
+      res.setHeader('Content-Disposition', `attachment; filename="reporte-${suffix}.xlsx"`);
+      res.send(buffer);
+      return;
+    }
+
+    const buffer = await this.reportPdfService.generateEmployeeListPdf(report, reportType);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="reporte-${suffix}.pdf"`);
+    res.send(buffer);
+  }
+
+  @ApiOperation({ summary: 'Export attendance report as PDF or XLSX' })
+  @ApiConsumes('application/json')
+  @ApiProduces(
+    'application/pdf',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  )
+  @Roles(...PAYROLL_WRITE_ROLES)
+  @Post('attendance/export')
+  async exportAttendanceReport(
+    @CurrentUser() user: JwtPayload,
+    @Headers('x-tenant-id') headerTenantId: string,
+    @Body() body: AttendanceExportQueryDto,
+    @Res() res: Response,
+  ): Promise<void> {
+    const tenantId = this.resolveTenantId(user, headerTenantId);
+    const actor = { userId: user?.sub ?? '', roleCode: user?.roleCode ?? '' };
+    const { format, ...query } = body;
+    const report = await this.reportsService.getAttendanceReportForExport(tenantId, query, actor);
+    const filtersSummary = buildAttendanceFiltersSummary(body);
+
+    if (format === ExportFormat.XLSX) {
+      const buffer = await this.reportExcelService.generateAttendanceXlsx(report, filtersSummary);
+      res.setHeader(
+        'Content-Type',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      );
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="asistencia-${query.from}-${query.to}.xlsx"`,
+      );
+      res.send(buffer);
+      return;
+    }
+
+    const buffer = await this.reportPdfService.generateAttendancePdf(report, filtersSummary);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="asistencia-${query.from}-${query.to}.pdf"`,
+    );
+    res.send(buffer);
   }
 
   private resolveTenantId(user: JwtPayload, headerTenantId: string): string {

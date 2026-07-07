@@ -2,6 +2,9 @@ import { Injectable } from '@nestjs/common';
 import PDFDocument from 'pdfkit';
 import type PDFKit from 'pdfkit';
 import { PayrollReportResponseDto } from '../controller/dto/payroll-report-response.dto';
+import { EmployeeListReportResponseDto } from '../controller/dto/employee-list-report-response.dto';
+import { AttendanceReportResponseDto } from '../controller/dto/attendance-report-response.dto';
+import { EmployeeListReportType } from '../controller/dto/employee-list-export-query.dto';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -146,7 +149,7 @@ function drawDataRow(
 
 @Injectable()
 export class ReportPdfService {
-  generatePayrollPdf(report: PayrollReportResponseDto): Promise<Buffer> {
+  generatePayrollPdf(report: PayrollReportResponseDto, filtersSummary?: string[]): Promise<Buffer> {
     return new Promise<Buffer>((resolve, reject) => {
       const doc = new PDFDocument({
         size: 'A4',
@@ -160,12 +163,138 @@ export class ReportPdfService {
       doc.on('end', () => resolve(Buffer.concat(chunks)));
       doc.on('error', reject);
 
-      this.drawDocument(doc, report);
+      this.drawDocument(doc, report, filtersSummary);
       doc.end();
     });
   }
 
-  private drawDocument(doc: PDFKit.PDFDocument, report: PayrollReportResponseDto): void {
+  generateEmployeeListPdf(
+    report: EmployeeListReportResponseDto,
+    reportType: EmployeeListReportType = EmployeeListReportType.EMPLOYEES,
+  ): Promise<Buffer> {
+    return this.generateTabularPdf({
+      title:
+        reportType === EmployeeListReportType.CONTRACTS
+          ? 'REPORTE DE CONTRATOS'
+          : 'REPORTE DE EMPLEADOS',
+      tenantId: report.tenantId,
+      filtersSummary: report.filtersSummary,
+      columns:
+        reportType === EmployeeListReportType.CONTRACTS
+          ? ['Nombre', 'Contrato', 'Ingreso', 'Inicio', 'Fin', 'Sede', 'Estado']
+          : ['Nombre', 'Cédula', 'Cargo', 'Área', 'Depto', 'Contrato', 'Sede', 'Estado', 'Salario'],
+      rows: report.employees.map((employee) =>
+        reportType === EmployeeListReportType.CONTRACTS
+          ? [
+              employee.name,
+              employee.contractType,
+              employee.hireDate,
+              employee.contractStart ?? '—',
+              employee.contractEnd ?? '—',
+              employee.locationName,
+              employee.isActive ? 'Activo' : 'Inactivo',
+            ]
+          : [
+              employee.name,
+              employee.cedula,
+              employee.position,
+              employee.area,
+              employee.department,
+              employee.contractType,
+              employee.locationName,
+              employee.isActive ? 'Activo' : 'Inactivo',
+              formatCOP(employee.salaryAmount),
+            ],
+      ),
+    });
+  }
+
+  generateAttendancePdf(
+    report: AttendanceReportResponseDto,
+    filtersSummary: string[],
+  ): Promise<Buffer> {
+    return this.generateTabularPdf({
+      title: 'REPORTE DE ASISTENCIA',
+      tenantId: report.tenantId,
+      filtersSummary,
+      columns: [
+        'Empleado',
+        'Cédula',
+        'Sede',
+        'Min. trabajadas',
+        'Min. ordinarias',
+        'Min. extra',
+        'Días activos',
+        'Días ausentes',
+        'Alerta legal',
+      ],
+      rows: report.employees.map((employee) => [
+        employee.employeeName,
+        employee.cedula,
+        employee.locationName,
+        String(employee.totalWorkedMinutes),
+        String(employee.regularMinutes),
+        String(employee.overtimeMinutes),
+        String(employee.activeDays),
+        String(employee.absentDays),
+        employee.exceededLegalOvertimeLimit ? 'Sí' : 'No',
+      ]),
+    });
+  }
+
+  private generateTabularPdf(options: {
+    title: string;
+    tenantId: string;
+    filtersSummary: string[];
+    columns: string[];
+    rows: string[][];
+  }): Promise<Buffer> {
+    return new Promise<Buffer>((resolve, reject) => {
+      const doc = new PDFDocument({ size: 'A4', layout: 'landscape', margin: MARGIN });
+      const chunks: Buffer[] = [];
+      doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', reject);
+
+      doc.font('Helvetica-Bold').fontSize(14).text(options.title, { align: 'center' });
+      doc.moveDown(0.4);
+      doc.font('Helvetica').fontSize(9).text(`Tenant: ${options.tenantId}`);
+      for (const line of options.filtersSummary) {
+        doc.text(line);
+      }
+      doc.text(
+        `Generado: ${new Date().toLocaleDateString('es-CO', { timeZone: 'America/Bogota' })}`,
+      );
+      doc.moveDown(0.6);
+
+      const colWidth = Math.floor(CONTENT_WIDTH / options.columns.length);
+      let y = doc.y;
+      doc.font('Helvetica-Bold').fontSize(8);
+      options.columns.forEach((header, index) => {
+        doc.text(header, MARGIN + index * colWidth, y, { width: colWidth - 4 });
+      });
+      y += 16;
+      doc.font('Helvetica').fontSize(7.5);
+      for (const row of options.rows) {
+        if (y > PAGE_HEIGHT - MARGIN - 40) {
+          doc.addPage();
+          y = MARGIN;
+        }
+        row.forEach((cell, index) => {
+          doc.text(trunc(cell, 28), MARGIN + index * colWidth, y, { width: colWidth - 4 });
+        });
+        y += 14;
+      }
+
+      doc.end();
+    });
+  }
+
+  private drawDocument(
+    doc: PDFKit.PDFDocument,
+    report: PayrollReportResponseDto,
+    filtersSummary?: string[],
+  ): void {
     const { tenantId, period, employees, tenantTotals } = report;
     const monthName = MONTH_NAMES_ES[period.month - 1] ?? String(period.month);
 
@@ -179,6 +308,11 @@ export class ReportPdfService {
     doc.font('Helvetica').fontSize(9.5).moveDown(0.35);
     doc.text(`Tenant: ${tenantId}`, MARGIN, doc.y);
     doc.text(`Período: ${monthName} ${period.year}`);
+    if (filtersSummary?.length) {
+      for (const line of filtersSummary) {
+        doc.text(line);
+      }
+    }
     const genDate = new Date().toLocaleDateString('es-CO', {
       timeZone: 'America/Bogota',
       year: 'numeric',

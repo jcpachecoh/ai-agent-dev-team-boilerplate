@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import * as ExcelJS from 'exceljs';
 import { PayrollReportResponseDto } from '../controller/dto/payroll-report-response.dto';
+import { EmployeeListReportResponseDto } from '../controller/dto/employee-list-report-response.dto';
+import { AttendanceReportResponseDto } from '../controller/dto/attendance-report-response.dto';
+import { EmployeeListReportType } from '../controller/dto/employee-list-export-query.dto';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -51,7 +54,10 @@ const COLUMNS: [string, number, boolean][] = [
 
 @Injectable()
 export class ReportExcelService {
-  async generatePayrollXlsx(report: PayrollReportResponseDto): Promise<Buffer> {
+  async generatePayrollXlsx(
+    report: PayrollReportResponseDto,
+    filtersSummary?: string[],
+  ): Promise<Buffer> {
     const workbook = new ExcelJS.Workbook();
     workbook.creator = 'RestOpsIQ';
     workbook.created = new Date();
@@ -72,6 +78,11 @@ export class ReportExcelService {
     sheet.mergeCells(`A1:J1`);
 
     sheet.addRow([`Tenant: ${tenantId}`]);
+    if (filtersSummary?.length) {
+      for (const line of filtersSummary) {
+        sheet.addRow([line]);
+      }
+    }
     const genDate = new Date().toLocaleDateString('es-CO', {
       timeZone: 'America/Bogota',
       year: 'numeric',
@@ -141,6 +152,112 @@ export class ReportExcelService {
     this.applyMoneyFormat(totalsRow);
 
     // ── Return buffer ────────────────────────────────────────────────────────
+    const arrayBuffer = await workbook.xlsx.writeBuffer();
+    return Buffer.from(arrayBuffer as ArrayBuffer);
+  }
+
+  async generateEmployeeListXlsx(
+    report: EmployeeListReportResponseDto,
+    reportType: EmployeeListReportType = EmployeeListReportType.EMPLOYEES,
+  ): Promise<Buffer> {
+    const columns =
+      reportType === EmployeeListReportType.CONTRACTS
+        ? ['Nombre', 'Contrato', 'Ingreso', 'Inicio', 'Fin', 'Sede', 'Estado']
+        : ['Nombre', 'Cédula', 'Cargo', 'Área', 'Depto', 'Contrato', 'Sede', 'Estado', 'Salario'];
+
+    const rows = report.employees.map((employee) =>
+      reportType === EmployeeListReportType.CONTRACTS
+        ? [
+            employee.name,
+            employee.contractType,
+            employee.hireDate,
+            employee.contractStart ?? '',
+            employee.contractEnd ?? '',
+            employee.locationName,
+            employee.isActive ? 'Activo' : 'Inactivo',
+          ]
+        : [
+            employee.name,
+            employee.cedula,
+            employee.position,
+            employee.area,
+            employee.department,
+            employee.contractType,
+            employee.locationName,
+            employee.isActive ? 'Activo' : 'Inactivo',
+            employee.salaryAmount,
+          ],
+    );
+
+    return this.generateSimpleWorkbook({
+      sheetName: reportType === EmployeeListReportType.CONTRACTS ? 'Contratos' : 'Empleados',
+      title:
+        reportType === EmployeeListReportType.CONTRACTS
+          ? 'REPORTE DE CONTRATOS'
+          : 'REPORTE DE EMPLEADOS',
+      tenantId: report.tenantId,
+      filtersSummary: report.filtersSummary,
+      columns,
+      rows,
+    });
+  }
+
+  async generateAttendanceXlsx(
+    report: AttendanceReportResponseDto,
+    filtersSummary: string[],
+  ): Promise<Buffer> {
+    return this.generateSimpleWorkbook({
+      sheetName: 'Asistencia',
+      title: 'REPORTE DE ASISTENCIA',
+      tenantId: report.tenantId,
+      filtersSummary,
+      columns: [
+        'Empleado',
+        'Cédula',
+        'Sede',
+        'Min. trabajadas',
+        'Min. ordinarias',
+        'Min. extra',
+        'Días activos',
+        'Días ausentes',
+        'Alerta legal',
+      ],
+      rows: report.employees.map((employee) => [
+        employee.employeeName,
+        employee.cedula,
+        employee.locationName,
+        employee.totalWorkedMinutes,
+        employee.regularMinutes,
+        employee.overtimeMinutes,
+        employee.activeDays,
+        employee.absentDays,
+        employee.exceededLegalOvertimeLimit ? 'Sí' : 'No',
+      ]),
+    });
+  }
+
+  private async generateSimpleWorkbook(options: {
+    sheetName: string;
+    title: string;
+    tenantId: string;
+    filtersSummary: string[];
+    columns: string[];
+    rows: Array<Array<string | number>>;
+  }): Promise<Buffer> {
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'RestOpsIQ';
+    const sheet = workbook.addWorksheet(options.sheetName);
+    sheet.addRow([options.title]).font = { bold: true, size: 13 };
+    sheet.addRow([`Tenant: ${options.tenantId}`]);
+    for (const line of options.filtersSummary) {
+      sheet.addRow([line]);
+    }
+    sheet.addRow([]);
+    const headerRow = sheet.addRow(options.columns);
+    headerRow.font = { bold: true };
+    for (const row of options.rows) {
+      sheet.addRow(row);
+    }
     const arrayBuffer = await workbook.xlsx.writeBuffer();
     return Buffer.from(arrayBuffer as ArrayBuffer);
   }

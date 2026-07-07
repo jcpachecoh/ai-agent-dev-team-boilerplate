@@ -14,6 +14,56 @@ import { EmployeeDetails, User } from '@prisma/client';
 export class PayrollRepository implements IPayrollRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  private buildListWhere(filters: ListEmployeesFilters): Record<string, unknown> {
+    const where: Record<string, unknown> = {
+      tenantId: filters.tenantId,
+    };
+
+    if (filters.locationId) {
+      where.locationId = filters.locationId;
+    } else if (filters.allowedLocationIds) {
+      where.locationId = { in: filters.allowedLocationIds };
+    }
+
+    if (filters.contractType) {
+      where.contractType = filters.contractType;
+    }
+
+    if (filters.positionId) {
+      where.positionId = filters.positionId;
+    }
+
+    if (filters.area?.trim()) {
+      where.area = { contains: filters.area.trim(), mode: 'insensitive' };
+    }
+
+    if (filters.department?.trim()) {
+      where.department = filters.department.trim();
+    }
+
+    if (filters.employeeId) {
+      where.id = filters.employeeId;
+    }
+
+    if (!filters.includeInactive) {
+      where.isActive = true;
+      where.deletedAt = null;
+    } else if (filters.isActive !== undefined) {
+      where.isActive = filters.isActive;
+    }
+
+    const search = filters.search?.trim();
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { user: { cedula: { contains: search } } },
+        { user: { email: { contains: search, mode: 'insensitive' } } },
+      ];
+    }
+
+    return where;
+  }
+
   async create(
     data: CreateEmployeeData & { hasTransportSubsidy: boolean },
   ): Promise<EmployeeDetails & { user: User }> {
@@ -83,32 +133,10 @@ export class PayrollRepository implements IPayrollRepository {
   async findAll(
     filters: ListEmployeesFilters,
   ): Promise<(EmployeeDetails & { user: User; location?: { id: string; name: string } })[]> {
-    const where: any = {
-      tenantId: filters.tenantId,
-    };
-
-    if (filters.locationId) {
-      where.locationId = filters.locationId;
-    } else if (filters.allowedLocationIds) {
-      where.locationId = { in: filters.allowedLocationIds };
-    }
-
-    if (filters.contractType) {
-      where.contractType = filters.contractType;
-    }
-
-    if (!filters.includeInactive) {
-      where.isActive = true;
-      where.deletedAt = null;
-    } else if (filters.isActive !== undefined) {
-      where.isActive = filters.isActive;
-    }
-
     return this.prisma.employeeDetails.findMany({
-      where,
+      where: this.buildListWhere(filters),
       include: {
         user: true,
-
         location: { select: { id: true, name: true } },
         photoStorageObject: PayrollRepository.PHOTO_INCLUDE,
         socialProfiles: { where: { deletedAt: null } },
@@ -254,26 +282,9 @@ export class PayrollRepository implements IPayrollRepository {
   }
 
   async count(filters: ListEmployeesFilters): Promise<number> {
-    const where: any = {
-      tenantId: filters.tenantId,
-    };
-
-    if (filters.locationId) {
-      where.locationId = filters.locationId;
-    } else if (filters.allowedLocationIds) {
-      where.locationId = { in: filters.allowedLocationIds };
-    }
-
-    if (filters.contractType) {
-      where.contractType = filters.contractType;
-    }
-
-    if (!filters.includeInactive) {
-      where.isActive = true;
-      where.deletedAt = null;
-    }
-
-    return this.prisma.employeeDetails.count({ where });
+    return this.prisma.employeeDetails.count({
+      where: this.buildListWhere(filters),
+    });
   }
 
   async findExistingUser(

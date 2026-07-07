@@ -71,18 +71,24 @@ describe('ReportsController', () => {
             getPayrollReport: jest.fn(),
             getAttendanceReport: jest.fn(),
             getSocialSecurityReport: jest.fn(),
+            getEmployeeListReport: jest.fn(),
+            getAttendanceReportForExport: jest.fn(),
           },
         },
         {
           provide: ReportPdfService,
           useValue: {
             generatePayrollPdf: jest.fn(),
+            generateEmployeeListPdf: jest.fn(),
+            generateAttendancePdf: jest.fn(),
           },
         },
         {
           provide: ReportExcelService,
           useValue: {
             generatePayrollXlsx: jest.fn(),
+            generateEmployeeListXlsx: jest.fn(),
+            generateAttendanceXlsx: jest.fn(),
           },
         },
       ],
@@ -226,7 +232,10 @@ describe('ReportsController', () => {
 
       // Assert
       expect(service.getPayrollReport).toHaveBeenCalledWith(TENANT_ID, pdfBody, mockActor);
-      expect(pdfService.generatePayrollPdf).toHaveBeenCalledWith(mockPayrollReport);
+      expect(pdfService.generatePayrollPdf).toHaveBeenCalledWith(
+        mockPayrollReport,
+        expect.arrayContaining(['Periodo: 2025-06']),
+      );
       expect(excelService.generatePayrollXlsx).not.toHaveBeenCalled();
       expect(mockRes.setHeader).toHaveBeenCalledWith('Content-Type', 'application/pdf');
       expect(mockRes.setHeader).toHaveBeenCalledWith(
@@ -246,7 +255,10 @@ describe('ReportsController', () => {
 
       // Assert
       expect(service.getPayrollReport).toHaveBeenCalledWith(TENANT_ID, xlsxBody, mockActor);
-      expect(excelService.generatePayrollXlsx).toHaveBeenCalledWith(mockPayrollReport);
+      expect(excelService.generatePayrollXlsx).toHaveBeenCalledWith(
+        mockPayrollReport,
+        expect.arrayContaining(['Periodo: 2025-06']),
+      );
       expect(pdfService.generatePayrollPdf).not.toHaveBeenCalled();
       expect(mockRes.setHeader).toHaveBeenCalledWith(
         'Content-Type',
@@ -297,6 +309,64 @@ describe('ReportsController', () => {
       await expect(
         controller.exportPayrollReport({} as unknown as JwtPayload, '', pdfBody, mockRes as any),
       ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('exportEmployeeList', () => {
+    const mockRes = { setHeader: jest.fn(), send: jest.fn() };
+    const mockEmployeeReport = {
+      tenantId: TENANT_ID,
+      filtersSummary: ['Sin filtros adicionales'],
+      employees: [],
+    };
+
+    beforeEach(() => {
+      mockRes.setHeader.mockClear();
+      mockRes.send.mockClear();
+    });
+
+    it('exports employee list as PDF', async () => {
+      service.getEmployeeListReport.mockResolvedValue(mockEmployeeReport);
+      pdfService.generateEmployeeListPdf.mockResolvedValue(Buffer.from('%PDF'));
+
+      await controller.exportEmployeeList(
+        mockUser,
+        '',
+        { format: ExportFormat.PDF },
+        mockRes as any,
+      );
+
+      expect(service.getEmployeeListReport).toHaveBeenCalled();
+      expect(pdfService.generateEmployeeListPdf).toHaveBeenCalled();
+      expect(mockRes.setHeader).toHaveBeenCalledWith('Content-Type', 'application/pdf');
+    });
+  });
+
+  describe('exportAttendanceReport', () => {
+    const mockRes = { setHeader: jest.fn(), send: jest.fn() };
+
+    beforeEach(() => {
+      mockRes.setHeader.mockClear();
+      mockRes.send.mockClear();
+    });
+
+    it('exports attendance report as XLSX', async () => {
+      service.getAttendanceReportForExport.mockResolvedValue(mockAttendanceReport);
+      excelService.generateAttendanceXlsx.mockResolvedValue(Buffer.from('PK\x03\x04'));
+
+      await controller.exportAttendanceReport(
+        mockUser,
+        '',
+        { format: ExportFormat.XLSX, from: '2025-06-01', to: '2025-06-30' },
+        mockRes as any,
+      );
+
+      expect(service.getAttendanceReportForExport).toHaveBeenCalled();
+      expect(excelService.generateAttendanceXlsx).toHaveBeenCalled();
+      expect(mockRes.setHeader).toHaveBeenCalledWith(
+        'Content-Type',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      );
     });
   });
 });

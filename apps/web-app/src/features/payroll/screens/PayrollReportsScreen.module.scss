@@ -1,3 +1,116 @@
+.dashboard {
+  min-height: 100%;
+}
+
+.filtersBar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(160px, 100%), 1fr));
+  gap: 12px;
+  width: 100%;
+  align-items: end;
+}
+
+.filterField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  width: 100%;
+}
+
+.filterField > :not(.filterLabel) {
+  width: 100%;
+  min-width: 0;
+  --control-width: 100%;
+  --control-min-height: 36px;
+}
+
+.filterLabel {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.filterInput {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 36px;
+  padding: 0.4rem 0.65rem;
+  border: 1px solid var(--report-filter-border);
+  border-radius: 4px;
+  background: var(--report-filter-input-bg);
+  color: var(--report-filter-text);
+  font-size: 0.8125rem;
+}
+
+.dateInputWrap {
+  position: relative;
+  width: 100%;
+}
+
+.dateInputWrap .filterInput {
+  padding-right: 2rem;
+
+  &::-webkit-calendar-picker-indicator {
+    position: absolute;
+    right: 0;
+    top: 0;
+    z-index: 2;
+    width: 2rem;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    cursor: pointer;
+    opacity: 0;
+  }
+}
+
+.calendarIcon {
+  position: absolute;
+  right: 0.55rem;
+  top: 50%;
+  z-index: 1;
+  width: 1rem;
+  height: 1rem;
+  transform: translateY(-50%);
+  color: var(--report-filter-icon);
+  pointer-events: none;
+}
+
+.theme--dark {
+  --report-filter-border: #2e2e2e;
+  --report-filter-input-bg: #111;
+  --report-filter-text: #f5f5f0;
+  --report-filter-label: #888;
+  --report-filter-icon: #f5f5f0;
+
+  .filterInput {
+    color-scheme: dark;
+  }
+}
+
+.theme--light {
+  --report-filter-border: rgba(0, 0, 0, 0.12);
+  --report-filter-input-bg: #fff;
+  --report-filter-text: #1a1a1a;
+  --report-filter-label: #666;
+  --report-filter-icon: #666;
+
+  .filterInput {
+    color-scheme: light;
+  }
+}
+
+.theme--dark .filterLabel {
+  color: var(--report-filter-label);
+}
+
+.theme--light .filterLabel {
+  color: var(--report-filter-label);
+}
+
 .state {
   display: flex;
   flex-direction: column;
@@ -20,12 +133,18 @@
   }
 }
 
-.theme--light {
+.theme--light.state {
   background: #f6f4ef;
   color: #1a1a1a;
 
   button {
     border-color: rgba(0, 0, 0, 0.12);
     background: #fff;
+  }
+}
+
+@media (max-width: 767px) {
+  .filterField {
+    min-width: 0;
   }
 }

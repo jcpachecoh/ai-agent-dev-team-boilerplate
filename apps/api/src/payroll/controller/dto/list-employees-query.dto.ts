@@ -16,6 +16,35 @@ export class ListEmployeesQueryDto {
   @IsOptional()
   includeInactive?: boolean;
 
+  @Transform(({ value }) => {
+    if (value === 'true' || value === true) return true;
+    if (value === 'false' || value === false) return false;
+    return undefined;
+  })
+  @IsBoolean()
+  @IsOptional()
+  isActive?: boolean;
+
+  @IsString()
+  @IsOptional()
+  positionId?: string;
+
+  @IsString()
+  @IsOptional()
+  area?: string;
+
+  @IsString()
+  @IsOptional()
+  department?: string;
+
+  @IsString()
+  @IsOptional()
+  employeeId?: string;
+
+  @IsString()
+  @IsOptional()
+  search?: string;
+
   @Transform(({ value }) => (value != null ? Number(value) : undefined))
   @IsInt()
   @Min(1)

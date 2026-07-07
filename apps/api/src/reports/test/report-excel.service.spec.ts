@@ -4,6 +4,9 @@ import {
   PayrollReportResponseDto,
   PayrollEmployeeRowDto,
 } from '../controller/dto/payroll-report-response.dto';
+import { EmployeeListReportType } from '../controller/dto/employee-list-export-query.dto';
+import { EmployeeListReportResponseDto } from '../controller/dto/employee-list-report-response.dto';
+import { AttendanceReportResponseDto } from '../controller/dto/attendance-report-response.dto';
 import { SalaryType, EmployeeContractType } from '@prisma/client';
 
 // Minimal valid report — no employees
@@ -84,6 +87,15 @@ describe('ReportExcelService', () => {
   it('returns a valid XLSX (ZIP) buffer — magic bytes PK\\x03\\x04', async () => {
     const result = await service.generatePayrollXlsx(EMPTY_REPORT);
     expect(isXlsxBuffer(result)).toBe(true);
+  });
+
+  it('includes filters summary rows in payroll XLSX', async () => {
+    const result = await service.generatePayrollXlsx(EMPTY_REPORT, [
+      'Periodo: 2025-06',
+      'Sede: loc-1',
+    ]);
+    expect(isXlsxBuffer(result)).toBe(true);
+    expect(result.length).toBeGreaterThan(0);
   });
 
   it('empty employees report still produces valid XLSX buffer', async () => {
@@ -190,6 +202,72 @@ describe('ReportExcelService', () => {
     };
 
     const result = await service.generatePayrollXlsx(report);
+    expect(isXlsxBuffer(result)).toBe(true);
+  });
+
+  const employeeListReport: EmployeeListReportResponseDto = {
+    tenantId: 'tenant-1',
+    filtersSummary: ['Sede: loc-1'],
+    employees: [
+      {
+        employeeId: 'emp-1',
+        name: 'Ana Gómez',
+        cedula: '10000001',
+        email: 'ana@test.com',
+        position: 'Cajera',
+        area: 'Salón',
+        department: 'Operaciones',
+        contractType: EmployeeContractType.INDEFINIDO,
+        locationId: 'loc-1',
+        locationName: 'Sede Norte',
+        hireDate: '2020-01-01',
+        contractStart: '2020-01-01',
+        contractEnd: null,
+        salaryAmount: 1_800_000,
+        isActive: true,
+      },
+    ],
+  };
+
+  it('generates employee list XLSX for employees report type', async () => {
+    const result = await service.generateEmployeeListXlsx(
+      employeeListReport,
+      EmployeeListReportType.EMPLOYEES,
+    );
+    expect(isXlsxBuffer(result)).toBe(true);
+  });
+
+  it('generates employee list XLSX for contracts report type', async () => {
+    const result = await service.generateEmployeeListXlsx(
+      employeeListReport,
+      EmployeeListReportType.CONTRACTS,
+    );
+    expect(isXlsxBuffer(result)).toBe(true);
+  });
+
+  it('generates attendance XLSX with legal alert row', async () => {
+    const attendanceReport: AttendanceReportResponseDto = {
+      tenantId: 'tenant-1',
+      from: '2025-06-01',
+      to: '2025-06-30',
+      employees: [
+        {
+          employeeId: 'emp-1',
+          employeeName: 'Ana Gómez',
+          cedula: '10000001',
+          locationId: 'loc-1',
+          locationName: 'Sede Norte',
+          totalWorkedMinutes: 480,
+          regularMinutes: 420,
+          overtimeMinutes: 60,
+          activeDays: 1,
+          absentDays: 29,
+          exceededLegalOvertimeLimit: true,
+        },
+      ],
+    };
+
+    const result = await service.generateAttendanceXlsx(attendanceReport, ['Desde: 2025-06-01']);
     expect(isXlsxBuffer(result)).toBe(true);
   });
 });

@@ -1,5 +1,8 @@
 import { ReportPdfService } from '../service/report-pdf.service';
 import { PayrollReportResponseDto } from '../controller/dto/payroll-report-response.dto';
+import { EmployeeListReportType } from '../controller/dto/employee-list-export-query.dto';
+import { EmployeeListReportResponseDto } from '../controller/dto/employee-list-report-response.dto';
+import { AttendanceReportResponseDto } from '../controller/dto/attendance-report-response.dto';
 import { EmployeeContractType, SalaryType } from '@prisma/client';
 
 const PDF_MAGIC = Buffer.from('%PDF');
@@ -185,6 +188,125 @@ describe('ReportPdfService', () => {
 
       // Assert — one employee adds content → buffer should be strictly larger
       expect(buffer.length).toBeGreaterThan(emptyBuffer.length);
+    });
+
+    it('includes filters summary lines in payroll PDF', async () => {
+      const buffer = await service.generatePayrollPdf(makeReport([makeEmployee()]), [
+        'Periodo: 2025-06',
+        'Sede: loc-1',
+      ]);
+
+      expect(buffer.slice(0, 4)).toEqual(PDF_MAGIC);
+      expect(buffer.length).toBeGreaterThan(0);
+    });
+  });
+
+  const employeeListReport: EmployeeListReportResponseDto = {
+    tenantId: 'tenant-test',
+    filtersSummary: ['Estado: Activos'],
+    employees: [
+      {
+        employeeId: 'emp-1',
+        name: 'Ana García López',
+        cedula: '1000100001',
+        email: 'ana@test.com',
+        position: 'Cajera',
+        area: 'Salón',
+        department: 'Operaciones',
+        contractType: EmployeeContractType.INDEFINIDO,
+        locationId: 'loc-1',
+        locationName: 'Sede Centro',
+        hireDate: '2020-01-01',
+        contractStart: '2020-01-01',
+        contractEnd: null,
+        salaryAmount: 1_800_000,
+        isActive: true,
+      },
+    ],
+  };
+
+  describe('generateEmployeeListPdf', () => {
+    it('returns PDF buffer for employees report type', async () => {
+      const buffer = await service.generateEmployeeListPdf(
+        employeeListReport,
+        EmployeeListReportType.EMPLOYEES,
+      );
+      expect(buffer.slice(0, 4)).toEqual(PDF_MAGIC);
+    });
+
+    it('returns PDF buffer for contracts report type', async () => {
+      const buffer = await service.generateEmployeeListPdf(
+        {
+          ...employeeListReport,
+          employees: [
+            {
+              ...employeeListReport.employees[0]!,
+              contractEnd: '2025-12-31',
+              isActive: false,
+            },
+          ],
+        },
+        EmployeeListReportType.CONTRACTS,
+      );
+      expect(buffer.slice(0, 4)).toEqual(PDF_MAGIC);
+    });
+  });
+
+  describe('generateAttendancePdf', () => {
+    it('returns PDF buffer for attendance export', async () => {
+      const attendanceReport: AttendanceReportResponseDto = {
+        tenantId: 'tenant-test',
+        from: '2025-06-01',
+        to: '2025-06-30',
+        employees: [
+          {
+            employeeId: 'emp-1',
+            employeeName: 'Ana García López',
+            cedula: '1000100001',
+            locationId: 'loc-1',
+            locationName: 'Sede Centro',
+            totalWorkedMinutes: 480,
+            regularMinutes: 420,
+            overtimeMinutes: 60,
+            activeDays: 1,
+            absentDays: 29,
+            exceededLegalOvertimeLimit: false,
+          },
+        ],
+      };
+
+      const buffer = await service.generateAttendancePdf(attendanceReport, [
+        'Desde: 2025-06-01',
+        'Hasta: 2025-06-30',
+      ]);
+
+      expect(buffer.slice(0, 4)).toEqual(PDF_MAGIC);
+    });
+
+    it('paginates attendance PDF when there are many rows', async () => {
+      const attendanceReport: AttendanceReportResponseDto = {
+        tenantId: 'tenant-test',
+        from: '2025-06-01',
+        to: '2025-06-30',
+        employees: Array.from({ length: 40 }, (_, index) => ({
+          employeeId: `emp-${index}`,
+          employeeName: `Empleado ${index}`,
+          cedula: `1000000${index}`,
+          locationId: 'loc-1',
+          locationName: 'Sede Centro',
+          totalWorkedMinutes: 480,
+          regularMinutes: 420,
+          overtimeMinutes: 60,
+          activeDays: 1,
+          absentDays: 29,
+          exceededLegalOvertimeLimit: index % 2 === 0,
+        })),
+      };
+
+      const buffer = await service.generateAttendancePdf(attendanceReport, ['Desde: 2025-06-01']);
+
+      expect(buffer.slice(0, 4)).toEqual(PDF_MAGIC);
+      expect(buffer.length).toBeGreaterThan(1000);
     });
   });
 });

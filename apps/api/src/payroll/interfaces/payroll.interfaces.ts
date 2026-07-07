@@ -98,6 +98,11 @@ export interface ListEmployeesFilters {
   contractType?: EmployeeContractType;
   isActive?: boolean;
   includeInactive?: boolean;
+  positionId?: string;
+  area?: string;
+  department?: string;
+  employeeId?: string;
+  search?: string;
   limit?: number;
   offset?: number;
 }

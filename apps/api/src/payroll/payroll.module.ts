@@ -51,6 +51,7 @@ import { PayrollCalculationService } from './service/payroll-calculation.service
   ],
   exports: [
     PayrollService,
+    PayrollRepository,
     PayrollCalculationService,
     EmployeeCatalogService,
     EmployeePositionsService,

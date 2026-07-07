@@ -1,6 +1,7 @@
-import { IsEnum, IsOptional, IsString, Matches } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { EmployeeContractType } from '@prisma/client';
+import { IsEnum, IsOptional, IsString, Matches } from 'class-validator';
+import { AttendanceReportStatusFilter } from './attendance-export-query.dto';
 
 export class PeriodQueryDto {
   @ApiProperty({ example: '2025-06', description: 'Billing period in YYYY-MM format' })
@@ -43,4 +44,14 @@ export class AttendanceQueryDto {
   @IsOptional()
   @IsString()
   locationId?: string;
+
+  @ApiPropertyOptional({ description: 'Filter by employee details id' })
+  @IsOptional()
+  @IsString()
+  employeeId?: string;
+
+  @ApiPropertyOptional({ enum: AttendanceReportStatusFilter })
+  @IsOptional()
+  @IsEnum(AttendanceReportStatusFilter)
+  status?: AttendanceReportStatusFilter;
 }

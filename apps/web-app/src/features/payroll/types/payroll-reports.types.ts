@@ -47,13 +47,35 @@ export interface AttendanceReportResponse {
 
 export type PayrollReportExportFormat = 'PDF' | 'XLSX';
 
+export type EmployeeListReportType = 'EMPLOYEES' | 'CONTRACTS';
+
+export type AttendanceReportStatusFilter = 'ALL' | 'PRESENT' | 'ABSENT' | 'LATE';
+
 export interface PayrollReportQuery {
   period: string;
   locationId?: string;
+  employeeId?: string;
+  contractType?: string;
 }
 
 export interface AttendanceReportQuery {
   from: string;
   to: string;
   locationId?: string;
+  employeeId?: string;
+  status?: AttendanceReportStatusFilter;
 }
+
+export interface EmployeeListExportQuery {
+  reportType?: EmployeeListReportType;
+  locationId?: string;
+  employeeId?: string;
+  positionId?: string;
+  area?: string;
+  department?: string;
+  contractType?: string;
+  isActive?: boolean;
+  search?: string;
+}
+
+export interface AttendanceExportQuery extends AttendanceReportQuery {}

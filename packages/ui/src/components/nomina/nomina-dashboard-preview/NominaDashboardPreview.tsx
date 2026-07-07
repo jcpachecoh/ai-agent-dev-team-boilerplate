@@ -73,6 +73,8 @@ export interface NominaDashboardPreviewProps {
   legalAlertsItems?: NominaLegalAlertItem[];
   reports?: NominaReportDefinition[];
   onReportDownload?: (item: NominaReportDefinition) => void;
+  filtersBar?: ReactNode;
+  showPeriodToggle?: boolean;
   className?: string;
 }
 
@@ -96,6 +98,8 @@ export function NominaDashboardPreview({
   legalAlertsItems,
   reports = NOMINA_DEMO_REPORTS,
   onReportDownload,
+  filtersBar,
+  showPeriodToggle = true,
   className,
 }: NominaDashboardPreviewProps): JSX.Element {
   const [internalPeriod, setInternalPeriod] = useState<NominaPeriodMode>('month');
@@ -134,13 +138,15 @@ export function NominaDashboardPreview({
         </div>
       </section>
 
+      {filtersBar ? <section className={styles.filtersSection}>{filtersBar}</section> : null}
+
       <div className={styles.main}>
         <div className={styles.primary}>
           <NominaChartPanel
             theme={theme}
             title={chartTitle}
             period={period}
-            onPeriodChange={handlePeriodChange}
+            onPeriodChange={showPeriodToggle ? handlePeriodChange : undefined}
             data={chartData}
             xDataKey={chartXDataKey}
             series={chartSeries}

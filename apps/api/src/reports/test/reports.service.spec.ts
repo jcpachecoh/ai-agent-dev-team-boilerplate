@@ -1,4 +1,4 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import {
   ArlRiskLevel,
@@ -12,8 +12,11 @@ import { SMLV_2025, TRANSPORT_SUBSIDY_2025 } from '../../payroll/payroll.constan
 import { UserLocationsService } from '../../locations/service/user-locations.service';
 import { PayrollCalculationService } from '../../payroll/service/payroll-calculation.service';
 import { EmployeeWithUserAndLocation, ReportsRepository } from '../repository/reports.repository';
+import { PayrollRepository } from '../../payroll/repository/payroll.repository';
 import { ReportsService } from '../service/reports.service';
 import { AttendanceQueryDto, PeriodQueryDto } from '../controller/dto/report-query.dto';
+import { AttendanceReportStatusFilter } from '../controller/dto/attendance-export-query.dto';
+import { MAX_EXPORT_ROWS } from '../reports.constants';
 
 // ── Fixtures ─────────────────────────────────────────────────────────────────
 
@@ -192,6 +195,7 @@ function nocturnoDayLogs(employeeId: string, date: string): any[] {
 describe('ReportsService', () => {
   let service: ReportsService;
   let repository: jest.Mocked<ReportsRepository>;
+  let payrollRepository: jest.Mocked<PayrollRepository>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -206,6 +210,14 @@ describe('ReportsService', () => {
           },
         },
         {
+          provide: PayrollRepository,
+          useValue: {
+            findAll: jest.fn(),
+            count: jest.fn(),
+            findById: jest.fn(),
+          },
+        },
+        {
           provide: UserLocationsService,
           useValue: {
             resolveAllowedLocationIds: jest.fn().mockResolvedValue(null),
@@ -217,6 +229,7 @@ describe('ReportsService', () => {
 
     service = module.get<ReportsService>(ReportsService);
     repository = module.get(ReportsRepository);
+    payrollRepository = module.get(PayrollRepository);
   });
 
   afterEach(() => jest.clearAllMocks());
@@ -621,6 +634,144 @@ describe('ReportsService', () => {
         TENANT_ID,
         expect.objectContaining({ locationId: 'loc-1' }),
       );
+    });
+
+    it('filters PRESENT employees with worked minutes', async () => {
+      repository.findActiveEmployees.mockResolvedValue([mockEmployee, mockEmployee2]);
+      repository.findAttendanceLogsByDateRange.mockResolvedValue(
+        fullDayLogs('emp-1', '2025-06-01'),
+      );
+
+      const result = await service.getAttendanceReport(
+        TENANT_ID,
+        { ...query, status: AttendanceReportStatusFilter.PRESENT },
+        OWNER_ACTOR,
+      );
+
+      expect(result.employees).toHaveLength(1);
+      expect(result.employees[0]?.employeeId).toBe('emp-1');
+    });
+
+    it('filters ABSENT employees without worked minutes', async () => {
+      repository.findActiveEmployees.mockResolvedValue([mockEmployee, mockEmployee2]);
+      repository.findAttendanceLogsByDateRange.mockResolvedValue(
+        fullDayLogs('emp-1', '2025-06-01'),
+      );
+
+      const result = await service.getAttendanceReport(
+        TENANT_ID,
+        { ...query, status: AttendanceReportStatusFilter.ABSENT },
+        OWNER_ACTOR,
+      );
+
+      expect(result.employees).toHaveLength(1);
+      expect(result.employees[0]?.employeeId).toBe('emp-2');
+    });
+
+    it('filters LATE employees exceeding legal overtime', async () => {
+      repository.findActiveEmployees.mockResolvedValue([mockEmployee, mockEmployee2]);
+      repository.findAttendanceLogsByDateRange.mockResolvedValue(
+        excessOvertimeDayLogs('emp-1', '2025-06-01'),
+      );
+
+      const result = await service.getAttendanceReport(
+        TENANT_ID,
+        { ...query, status: AttendanceReportStatusFilter.LATE },
+        OWNER_ACTOR,
+      );
+
+      expect(result.employees).toHaveLength(1);
+      expect(result.employees[0]?.exceededLegalOvertimeLimit).toBe(true);
+    });
+  });
+
+  describe('getAttendanceReportForExport', () => {
+    const query = { from: '2025-06-01', to: '2025-06-30' };
+
+    it('returns attendance report when within export row limit', async () => {
+      repository.findActiveEmployees.mockResolvedValue([mockEmployee]);
+      repository.findAttendanceLogsByDateRange.mockResolvedValue(
+        fullDayLogs('emp-1', '2025-06-01'),
+      );
+
+      const result = await service.getAttendanceReportForExport(TENANT_ID, query, OWNER_ACTOR);
+
+      expect(result.employees).toHaveLength(1);
+      expect(result.from).toBe(query.from);
+    });
+
+    it('throws BadRequestException when export row limit is exceeded', async () => {
+      const employees = Array.from({ length: MAX_EXPORT_ROWS + 1 }, (_, index) => ({
+        ...mockEmployee,
+        id: `emp-${index}`,
+      }));
+      repository.findActiveEmployees.mockResolvedValue(employees);
+      repository.findAttendanceLogsByDateRange.mockResolvedValue([]);
+
+      await expect(
+        service.getAttendanceReportForExport(TENANT_ID, query, OWNER_ACTOR),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('getEmployeeListReport', () => {
+    it('maps employees for export with filters summary', async () => {
+      payrollRepository.count.mockResolvedValue(1);
+      payrollRepository.findAll.mockResolvedValue([mockEmployee as any]);
+
+      const result = await service.getEmployeeListReport(
+        TENANT_ID,
+        { locationId: 'loc-1', isActive: true },
+        OWNER_ACTOR,
+      );
+
+      expect(result.tenantId).toBe(TENANT_ID);
+      expect(result.employees).toHaveLength(1);
+      expect(result.employees[0]?.name).toBe('Juan Perez');
+      expect(result.filtersSummary).toContain('Sede: loc-1');
+    });
+
+    it('throws NotFoundException when employeeId does not belong to tenant', async () => {
+      payrollRepository.findById.mockResolvedValue({ ...mockEmployee, tenantId: 'other' } as any);
+
+      await expect(
+        service.getEmployeeListReport(TENANT_ID, { employeeId: 'emp-1' }, OWNER_ACTOR),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('throws NotFoundException when employeeId is missing', async () => {
+      payrollRepository.findById.mockResolvedValue(null);
+
+      await expect(
+        service.getEmployeeListReport(TENANT_ID, { employeeId: 'emp-missing' }, OWNER_ACTOR),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('maps nullable contract dates in employee list rows', async () => {
+      payrollRepository.count.mockResolvedValue(1);
+      payrollRepository.findAll.mockResolvedValue([
+        {
+          ...mockEmployee,
+          contractStart: null,
+          contractEnd: null,
+          location: undefined,
+        } as any,
+      ]);
+
+      const result = await service.getEmployeeListReport(TENANT_ID, {}, OWNER_ACTOR);
+
+      expect(result.employees[0]?.contractStart).toBeNull();
+      expect(result.employees[0]?.contractEnd).toBeNull();
+      expect(result.employees[0]?.locationName).toBe('loc-1');
+    });
+
+    it('throws BadRequestException when employee export exceeds row limit', async () => {
+      payrollRepository.findById.mockResolvedValue(mockEmployee as any);
+      payrollRepository.count.mockResolvedValue(MAX_EXPORT_ROWS + 1);
+
+      await expect(
+        service.getEmployeeListReport(TENANT_ID, { employeeId: 'emp-1' }, OWNER_ACTOR),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 

@@ -24,6 +24,45 @@
   padding: 1rem;
 }
 
+.searchRow {
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+.filterField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  width: 100%;
+}
+
+.filterField > :not(.filterLabel) {
+  width: 100%;
+  min-width: 0;
+  --control-width: 100%;
+  --control-min-height: 40px;
+}
+
+.filterLabel {
+  color: var(--empleado-muted, #888);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.filterInput {
+  min-height: 40px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--empleado-border, #2e2e2e);
+  border-radius: 4px;
+  background: var(--empleado-input, #111);
+  color: var(--empleado-text, #fff);
+  font-size: 0.875rem;
+}
+
 .readOnlyBanner {
   margin: 0 0 12px;
   padding: 10px 12px;

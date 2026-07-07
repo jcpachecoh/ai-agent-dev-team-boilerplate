@@ -1,11 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum } from 'class-validator';
 import { PeriodQueryDto } from './report-query.dto';
+import { ExportFormat } from './export-format.enum';
 
-export enum ExportFormat {
-  PDF = 'PDF',
-  XLSX = 'XLSX',
-}
+export { ExportFormat };
 
 export class ExportPayrollReportDto extends PeriodQueryDto {
   @ApiProperty({
