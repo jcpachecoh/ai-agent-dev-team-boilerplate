@@ -5,7 +5,9 @@ import { useForm } from 'react-hook-form';
 
 import { useUiTheme } from '@/hooks/useUiTheme';
 
+import { useAttendanceScopeLocations } from '../../hooks/useAttendanceScopeLocations';
 import type { Turno, TurnoFormValues } from '../../types/turnos.types';
+import { TURNO_DAY_OPTIONS } from '../../utils/format-turno-days';
 import {
   crossesMidnight,
   turnoFormSchema,
@@ -25,22 +27,26 @@ const JORNADA_OPTIONS = [
 ] as const;
 
 const EMPTY_VALUES: TurnoFormValues = {
+  locationId: '',
   nombre: '',
   sigla: '',
   tipo: 'PERMANENTE',
   jornada: 'DIURNO',
   horaInicio: '06:00',
   horaFin: '14:00',
+  daysOfWeek: [1, 2, 3, 4, 5],
 };
 
 function turnoToFormValues(turno: Turno): TurnoFormValues {
   return {
+    locationId: turno.locationId,
     nombre: turno.nombre,
     sigla: turno.sigla,
     tipo: turno.tipo,
     jornada: turno.jornada,
     horaInicio: turno.horaInicio,
     horaFin: turno.horaFin,
+    daysOfWeek: turno.daysOfWeek,
   };
 }
 
@@ -60,10 +66,14 @@ export function TurnosForm({
   onSubmit,
 }: TurnosFormProps): React.JSX.Element {
   const uiTheme = useUiTheme();
+  const { locations } = useAttendanceScopeLocations();
 
   const defaultValues = useMemo<TurnoFormValues>(
-    () => (initialValues ? turnoToFormValues(initialValues) : EMPTY_VALUES),
-    [initialValues],
+    () =>
+      initialValues
+        ? turnoToFormValues(initialValues)
+        : { ...EMPTY_VALUES, locationId: locations[0]?.id ?? '' },
+    [initialValues, locations],
   );
 
   const {
@@ -86,11 +96,50 @@ export function TurnosForm({
   const horaFin = watch('horaFin');
   const tipo = watch('tipo');
   const jornada = watch('jornada');
+  const locationId = watch('locationId');
+  const daysOfWeek = watch('daysOfWeek');
   const midnightWarning = crossesMidnight(horaInicio, horaFin);
+
+  const toggleDay = (day: number): void => {
+    const current = new Set(daysOfWeek);
+    if (current.has(day)) {
+      current.delete(day);
+    } else {
+      current.add(day);
+    }
+    setValue(
+      'daysOfWeek',
+      [...current].sort((a, b) => a - b),
+      { shouldValidate: true },
+    );
+  };
 
   return (
     <form className={styles.form} onSubmit={handleSubmit(onSubmit)} noValidate>
       <div className={styles.grid}>
+        <div className={styles.fieldGroup}>
+          <InventarioFormField
+            label="Sede"
+            inputType="select"
+            bareControl
+            theme={uiTheme}
+            size="md"
+          >
+            <RecetaFilterSelect
+              theme={uiTheme}
+              size="md"
+              className={styles.select}
+              value={locationId}
+              options={locations.map((location) => ({ value: location.id, label: location.name }))}
+              onChange={(value) => setValue('locationId', value, { shouldValidate: true })}
+              disabled={submitting}
+            />
+          </InventarioFormField>
+          {errors.locationId ? (
+            <span className={styles.error}>{errors.locationId.message}</span>
+          ) : null}
+        </div>
+
         <div className={styles.fieldGroup}>
           <InventarioFormField label="Nombre" theme={uiTheme} size="md">
             <input
@@ -190,6 +239,26 @@ export function TurnosForm({
             />
           </InventarioFormField>
           {errors.horaFin ? <span className={styles.error}>{errors.horaFin.message}</span> : null}
+        </div>
+
+        <div className={`${styles.fieldGroup} ${styles.daysGroup}`}>
+          <span className={styles.daysLabel}>Días de la semana *</span>
+          <div className={styles.daysRow} role="group" aria-label="Días de la semana">
+            {TURNO_DAY_OPTIONS.map((day) => (
+              <label key={day.value} className={styles.dayToggle}>
+                <input
+                  type="checkbox"
+                  checked={daysOfWeek.includes(day.value)}
+                  disabled={submitting}
+                  onChange={() => toggleDay(day.value)}
+                />
+                {day.label}
+              </label>
+            ))}
+          </div>
+          {errors.daysOfWeek ? (
+            <span className={styles.error}>{errors.daysOfWeek.message}</span>
+          ) : null}
         </div>
       </div>
 

@@ -4,6 +4,7 @@ import { AuthModule } from '../auth/auth.module';
 import { EmailModule } from '../email/email.module';
 import { LocationsModule } from '../locations/locations.module';
 import { PrismaModule } from '../prisma/prisma.module';
+import { TurnosModule } from '../turnos/turnos.module';
 import { MobileAttendanceRepository } from './mobile/repository/mobile-attendance.repository';
 import { MobileAttendanceResolver } from './mobile/resolver/mobile-attendance.resolver';
 import { MobileAttendanceService } from './mobile/service/mobile-attendance.service';
@@ -21,7 +22,7 @@ import { AttendanceRepository } from './repository/attendance.repository';
 import { AttendanceCollaboratorsRepository } from './repository/attendance-collaborators.repository';
 
 @Module({
-  imports: [PrismaModule, AuthModule, AuditModule, LocationsModule, EmailModule],
+  imports: [PrismaModule, AuthModule, AuditModule, LocationsModule, EmailModule, TurnosModule],
   controllers: [AttendanceController],
   providers: [
     AttendanceService,

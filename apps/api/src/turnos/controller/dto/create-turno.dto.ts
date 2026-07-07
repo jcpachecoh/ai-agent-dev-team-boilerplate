@@ -1,9 +1,26 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { TurnoJornada, TurnoTipo } from '@prisma/client';
-import { IsEnum, IsNotEmpty, IsString, Matches, MaxLength } from 'class-validator';
+import {
+  ArrayMaxSize,
+  ArrayMinSize,
+  IsArray,
+  IsEnum,
+  IsInt,
+  IsNotEmpty,
+  IsString,
+  Matches,
+  Max,
+  MaxLength,
+  Min,
+} from 'class-validator';
 import { HH_MM_REGEX } from '../../turnos.constants';
 
 export class CreateTurnoDto {
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  locationId!: string;
+
   @ApiProperty({ maxLength: 100 })
   @IsString()
   @IsNotEmpty()
@@ -33,6 +50,19 @@ export class CreateTurnoDto {
   @IsString()
   @Matches(HH_MM_REGEX, { message: 'horaFin debe tener formato HH:mm' })
   horaFin!: string;
+
+  @ApiProperty({
+    example: [1, 2, 3, 4, 5],
+    description: '0=domingo … 6=sábado',
+    type: [Number],
+  })
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(7)
+  @IsInt({ each: true })
+  @Min(0, { each: true })
+  @Max(6, { each: true })
+  daysOfWeek!: number[];
 }
 
 export class UpdateTurnoDto extends CreateTurnoDto {}

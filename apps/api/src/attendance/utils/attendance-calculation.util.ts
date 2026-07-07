@@ -113,3 +113,60 @@ export function parseCalendarDate(isoDate: string): Date {
   const datePart = isoDate.slice(0, 10);
   return new Date(`${datePart}T00:00:00.000Z`);
 }
+
+export function formatCalendarDate(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
+
+export function listDatesInRange(from: Date, to: Date): Date[] {
+  const dates: Date[] = [];
+  const cursor = new Date(from);
+  while (cursor.getTime() <= to.getTime()) {
+    dates.push(new Date(cursor));
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+  return dates;
+}
+
+export function formatMinutesAsHours(minutes: number): string {
+  const safe = Math.max(0, Math.round(minutes));
+  const hours = Math.floor(safe / 60);
+  const mins = safe % 60;
+  return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}:00`;
+}
+
+export function splitWorkedMinutesAgainstTarget(
+  workedMinutes: number,
+  targetMinutes: number,
+): { ordinaryMinutes: number; overtimeMinutes: number; unworkedMinutes: number } {
+  const ordinaryMinutes = Math.min(workedMinutes, targetMinutes);
+  const overtimeMinutes = Math.max(0, workedMinutes - targetMinutes);
+  const unworkedMinutes = Math.max(0, targetMinutes - workedMinutes);
+  return { ordinaryMinutes, overtimeMinutes, unworkedMinutes };
+}
+
+export function getBogotaMinutesFromMidnight(ts: Date): number {
+  return getBogotaHour(ts) * 60 + getBogotaMinute(ts);
+}
+
+export function isTimestampWithinShiftWindow(
+  timestamp: Date,
+  horaInicio: string,
+  horaFin: string,
+  toleranceMinutes: number,
+): boolean {
+  const [startH, startM] = horaInicio.split(':').map(Number);
+  const [endH, endM] = horaFin.split(':').map(Number);
+  const start = startH * 60 + startM - toleranceMinutes;
+  let end = endH * 60 + endM + toleranceMinutes;
+  const timeMinutes = getBogotaMinutesFromMidnight(timestamp);
+
+  if (endH * 60 + endM < startH * 60 + startM) {
+    return timeMinutes >= start || timeMinutes <= end;
+  }
+
+  if (end >= 24 * 60) {
+    end = 24 * 60 - 1;
+  }
+  return timeMinutes >= Math.max(0, start) && timeMinutes <= end;
+}

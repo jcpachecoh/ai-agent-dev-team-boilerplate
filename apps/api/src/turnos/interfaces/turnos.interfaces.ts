@@ -3,12 +3,14 @@ import type { TurnoJornada, TurnoTipo } from '@prisma/client';
 export interface TurnoRecord {
   id: string;
   tenantId: string;
+  locationId: string;
   nombre: string;
   sigla: string;
   tipo: TurnoTipo;
   jornada: TurnoJornada;
   horaInicio: string;
   horaFin: string;
+  daysOfWeek: number[];
   estado: boolean;
   createdByUserId: string | null;
   updatedByUserId: string | null;
@@ -23,6 +25,7 @@ export interface ListTurnosFilters {
   sigla?: string;
   tipo?: TurnoTipo;
   jornada?: TurnoJornada;
+  locationId?: string;
 }
 
 export interface ListTurnosOptions extends ListTurnosFilters {
@@ -43,12 +46,14 @@ export interface TurnosListResult {
 }
 
 export interface CreateTurnoData {
+  locationId: string;
   nombre: string;
   sigla: string;
   tipo: TurnoTipo;
   jornada: TurnoJornada;
   horaInicio: string;
   horaFin: string;
+  daysOfWeek: number[];
 }
 
 export type UpdateTurnoData = CreateTurnoData;

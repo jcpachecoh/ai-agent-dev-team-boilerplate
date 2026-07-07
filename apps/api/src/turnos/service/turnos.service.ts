@@ -47,6 +47,8 @@ export class TurnosService implements ITurnosService {
         jornada: data.jornada,
         horaInicio: data.horaInicio,
         horaFin: data.horaFin,
+        locationId: data.locationId,
+        daysOfWeek: data.daysOfWeek,
         estado: true,
       });
     } catch (error) {
@@ -154,6 +156,21 @@ export class TurnosService implements ITurnosService {
   }
 
   private validateTurnoPayload(data: CreateTurnoData): void {
+    if (!data.locationId?.trim()) {
+      throw new BadRequestException('locationId es obligatorio');
+    }
+    if (!Array.isArray(data.daysOfWeek) || data.daysOfWeek.length === 0) {
+      throw new BadRequestException('daysOfWeek debe incluir al menos un día');
+    }
+    const uniqueDays = new Set(data.daysOfWeek);
+    if (uniqueDays.size !== data.daysOfWeek.length) {
+      throw new BadRequestException('daysOfWeek no puede tener días duplicados');
+    }
+    for (const day of data.daysOfWeek) {
+      if (!Number.isInteger(day) || day < 0 || day > 6) {
+        throw new BadRequestException('daysOfWeek debe contener enteros entre 0 y 6');
+      }
+    }
     if (!data.nombre?.trim()) {
       throw new BadRequestException('El nombre es obligatorio');
     }
@@ -181,18 +198,27 @@ export class TurnosService implements ITurnosService {
     const oldValue: Record<string, unknown> = {};
     const newValue: Record<string, unknown> = {};
     const keys: (keyof UpdateTurnoData)[] = [
+      'locationId',
       'nombre',
       'sigla',
       'tipo',
       'jornada',
       'horaInicio',
       'horaFin',
+      'daysOfWeek',
     ];
 
     for (const key of keys) {
-      if (data[key] !== current[key]) {
-        oldValue[key] = current[key];
-        newValue[key] = data[key];
+      const currentValue = current[key];
+      const nextValue = data[key];
+      const hasChanged =
+        Array.isArray(currentValue) && Array.isArray(nextValue)
+          ? JSON.stringify(currentValue) !== JSON.stringify(nextValue)
+          : currentValue !== nextValue;
+
+      if (hasChanged) {
+        oldValue[key] = currentValue;
+        newValue[key] = nextValue;
       }
     }
 

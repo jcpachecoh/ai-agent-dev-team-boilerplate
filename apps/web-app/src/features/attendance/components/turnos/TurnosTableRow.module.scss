@@ -1,0 +1,73 @@
+.row {
+  display: grid;
+  grid-template-columns: var(--cargo-columns);
+  column-gap: 20px;
+  align-items: center;
+  min-height: 52px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--cargo-border-subtle, #2e2e2e);
+}
+
+.theme--dark {
+  --cargo-border-subtle: #2e2e2e;
+  --cargo-text: #f5f5f5;
+  --cargo-text-secondary: #a3a3a3;
+  --cargo-secondary: #c9920a;
+}
+
+.theme--light {
+  --cargo-border-subtle: #e2e8f0;
+  --cargo-text: #0f172a;
+  --cargo-text-secondary: #64748b;
+  --cargo-secondary: #a67808;
+}
+
+.cell {
+  font-size: 0.75rem;
+  color: var(--cargo-text-secondary);
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.titleCell {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--cargo-text);
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.scheduleCell {
+  justify-self: end;
+  text-align: right;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 0.6875rem;
+  color: var(--cargo-secondary);
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.statusCell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: center;
+  width: fit-content;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.actionsCell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  justify-self: end;
+  gap: 8px;
+  min-width: 0;
+}

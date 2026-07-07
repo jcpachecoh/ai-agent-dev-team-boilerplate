@@ -21,12 +21,14 @@ describe('TurnosController', () => {
   const mockTurno = {
     id: 'turno-1',
     tenantId,
+    locationId: 'loc-1',
     nombre: 'Turno mañana',
     sigla: 'TM',
     tipo: TurnoTipo.PERMANENTE,
     jornada: TurnoJornada.DIURNO,
     horaInicio: '06:00',
     horaFin: '14:00',
+    daysOfWeek: [1, 2, 3, 4, 5],
     estado: true,
     createdByUserId: user.sub,
     updatedByUserId: user.sub,
@@ -78,12 +80,14 @@ describe('TurnosController', () => {
     service.create.mockResolvedValue(mockTurno);
 
     const result = await controller.create({ ...user } as never, tenantId, {
+      locationId: 'loc-1',
       nombre: 'Turno mañana',
       sigla: 'TM',
       tipo: TurnoTipo.PERMANENTE,
       jornada: TurnoJornada.DIURNO,
       horaInicio: '06:00',
       horaFin: '14:00',
+      daysOfWeek: [1, 2, 3, 4, 5],
     });
 
     expect(service.create).toHaveBeenCalledWith(tenantId, expect.any(Object), user.sub);

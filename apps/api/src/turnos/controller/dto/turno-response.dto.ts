@@ -6,6 +6,9 @@ export class TurnoResponseDto {
   id!: string;
 
   @ApiProperty()
+  locationId!: string;
+
+  @ApiProperty()
   nombre!: string;
 
   @ApiProperty()
@@ -22,6 +25,9 @@ export class TurnoResponseDto {
 
   @ApiProperty({ example: '14:00' })
   horaFin!: string;
+
+  @ApiProperty({ type: [Number], example: [1, 2, 3, 4, 5] })
+  daysOfWeek!: number[];
 
   @ApiProperty()
   estado!: boolean;

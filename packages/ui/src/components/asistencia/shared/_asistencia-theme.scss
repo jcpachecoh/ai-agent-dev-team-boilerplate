@@ -47,9 +47,9 @@ $asistencia-dark-muted: #888888;
   --asistencia-coral-soft: #{rgba($asistencia-coral, 0.1)};
   --asistencia-coral-border: #{rgba($asistencia-coral, 0.19)};
   --asistencia-progress-track: #1c1c1c;
-  --asistencia-rest-soft: #{color.mix($asistencia-dark-surface, $asistencia-teal, 14%)};
-  --asistencia-absence-soft: #{color.mix($asistencia-dark-surface, $asistencia-coral, 12%)};
-  --asistencia-festive-soft: #{color.mix($asistencia-dark-surface, $asistencia-amber, 10%)};
+  --asistencia-rest-soft: #{rgba($asistencia-teal, 0.2)};
+  --asistencia-absence-soft: #{rgba($asistencia-coral, 0.18)};
+  --asistencia-festive-soft: #{rgba($asistencia-amber, 0.16)};
   --asistencia-table-header: #9a9a9a;
   --asistencia-table-muted: #c8c8c8;
 }

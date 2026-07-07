@@ -44,12 +44,15 @@ export function computeNightMinutes(
   return 0;
 }
 
-export function splitWorkedMinutes(workedMinutes: number): {
+export function splitWorkedMinutes(
+  workedMinutes: number,
+  targetMinutes = REGULAR_DAY_MINUTES,
+): {
   ordinaryMinutes: number;
   overtimeMinutes: number;
 } {
-  const ordinaryMinutes = Math.min(workedMinutes, REGULAR_DAY_MINUTES);
-  const overtimeMinutes = Math.max(0, workedMinutes - REGULAR_DAY_MINUTES);
+  const ordinaryMinutes = Math.min(workedMinutes, targetMinutes);
+  const overtimeMinutes = Math.max(0, workedMinutes - targetMinutes);
   return { ordinaryMinutes, overtimeMinutes };
 }
 

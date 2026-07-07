@@ -18,6 +18,12 @@ import { AttendanceService } from '../service/attendance.service';
 import { AttendanceRepository } from '../repository/attendance.repository';
 import { AuthService } from '../../auth/service/auth.service';
 import { UserLocationsService } from '../../locations/service/user-locations.service';
+import { ShiftResolutionService } from '../../turnos/service/shift-resolution.service';
+
+const shiftResolutionMock = {
+  resolveForDay: jest.fn().mockResolvedValue({ kind: 'NONE', targetMinutes: 0 }),
+  getTargetMinutesForDay: jest.fn().mockResolvedValue(0),
+};
 
 jest.mock('bcrypt', () => ({
   compare: jest.fn(),
@@ -129,6 +135,7 @@ describe('AttendanceService', () => {
         AttendanceService,
         { provide: AttendanceRepository, useValue: repoMock },
         { provide: AuthService, useValue: authServiceMock },
+        { provide: ShiftResolutionService, useValue: shiftResolutionMock },
         { provide: UserLocationsService, useValue: userLocationsServiceMock },
       ],
     }).compile();
@@ -500,6 +507,38 @@ describe('AttendanceService', () => {
           validationStatus: null,
         }),
       );
+    });
+
+    it('MANUAL rechaza marcación fuera de la ventana del turno asignado', async () => {
+      shiftResolutionMock.resolveForDay.mockResolvedValueOnce({
+        kind: 'ASSIGNED',
+        source: 'EMPLOYEE_ASSIGNMENT',
+        targetMinutes: 480,
+        turno: {
+          id: 'turno-1',
+          nombre: 'Mañana',
+          sigla: 'TM',
+          horaInicio: '08:00',
+          horaFin: '16:00',
+          jornada: 'DIURNO',
+          locationId: LOCATION_ID,
+          daysOfWeek: [1, 2, 3, 4, 5],
+          estado: true,
+        },
+      });
+
+      await expect(
+        service.registerEvent({
+          ...baseInput,
+          source: AttendanceLogSource.MANUAL,
+          workDate: WORK_DATE,
+          timestamp: new Date('2026-06-10T23:00:00.000Z'),
+          createdByUserId: 'actor-1',
+          manualReason: 'FORGOT',
+        }),
+      ).rejects.toThrow(BadRequestException);
+
+      expect(repoMock.createEventLog).not.toHaveBeenCalled();
     });
 
     it('APP_MOVIL EXIT hereda workDate del ENTRY abierto (turno nocturno)', async () => {

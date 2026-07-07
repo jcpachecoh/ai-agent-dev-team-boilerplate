@@ -135,6 +135,10 @@
   overflow: auto;
 }
 
+.mobileCardList {
+  display: none;
+}
+
 .table {
   width: 100%;
   border-collapse: collapse;
@@ -386,5 +390,26 @@
   .metrics,
   .filters {
     grid-template-columns: 1fr;
+  }
+
+  .tableWrap {
+    display: none;
+  }
+
+  .mobileCardList {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+
+  .pagination {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .pageSizeControl {
+    margin-left: 0;
+    width: 100%;
+    justify-content: space-between;
   }
 }

@@ -8,6 +8,7 @@ import { AttendanceService } from '../service/attendance.service';
 import { AttendanceRepository } from '../repository/attendance.repository';
 import { AuthService } from '../../auth/service/auth.service';
 import { UserLocationsService } from '../../locations/service/user-locations.service';
+import { ShiftResolutionService } from '../../turnos/service/shift-resolution.service';
 
 describe('ASIS-UNI — convivencia APP_MOVIL + MANUAL', () => {
   let service: AttendanceService;
@@ -25,6 +26,12 @@ describe('ASIS-UNI — convivencia APP_MOVIL + MANUAL', () => {
         AttendanceService,
         { provide: AttendanceRepository, useValue: repoMock },
         { provide: AuthService, useValue: { issueKioskAuthTokens: jest.fn() } },
+        {
+          provide: ShiftResolutionService,
+          useValue: {
+            resolveForDay: jest.fn().mockResolvedValue({ kind: 'NONE', targetMinutes: 0 }),
+          },
+        },
         {
           provide: UserLocationsService,
           useValue: {

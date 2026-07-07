@@ -55,12 +55,14 @@ function resolveTenantId(user: JwtPayload, headerTenantId: string): string {
 function toTurnoResponse(turno: TurnoRecord): TurnoResponseDto {
   return {
     id: turno.id,
+    locationId: turno.locationId,
     nombre: turno.nombre,
     sigla: turno.sigla,
     tipo: turno.tipo,
     jornada: turno.jornada,
     horaInicio: turno.horaInicio,
     horaFin: turno.horaFin,
+    daysOfWeek: turno.daysOfWeek,
     estado: turno.estado,
     createdAt: turno.createdAt,
     updatedAt: turno.updatedAt,

@@ -15,12 +15,14 @@ describe('TurnosService', () => {
   const baseTurno = {
     id: 'turno-1',
     tenantId,
+    locationId: 'loc-1',
     nombre: 'Turno mañana',
     sigla: 'TM',
     tipo: TurnoTipo.PERMANENTE,
     jornada: TurnoJornada.DIURNO,
     horaInicio: '06:00',
     horaFin: '14:00',
+    daysOfWeek: [1, 2, 3, 4, 5],
     estado: true,
     createdByUserId: actorUserId,
     updatedByUserId: actorUserId,
@@ -29,12 +31,14 @@ describe('TurnosService', () => {
   };
 
   const validPayload = {
+    locationId: 'loc-1',
     nombre: 'Turno mañana',
     sigla: 'TM',
     tipo: TurnoTipo.PERMANENTE,
     jornada: TurnoJornada.DIURNO,
     horaInicio: '06:00',
     horaFin: '14:00',
+    daysOfWeek: [1, 2, 3, 4, 5],
   };
 
   beforeEach(async () => {

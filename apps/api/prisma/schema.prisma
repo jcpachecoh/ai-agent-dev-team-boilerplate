@@ -629,6 +629,8 @@ model User {
   turnosUpdated                         Turno[]                     @relation("TurnoUpdatedBy")
   turnoAssignmentsCreated               TurnoAssignment[]           @relation("TurnoAssignmentCreatedBy")
   turnoAssignmentsUpdated               TurnoAssignment[]           @relation("TurnoAssignmentUpdatedBy")
+  employeeShiftAssignmentsCreated       EmployeeShiftAssignment[]   @relation("EmployeeShiftAssignmentCreatedBy")
+  employeeShiftAssignmentsUpdated       EmployeeShiftAssignment[]   @relation("EmployeeShiftAssignmentUpdatedBy")
   supplierDocumentsUploaded             SupplierDocument[]          @relation("SupplierDocumentUploadedBy")
   supplierDocumentVersionsUploaded      SupplierDocumentVersion[]   @relation("SupplierDocumentVersionUploadedBy")
   supplierLogisticsReceptionResponsible SupplierLogistics[]         @relation("SupplierLogisticsReceptionResponsible")
@@ -724,6 +726,7 @@ model Location {
   supplyItems               SupplyItem[]
   productionRecipes         ProductionRecipeLocation[]
   supplierLogisticsCoverage SupplierLogisticsCoverage[]
+  turnos                    Turno[]
 
   @@unique([tenantId, name])
   @@unique([tenantId, code])
@@ -785,17 +788,18 @@ model EmployeeDetails {
   updatedAt            DateTime             @updatedAt
   deletedAt            DateTime?
 
-  user                   User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  location               Location                  @relation(fields: [locationId], references: [id])
-  positionRef            EmployeePosition?         @relation(fields: [positionId], references: [id], onDelete: SetNull)
-  photoStorageObject     StorageObject?            @relation(fields: [photoStorageObjectId], references: [id], onDelete: SetNull)
-  positionHistory        EmployeePositionHistory[]
-  attendanceLogs         AttendanceLog[]
-  attendanceObservations AttendanceObservation[]
-  socialProfiles         EmployeeSocialProfile[]
-  financialProfile       EmployeeFinancialProfile?
-  personalData           EmployeePersonalData?
-  turnoAssignments       TurnoAssignment[]
+  user                     User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  location                 Location                  @relation(fields: [locationId], references: [id])
+  positionRef              EmployeePosition?         @relation(fields: [positionId], references: [id], onDelete: SetNull)
+  photoStorageObject       StorageObject?            @relation(fields: [photoStorageObjectId], references: [id], onDelete: SetNull)
+  positionHistory          EmployeePositionHistory[]
+  attendanceLogs           AttendanceLog[]
+  attendanceObservations   AttendanceObservation[]
+  socialProfiles           EmployeeSocialProfile[]
+  financialProfile         EmployeeFinancialProfile?
+  personalData             EmployeePersonalData?
+  turnoAssignments         TurnoAssignment[]
+  employeeShiftAssignments EmployeeShiftAssignment[]
 
   @@index([tenantId])
   @@index([locationId])
@@ -1906,26 +1910,54 @@ enum TurnoJornada {
 model Turno {
   id              String       @id @default(cuid())
   tenantId        String
+  locationId      String
   nombre          String       @db.VarChar(100)
   sigla           String       @db.VarChar(30)
   tipo            TurnoTipo
   jornada         TurnoJornada
   horaInicio      String
   horaFin         String
+  daysOfWeek      Int[]        @default([1, 2, 3, 4, 5])
   estado          Boolean      @default(true)
   createdByUserId String?
   updatedByUserId String?
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 
-  createdBy   User?             @relation("TurnoCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
-  updatedBy   User?             @relation("TurnoUpdatedBy", fields: [updatedByUserId], references: [id], onDelete: SetNull)
-  assignments TurnoAssignment[]
+  location            Location                  @relation(fields: [locationId], references: [id])
+  createdBy           User?                     @relation("TurnoCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  updatedBy           User?                     @relation("TurnoUpdatedBy", fields: [updatedByUserId], references: [id], onDelete: SetNull)
+  assignments         TurnoAssignment[]
+  employeeAssignments EmployeeShiftAssignment[]
 
   @@unique([tenantId, sigla])
   @@index([tenantId, estado])
   @@index([tenantId, nombre])
+  @@index([tenantId, locationId])
   @@map("turnos")
+}
+
+// SHIFT-UNI: vigencia de turno base por empleado (asistencia + nómina).
+model EmployeeShiftAssignment {
+  id              String    @id @default(cuid())
+  tenantId        String
+  employeeId      String
+  turnoId         String
+  effectiveFrom   DateTime  @db.Date
+  effectiveTo     DateTime? @db.Date
+  createdByUserId String?
+  updatedByUserId String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  turno     Turno           @relation(fields: [turnoId], references: [id])
+  employee  EmployeeDetails @relation(fields: [employeeId], references: [id])
+  createdBy User?           @relation("EmployeeShiftAssignmentCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  updatedBy User?           @relation("EmployeeShiftAssignmentUpdatedBy", fields: [updatedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, employeeId, effectiveFrom])
+  @@index([tenantId, turnoId])
+  @@map("employee_shift_assignments")
 }
 
 enum TurnoAssignmentType {

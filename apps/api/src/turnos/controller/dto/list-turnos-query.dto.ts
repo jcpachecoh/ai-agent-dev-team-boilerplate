@@ -48,6 +48,11 @@ export class ListTurnosQueryDto {
   @IsEnum(TurnoJornada)
   jornada?: TurnoJornada;
 
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  locationId?: string;
+
   @ApiPropertyOptional({ default: 1 })
   @IsOptional()
   @Type(() => Number)

@@ -217,6 +217,9 @@ export class TurnosRepository implements ITurnosRepository {
     if (filters.jornada) {
       and.push({ jornada: filters.jornada });
     }
+    if (filters.locationId) {
+      and.push({ locationId: filters.locationId });
+    }
 
     const search = filters.search?.trim();
     if (search) {
@@ -237,12 +240,14 @@ export class TurnosRepository implements ITurnosRepository {
   private mapTurno(row: {
     id: string;
     tenantId: string;
+    locationId: string;
     nombre: string;
     sigla: string;
     tipo: TurnoTipo;
     jornada: TurnoJornada;
     horaInicio: string;
     horaFin: string;
+    daysOfWeek: number[];
     estado: boolean;
     createdByUserId: string | null;
     updatedByUserId: string | null;
@@ -252,12 +257,14 @@ export class TurnosRepository implements ITurnosRepository {
     return {
       id: row.id,
       tenantId: row.tenantId,
+      locationId: row.locationId,
       nombre: row.nombre,
       sigla: row.sigla,
       tipo: row.tipo,
       jornada: row.jornada,
       horaInicio: row.horaInicio,
       horaFin: row.horaFin,
+      daysOfWeek: row.daysOfWeek,
       estado: row.estado,
       createdByUserId: row.createdByUserId,
       updatedByUserId: row.updatedByUserId,

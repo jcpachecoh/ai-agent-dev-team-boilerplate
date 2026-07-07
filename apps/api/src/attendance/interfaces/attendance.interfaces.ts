@@ -211,6 +211,19 @@ export interface AttendanceCardQuery {
 export interface AttendanceCardResult {
   logs: AttendanceLogFull[];
   observations: AttendanceObservationFull[];
+  daySummaries: AttendanceCardDaySummary[];
+}
+
+export interface AttendanceCardDaySummary {
+  workDate: string;
+  targetMinutes: number;
+  targetHours: string;
+  ordinaryMinutes: number;
+  unworkedMinutes: number;
+  overtimeMinutes: number;
+  resolvedKind: 'ASSIGNED' | 'REST' | 'NONE';
+  shiftName: string | null;
+  shiftRange: string | null;
 }
 
 export interface UpsertObservationInput {

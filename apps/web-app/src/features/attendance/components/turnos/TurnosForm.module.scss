@@ -53,6 +53,81 @@
   gap: 0.75rem;
 }
 
+.daysGroup {
+  grid-column: 1 / -1;
+}
+
+.daysLabel {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-muted, #64748b);
+}
+
+.daysRow {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.625rem;
+
+  @media (max-width: 720px) {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  @media (max-width: 480px) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.dayToggle {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0.5rem 0.25rem;
+  border: 1px solid var(--color-border, rgb(255 255 255 / 14%));
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-primary, inherit);
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease,
+    color 0.15s ease;
+  user-select: none;
+
+  input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+  }
+
+  &:hover:not(:has(input:disabled)) {
+    border-color: rgb(255 159 67 / 35%);
+    background: rgb(255 159 67 / 6%);
+  }
+
+  &:has(input:checked) {
+    border-color: rgb(255 159 67 / 65%);
+    background: rgb(255 159 67 / 14%);
+    color: rgb(255 180 100);
+  }
+
+  &:has(input:focus-visible) {
+    outline: 2px solid rgb(255 159 67 / 55%);
+    outline-offset: 2px;
+  }
+
+  &:has(input:disabled) {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
 @media (max-width: 640px) {
   .grid {
     grid-template-columns: 1fr;

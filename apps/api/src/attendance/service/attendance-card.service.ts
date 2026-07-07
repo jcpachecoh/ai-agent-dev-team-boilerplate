@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { AttendanceLog, AttendanceLogSource, AttendanceObservation } from '@prisma/client';
 import { AuditService } from '../../audit/service/audit.service';
+import { ShiftResolutionService } from '../../turnos/service/shift-resolution.service';
 import { ATTENDANCE_CARD_HISTORY_LIMIT } from '../attendance.constants';
 import type {
   AttendanceActingUser,
@@ -21,6 +22,7 @@ import {
   isCardDateRangeWithinLimit,
   parseCalendarDate,
 } from '../utils/attendance-calculation.util';
+import { buildAttendanceCardDaySummaries } from '../utils/attendance-card-day-summary.util';
 
 @Injectable()
 export class AttendanceCardService {
@@ -28,6 +30,7 @@ export class AttendanceCardService {
     private readonly attendanceRepository: AttendanceRepository,
     private readonly auditService: AuditService,
     private readonly attendanceService: AttendanceService,
+    private readonly shiftResolutionService: ShiftResolutionService,
     private readonly userLocationsService: UserLocationsService,
   ) {}
 
@@ -55,7 +58,20 @@ export class AttendanceCardService {
       this.attendanceRepository.listObservationsInRange(tenantId, employee.id, from, to),
     ]);
 
-    return { logs, observations };
+    const daySummaries = await buildAttendanceCardDaySummaries({
+      dateFrom: from,
+      dateTo: to,
+      logs,
+      resolveForDay: (workDate) =>
+        this.shiftResolutionService.resolveForDay({
+          tenantId,
+          employeeId: employee.id,
+          locationId: employee.locationId,
+          workDate,
+        }),
+    });
+
+    return { logs, observations, daySummaries };
   }
 
   async upsertObservation(

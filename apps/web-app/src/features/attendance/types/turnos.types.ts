@@ -5,12 +5,14 @@ export type TurnoEstadoFilter = 'active' | 'inactive' | 'all';
 
 export interface Turno {
   id: string;
+  locationId: string;
   nombre: string;
   sigla: string;
   tipo: TurnoTipo;
   jornada: TurnoJornada;
   horaInicio: string;
   horaFin: string;
+  daysOfWeek: number[];
   estado: boolean;
   createdAt: string;
   updatedAt: string;
@@ -40,23 +42,27 @@ export interface TurnosListResponse {
 }
 
 export interface CreateTurnoInput {
+  locationId: string;
   nombre: string;
   sigla: string;
   tipo: TurnoTipo;
   jornada: TurnoJornada;
   horaInicio: string;
   horaFin: string;
+  daysOfWeek: number[];
 }
 
 export type UpdateTurnoInput = CreateTurnoInput;
 
 export interface TurnoFormValues {
+  locationId: string;
   nombre: string;
   sigla: string;
   tipo: TurnoTipo;
   jornada: TurnoJornada;
   horaInicio: string;
   horaFin: string;
+  daysOfWeek: number[];
 }
 
 export interface TurnoConflictErrorBody {

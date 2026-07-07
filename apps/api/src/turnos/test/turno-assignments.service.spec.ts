@@ -23,12 +23,14 @@ describe('TurnoAssignmentsService', () => {
 
   const activeTurno = {
     id: 'turno-1',
+    locationId: 'loc-1',
     nombre: 'Turno mañana',
     sigla: 'TM',
     horaInicio: '06:00',
     horaFin: '14:00',
     jornada: TurnoJornada.DIURNO,
     tipo: TurnoTipo.PERMANENTE,
+    daysOfWeek: [1, 2, 3, 4, 5],
     estado: true,
   };
 

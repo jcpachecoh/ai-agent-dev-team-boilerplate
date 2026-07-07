@@ -12,11 +12,14 @@ import type {
 
 import type { PayrollEmployee } from '@/features/payroll/types/payroll.types';
 
-import type { AttendanceHistoryItem, AttendanceObservationDto } from '../types/attendance.types';
+import type {
+  AttendanceHistoryItem,
+  AttendanceObservationDto,
+  AttendanceCardDaySummary,
+} from '../types/attendance.types';
 import {
   formatMinutesAsHours,
   formatTimeLabel,
-  shiftLabel,
   splitWorkedMinutes,
 } from '../utils/attendance-card-calculations';
 import {
@@ -35,6 +38,14 @@ const CONTRACT_LABELS: Record<string, string> = {
 };
 
 const REGULAR_DAY_MINUTES = 480;
+
+function summaryTargetMinutes(
+  summary: AttendanceCardDaySummary | undefined,
+  isWorkday: boolean,
+): number {
+  if (summary) return summary.targetMinutes;
+  return isWorkday ? REGULAR_DAY_MINUTES : 0;
+}
 
 function na(value: string | null | undefined): string {
   const trimmed = value?.trim();
@@ -142,9 +153,11 @@ export function buildAttendanceCardRows(
   toIso: string,
   logs: AttendanceHistoryItem[],
   observations: AttendanceObservationDto[] = [],
+  daySummaries: AttendanceCardDaySummary[] = [],
 ): AsistenciaTarjetaDayRow[] {
   const grouped = groupLogsByWorkDate(logs);
   const observationsByDate = groupObservationsByWorkDate(observations);
+  const summaryByDate = new Map(daySummaries.map((summary) => [summary.workDate, summary]));
   const dates = listIsoDatesInRange(fromIso, toIso);
 
   return dates.map((isoDate) => {
@@ -152,6 +165,7 @@ export function buildAttendanceCardRows(
     const entry = dayGroup?.entries[0];
     const exit = dayGroup?.exits[0];
     const observation = observationsByDate.get(isoDate);
+    const daySummary = summaryByDate.get(isoDate);
 
     const entryTimestamp = entry?.timestamp;
     const exitTimestamp = exit?.timestamp;
@@ -163,39 +177,50 @@ export function buildAttendanceCardRows(
 
     const hasAttendance = Boolean(entryTimestamp || exitTimestamp);
     const workedMinutes = computeWorkedMinutes(entry, exit);
-    const { ordinaryMinutes, overtimeMinutes } = splitWorkedMinutes(workedMinutes);
-    const shift = shiftLabel(entry?.shift ?? exit?.shift);
     const isWorkday = !isRestOrFestiveDay(isoDate);
+    const targetMinutes = summaryTargetMinutes(daySummary, isWorkday);
+    const ordinaryMinutes =
+      daySummary?.ordinaryMinutes ??
+      splitWorkedMinutes(workedMinutes, targetMinutes).ordinaryMinutes;
+    const overtimeMinutes =
+      daySummary?.overtimeMinutes ??
+      splitWorkedMinutes(workedMinutes, targetMinutes).overtimeMinutes;
     const unworkedMinutes =
-      isWorkday && workedMinutes < REGULAR_DAY_MINUTES
-        ? REGULAR_DAY_MINUTES - workedMinutes
+      daySummary?.unworkedMinutes ??
+      (isWorkday && workedMinutes < targetMinutes
+        ? targetMinutes - workedMinutes
         : isWorkday && !hasAttendance
-          ? REGULAR_DAY_MINUTES
-          : 0;
+          ? targetMinutes
+          : 0);
 
     const variant = resolveVariant(isoDate, hasAttendance);
     const shiftName =
-      variant === 'rest'
+      daySummary?.shiftName ??
+      (variant === 'rest'
         ? 'Descanso'
         : variant === 'absence'
           ? 'Inasistencia'
           : entry || exit
             ? `ADM.${shiftSchedule(entry?.shift ?? exit?.shift)}`
-            : '—';
+            : '—');
 
     return {
       id: isoDate,
       dayShort: format(parseISO(isoDate), 'EEE', { locale: es }).replace('.', ''),
       dateLabel: format(parseISO(isoDate), 'dd/MM/yyyy'),
       shiftName,
-      shiftRange: entry || exit ? shiftSchedule(entry?.shift ?? exit?.shift) : '—',
+      shiftRange:
+        daySummary?.shiftRange ??
+        (entry || exit ? shiftSchedule(entry?.shift ?? exit?.shift) : '—'),
       entryTime: formatTimeLabel(entryTimestamp),
       exitTime: formatTimeLabel(exitTimestamp),
-      ordinaryHours: workedMinutes > 0 ? formatMinutesAsHours(ordinaryMinutes) : '—',
+      ordinaryHours: workedMinutes > 0 || daySummary ? formatMinutesAsHours(ordinaryMinutes) : '—',
       unworkedHours: unworkedMinutes > 0 ? formatMinutesAsHours(unworkedMinutes) : '—',
       overtimeHours: overtimeMinutes > 0 ? formatMinutesAsHours(overtimeMinutes) : '—',
       approvedOvertimeHours: overtimeMinutes > 0 ? formatMinutesAsHours(overtimeMinutes) : '—',
-      targetHours: isWorkday ? '08:00:00' : '—',
+      targetHours:
+        daySummary?.targetHours ??
+        (isWorkday && targetMinutes > 0 ? formatMinutesAsHours(targetMinutes) : '—'),
       permissions: '00:00:00',
       variant,
       hasObservation: Boolean(observation?.note?.trim()),
@@ -220,7 +245,7 @@ export function buildAttendanceCardSummaryMetrics(
     overtime += parseDuration(row.overtimeHours);
 
     if (row.variant === 'absence') {
-      absences += REGULAR_DAY_MINUTES;
+      absences += parseDuration(row.targetHours);
     }
   }
 

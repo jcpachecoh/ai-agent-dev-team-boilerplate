@@ -4,6 +4,7 @@ import {
   CargoPageSection,
   Checkbox,
   EmptyState,
+  InventarioPrimaryButton,
   InventarioSearch,
   LoadingState,
   RecetaFilterSelect,
@@ -236,34 +237,51 @@ export function AsignacionTurnosScreen(): React.JSX.Element {
             />
           </div>
 
-          <div className={styles.weekNav}>
-            <button type="button" className={styles.navButton} onClick={goToPreviousWeek}>
-              Anterior
-            </button>
-            <span className={styles.weekRange}>{weekRangeLabel}</span>
-            <button type="button" className={styles.navButton} onClick={goToNextWeek}>
-              Siguiente
-            </button>
-            <button type="button" className={styles.navButtonToday} onClick={goToToday}>
-              Hoy
-            </button>
+          <div className={`${styles.field} ${styles.fieldWeek}`}>
+            <span className={styles.fieldLabel}>Semana</span>
+            <div className={styles.weekNav}>
+              <InventarioPrimaryButton
+                label="Anterior"
+                variant="ghost"
+                showIcon={false}
+                theme={cargoTheme}
+                size="md"
+                onClick={goToPreviousWeek}
+              />
+              <span className={styles.weekRange}>{weekRangeLabel}</span>
+              <InventarioPrimaryButton
+                label="Siguiente"
+                variant="ghost"
+                showIcon={false}
+                theme={cargoTheme}
+                size="md"
+                onClick={goToNextWeek}
+              />
+              <InventarioPrimaryButton
+                label="Hoy"
+                variant="primary"
+                showIcon={false}
+                theme={cargoTheme}
+                size="md"
+                onClick={goToToday}
+              />
+            </div>
           </div>
 
-          <div className={styles.rightActions}>
-            <span className={styles.selectedCounter}>Seleccionados ({selectedIds.size})</span>
-            <button
-              type="button"
-              className={styles.downloadButton}
-              disabled={selectedIds.size === 0 || !canWrite}
-              title={
-                selectedIds.size === 0
-                  ? 'Selecciona al menos un colaborador para asignación masiva'
-                  : undefined
-              }
-              onClick={() => setBulkModalOpen(true)}
-            >
-              Asignación masiva
-            </button>
+          <div className={`${styles.field} ${styles.fieldActions}`}>
+            <span className={styles.fieldLabel}>Acciones</span>
+            <div className={styles.rightActions}>
+              <span className={styles.selectedCounter}>Seleccionados ({selectedIds.size})</span>
+              <InventarioPrimaryButton
+                label="Asignación masiva"
+                variant="primary"
+                showIcon={false}
+                theme={cargoTheme}
+                size="md"
+                disabled={selectedIds.size === 0 || !canWrite}
+                onClick={() => setBulkModalOpen(true)}
+              />
+            </div>
           </div>
         </div>
       </CargoPageSection>

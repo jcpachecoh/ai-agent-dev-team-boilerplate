@@ -32,3 +32,6 @@ export type AttendanceManualMarkingReason = (typeof ATTENDANCE_MANUAL_MARKING_RE
 
 // ASIS-UNI — ventana para detectar marcaciones duplicadas (mismo empleado, tipo, source y timestamp)
 export const ATTENDANCE_DUPLICATE_WINDOW_MS = 60_000;
+
+// SHIFT-UNI — tolerancia al validar marcación manual contra ventana del turno asignado
+export const SHIFT_WINDOW_TOLERANCE_MINUTES = 30;

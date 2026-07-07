@@ -188,6 +188,8 @@ export class TurnoAssignmentsRepository implements ITurnoAssignmentsRepository {
         jornada: true,
         tipo: true,
         estado: true,
+        locationId: true,
+        daysOfWeek: true,
       },
     });
     return row ?? null;
@@ -302,6 +304,8 @@ export class TurnoAssignmentsRepository implements ITurnoAssignmentsRepository {
             horaInicio: row.turno.horaInicio,
             horaFin: row.turno.horaFin,
             jornada: row.turno.jornada,
+            locationId: row.turno.locationId,
+            daysOfWeek: row.turno.daysOfWeek,
           }
         : null,
     };

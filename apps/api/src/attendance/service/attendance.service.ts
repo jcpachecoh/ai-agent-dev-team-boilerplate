@@ -22,6 +22,7 @@ import {
   SHIFT_AFTERNOON_END,
   SHIFT_AFTERNOON_START,
   SHIFT_MORNING_START,
+  SHIFT_WINDOW_TOLERANCE_MINUTES,
 } from '../attendance.constants';
 import type {
   ActiveAttendanceEntry,
@@ -39,10 +40,15 @@ import type {
   RegisterEventInput,
 } from '../interfaces/attendance.interfaces';
 import { AttendanceRepository, normalizeWorkDate } from '../repository/attendance.repository';
-import { calculateDaySummary, getBogotaHour } from '../utils/attendance-calculation.util';
+import {
+  calculateDaySummary,
+  getBogotaHour,
+  isTimestampWithinShiftWindow,
+} from '../utils/attendance-calculation.util';
 import { validateGeofence } from '../utils/attendance-geofence.util';
 import { AuthService } from '../../auth/service/auth.service';
 import { UserLocationsService } from '../../locations/service/user-locations.service';
+import { ShiftResolutionService } from '../../turnos/service/shift-resolution.service';
 
 // Kiosk-auth security model:
 //   • Tenant scope: tenantId required on every call
@@ -62,6 +68,7 @@ export class AttendanceService implements IAttendanceService {
   constructor(
     private readonly attendanceRepository: AttendanceRepository,
     private readonly authService: AuthService,
+    private readonly shiftResolutionService: ShiftResolutionService,
     private readonly userLocationsService: UserLocationsService,
   ) {}
 
@@ -241,6 +248,7 @@ export class AttendanceService implements IAttendanceService {
       }
     } else if (input.source === AttendanceLogSource.MANUAL) {
       shift = shift ?? detectShift(input.timestamp);
+      await this.assertManualMarkingWithinAssignedShift(input, workDate);
     }
 
     let validationStatus = null;
@@ -381,6 +389,35 @@ export class AttendanceService implements IAttendanceService {
       isNocturno: summary.isNocturno,
       pairs: summary.pairs,
     };
+  }
+
+  private async assertManualMarkingWithinAssignedShift(
+    input: RegisterEventInput,
+    workDate: Date,
+  ): Promise<void> {
+    const resolved = await this.shiftResolutionService.resolveForDay({
+      tenantId: input.tenantId,
+      employeeId: input.employeeId,
+      locationId: input.locationId,
+      workDate,
+    });
+
+    if (resolved.kind !== 'ASSIGNED') {
+      return;
+    }
+
+    const withinWindow = isTimestampWithinShiftWindow(
+      input.timestamp,
+      resolved.turno.horaInicio,
+      resolved.turno.horaFin,
+      SHIFT_WINDOW_TOLERANCE_MINUTES,
+    );
+
+    if (!withinWindow) {
+      throw new BadRequestException(
+        'La marcación manual está fuera de la ventana del turno asignado',
+      );
+    }
   }
 
   private incrementLockout(key: string): void {

@@ -28,6 +28,7 @@ export function useAttendanceCardData({
       toIso,
       cardQuery.data.logs,
       cardQuery.data.observations,
+      cardQuery.data.daySummaries ?? [],
     );
   }, [enabled, fromIso, toIso, cardQuery.data]);
 

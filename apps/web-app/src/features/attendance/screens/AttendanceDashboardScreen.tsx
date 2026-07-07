@@ -3,19 +3,20 @@ import {
   AsistenciaPageHeader,
   AsistenciaSyncButton,
   AreaChart,
-  EmpleadoAvatar,
   RecetaFilterSelect,
   RecetaMetricCard,
   RecetaTextInput,
   LoadingState,
-  resolveEmpleadoInitials,
 } from '@restopsiq/ui';
-import { MapPin, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 import { useUiTheme } from '@/hooks/useUiTheme';
 import { useTheme } from '@/providers/ThemeProvider';
 import { getErrorMessage } from '@/lib/graphql-client';
+
+import { TimelineTableCard } from '../components/control-panel/TimelineTableCard';
+import { TimelineTableRow } from '../components/control-panel/TimelineTableRow';
 
 import { dismissAttendanceAlert } from '../api/attendance.client';
 import { formatLastSyncLabel } from '../mappers/monitor.mappers';
@@ -26,20 +27,8 @@ import { getTodayIsoDateBogota } from '../utils/attendance-storage';
 import type {
   AttendanceClasificacion,
   AttendanceControlPanelPeriod,
-  AttendanceControlPanelTimelineRow,
 } from '../types/attendance.types';
 import styles from './AttendanceDashboardScreen.module.scss';
-
-function formatAttendanceSourceLabel(source: AttendanceControlPanelTimelineRow['source']): string {
-  switch (source) {
-    case 'APP_MOVIL':
-      return 'App móvil';
-    case 'MANUAL':
-      return 'Manual';
-    default:
-      return 'Automática';
-  }
-}
 
 const TIMELINE_PERIOD_OPTIONS: Array<{ id: AttendanceControlPanelPeriod; label: string }> = [
   { id: 'day', label: 'Hoy' },
@@ -69,19 +58,6 @@ type SortableColumn =
   | 'area'
   | 'contrato'
   | 'lastRecordAt';
-
-function formatRecordDate(value: string): string {
-  const date = new Date(value);
-  return new Intl.DateTimeFormat('es-CO', {
-    timeZone: 'America/Bogota',
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  }).format(date);
-}
 
 function formatComparisonChartLabel(
   label: string,
@@ -546,11 +522,29 @@ export function AttendanceDashboardScreen(): React.JSX.Element {
                   </tr>
                 ) : (
                   data?.timeline.items.map((row) => (
-                    <TimelineRow key={row.employeeId} row={row} theme={asistenciaTheme} />
+                    <TimelineTableRow key={row.employeeId} row={row} theme={asistenciaTheme} />
                   ))
                 )}
               </tbody>
             </table>
+          </div>
+
+          <div className={styles.mobileCardList} aria-label="Línea de tiempo hoy">
+            {query.isLoading ? (
+              <LoadingState
+                message="Cargando línea de tiempo…"
+                theme={asistenciaTheme === 'light' ? 'light' : 'dark'}
+                layout="inline"
+              />
+            ) : (data?.timeline.items.length ?? 0) === 0 ? (
+              <p className={styles.emptyCell}>
+                No hay marcaciones registradas en el periodo con los filtros actuales.
+              </p>
+            ) : (
+              data?.timeline.items.map((row) => (
+                <TimelineTableCard key={row.employeeId} row={row} theme={asistenciaTheme} />
+              ))
+            )}
           </div>
 
           <div className={styles.pagination}>
@@ -631,55 +625,5 @@ export function AttendanceDashboardScreen(): React.JSX.Element {
         </aside>
       </div>
     </AsistenciaPage>
-  );
-}
-
-function TimelineRow({
-  row,
-  theme,
-}: {
-  row: AttendanceControlPanelTimelineRow;
-  theme: 'light' | 'dark';
-}): React.JSX.Element {
-  const fullName = [row.nombres, row.primerApellido].filter(Boolean).join(' ');
-  const mapUrl =
-    row.latitude != null && row.longitude != null
-      ? `https://www.google.com/maps?q=${row.latitude},${row.longitude}`
-      : null;
-
-  return (
-    <tr className={row.isOutOfGeofence ? styles.outOfGeofenceRow : undefined}>
-      <td>
-        <EmpleadoAvatar
-          initials={resolveEmpleadoInitials(fullName || row.documentNumber)}
-          photoUrl={row.photoUrl ?? undefined}
-          theme={theme}
-          size="sm"
-        />
-      </td>
-      <td>{row.documentNumber}</td>
-      <td>{row.primerApellido ?? '—'}</td>
-      <td>{row.nombres ?? '—'}</td>
-      <td>{row.especialidad}</td>
-      <td>{row.area}</td>
-      <td>{row.contrato}</td>
-      <td>{formatRecordDate(row.lastRecordAt)}</td>
-      <td>{formatAttendanceSourceLabel(row.source)}</td>
-      <td>
-        {mapUrl ? (
-          <a
-            href={mapUrl}
-            target="_blank"
-            rel="noreferrer"
-            className={row.isOutOfGeofence ? styles.geoLinkDanger : styles.geoLink}
-            aria-label={`Ver ubicación de ${fullName}`}
-          >
-            <MapPin size={16} aria-hidden />
-          </a>
-        ) : (
-          <span className={styles.noGeo}>—</span>
-        )}
-      </td>
-    </tr>
   );
 }

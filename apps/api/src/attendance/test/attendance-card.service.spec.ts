@@ -2,6 +2,7 @@ import { BadRequestException, ForbiddenException, NotFoundException } from '@nes
 import { Test, TestingModule } from '@nestjs/testing';
 import { AttendanceEventType } from '@prisma/client';
 import { AuditService } from '../../audit/service/audit.service';
+import { ShiftResolutionService } from '../../turnos/service/shift-resolution.service';
 import type { AttendanceActingUser } from '../interfaces/attendance.interfaces';
 import { AttendanceRepository } from '../repository/attendance.repository';
 import { AttendanceCardService } from '../service/attendance-card.service';
@@ -59,6 +60,13 @@ describe('AttendanceCardService', () => {
         { provide: AuditService, useValue: { log: jest.fn() } },
         { provide: AttendanceService, useValue: { registerEvent: jest.fn() } },
         {
+          provide: ShiftResolutionService,
+          useValue: {
+            resolveForDay: jest.fn().mockResolvedValue({ kind: 'NONE', targetMinutes: 0 }),
+            getTargetMinutesForDay: jest.fn().mockResolvedValue(0),
+          },
+        },
+        {
           provide: UserLocationsService,
           useValue: {
             resolveAllowedLocationIds: jest.fn().mockResolvedValue(null),
@@ -79,7 +87,13 @@ describe('AttendanceCardService', () => {
     it('resuelve historial + observaciones del rango', async () => {
       const employee = makeEmployee();
       repo.findEmployeeByUserId.mockResolvedValue(employee as never);
-      repo.listHistory.mockResolvedValue([{ id: 'log-1' }] as never);
+      const log = {
+        id: 'log-1',
+        workDate: new Date('2026-06-10T00:00:00.000Z'),
+        eventType: 'ENTRY',
+        timestamp: new Date('2026-06-10T13:00:00.000Z'),
+      };
+      repo.listHistory.mockResolvedValue([log] as never);
       repo.listObservationsInRange.mockResolvedValue([{ id: 'obs-1' }] as never);
 
       const result = await service.getCard(
@@ -90,8 +104,9 @@ describe('AttendanceCardService', () => {
         makeActingUser(),
       );
 
-      expect(result.logs).toEqual([{ id: 'log-1' }]);
+      expect(result.logs).toEqual([log]);
       expect(result.observations).toEqual([{ id: 'obs-1' }]);
+      expect(result.daySummaries.length).toBeGreaterThan(0);
     });
 
     it('empleado fuera de tenant falla', async () => {

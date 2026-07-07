@@ -5,7 +5,6 @@ import {
   CargoPageHeader,
   CargoPageSection,
   CargoTable,
-  CargoTableItem,
   EmptyState,
   InventarioExportActions,
   InventarioPrimaryButton,
@@ -15,7 +14,7 @@ import {
   toast,
 } from '@restopsiq/ui';
 import { RefreshCw } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 
 import { canWriteTurnos } from '@/config/rbac.config';
 import { useMe } from '@/features/auth/hooks/useMe';
@@ -27,7 +26,9 @@ import { TurnosCreateModal } from '../components/turnos/TurnosCreateModal';
 import { TurnosDeactivateDialog } from '../components/turnos/TurnosDeactivateDialog';
 import { TurnosEditModal } from '../components/turnos/TurnosEditModal';
 import { TurnosSubNav } from '../components/turnos/TurnosSubNav';
+import { TurnosTableItem } from '../components/turnos/TurnosTableItem';
 import { TURNOS_PAGE_SIZE_OPTIONS, useTurnosFilters } from '../hooks/useTurnosFilters';
+import { useAttendanceScopeLocations } from '../hooks/useAttendanceScopeLocations';
 import {
   useCreateTurnoMutation,
   useExportTurnosMutation,
@@ -65,9 +66,11 @@ const JORNADA_LABELS: Record<TurnoJornada, string> = {
 };
 
 const TURNOS_TABLE_COLUMNS: CargoColumnDef[] = [
-  { key: 'title', label: 'Nombre del turno', width: 'minmax(200px, 1.4fr)', align: 'left' },
-  { key: 'area', label: 'Sigla', width: 'minmax(140px, 1fr)', align: 'left' },
-  { key: 'salary', label: 'Horario', width: 'minmax(220px, 1.4fr)', align: 'right' },
+  { key: 'title', label: 'Nombre del turno', width: 'minmax(160px, 1.2fr)', align: 'left' },
+  { key: 'area', label: 'Sigla', width: 'minmax(100px, 0.8fr)', align: 'left' },
+  { key: 'location', label: 'Sede', width: 'minmax(120px, 1fr)', align: 'left' },
+  { key: 'days', label: 'Días', width: 'minmax(140px, 1fr)', align: 'left' },
+  { key: 'salary', label: 'Horario', width: 'minmax(200px, 1.2fr)', align: 'center' },
   { key: 'status', label: 'Estado', width: 'minmax(108px, max-content)', align: 'center' },
   { key: 'actions', label: 'Acciones', width: '72px', align: 'right' },
 ];
@@ -91,12 +94,14 @@ function getErrorMessage(error: unknown): string {
 
 function toCreateInput(values: TurnoFormValues): CreateTurnoInput {
   return {
+    locationId: values.locationId.trim(),
     nombre: values.nombre.trim(),
     sigla: values.sigla.trim(),
     tipo: values.tipo,
     jornada: values.jornada,
     horaInicio: values.horaInicio,
     horaFin: values.horaFin,
+    daysOfWeek: values.daysOfWeek,
   };
 }
 
@@ -135,6 +140,12 @@ export function TurnosListScreen(): React.JSX.Element {
   } = useTurnosFilters(50);
 
   const turnosQuery = useTurnosQuery(queryFilters);
+  const { locations } = useAttendanceScopeLocations();
+  const locationNameById = useMemo(
+    () => new Map(locations.map((location) => [location.id, location.name])),
+    [locations],
+  );
+  const tableColumns = useMemo(() => getTurnosTableColumns(canWrite), [canWrite]);
   const createTurno = useCreateTurnoMutation();
   const updateTurno = useUpdateTurnoMutation();
   const updateEstado = useUpdateTurnoEstadoMutation();
@@ -368,7 +379,7 @@ export function TurnosListScreen(): React.JSX.Element {
           <CargoTable
             theme={cargoTheme}
             showActions={canWrite}
-            columns={getTurnosTableColumns(canWrite)}
+            columns={tableColumns}
             ariaLabel="Listado de turnos"
             enableSorting={false}
             pagination={{
@@ -380,13 +391,12 @@ export function TurnosListScreen(): React.JSX.Element {
             }}
           >
             {turnos.map((turno) => (
-              <CargoTableItem
+              <TurnosTableItem
                 key={turno.id}
-                id={turno.id}
-                title={turno.nombre}
-                area={turno.sigla}
-                baseSalaryRange={formatTurnoSchedule(turno)}
-                isActive={turno.estado}
+                turno={turno}
+                columns={tableColumns}
+                locationName={locationNameById.get(turno.locationId) ?? turno.locationId}
+                scheduleLabel={formatTurnoSchedule(turno)}
                 theme={cargoTheme}
                 showActions={canWrite}
                 toggleLoading={togglingId === turno.id}

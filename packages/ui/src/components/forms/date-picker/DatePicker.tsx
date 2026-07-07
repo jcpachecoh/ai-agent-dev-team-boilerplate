@@ -91,20 +91,23 @@ export const DatePicker: React.FC<DatePickerProps> = ({
           ]
             .filter(Boolean)
             .join(' ')}
-          sideOffset={5}
+          sideOffset={6}
           align="start"
+          collisionPadding={12}
+          avoidCollisions
         >
           <DayPicker
             mode="single"
             selected={value}
             onSelect={handleDateSelect}
             locale={es}
+            weekStartsOn={1}
             components={{
               Chevron: (props): React.JSX.Element => {
                 if (props.orientation === 'left') {
-                  return <ChevronLeft size={16} {...props} />;
+                  return <ChevronLeft size={14} {...props} />;
                 }
-                return <ChevronRight size={16} {...props} />;
+                return <ChevronRight size={14} {...props} />;
               },
             }}
           />

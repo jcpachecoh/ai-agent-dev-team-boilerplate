@@ -1,10 +1,42 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { AttendanceObservationResponseDto } from './attendance-observation.response';
 
+export class AttendanceCardDaySummaryDto {
+  @ApiProperty()
+  workDate!: string;
+
+  @ApiProperty()
+  targetMinutes!: number;
+
+  @ApiProperty()
+  targetHours!: string;
+
+  @ApiProperty()
+  ordinaryMinutes!: number;
+
+  @ApiProperty()
+  unworkedMinutes!: number;
+
+  @ApiProperty()
+  overtimeMinutes!: number;
+
+  @ApiProperty({ enum: ['ASSIGNED', 'REST', 'NONE'] })
+  resolvedKind!: 'ASSIGNED' | 'REST' | 'NONE';
+
+  @ApiProperty({ nullable: true })
+  shiftName!: string | null;
+
+  @ApiProperty({ nullable: true })
+  shiftRange!: string | null;
+}
+
 export class AttendanceCardResponseDto {
   @ApiProperty({ description: 'Marcaciones (AttendanceLog) del rango, DEVICE + MANUAL' })
   logs!: unknown[];
 
   @ApiProperty({ type: [AttendanceObservationResponseDto] })
   observations!: AttendanceObservationResponseDto[];
+
+  @ApiProperty({ type: [AttendanceCardDaySummaryDto] })
+  daySummaries!: AttendanceCardDaySummaryDto[];
 }

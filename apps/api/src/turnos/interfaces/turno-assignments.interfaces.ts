@@ -9,6 +9,8 @@ export interface AssignmentTurnoSummary {
   horaInicio: string;
   horaFin: string;
   jornada: TurnoJornada;
+  locationId?: string;
+  daysOfWeek?: number[];
 }
 
 export interface WeeklyAssignmentCell {
@@ -88,6 +90,8 @@ export interface TurnoScopeInfo {
   jornada: TurnoJornada;
   tipo: TurnoTipo;
   estado: boolean;
+  locationId: string;
+  daysOfWeek: number[];
 }
 
 export interface AssignAssignmentData {

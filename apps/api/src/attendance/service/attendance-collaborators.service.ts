@@ -5,6 +5,7 @@ import { EmailService } from '@restopsiq/email';
 
 import { AuditService } from '../../audit/service/audit.service';
 import { UserLocationsService } from '../../locations/service/user-locations.service';
+import { ShiftResolutionService } from '../../turnos/service/shift-resolution.service';
 import {
   ATTENDANCE_COLLABORATORS_EXPORT_EMPTY_MESSAGE,
   ATTENDANCE_COLLABORATORS_EXPORT_MAX_ROWS,
@@ -53,6 +54,7 @@ export class AttendanceCollaboratorsService {
     private readonly excelService: AttendanceCollaboratorsExcelService,
     private readonly pdfService: AttendanceCollaboratorsPdfService,
     private readonly emailService: EmailService,
+    private readonly shiftResolutionService: ShiftResolutionService,
   ) {}
 
   async list(
@@ -71,11 +73,16 @@ export class AttendanceCollaboratorsService {
       this.repository.findTodayAssignments(tenantId, employeeIds, normalizeWorkDate(new Date())),
     ]);
 
-    const items: AttendanceCollaboratorItem[] = page.items.map((item) => ({
-      ...item,
-      supervisors: supervisorsByLocation.get(item.locationId) ?? [],
-      todayShift: shiftsByEmployee.get(item.id) ?? { type: 'BASE', turno: null },
-    }));
+    const today = normalizeWorkDate(new Date());
+    const items: AttendanceCollaboratorItem[] = await Promise.all(
+      page.items.map(async (item) => ({
+        ...item,
+        supervisors: supervisorsByLocation.get(item.locationId) ?? [],
+        todayShift:
+          shiftsByEmployee.get(item.id) ??
+          (await this.resolveTodayShiftFromAssignment(tenantId, item.id, item.locationId, today)),
+      })),
+    );
 
     const totalPages = Math.max(1, Math.ceil(page.total / filters.pageSize));
 
@@ -268,6 +275,41 @@ export class AttendanceCollaboratorsService {
   private formatSupervisorsLabel(supervisors: Array<{ name: string }>): string {
     if (supervisors.length === 0) return 'N/A';
     return supervisors.map((supervisor) => supervisor.name).join(', ');
+  }
+
+  private async resolveTodayShiftFromAssignment(
+    tenantId: string,
+    employeeId: string,
+    locationId: string,
+    workDate: Date,
+  ): Promise<CollaboratorTodayShift> {
+    const resolved = await this.shiftResolutionService.resolveForDay({
+      tenantId,
+      employeeId,
+      locationId,
+      workDate,
+    });
+
+    if (resolved.kind === 'REST') {
+      return { type: 'REST', turno: null };
+    }
+
+    if (resolved.kind === 'ASSIGNED' && resolved.source === 'EMPLOYEE_ASSIGNMENT') {
+      const turno = resolved.turno;
+      return {
+        type: 'ASSIGNED',
+        turno: {
+          id: turno.id,
+          nombre: turno.nombre,
+          sigla: turno.sigla,
+          horaInicio: turno.horaInicio,
+          horaFin: turno.horaFin,
+          jornada: turno.jornada,
+        },
+      };
+    }
+
+    return { type: 'BASE', turno: null };
   }
 
   private formatTurnoLabel(todayShift: CollaboratorTodayShift): string {

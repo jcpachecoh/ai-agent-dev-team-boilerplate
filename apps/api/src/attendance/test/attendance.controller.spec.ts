@@ -349,7 +349,7 @@ describe('AttendanceController', () => {
         dateFrom: '2026-06-01',
         dateTo: '2026-06-30',
       });
-      cardServiceMock.getCard.mockResolvedValue({ logs: [], observations: [] });
+      cardServiceMock.getCard.mockResolvedValue({ logs: [], observations: [], daySummaries: [] });
 
       const result = await controller.getAttendanceCard(user, '', 'user-1', query);
 
@@ -360,7 +360,7 @@ describe('AttendanceController', () => {
         '2026-06-30',
         { sub: 'user-001', roleCode: 'OWNER', locationId: undefined },
       );
-      expect(result).toEqual({ logs: [], observations: [] });
+      expect(result).toEqual({ logs: [], observations: [], daySummaries: [] });
     });
   });
 

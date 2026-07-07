@@ -8,6 +8,7 @@ import { AttendanceCollaboratorsRepository } from '../repository/attendance-coll
 import { AttendanceCollaboratorsExcelService } from '../service/attendance-collaborators-excel.service';
 import { AttendanceCollaboratorsPdfService } from '../service/attendance-collaborators-pdf.service';
 import { AttendanceCollaboratorsService } from '../service/attendance-collaborators.service';
+import { ShiftResolutionService } from '../../turnos/service/shift-resolution.service';
 import type { CollaboratorRecord } from '../interfaces/attendance-collaborators.interfaces';
 
 const TENANT = 'tenant-1';
@@ -88,6 +89,12 @@ describe('AttendanceCollaboratorsService', () => {
         {
           provide: EmailService,
           useValue: { send: jest.fn() },
+        },
+        {
+          provide: ShiftResolutionService,
+          useValue: {
+            resolveForDay: jest.fn().mockResolvedValue({ kind: 'NONE', targetMinutes: 0 }),
+          },
         },
       ],
     }).compile();

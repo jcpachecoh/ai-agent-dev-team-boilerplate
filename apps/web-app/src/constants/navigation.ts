@@ -221,12 +221,6 @@ export const navigationItems: NavItem[] = [
         icon: Monitor,
         end: false,
       },
-      {
-        id: 'attendance-reports',
-        label: 'Reportes',
-        path: '/asistencia/reportes',
-        icon: FileText,
-      },
     ],
   },
   {
