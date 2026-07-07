@@ -5,13 +5,14 @@ import {
   Field,
   ID,
   InputType,
+  Int,
   Mutation,
   ObjectType,
   Query,
   Resolver,
   registerEnumType,
 } from '@nestjs/graphql';
-import { EmployeeRelationshipType } from '@prisma/client';
+import { BeneficiaryDisabilityType, DocumentType, EmployeeRelationshipType } from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
   IsBoolean,
@@ -35,6 +36,7 @@ import {
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../../common/guards/permissions.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
+import { calculateAge } from '../../common/utils/date.util';
 import { EmployeeSocialProfileService } from '../service/employee-social-profile.service';
 
 registerEnumType(EmployeeRelationshipType, {
@@ -42,14 +44,29 @@ registerEnumType(EmployeeRelationshipType, {
   description: 'Tipo de parentesco del familiar',
 });
 
+registerEnumType(BeneficiaryDisabilityType, {
+  name: 'BeneficiaryDisabilityType',
+  description: 'Tipo de discapacidad del familiar',
+});
+
+// DocumentType ya se registra en auth.resolver.ts / employees.resolver.ts — no volver a registrarlo aquí.
+
 @ObjectType('EmployeeSocialProfile')
 export class EmployeeSocialProfileType {
   @Field(() => ID) id!: string;
   @Field() tenantId!: string;
   @Field(() => ID) employeeDetailsId!: string;
   @Field() fullName!: string;
+  @Field(() => String, { nullable: true }) primerNombre?: string | null;
+  @Field(() => String, { nullable: true }) segundoNombre?: string | null;
+  @Field(() => String, { nullable: true }) primerApellido?: string | null;
+  @Field(() => String, { nullable: true }) segundoApellido?: string | null;
+  @Field(() => DocumentType, { nullable: true }) documentType?: DocumentType | null;
+  @Field(() => String, { nullable: true }) documentNumber?: string | null;
   @Field(() => EmployeeRelationshipType) relationshipType!: EmployeeRelationshipType;
+  @Field(() => BeneficiaryDisabilityType) disability!: BeneficiaryDisabilityType;
   @Field() birthDate!: Date;
+  @Field(() => Int) age!: number;
   @Field() isDependent!: boolean;
   @Field() createdAt!: Date;
   @Field() updatedAt!: Date;
@@ -58,15 +75,45 @@ export class EmployeeSocialProfileType {
 
 @InputType()
 export class CreateSocialProfileInput {
+  @Field(() => DocumentType, { nullable: true })
+  @IsEnum(DocumentType)
+  @IsOptional()
+  documentType?: DocumentType;
+
+  @Field({ nullable: true })
+  @IsString()
+  @IsOptional()
+  documentNumber?: string;
+
   @Field()
   @IsString()
   @IsNotEmpty()
-  fullName!: string;
+  primerNombre!: string;
+
+  @Field({ nullable: true })
+  @IsString()
+  @IsOptional()
+  segundoNombre?: string;
+
+  @Field()
+  @IsString()
+  @IsNotEmpty()
+  primerApellido!: string;
+
+  @Field({ nullable: true })
+  @IsString()
+  @IsOptional()
+  segundoApellido?: string;
 
   @Field(() => EmployeeRelationshipType)
   @IsEnum(EmployeeRelationshipType)
   @IsNotEmpty()
   relationshipType!: EmployeeRelationshipType;
+
+  @Field(() => BeneficiaryDisabilityType)
+  @IsEnum(BeneficiaryDisabilityType)
+  @IsNotEmpty()
+  disability!: BeneficiaryDisabilityType;
 
   @Field()
   @Type(() => Date)
@@ -82,15 +129,45 @@ export class CreateSocialProfileInput {
 
 @InputType()
 export class UpdateSocialProfileInput {
+  @Field(() => DocumentType, { nullable: true })
+  @IsEnum(DocumentType)
+  @IsOptional()
+  documentType?: DocumentType;
+
   @Field({ nullable: true })
   @IsString()
   @IsOptional()
-  fullName?: string;
+  documentNumber?: string;
+
+  @Field({ nullable: true })
+  @IsString()
+  @IsOptional()
+  primerNombre?: string;
+
+  @Field({ nullable: true })
+  @IsString()
+  @IsOptional()
+  segundoNombre?: string;
+
+  @Field({ nullable: true })
+  @IsString()
+  @IsOptional()
+  primerApellido?: string;
+
+  @Field({ nullable: true })
+  @IsString()
+  @IsOptional()
+  segundoApellido?: string;
 
   @Field(() => EmployeeRelationshipType, { nullable: true })
   @IsEnum(EmployeeRelationshipType)
   @IsOptional()
   relationshipType?: EmployeeRelationshipType;
+
+  @Field(() => BeneficiaryDisabilityType, { nullable: true })
+  @IsEnum(BeneficiaryDisabilityType)
+  @IsOptional()
+  disability?: BeneficiaryDisabilityType;
 
   @Field(() => Date, { nullable: true })
   @Type(() => Date)
@@ -116,7 +193,8 @@ export class EmployeeSocialProfileResolver {
     @Context() context: GqlRequestContext,
   ): Promise<EmployeeSocialProfileType[]> {
     const tenantId = this.resolveTenantId(user, context);
-    return this.service.findMyProfiles(user.sub, tenantId) as Promise<EmployeeSocialProfileType[]>;
+    const profiles = await this.service.findMyProfiles(user.sub, tenantId);
+    return profiles.map(toGraphqlProfile);
   }
 
   @Query(() => [EmployeeSocialProfileType])
@@ -129,9 +207,8 @@ export class EmployeeSocialProfileResolver {
     @Args('employeeId', { type: () => ID }) employeeId: string,
   ): Promise<EmployeeSocialProfileType[]> {
     const tenantId = this.resolveTenantId(user, context);
-    return this.service.findAllByEmployee(tenantId, employeeId) as Promise<
-      EmployeeSocialProfileType[]
-    >;
+    const profiles = await this.service.findAllByEmployee(tenantId, employeeId);
+    return profiles.map(toGraphqlProfile);
   }
 
   @Mutation(() => EmployeeSocialProfileType)
@@ -145,12 +222,19 @@ export class EmployeeSocialProfileResolver {
     @Args('input') input: CreateSocialProfileInput,
   ): Promise<EmployeeSocialProfileType> {
     const tenantId = this.resolveTenantId(user, context);
-    return this.service.create(tenantId, employeeId, {
-      fullName: input.fullName.trim(),
+    const profile = await this.service.create(tenantId, employeeId, {
+      primerNombre: input.primerNombre.trim(),
+      segundoNombre: input.segundoNombre?.trim(),
+      primerApellido: input.primerApellido.trim(),
+      segundoApellido: input.segundoApellido?.trim(),
+      documentType: input.documentType,
+      documentNumber: input.documentNumber?.trim(),
       relationshipType: input.relationshipType,
+      disability: input.disability,
       birthDate: input.birthDate,
       isDependent: input.isDependent ?? false,
-    }) as Promise<EmployeeSocialProfileType>;
+    });
+    return toGraphqlProfile(profile);
   }
 
   @Mutation(() => EmployeeSocialProfileType)
@@ -165,12 +249,20 @@ export class EmployeeSocialProfileResolver {
     @Args('input') input: UpdateSocialProfileInput,
   ): Promise<EmployeeSocialProfileType> {
     const tenantId = this.resolveTenantId(user, context);
-    return this.service.update(tenantId, id, employeeId, {
-      fullName: input.fullName !== undefined ? input.fullName.trim() : undefined,
+    const profile = await this.service.update(tenantId, id, employeeId, {
+      primerNombre: input.primerNombre !== undefined ? input.primerNombre.trim() : undefined,
+      segundoNombre: input.segundoNombre !== undefined ? input.segundoNombre.trim() : undefined,
+      primerApellido: input.primerApellido !== undefined ? input.primerApellido.trim() : undefined,
+      segundoApellido:
+        input.segundoApellido !== undefined ? input.segundoApellido.trim() : undefined,
+      documentType: input.documentType,
+      documentNumber: input.documentNumber !== undefined ? input.documentNumber.trim() : undefined,
       relationshipType: input.relationshipType,
+      disability: input.disability,
       birthDate: input.birthDate,
       isDependent: input.isDependent,
-    }) as Promise<EmployeeSocialProfileType>;
+    });
+    return toGraphqlProfile(profile);
   }
 
   @Mutation(() => Boolean)
@@ -194,4 +286,26 @@ export class EmployeeSocialProfileResolver {
     }
     return getTenantIdFromContext(context);
   }
+}
+
+function toGraphqlProfile(profile: {
+  id: string;
+  tenantId: string;
+  employeeDetailsId: string;
+  fullName: string;
+  primerNombre: string | null;
+  segundoNombre: string | null;
+  primerApellido: string | null;
+  segundoApellido: string | null;
+  documentType: DocumentType | null;
+  documentNumber: string | null;
+  relationshipType: EmployeeRelationshipType;
+  disability: BeneficiaryDisabilityType;
+  birthDate: Date;
+  isDependent: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  deletedAt: Date | null;
+}): EmployeeSocialProfileType {
+  return { ...profile, age: calculateAge(profile.birthDate) };
 }

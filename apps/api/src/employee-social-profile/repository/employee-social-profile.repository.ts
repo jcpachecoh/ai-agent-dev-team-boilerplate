@@ -3,10 +3,10 @@ import { EmployeeSocialProfile } from '@prisma/client';
 
 import { PrismaService } from '../../prisma/prisma.service';
 import type {
-  CreateSocialProfileData,
+  CreateSocialProfileRecord,
   EmployeeRecord,
   IEmployeeSocialProfileRepository,
-  UpdateSocialProfileData,
+  UpdateSocialProfileRecord,
 } from '../interfaces/employee-social-profile.interfaces';
 
 const EMPLOYEE_SELECT = {
@@ -37,7 +37,7 @@ export class EmployeeSocialProfileRepository implements IEmployeeSocialProfileRe
   async create(
     tenantId: string,
     employeeDetailsId: string,
-    data: CreateSocialProfileData,
+    data: CreateSocialProfileRecord,
   ): Promise<EmployeeSocialProfile> {
     return this.prisma.employeeSocialProfile.create({
       data: {
@@ -45,6 +45,13 @@ export class EmployeeSocialProfileRepository implements IEmployeeSocialProfileRe
         employeeDetailsId,
         fullName: data.fullName,
         relationshipType: data.relationshipType,
+        documentType: data.documentType,
+        documentNumber: data.documentNumber,
+        primerNombre: data.primerNombre,
+        segundoNombre: data.segundoNombre,
+        primerApellido: data.primerApellido,
+        segundoApellido: data.segundoApellido,
+        disability: data.disability,
         birthDate: data.birthDate,
         isDependent: data.isDependent,
       },
@@ -75,13 +82,20 @@ export class EmployeeSocialProfileRepository implements IEmployeeSocialProfileRe
     tenantId: string,
     id: string,
     employeeDetailsId: string,
-    data: UpdateSocialProfileData,
+    data: UpdateSocialProfileRecord,
   ): Promise<EmployeeSocialProfile> {
     return this.prisma.employeeSocialProfile.update({
       where: { id },
       data: {
         ...(data.fullName !== undefined && { fullName: data.fullName }),
         ...(data.relationshipType !== undefined && { relationshipType: data.relationshipType }),
+        ...(data.documentType !== undefined && { documentType: data.documentType }),
+        ...(data.documentNumber !== undefined && { documentNumber: data.documentNumber }),
+        ...(data.primerNombre !== undefined && { primerNombre: data.primerNombre }),
+        ...(data.segundoNombre !== undefined && { segundoNombre: data.segundoNombre }),
+        ...(data.primerApellido !== undefined && { primerApellido: data.primerApellido }),
+        ...(data.segundoApellido !== undefined && { segundoApellido: data.segundoApellido }),
+        ...(data.disability !== undefined && { disability: data.disability }),
         ...(data.birthDate !== undefined && { birthDate: data.birthDate }),
         ...(data.isDependent !== undefined && { isDependent: data.isDependent }),
       },

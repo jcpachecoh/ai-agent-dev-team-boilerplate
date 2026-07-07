@@ -1,6 +1,8 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { EmployeeDetails, StorageObject, EmployeeSocialProfile, User } from '@prisma/client';
 
+import { calculateAge } from '../../common/utils/date.util';
+
 const PUBLIC_DOMAIN = (): string => {
   const raw = process.env.R2_PUBLIC_DOMAIN ?? '';
   const trimmed = raw.trim().replace(/\/+$/, '');
@@ -58,7 +60,15 @@ export class EmployeeResponseDto {
   @ApiPropertyOptional() beneficiaries?: Array<{
     id: string;
     fullName: string;
+    primerNombre: string | null;
+    segundoNombre: string | null;
+    primerApellido: string | null;
+    segundoApellido: string | null;
+    documentType: string | null;
+    documentNumber: string | null;
     relationshipType: string;
+    disability: string;
+    birthDate: Date;
     age: number;
   }>;
 }
@@ -128,8 +138,16 @@ export function toEmployeeResponse(
     beneficiaries: employee.socialProfiles?.map((p) => ({
       id: p.id,
       fullName: p.fullName,
+      primerNombre: p.primerNombre,
+      segundoNombre: p.segundoNombre,
+      primerApellido: p.primerApellido,
+      segundoApellido: p.segundoApellido,
+      documentType: p.documentType,
+      documentNumber: p.documentNumber,
       relationshipType: p.relationshipType,
-      age: new Date().getFullYear() - p.birthDate.getFullYear(),
+      disability: p.disability,
+      birthDate: p.birthDate,
+      age: calculateAge(p.birthDate),
     })),
   };
 }

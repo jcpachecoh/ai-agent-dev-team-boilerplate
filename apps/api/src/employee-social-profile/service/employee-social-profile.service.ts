@@ -26,7 +26,15 @@ export class EmployeeSocialProfileService implements IEmployeeSocialProfileServi
   ): Promise<EmployeeSocialProfile> {
     await this.resolveEmployee(tenantId, employeeDetailsId);
     try {
-      return await this.repository.create(tenantId, employeeDetailsId, data);
+      return await this.repository.create(tenantId, employeeDetailsId, {
+        ...data,
+        fullName: this.buildFullName(
+          data.primerNombre,
+          data.segundoNombre,
+          data.primerApellido,
+          data.segundoApellido,
+        ),
+      });
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
         throw new ConflictException(
@@ -64,9 +72,24 @@ export class EmployeeSocialProfileService implements IEmployeeSocialProfileServi
     employeeDetailsId: string,
     data: UpdateSocialProfileData,
   ): Promise<EmployeeSocialProfile> {
-    await this.findOne(tenantId, id, employeeDetailsId);
+    const existing = await this.findOne(tenantId, id, employeeDetailsId);
+    const nameChanged =
+      data.primerNombre !== undefined ||
+      data.segundoNombre !== undefined ||
+      data.primerApellido !== undefined ||
+      data.segundoApellido !== undefined;
     try {
-      return await this.repository.update(tenantId, id, employeeDetailsId, data);
+      return await this.repository.update(tenantId, id, employeeDetailsId, {
+        ...data,
+        ...(nameChanged && {
+          fullName: this.buildFullName(
+            data.primerNombre ?? existing.primerNombre ?? undefined,
+            data.segundoNombre ?? existing.segundoNombre ?? undefined,
+            data.primerApellido ?? existing.primerApellido ?? undefined,
+            data.segundoApellido ?? existing.segundoApellido ?? undefined,
+          ),
+        }),
+      });
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
         throw new ConflictException(
@@ -91,6 +114,18 @@ export class EmployeeSocialProfileService implements IEmployeeSocialProfileServi
       throw new ForbiddenException('El empleado está inactivo');
     }
     return this.repository.findAllByEmployee(tenantId, employee.id);
+  }
+
+  private buildFullName(
+    primerNombre?: string,
+    segundoNombre?: string,
+    primerApellido?: string,
+    segundoApellido?: string,
+  ): string {
+    return [primerNombre, segundoNombre, primerApellido, segundoApellido]
+      .map((value) => value?.trim() ?? '')
+      .filter(Boolean)
+      .join(' ');
   }
 
   private async resolveEmployee(

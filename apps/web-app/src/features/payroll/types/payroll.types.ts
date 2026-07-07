@@ -10,12 +10,37 @@ export type CostCenter = 'ADMINISTRATIVO' | 'OPERACIONES' | 'PLANTA' | 'GERENCIA
 
 export type LaborClassification = 'COCINA' | 'SERVICIO' | 'ADMINISTRATIVO';
 
-export type BeneficiaryRelationshipType = 'CHILD' | 'SPOUSE' | 'TUTOR';
+export type BeneficiaryRelationshipType =
+  | 'FATHER'
+  | 'MOTHER'
+  | 'SPOUSE'
+  | 'CHILD'
+  | 'MINOR_IN_CHARGE'
+  | 'ORPHAN_SIBLING';
+
+export type BeneficiaryDisabilityType =
+  | 'NOT_APPLICABLE'
+  | 'PHYSICAL'
+  | 'AUDITORY'
+  | 'VISUAL'
+  | 'DEAFBLINDNESS'
+  | 'INTELLECTUAL_COGNITIVE'
+  | 'PSYCHOSOCIAL'
+  | 'MULTIPLE';
+
+/** Tipos de documento soportados por el backend para el familiar (independiente del `DocumentType` del empleado). */
+export type BeneficiaryDocumentType = 'CC' | 'CE' | 'PASAPORTE' | 'TI' | 'PEP';
 
 export interface BeneficiaryFormRow {
+  documentType: BeneficiaryDocumentType | '';
+  documentNumber: string;
   relationshipType: BeneficiaryRelationshipType;
-  fullName: string;
-  age: string;
+  primerNombre: string;
+  segundoNombre: string;
+  primerApellido: string;
+  segundoApellido: string;
+  fechaNacimiento: string;
+  disability: BeneficiaryDisabilityType;
 }
 
 export interface EmployeeUserSummary {
@@ -59,7 +84,15 @@ export interface PayrollEmployee {
   beneficiaries?: Array<{
     id: string;
     fullName: string;
+    primerNombre: string | null;
+    segundoNombre: string | null;
+    primerApellido: string | null;
+    segundoApellido: string | null;
+    documentType: BeneficiaryDocumentType | null;
+    documentNumber: string | null;
     relationshipType: BeneficiaryRelationshipType;
+    disability: BeneficiaryDisabilityType;
+    birthDate: string;
     age: number;
   }>;
   isActive: boolean;
@@ -115,9 +148,15 @@ export interface CreatePayrollEmployeeInput {
   laborClassification: LaborClassification;
   nonSalaryAmount?: number;
   beneficiaries?: Array<{
-    fullName: string;
+    documentType?: BeneficiaryDocumentType;
+    documentNumber?: string;
+    primerNombre: string;
+    segundoNombre?: string;
+    primerApellido: string;
+    segundoApellido?: string;
     relationshipType: BeneficiaryRelationshipType;
-    age: number;
+    disability: BeneficiaryDisabilityType;
+    fechaNacimiento: string;
   }>;
 }
 

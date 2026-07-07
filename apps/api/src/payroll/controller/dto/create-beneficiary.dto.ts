@@ -1,28 +1,60 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum, IsInt, IsNotEmpty, IsString, Max, Min } from 'class-validator';
-import { EmployeeRelationshipType } from '@prisma/client';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsDateString, IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { BeneficiaryDisabilityType, DocumentType, EmployeeRelationshipType } from '@prisma/client';
 
 const ALLOWED_TYPES = [
-  EmployeeRelationshipType.CHILD,
+  EmployeeRelationshipType.FATHER,
+  EmployeeRelationshipType.MOTHER,
   EmployeeRelationshipType.SPOUSE,
-  EmployeeRelationshipType.TUTOR,
+  EmployeeRelationshipType.CHILD,
+  EmployeeRelationshipType.MINOR_IN_CHARGE,
+  EmployeeRelationshipType.ORPHAN_SIBLING,
 ] as const;
 
 export type BeneficiaryRelationshipType = (typeof ALLOWED_TYPES)[number];
 
 export class CreateBeneficiaryDto {
+  @ApiPropertyOptional({ enum: DocumentType })
+  @IsEnum(DocumentType)
+  @IsOptional()
+  documentType?: DocumentType;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  documentNumber?: string;
+
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
-  fullName!: string;
+  primerNombre!: string;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  segundoNombre?: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  primerApellido!: string;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  segundoApellido?: string;
 
   @ApiProperty({ enum: ALLOWED_TYPES })
   @IsEnum(ALLOWED_TYPES)
   relationshipType!: BeneficiaryRelationshipType;
 
-  @ApiProperty({ minimum: 0, maximum: 99 })
-  @IsInt()
-  @Min(0)
-  @Max(99)
-  age!: number;
+  @ApiProperty({ enum: BeneficiaryDisabilityType })
+  @IsEnum(BeneficiaryDisabilityType)
+  @IsNotEmpty()
+  disability!: BeneficiaryDisabilityType;
+
+  @ApiProperty({ description: 'Fecha de nacimiento (no puede ser futura)' })
+  @IsDateString()
+  @IsNotEmpty()
+  fechaNacimiento!: string;
 }

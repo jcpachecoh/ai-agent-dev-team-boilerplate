@@ -5,7 +5,14 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
-import { EmployeeRelationshipType } from '@prisma/client';
+import { BeneficiaryDisabilityType, EmployeeRelationshipType, Prisma } from '@prisma/client';
+
+function uniqueConstraintError(): Prisma.PrismaClientKnownRequestError {
+  return new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
+    code: 'P2002',
+    clientVersion: '5.22.0',
+  });
+}
 
 import { EmployeeSocialProfileRepository } from '../repository/employee-social-profile.repository';
 import { EmployeeSocialProfileService } from '../service/employee-social-profile.service';
@@ -28,7 +35,14 @@ const mockProfile = {
   tenantId: TENANT_ID,
   employeeDetailsId: EMPLOYEE_ID,
   fullName: 'Ana García',
+  primerNombre: 'Ana',
+  segundoNombre: null,
+  primerApellido: 'García',
+  segundoApellido: null,
+  documentType: null,
+  documentNumber: null,
   relationshipType: EmployeeRelationshipType.SPOUSE,
+  disability: BeneficiaryDisabilityType.NOT_APPLICABLE,
   birthDate: new Date('1990-05-10'),
   isDependent: false,
   createdAt: new Date(),
@@ -37,8 +51,10 @@ const mockProfile = {
 };
 
 const validCreateData = {
-  fullName: 'Ana García',
+  primerNombre: 'Ana',
+  primerApellido: 'García',
   relationshipType: EmployeeRelationshipType.SPOUSE,
+  disability: BeneficiaryDisabilityType.NOT_APPLICABLE,
   birthDate: new Date('1990-05-10'),
   isDependent: false,
 };
@@ -83,7 +99,10 @@ describe('EmployeeSocialProfileService', () => {
 
       // Assert
       expect(result).toEqual(mockProfile);
-      expect(repository.create).toHaveBeenCalledWith(TENANT_ID, EMPLOYEE_ID, validCreateData);
+      expect(repository.create).toHaveBeenCalledWith(TENANT_ID, EMPLOYEE_ID, {
+        ...validCreateData,
+        fullName: 'Ana García',
+      });
     });
 
     it('rechaza si el employee no existe', async () => {
@@ -135,16 +154,25 @@ describe('EmployeeSocialProfileService', () => {
       );
     });
 
-    it('propaga ConflictException del repositorio (duplicate familiar)', async () => {
+    it('convierte P2002 del repositorio en ConflictException', async () => {
       // Arrange
       repository.findEmployee.mockResolvedValue(mockEmployee);
-      repository.create.mockRejectedValue(
-        new ConflictException('Ya existe un registro de familiar'),
-      );
+      repository.create.mockRejectedValue(uniqueConstraintError());
 
       // Act & Assert
       await expect(service.create(TENANT_ID, EMPLOYEE_ID, validCreateData)).rejects.toThrow(
         ConflictException,
+      );
+    });
+
+    it('propaga otros errores del repositorio sin transformarlos', async () => {
+      // Arrange
+      repository.findEmployee.mockResolvedValue(mockEmployee);
+      repository.create.mockRejectedValue(new Error('db down'));
+
+      // Act & Assert
+      await expect(service.create(TENANT_ID, EMPLOYEE_ID, validCreateData)).rejects.toThrow(
+        'db down',
       );
     });
   });
@@ -183,12 +211,13 @@ describe('EmployeeSocialProfileService', () => {
 
       // Act
       const result = await service.update(TENANT_ID, PROFILE_ID, EMPLOYEE_ID, {
-        fullName: 'Ana García Ruiz',
+        primerApellido: 'García Ruiz',
       });
 
       // Assert
       expect(result.fullName).toBe('Ana García Ruiz');
       expect(repository.update).toHaveBeenCalledWith(TENANT_ID, PROFILE_ID, EMPLOYEE_ID, {
+        primerApellido: 'García Ruiz',
         fullName: 'Ana García Ruiz',
       });
     });
@@ -200,8 +229,49 @@ describe('EmployeeSocialProfileService', () => {
 
       // Act & Assert
       await expect(
-        service.update(TENANT_ID, 'ghost-id', EMPLOYEE_ID, { fullName: 'X' }),
+        service.update(TENANT_ID, 'ghost-id', EMPLOYEE_ID, { primerNombre: 'X' }),
       ).rejects.toThrow(NotFoundException);
+    });
+
+    it('no recalcula fullName cuando ningún campo de nombre cambia', async () => {
+      // Arrange
+      repository.findEmployee.mockResolvedValue(mockEmployee);
+      repository.findById.mockResolvedValue(mockProfile);
+      repository.update.mockResolvedValue(mockProfile);
+
+      // Act
+      await service.update(TENANT_ID, PROFILE_ID, EMPLOYEE_ID, {
+        disability: BeneficiaryDisabilityType.PHYSICAL,
+      });
+
+      // Assert
+      expect(repository.update).toHaveBeenCalledWith(TENANT_ID, PROFILE_ID, EMPLOYEE_ID, {
+        disability: BeneficiaryDisabilityType.PHYSICAL,
+      });
+    });
+
+    it('convierte P2002 del repositorio en ConflictException', async () => {
+      // Arrange
+      repository.findEmployee.mockResolvedValue(mockEmployee);
+      repository.findById.mockResolvedValue(mockProfile);
+      repository.update.mockRejectedValue(uniqueConstraintError());
+
+      // Act & Assert
+      await expect(
+        service.update(TENANT_ID, PROFILE_ID, EMPLOYEE_ID, { primerNombre: 'X' }),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('propaga otros errores del repositorio sin transformarlos', async () => {
+      // Arrange
+      repository.findEmployee.mockResolvedValue(mockEmployee);
+      repository.findById.mockResolvedValue(mockProfile);
+      repository.update.mockRejectedValue(new Error('db down'));
+
+      // Act & Assert
+      await expect(
+        service.update(TENANT_ID, PROFILE_ID, EMPLOYEE_ID, { primerNombre: 'X' }),
+      ).rejects.toThrow('db down');
     });
   });
 

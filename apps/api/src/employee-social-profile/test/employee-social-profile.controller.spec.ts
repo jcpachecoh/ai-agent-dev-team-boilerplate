@@ -1,6 +1,6 @@
 import { BadRequestException, type CanActivate, NotFoundException } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
-import { EmployeeRelationshipType } from '@prisma/client';
+import { BeneficiaryDisabilityType, EmployeeRelationshipType } from '@prisma/client';
 
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../../common/guards/permissions.guard';
@@ -21,7 +21,14 @@ const mockProfile = {
   tenantId: TENANT_ID,
   employeeDetailsId: EMPLOYEE_ID,
   fullName: 'Ana García',
+  primerNombre: 'Ana',
+  segundoNombre: null,
+  primerApellido: 'García',
+  segundoApellido: null,
+  documentType: null,
+  documentNumber: null,
   relationshipType: EmployeeRelationshipType.SPOUSE,
+  disability: BeneficiaryDisabilityType.NOT_APPLICABLE,
   birthDate: new Date('1990-05-10'),
   isDependent: false,
   createdAt: new Date(),
@@ -114,8 +121,10 @@ describe('EmployeeSocialProfileController', () => {
 
   describe('create', () => {
     const dto = {
-      fullName: 'Ana García',
+      primerNombre: 'Ana',
+      primerApellido: 'García',
       relationshipType: EmployeeRelationshipType.SPOUSE,
+      disability: BeneficiaryDisabilityType.NOT_APPLICABLE,
       birthDate: new Date('1990-05-10'),
       isDependent: false,
     };
@@ -129,8 +138,14 @@ describe('EmployeeSocialProfileController', () => {
 
       // Assert
       expect(serviceMock.create).toHaveBeenCalledWith(TENANT_ID, EMPLOYEE_ID, {
-        fullName: dto.fullName.trim(),
+        primerNombre: dto.primerNombre.trim(),
+        segundoNombre: undefined,
+        primerApellido: dto.primerApellido.trim(),
+        segundoApellido: undefined,
+        documentType: undefined,
+        documentNumber: undefined,
         relationshipType: dto.relationshipType,
+        disability: dto.disability,
         birthDate: dto.birthDate,
         isDependent: false,
       });
@@ -147,13 +162,19 @@ describe('EmployeeSocialProfileController', () => {
 
       // Act
       const result = await controller.update(mockUser as never, '', EMPLOYEE_ID, PROFILE_ID, {
-        fullName: 'Ana García Ruiz',
+        primerApellido: 'García Ruiz',
       } as never);
 
       // Assert
       expect(serviceMock.update).toHaveBeenCalledWith(TENANT_ID, PROFILE_ID, EMPLOYEE_ID, {
-        fullName: 'Ana García Ruiz',
+        primerNombre: undefined,
+        segundoNombre: undefined,
+        primerApellido: 'García Ruiz',
+        segundoApellido: undefined,
+        documentType: undefined,
+        documentNumber: undefined,
         relationshipType: undefined,
+        disability: undefined,
         birthDate: undefined,
         isDependent: undefined,
       });

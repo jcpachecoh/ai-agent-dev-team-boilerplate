@@ -82,8 +82,14 @@ export class EmployeeSocialProfileController {
   ): Promise<SocialProfileResponseDto> {
     const tenantId = this.resolveTenantId(user, headerTenantId);
     const profile = await this.service.create(tenantId, employeeId, {
-      fullName: body.fullName.trim(),
+      primerNombre: body.primerNombre.trim(),
+      segundoNombre: body.segundoNombre?.trim(),
+      primerApellido: body.primerApellido.trim(),
+      segundoApellido: body.segundoApellido?.trim(),
+      documentType: body.documentType,
+      documentNumber: body.documentNumber?.trim(),
       relationshipType: body.relationshipType,
+      disability: body.disability,
       birthDate: body.birthDate,
       isDependent: body.isDependent ?? false,
     });
@@ -105,8 +111,14 @@ export class EmployeeSocialProfileController {
   ): Promise<SocialProfileResponseDto> {
     const tenantId = this.resolveTenantId(user, headerTenantId);
     const profile = await this.service.update(tenantId, id, employeeId, {
-      fullName: body.fullName !== undefined ? body.fullName.trim() : undefined,
+      primerNombre: body.primerNombre !== undefined ? body.primerNombre.trim() : undefined,
+      segundoNombre: body.segundoNombre !== undefined ? body.segundoNombre.trim() : undefined,
+      primerApellido: body.primerApellido !== undefined ? body.primerApellido.trim() : undefined,
+      segundoApellido: body.segundoApellido !== undefined ? body.segundoApellido.trim() : undefined,
+      documentType: body.documentType,
+      documentNumber: body.documentNumber !== undefined ? body.documentNumber.trim() : undefined,
       relationshipType: body.relationshipType,
+      disability: body.disability,
       birthDate: body.birthDate,
       isDependent: body.isDependent,
     });

@@ -36,9 +36,15 @@ export function payrollEmployeeFormValuesToCreateInput(
     nonSalaryAmount:
       values.nonSalaryAmount.trim() !== '' ? Number(values.nonSalaryAmount) : undefined,
     beneficiaries: values.beneficiaries.map((b) => ({
-      fullName: b.fullName.trim(),
+      documentType: b.documentType || undefined,
+      documentNumber: b.documentNumber.trim() || undefined,
+      primerNombre: b.primerNombre.trim(),
+      segundoNombre: b.segundoNombre.trim() || undefined,
+      primerApellido: b.primerApellido.trim(),
+      segundoApellido: b.segundoApellido.trim() || undefined,
       relationshipType: b.relationshipType,
-      age: Number(b.age),
+      disability: b.disability,
+      fechaNacimiento: b.fechaNacimiento,
     })),
   };
 }

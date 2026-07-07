@@ -97,17 +97,22 @@
   }
 }
 
+.beneficiaryListScroll {
+  overflow-x: auto;
+}
+
 .beneficiaryList {
   border: 1px solid var(--receta-border);
   border-radius: 4px;
   overflow: hidden;
   font-size: 0.875rem;
+  min-width: 840px;
 }
 
 .beneficiaryHeader,
 .beneficiaryRow {
   display: grid;
-  grid-template-columns: 148px 1fr 72px 48px;
+  grid-template-columns: 110px minmax(160px, 1fr) 120px 120px 130px 64px 72px;
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 0.75rem;
@@ -132,24 +137,36 @@
   }
 }
 
-.beneficiaryRemoveCell {
+.beneficiaryRemoveCell,
+.beneficiaryActionsCell {
   display: flex;
   justify-content: center;
   align-items: center;
+  gap: 0.4rem;
 }
 
-.btnRemove {
+.btnRemove,
+.btnEdit {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 32px;
   height: 32px;
   padding: 0;
-  border: 1px solid rgba(232, 93, 74, 0.45);
   border-radius: 50%;
+  cursor: pointer;
+}
+
+.btnRemove {
+  border: 1px solid rgba(232, 93, 74, 0.45);
   background: rgba(232, 93, 74, 0.1);
   color: #e85d4a;
-  cursor: pointer;
+}
+
+.btnEdit {
+  border: 1px solid rgba(99, 102, 241, 0.45);
+  background: rgba(99, 102, 241, 0.1);
+  color: #6366f1;
 }
 
 .modalFooter {

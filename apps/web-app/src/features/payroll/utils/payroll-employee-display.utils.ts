@@ -35,9 +35,12 @@ const LABOR_CLASSIFICATION_LABELS: Record<LaborClassification, string> = {
 };
 
 const BENEFICIARY_LABELS: Record<BeneficiaryRelationshipType, string> = {
-  CHILD: 'Hijo',
+  FATHER: 'Padre',
+  MOTHER: 'Madre',
   SPOUSE: 'Cónyuge',
-  TUTOR: 'Tutor',
+  CHILD: 'Hijo/Hija',
+  MINOR_IN_CHARGE: 'Menor a Cargo',
+  ORPHAN_SIBLING: 'Hermano huérfano de padre y madre',
 };
 
 export function displayOrDash(value: string | null | undefined): string {

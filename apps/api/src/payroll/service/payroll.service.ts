@@ -44,14 +44,6 @@ function toAuditJson(value: unknown): Record<string, unknown> {
   ) as Record<string, unknown>;
 }
 
-function ageToApproxBirthDate(age: number): Date {
-  const d = new Date();
-  d.setFullYear(d.getFullYear() - age);
-  d.setMonth(0);
-  d.setDate(1);
-  return d;
-}
-
 @Injectable()
 export class PayrollService implements IPayrollService {
   private readonly logger = new Logger(PayrollService.name);
@@ -495,9 +487,15 @@ export class PayrollService implements IPayrollService {
     }
     for (const b of beneficiaries) {
       await this.socialProfileService.create(tenantId, employeeDetailsId, {
-        fullName: b.fullName,
+        primerNombre: b.primerNombre,
+        segundoNombre: b.segundoNombre,
+        primerApellido: b.primerApellido,
+        segundoApellido: b.segundoApellido,
+        documentType: b.documentType,
+        documentNumber: b.documentNumber,
         relationshipType: b.relationshipType,
-        birthDate: ageToApproxBirthDate(b.age),
+        disability: b.disability,
+        birthDate: new Date(b.fechaNacimiento),
         isDependent: true,
       });
     }

@@ -991,9 +991,11 @@ describe('PayrollService', () => {
           ...mockEmployeeData,
           beneficiaries: [
             {
-              fullName: 'Ana López',
+              primerNombre: 'Ana',
+              primerApellido: 'López',
               relationshipType: EmployeeRelationshipType.CHILD,
-              age: 5,
+              disability: 'NOT_APPLICABLE',
+              fechaNacimiento: '2019-01-01',
             },
           ],
         });
@@ -1003,7 +1005,8 @@ describe('PayrollService', () => {
           mockTenantId,
           'emp-details-1',
           expect.objectContaining({
-            fullName: 'Ana López',
+            primerNombre: 'Ana',
+            primerApellido: 'López',
             relationshipType: EmployeeRelationshipType.CHILD,
           }),
         );
@@ -1024,9 +1027,11 @@ describe('PayrollService', () => {
         await service.update(mockTenantId, 'user-1', {
           beneficiaries: [
             {
-              fullName: 'New Person',
-              relationshipType: EmployeeRelationshipType.TUTOR,
-              age: 60,
+              primerNombre: 'New',
+              primerApellido: 'Person',
+              relationshipType: EmployeeRelationshipType.MINOR_IN_CHARGE,
+              disability: 'NOT_APPLICABLE',
+              fechaNacimiento: '1965-01-01',
             },
           ],
         });
@@ -1041,8 +1046,9 @@ describe('PayrollService', () => {
           mockTenantId,
           'emp-details-1',
           expect.objectContaining({
-            fullName: 'New Person',
-            relationshipType: EmployeeRelationshipType.TUTOR,
+            primerNombre: 'New',
+            primerApellido: 'Person',
+            relationshipType: EmployeeRelationshipType.MINOR_IN_CHARGE,
           }),
         );
       });

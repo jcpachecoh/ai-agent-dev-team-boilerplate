@@ -8,7 +8,6 @@ import { useLocations } from '@/features/sedes/hooks/useLocations';
 import {
   type ArlRiskLevel,
   type BeneficiaryFormRow,
-  type BeneficiaryRelationshipType,
   type CostCenter,
   type DocumentType,
   type EmployeeContractType,
@@ -25,6 +24,14 @@ import {
 } from '../hooks/useEmployeeCatalogOptions';
 import { useEmployeePositions } from '../hooks/useEmployeePositions';
 import { buildEmployeeFullName, splitEmployeeNameForForm } from '../utils/employee-name';
+import {
+  BENEFICIARY_TYPE_OPTIONS,
+  DISABILITY_OPTIONS,
+  buildBeneficiaryFullName,
+  calculateAge,
+  validateBeneficiaryForm,
+} from '../utils/beneficiary';
+import { PayrollBeneficiaryFormModal } from './PayrollBeneficiaryFormModal';
 import defaultStyles from '../payroll.module.scss';
 import wizardStyles from './PayrollEmployeeFormWizard.module.scss';
 
@@ -46,8 +53,6 @@ export interface PayrollEmployeeFormProps {
   onControlledValuesChange?: (values: PayrollEmployeeFormValues) => void;
   sectionScope?: 'default' | 'employment-only';
 }
-
-const EMPTY_BENEFICIARY: BeneficiaryFormRow = { relationshipType: 'CHILD', fullName: '', age: '' };
 
 export const PAYROLL_EMPLOYEE_FORM_EMPTY_VALUES: PayrollEmployeeFormValues = {
   cedula: '',
@@ -138,9 +143,15 @@ function employeeToFormValues(employee: PayrollEmployee): PayrollEmployeeFormVal
     laborClassification: (employee.laborClassification as LaborClassification) ?? 'ADMINISTRATIVO',
     nonSalaryAmount: employee.nonSalaryAmount ?? '',
     beneficiaries: (employee.beneficiaries ?? []).map((b) => ({
-      relationshipType: b.relationshipType as BeneficiaryRelationshipType,
-      fullName: b.fullName,
-      age: String(b.age),
+      documentType: b.documentType ?? '',
+      documentNumber: b.documentNumber ?? '',
+      relationshipType: b.relationshipType,
+      primerNombre: b.primerNombre ?? '',
+      segundoNombre: b.segundoNombre ?? '',
+      primerApellido: b.primerApellido ?? '',
+      segundoApellido: b.segundoApellido ?? '',
+      fechaNacimiento: toDateInputValue(b.birthDate),
+      disability: b.disability,
     })),
   };
 }
@@ -191,12 +202,6 @@ const LABOR_CLASSIFICATION_OPTIONS: Array<{ value: LaborClassification; label: s
   { value: 'ADMINISTRATIVO', label: 'Administrativo' },
 ];
 
-const BENEFICIARY_TYPE_OPTIONS: Array<{ value: BeneficiaryRelationshipType; label: string }> = [
-  { value: 'CHILD', label: 'Hijo' },
-  { value: 'SPOUSE', label: 'Cónyuge' },
-  { value: 'TUTOR', label: 'Tutor' },
-];
-
 export function PayrollEmployeeForm({
   mode,
   initialValues,
@@ -221,6 +226,11 @@ export function PayrollEmployeeForm({
     initialValues ? employeeToFormValues(initialValues) : PAYROLL_EMPLOYEE_FORM_EMPTY_VALUES,
   );
   const [error, setError] = useState<string | null>(null);
+  const [beneficiaryModal, setBeneficiaryModal] = useState<{
+    open: boolean;
+    mode: 'create' | 'edit';
+    index?: number;
+  }>({ open: false, mode: 'create' });
   const values = controlledValues ?? internalValues;
 
   const setValues = (
@@ -361,19 +371,24 @@ export function PayrollEmployeeForm({
   const update = (patch: Partial<PayrollEmployeeFormValues>) =>
     setValues((prev) => ({ ...prev, ...patch }));
 
-  const updateBeneficiary = (index: number, patch: Partial<BeneficiaryFormRow>) => {
-    setValues((prev) => {
-      const next = [...prev.beneficiaries];
-      next[index] = { ...next[index], ...patch };
-      return { ...prev, beneficiaries: next };
-    });
-  };
+  const openAddBeneficiary = () => setBeneficiaryModal({ open: true, mode: 'create' });
 
-  const addBeneficiary = () =>
-    setValues((prev) => ({
-      ...prev,
-      beneficiaries: [...prev.beneficiaries, { ...EMPTY_BENEFICIARY }],
-    }));
+  const openEditBeneficiary = (index: number) =>
+    setBeneficiaryModal({ open: true, mode: 'edit', index });
+
+  const closeBeneficiaryModal = () => setBeneficiaryModal({ open: false, mode: 'create' });
+
+  const submitBeneficiary = (row: BeneficiaryFormRow) => {
+    setValues((prev) => {
+      if (beneficiaryModal.mode === 'edit' && beneficiaryModal.index !== undefined) {
+        const next = [...prev.beneficiaries];
+        next[beneficiaryModal.index] = row;
+        return { ...prev, beneficiaries: next };
+      }
+      return { ...prev, beneficiaries: [...prev.beneficiaries, row] };
+    });
+    closeBeneficiaryModal();
+  };
 
   const removeBeneficiary = (index: number) =>
     setValues((prev) => ({
@@ -443,14 +458,10 @@ export function PayrollEmployeeForm({
     }
 
     for (let i = 0; i < values.beneficiaries.length; i++) {
-      const b = values.beneficiaries[i];
-      if (!b.fullName.trim()) {
-        setError(`Beneficiario ${i + 1}: el nombre completo es obligatorio.`);
-        return;
-      }
-      const age = Number(b.age);
-      if (!Number.isInteger(age) || age < 0 || age > 99) {
-        setError(`Beneficiario ${i + 1}: la edad debe ser entre 0 y 99.`);
+      const beneficiaryErrors = validateBeneficiaryForm(values.beneficiaries[i]);
+      const firstError = Object.values(beneficiaryErrors)[0];
+      if (firstError) {
+        setError(`Beneficiario ${i + 1}: ${firstError}`);
         return;
       }
     }
@@ -845,88 +856,107 @@ export function PayrollEmployeeForm({
           <section className={formStyles.beneficiariesSection}>
             <div className={formStyles.beneficiariesHeader}>
               <span className={formStyles.beneficiariesTitle}>Beneficiarios</span>
-              <button type="button" className={formStyles.buttonSecondary} onClick={addBeneficiary}>
+              <button
+                type="button"
+                className={formStyles.buttonSecondary}
+                onClick={openAddBeneficiary}
+              >
                 + Agregar beneficiario
               </button>
             </div>
             {values.beneficiaries.length > 0 ? (
-              <div className={formStyles.beneficiaryList}>
-                <div className={formStyles.beneficiaryHeader}>
-                  <span>Tipo</span>
-                  <span>Nombre completo</span>
-                  <span>Edad</span>
-                  <span />
-                </div>
-                {values.beneficiaries.map((b, index) => (
-                  <div key={index} className={formStyles.beneficiaryRow}>
-                    <div>
-                      <RecetaFilterSelect
-                        aria-label={`Tipo beneficiario ${index + 1}`}
-                        options={BENEFICIARY_TYPE_OPTIONS}
-                        value={b.relationshipType}
-                        onChange={(value) =>
-                          updateBeneficiary(index, {
-                            relationshipType: value as BeneficiaryRelationshipType,
-                          })
-                        }
-                        theme={theme}
-                        size="sm"
-                      />
-                    </div>
-                    <div>
-                      <input
-                        aria-label={`Nombre beneficiario ${index + 1}`}
-                        className={formStyles.input}
-                        value={b.fullName}
-                        placeholder="Nombre completo"
-                        onChange={(event) =>
-                          updateBeneficiary(index, { fullName: event.target.value })
-                        }
-                      />
-                    </div>
-                    <div>
-                      <input
-                        aria-label={`Edad beneficiario ${index + 1}`}
-                        className={formStyles.input}
-                        type="number"
-                        min="0"
-                        max="99"
-                        value={b.age}
-                        placeholder="0"
-                        onChange={(event) => updateBeneficiary(index, { age: event.target.value })}
-                      />
-                    </div>
-                    <div className={formStyles.beneficiaryRemoveCell}>
-                      <button
-                        type="button"
-                        className={formStyles.btnRemove}
-                        aria-label={`Eliminar beneficiario ${index + 1}`}
-                        onClick={() => removeBeneficiary(index)}
-                      >
-                        <svg
-                          width="14"
-                          height="14"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <path d="M3 6h18" />
-                          <path d="M8 6V4h8v2" />
-                          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                          <line x1="10" y1="11" x2="10" y2="17" />
-                          <line x1="14" y1="11" x2="14" y2="17" />
-                        </svg>
-                      </button>
-                    </div>
+              <div className={formStyles.beneficiaryListScroll}>
+                <div className={formStyles.beneficiaryList}>
+                  <div className={formStyles.beneficiaryHeader}>
+                    <span>Tipo</span>
+                    <span>Nombre completo</span>
+                    <span>Documento</span>
+                    <span>Fecha de nacimiento</span>
+                    <span>Discapacidad</span>
+                    <span>Edad</span>
+                    <span />
                   </div>
-                ))}
+                  {values.beneficiaries.map((b, index) => (
+                    <div key={index} className={formStyles.beneficiaryRow}>
+                      <span>
+                        {BENEFICIARY_TYPE_OPTIONS.find(
+                          (option) => option.value === b.relationshipType,
+                        )?.label ?? b.relationshipType}
+                      </span>
+                      <span>{buildBeneficiaryFullName(b) || '—'}</span>
+                      <span>
+                        {b.documentType ? `${b.documentType} ${b.documentNumber}`.trim() : '—'}
+                      </span>
+                      <span>{b.fechaNacimiento || '—'}</span>
+                      <span>
+                        {DISABILITY_OPTIONS.find((option) => option.value === b.disability)
+                          ?.label ?? b.disability}
+                      </span>
+                      <span>{calculateAge(b.fechaNacimiento) ?? '—'}</span>
+                      <div className={formStyles.beneficiaryActionsCell}>
+                        <button
+                          type="button"
+                          className={formStyles.btnEdit}
+                          aria-label={`Editar beneficiario ${index + 1}`}
+                          onClick={() => openEditBeneficiary(index)}
+                        >
+                          <svg
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="M12 20h9" />
+                            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                          </svg>
+                        </button>
+                        <button
+                          type="button"
+                          className={formStyles.btnRemove}
+                          aria-label={`Eliminar beneficiario ${index + 1}`}
+                          onClick={() => removeBeneficiary(index)}
+                        >
+                          <svg
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="M3 6h18" />
+                            <path d="M8 6V4h8v2" />
+                            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                            <line x1="10" y1="11" x2="10" y2="17" />
+                            <line x1="14" y1="11" x2="14" y2="17" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             ) : (
               <p className={formStyles.formHint}>Sin beneficiarios registrados.</p>
             )}
+            <PayrollBeneficiaryFormModal
+              open={beneficiaryModal.open}
+              mode={beneficiaryModal.mode}
+              theme={theme}
+              initialValues={
+                beneficiaryModal.index !== undefined
+                  ? values.beneficiaries[beneficiaryModal.index]
+                  : undefined
+              }
+              onClose={closeBeneficiaryModal}
+              onSubmit={submitBeneficiary}
+            />
           </section>
         ) : null}
 

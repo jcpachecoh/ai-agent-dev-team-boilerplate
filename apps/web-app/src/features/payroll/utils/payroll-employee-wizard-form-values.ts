@@ -57,9 +57,15 @@ export function payrollEmployeeToFormValues(employee: PayrollEmployee): PayrollE
       'ADMINISTRATIVO',
     nonSalaryAmount: employee.nonSalaryAmount ?? '',
     beneficiaries: (employee.beneficiaries ?? []).map((beneficiary) => ({
+      documentType: beneficiary.documentType ?? '',
+      documentNumber: beneficiary.documentNumber ?? '',
       relationshipType: beneficiary.relationshipType,
-      fullName: beneficiary.fullName,
-      age: String(beneficiary.age),
+      primerNombre: beneficiary.primerNombre ?? '',
+      segundoNombre: beneficiary.segundoNombre ?? '',
+      primerApellido: beneficiary.primerApellido ?? '',
+      segundoApellido: beneficiary.segundoApellido ?? '',
+      fechaNacimiento: toDateInputValue(beneficiary.birthDate),
+      disability: beneficiary.disability,
     })),
   };
 }

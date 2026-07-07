@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { EmployeeRelationshipType } from '@prisma/client';
+import { BeneficiaryDisabilityType, DocumentType, EmployeeRelationshipType } from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
   IsBoolean,
@@ -12,15 +12,45 @@ import {
 } from 'class-validator';
 
 export class CreateSocialProfileDto {
-  @ApiProperty({ description: 'Nombre completo del familiar' })
+  @ApiPropertyOptional({ enum: DocumentType })
+  @IsEnum(DocumentType)
+  @IsOptional()
+  documentType?: DocumentType;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  documentNumber?: string;
+
+  @ApiProperty({ description: 'Primer nombre del familiar' })
   @IsString()
   @IsNotEmpty()
-  fullName!: string;
+  primerNombre!: string;
+
+  @ApiPropertyOptional({ description: 'Segundo nombre del familiar' })
+  @IsString()
+  @IsOptional()
+  segundoNombre?: string;
+
+  @ApiProperty({ description: 'Primer apellido del familiar' })
+  @IsString()
+  @IsNotEmpty()
+  primerApellido!: string;
+
+  @ApiPropertyOptional({ description: 'Segundo apellido del familiar' })
+  @IsString()
+  @IsOptional()
+  segundoApellido?: string;
 
   @ApiProperty({ enum: EmployeeRelationshipType })
   @IsEnum(EmployeeRelationshipType)
   @IsNotEmpty()
   relationshipType!: EmployeeRelationshipType;
+
+  @ApiProperty({ enum: BeneficiaryDisabilityType })
+  @IsEnum(BeneficiaryDisabilityType)
+  @IsNotEmpty()
+  disability!: BeneficiaryDisabilityType;
 
   @ApiProperty({ description: 'Fecha de nacimiento (no puede ser futura)' })
   @Type(() => Date)

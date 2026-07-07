@@ -986,6 +986,19 @@ enum EmployeeRelationshipType {
   MOTHER
   TUTOR
   OTHER
+  MINOR_IN_CHARGE
+  ORPHAN_SIBLING
+}
+
+enum BeneficiaryDisabilityType {
+  NOT_APPLICABLE
+  PHYSICAL
+  AUDITORY
+  VISUAL
+  DEAFBLINDNESS
+  INTELLECTUAL_COGNITIVE
+  PSYCHOSOCIAL
+  MULTIPLE
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1007,15 +1020,22 @@ enum LaborClassification {
 }
 
 model EmployeeSocialProfile {
-  id                String                   @id @default(cuid())
+  id                String                    @id @default(cuid())
   tenantId          String
   employeeDetailsId String
   fullName          String
   relationshipType  EmployeeRelationshipType
+  documentType      DocumentType?
+  documentNumber    String?
+  primerNombre      String?
+  segundoNombre     String?
+  primerApellido    String?
+  segundoApellido   String?
+  disability        BeneficiaryDisabilityType @default(NOT_APPLICABLE)
   birthDate         DateTime
-  isDependent       Boolean                  @default(false)
-  createdAt         DateTime                 @default(now())
-  updatedAt         DateTime                 @updatedAt
+  isDependent       Boolean                   @default(false)
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
   deletedAt         DateTime?
 
   employeeDetails EmployeeDetails @relation(fields: [employeeDetailsId], references: [id], onDelete: Cascade)

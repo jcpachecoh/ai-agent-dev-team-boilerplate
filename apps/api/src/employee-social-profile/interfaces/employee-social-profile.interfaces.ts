@@ -1,18 +1,39 @@
-import type { EmployeeRelationshipType, EmployeeSocialProfile } from '@prisma/client';
+import type {
+  BeneficiaryDisabilityType,
+  DocumentType,
+  EmployeeRelationshipType,
+  EmployeeSocialProfile,
+} from '@prisma/client';
 
 export interface CreateSocialProfileData {
-  fullName: string;
+  primerNombre: string;
+  segundoNombre?: string;
+  primerApellido: string;
+  segundoApellido?: string;
   relationshipType: EmployeeRelationshipType;
+  documentType?: DocumentType;
+  documentNumber?: string;
+  disability: BeneficiaryDisabilityType;
   birthDate: Date;
   isDependent: boolean;
 }
 
 export interface UpdateSocialProfileData {
-  fullName?: string;
+  primerNombre?: string;
+  segundoNombre?: string;
+  primerApellido?: string;
+  segundoApellido?: string;
   relationshipType?: EmployeeRelationshipType;
+  documentType?: DocumentType;
+  documentNumber?: string;
+  disability?: BeneficiaryDisabilityType;
   birthDate?: Date;
   isDependent?: boolean;
 }
+
+/** `fullName` is derived server-side by the service from the name parts. */
+export type CreateSocialProfileRecord = CreateSocialProfileData & { fullName: string };
+export type UpdateSocialProfileRecord = UpdateSocialProfileData & { fullName?: string };
 
 export interface EmployeeRecord {
   id: string;
@@ -27,7 +48,7 @@ export interface IEmployeeSocialProfileRepository {
   create(
     tenantId: string,
     employeeDetailsId: string,
-    data: CreateSocialProfileData,
+    data: CreateSocialProfileRecord,
   ): Promise<EmployeeSocialProfile>;
   findAllByEmployee(tenantId: string, employeeDetailsId: string): Promise<EmployeeSocialProfile[]>;
   findById(
@@ -39,7 +60,7 @@ export interface IEmployeeSocialProfileRepository {
     tenantId: string,
     id: string,
     employeeDetailsId: string,
-    data: UpdateSocialProfileData,
+    data: UpdateSocialProfileRecord,
   ): Promise<EmployeeSocialProfile>;
   softDelete(tenantId: string, id: string, employeeDetailsId: string): Promise<void>;
 }

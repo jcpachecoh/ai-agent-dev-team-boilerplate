@@ -4,6 +4,7 @@ import type {
 } from '../types/payroll-employee-create-wizard.types';
 import type { PayrollEmployeeFormValues } from '../types/payroll.types';
 import { validateAccountNumberForBank } from './bank-account-validation';
+import { validateBeneficiaryForm } from './beneficiary';
 import { parseWithholdingRatePercent } from './financial-profile-display';
 
 const REQUIRED_CATALOG_FIELDS: Array<{
@@ -79,13 +80,10 @@ export function validatePayrollEmployeePersonalStep(
   }
 
   for (let index = 0; index < values.beneficiaries.length; index += 1) {
-    const beneficiary = values.beneficiaries[index];
-    if (!beneficiary.fullName.trim()) {
-      return `Beneficiario ${index + 1}: el nombre completo es obligatorio.`;
-    }
-    const age = Number(beneficiary.age);
-    if (!Number.isInteger(age) || age < 0 || age > 99) {
-      return `Beneficiario ${index + 1}: la edad debe ser entre 0 y 99.`;
+    const beneficiaryErrors = validateBeneficiaryForm(values.beneficiaries[index]);
+    const firstError = Object.values(beneficiaryErrors)[0];
+    if (firstError) {
+      return `Beneficiario ${index + 1}: ${firstError}`;
     }
   }
 
