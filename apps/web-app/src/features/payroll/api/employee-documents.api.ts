@@ -5,6 +5,7 @@ import type {
   DocumentFileType,
   EmployeeDocument,
 } from '../types/employee-document.types';
+import { buildPayrollUrl } from './payroll.client';
 
 function authHeaders(): Record<string, string> {
   const headers: Record<string, string> = { 'x-tenant-id': getTenantId() };
@@ -20,7 +21,7 @@ export async function fetchEmployeeDocuments(
   const params = new URLSearchParams({ employeeId });
   if (fileType) params.set('fileType', fileType);
 
-  const response = await fetch(`/api/employee-documents?${params.toString()}`, {
+  const response = await fetch(buildPayrollUrl(`/employee-documents?${params.toString()}`), {
     headers: authHeaders(),
   });
   if (!response.ok) throw new Error('No se pudieron cargar los documentos');
@@ -30,7 +31,7 @@ export async function fetchEmployeeDocuments(
 export async function createEmployeeDocument(
   input: CreateEmployeeDocumentInput,
 ): Promise<EmployeeDocument> {
-  const response = await fetch('/api/employee-documents', {
+  const response = await fetch(buildPayrollUrl('/employee-documents'), {
     method: 'POST',
     headers: { ...authHeaders(), 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
@@ -43,7 +44,7 @@ export async function createEmployeeDocument(
 }
 
 export async function fetchEmployeeDocumentDownloadUrl(documentId: string): Promise<string> {
-  const response = await fetch(`/api/employee-documents/${documentId}/download`, {
+  const response = await fetch(buildPayrollUrl(`/employee-documents/${documentId}/download`), {
     headers: authHeaders(),
   });
   if (!response.ok) throw new Error('No se pudo obtener el enlace de descarga');
@@ -52,7 +53,7 @@ export async function fetchEmployeeDocumentDownloadUrl(documentId: string): Prom
 }
 
 export async function deleteEmployeeDocument(documentId: string): Promise<void> {
-  const response = await fetch(`/api/employee-documents/${documentId}`, {
+  const response = await fetch(buildPayrollUrl(`/employee-documents/${documentId}`), {
     method: 'DELETE',
     headers: authHeaders(),
   });

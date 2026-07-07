@@ -59,7 +59,7 @@ function getPayrollBaseUrl(): string {
   return '';
 }
 
-function buildPayrollUrl(path: string): string {
+export function buildPayrollUrl(path: string): string {
   const base = getPayrollBaseUrl();
   return base ? `${base}/api${path}` : `/api${path}`;
 }

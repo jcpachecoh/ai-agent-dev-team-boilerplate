@@ -1,5 +1,6 @@
 import { getGraphqlAuthToken } from '@/lib/auth-token';
 import { getTenantId } from '@/lib/tenant';
+import { buildPayrollUrl } from './payroll.client';
 
 export interface UploadEmployeePhotoResult {
   id: string;
@@ -49,7 +50,7 @@ export async function uploadEmployeePhoto(
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const response = await fetch('/api/storage/upload', {
+  const response = await fetch(buildPayrollUrl('/storage/upload'), {
     method: 'POST',
     headers,
     body: formData,

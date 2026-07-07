@@ -1,5 +1,6 @@
 import { getGraphqlAuthToken } from '@/lib/auth-token';
 import { getTenantId } from '@/lib/tenant';
+import { buildPayrollUrl } from './payroll.client';
 
 const ALLOWED_TYPES = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 const MAX_SIZE_BYTES = 20 * 1024 * 1024;
@@ -35,7 +36,7 @@ export async function uploadEmployeeDocument(
   formData.append('entityId', employeeId);
   formData.append('visibility', 'PRIVATE');
 
-  const response = await fetch('/api/storage/upload', {
+  const response = await fetch(buildPayrollUrl('/storage/upload'), {
     method: 'POST',
     headers: authHeaders(),
     body: formData,
@@ -50,7 +51,7 @@ export async function uploadEmployeeDocument(
 }
 
 export async function fetchEmployeeAssetDownloadUrl(assetId: string): Promise<string> {
-  const response = await fetch(`/api/employee-assets/${assetId}/download`, {
+  const response = await fetch(buildPayrollUrl(`/employee-assets/${assetId}/download`), {
     headers: authHeaders(),
   });
 
