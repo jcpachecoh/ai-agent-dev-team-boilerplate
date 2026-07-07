@@ -122,7 +122,9 @@ export class MobileAttendanceService implements IMobileAttendanceService {
       throw new NotFoundException('Empleado no encontrado');
     }
 
-    return this.repo.findByEmployeeId(employee.id, tenantId, {
+    return this.repo.findMany({
+      tenantId,
+      employeeId: employee.id,
       dateFrom: input.dateFrom ? new Date(input.dateFrom) : undefined,
       dateTo: input.dateTo ? new Date(input.dateTo) : undefined,
       cursor: input.cursor ?? undefined,

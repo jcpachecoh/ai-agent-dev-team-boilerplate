@@ -16,6 +16,7 @@ import {
 import * as bcrypt from 'bcrypt';
 import { AttendanceService } from '../service/attendance.service';
 import { AttendanceRepository } from '../repository/attendance.repository';
+import { MobileAttendanceRepository } from '../mobile/repository/mobile-attendance.repository';
 import { AuthService } from '../../auth/service/auth.service';
 import { UserLocationsService } from '../../locations/service/user-locations.service';
 import { ShiftResolutionService } from '../../turnos/service/shift-resolution.service';
@@ -115,6 +116,10 @@ const repoMock = {
   findLocationById: jest.fn(),
 };
 
+const mobileRepoMock = {
+  create: jest.fn(),
+};
+
 const authServiceMock = {
   issueKioskAuthTokens: jest.fn(),
 };
@@ -134,6 +139,7 @@ describe('AttendanceService', () => {
       providers: [
         AttendanceService,
         { provide: AttendanceRepository, useValue: repoMock },
+        { provide: MobileAttendanceRepository, useValue: mobileRepoMock },
         { provide: AuthService, useValue: authServiceMock },
         { provide: ShiftResolutionService, useValue: shiftResolutionMock },
         { provide: UserLocationsService, useValue: userLocationsServiceMock },
@@ -425,6 +431,7 @@ describe('AttendanceService', () => {
         geoLongitude: -74.0817,
         checkInRadiusMeters: 100,
       });
+      mobileRepoMock.create.mockReset();
     });
 
     it('lanza ConflictException si hay marcación duplicada en la misma ventana y source', async () => {
@@ -442,6 +449,7 @@ describe('AttendanceService', () => {
       ).rejects.toThrow(ConflictException);
 
       expect(repoMock.createEventLog).not.toHaveBeenCalled();
+      expect(mobileRepoMock.create).not.toHaveBeenCalled();
     });
 
     it('permite APP_MOVIL y MANUAL el mismo día sin conflicto de duplicado', async () => {
@@ -464,7 +472,7 @@ describe('AttendanceService', () => {
     });
 
     it('aplica geocerca solo para source=APP_MOVIL', async () => {
-      repoMock.createEventLog.mockResolvedValue(
+      mobileRepoMock.create.mockResolvedValue(
         makeAttendanceLog('log-app', AttendanceEventType.ENTRY, new Date()),
       );
 
@@ -476,13 +484,14 @@ describe('AttendanceService', () => {
       });
 
       expect(repoMock.findLocationById).toHaveBeenCalledWith(LOCATION_ID, TENANT);
-      expect(repoMock.createEventLog).toHaveBeenCalledWith(
+      expect(mobileRepoMock.create).toHaveBeenCalledWith(
         expect.objectContaining({
           source: AttendanceLogSource.APP_MOVIL,
           validationStatus: AttendanceValidationStatus.REJECTED,
           rejectionReason: 'OUTSIDE_RADIUS',
         }),
       );
+      expect(repoMock.createEventLog).not.toHaveBeenCalled();
     });
 
     it('MANUAL no consulta geocerca ni persiste validationStatus', async () => {
@@ -548,7 +557,7 @@ describe('AttendanceService', () => {
         new Date('2026-06-10T13:00:00.000Z'),
       );
       repoMock.findOpenEntry.mockResolvedValue(openEntry);
-      repoMock.createEventLog.mockResolvedValue(
+      mobileRepoMock.create.mockResolvedValue(
         makeAttendanceLog(
           'log-exit',
           AttendanceEventType.EXIT,
@@ -566,9 +575,10 @@ describe('AttendanceService', () => {
         clientLongitude: -74.0817,
       });
 
-      expect(repoMock.createEventLog).toHaveBeenCalledWith(
+      expect(mobileRepoMock.create).toHaveBeenCalledWith(
         expect.objectContaining({ workDate: openEntry.workDate, shift: openEntry.shift }),
       );
+      expect(repoMock.createEventLog).not.toHaveBeenCalled();
     });
   });
 

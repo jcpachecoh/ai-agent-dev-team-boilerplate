@@ -70,6 +70,8 @@ describe('MobileAttendanceService', () => {
             findEmployeeByUserId: jest.fn(),
             findEmployeeWithFacialReference: jest.fn(),
             findLocationById: jest.fn(),
+            create: jest.fn(),
+            findMany: jest.fn(),
             findByEmployeeId: jest.fn(),
             findByLocationId: jest.fn(),
             findByEmployeeIdAdmin: jest.fn(),
@@ -290,17 +292,19 @@ describe('MobileAttendanceService', () => {
       // Arrange
       repo.findEmployeeByUserId.mockResolvedValue(mockEmployee);
       const mockConn = { edges: [], pageInfo: { hasNextPage: false, endCursor: null } };
-      repo.findByEmployeeId.mockResolvedValue(mockConn);
+      repo.findMany.mockResolvedValue(mockConn);
 
       // Act
       const result = await service.misMarcaciones(USER_ID, TENANT_ID, { take: 20 });
 
       // Assert
       expect(repo.findEmployeeByUserId).toHaveBeenCalledWith(USER_ID, TENANT_ID);
-      expect(repo.findByEmployeeId).toHaveBeenCalledWith(
-        EMPLOYEE_ID,
-        TENANT_ID,
-        expect.objectContaining({ take: 20 }),
+      expect(repo.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          tenantId: TENANT_ID,
+          employeeId: EMPLOYEE_ID,
+          take: 20,
+        }),
       );
       expect(result).toBe(mockConn);
     });

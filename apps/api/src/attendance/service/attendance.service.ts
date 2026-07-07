@@ -40,6 +40,7 @@ import type {
   RegisterEventInput,
 } from '../interfaces/attendance.interfaces';
 import { AttendanceRepository, normalizeWorkDate } from '../repository/attendance.repository';
+import { MobileAttendanceRepository } from '../mobile/repository/mobile-attendance.repository';
 import {
   calculateDaySummary,
   getBogotaHour,
@@ -67,6 +68,7 @@ export class AttendanceService implements IAttendanceService {
 
   constructor(
     private readonly attendanceRepository: AttendanceRepository,
+    private readonly mobileAttendanceRepository: MobileAttendanceRepository,
     private readonly authService: AuthService,
     private readonly shiftResolutionService: ShiftResolutionService,
     private readonly userLocationsService: UserLocationsService,
@@ -282,7 +284,7 @@ export class AttendanceService implements IAttendanceService {
       rejectionReason = geo.rejectionReason;
     }
 
-    const log = await this.attendanceRepository.createEventLog({
+    const persistPayload = {
       ...input,
       workDate,
       shift,
@@ -290,7 +292,12 @@ export class AttendanceService implements IAttendanceService {
       distanceMeters,
       radiusMeters,
       rejectionReason,
-    });
+    };
+
+    const log =
+      input.source === AttendanceLogSource.APP_MOVIL
+        ? await this.mobileAttendanceRepository.create(persistPayload)
+        : await this.attendanceRepository.createEventLog(persistPayload);
 
     this.logger.log(
       `EVENT ${input.eventType} source=${input.source}: employeeId=${input.employeeId} workDate=${workDate.toISOString()}`,

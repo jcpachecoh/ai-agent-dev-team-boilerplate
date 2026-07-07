@@ -1,5 +1,7 @@
 import type {
   AttendanceEventType,
+  AttendanceLog,
+  AttendanceShift,
   AttendanceValidationStatus,
   EmployeeDetails,
   Location,
@@ -108,9 +110,44 @@ export interface MarcacionConnection {
   pageInfo: PageInfo;
 }
 
+/** Payload persistido en attendance_logs (source=APP_MOVIL). */
+export interface CreateMobileAttendanceLogData {
+  tenantId: string;
+  employeeId: string;
+  locationId: string;
+  eventType: AttendanceEventType;
+  timestamp: Date;
+  workDate: Date;
+  shift?: AttendanceShift | null;
+  notes?: string | null;
+  validationStatus?: AttendanceValidationStatus | null;
+  clientLatitude?: number | null;
+  clientLongitude?: number | null;
+  distanceMeters?: number | null;
+  radiusMeters?: number | null;
+  storageObjectId?: string | null;
+  photoUrl?: string | null;
+  facialMatchScore?: number | null;
+  facialMatchResult?: string | null;
+  rejectionReason?: string | null;
+}
+
+export interface MobileAttendanceFindManyFilters {
+  tenantId: string;
+  employeeId?: string;
+  locationId?: string;
+  dateFrom?: Date;
+  dateTo?: Date;
+  status?: AttendanceValidationStatus | null;
+  cursor?: string;
+  take: number;
+}
+
 // ── Repository contract ─────────────────────────────────────────────────────
 
 export interface IMobileAttendanceRepository {
+  create(data: CreateMobileAttendanceLogData): Promise<AttendanceLog>;
+  findMany(filters: MobileAttendanceFindManyFilters): Promise<MarcacionConnection>;
   findEmployeeByUserId(userId: string, tenantId: string): Promise<EmployeeDetails | null>;
   findEmployeeWithFacialReference(
     userId: string,

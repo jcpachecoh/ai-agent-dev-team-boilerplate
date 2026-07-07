@@ -6,6 +6,7 @@ import {
 import { Test, TestingModule } from '@nestjs/testing';
 import { AttendanceService } from '../service/attendance.service';
 import { AttendanceRepository } from '../repository/attendance.repository';
+import { MobileAttendanceRepository } from '../mobile/repository/mobile-attendance.repository';
 import { AuthService } from '../../auth/service/auth.service';
 import { UserLocationsService } from '../../locations/service/user-locations.service';
 import { ShiftResolutionService } from '../../turnos/service/shift-resolution.service';
@@ -20,11 +21,16 @@ describe('ASIS-UNI — convivencia APP_MOVIL + MANUAL', () => {
     createEventLog: jest.fn(),
   };
 
+  const mobileRepoMock = {
+    create: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AttendanceService,
         { provide: AttendanceRepository, useValue: repoMock },
+        { provide: MobileAttendanceRepository, useValue: mobileRepoMock },
         { provide: AuthService, useValue: { issueKioskAuthTokens: jest.fn() } },
         {
           provide: ShiftResolutionService,
@@ -58,16 +64,15 @@ describe('ASIS-UNI — convivencia APP_MOVIL + MANUAL', () => {
     const workDate = new Date('2026-06-10T00:00:00.000Z');
     const timestamp = new Date('2026-06-10T13:00:00.000Z');
 
-    repoMock.createEventLog
-      .mockResolvedValueOnce({
-        id: 'log-app',
-        source: AttendanceLogSource.APP_MOVIL,
-        validationStatus: AttendanceValidationStatus.VALID,
-      })
-      .mockResolvedValueOnce({
-        id: 'log-manual',
-        source: AttendanceLogSource.MANUAL,
-      });
+    mobileRepoMock.create.mockResolvedValueOnce({
+      id: 'log-app',
+      source: AttendanceLogSource.APP_MOVIL,
+      validationStatus: AttendanceValidationStatus.VALID,
+    });
+    repoMock.createEventLog.mockResolvedValueOnce({
+      id: 'log-manual',
+      source: AttendanceLogSource.MANUAL,
+    });
 
     await service.registerEvent({
       tenantId: 'tenant-1',
@@ -93,7 +98,8 @@ describe('ASIS-UNI — convivencia APP_MOVIL + MANUAL', () => {
       manualParentLogId: 'log-app',
     });
 
-    expect(repoMock.createEventLog).toHaveBeenCalledTimes(2);
+    expect(mobileRepoMock.create).toHaveBeenCalledTimes(1);
+    expect(repoMock.createEventLog).toHaveBeenCalledTimes(1);
     expect(repoMock.findDuplicateEvent).toHaveBeenNthCalledWith(
       1,
       expect.objectContaining({ source: AttendanceLogSource.APP_MOVIL }),
