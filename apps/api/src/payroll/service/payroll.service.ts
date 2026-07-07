@@ -16,7 +16,11 @@ import {
 } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
-import { SMLV_2025, TRANSPORT_SUBSIDY_THRESHOLD } from '../payroll.constants';
+import {
+  SMLV_2025,
+  TRANSPORT_SUBSIDY_THRESHOLD,
+  DEFAULT_EMPLOYEE_BOOTSTRAP_ROLE_CODE,
+} from '../payroll.constants';
 import { PayrollRepository } from '../repository/payroll.repository';
 import { EmployeePositionsService } from './employee-positions.service';
 import { IPayrollService } from '../interfaces/payroll.interfaces';
@@ -93,10 +97,7 @@ export class PayrollService implements IPayrollService {
       throw new BadRequestException('Invalid location for this tenant');
     }
 
-    const role = await this.payrollRepository.findRoleById(data.roleId);
-    if (!role || role.tenantId !== tenantId) {
-      throw new BadRequestException('Invalid role for this tenant');
-    }
+    const roleId = await this.resolveRoleIdForCreate(tenantId, data.roleId, linkedUserId);
 
     const hasTransportSubsidy = this.calculateTransportSubsidy(data.salaryAmount);
     const passwordHash =
@@ -108,7 +109,7 @@ export class PayrollService implements IPayrollService {
       const employee = await this.payrollRepository.create({
         tenantId,
         userId: linkedUserId,
-        roleId: data.roleId,
+        roleId,
         email: data.email,
         cedula: data.cedula,
         documentType: data.documentType,
@@ -204,6 +205,36 @@ export class PayrollService implements IPayrollService {
     }
 
     return linkedUser.id;
+  }
+
+  private async resolveRoleIdForCreate(
+    tenantId: string,
+    roleId: string | undefined,
+    linkedUserId: string | undefined,
+  ): Promise<string | undefined> {
+    if (linkedUserId) {
+      return undefined;
+    }
+
+    if (roleId) {
+      const role = await this.payrollRepository.findRoleById(roleId);
+      if (!role || role.tenantId !== tenantId) {
+        throw new BadRequestException('Invalid role for this tenant');
+      }
+      return roleId;
+    }
+
+    const defaultRole = await this.payrollRepository.findRoleByTenantAndCode(
+      tenantId,
+      DEFAULT_EMPLOYEE_BOOTSTRAP_ROLE_CODE,
+    );
+    if (!defaultRole) {
+      throw new BadRequestException(
+        'No se encontró un rol por defecto para crear el usuario. Asigne el rol en Usuarios.',
+      );
+    }
+
+    return defaultRole.id;
   }
 
   async findAll(

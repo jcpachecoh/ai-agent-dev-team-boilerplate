@@ -82,6 +82,10 @@ describe('PayrollService', () => {
       id: mockRoleId,
       tenantId: mockTenantId,
     });
+    (repository.findRoleByTenantAndCode as jest.Mock).mockResolvedValue({
+      id: 'role-operator',
+      tenantId: mockTenantId,
+    });
   };
 
   beforeEach(async () => {
@@ -102,6 +106,7 @@ describe('PayrollService', () => {
             findUserByEmailAndCedula: jest.fn(),
             findLocationById: jest.fn(),
             findRoleById: jest.fn(),
+            findRoleByTenantAndCode: jest.fn(),
             findById: jest.fn(),
           },
         },
@@ -182,7 +187,23 @@ describe('PayrollService', () => {
         expect.objectContaining({
           tenantId: mockTenantId,
           userId: mockLinkedUser.id,
-          roleId: mockRoleId,
+          roleId: undefined,
+        }),
+      );
+    });
+
+    it('should use default OPERATOR role when creating a new user without roleId', async () => {
+      setupSuccessfulCreate(null);
+      const { roleId: _ignoredRoleId, ...dataWithoutRole } = mockEmployeeData;
+      (repository.create as jest.Mock).mockResolvedValue({ id: 'emp-1', ...mockEmployeeData });
+
+      await service.create(mockTenantId, dataWithoutRole);
+
+      expect(repository.findRoleByTenantAndCode).toHaveBeenCalledWith(mockTenantId, 'OPERATOR');
+      expect(repository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: undefined,
+          roleId: 'role-operator',
         }),
       );
     });
@@ -276,7 +297,7 @@ describe('PayrollService', () => {
     });
 
     it('should throw BadRequestException if role is invalid', async () => {
-      setupSuccessfulCreate();
+      setupSuccessfulCreate(null);
       (repository.findRoleById as jest.Mock).mockResolvedValue(null);
 
       await expect(service.create(mockTenantId, mockEmployeeData)).rejects.toThrow(
@@ -306,7 +327,7 @@ describe('PayrollService', () => {
     });
 
     it('should throw BadRequestException if role belongs to a different tenant', async () => {
-      setupSuccessfulCreate();
+      setupSuccessfulCreate(null);
       (repository.findRoleById as jest.Mock).mockResolvedValue({
         id: mockRoleId,
         tenantId: 'other-tenant',

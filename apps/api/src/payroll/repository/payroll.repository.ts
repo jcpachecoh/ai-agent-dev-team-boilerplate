@@ -77,17 +77,12 @@ export class PayrollRepository implements IPayrollRepository {
             email: data.email,
             cedula: data.cedula,
             documentType: data.documentType,
-            roleId: data.roleId,
+            roleId: data.roleId!,
             passwordHash: data.passwordHash!,
             isActive: true,
           },
         });
         userId = user.id;
-      } else {
-        await tx.user.update({
-          where: { id: userId },
-          data: { roleId: data.roleId },
-        });
       }
 
       const employeeDetails = await tx.employeeDetails.create({
@@ -333,6 +328,16 @@ export class PayrollRepository implements IPayrollRepository {
   async findRoleById(roleId: string): Promise<{ id: string; tenantId: string } | null> {
     return this.prisma.role.findUnique({
       where: { id: roleId },
+      select: { id: true, tenantId: true },
+    });
+  }
+
+  async findRoleByTenantAndCode(
+    tenantId: string,
+    code: string,
+  ): Promise<{ id: string; tenantId: string } | null> {
+    return this.prisma.role.findFirst({
+      where: { tenantId, code, isActive: true },
       select: { id: true, tenantId: true },
     });
   }

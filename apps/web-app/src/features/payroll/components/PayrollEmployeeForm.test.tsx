@@ -8,7 +8,6 @@ import type { PayrollEmployeeFormValues } from '../types/payroll.types';
 import { PayrollEmployeeForm } from './PayrollEmployeeForm';
 
 const TEST_LOCATIONS = [{ id: 'loc-1', name: 'Sede Palos de Leña 1', isActive: true }];
-const TEST_ROLES = [{ id: 'role-1', code: 'MANAGER', name: 'Manager', isActive: true }];
 
 const TEST_CATALOGS = {
   EPS: [{ id: 'eps-1', type: 'EPS' as const, name: 'Sura' }],
@@ -81,7 +80,7 @@ describe('PayrollEmployeeForm', () => {
     const user = userEvent.setup();
     const onSubmit = vi.fn();
 
-    renderForm({ mode: 'create', locations: TEST_LOCATIONS, roles: TEST_ROLES, onSubmit });
+    renderForm({ mode: 'create', locations: TEST_LOCATIONS, onSubmit });
 
     await user.click(screen.getByRole('button', { name: 'Crear empleado' }));
 
@@ -95,14 +94,12 @@ describe('PayrollEmployeeForm', () => {
     const user = userEvent.setup();
     const onSubmit = vi.fn<(values: PayrollEmployeeFormValues) => void>();
 
-    renderForm({ mode: 'create', locations: TEST_LOCATIONS, roles: TEST_ROLES, onSubmit });
+    renderForm({ mode: 'create', locations: TEST_LOCATIONS, onSubmit });
 
     await user.type(screen.getByLabelText('Nombres'), 'Carlos');
     await user.type(screen.getByLabelText('Primer apellido'), 'Perez');
     await user.type(screen.getByLabelText('Cédula'), '12345678');
     await user.type(screen.getByLabelText('Correo'), 'carlos@test.com');
-    await user.click(screen.getByRole('button', { name: 'Rol del sistema' }));
-    await user.click(screen.getByRole('option', { name: 'Manager' }));
     await user.click(screen.getByRole('button', { name: 'Áreas' }));
     await user.click(screen.getByRole('option', { name: 'Sede Palos de Leña 1' }));
     await user.click(screen.getByRole('button', { name: 'Cargo' }));

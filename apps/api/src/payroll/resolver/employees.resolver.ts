@@ -105,10 +105,10 @@ export class CreateEmployeeInput {
   @IsNotEmpty()
   email!: string;
 
-  @Field()
+  @Field({ nullable: true })
   @IsString()
-  @IsNotEmpty()
-  roleId!: string;
+  @IsOptional()
+  roleId?: string;
 
   @Field()
   @IsString()

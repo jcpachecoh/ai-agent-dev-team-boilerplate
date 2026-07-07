@@ -13,7 +13,7 @@ import { Decimal } from '@prisma/client/runtime/library';
 export interface CreateEmployeeData {
   tenantId: string;
   userId?: string;
-  roleId: string;
+  roleId?: string;
   email: string;
   cedula: string;
   documentType: DocumentType;
@@ -130,6 +130,10 @@ export interface IPayrollRepository {
   ): Promise<LinkedUserRecord | null>;
   findLocationById(locationId: string): Promise<{ id: string; tenantId: string } | null>;
   findRoleById(roleId: string): Promise<{ id: string; tenantId: string } | null>;
+  findRoleByTenantAndCode(
+    tenantId: string,
+    code: string,
+  ): Promise<{ id: string; tenantId: string } | null>;
   updateEmployeePositionAssignment(
     employeeDetailsId: string,
     data: { positionId: string; position: string },

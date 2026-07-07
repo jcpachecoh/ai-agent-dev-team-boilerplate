@@ -39,10 +39,13 @@ export class CreateEmployeeDto {
   @IsNotEmpty()
   email!: string;
 
-  @ApiProperty()
+  @ApiPropertyOptional({
+    description:
+      'Opcional. Si se omite, se usa un rol bootstrap al crear usuario; el rol definitivo se asigna en Usuarios.',
+  })
   @IsString()
-  @IsNotEmpty()
-  roleId!: string;
+  @IsOptional()
+  roleId?: string;
 
   @ApiProperty()
   @IsString()

@@ -4,8 +4,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { ThousandsInput } from '@/components/shared/ThousandsInput';
 import { useUiTheme } from '@/hooks/useUiTheme';
 import { useLocations } from '@/features/sedes/hooks/useLocations';
-import { useAdminRolesForSelect } from '@/features/usuarios/hooks/useAdminUsers';
-import type { AdminRoleOptionApi } from '@/features/usuarios/types';
 
 import {
   type ArlRiskLevel,
@@ -38,7 +36,6 @@ export interface PayrollEmployeeFormProps {
   mode: 'create' | 'edit';
   initialValues?: PayrollEmployee;
   locations?: Array<{ id: string; name: string; isActive?: boolean }>;
-  roles?: AdminRoleOptionApi[];
   onCancel: () => void;
   onSubmit: (values: PayrollEmployeeFormValues) => void;
   submitting?: boolean;
@@ -56,7 +53,6 @@ export const PAYROLL_EMPLOYEE_FORM_EMPTY_VALUES: PayrollEmployeeFormValues = {
   cedula: '',
   documentType: 'CC',
   email: '',
-  roleId: '',
   locationId: '',
   nombres: '',
   primerApellido: '',
@@ -117,7 +113,6 @@ function employeeToFormValues(employee: PayrollEmployee): PayrollEmployeeFormVal
     cedula: employee.user?.cedula ?? '',
     documentType: (employee.user?.documentType as DocumentType) ?? 'CC',
     email: employee.user?.email ?? '',
-    roleId: employee.user?.roleId ?? '',
     locationId: employee.locationId,
     nombres: nameParts.nombres,
     primerApellido: nameParts.primerApellido,
@@ -206,7 +201,6 @@ export function PayrollEmployeeForm({
   mode,
   initialValues,
   locations,
-  roles,
   onCancel,
   onSubmit,
   submitting = false,
@@ -220,11 +214,9 @@ export function PayrollEmployeeForm({
   const formStyles = layout === 'wizard' ? wizardStyles : defaultStyles;
   const theme = useUiTheme();
   const locationsQuery = useLocations();
-  const rolesQuery = useAdminRolesForSelect();
   const catalogsQuery = useEmployeeCatalogsGrouped();
   const positionsQuery = useEmployeePositions({ includeInactive: false });
   const locationRows = locations ?? locationsQuery.data ?? [];
-  const roleRows = roles ?? rolesQuery.data ?? [];
   const [internalValues, setInternalValues] = useState<PayrollEmployeeFormValues>(
     initialValues ? employeeToFormValues(initialValues) : PAYROLL_EMPLOYEE_FORM_EMPTY_VALUES,
   );
@@ -272,33 +264,9 @@ export function PayrollEmployeeForm({
     return options;
   }, [initialValues?.location?.name, locationRows, values.locationId]);
 
-  const roleOptions = useMemo(() => {
-    const options = roleRows
-      .filter((role) => role.isActive)
-      .map((role) => ({ id: role.id, name: role.name, code: role.code }));
-
-    if (values.roleId && !options.some((option) => option.id === values.roleId)) {
-      const currentRole = roleRows.find((role) => role.id === values.roleId);
-      if (currentRole) {
-        options.unshift({
-          id: currentRole.id,
-          name: currentRole.name,
-          code: currentRole.code,
-        });
-      }
-    }
-
-    return options;
-  }, [roleRows, values.roleId]);
-
   const locationSelectOptions = useMemo(
     () => locationOptions.map((location) => ({ value: location.id, label: location.name })),
     [locationOptions],
-  );
-
-  const roleSelectOptions = useMemo(
-    () => roleOptions.map((role) => ({ value: role.id, label: role.name })),
-    [roleOptions],
   );
 
   const departmentSelectOptions = useMemo(
@@ -426,8 +394,8 @@ export function PayrollEmployeeForm({
       return;
     }
 
-    if (!values.locationId.trim() || !values.roleId.trim()) {
-      setError('Áreas y rol del sistema son obligatorios.');
+    if (!values.locationId.trim()) {
+      setError('El área (sede) es obligatoria.');
       return;
     }
 
@@ -603,22 +571,7 @@ export function PayrollEmployeeForm({
                 </>
               ) : null}
 
-              {/* ── Rol del sistema (auth) y clasificación operacional ────────── */}
-              <div className={formStyles.field}>
-                <span className={formStyles.fieldLabel}>Rol del sistema *</span>
-                <RecetaFilterSelect
-                  aria-label="Rol del sistema"
-                  options={roleSelectOptions}
-                  value={values.roleId}
-                  disabled={rolesQuery.isLoading && !roles}
-                  placeholder={
-                    rolesQuery.isLoading && !roles ? 'Cargando roles...' : 'Seleccionar rol'
-                  }
-                  onChange={(value) => update({ roleId: value })}
-                  theme={theme}
-                  size="md"
-                />
-              </div>
+              {/* ── Clasificación operacional ─────────────────────────────────── */}
               <div className={formStyles.field}>
                 <span className={formStyles.fieldLabel}>Centro de Costos *</span>
                 <RecetaFilterSelect

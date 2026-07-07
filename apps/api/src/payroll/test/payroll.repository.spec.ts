@@ -122,7 +122,6 @@ describe('PayrollRepository', () => {
   });
 
   it('links an existing user and creates employee with null contractEnd when omitted', async () => {
-    userUpdate.mockResolvedValue({ id: 'user-1' });
     employeeDetailsCreate.mockResolvedValue({
       id: 'emp-1',
       userId: 'user-1',
@@ -135,10 +134,8 @@ describe('PayrollRepository', () => {
       hasTransportSubsidy: true,
     });
 
-    expect(userUpdate).toHaveBeenCalledWith({
-      where: { id: 'user-1' },
-      data: { roleId: 'role-1' },
-    });
+    expect(userCreate).not.toHaveBeenCalled();
+    expect(userUpdate).not.toHaveBeenCalled();
     expect(employeeDetailsCreate).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({

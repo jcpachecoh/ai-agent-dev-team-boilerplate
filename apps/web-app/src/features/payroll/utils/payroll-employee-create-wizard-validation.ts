@@ -42,8 +42,8 @@ export function validatePayrollEmployeePersonalStep(
     return 'Nombres, primer apellido, correo y cédula son obligatorios.';
   }
 
-  if (!values.locationId.trim() || !values.roleId.trim()) {
-    return 'Áreas y rol del sistema son obligatorios.';
+  if (!values.locationId.trim()) {
+    return 'El área (sede) es obligatoria.';
   }
 
   if (!values.costCenter) {

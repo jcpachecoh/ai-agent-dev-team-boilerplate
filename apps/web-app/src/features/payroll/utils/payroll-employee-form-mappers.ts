@@ -12,7 +12,6 @@ export function payrollEmployeeFormValuesToCreateInput(
     cedula: values.cedula.trim(),
     documentType: values.documentType,
     email: values.email.trim(),
-    roleId: values.roleId.trim(),
     locationId: values.locationId.trim(),
     name: buildEmployeeFullName(values),
     positionId: values.positionId.trim() || undefined,

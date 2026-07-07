@@ -90,7 +90,7 @@ export interface CreatePayrollEmployeeInput {
   cedula: string;
   documentType: DocumentType;
   email: string;
-  roleId: string;
+  roleId?: string;
   locationId: string;
   name: string;
   positionId?: string;
@@ -130,7 +130,6 @@ export interface PayrollEmployeeFormValues {
   cedula: string;
   documentType: DocumentType;
   email: string;
-  roleId: string;
   locationId: string;
   nombres: string;
   primerApellido: string;

@@ -30,7 +30,6 @@ export function payrollEmployeeToFormValues(employee: PayrollEmployee): PayrollE
     cedula: employee.user?.cedula ?? '',
     documentType: (employee.user?.documentType as DocumentType) ?? 'CC',
     email: employee.user?.email ?? '',
-    roleId: employee.user?.roleId ?? '',
     locationId: employee.locationId,
     nombres: nameParts.nombres,
     primerApellido: nameParts.primerApellido,
