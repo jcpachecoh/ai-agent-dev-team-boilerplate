@@ -42,7 +42,7 @@ const NEW_ORG_CHART_POSITIONS = [
  * seed.ts) o uno de los 8 nuevos de arriba. Resuelve alias donde el texto del Excel no
  * coincide literalmente con el título ya sembrado:
  *
- *   - "Chef Corporativo"       → CHEF COORPORATIVO (typo ya existente en el catálogo)
+ *   - "Chef Corporativo"       → CHEF CORPORATIVO (OS-566: typo "COORPORATIVO" corregido)
  *   - "Gerente PDV/Administrador" → GERENTE DE PUNTO DE VENTA (PDV = Punto De Venta)
  *   - "Administrador Jr"       → ADMINISTRADOR JUNIOR
  *   - "Impulsadores"/"Asesores de Venta"/"Parrilleros" → singular ya sembrado
@@ -52,8 +52,8 @@ const NEW_ORG_CHART_POSITIONS = [
  *   - "Aux. Conductor"         → AUXILIAR DE CONDUCCION
  *   - "Jefe/Analista de Abastecimiento" → JEFE/ANALISTA DE COMPRAS — confirmado con
  *     producto: mismo cargo, nombre distinto (no crear "Abastecimiento" como cargo nuevo).
- *   - "Líder de Talento Humano" → JEFE DE TALENO HUMANO (typo ya existente) — confirmado
- *     con producto: mismo cargo, no crear "Líder de Talento Humano" como cargo nuevo.
+ *   - "Líder de Talento Humano" → JEFE DE TALENTO HUMANO (OS-566: typo "TALENO" corregido)
+ *     — confirmado con producto: mismo cargo, no crear "Líder de Talento Humano" como cargo nuevo.
  */
 const ORG_CHART_POSITION_IDS: Record<string, string> = {
   Fundadores: 'pos-pdl-039',
@@ -62,9 +62,9 @@ const ORG_CHART_POSITION_IDS: Record<string, string> = {
   'Director Jurídico - Externo': 'pos-pdl-041',
   'Director de Operaciones': 'pos-pdl-003',
   'Director Administrativo - Financiero': 'pos-pdl-042',
-  'Líder de Talento Humano': 'pos-pdl-032', // alias → JEFE DE TALENO HUMANO
+  'Líder de Talento Humano': 'pos-pdl-032', // alias → JEFE DE TALENTO HUMANO
   'Director Comercial y Mercadeo': 'pos-pdl-004', // alias → DIRECTORA COMERCIAL
-  'Chef Corporativo': 'pos-pdl-010', // alias → CHEF COORPORATIVO
+  'Chef Corporativo': 'pos-pdl-010', // alias → CHEF CORPORATIVO
   'Gerente PDV/Administrador': 'pos-pdl-006', // alias → GERENTE DE PUNTO DE VENTA
   'Administrador Jr': 'pos-pdl-002', // alias → ADMINISTRADOR JUNIOR
   Cocina: 'pos-pdl-011',

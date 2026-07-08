@@ -906,75 +906,166 @@ async function seedUserLocationAssignments(
   }
 }
 
-// ─── OS-563: EmployeePosition catalog for Palos de Leña (lista oficial cliente) ─
+// ─── OS-563/OS-566: EmployeePosition catalog for Palos de Leña ─
+// OS-566 — Fuente de verdad de "cargo oficial activo": el Excel del organigrama
+// `Organigrama_Palos_de_Lena_Supervision.xlsx` (hoja "Organigrama Palos de Leña", 32 filas
+// Cargo → Cargo supervisor). Cada entrada trae su propio `isActive`, calculado una sola vez
+// contra ese Excel: `true` si el título está referenciado por algún alias en
+// `ORG_CHART_POSITION_IDS` (employee-org-chart.seed.ts), `false` si no aparece ahí bajo
+// ningún alias. Esta lista de 37 títulos escrita originalmente en el texto del ticket
+// OS-566 ya NO es la fuente de "oficial" — solo queda como catálogo histórico de
+// definiciones (title/area/baseSalaryRange); lo que decide si un cargo es seleccionable es
+// exclusivamente su `isActive` aquí. Ningún cargo se borra — solo se desactiva — para no
+// perder referencias históricas de EmployeeDetails.positionId.
 const EMPLOYEE_POSITIONS_PDL = [
   // Gerencia
   // NOTE: titles must match prod's casing exactly (ALL CAPS) — the upsert `where` matches
   // by `tenantId_title`, and prod's employee_positions rows were normalized to uppercase
   // outside of this seed. A casing mismatch here makes upsert miss the match-by-title and
   // fall into create with an id that's already taken by the uppercase row → P2002 on id.
-  { id: 'pos-pdl-001', title: 'ADMINISTRADOR', area: 'Gerencia', baseSalaryRange: 5000000 },
-  { id: 'pos-pdl-002', title: 'ADMINISTRADOR JUNIOR', area: 'Gerencia', baseSalaryRange: 3000000 },
+  {
+    id: 'pos-pdl-001',
+    title: 'ADMINISTRADOR',
+    area: 'Gerencia',
+    baseSalaryRange: 5000000,
+    isActive: false, // no aparece en el Excel del organigrama
+  },
+  {
+    id: 'pos-pdl-002',
+    title: 'ADMINISTRADOR JUNIOR',
+    area: 'Gerencia',
+    baseSalaryRange: 3000000,
+    isActive: true, // Excel: "Administrador Jr"
+  },
   {
     id: 'pos-pdl-003',
     title: 'DIRECTOR DE OPERACIONES',
     area: 'Gerencia',
     baseSalaryRange: 8000000,
+    isActive: true, // Excel: "Director de Operaciones"
   },
-  { id: 'pos-pdl-004', title: 'DIRECTORA COMERCIAL', area: 'Gerencia', baseSalaryRange: 7000000 },
+  {
+    id: 'pos-pdl-004',
+    title: 'DIRECTORA COMERCIAL',
+    area: 'Gerencia',
+    baseSalaryRange: 7000000,
+    isActive: true, // Excel: "Director Comercial y Mercadeo"
+  },
   {
     id: 'pos-pdl-005',
     title: 'GERENTE ADMINISTRATIVA',
     area: 'Gerencia',
     baseSalaryRange: 6000000,
+    isActive: false, // no aparece en el Excel del organigrama
   },
   {
     id: 'pos-pdl-006',
     title: 'GERENTE DE PUNTO DE VENTA',
     area: 'Gerencia',
     baseSalaryRange: 4500000,
+    isActive: true, // Excel: "Gerente PDV/Administrador"
   },
-  { id: 'pos-pdl-007', title: 'GERENTE GENERAL', area: 'Gerencia', baseSalaryRange: 15000000 },
+  {
+    id: 'pos-pdl-007',
+    title: 'GERENTE GENERAL',
+    area: 'Gerencia',
+    baseSalaryRange: 15000000,
+    isActive: true, // Excel: "Gerente General"
+  },
   // Cocina
   {
     id: 'pos-pdl-008',
     title: 'AUXILIAR DE COCINA Y PRODUCCION',
     area: 'Cocina',
     baseSalaryRange: 1423500,
+    isActive: false, // no aparece en el Excel del organigrama
+  },
+  // pos-pdl-009 ('AUXLIAR DE COCINA Y PRODUCCION') fue un typo-duplicado de pos-pdl-008 —
+  // no vive en este catálogo, ver POSITION_MERGE_INTO_CANONICAL más abajo.
+  {
+    id: 'pos-pdl-010',
+    title: 'CHEF CORPORATIVO',
+    area: 'Cocina',
+    baseSalaryRange: 6000000,
+    isActive: true, // Excel: "Chef Corporativo"
   },
   {
-    id: 'pos-pdl-009',
-    title: 'AUXLIAR DE COCINA Y PRODUCCION',
+    id: 'pos-pdl-011',
+    title: 'COCINA',
+    area: 'Cocina',
+    baseSalaryRange: 1800000,
+    isActive: true, // Excel: "Cocina"
+  },
+  {
+    id: 'pos-pdl-012',
+    title: 'COCINA FIN DE SEMANA',
     area: 'Cocina',
     baseSalaryRange: 1423500,
+    isActive: false, // no aparece en el Excel del organigrama
   },
-  { id: 'pos-pdl-010', title: 'CHEF COORPORATIVO', area: 'Cocina', baseSalaryRange: 6000000 },
-  { id: 'pos-pdl-011', title: 'COCINA', area: 'Cocina', baseSalaryRange: 1800000 },
-  { id: 'pos-pdl-012', title: 'COCINA FIN DE SEMANA', area: 'Cocina', baseSalaryRange: 1423500 },
-  { id: 'pos-pdl-013', title: 'PARRILLERO', area: 'Cocina', baseSalaryRange: 2200000 },
-  { id: 'pos-pdl-014', title: 'PARRILLERO JUNIOR', area: 'Cocina', baseSalaryRange: 1600000 },
+  {
+    id: 'pos-pdl-013',
+    title: 'PARRILLERO',
+    area: 'Cocina',
+    baseSalaryRange: 2200000,
+    isActive: true, // Excel: "Parrilleros"
+  },
+  {
+    id: 'pos-pdl-014',
+    title: 'PARRILLERO JUNIOR',
+    area: 'Cocina',
+    baseSalaryRange: 1600000,
+    isActive: true, // Excel: "Parrilla Jr"
+  },
   // Servicio
-  { id: 'pos-pdl-015', title: 'ASESOR DE VENTAS', area: 'Servicio', baseSalaryRange: 1800000 },
+  {
+    id: 'pos-pdl-015',
+    title: 'ASESOR DE VENTAS',
+    area: 'Servicio',
+    baseSalaryRange: 1800000,
+    isActive: true, // Excel: "Asesores de Venta"
+  },
   {
     id: 'pos-pdl-016',
     title: 'ASESORA DE VENTAS FIN DE SEMANA',
     area: 'Servicio',
     baseSalaryRange: 1423500,
+    isActive: false, // no aparece en el Excel del organigrama
   },
-  { id: 'pos-pdl-017', title: 'BARTENDER', area: 'Servicio', baseSalaryRange: 1800000 },
-  { id: 'pos-pdl-018', title: 'EJECUTIVO COMERCIAL', area: 'Servicio', baseSalaryRange: 3000000 },
+  {
+    id: 'pos-pdl-017',
+    title: 'BARTENDER',
+    area: 'Servicio',
+    baseSalaryRange: 1800000,
+    isActive: false, // no aparece en el Excel del organigrama
+  },
+  {
+    id: 'pos-pdl-018',
+    title: 'EJECUTIVO COMERCIAL',
+    area: 'Servicio',
+    baseSalaryRange: 3000000,
+    isActive: true, // Excel: "Ejecutivo Comercial"
+  },
   {
     id: 'pos-pdl-019',
-    title: 'HOTESS FIN DE SEMANA',
+    title: 'HOSTESS FIN DE SEMANA',
     area: 'Servicio',
     baseSalaryRange: 1423500,
+    isActive: false, // no aparece en el Excel del organigrama
   },
-  { id: 'pos-pdl-020', title: 'IMPULSADOR', area: 'Servicio', baseSalaryRange: 1600000 },
+  {
+    id: 'pos-pdl-020',
+    title: 'IMPULSADOR',
+    area: 'Servicio',
+    baseSalaryRange: 1600000,
+    isActive: true, // Excel: "Impulsadores"
+  },
   {
     id: 'pos-pdl-021',
     title: 'IMPULSADOR FIN DE SEMANA',
     area: 'Servicio',
     baseSalaryRange: 1423500,
+    isActive: false, // no aparece en el Excel del organigrama
   },
   // Planta / Producción
   {
@@ -982,6 +1073,7 @@ const EMPLOYEE_POSITIONS_PDL = [
     title: 'LIDER DE PLANTA DE PRODUCCION',
     area: 'Planta',
     baseSalaryRange: 3500000,
+    isActive: true, // Excel: "Líder de Producción"
   },
   // Administrativo
   {
@@ -989,69 +1081,133 @@ const EMPLOYEE_POSITIONS_PDL = [
     title: 'ANALISTA DE COMPRAS',
     area: 'Administrativo',
     baseSalaryRange: 3000000,
+    isActive: true, // Excel: "Analista de Abastecimiento"
   },
   {
     id: 'pos-pdl-024',
     title: 'ANALISTA DE GESTIÓN HUMANA',
     area: 'Administrativo',
     baseSalaryRange: 3000000,
+    isActive: false, // no aparece en el Excel del organigrama
   },
   {
     id: 'pos-pdl-025',
     title: 'ANALISTA FINANCIERA Y CONTABLE',
     area: 'Administrativo',
     baseSalaryRange: 3500000,
+    isActive: true, // Excel: "Analista Financiera y Contable"
   },
-  { id: 'pos-pdl-026', title: 'APRENDIZ SENA', area: 'Administrativo', baseSalaryRange: 711750 },
-  { id: 'pos-pdl-027', title: 'AUDITOR', area: 'Administrativo', baseSalaryRange: 4000000 },
+  {
+    id: 'pos-pdl-026',
+    title: 'APRENDIZ SENA',
+    area: 'Administrativo',
+    baseSalaryRange: 711750,
+    isActive: true, // Excel: "Aprendiz SENA"
+  },
+  {
+    id: 'pos-pdl-027',
+    title: 'AUDITOR',
+    area: 'Administrativo',
+    baseSalaryRange: 4000000,
+    isActive: false, // no aparece en el Excel del organigrama
+  },
   {
     id: 'pos-pdl-028',
     title: 'AUXILIAR ADMINISTRATIVO',
     area: 'Administrativo',
     baseSalaryRange: 1800000,
+    isActive: false, // no aparece en el Excel del organigrama
   },
   {
     id: 'pos-pdl-029',
     title: 'AUXILIAR TALENTO HUMANO',
     area: 'Administrativo',
     baseSalaryRange: 1800000,
+    isActive: true, // Excel: "Auxiliar Talento Humano"
   },
-  { id: 'pos-pdl-030', title: 'CONTADOR', area: 'Administrativo', baseSalaryRange: 4500000 },
+  {
+    id: 'pos-pdl-030',
+    title: 'CONTADOR',
+    area: 'Administrativo',
+    baseSalaryRange: 4500000,
+    isActive: false, // no aparece en el Excel del organigrama
+  },
   {
     id: 'pos-pdl-031',
     title: 'JEFE DE COMPRAS',
     area: 'Administrativo',
     baseSalaryRange: 4000000,
+    isActive: true, // Excel: "Jefe de Abastecimiento"
   },
   {
     id: 'pos-pdl-032',
-    title: 'JEFE DE TALENO HUMANO',
+    title: 'JEFE DE TALENTO HUMANO',
     area: 'Administrativo',
     baseSalaryRange: 4000000,
+    isActive: true, // Excel: "Líder de Talento Humano"
   },
-  { id: 'pos-pdl-033', title: 'PROGRAMADOR', area: 'Administrativo', baseSalaryRange: 3500000 },
+  {
+    id: 'pos-pdl-033',
+    title: 'PROGRAMADOR',
+    area: 'Administrativo',
+    baseSalaryRange: 3500000,
+    isActive: true, // Excel: "Programador"
+  },
   {
     id: 'pos-pdl-034',
     title: 'SERVICIOS GENERALES',
     area: 'Administrativo',
     baseSalaryRange: 1423500,
+    isActive: true, // Excel: "Servicios Generales"
   },
   // Logística
-  { id: 'pos-pdl-035', title: 'ALMACENISTA', area: 'Logística', baseSalaryRange: 1800000 },
+  {
+    id: 'pos-pdl-035',
+    title: 'ALMACENISTA',
+    area: 'Logística',
+    baseSalaryRange: 1800000,
+    isActive: true, // Excel: "Almacenista"
+  },
   {
     id: 'pos-pdl-036',
     title: 'AUXILIAR DE CONDUCCION',
     area: 'Logística',
     baseSalaryRange: 1800000,
+    isActive: true, // Excel: "Aux. Conductor"
   },
   {
     id: 'pos-pdl-037',
     title: 'AUXILIAR DE CONDUCCION Y MANTENIMIENTO',
     area: 'Logística',
     baseSalaryRange: 2000000,
+    isActive: false, // no aparece en el Excel del organigrama (distinto de pos-pdl-036,
+    // que sí está aliasado como "Aux. Conductor")
   },
-  { id: 'pos-pdl-038', title: 'CONDUCTOR', area: 'Logística', baseSalaryRange: 2200000 },
+  {
+    id: 'pos-pdl-038',
+    title: 'CONDUCTOR',
+    area: 'Logística',
+    baseSalaryRange: 2200000,
+    isActive: true, // Excel: "Conductor"
+  },
 ] as const;
+
+// OS-566 — pos-pdl-009 ('AUXLIAR DE COCINA Y PRODUCCION') fue un typo-duplicado exacto de
+// pos-pdl-008 (mismo título salvo la I faltante, misma área, mismo salario). A diferencia
+// del resto del catálogo (que solo necesita su `isActive` correcto), este caso requiere
+// además fusionar cualquier EmployeeDetails que todavía apunte al duplicado hacia el título
+// correcto antes de desactivarlo — por eso vive aparte, no en EMPLOYEE_POSITIONS_PDL.
+const POSITION_MERGE_INTO_CANONICAL: ReadonlyArray<{
+  id: string;
+  canonicalId: string;
+  reason: string;
+}> = [
+  {
+    id: 'pos-pdl-009',
+    canonicalId: 'pos-pdl-008',
+    reason: "typo-duplicado de 'AUXILIAR DE COCINA Y PRODUCCION' (AUXLIAR sin la I)",
+  },
+];
 
 async function seedEmployeePositions(tenantId: string) {
   // Matched by `id` (not `tenantId_title`): `id` is the stable identity we control here —
@@ -1059,6 +1215,9 @@ async function seedEmployeePositions(tenantId: string) {
   // band between environments (e.g. prod rows got normalized to uppercase directly in the DB).
   // Matching by title made upsert miss the existing row on any drift and crash trying to
   // create a duplicate `id`. Matching by `id` finds the row regardless of title and heals it.
+  //
+  // `isActive` viene de cada entrada (calculado contra el Excel del organigrama, ver
+  // comentario arriba) — no hay un segundo paso que lo pise después.
   for (const pos of EMPLOYEE_POSITIONS_PDL) {
     await prisma.employeePosition.upsert({
       where: { id: pos.id },
@@ -1066,7 +1225,7 @@ async function seedEmployeePositions(tenantId: string) {
         title: pos.title,
         area: pos.area,
         baseSalaryRange: pos.baseSalaryRange,
-        isActive: true,
+        isActive: pos.isActive,
       },
       create: {
         id: pos.id,
@@ -1074,13 +1233,54 @@ async function seedEmployeePositions(tenantId: string) {
         title: pos.title,
         area: pos.area,
         baseSalaryRange: pos.baseSalaryRange,
-        isActive: true,
+        isActive: pos.isActive,
       },
     });
   }
+  const activeCount = EMPLOYEE_POSITIONS_PDL.filter((pos) => pos.isActive).length;
   console.log(
-    `EmployeePositions: Seeded ${EMPLOYEE_POSITIONS_PDL.length} positions for ${tenantId}`,
+    `EmployeePositions: seeded ${EMPLOYEE_POSITIONS_PDL.length} positions for ${tenantId} ` +
+      `(${activeCount} active per Excel del organigrama, ${EMPLOYEE_POSITIONS_PDL.length - activeCount} deprecated)`,
   );
+
+  for (const merge of POSITION_MERGE_INTO_CANONICAL) {
+    const existing = await prisma.employeePosition.findUnique({ where: { id: merge.id } });
+    if (!existing) continue;
+
+    const canonical = await prisma.employeePosition.findUniqueOrThrow({
+      where: { id: merge.canonicalId },
+    });
+
+    const { count } = await prisma.employeeDetails.updateMany({
+      where: { tenantId, positionId: merge.id },
+      data: { positionId: canonical.id, position: canonical.title, area: canonical.area },
+    });
+    if (count > 0) {
+      console.log(
+        `EmployeePositions: reassigned ${count} employee(s) from deprecated ${merge.id} to ${merge.canonicalId}`,
+      );
+    }
+
+    await prisma.employeePosition.update({
+      where: { id: merge.id },
+      data: { isActive: false },
+    });
+    console.log(`EmployeePositions: deactivated deprecated position ${merge.id} (${merge.reason})`);
+  }
+
+  // Visibilidad: cualquier EmployeeDetails que quede con positionId apuntando a un cargo hoy
+  // inactivo conserva su FK intacta (no se reasigna sin alias claro) — solo se reporta.
+  const inactiveRefs = await prisma.employeeDetails.groupBy({
+    by: ['positionId'],
+    where: { tenantId, positionRef: { isActive: false } },
+    _count: { _all: true },
+  });
+  for (const ref of inactiveRefs) {
+    console.log(
+      `EmployeePositions: ${ref._count._all} employee(s) keep positionId=${ref.positionId} ` +
+        `(inactive, history preserved, not reassigned)`,
+    );
+  }
 }
 
 async function seedEmployeeDetails(
