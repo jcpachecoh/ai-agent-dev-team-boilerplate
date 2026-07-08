@@ -263,14 +263,6 @@ export default function SedesListView(): JSX.Element {
               : undefined
         }
         onClose={() => setViewTargetId(null)}
-        onEdit={
-          viewTargetId
-            ? () => {
-                setViewTargetId(null);
-                navigate(`/empresa/sedes/${viewTargetId}/editar`);
-              }
-            : undefined
-        }
         theme={theme}
       />
     </>

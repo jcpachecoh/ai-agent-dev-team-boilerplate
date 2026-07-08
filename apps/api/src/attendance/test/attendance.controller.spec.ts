@@ -108,7 +108,6 @@ describe('AttendanceController', () => {
     const dto: KioskAuthDto = Object.assign(new KioskAuthDto(), {
       cedula: '12345678',
       pin: '1234',
-      locationId: 'loc-001',
     });
 
     it('delega al service y retorna el resultado', async () => {

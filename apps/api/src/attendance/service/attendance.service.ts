@@ -80,13 +80,9 @@ export class AttendanceService implements IAttendanceService {
       throw new UnauthorizedException('Cédula o PIN incorrecto');
     }
 
-    const employee = await this.attendanceRepository.findEmployeeByUserAndLocation(
-      user.id,
-      dto.locationId,
-      tenantId,
-    );
+    const employee = await this.attendanceRepository.findEmployeeByUserId(user.id, tenantId);
     if (!employee) {
-      throw new ForbiddenException('Empleado no encontrado en esta sede');
+      throw new NotFoundException('Empleado no encontrado');
     }
 
     if (!employee.pinHash) {

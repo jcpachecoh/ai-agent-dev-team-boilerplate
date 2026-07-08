@@ -37,7 +37,6 @@ export type AttendanceObservationFull = AttendanceObservation & {
 export interface KioskAuthInput {
   cedula: string;
   pin: string;
-  locationId: string;
 }
 
 export interface RegisterEntryInput {

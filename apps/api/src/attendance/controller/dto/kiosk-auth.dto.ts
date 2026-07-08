@@ -14,9 +14,4 @@ export class KioskAuthDto implements KioskAuthInput {
   @IsNotEmpty()
   @Matches(/^\d{4,6}$/, { message: 'Credenciales inválidas' })
   pin!: string;
-
-  @ApiProperty({ example: 'loc-cuid', description: 'ID de la sede del kiosko' })
-  @IsString()
-  @IsNotEmpty()
-  locationId!: string;
 }

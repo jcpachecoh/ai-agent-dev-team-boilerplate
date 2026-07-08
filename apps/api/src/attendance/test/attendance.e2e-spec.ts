@@ -78,7 +78,7 @@ describe('AttendanceController (e2e)', () => {
     const authRes = await request(app.getHttpServer())
       .post('/api/attendance/kiosk-auth')
       .set('x-tenant-id', TENANT)
-      .send({ cedula: OPERATOR_CEDULA, pin: OPERATOR_PIN, locationId });
+      .send({ cedula: OPERATOR_CEDULA, pin: OPERATOR_PIN });
 
     expect(authRes.status).toBe(200);
     expect(authRes.body.userId).toBe(OPERATOR_USER_ID);
@@ -160,7 +160,7 @@ describe('AttendanceController (e2e)', () => {
     const res = await request(app.getHttpServer())
       .post('/api/attendance/kiosk-auth')
       .set('x-tenant-id', TENANT)
-      .send({ cedula: OPERATOR_CEDULA, pin: '0000', locationId });
+      .send({ cedula: OPERATOR_CEDULA, pin: '0000' });
 
     expect(res.status).toBe(401);
   });
@@ -168,7 +168,7 @@ describe('AttendanceController (e2e)', () => {
   it('kiosk-auth: header x-tenant-id faltante devuelve 400', async () => {
     const res = await request(app.getHttpServer())
       .post('/api/attendance/kiosk-auth')
-      .send({ cedula: OPERATOR_CEDULA, pin: OPERATOR_PIN, locationId });
+      .send({ cedula: OPERATOR_CEDULA, pin: OPERATOR_PIN });
 
     expect(res.status).toBe(400);
   });

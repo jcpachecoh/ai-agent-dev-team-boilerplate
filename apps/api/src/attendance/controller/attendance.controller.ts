@@ -90,9 +90,9 @@ export class AttendanceController {
   //
   // kiosk-auth es público (sin JWT) para permitir que el dispositivo kiosko
   // opere en modo embebido sin gestionar tokens de empleados.
+  // La sede del empleado se resuelve en el backend y se devuelve en la respuesta.
   // Seguridad provista por:
   //   • Scope de tenant (header x-tenant-id obligatorio)
-  //   • Scope de sede (locationId en body — empleado debe pertenecer a esa Location)
   //   • bcrypt PIN (SALT_ROUNDS=12, hash en EmployeeDetails.pinHash)
   //   • Lockout in-memory: 3 intentos fallidos → bloqueo 15 min
   //
@@ -105,7 +105,8 @@ export class AttendanceController {
   @ApiOperation({ summary: 'Autenticación kiosko: cédula + PIN → userId + JWT' })
   @ApiResponse({ status: 200, type: KioskAuthResponseDto })
   @ApiResponse({ status: 401, description: 'Cédula o PIN incorrecto' })
-  @ApiResponse({ status: 403, description: 'Cuenta bloqueada o empleado no en esta sede' })
+  @ApiResponse({ status: 403, description: 'Cuenta bloqueada' })
+  @ApiResponse({ status: 404, description: 'Empleado no encontrado' })
   @ApiResponse({ status: 422, description: 'PIN no configurado' })
   kioskAuth(
     @Headers('x-tenant-id') tenantIdHeader: string,

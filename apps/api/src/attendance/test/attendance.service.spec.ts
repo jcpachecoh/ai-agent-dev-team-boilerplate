@@ -158,12 +158,12 @@ describe('AttendanceService', () => {
   // ── kioskAuth ──────────────────────────────────────────────────────────────
 
   describe('kioskAuth', () => {
-    const dto = { cedula: '12345678', pin: '1234', locationId: LOCATION_ID };
+    const dto = { cedula: '12345678', pin: '1234' };
 
     it('retorna KioskAuthResult cuando cédula y PIN son correctos', async () => {
       const emp = makeEmployee('emp-kiosk-ok');
       repoMock.findUserByCedula.mockResolvedValue(makeUser());
-      repoMock.findEmployeeByUserAndLocation.mockResolvedValue(emp);
+      repoMock.findEmployeeByUserId.mockResolvedValue(emp);
       (bcryptCompare as jest.Mock).mockResolvedValue(true);
 
       const result = await service.kioskAuth(dto, TENANT);
@@ -184,7 +184,7 @@ describe('AttendanceService', () => {
     it('lanza UnauthorizedException cuando el PIN es incorrecto', async () => {
       const emp = makeEmployee('emp-kiosk-bad-pin');
       repoMock.findUserByCedula.mockResolvedValue(makeUser());
-      repoMock.findEmployeeByUserAndLocation.mockResolvedValue(emp);
+      repoMock.findEmployeeByUserId.mockResolvedValue(emp);
       (bcryptCompare as jest.Mock).mockResolvedValue(false);
 
       await expect(service.kioskAuth(dto, TENANT)).rejects.toThrow(UnauthorizedException);
@@ -193,17 +193,17 @@ describe('AttendanceService', () => {
     it('lanza UnprocessableEntityException cuando el empleado no tiene pinHash', async () => {
       const emp = makeEmployee('emp-kiosk-no-pin', { pinHash: null });
       repoMock.findUserByCedula.mockResolvedValue(makeUser());
-      repoMock.findEmployeeByUserAndLocation.mockResolvedValue(emp);
+      repoMock.findEmployeeByUserId.mockResolvedValue(emp);
 
       await expect(service.kioskAuth(dto, TENANT)).rejects.toThrow(UnprocessableEntityException);
       expect(bcryptCompare).not.toHaveBeenCalled();
     });
 
-    it('lanza ForbiddenException cuando el empleado no pertenece a la sede', async () => {
+    it('lanza NotFoundException cuando el usuario no tiene empleado', async () => {
       repoMock.findUserByCedula.mockResolvedValue(makeUser());
-      repoMock.findEmployeeByUserAndLocation.mockResolvedValue(null);
+      repoMock.findEmployeeByUserId.mockResolvedValue(null);
 
-      await expect(service.kioskAuth(dto, TENANT)).rejects.toThrow(ForbiddenException);
+      await expect(service.kioskAuth(dto, TENANT)).rejects.toThrow(NotFoundException);
     });
 
     it('lanza UnauthorizedException cuando el usuario no existe', async () => {
@@ -216,7 +216,7 @@ describe('AttendanceService', () => {
       // Uses unique empId so the module-level lockout Map doesn't interfere with other tests
       const emp = makeEmployee('emp-lockout-seq');
       repoMock.findUserByCedula.mockResolvedValue(makeUser());
-      repoMock.findEmployeeByUserAndLocation.mockResolvedValue(emp);
+      repoMock.findEmployeeByUserId.mockResolvedValue(emp);
       (bcryptCompare as jest.Mock).mockResolvedValue(false);
 
       // Attempts 1-3 → UnauthorizedException, increments lockout counter each time

@@ -30,11 +30,6 @@ class KioskAuthInputType implements KioskAuthInput {
   @IsNotEmpty()
   @Matches(/^\d{4,6}$/, { message: 'Credenciales inválidas' })
   pin!: string;
-
-  @Field(() => ID)
-  @IsString()
-  @IsNotEmpty()
-  locationId!: string;
 }
 
 @ObjectType('KioskAuthResult')
