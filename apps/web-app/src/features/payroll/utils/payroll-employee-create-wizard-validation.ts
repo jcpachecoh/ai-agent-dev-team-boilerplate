@@ -120,6 +120,11 @@ export function validatePayrollEmployeeBankStep(draft: PayrollEmployeeCreateBank
     };
   }
 
+  // Editing an existing account without changing the masked number — keep the current value.
+  if (draft.bankAccountId && !draft.accountNumber.trim()) {
+    return { message: null, fieldErrors: {} };
+  }
+
   const accountError = validateAccountNumberForBank(draft.bankCode, draft.accountNumber);
   if (accountError) {
     fieldErrors.accountNumber = accountError;
@@ -127,6 +132,31 @@ export function validatePayrollEmployeeBankStep(draft: PayrollEmployeeCreateBank
   }
 
   return { message: null, fieldErrors: {} };
+}
+
+/**
+ * Decides what (if anything) should be sent to the backend for the bank step.
+ * Returns undefined when there is nothing to persist, which is how the wizard
+ * avoids creating a duplicate account when the user never touched the step.
+ */
+export function resolveBankDraftPayload(
+  draft: PayrollEmployeeCreateBankDraft,
+  initialDraft: PayrollEmployeeCreateBankDraft | null,
+): PayrollEmployeeCreateBankDraft | undefined {
+  const accountNumberDigits = draft.accountNumber.replace(/\D/g, '');
+
+  if (draft.bankAccountId) {
+    const changed =
+      draft.bankCode !== (initialDraft?.bankCode ?? '') ||
+      draft.accountType !== (initialDraft?.accountType ?? draft.accountType) ||
+      accountNumberDigits.length > 0;
+
+    if (!changed) return undefined;
+    return { ...draft, accountNumber: accountNumberDigits };
+  }
+
+  if (!draft.bankCode.trim() || !accountNumberDigits) return undefined;
+  return { ...draft, accountNumber: accountNumberDigits };
 }
 
 export function validatePayrollEmployeeTaxStep(

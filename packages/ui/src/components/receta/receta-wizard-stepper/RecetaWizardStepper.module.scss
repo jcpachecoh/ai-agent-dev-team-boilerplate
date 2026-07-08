@@ -3,6 +3,7 @@
 
 .stepper {
   width: 100%;
+  overflow-x: auto;
 }
 
 .themeLight {
@@ -17,6 +18,8 @@
   display: flex;
   align-items: center;
   gap: 0;
+  width: max-content;
+  min-width: 100%;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -24,9 +27,8 @@
 
 .item {
   display: flex;
-  flex: 1;
+  flex: 0 0 auto;
   align-items: center;
-  min-width: 0;
 }
 
 .stepButton {
@@ -34,15 +36,15 @@
   flex-shrink: 0;
   align-items: center;
   gap: $spacing-sm;
-  border: none;
-  background: transparent;
-  color: var(--receta-muted);
-  cursor: pointer;
   padding: 0;
+  background: transparent;
+  border: none;
   font-family: $font-family-base;
   font-size: $font-size-sm;
   line-height: 1.4;
+  color: var(--receta-muted);
   text-align: left;
+  cursor: pointer;
 
   &:focus-visible {
     @include receta.receta-focus-ring;
@@ -74,13 +76,13 @@
 }
 
 .label {
-  min-width: 0;
   font-weight: $font-weight-medium;
   white-space: nowrap;
 }
 
 .connector {
-  flex: 1;
+  flex: 1 1 24px;
+  min-width: 12px;
   height: 1px;
   margin: 0 $spacing-md;
   background: var(--receta-border);

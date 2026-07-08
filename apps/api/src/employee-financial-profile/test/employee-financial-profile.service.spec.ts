@@ -311,6 +311,80 @@ describe('EmployeeFinancialProfileService', () => {
     });
   });
 
+  // ── updateBankAccount ───────────────────────────────────────────────────────
+
+  describe('updateBankAccount', () => {
+    beforeEach(() => {
+      repository.findEmployee.mockResolvedValue(mockEmployee);
+      repository.findProfileByEmployee.mockResolvedValue(mockProfile);
+      repository.findBankAccountById.mockResolvedValue(mockAccount);
+      repository.updateBankAccount.mockResolvedValue(mockAccount);
+    });
+
+    it('no cifra ni toca el número de cuenta si no se provee', async () => {
+      // Act
+      await service.updateBankAccount(TENANT_ID, ACCOUNT_ID, EMPLOYEE_ID, ACTOR_ID, {
+        bankName: 'Davivienda',
+      });
+
+      // Assert
+      expect(encryption.encrypt).not.toHaveBeenCalled();
+      expect(repository.updateBankAccount).toHaveBeenCalledWith(
+        TENANT_ID,
+        ACCOUNT_ID,
+        expect.objectContaining({
+          bankName: 'Davivienda',
+          accountNumberEncrypted: undefined,
+          accountLast4: undefined,
+        }),
+      );
+    });
+
+    it('cifra el nuevo número de cuenta cuando se provee', async () => {
+      // Arrange
+      encryption.encrypt.mockReturnValue('iv:tag:newencrypted');
+      encryption.last.mockReturnValue('9999');
+
+      // Act
+      await service.updateBankAccount(TENANT_ID, ACCOUNT_ID, EMPLOYEE_ID, ACTOR_ID, {
+        accountNumber: '1112223339999',
+      });
+
+      // Assert
+      expect(encryption.encrypt).toHaveBeenCalledWith('1112223339999');
+      expect(repository.updateBankAccount).toHaveBeenCalledWith(
+        TENANT_ID,
+        ACCOUNT_ID,
+        expect.objectContaining({
+          accountNumberEncrypted: 'iv:tag:newencrypted',
+          accountLast4: '9999',
+        }),
+      );
+    });
+
+    it('lanza BadRequestException si el nuevo número de cuenta es inválido', async () => {
+      // Act & Assert
+      await expect(
+        service.updateBankAccount(TENANT_ID, ACCOUNT_ID, EMPLOYEE_ID, ACTOR_ID, {
+          accountNumber: 'abc',
+        }),
+      ).rejects.toThrow(BadRequestException);
+      expect(repository.updateBankAccount).not.toHaveBeenCalled();
+    });
+
+    it('lanza NotFoundException si la cuenta no existe', async () => {
+      // Arrange
+      repository.findBankAccountById.mockResolvedValue(null);
+
+      // Act & Assert
+      await expect(
+        service.updateBankAccount(TENANT_ID, 'ghost-id', EMPLOYEE_ID, ACTOR_ID, {
+          bankName: 'Davivienda',
+        }),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
   // ── softDeleteBankAccount ───────────────────────────────────────────────────
 
   describe('softDeleteBankAccount', () => {

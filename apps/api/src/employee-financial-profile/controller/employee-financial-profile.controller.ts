@@ -160,6 +160,7 @@ export class EmployeeFinancialProfileController {
       bankName: body.bankName !== undefined ? body.bankName.trim() : undefined,
       bankCode: body.bankCode,
       accountType: body.accountType,
+      accountNumber: body.accountNumber,
     });
     return toBankAccountResponse(account);
   }

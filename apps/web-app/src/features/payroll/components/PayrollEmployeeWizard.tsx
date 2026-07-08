@@ -1,12 +1,13 @@
 import { RecetaFormButton, RecetaWizardShell, type RecetaWizardStepItem } from '@restopsiq/ui';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import {
   PAYROLL_EMPLOYEE_CREATE_WIZARD_STEPS,
   payrollEmployeeCreateWizardStepIndex,
   type PayrollEmployeeCreateWizardStepId,
 } from '../constants/payroll-employee-create-wizard';
+import { useEmployeeBankAccountsQuery } from '../hooks/useEmployeeBankAccountsQuery';
 import { useEmployeePersonalDataQuery } from '../hooks/useEmployeePersonalDataQuery';
 import { useEmployeePositions } from '../hooks/useEmployeePositions';
 import { useEmployeeTaxInformationQuery } from '../hooks/useEmployeeTaxInformationQuery';
@@ -17,12 +18,14 @@ import type {
 } from '../types/payroll-employee-create-wizard.types';
 import type { EmployeeAssetDraft } from '../types/employee-asset.types';
 import {
+  resolveBankDraftPayload,
   validatePayrollEmployeeBankStep,
   validatePayrollEmployeePersonalStep,
   validatePayrollEmployeeSocialStep,
   validatePayrollEmployeeTaxStep,
 } from '../utils/payroll-employee-create-wizard-validation';
 import {
+  bankAccountToWizardDraft,
   mergePersonalDataIntoFormValues,
   payrollEmployeeToFormValues,
   taxInformationToWizardDraft,
@@ -82,6 +85,9 @@ export function PayrollEmployeeWizard({
     isEditMode && open ? employee?.userId : undefined,
   );
   const taxQuery = useEmployeeTaxInformationQuery(isEditMode && open ? employee?.id : undefined);
+  const bankAccountsQuery = useEmployeeBankAccountsQuery(
+    isEditMode && open ? employee?.id : undefined,
+  );
 
   const [currentStep, setCurrentStep] = useState<PayrollEmployeeCreateWizardStepId>('personal');
   const [maxReachedStep, setMaxReachedStep] =
@@ -96,9 +102,13 @@ export function PayrollEmployeeWizard({
   const [taxErrors, setTaxErrors] = useState<Partial<Record<string, string>>>({});
   const [error, setError] = useState<string | null>(null);
   const [localPhotoUrl, setLocalPhotoUrl] = useState<string | null>(null);
+  const initialBankDraftRef = useRef<PayrollEmployeeCreateBankDraft>(EMPTY_BANK_DRAFT);
 
   const isLoadingEditData =
-    isEditMode && open && Boolean(employee) && (personalDataQuery.isLoading || taxQuery.isLoading);
+    isEditMode &&
+    open &&
+    Boolean(employee) &&
+    (personalDataQuery.isLoading || taxQuery.isLoading || bankAccountsQuery.isLoading);
 
   useEffect(() => {
     if (!open) return;
@@ -112,6 +122,7 @@ export function PayrollEmployeeWizard({
     setTaxErrors({});
     setError(null);
     setLocalPhotoUrl(null);
+    initialBankDraftRef.current = EMPTY_BANK_DRAFT;
 
     if (isEditMode && employee) {
       const baseValues = payrollEmployeeToFormValues(employee);
@@ -121,11 +132,14 @@ export function PayrollEmployeeWizard({
           : baseValues,
       );
       setTaxDraft(taxInformationToWizardDraft(taxQuery.data));
+      const loadedBankDraft = bankAccountToWizardDraft(bankAccountsQuery.data);
+      setBankDraft(loadedBankDraft);
+      initialBankDraftRef.current = loadedBankDraft;
       return;
     }
 
     setEmployeeValues(PAYROLL_EMPLOYEE_FORM_EMPTY_VALUES);
-  }, [employee, isEditMode, open, personalDataQuery.data, taxQuery.data]);
+  }, [employee, isEditMode, open, personalDataQuery.data, taxQuery.data, bankAccountsQuery.data]);
 
   useEffect(() => {
     if (!open) return;
@@ -169,20 +183,23 @@ export function PayrollEmployeeWizard({
     (position) => position.id === employeeValues.positionId,
   );
 
-  const validateForSubmit = (): string | null => {
+  const validateForSubmit = (): {
+    stepId: PayrollEmployeeCreateWizardStepId;
+    message: string;
+  } | null => {
     const personalError = validatePayrollEmployeePersonalStep(employeeValues, {
       hasActivePositions,
       selectedPositionArea: selectedPosition?.area,
     });
-    if (personalError) return personalError;
+    if (personalError) return { stepId: 'personal', message: personalError };
 
     const socialError = validatePayrollEmployeeSocialStep(employeeValues);
-    if (socialError) return socialError;
+    if (socialError) return { stepId: 'social-security', message: socialError };
 
     const bankValidation = validatePayrollEmployeeBankStep(bankDraft);
     if (bankValidation.message) {
       setBankErrors(bankValidation.fieldErrors);
-      return bankValidation.message;
+      return { stepId: 'banks', message: bankValidation.message };
     }
     setBankErrors({});
 
@@ -193,7 +210,7 @@ export function PayrollEmployeeWizard({
       } else {
         setTaxErrors({ withholdingRatePercent: taxError });
       }
-      return taxError;
+      return { stepId: 'taxes', message: taxError };
     }
     setTaxErrors({});
     return null;
@@ -283,9 +300,16 @@ export function PayrollEmployeeWizard({
   };
 
   const handleSave = () => {
-    const validationError = validateForSubmit();
-    if (validationError) {
-      setError(validationError);
+    const validation = validateForSubmit();
+    if (validation) {
+      if (validation.stepId !== currentStep) {
+        const targetIndex = visibleSteps.findIndex((s) => s.id === validation.stepId);
+        if (targetIndex > maxIndex) {
+          setMaxReachedStep(validation.stepId);
+        }
+        setCurrentStep(validation.stepId);
+      }
+      setError(validation.message);
       return;
     }
 
@@ -302,11 +326,9 @@ export function PayrollEmployeeWizard({
       },
     };
 
-    if (bankDraft.bankCode.trim() && bankDraft.accountNumber.trim()) {
-      payload.bankAccount = {
-        ...bankDraft,
-        accountNumber: bankDraft.accountNumber.replace(/\D/g, ''),
-      };
+    const bankAccountPayload = resolveBankDraftPayload(bankDraft, initialBankDraftRef.current);
+    if (bankAccountPayload) {
+      payload.bankAccount = bankAccountPayload;
     }
 
     if (taxDraft.taxId.trim()) {
@@ -440,6 +462,11 @@ export function PayrollEmployeeWizard({
                 theme={theme}
                 values={bankDraft}
                 errors={bankErrors}
+                hint={
+                  isEditMode && bankDraft.bankAccountId
+                    ? 'Ya existe una cuenta registrada. Haz clic en el número para reemplazarla o ajusta banco/tipo de cuenta.'
+                    : undefined
+                }
                 onChange={(nextValues) => {
                   setBankDraft(nextValues);
                   setBankErrors({});

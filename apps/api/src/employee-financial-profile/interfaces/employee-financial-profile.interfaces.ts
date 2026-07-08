@@ -43,6 +43,8 @@ export interface UpdateBankAccountData {
   bankName?: string;
   bankCode?: string;
   accountType?: BankAccountType;
+  /** Plain account number — will be encrypted by the service before persisting. */
+  accountNumber?: string;
 }
 
 // ── Tax Information ───────────────────────────────────────────────────────────
@@ -123,7 +125,13 @@ export interface IEmployeeFinancialProfileRepository {
   updateBankAccount(
     tenantId: string,
     id: string,
-    data: UpdateBankAccountData,
+    data: {
+      bankName?: string;
+      bankCode?: string;
+      accountType?: BankAccountType;
+      accountNumberEncrypted?: string;
+      accountLast4?: string;
+    },
   ): Promise<EmployeeBankAccount>;
   softDeleteBankAccount(tenantId: string, id: string): Promise<void>;
   clearPrimaryBankAccounts(tenantId: string, financialProfileId: string): Promise<void>;

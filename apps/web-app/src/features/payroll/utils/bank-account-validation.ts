@@ -3,6 +3,7 @@ import {
   findColombianBank,
   GENERIC_ACCOUNT_LENGTH,
 } from '../constants/colombian-banks';
+import type { EmployeeBankAccount } from '../types/bank-account.types';
 
 export function validateAccountNumberForBank(
   bankCode: string,
@@ -79,4 +80,17 @@ export const ACCOUNT_TYPE_OPTIONS = [
 
 export function listKnownBankCodes(): string[] {
   return COLOMBIAN_BANKS.map((bank) => bank.code);
+}
+
+/** Picks the primary account, falling back to the first active/non-deleted one. */
+export function selectPrimaryBankAccount(
+  accounts: EmployeeBankAccount[] | null | undefined,
+): EmployeeBankAccount | undefined {
+  if (!accounts || accounts.length === 0) return undefined;
+
+  const isUsable = (account: EmployeeBankAccount) => account.isActive && !account.deletedAt;
+
+  return (
+    accounts.find((account) => account.isPrimary && isUsable(account)) ?? accounts.find(isUsable)
+  );
 }

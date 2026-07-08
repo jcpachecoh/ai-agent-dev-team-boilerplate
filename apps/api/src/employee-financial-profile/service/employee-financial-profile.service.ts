@@ -170,7 +170,21 @@ export class EmployeeFinancialProfileService implements IEmployeeFinancialProfil
       throw new NotFoundException(`Cuenta bancaria ${id} no encontrada`);
     }
 
-    const updated = await this.repository.updateBankAccount(tenantId, id, data);
+    let accountNumberEncrypted: string | undefined;
+    let accountLast4: string | undefined;
+    if (data.accountNumber !== undefined) {
+      this.validateAccountNumber(data.accountNumber);
+      accountNumberEncrypted = this.encryption.encrypt(data.accountNumber);
+      accountLast4 = this.encryption.last(data.accountNumber);
+    }
+
+    const updated = await this.repository.updateBankAccount(tenantId, id, {
+      bankName: data.bankName,
+      bankCode: data.bankCode,
+      accountType: data.accountType,
+      accountNumberEncrypted,
+      accountLast4,
+    });
     await this.auditService.log({
       tenantId,
       action: 'UPDATE',

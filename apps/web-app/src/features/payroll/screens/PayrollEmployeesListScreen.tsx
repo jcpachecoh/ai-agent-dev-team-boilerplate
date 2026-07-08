@@ -14,6 +14,7 @@ import {
   type EmpleadoSortColumnKey,
   type EmpleadoSortDirection,
 } from '@restopsiq/ui';
+import { useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -109,6 +110,7 @@ export function PayrollEmployeesListScreen(): React.JSX.Element {
       `empleados-${new Date().toISOString().slice(0, 10)}.${format === 'PDF' ? 'pdf' : 'xlsx'}`,
     exportFn: (filters, format) => exportEmployeeList(filters, format, 'EMPLOYEES'),
   });
+  const queryClient = useQueryClient();
   const createEmployee = useCreatePayrollEmployeeMutation();
   const updateEmployee = useUpdatePayrollEmployeeMutation();
   const removeEmployee = useRemovePayrollEmployeeMutation();
@@ -162,7 +164,7 @@ export function PayrollEmployeesListScreen(): React.JSX.Element {
     try {
       const employee = await createEmployee.mutateAsync(toCreateInput(payload.employee));
       await applyPayrollEmployeeCreatePersonalData(employee.userId, payload.employee);
-      await applyPayrollEmployeeCreateFinancialProfile(employee.id, payload);
+      await applyPayrollEmployeeCreateFinancialProfile(employee.id, payload, queryClient);
       toast.success('Empleado creado correctamente');
       setCreateOpen(false);
     } catch (error) {
@@ -179,7 +181,7 @@ export function PayrollEmployeesListScreen(): React.JSX.Element {
         input: toUpdateInput(payload.employee),
       });
       await applyPayrollEmployeeCreatePersonalData(editingEmployee.userId, payload.employee);
-      await applyPayrollEmployeeCreateFinancialProfile(editingEmployee.id, payload);
+      await applyPayrollEmployeeCreateFinancialProfile(editingEmployee.id, payload, queryClient);
       toast.success('Empleado actualizado');
       setEditingEmployee(undefined);
     } catch (error) {

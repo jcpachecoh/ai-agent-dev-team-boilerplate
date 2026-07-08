@@ -1,9 +1,13 @@
+import type { QueryClient } from '@tanstack/react-query';
+
 import {
   createEmployeeBankAccount,
+  updateEmployeeBankAccount,
   upsertEmployeeTaxInformation,
 } from '../api/financial-profile.client';
 import { createEmployeeAsset } from '../api/employee-assets.graphql';
 import { uploadEmployeeDocument } from '../api/employee-assets.upload';
+import { payrollKeys } from '../api/queryKeys';
 import type { PayrollEmployeeCreateWizardPayload } from '../types/payroll-employee-create-wizard.types';
 import { resolveBankName } from './bank-account-validation';
 import { parseWithholdingRatePercent } from './financial-profile-display';
@@ -14,15 +18,28 @@ export async function applyPayrollEmployeeCreateFinancialProfile(
     PayrollEmployeeCreateWizardPayload,
     'bankAccount' | 'taxInformation' | 'assetDrafts'
   >,
+  queryClient?: QueryClient,
 ): Promise<void> {
   if (payload.bankAccount) {
-    await createEmployeeBankAccount(employeeId, {
-      bankName: resolveBankName(payload.bankAccount.bankCode),
-      bankCode: payload.bankAccount.bankCode,
-      accountType: payload.bankAccount.accountType,
-      accountNumber: payload.bankAccount.accountNumber,
-      isPrimary: true,
-    });
+    if (payload.bankAccount.bankAccountId) {
+      await updateEmployeeBankAccount(employeeId, payload.bankAccount.bankAccountId, {
+        bankName: resolveBankName(payload.bankAccount.bankCode),
+        bankCode: payload.bankAccount.bankCode,
+        accountType: payload.bankAccount.accountType,
+        ...(payload.bankAccount.accountNumber
+          ? { accountNumber: payload.bankAccount.accountNumber }
+          : {}),
+      });
+    } else {
+      await createEmployeeBankAccount(employeeId, {
+        bankName: resolveBankName(payload.bankAccount.bankCode),
+        bankCode: payload.bankAccount.bankCode,
+        accountType: payload.bankAccount.accountType,
+        accountNumber: payload.bankAccount.accountNumber,
+        isPrimary: true,
+      });
+    }
+    await queryClient?.invalidateQueries({ queryKey: payrollKeys.bankAccounts(employeeId) });
   }
 
   if (payload.taxInformation) {
@@ -36,6 +53,7 @@ export async function applyPayrollEmployeeCreateFinancialProfile(
       withholdingApplicable: payload.taxInformation.withholdingApplicable,
       withholdingRate,
     });
+    await queryClient?.invalidateQueries({ queryKey: payrollKeys.taxInformation(employeeId) });
   }
 
   if (payload.assetDrafts && payload.assetDrafts.length > 0) {
@@ -60,5 +78,6 @@ export async function applyPayrollEmployeeCreateFinancialProfile(
         });
       }),
     );
+    await queryClient?.invalidateQueries({ queryKey: payrollKeys.assets(employeeId) });
   }
 }

@@ -1,5 +1,5 @@
 import { RecetaFilterSelect } from '@restopsiq/ui';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 
 import { buildBankSelectOptions } from '../constants/colombian-banks';
 import type { PayrollEmployeeCreateBankDraft } from '../types/payroll-employee-create-wizard.types';
@@ -10,6 +10,7 @@ interface PayrollEmployeeWizardBankStepProps {
   theme: 'light' | 'dark';
   values: PayrollEmployeeCreateBankDraft;
   errors: Partial<Record<keyof PayrollEmployeeCreateBankDraft, string>>;
+  hint?: string;
   onChange: (values: PayrollEmployeeCreateBankDraft) => void;
 }
 
@@ -17,6 +18,7 @@ export function PayrollEmployeeWizardBankStep({
   theme,
   values,
   errors,
+  hint,
   onChange,
 }: PayrollEmployeeWizardBankStepProps): React.JSX.Element {
   const bankOptions = useMemo(
@@ -24,10 +26,15 @@ export function PayrollEmployeeWizardBankStep({
     [values.bankCode],
   );
 
+  const [isEditingAccountNumber, setIsEditingAccountNumber] = useState(false);
+  const showMasked =
+    Boolean(values.maskedAccountNumber) && !values.accountNumber && !isEditingAccountNumber;
+
   return (
     <div className={styles.form}>
       <p className={styles.hint}>
-        Opcional. Puedes registrar la cuenta ahora o completarla después en el perfil del empleado.
+        {hint ??
+          'Opcional. Puedes registrar la cuenta ahora o completarla después en el perfil del empleado.'}
       </p>
 
       <label className={styles.field}>
@@ -68,11 +75,18 @@ export function PayrollEmployeeWizardBankStep({
           type="text"
           inputMode="numeric"
           autoComplete="off"
-          value={values.accountNumber}
+          value={showMasked ? values.maskedAccountNumber : values.accountNumber}
           placeholder="Solo dígitos"
+          readOnly={showMasked}
+          onFocus={() => {
+            if (showMasked) setIsEditingAccountNumber(true);
+          }}
           onChange={(event) => onChange({ ...values, accountNumber: event.target.value })}
         />
         {errors.accountNumber ? <p className={styles.error}>{errors.accountNumber}</p> : null}
+        {values.bankAccountId && showMasked ? (
+          <p className={styles.hint}>Haz clic para editar el número de cuenta.</p>
+        ) : null}
       </label>
     </div>
   );

@@ -17,6 +17,7 @@ import {
   type EmpleadoSortColumnKey,
   type EmpleadoSortDirection,
 } from '@restopsiq/ui';
+import { useQueryClient } from '@tanstack/react-query';
 import { Eraser, FileSpreadsheet, FileText, Mail } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -207,6 +208,7 @@ export function AttendanceCollaboratorsScreen(): React.JSX.Element {
   };
 
   const collaboratorsQuery = useAttendanceCollaboratorsQuery(queryFilters);
+  const queryClient = useQueryClient();
   const updateEmployee = useUpdatePayrollEmployeeMutation();
   const removeEmployee = useRemovePayrollEmployeeMutation();
 
@@ -349,7 +351,11 @@ export function AttendanceCollaboratorsScreen(): React.JSX.Element {
         editingEmployeeQuery.data.userId,
         payload.employee,
       );
-      await applyPayrollEmployeeCreateFinancialProfile(editingEmployeeQuery.data.id, payload);
+      await applyPayrollEmployeeCreateFinancialProfile(
+        editingEmployeeQuery.data.id,
+        payload,
+        queryClient,
+      );
       toast.success('Colaborador actualizado');
       setEditingUserId(undefined);
     } catch (error) {

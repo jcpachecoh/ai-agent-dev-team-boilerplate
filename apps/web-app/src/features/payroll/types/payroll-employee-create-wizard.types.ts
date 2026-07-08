@@ -6,6 +6,10 @@ export interface PayrollEmployeeCreateBankDraft {
   bankCode: string;
   accountType: BankAccountType;
   accountNumber: string;
+  /** Present only when editing an existing account — signals PATCH instead of POST. */
+  bankAccountId?: string;
+  /** Display-only masked value preloaded from the backend, e.g. "**** **** 1234". */
+  maskedAccountNumber?: string;
 }
 
 export interface PayrollEmployeeCreateTaxDraft {

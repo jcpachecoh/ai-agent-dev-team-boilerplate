@@ -79,6 +79,14 @@ export class UpdateBankAccountDto {
   @IsEnum(BankAccountType)
   @IsOptional()
   accountType?: BankAccountType;
+
+  @ApiPropertyOptional({ description: 'Plain account number (6-20 digits)' })
+  @IsString()
+  @Matches(/^\d{6,20}$/, {
+    message: 'El número de cuenta debe contener solo dígitos (6-20 caracteres)',
+  })
+  @IsOptional()
+  accountNumber?: string;
 }
 
 export class UpsertTaxInformationDto {

@@ -360,6 +360,26 @@ describe('EmployeeFinancialProfileRepository', () => {
       expect(callData).not.toHaveProperty('bankName');
       expect(callData).not.toHaveProperty('bankCode');
       expect(callData).not.toHaveProperty('accountType');
+      expect(callData).not.toHaveProperty('accountNumberEncrypted');
+      expect(callData).not.toHaveProperty('accountLast4');
+    });
+
+    it('incluye accountNumberEncrypted y accountLast4 cuando se proveen', async () => {
+      // Arrange
+      prismaMock.employeeBankAccount.update.mockResolvedValue(bankFixture);
+
+      // Act
+      await repository.updateBankAccount(TENANT, BANK_ID, {
+        accountNumberEncrypted: 'iv:tag:newdata',
+        accountLast4: '9999',
+      });
+
+      // Assert
+      const callData = prismaMock.employeeBankAccount.update.mock.calls[0][0].data;
+      expect(callData).toEqual({
+        accountNumberEncrypted: 'iv:tag:newdata',
+        accountLast4: '9999',
+      });
     });
   });
 

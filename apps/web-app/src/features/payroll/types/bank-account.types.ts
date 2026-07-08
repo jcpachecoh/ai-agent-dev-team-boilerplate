@@ -38,6 +38,7 @@ export interface UpdateBankAccountInput {
   bankName?: string;
   bankCode?: string;
   accountType?: BankAccountType;
+  accountNumber?: string;
 }
 
 export interface BankAccountFormValues {

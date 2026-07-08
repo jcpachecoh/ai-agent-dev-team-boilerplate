@@ -13,7 +13,6 @@ import type {
   EmployeeRecord,
   IEmployeeFinancialProfileRepository,
   PaymentHistoryPage,
-  UpdateBankAccountData,
   UpdateFinancialProfileData,
 } from '../interfaces/employee-financial-profile.interfaces';
 
@@ -142,7 +141,13 @@ export class EmployeeFinancialProfileRepository implements IEmployeeFinancialPro
   async updateBankAccount(
     tenantId: string,
     id: string,
-    data: UpdateBankAccountData,
+    data: {
+      bankName?: string;
+      bankCode?: string;
+      accountType?: BankAccountType;
+      accountNumberEncrypted?: string;
+      accountLast4?: string;
+    },
   ): Promise<EmployeeBankAccount> {
     return this.prisma.employeeBankAccount.update({
       where: { id },
@@ -150,6 +155,10 @@ export class EmployeeFinancialProfileRepository implements IEmployeeFinancialPro
         ...(data.bankName !== undefined && { bankName: data.bankName }),
         ...(data.bankCode !== undefined && { bankCode: data.bankCode }),
         ...(data.accountType !== undefined && { accountType: data.accountType }),
+        ...(data.accountNumberEncrypted !== undefined && {
+          accountNumberEncrypted: data.accountNumberEncrypted,
+        }),
+        ...(data.accountLast4 !== undefined && { accountLast4: data.accountLast4 }),
       },
     });
   }

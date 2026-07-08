@@ -1,3 +1,4 @@
+import type { EmployeeBankAccount } from '../types/bank-account.types';
 import type { EmployeePersonalData } from '../types/personal-data.types';
 import type { EmployeeTaxInformation } from '../types/financial-profile.types';
 import type {
@@ -5,7 +6,11 @@ import type {
   PayrollEmployee,
   PayrollEmployeeFormValues,
 } from '../types/payroll.types';
-import type { PayrollEmployeeCreateTaxDraft } from '../types/payroll-employee-create-wizard.types';
+import type {
+  PayrollEmployeeCreateBankDraft,
+  PayrollEmployeeCreateTaxDraft,
+} from '../types/payroll-employee-create-wizard.types';
+import { formatMaskedAccountNumber, selectPrimaryBankAccount } from './bank-account-validation';
 import { splitEmployeeNameForForm } from './employee-name';
 import { formatWithholdingRate } from './financial-profile-display';
 
@@ -108,5 +113,25 @@ export function taxInformationToWizardDraft(
     taxRegime: taxInformation.taxRegime?.trim() || 'ORDINARIO',
     withholdingApplicable: taxInformation.withholdingApplicable,
     withholdingRatePercent: formatWithholdingRate(taxInformation.withholdingRate),
+  };
+}
+
+export function bankAccountToWizardDraft(
+  accounts: EmployeeBankAccount[] | null | undefined,
+): PayrollEmployeeCreateBankDraft {
+  const account = selectPrimaryBankAccount(accounts);
+  if (!account) {
+    return { bankCode: '', accountType: 'SAVINGS', accountNumber: '' };
+  }
+
+  return {
+    bankAccountId: account.id,
+    bankCode: account.bankCode ?? '',
+    accountType: account.accountType,
+    accountNumber: '',
+    maskedAccountNumber: formatMaskedAccountNumber(
+      account.maskedAccountNumber,
+      account.accountLast4,
+    ),
   };
 }
