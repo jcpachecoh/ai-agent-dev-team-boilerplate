@@ -172,13 +172,6 @@ export const navigationItems: NavItem[] = [
     ],
   },
   {
-    id: 'despacho',
-    label: 'Centro de Despacho',
-    path: '/dispatch',
-    icon: Truck,
-    accent: 'orange',
-  },
-  {
     id: 'usuarios',
     label: 'Usuarios',
     icon: Users,
@@ -254,13 +247,6 @@ export const navigationItems: NavItem[] = [
       },
       { id: 'empresa-sedes', label: 'Sedes', path: '/empresa/sedes', icon: MapPin },
     ],
-  },
-  {
-    id: 'settings',
-    label: 'Configuración',
-    path: '/settings',
-    icon: Settings,
-    accent: 'muted',
   },
 ];
 

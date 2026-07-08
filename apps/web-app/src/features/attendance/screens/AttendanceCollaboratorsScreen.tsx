@@ -1,6 +1,5 @@
 import {
   Button,
-  EmpleadoActionButton,
   EmpleadoListToolbar,
   EmpleadoPage,
   EmpleadoPageHeader,
@@ -27,12 +26,10 @@ import { useMe } from '@/features/auth/hooks/useMe';
 import { getRoleCodeFromToken } from '@/lib/auth-token';
 import { useTheme } from '@/providers/ThemeProvider';
 import { PayrollDeactivateEmployeeDialog } from '@/features/payroll/components/PayrollDeactivateEmployeeDialog';
-import { PayrollEmployeeCreateModal } from '@/features/payroll/components/PayrollEmployeeCreateModal';
 import { PayrollEmployeeEditDrawer } from '@/features/payroll/components/PayrollEmployeeEditDrawer';
 import { PayrollApiError } from '@/features/payroll/api/payroll.client';
 import { useEmployeePositions } from '@/features/payroll/hooks/useEmployeePositions';
 import {
-  useCreatePayrollEmployeeMutation,
   useRemovePayrollEmployeeMutation,
   useUpdatePayrollEmployeeMutation,
 } from '@/features/payroll/hooks/usePayrollEmployeeMutations';
@@ -210,11 +207,9 @@ export function AttendanceCollaboratorsScreen(): React.JSX.Element {
   };
 
   const collaboratorsQuery = useAttendanceCollaboratorsQuery(queryFilters);
-  const createEmployee = useCreatePayrollEmployeeMutation();
   const updateEmployee = useUpdatePayrollEmployeeMutation();
   const removeEmployee = useRemovePayrollEmployeeMutation();
 
-  const [createOpen, setCreateOpen] = useState(false);
   const [editingUserId, setEditingUserId] = useState<string | undefined>();
   const [statusChangeUserId, setStatusChangeUserId] = useState<string | undefined>();
 
@@ -342,18 +337,6 @@ export function AttendanceCollaboratorsScreen(): React.JSX.Element {
       .map((location) => ({ value: location.id, label: location.name })),
   ];
 
-  const handleCreate = async (payload: PayrollEmployeeCreateWizardPayload) => {
-    try {
-      const employee = await createEmployee.mutateAsync(toCreateInput(payload.employee));
-      await applyPayrollEmployeeCreatePersonalData(employee.userId, payload.employee);
-      await applyPayrollEmployeeCreateFinancialProfile(employee.id, payload);
-      toast.success('Colaborador creado correctamente');
-      setCreateOpen(false);
-    } catch (error) {
-      toast.error(getErrorMessage(error));
-    }
-  };
-
   const handleEdit = async (payload: PayrollEmployeeCreateWizardPayload) => {
     if (!editingEmployeeQuery.data) return;
 
@@ -402,11 +385,6 @@ export function AttendanceCollaboratorsScreen(): React.JSX.Element {
           title="Colaboradores"
           subtitle={`Clasificación, sede y contrato · ${activeCount} activos de ${totalCount}`}
           theme={empleadoTheme}
-          primaryAction={
-            readOnly ? undefined : (
-              <EmpleadoActionButton theme={empleadoTheme} onClick={() => setCreateOpen(true)} />
-            )
-          }
         />
       </EmpleadoPageSection>
 
@@ -661,14 +639,6 @@ export function AttendanceCollaboratorsScreen(): React.JSX.Element {
 
       {!readOnly ? (
         <>
-          <PayrollEmployeeCreateModal
-            open={createOpen}
-            submitting={createEmployee.isPending}
-            theme={empleadoTheme}
-            onClose={() => setCreateOpen(false)}
-            onSubmit={(payload) => void handleCreate(payload)}
-          />
-
           <PayrollEmployeeEditDrawer
             employee={editingEmployeeQuery.data}
             open={Boolean(editingUserId)}
