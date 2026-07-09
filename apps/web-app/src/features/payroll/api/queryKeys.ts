@@ -25,6 +25,12 @@ export const payrollKeys = {
   assets: (employeeId: string) => [...payrollKeys.all, 'employee-assets', employeeId] as const,
   documents: (employeeId: string) =>
     [...payrollKeys.all, 'employee-documents', employeeId] as const,
+  dotaciones: () => [...payrollKeys.all, 'dotaciones'] as const,
+  dotacionPeriod: (period: string, locationId?: string) =>
+    [...payrollKeys.dotaciones(), 'period', period, locationId ?? 'all'] as const,
+  dotacionAvailableItems: () => [...payrollKeys.dotaciones(), 'available-items'] as const,
+  dotacionEmployeeHistory: (employeeId: string) =>
+    [...payrollKeys.dotaciones(), 'history', employeeId] as const,
   reports: () => [...payrollKeys.all, 'reports'] as const,
   payrollReport: (query: PayrollReportQuery) =>
     [...payrollKeys.reports(), 'payroll', query] as const,

@@ -257,3 +257,8 @@ export function listEmployeeCatalogOptions(
   const query = toQueryString({ type });
   return payrollFetch<EmployeeCatalogOption[]>(`/employee-catalogs${query}`);
 }
+
+export function exportDotacionReport(period: string, locationId?: string): Promise<Blob> {
+  const params = toQueryString({ period, locationId });
+  return payrollFetchBlob(`/dotaciones/report${params}`);
+}

@@ -437,6 +437,7 @@ model SupplyItem {
   orderMaterials   ProductionOrderMaterial[]
   alertResolutions InventoryAlertResolution[]
   compositionLines RecipeCompositionLine[]
+  dotacionDeliveries DotacionDelivery[]
 
   @@unique([tenantId, codigoInterno])
   @@index([tenantId, categoriaId])
@@ -2123,4 +2124,41 @@ model AlertDismissal {
   @@unique([tenantId, userId, alertKey])
   @@index([tenantId, userId])
   @@map("attendance_alert_dismissals")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DOTACIONES — Art. 230 CST
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum DotacionStatus {
+  PENDIENTE
+  ENTREGADA
+  NO_APLICA
+}
+
+model DotacionDelivery {
+  id               String         @id @default(cuid())
+  tenantId         String
+  employeeId       String
+  period           String         // "2026-04" | "2026-08" | "2026-12"
+  supplyItemId     String?        // null until delivery is registered
+  quantity         Int            @default(1)
+  deliveredAt      DateTime?
+  status           DotacionStatus @default(PENDIENTE)
+  signedReceiptUrl String?
+  stockMovementId  String?        // ID of SupplyItemPriceHistory generated at delivery
+  noAplicaReason   String?
+  deletedAt        DateTime?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  supplyItem SupplyItem? @relation(fields: [supplyItemId], references: [id])
+
+  @@unique([employeeId, period])
+  @@index([tenantId])
+  @@index([employeeId])
+  @@index([supplyItemId])
+  @@index([tenantId, period])
+  @@index([deletedAt])
+  @@map("dotacion_deliveries")
 }

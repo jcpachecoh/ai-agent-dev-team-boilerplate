@@ -20,6 +20,7 @@ import {
   MapPin,
   Monitor,
   Package,
+  PackageCheck,
   Settings,
   Shield,
   Truck,
@@ -231,6 +232,12 @@ export const navigationItems: NavItem[] = [
         icon: Briefcase,
       },
       { id: 'payroll-salaries', label: 'Salarios', path: '/payroll/salaries', icon: BarChart3 },
+      {
+        id: 'payroll-dotaciones',
+        label: 'Dotación',
+        path: '/payroll/dotaciones',
+        icon: PackageCheck,
+      },
     ],
   },
   {
@@ -279,6 +286,7 @@ const routeLabels: Record<string, string> = {
   '/payroll/employees': 'Empleados',
   '/payroll/positions': 'Gestión de Cargos',
   '/payroll/salaries': 'Salarios',
+  '/payroll/dotaciones': 'Dotación',
   '/asistencia': 'Panel de control',
   '/asistencia/colaboradores': 'Colaboradores',
   '/asistencia/turnos': 'Turnos',

@@ -14,6 +14,7 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useTheme } from '@/providers/ThemeProvider';
 
 import { PayrollEmployeeAssetsTab } from '../components/PayrollEmployeeAssetsTab';
+import { PayrollEmployeeDotacionesTab } from '../components/PayrollEmployeeDotacionesTab';
 import { PayrollEmployeeDocumentsTab } from '../components/PayrollEmployeeDocumentsTab';
 import { PayrollEmployeeAttendanceTab } from '../components/PayrollEmployeeAttendanceTab';
 import { PayrollEmployeeBankAccountsTab } from '../components/PayrollEmployeeBankAccountsTab';
@@ -170,6 +171,10 @@ function ProfileTabPanel({
 
   if (tabId === 'documents') {
     return <PayrollEmployeeDocumentsTab userId={userId} theme={theme} />;
+  }
+
+  if (tabId === 'dotaciones') {
+    return <PayrollEmployeeDotacionesTab userId={userId} theme={theme} />;
   }
 
   return (

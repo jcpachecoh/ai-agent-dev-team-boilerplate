@@ -214,7 +214,7 @@ describe('TurnoAssignmentsService', () => {
   });
 
   describe('assign', () => {
-    const futureDate = '2026-07-08';
+    const futureDate = '2026-12-01';
 
     beforeEach(() => {
       repository.findEmployeeScope.mockResolvedValue(employeeInScope);

@@ -3,6 +3,7 @@ import {
   FileText,
   Landmark,
   Package,
+  PackageCheck,
   Receipt,
   ShieldCheck,
   UserRound,
@@ -18,7 +19,8 @@ export type PayrollEmployeeProfileTabId =
   | 'bank-accounts'
   // | 'taxes'
   | 'assets'
-  | 'documents';
+  | 'documents'
+  | 'dotaciones';
 
 export interface PayrollEmployeeProfileTabDefinition {
   id: PayrollEmployeeProfileTabId;
@@ -92,6 +94,13 @@ export const PAYROLL_EMPLOYEE_PROFILE_TABS: PayrollEmployeeProfileTabDefinition[
     icon: <FileText {...iconProps} />,
     placeholderTitle: 'Documentos del colaborador',
     placeholderDescription: 'Identificación, licencias, certificados y documentos de dependientes.',
+  },
+  {
+    id: 'dotaciones',
+    label: 'Dotación',
+    icon: <PackageCheck {...iconProps} />,
+    placeholderTitle: 'Dotación',
+    placeholderDescription: 'Historial de entregas de calzado y vestido de labor — Art. 230 CST.',
   },
 ];
 
