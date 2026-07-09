@@ -23,7 +23,7 @@ import {
   type LaborLegalParameter,
 } from '@/features/labor-legal-parameters/types';
 
-import styles from './LaborLegalParametersView.module.scss';
+import styles from './PayrollLegalParametersScreen.module.scss';
 
 function formatDate(value: string | null): string {
   if (!value) return '—';
@@ -37,7 +37,7 @@ function isCurrentlyActive(row: LaborLegalParameter): boolean {
   return from <= today && (!to || to >= today);
 }
 
-export default function LaborLegalParametersView(): JSX.Element {
+export function PayrollLegalParametersScreen(): JSX.Element {
   const { theme } = useTheme();
   const { data: me } = useMe();
   const isSystemAdmin = (SYSTEM_ADMIN_ROLES as readonly string[]).includes(me?.roleCode ?? '');
