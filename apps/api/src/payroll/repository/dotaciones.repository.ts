@@ -230,6 +230,89 @@ export class DotacionesRepository {
     });
   }
 
+  async findPendingDeliveriesByPosition(
+    tenantId: string,
+    period: string,
+    positionId: string,
+    locationId?: string,
+  ) {
+    const employees = await this.prisma.employeeDetails.findMany({
+      where: {
+        tenantId,
+        positionId,
+        isActive: true,
+        deletedAt: null,
+        ...(locationId ? { locationId } : {}),
+      },
+      select: { id: true },
+    });
+
+    if (employees.length === 0) {
+      return [];
+    }
+
+    const employeeIds = employees.map((e) => e.id);
+
+    return this.prisma.dotacionDelivery.findMany({
+      where: {
+        tenantId,
+        period,
+        status: DotacionStatus.PENDIENTE,
+        employeeId: { in: employeeIds },
+        deletedAt: null,
+      },
+      select: { id: true, tenantId: true },
+    });
+  }
+
+  async bulkRegisterDeliveriesTransaction(
+    deliveries: { id: string; tenantId: string }[],
+    supplyItemId: string,
+    quantity: number,
+    deliveredAt: Date,
+    currentStock: number,
+    signedReceiptUrl?: string,
+  ) {
+    const totalQuantity = deliveries.length * quantity;
+    const newStock = currentStock - totalQuantity;
+
+    return this.prisma.$transaction(async (tx) => {
+      const movement = await tx.supplyItemPriceHistory.create({
+        data: {
+          tenantId: deliveries[0]!.tenantId,
+          supplyItemId,
+          costoAnterior: 0,
+          costoNuevo: 0,
+          cantidadRecibida: -totalQuantity,
+          stockAnterior: currentStock,
+          stockNuevo: newStock,
+          motivo: 'ENTREGA_DOTACION_BULK',
+          referenciaTipo: 'DotacionBulkByPosition',
+          referenciaId: `bulk:${supplyItemId}:${deliveries.length}`,
+        },
+      });
+
+      await tx.supplyItem.update({
+        where: { id: supplyItemId },
+        data: { stockActualBodega: { decrement: totalQuantity } },
+      });
+
+      await tx.dotacionDelivery.updateMany({
+        where: { id: { in: deliveries.map((d) => d.id) } },
+        data: {
+          supplyItemId,
+          quantity,
+          deliveredAt,
+          signedReceiptUrl: signedReceiptUrl ?? null,
+          status: DotacionStatus.ENTREGADA,
+          stockMovementId: movement.id,
+        },
+      });
+
+      return movement.id;
+    });
+  }
+
   async markNotApplicable(id: string, tenantId: string, reason?: string) {
     return this.prisma.dotacionDelivery.update({
       where: { id },

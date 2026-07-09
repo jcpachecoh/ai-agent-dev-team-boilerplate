@@ -86,7 +86,52 @@ export class GenerateEntitlementsResultType {
   @Field(() => Int) skipped!: number;
 }
 
+@ObjectType('BulkAssignResult')
+export class BulkAssignResultType {
+  @Field(() => Int) assigned!: number;
+  @Field(() => Int) skipped!: number;
+  @Field(() => Int) total!: number;
+}
+
 // ── Input types ───────────────────────────────────────────────────────────────
+
+@InputType()
+export class BulkAssignByPositionInput {
+  @Field()
+  @IsString()
+  @IsNotEmpty()
+  period!: string;
+
+  @Field(() => ID)
+  @IsString()
+  @IsNotEmpty()
+  positionId!: string;
+
+  @Field(() => ID)
+  @IsString()
+  @IsNotEmpty()
+  supplyItemId!: string;
+
+  @Field(() => Int)
+  @IsInt()
+  @Min(1)
+  quantity!: number;
+
+  @Field()
+  @IsDate()
+  @Type(() => Date)
+  deliveredAt!: Date;
+
+  @Field(() => ID, { nullable: true })
+  @IsOptional()
+  @IsString()
+  locationId?: string;
+
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsString()
+  signedReceiptUrl?: string;
+}
 
 @InputType()
 export class RegisterDotacionDeliveryInput {
@@ -128,7 +173,7 @@ export class DotacionesResolver {
   async dotacionPeriod(
     @Context() ctx: GqlRequestContext,
     @Args('period') period: string,
-    @Args('locationId', { nullable: true }) locationId?: string,
+    @Args('locationId', { nullable: true, type: () => ID }) locationId?: string,
     @Args('cursor', { nullable: true }) cursor?: string,
     @Args('take', { nullable: true, type: () => Int }) take?: number,
   ): Promise<DotacionPageType> {
@@ -206,5 +251,24 @@ export class DotacionesResolver {
   ): Promise<DotacionDeliveryType> {
     const tenantId = getTenantIdFromContext(ctx);
     return this.dotacionesService.markNotApplicable({ id, tenantId, reason });
+  }
+
+  @Mutation(() => BulkAssignResultType)
+  @Roles(...PAYROLL_WRITE_ROLES)
+  async bulkAssignDotacionByPosition(
+    @Context() ctx: GqlRequestContext,
+    @Args('input') input: BulkAssignByPositionInput,
+  ): Promise<BulkAssignResultType> {
+    const tenantId = getTenantIdFromContext(ctx);
+    return this.dotacionesService.bulkAssignByPosition({
+      tenantId,
+      period: input.period,
+      positionId: input.positionId,
+      supplyItemId: input.supplyItemId,
+      quantity: input.quantity,
+      deliveredAt: input.deliveredAt,
+      locationId: input.locationId,
+      signedReceiptUrl: input.signedReceiptUrl,
+    });
   }
 }

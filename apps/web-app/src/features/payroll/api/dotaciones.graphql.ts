@@ -2,6 +2,8 @@ import { graphqlRequest } from '@/lib/graphql-client';
 
 import type {
   AvailableSupplyItem,
+  BulkAssignByPositionInput,
+  BulkAssignResult,
   DotacionDelivery,
   DotacionPage,
   GenerateEntitlementsResult,
@@ -103,6 +105,16 @@ const REGISTER_DELIVERY_MUTATION = `
   }
 `;
 
+const BULK_ASSIGN_BY_POSITION_MUTATION = `
+  mutation BulkAssignDotacionByPosition($input: BulkAssignByPositionInput!) {
+    bulkAssignDotacionByPosition(input: $input) {
+      assigned
+      skipped
+      total
+    }
+  }
+`;
+
 const MARK_NOT_APPLICABLE_MUTATION = `
   mutation MarkDotacionNotApplicable($id: ID!, $reason: String) {
     markDotacionNotApplicable(id: $id, reason: $reason) {
@@ -153,7 +165,11 @@ export async function fetchEmployeeDotacionHistory(
 ): Promise<DotacionPage> {
   const result = await graphqlRequest<{ employeeDotacionHistory: DotacionPage }>(
     EMPLOYEE_DOTACION_HISTORY_QUERY,
-    { employeeId, cursor: cursor ?? null, take },
+    {
+      employeeId,
+      cursor: cursor ?? null,
+      take,
+    },
   );
   return result.employeeDotacionHistory;
 }
@@ -173,9 +189,21 @@ export async function registerDotacionDelivery(
 ): Promise<DotacionDelivery> {
   const result = await graphqlRequest<{ registerDotacionDelivery: DotacionDelivery }>(
     REGISTER_DELIVERY_MUTATION,
-    { input },
+    {
+      input,
+    },
   );
   return result.registerDotacionDelivery;
+}
+
+export async function bulkAssignDotacionByPosition(
+  input: BulkAssignByPositionInput,
+): Promise<BulkAssignResult> {
+  const result = await graphqlRequest<{ bulkAssignDotacionByPosition: BulkAssignResult }>(
+    BULK_ASSIGN_BY_POSITION_MUTATION,
+    { input },
+  );
+  return result.bulkAssignDotacionByPosition;
 }
 
 export async function markDotacionNotApplicable(

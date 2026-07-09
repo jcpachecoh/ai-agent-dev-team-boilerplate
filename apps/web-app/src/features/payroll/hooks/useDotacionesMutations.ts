@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import {
+  bulkAssignDotacionByPosition,
   generatePeriodEntitlements,
   markDotacionNotApplicable,
   registerDotacionDelivery,
@@ -21,6 +22,17 @@ export function useRegisterDotacionMutation(period: string, locationId?: string)
   const qc = useQueryClient();
   return useMutation({
     mutationFn: registerDotacionDelivery,
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: payrollKeys.dotacionPeriod(period, locationId) });
+      void qc.invalidateQueries({ queryKey: payrollKeys.dotacionAvailableItems() });
+    },
+  });
+}
+
+export function useBulkAssignByPositionMutation(period: string, locationId?: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: bulkAssignDotacionByPosition,
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: payrollKeys.dotacionPeriod(period, locationId) });
       void qc.invalidateQueries({ queryKey: payrollKeys.dotacionAvailableItems() });

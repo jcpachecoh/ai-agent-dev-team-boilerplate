@@ -6,7 +6,7 @@ import {
   RecetaFilterSelect,
   toast,
 } from '@restopsiq/ui';
-import { Download, PackageCheck, RefreshCw } from 'lucide-react';
+import { Download, PackageCheck, RefreshCw, Users } from 'lucide-react';
 import { useState } from 'react';
 
 import { useTheme } from '@/providers/ThemeProvider';
@@ -25,6 +25,7 @@ import {
   buildDotacionPeriod,
   getCurrentDotacionPeriod,
 } from '../types/dotaciones.types';
+import { BulkAssignByPositionModal } from '../components/BulkAssignByPositionModal';
 import { RegisterDotacionModal } from '../components/RegisterDotacionModal';
 import styles from './DotacionesScreen.module.scss';
 
@@ -53,6 +54,7 @@ export function DotacionesScreen(): React.JSX.Element {
   );
   const [selectedLocationId, setSelectedLocationId] = useState<string>('');
   const [registerTarget, setRegisterTarget] = useState<DotacionDelivery | null>(null);
+  const [bulkAssignOpen, setBulkAssignOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
 
   const period = buildDotacionPeriod(Number(selectedYear), selectedMonth);
@@ -191,6 +193,15 @@ export function DotacionesScreen(): React.JSX.Element {
             </button>
             <button
               type="button"
+              className={styles.btnSecondary}
+              onClick={() => setBulkAssignOpen(true)}
+              disabled={deliveries.length === 0}
+            >
+              <Users size={13} aria-hidden />
+              Asignar por cargo
+            </button>
+            <button
+              type="button"
               className={styles.btnPrimary}
               onClick={() => void handleGenerate()}
               disabled={generateMutation.isPending}
@@ -270,6 +281,15 @@ export function DotacionesScreen(): React.JSX.Element {
           period={period}
           locationId={locationId}
           onClose={() => setRegisterTarget(null)}
+        />
+      ) : null}
+
+      {/* Bulk assign by position modal */}
+      {bulkAssignOpen ? (
+        <BulkAssignByPositionModal
+          period={period}
+          locationId={locationId}
+          onClose={() => setBulkAssignOpen(false)}
         />
       ) : null}
     </EmpleadoPage>

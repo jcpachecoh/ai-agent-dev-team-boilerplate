@@ -2,6 +2,8 @@ import { ConflictException, Injectable, NotFoundException } from '@nestjs/common
 import { DotacionStatus } from '@prisma/client';
 
 import type {
+  BulkAssignByPositionData,
+  BulkAssignResult,
   ComplianceReportRow,
   DotacionHistoryFilters,
   DotacionPage,
@@ -129,6 +131,46 @@ export class DotacionesService {
     }
 
     return this.repo.markNotApplicable(data.id, data.tenantId, data.reason);
+  }
+
+  async bulkAssignByPosition(data: BulkAssignByPositionData): Promise<BulkAssignResult> {
+    this.validatePeriodFormat(data.period);
+
+    const supplyItem = await this.repo.findSupplyItemForDelivery(data.supplyItemId, data.tenantId);
+    if (!supplyItem) {
+      throw new NotFoundException(`Insumo ${data.supplyItemId} no encontrado`);
+    }
+
+    const deliveries = await this.repo.findPendingDeliveriesByPosition(
+      data.tenantId,
+      data.period,
+      data.positionId,
+      data.locationId,
+    );
+
+    if (deliveries.length === 0) {
+      return { assigned: 0, skipped: 0, total: 0 };
+    }
+
+    const totalNeeded = deliveries.length * data.quantity;
+    const currentStock = Number(supplyItem.stockActualBodega);
+
+    if (currentStock < totalNeeded) {
+      throw new ConflictException(
+        `Stock insuficiente para "${supplyItem.nombre}". Necesario: ${totalNeeded}, disponible: ${currentStock}`,
+      );
+    }
+
+    await this.repo.bulkRegisterDeliveriesTransaction(
+      deliveries,
+      data.supplyItemId,
+      data.quantity,
+      data.deliveredAt,
+      currentStock,
+      data.signedReceiptUrl,
+    );
+
+    return { assigned: deliveries.length, skipped: 0, total: deliveries.length };
   }
 
   async getComplianceReport(

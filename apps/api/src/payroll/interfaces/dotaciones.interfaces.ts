@@ -53,6 +53,23 @@ export interface EligibleEmployee {
   locationId: string;
 }
 
+export interface BulkAssignByPositionData {
+  tenantId: string;
+  period: string;
+  positionId: string;
+  supplyItemId: string;
+  quantity: number;
+  deliveredAt: Date;
+  locationId?: string;
+  signedReceiptUrl?: string;
+}
+
+export interface BulkAssignResult {
+  assigned: number;
+  skipped: number;
+  total: number;
+}
+
 export interface ComplianceReportRow {
   employeeId: string;
   employeeName: string;

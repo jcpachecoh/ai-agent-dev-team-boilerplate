@@ -55,6 +55,22 @@ export interface RegisterDotacionInput {
   signedReceiptUrl?: string;
 }
 
+export interface BulkAssignByPositionInput {
+  period: string;
+  positionId: string;
+  supplyItemId: string;
+  quantity: number;
+  deliveredAt: string;
+  locationId?: string;
+  signedReceiptUrl?: string;
+}
+
+export interface BulkAssignResult {
+  assigned: number;
+  skipped: number;
+  total: number;
+}
+
 export const DOTACION_STATUS_LABELS: Record<DotacionStatus, string> = {
   PENDIENTE: 'Pendiente',
   ENTREGADA: 'Entregada',
