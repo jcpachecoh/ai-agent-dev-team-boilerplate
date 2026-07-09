@@ -132,6 +132,25 @@ const LEGAL_PARAMETER_SEEDS: LegalParameterSeed[] = [
     source: 'CST art. 168',
   },
 
+  // ── RECARGO_HORA_EXTRA_DIURNA / NOCTURNA — recargos de hora extra (OS-586) ──
+  // Estables desde el CST original; no afectados por la Ley 2466/2025. Se versionan
+  // igual que el resto de recargos (en vez de quedar hardcodeados) para tener una
+  // única fuente de verdad vía LaborLegalParametersService.getValueAt(...).
+  {
+    key: 'RECARGO_HORA_EXTRA_DIURNA',
+    value: 0.25,
+    validFrom: '2020-01-01',
+    validTo: null,
+    source: 'CST art. 168',
+  },
+  {
+    key: 'RECARGO_HORA_EXTRA_NOCTURNA',
+    value: 0.75,
+    validFrom: '2020-01-01',
+    validTo: null,
+    source: 'CST art. 168',
+  },
+
   // ── INTERES_CESANTIAS — interés anual sobre cesantías ────────────────────────
   {
     key: 'INTERES_CESANTIAS',

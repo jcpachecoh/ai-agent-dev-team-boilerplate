@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { EmployeeContractType, SalaryType } from '@prisma/client';
-import { AttendanceOvertimeType } from '../payroll.constants';
 import {
   ARL_RATES,
   EMPLOYEE_HEALTH_PCT,
@@ -11,7 +10,6 @@ import {
   EMPLOYER_PENSION_PCT,
   EMPLOYER_SENA_PCT,
   INTEGRAL_CONTRIBUTIONS_BASE_PCT,
-  MONTHLY_HOURS_BASE,
 } from '../payroll.constants';
 import {
   AttendanceMonthSummary,
@@ -20,17 +18,6 @@ import {
   OvertimeBreakdownItem,
   PayrollLegalRates,
 } from '../interfaces/payroll-report.interfaces';
-
-/**
- * Surcharge multipliers that are NOT sourced from LaborLegalParameter in this PR (OS-585
- * scope is limited to RECARGO_DOMINICAL_FESTIVO — see ticket "Migración de hardcodes").
- * DIURNO/NOCTURNO are the CST art. 168 overtime surcharges (25% / 75%), stable historically.
- */
-const BASE_OVERTIME_SURCHARGE: Partial<Record<AttendanceOvertimeType, number>> = {
-  [AttendanceOvertimeType.REGULAR]: 0,
-  [AttendanceOvertimeType.DIURNO]: 0.25,
-  [AttendanceOvertimeType.NOCTURNO]: 0.75,
-};
 
 /** Returns days in a given month — used as calendarDays denominator */
 function daysInMonth(year: number, month: number): number {
@@ -91,32 +78,27 @@ export class PayrollCalculationService {
       : 0;
 
     // ── 4. Overtime pay ───────────────────────────────────────────────────────
-    // Hourly rate uses full (non-prorated) salary — CST art. 168
-    const hourlyRate = employee.salaryAmount / MONTHLY_HOURS_BASE;
-
-    // FESTIVO_DIURNO/FESTIVO_NOCTURNO are versioned via RECARGO_DOMINICAL_FESTIVO (OS-585);
-    // FESTIVO_NOCTURNO combines the (stable, out-of-scope) nocturno surcharge with it.
-    const overtimeSurcharge: Partial<Record<AttendanceOvertimeType, number>> = {
-      ...BASE_OVERTIME_SURCHARGE,
-      [AttendanceOvertimeType.FESTIVO_DIURNO]: legalRates.recargoDominicalFestivo,
-      [AttendanceOvertimeType.FESTIVO_NOCTURNO]:
-        (BASE_OVERTIME_SURCHARGE[AttendanceOvertimeType.NOCTURNO] ?? 0) +
-        legalRates.recargoDominicalFestivo,
-    };
-
+    // Hourly rate uses full (non-prorated) salary — CST art. 168. Both the divisor
+    // (monthlyHoursBase) and the surcharge are resolved per work-day date by the caller
+    // (OS-586) — see OvertimeMinutesEntry — not a single flat value for the whole period.
     const overtimeBreakdown: OvertimeBreakdownItem[] = [];
     let overtimePay = 0;
 
-    for (const [typeKey, minutes] of Object.entries(attendance.overtimeByType)) {
-      const type = typeKey as AttendanceOvertimeType;
-      if (!minutes || minutes <= 0) continue;
-      const surchargeRate = overtimeSurcharge[type] ?? 0;
-      if (surchargeRate === 0) continue; // REGULAR — no extra pay
+    for (const entry of attendance.overtimeEntries) {
+      if (!entry.minutes || entry.minutes <= 0) continue;
+      if (entry.surchargeRate === 0) continue; // REGULAR — no extra pay
 
-      const hours = minutes / 60;
-      const amount = roundCOP(hourlyRate * (1 + surchargeRate) * hours);
+      const hourlyRate = employee.salaryAmount / entry.monthlyHoursBase;
+      const hours = entry.minutes / 60;
+      const amount = roundCOP(hourlyRate * (1 + entry.surchargeRate) * hours);
 
-      overtimeBreakdown.push({ type, minutes, hourlyRate, surchargeRate, amount });
+      overtimeBreakdown.push({
+        type: entry.type,
+        minutes: entry.minutes,
+        hourlyRate,
+        surchargeRate: entry.surchargeRate,
+        amount,
+      });
       overtimePay += amount;
     }
 

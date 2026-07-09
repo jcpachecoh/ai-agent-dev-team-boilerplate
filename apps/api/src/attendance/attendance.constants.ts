@@ -3,7 +3,8 @@ export const REGULAR_DAY_MINUTES = 480;
 // LaborLegalParametersService.getValueAt('HORARIO_NOCTURNO_INICIO', date, tenantId) instead;
 // the legal value changed from 21 to 19 on 2025-12-25 (Ley 2466 de 2025), which a static
 // constant cannot represent.
-export const NOCTURNO_END_HOUR = 6;
+// NOCTURNO_END_HOUR removed (OS-586) — was dead code (unreferenced); nocturno classification
+// only checks entry/exit against the start hour, never an end hour.
 export const KIOSK_MAX_ATTEMPTS = 3;
 export const KIOSK_LOCK_DURATION_MS = 15 * 60 * 1000;
 export const COLOMBIA_TZ = 'America/Bogota';
