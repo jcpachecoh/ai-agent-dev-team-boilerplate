@@ -15,16 +15,28 @@ import {
   OVERTIME_SURCHARGE,
   SMLV_2025,
   TRANSPORT_SUBSIDY_2025,
+  TRANSPORT_SUBSIDY_THRESHOLD,
 } from '../payroll.constants';
 import { PayrollCalculationService } from '../service/payroll-calculation.service';
 import {
   AttendanceMonthSummary,
   EmployeePayrollInput,
+  PayrollLegalRates,
 } from '../interfaces/payroll-report.interfaces';
 
 // ── Test fixtures ─────────────────────────────────────────────────────────────
 
 const PERIOD = { year: 2025, month: 6 }; // June 2025 — 30 calendar days
+
+// Reproduces the pre-OS-585 hardcoded constants (SMLV_2025, TRANSPORT_SUBSIDY_2025, and the
+// old FESTIVO_DIURNO=0.75 / FESTIVO_NOCTURNO=1.5 surcharges) as resolved
+// LaborLegalParametersService values, so existing assertions keep passing unchanged.
+const LEGAL_RATES: PayrollLegalRates = {
+  smlv: SMLV_2025,
+  transportSubsidyThreshold: TRANSPORT_SUBSIDY_THRESHOLD,
+  transportSubsidy: TRANSPORT_SUBSIDY_2025,
+  recargoDominicalFestivo: 0.75,
+};
 
 function makeEmployee(overrides: Partial<EmployeePayrollInput> = {}): EmployeePayrollInput {
   return {
@@ -77,7 +89,7 @@ describe('PayrollCalculationService', () => {
 
   describe('salaryBase proration', () => {
     it('full month (30/30) → salaryBase equals full salary', () => {
-      const result = service.calculateEmployeePeriod(makeEmployee(), makeAttendance());
+      const result = service.calculateEmployeePeriod(makeEmployee(), makeAttendance(), LEGAL_RATES);
       expect(result.salaryBase).toBe(SMLV_2025);
     });
 
@@ -85,6 +97,7 @@ describe('PayrollCalculationService', () => {
       const result = service.calculateEmployeePeriod(
         makeEmployee({ salaryAmount: 2_000_000 }),
         makeAttendance({ presentDays: 15 }),
+        LEGAL_RATES,
       );
       expect(result.salaryBase).toBe(roundCOP(2_000_000 * (15 / 30)));
       expect(result.workedDays).toBe(15);
@@ -95,6 +108,7 @@ describe('PayrollCalculationService', () => {
       const result = service.calculateEmployeePeriod(
         makeEmployee(),
         makeAttendance({ presentDays: 0 }),
+        LEGAL_RATES,
       );
       expect(result.salaryBase).toBe(0);
     });
@@ -103,6 +117,7 @@ describe('PayrollCalculationService', () => {
       const result = service.calculateEmployeePeriod(
         makeEmployee({ salaryAmount: 3_100_000 }),
         makeAttendance({ presentDays: 31, period: { year: 2025, month: 1 } }),
+        LEGAL_RATES,
       );
       expect(result.calendarDays).toBe(31);
       expect(result.salaryBase).toBe(3_100_000); // 31/31 = full
@@ -112,6 +127,7 @@ describe('PayrollCalculationService', () => {
       const result = service.calculateEmployeePeriod(
         makeEmployee({ salaryAmount: 2_800_000 }),
         makeAttendance({ presentDays: 28, period: { year: 2025, month: 2 } }),
+        LEGAL_RATES,
       );
       expect(result.calendarDays).toBe(28);
       expect(result.salaryBase).toBe(2_800_000);
@@ -122,7 +138,7 @@ describe('PayrollCalculationService', () => {
 
   describe('transportSubsidy', () => {
     it('eligible employee full month → gets full subsidy', () => {
-      const result = service.calculateEmployeePeriod(makeEmployee(), makeAttendance());
+      const result = service.calculateEmployeePeriod(makeEmployee(), makeAttendance(), LEGAL_RATES);
       expect(result.transportSubsidy).toBe(TRANSPORT_SUBSIDY_2025);
     });
 
@@ -130,6 +146,7 @@ describe('PayrollCalculationService', () => {
       const result = service.calculateEmployeePeriod(
         makeEmployee(),
         makeAttendance({ presentDays: 15 }),
+        LEGAL_RATES,
       );
       expect(result.transportSubsidy).toBe(roundCOP(TRANSPORT_SUBSIDY_2025 * (15 / 30)));
     });
@@ -138,6 +155,7 @@ describe('PayrollCalculationService', () => {
       const result = service.calculateEmployeePeriod(
         makeEmployee({ salaryType: SalaryType.INTEGRAL, hasTransportSubsidy: true }),
         makeAttendance(),
+        LEGAL_RATES,
       );
       expect(result.transportSubsidy).toBe(0);
     });
@@ -146,6 +164,7 @@ describe('PayrollCalculationService', () => {
       const result = service.calculateEmployeePeriod(
         makeEmployee({ hasTransportSubsidy: false }),
         makeAttendance(),
+        LEGAL_RATES,
       );
       expect(result.transportSubsidy).toBe(0);
     });
@@ -155,6 +174,7 @@ describe('PayrollCalculationService', () => {
       const result = service.calculateEmployeePeriod(
         makeEmployee({ salaryAmount: highSalary, hasTransportSubsidy: true }),
         makeAttendance(),
+        LEGAL_RATES,
       );
       expect(result.transportSubsidy).toBe(0);
     });
@@ -164,7 +184,7 @@ describe('PayrollCalculationService', () => {
 
   describe('overtimePay', () => {
     it('no overtime → overtimePay is 0 and breakdown is empty', () => {
-      const result = service.calculateEmployeePeriod(makeEmployee(), makeAttendance());
+      const result = service.calculateEmployeePeriod(makeEmployee(), makeAttendance(), LEGAL_RATES);
       expect(result.overtimePay).toBe(0);
       expect(result.overtimeBreakdown).toHaveLength(0);
     });
@@ -175,6 +195,7 @@ describe('PayrollCalculationService', () => {
         makeAttendance({
           overtimeByType: { [AttendanceOvertimeType.REGULAR]: 240 },
         }),
+        LEGAL_RATES,
       );
       expect(result.overtimePay).toBe(0);
       expect(result.overtimeBreakdown).toHaveLength(0);
@@ -193,6 +214,7 @@ describe('PayrollCalculationService', () => {
         makeAttendance({
           overtimeByType: { [AttendanceOvertimeType.DIURNO]: hours * 60 },
         }),
+        LEGAL_RATES,
       );
       expect(result.overtimePay).toBe(expected);
       expect(result.overtimeBreakdown).toHaveLength(1);
@@ -212,6 +234,7 @@ describe('PayrollCalculationService', () => {
         makeAttendance({
           overtimeByType: { [AttendanceOvertimeType.NOCTURNO]: hours * 60 },
         }),
+        LEGAL_RATES,
       );
       expect(result.overtimePay).toBe(expected);
       expect(result.overtimeBreakdown[0].surchargeRate).toBe(0.75);
@@ -230,6 +253,7 @@ describe('PayrollCalculationService', () => {
         makeAttendance({
           overtimeByType: { [AttendanceOvertimeType.FESTIVO_DIURNO]: hours * 60 },
         }),
+        LEGAL_RATES,
       );
       expect(result.overtimePay).toBe(expected);
     });
@@ -247,6 +271,7 @@ describe('PayrollCalculationService', () => {
         makeAttendance({
           overtimeByType: { [AttendanceOvertimeType.FESTIVO_NOCTURNO]: hours * 60 },
         }),
+        LEGAL_RATES,
       );
       expect(result.overtimePay).toBe(expected);
       expect(result.overtimeBreakdown[0].surchargeRate).toBe(1.5);
@@ -268,6 +293,7 @@ describe('PayrollCalculationService', () => {
             [AttendanceOvertimeType.NOCTURNO]: nocturnoHours * 60,
           },
         }),
+        LEGAL_RATES,
       );
       expect(result.overtimeBreakdown).toHaveLength(2);
       expect(result.overtimePay).toBe(expectedDiurno + expectedNocturno);
@@ -284,6 +310,7 @@ describe('PayrollCalculationService', () => {
           presentDays: 15, // partial month
           overtimeByType: { [AttendanceOvertimeType.DIURNO]: hours * 60 },
         }),
+        LEGAL_RATES,
       );
       expect(result.overtimeBreakdown[0].hourlyRate).toBeCloseTo(expectedHourlyRate, 2);
     });
@@ -303,6 +330,7 @@ describe('PayrollCalculationService', () => {
         makeAttendance({
           overtimeByType: { [AttendanceOvertimeType.DIURNO]: hours * 60 },
         }),
+        LEGAL_RATES,
       );
       expect(result.grossPay).toBe(result.salaryBase + result.transportSubsidy + overtime);
     });
@@ -316,6 +344,7 @@ describe('PayrollCalculationService', () => {
       const result = service.calculateEmployeePeriod(
         makeEmployee({ salaryAmount: salary, hasTransportSubsidy: false }),
         makeAttendance(),
+        LEGAL_RATES,
       );
       const base = salary; // full month, ORDINARIO
       expect(result.healthDeduction).toBe(roundCOP(base * EMPLOYEE_HEALTH_PCT));
@@ -327,6 +356,7 @@ describe('PayrollCalculationService', () => {
       const result = service.calculateEmployeePeriod(
         makeEmployee({ salaryAmount: salary, salaryType: SalaryType.INTEGRAL }),
         makeAttendance(),
+        LEGAL_RATES,
       );
       const base = roundCOP(salary * INTEGRAL_CONTRIBUTIONS_BASE_PCT);
       expect(result.healthDeduction).toBe(roundCOP(base * EMPLOYEE_HEALTH_PCT));
@@ -337,6 +367,7 @@ describe('PayrollCalculationService', () => {
       const result = service.calculateEmployeePeriod(
         makeEmployee({ salaryAmount: 20_000_000 }),
         makeAttendance(),
+        LEGAL_RATES,
       );
       expect(result.incomeTaxWithholding).toBe(0);
     });
@@ -345,6 +376,7 @@ describe('PayrollCalculationService', () => {
       const result = service.calculateEmployeePeriod(
         makeEmployee({ salaryAmount: 5_000_000 }),
         makeAttendance(),
+        LEGAL_RATES,
       );
       expect(result.totalDeductions).toBe(
         result.healthDeduction + result.pensionDeduction + result.incomeTaxWithholding,
@@ -356,6 +388,7 @@ describe('PayrollCalculationService', () => {
       const result = service.calculateEmployeePeriod(
         makeEmployee({ salaryAmount: salary, hasTransportSubsidy: false }),
         makeAttendance({ presentDays: 15 }),
+        LEGAL_RATES,
       );
       const proratedBase = roundCOP(salary * (15 / 30));
       expect(result.healthDeduction).toBe(roundCOP(proratedBase * EMPLOYEE_HEALTH_PCT));
@@ -369,6 +402,7 @@ describe('PayrollCalculationService', () => {
       const result = service.calculateEmployeePeriod(
         makeEmployee({ salaryAmount: 3_500_000 }),
         makeAttendance(),
+        LEGAL_RATES,
       );
       expect(result.netPay).toBe(result.grossPay - result.totalDeductions);
     });
@@ -381,6 +415,7 @@ describe('PayrollCalculationService', () => {
       const result = service.calculateEmployeePeriod(
         makeEmployee({ salaryAmount: 4_000_000, hasTransportSubsidy: false }),
         makeAttendance(),
+        LEGAL_RATES,
       );
       expect(result.employerHealthContribution).toBeGreaterThan(0);
       expect(result.employerPensionContribution).toBeGreaterThan(0);
@@ -395,6 +430,7 @@ describe('PayrollCalculationService', () => {
       const result = service.calculateEmployeePeriod(
         makeEmployee({ salaryAmount: salary, hasTransportSubsidy: false }),
         makeAttendance(),
+        LEGAL_RATES,
       );
       const base = salary;
       expect(result.employerHealthContribution).toBe(roundCOP(base * EMPLOYER_HEALTH_PCT));
@@ -412,10 +448,12 @@ describe('PayrollCalculationService', () => {
       const riesgoI = service.calculateEmployeePeriod(
         makeEmployee({ salaryAmount: salary, arlRiskLevel: ArlRiskLevel.RIESGO_I }),
         makeAttendance(),
+        LEGAL_RATES,
       );
       const riesgoV = service.calculateEmployeePeriod(
         makeEmployee({ salaryAmount: salary, arlRiskLevel: ArlRiskLevel.RIESGO_V }),
         makeAttendance(),
+        LEGAL_RATES,
       );
       expect(riesgoV.employerArlContribution).toBeGreaterThan(riesgoI.employerArlContribution);
     });
@@ -424,6 +462,7 @@ describe('PayrollCalculationService', () => {
       const result = service.calculateEmployeePeriod(
         makeEmployee({ salaryAmount: 5_000_000 }),
         makeAttendance(),
+        LEGAL_RATES,
       );
       const sum =
         result.employerHealthContribution +
@@ -444,6 +483,7 @@ describe('PayrollCalculationService', () => {
       const result = service.calculateEmployeePeriod(
         makeEmployee({ salaryAmount: salary, salaryType: SalaryType.INTEGRAL }),
         makeAttendance(),
+        LEGAL_RATES,
       );
       const base70 = roundCOP(salary * INTEGRAL_CONTRIBUTIONS_BASE_PCT);
       expect(result.employerHealthContribution).toBe(roundCOP(base70 * EMPLOYER_HEALTH_PCT));
@@ -454,6 +494,7 @@ describe('PayrollCalculationService', () => {
       const result = service.calculateEmployeePeriod(
         makeEmployee({ salaryType: SalaryType.INTEGRAL, hasTransportSubsidy: true }),
         makeAttendance(),
+        LEGAL_RATES,
       );
       expect(result.transportSubsidy).toBe(0);
     });
@@ -466,6 +507,7 @@ describe('PayrollCalculationService', () => {
       const result = service.calculateEmployeePeriod(
         makeEmployee({ contractType: EmployeeContractType.PRESTACION }),
         makeAttendance(),
+        LEGAL_RATES,
       );
       expect(result.totalEmployerContributions).toBe(0);
       expect(result.employerHealthContribution).toBe(0);
@@ -480,6 +522,7 @@ describe('PayrollCalculationService', () => {
       const result = service.calculateEmployeePeriod(
         makeEmployee({ contractType: EmployeeContractType.APRENDIZAJE }),
         makeAttendance(),
+        LEGAL_RATES,
       );
       expect(result.totalEmployerContributions).toBe(0);
     });
@@ -488,6 +531,7 @@ describe('PayrollCalculationService', () => {
       const result = service.calculateEmployeePeriod(
         makeEmployee({ contractType: EmployeeContractType.FIJO, salaryAmount: 3_000_000 }),
         makeAttendance(),
+        LEGAL_RATES,
       );
       expect(result.totalEmployerContributions).toBeGreaterThan(0);
     });
@@ -500,6 +544,7 @@ describe('PayrollCalculationService', () => {
       const result = service.calculateEmployeePeriod(
         makeEmployee({ salaryAmount: 4_000_000 }),
         makeAttendance(),
+        LEGAL_RATES,
       );
       expect(result.totalPayrollCost).toBe(result.grossPay + result.totalEmployerContributions);
     });
@@ -515,7 +560,7 @@ describe('PayrollCalculationService', () => {
         tenantId: 'tenant-xyz',
         locationId: 'loc-99',
       });
-      const result = service.calculateEmployeePeriod(emp, makeAttendance());
+      const result = service.calculateEmployeePeriod(emp, makeAttendance(), LEGAL_RATES);
       expect(result.employeeId).toBe('emp-abc');
       expect(result.userId).toBe('user-abc');
       expect(result.tenantId).toBe('tenant-xyz');
@@ -531,7 +576,7 @@ describe('PayrollCalculationService', () => {
   describe('end-to-end: SMLV employee full month June 2025', () => {
     it('produces correct net pay and employer cost for minimum wage worker', () => {
       const salary = SMLV_2025; // 1,423,500
-      const result = service.calculateEmployeePeriod(makeEmployee(), makeAttendance());
+      const result = service.calculateEmployeePeriod(makeEmployee(), makeAttendance(), LEGAL_RATES);
 
       const base = salary;
       const subsidy = TRANSPORT_SUBSIDY_2025;

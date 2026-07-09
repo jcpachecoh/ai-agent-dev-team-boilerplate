@@ -10,6 +10,7 @@ import type {
 } from '../interfaces/attendance.interfaces';
 import { AttendanceRepository } from '../repository/attendance.repository';
 import { UserLocationsService } from '../../locations/service/user-locations.service';
+import { LaborLegalParametersService } from '../../labor-legal-parameters/service/labor-legal-parameters.service';
 import { calculateDaySummary } from '../utils/attendance-calculation.util';
 import { resolveClasificacionFilter } from '../utils/clasificacion.util';
 import {
@@ -42,6 +43,7 @@ export class AttendanceControlPanelService {
   constructor(
     private readonly repository: AttendanceRepository,
     private readonly userLocationsService: UserLocationsService,
+    private readonly legalParametersService: LaborLegalParametersService,
   ) {}
 
   async getControlPanel(
@@ -125,9 +127,15 @@ export class AttendanceControlPanelService {
       logsByEmployeeDay.set(key, bucket);
     }
 
+    // Resolved once for the whole aggregation (not per day/employee) — avoids N+1 queries.
+    const nocturnoStartHour = await this.legalParametersService.getValueAt(
+      'HORARIO_NOCTURNO_INICIO',
+      new Date(),
+      tenantId,
+    );
     let overtimeMinutesMonth = 0;
     for (const bucket of logsByEmployeeDay.values()) {
-      const summary = calculateDaySummary(bucket, new Date());
+      const summary = calculateDaySummary(bucket, new Date(), nocturnoStartHour);
       overtimeMinutesMonth += summary.overtimeMinutes;
     }
 

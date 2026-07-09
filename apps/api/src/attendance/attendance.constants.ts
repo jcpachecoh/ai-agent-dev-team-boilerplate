@@ -1,5 +1,8 @@
 export const REGULAR_DAY_MINUTES = 480;
-export const NOCTURNO_START_HOUR = 21;
+// NOCTURNO_START_HOUR removed (OS-585) — resolve via
+// LaborLegalParametersService.getValueAt('HORARIO_NOCTURNO_INICIO', date, tenantId) instead;
+// the legal value changed from 21 to 19 on 2025-12-25 (Ley 2466 de 2025), which a static
+// constant cannot represent.
 export const NOCTURNO_END_HOUR = 6;
 export const KIOSK_MAX_ATTEMPTS = 3;
 export const KIOSK_LOCK_DURATION_MS = 15 * 60 * 1000;
@@ -11,8 +14,10 @@ export const SHIFT_AFTERNOON_START = 14;
 export const SHIFT_AFTERNOON_END = 22;
 export const LATE_ARRIVAL_TOLERANCE_MINUTES = 5;
 
-// Ley 2101/2021: jornada semanal máxima 46h a partir de 2025
-export const MAX_WEEKLY_MINUTES = 46 * 60;
+// MAX_WEEKLY_MINUTES removed (OS-585) — was dead code (unreferenced) and legally imprecise
+// (calendar-year based). Resolve via
+// LaborLegalParametersService.getValueAt('JORNADA_MAX_SEMANAL', date, tenantId) instead
+// (Ley 2101/2021 steps down on July 15 of each year, not Jan 1).
 
 // OS-551 — Tarjeta de Asistencia
 export const ATTENDANCE_CARD_MAX_RANGE_MONTHS = 3;

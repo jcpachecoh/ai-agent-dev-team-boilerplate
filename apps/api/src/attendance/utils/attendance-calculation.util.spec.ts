@@ -7,6 +7,10 @@ import {
   isLateEntry,
 } from './attendance-calculation.util';
 
+// Reproduces the pre-OS-585 hardcoded NOCTURNO_START_HOUR constant (21), now resolved by
+// the caller via LaborLegalParametersService (HORARIO_NOCTURNO_INICIO).
+const NOCTURNO_START_HOUR = 21;
+
 describe('attendance-calculation.util', () => {
   it('obtiene hora y minuto en zona Bogotá', () => {
     const timestamp = new Date('2026-07-01T15:30:00.000Z');
@@ -58,7 +62,11 @@ describe('attendance-calculation.util', () => {
       },
     ];
 
-    const summary = calculateDaySummary(logs as never, new Date('2026-07-01T23:30:00.000Z'));
+    const summary = calculateDaySummary(
+      logs as never,
+      new Date('2026-07-01T23:30:00.000Z'),
+      NOCTURNO_START_HOUR,
+    );
 
     expect(summary.totalMinutes).toBeGreaterThan(480);
     expect(summary.overtimeMinutes).toBeGreaterThan(0);
@@ -76,7 +84,7 @@ describe('attendance-calculation.util', () => {
     ];
     const now = new Date('2026-07-01T17:00:00.000Z');
 
-    const summary = calculateDaySummary(logs as never, now);
+    const summary = calculateDaySummary(logs as never, now, NOCTURNO_START_HOUR);
 
     expect(summary.totalMinutes).toBe(240);
     expect(summary.overtimeMinutes).toBe(0);
@@ -97,7 +105,11 @@ describe('attendance-calculation.util', () => {
       },
     ];
 
-    const summary = calculateDaySummary(logs as never, new Date('2026-07-02T04:00:00.000Z'));
+    const summary = calculateDaySummary(
+      logs as never,
+      new Date('2026-07-02T04:00:00.000Z'),
+      NOCTURNO_START_HOUR,
+    );
 
     expect(summary.isNocturno).toBe(true);
   });
@@ -125,7 +137,11 @@ describe('attendance-calculation.util', () => {
   });
 
   it('retorna resumen vacío cuando no hay entradas', () => {
-    const summary = calculateDaySummary([], new Date('2026-07-01T17:00:00.000Z'));
+    const summary = calculateDaySummary(
+      [],
+      new Date('2026-07-01T17:00:00.000Z'),
+      NOCTURNO_START_HOUR,
+    );
 
     expect(summary.totalMinutes).toBe(0);
     expect(summary.overtimeMinutes).toBe(0);

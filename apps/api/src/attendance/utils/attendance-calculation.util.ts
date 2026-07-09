@@ -3,7 +3,6 @@ import {
   ATTENDANCE_CARD_MAX_RANGE_MONTHS,
   COLOMBIA_TZ,
   LATE_ARRIVAL_TOLERANCE_MINUTES,
-  NOCTURNO_START_HOUR,
   REGULAR_DAY_MINUTES,
   SHIFT_AFTERNOON_START,
   SHIFT_MORNING_START,
@@ -54,6 +53,8 @@ export function isLateEntry(log: AttendanceLog): boolean {
 export function calculateDaySummary(
   logs: AttendanceLog[],
   now: Date,
+  /** HORARIO_NOCTURNO_INICIO resolved by the caller — see LaborLegalParametersService (OS-585). */
+  nocturnoStartHour: number,
 ): { totalMinutes: number; overtimeMinutes: number; isNocturno: boolean; pairs: WorkPair[] } {
   const entries = logs.filter((log) => log.eventType === AttendanceEventType.ENTRY);
   const exits = logs.filter((log) => log.eventType === AttendanceEventType.EXIT);
@@ -72,7 +73,7 @@ export function calculateDaySummary(
     if (!isNocturno) {
       const entryHour = getBogotaHour(entry.timestamp);
       const exitHour = getBogotaHour(exitTime);
-      if (entryHour >= NOCTURNO_START_HOUR || exitHour >= NOCTURNO_START_HOUR) {
+      if (entryHour >= nocturnoStartHour || exitHour >= nocturnoStartHour) {
         isNocturno = true;
       }
     }

@@ -1,10 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { AttendanceEventType, AttendanceLog } from '@prisma/client';
-import {
-  COLOMBIA_TZ,
-  NOCTURNO_START_HOUR,
-  REGULAR_DAY_MINUTES,
-} from '../../attendance/attendance.constants';
+import { COLOMBIA_TZ, REGULAR_DAY_MINUTES } from '../../attendance/attendance.constants';
 import { AttendanceOvertimeType } from '../../payroll/payroll.constants';
 import { isColombianHoliday } from './colombia-holidays.util';
 import { IReportsService, ReportsActor } from '../interfaces/reports.interfaces';
@@ -12,8 +8,11 @@ import { UserLocationsService } from '../../locations/service/user-locations.ser
 import {
   AttendanceMonthSummary,
   EmployeePayrollInput,
+  PayrollLegalRates,
 } from '../../payroll/interfaces/payroll-report.interfaces';
 import { PayrollCalculationService } from '../../payroll/service/payroll-calculation.service';
+import { LaborLegalParametersService } from '../../labor-legal-parameters/service/labor-legal-parameters.service';
+import type { LegalParameterSnapshot } from '../../labor-legal-parameters/service/legal-parameter-snapshot';
 import { decimalToNumber } from '../../common/utils/decimal.util';
 import { EmployeeWithUserAndLocation, ReportsRepository } from '../repository/reports.repository';
 import { PayrollRepository } from '../../payroll/repository/payroll.repository';
@@ -46,7 +45,8 @@ import {
 } from '../controller/dto/social-security-report-response.dto';
 
 // CST art. 168: maximum 2h/day and 12h/week of extra (overtime) hours.
-// These are OT-only caps — distinct from total jornada limit (Ley 2101/2021, see getMaxWeeklyMinutesForYear).
+// These are OT-only caps — distinct from the total jornada limit (Ley 2101/2021), which is
+// versioned via LaborLegalParametersService.getValueAt('JORNADA_MAX_SEMANAL', date) — OS-585.
 const DAILY_OVERTIME_LIMIT_MINUTES = 120;
 const WEEKLY_OVERTIME_LIMIT_MINUTES = 720;
 
@@ -72,6 +72,11 @@ function parseDateArgToUtcStart(dateStr: string): Date {
 
 function parseDateArgToUtcEnd(dateStr: string): Date {
   return new Date(dateStr + 'T23:59:59.999Z');
+}
+
+/** Parses a "YYYY-MM-DD" dateKey (see buildDayRecords) into UTC midnight for legal-parameter lookups. */
+function parseCalendarDateKey(dateKey: string): Date {
+  return new Date(`${dateKey}T00:00:00.000Z`);
 }
 
 function getBogotaHour(ts: Date): number {
@@ -106,10 +111,13 @@ function daysBetweenInclusive(from: Date, to: Date): number {
  *
  * Overtime classification (consumed by buildAttendanceSummary):
  * - isFestivo: true when workDate is a Colombian public holiday (Ley 51/1983)
- * - isNocturno: true when entry OR exit hour ≥ NOCTURNO_START_HOUR (21:00 Colombia)
+ * - isNocturno: true when entry OR exit hour ≥ nocturnoStartHourAt(day) (HORARIO_NOCTURNO_INICIO, OS-585)
  * The combination of these two flags determines FESTIVO_DIURNO / FESTIVO_NOCTURNO / DIURNO / NOCTURNO.
  */
-function buildDayRecords(logs: AttendanceLog[]): {
+function buildDayRecords(
+  logs: AttendanceLog[],
+  nocturnoStartHourAt: (date: Date) => number,
+): {
   dateKey: string;
   workedMinutes: number;
   overtimeMinutes: number;
@@ -142,6 +150,7 @@ function buildDayRecords(logs: AttendanceLog[]): {
     let dayWorkedMinutes = 0;
     let dayIsNocturno = false;
     let hasPair = false;
+    const nocturnoStartHour = nocturnoStartHourAt(parseCalendarDateKey(dateKey));
 
     const pairCount = Math.min(entries.length, exits.length);
     for (let i = 0; i < pairCount; i++) {
@@ -156,7 +165,7 @@ function buildDayRecords(logs: AttendanceLog[]): {
       if (!dayIsNocturno) {
         const entryHour = getBogotaHour(entry.timestamp);
         const exitHour = getBogotaHour(exit.timestamp);
-        if (entryHour >= NOCTURNO_START_HOUR || exitHour >= NOCTURNO_START_HOUR) {
+        if (entryHour >= nocturnoStartHour || exitHour >= nocturnoStartHour) {
           dayIsNocturno = true;
         }
       }
@@ -181,8 +190,9 @@ function buildAttendanceSummary(
   logs: AttendanceLog[],
   period: { year: number; month: number },
   totalCalendarDays: number,
+  nocturnoStartHourAt: (date: Date) => number,
 ): AttendanceMonthSummary {
-  const dayRecords = buildDayRecords(logs);
+  const dayRecords = buildDayRecords(logs, nocturnoStartHourAt);
 
   const presentDays = dayRecords.length;
   const totalWorkedMinutes = dayRecords.reduce((s, r) => s + r.workedMinutes, 0);
@@ -290,6 +300,7 @@ export class ReportsService implements IReportsService {
     private readonly payrollRepository: PayrollRepository,
     private readonly payrollCalculationService: PayrollCalculationService,
     private readonly userLocationsService: UserLocationsService,
+    private readonly legalParametersService: LaborLegalParametersService,
   ) {}
 
   private async resolveLocationScope(
@@ -337,11 +348,36 @@ export class ReportsService implements IReportsService {
 
     const logsByEmployee = groupLogsByEmployee(allLogs);
 
+    // Preload once per report run (not per employee) — see LegalParameterSnapshot.
+    const legalSnapshot = await this.legalParametersService.preload(
+      ['SMLV', 'AUXILIO_TRANSPORTE', 'RECARGO_DOMINICAL_FESTIVO', 'HORARIO_NOCTURNO_INICIO'],
+      from,
+      to,
+      tenantId,
+    );
+    const nocturnoStartHourAt = (date: Date): number =>
+      legalSnapshot.numberAt('HORARIO_NOCTURNO_INICIO', date);
+    // SMLV/auxilio/recargo resolved as of the period's last day — a single flat rate per
+    // period, matching the historical pre-OS-585 behaviour (one hardcoded value per month).
+    const smlv = legalSnapshot.numberAt('SMLV', to);
+    const legalRates: PayrollLegalRates = {
+      smlv,
+      transportSubsidyThreshold: smlv * 2,
+      transportSubsidy: legalSnapshot.numberAt('AUXILIO_TRANSPORTE', to),
+      recargoDominicalFestivo: legalSnapshot.numberAt('RECARGO_DOMINICAL_FESTIVO', to),
+    };
+
     const rows: PayrollEmployeeRowDto[] = [];
 
     for (const emp of employees) {
       const empLogs = logsByEmployee.get(emp.id) ?? [];
-      const attendance = buildAttendanceSummary(emp.id, empLogs, period, calendarDays);
+      const attendance = buildAttendanceSummary(
+        emp.id,
+        empLogs,
+        period,
+        calendarDays,
+        nocturnoStartHourAt,
+      );
 
       const input: EmployeePayrollInput = {
         employeeId: emp.id,
@@ -355,7 +391,11 @@ export class ReportsService implements IReportsService {
         arlRiskLevel: emp.arlRiskLevel,
       };
 
-      const calc = this.payrollCalculationService.calculateEmployeePeriod(input, attendance);
+      const calc = this.payrollCalculationService.calculateEmployeePeriod(
+        input,
+        attendance,
+        legalRates,
+      );
       rows.push(mapToPayrollEmployeeRow(emp, input as EmployeePayrollInput, calc));
     }
 
@@ -403,9 +443,18 @@ export class ReportsService implements IReportsService {
     // Dummy period for AttendanceMonthSummary (informational only in attendance report)
     const [year, month] = query.from.split('-').map(Number);
 
+    const legalSnapshot = await this.legalParametersService.preload(
+      ['HORARIO_NOCTURNO_INICIO'],
+      from,
+      to,
+      tenantId,
+    );
+    const nocturnoStartHourAt = (date: Date): number =>
+      legalSnapshot.numberAt('HORARIO_NOCTURNO_INICIO', date);
+
     let rows: AttendanceEmployeeRowDto[] = employees.map((emp) => {
       const empLogs = logsByEmployee.get(emp.id) ?? [];
-      const dayRecords = buildDayRecords(empLogs);
+      const dayRecords = buildDayRecords(empLogs, nocturnoStartHourAt);
 
       const totalWorkedMinutes = dayRecords.reduce((s, r) => s + r.workedMinutes, 0);
       const regularMinutes = dayRecords.reduce(

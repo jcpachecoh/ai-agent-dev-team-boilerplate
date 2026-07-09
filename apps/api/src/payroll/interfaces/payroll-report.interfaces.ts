@@ -35,6 +35,18 @@ export interface AttendanceMonthSummary {
   overtimeByType: Partial<Record<AttendanceOvertimeType, number>>;
 }
 
+/**
+ * Legal rates resolved from LaborLegalParametersService for the period being calculated.
+ * Resolved once per report run (not per employee) — see ReportsService.getPayrollReport,
+ * which preloads these "as of" the period's last day before looping over employees.
+ */
+export interface PayrollLegalRates {
+  smlv: number;
+  transportSubsidyThreshold: number;
+  transportSubsidy: number;
+  recargoDominicalFestivo: number;
+}
+
 // ── Output types ─────────────────────────────────────────────────────────────
 
 export interface OvertimeBreakdownItem {

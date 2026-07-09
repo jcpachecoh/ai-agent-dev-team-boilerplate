@@ -568,6 +568,25 @@ const PERMISSION_SEEDS = [
     resource: 'mobile',
     action: 'read',
   },
+  // OS-585 / NOM-06 — Parámetros legales con vigencia (SuperAdmin/Owner only, ver ROLE_PERMISSION_MATRIX)
+  {
+    id: 'cccccccc-0000-0000-0000-000000000027',
+    code: 'configuracion.legal.read',
+    name: 'Leer parámetros legales',
+    description: 'Consultar parámetros legales vigentes y su histórico de vigencias.',
+    module: 'configuracion',
+    resource: 'legal',
+    action: 'read',
+  },
+  {
+    id: 'cccccccc-0000-0000-0000-000000000028',
+    code: 'configuracion.legal.write',
+    name: 'Administrar parámetros legales',
+    description: 'Crear, actualizar y eliminar vigencias de parámetros legales.',
+    module: 'configuracion',
+    resource: 'legal',
+    action: 'write',
+  },
 ] as const;
 
 const MANAGER_SUPERVISOR_PERMISSION_CODES = [
@@ -2322,6 +2341,9 @@ async function main() {
   await seedHistoricalAttendance(prisma);
   await seedMonitorOvertime(prisma);
   await seedSignupUserLocations(prisma, locations);
+
+  const { seedLaborLegalParameters } = await import('./seeds/labor-legal-parameters.seed');
+  await seedLaborLegalParameters(prisma);
 }
 
 main()

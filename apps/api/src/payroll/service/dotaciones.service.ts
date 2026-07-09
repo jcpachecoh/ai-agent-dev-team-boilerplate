@@ -14,15 +14,15 @@ import type {
   MarkNotApplicableData,
   RegisterDotacionDeliveryData,
 } from '../interfaces/dotaciones.interfaces';
-import { SMLV_2025 } from '../payroll.constants';
+import { LaborLegalParametersService } from '../../labor-legal-parameters/service/labor-legal-parameters.service';
 import { DotacionesRepository } from '../repository/dotaciones.repository';
-
-// Salary threshold for dotación eligibility: ≤ 2 SMLV (Art. 230 CST)
-const DOTACION_SALARY_THRESHOLD = SMLV_2025 * 2;
 
 @Injectable()
 export class DotacionesService {
-  constructor(private readonly repo: DotacionesRepository) {}
+  constructor(
+    private readonly repo: DotacionesRepository,
+    private readonly legalParametersService: LaborLegalParametersService,
+  ) {}
 
   async generatePeriodEntitlements(
     tenantId: string,
@@ -30,10 +30,9 @@ export class DotacionesService {
   ): Promise<GenerateEntitlementsResult> {
     this.validatePeriodFormat(period);
 
-    const eligibleEmployees = await this.repo.findEligibleEmployees(
-      tenantId,
-      DOTACION_SALARY_THRESHOLD,
-    );
+    // Salary threshold for dotación eligibility: ≤ 2 SMLV (Art. 230 CST)
+    const smlv = await this.legalParametersService.getValueAt('SMLV', new Date(), tenantId);
+    const eligibleEmployees = await this.repo.findEligibleEmployees(tenantId, smlv * 2);
 
     if (eligibleEmployees.length === 0) {
       return { processed: 0, created: 0, skipped: 0 };

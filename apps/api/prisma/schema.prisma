@@ -2162,3 +2162,35 @@ model DotacionDelivery {
   @@index([deletedAt])
   @@map("dotacion_deliveries")
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// OS-585 / NOM-06 — MOTOR DE PARÁMETROS LEGALES CON VIGENCIA
+// ─────────────────────────────────────────────────────────────────────────────
+// key: ver LABOR_LEGAL_PARAMETER_KEYS (src/labor-legal-parameters/labor-legal-parameters.constants.ts)
+//      — string libre en DB (no enum Prisma) para no requerir migración al agregar una key nueva;
+//      validado en la capa de aplicación (DTO + service).
+//
+// tenantId null = valor global (aplica a todos los tenants salvo que exista override).
+// tenantScope: copia normalizada de tenantId (tenantId ?? 'GLOBAL'), mantenida por el service.
+//   Postgres no garantiza unicidad de (tenantId, key, validFrom) cuando tenantId es NULL —
+//   NULL <> NULL en un unique index, así que dos filas globales con la misma key/validFrom
+//   pasarían el @@unique. tenantScope resuelve esto: siempre tiene un valor no nulo.
+model LaborLegalParameter {
+  id         String    @id @default(cuid())
+  tenantId   String? // null = parámetro global; valor = override de un tenant específico
+  tenantScope String   @default("GLOBAL") // = tenantId ?? 'GLOBAL' — normalizado por el service, ver nota arriba
+  key        String
+  value      Decimal   @db.Decimal(14, 4)
+  validFrom  DateTime
+  validTo    DateTime?
+  source     String? // referencia legal (ej. "Decreto 2481/2025", "Ley 2101/2021")
+  deletedAt  DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@unique([tenantScope, key, validFrom])
+  @@index([key, validFrom])
+  @@index([tenantId, key, validFrom])
+  @@index([deletedAt])
+  @@map("labor_legal_parameters")
+}

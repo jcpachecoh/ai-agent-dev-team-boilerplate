@@ -10,6 +10,7 @@ import { MobileAttendanceRepository } from '../mobile/repository/mobile-attendan
 import { AuthService } from '../../auth/service/auth.service';
 import { UserLocationsService } from '../../locations/service/user-locations.service';
 import { ShiftResolutionService } from '../../turnos/service/shift-resolution.service';
+import { LaborLegalParametersService } from '../../labor-legal-parameters/service/labor-legal-parameters.service';
 
 describe('ASIS-UNI — convivencia APP_MOVIL + MANUAL', () => {
   let service: AttendanceService;
@@ -44,6 +45,10 @@ describe('ASIS-UNI — convivencia APP_MOVIL + MANUAL', () => {
             resolveAllowedLocationIds: jest.fn().mockResolvedValue(null),
             assertLocationAllowed: jest.fn(),
           },
+        },
+        {
+          provide: LaborLegalParametersService,
+          useValue: { getValueAt: jest.fn().mockResolvedValue(21) },
         },
       ],
     }).compile();
