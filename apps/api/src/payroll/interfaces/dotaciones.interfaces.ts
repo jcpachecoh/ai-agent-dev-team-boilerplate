@@ -40,8 +40,17 @@ export interface DotacionWithSupplyItem extends DotacionDelivery {
   supplyItem: SupplyItem | null;
 }
 
+export interface DotacionDeliveryEnriched extends DotacionWithSupplyItem {
+  employeeName: string | null;
+}
+
 export interface DotacionPage {
   edges: DotacionWithSupplyItem[];
+  pageInfo: { hasNextPage: boolean; endCursor: string | null };
+}
+
+export interface DotacionPageEnriched {
+  edges: DotacionDeliveryEnriched[];
   pageInfo: { hasNextPage: boolean; endCursor: string | null };
 }
 

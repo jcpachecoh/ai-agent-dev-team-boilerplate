@@ -73,7 +73,7 @@
 
 .summaryValue {
   font-weight: 600;
-  color: var(--empleado-fg, #e0e0e0);
+  color: var(--empleado-text, #e0e0e0);
 }
 
 .table {
@@ -97,7 +97,7 @@
 .table td {
   padding: 10px 12px;
   border-bottom: 1px solid var(--empleado-border-subtle, #1e1e1e);
-  color: var(--empleado-fg, #e0e0e0);
+  color: var(--empleado-text, #e0e0e0);
   vertical-align: middle;
 }
 
@@ -106,7 +106,7 @@
 }
 
 .table tr:hover td {
-  background: var(--empleado-surface-hover, rgba(255, 255, 255, 0.02));
+  background: var(--empleado-hover, rgba(255, 255, 255, 0.02));
 }
 
 .statusBadge {
@@ -187,7 +187,7 @@
 
 .btnSecondary:hover {
   background: var(--empleado-surface, #111);
-  color: var(--empleado-fg, #e0e0e0);
+  color: var(--empleado-text, #e0e0e0);
 }
 
 .btnSecondary:disabled {

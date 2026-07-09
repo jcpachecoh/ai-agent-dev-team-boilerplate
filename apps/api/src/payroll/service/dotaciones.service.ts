@@ -7,6 +7,7 @@ import type {
   ComplianceReportRow,
   DotacionHistoryFilters,
   DotacionPage,
+  DotacionPageEnriched,
   DotacionPeriodFilters,
   DotacionWithSupplyItem,
   GenerateEntitlementsResult,
@@ -64,7 +65,7 @@ export class DotacionesService {
     return this.repo.findAvailableSupplyItems(tenantId);
   }
 
-  async findByPeriod(filters: DotacionPeriodFilters): Promise<DotacionPage> {
+  async findByPeriod(filters: DotacionPeriodFilters): Promise<DotacionPageEnriched> {
     return this.repo.findByPeriod(filters);
   }
 

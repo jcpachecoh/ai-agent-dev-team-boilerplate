@@ -16,6 +16,7 @@ const DELIVERY_FIELDS = `
   id
   tenantId
   employeeId
+  employeeName
   period
   supplyItemId
   quantity
@@ -132,7 +133,7 @@ export async function fetchDotacionPeriod(
   period: string,
   locationId?: string,
   cursor?: string,
-  take = 50,
+  take = 20,
 ): Promise<DotacionPage> {
   const result = await graphqlRequest<{ dotacionPeriod: DotacionPage }>(DOTACION_PERIOD_QUERY, {
     period,

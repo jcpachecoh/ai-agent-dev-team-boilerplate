@@ -21,6 +21,7 @@ export interface DotacionDelivery {
   createdAt: string;
   updatedAt: string;
   supplyItem: DotacionSupplyItem | null;
+  employeeName: string | null;
 }
 
 export interface DotacionPage {

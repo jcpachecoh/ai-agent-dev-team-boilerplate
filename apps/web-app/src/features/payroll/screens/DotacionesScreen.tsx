@@ -316,7 +316,7 @@ function DotacionRow({
 
   return (
     <tr>
-      <td>{delivery.employeeId}</td>
+      <td>{delivery.employeeName ?? delivery.employeeId}</td>
       <td>
         {delivery.supplyItem ? (
           <>

@@ -65,6 +65,8 @@ export class DotacionDeliveryType {
   @Field() updatedAt!: Date;
   @Field(() => DotacionSupplyItemRefType, { nullable: true })
   supplyItem?: DotacionSupplyItemRefType | null;
+  @Field(() => String, { nullable: true })
+  employeeName?: string | null;
 }
 
 @ObjectType('DotacionPageInfo')

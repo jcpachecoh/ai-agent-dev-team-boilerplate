@@ -3,8 +3,10 @@ import { DotacionStatus, Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../prisma/prisma.service';
 import type {
+  DotacionDeliveryEnriched,
   DotacionHistoryFilters,
   DotacionPage,
+  DotacionPageEnriched,
   DotacionPeriodFilters,
   DotacionWithSupplyItem,
   EligibleEmployee,
@@ -71,7 +73,7 @@ export class DotacionesRepository {
     });
   }
 
-  async findByPeriod(filters: DotacionPeriodFilters): Promise<DotacionPage> {
+  async findByPeriod(filters: DotacionPeriodFilters): Promise<DotacionPageEnriched> {
     const take = (filters.take ?? DEFAULT_PAGE_SIZE) + 1;
 
     const items = await this.prisma.dotacionDelivery.findMany({
@@ -94,8 +96,20 @@ export class DotacionesRepository {
     const hasNextPage = filtered.length > (filters.take ?? DEFAULT_PAGE_SIZE);
     const edges = hasNextPage ? filtered.slice(0, -1) : filtered;
 
+    const employeeIds = edges.map((e) => e.employeeId);
+    const employees = await this.prisma.employeeDetails.findMany({
+      where: { id: { in: employeeIds }, tenantId: filters.tenantId },
+      select: { id: true, name: true },
+    });
+    const nameMap = new Map(employees.map((e) => [e.id, e.name]));
+
+    const enrichedEdges: DotacionDeliveryEnriched[] = edges.map((d) => ({
+      ...d,
+      employeeName: nameMap.get(d.employeeId) ?? null,
+    }));
+
     return {
-      edges,
+      edges: enrichedEdges,
       pageInfo: { hasNextPage, endCursor: edges.at(-1)?.id ?? null },
     };
   }
