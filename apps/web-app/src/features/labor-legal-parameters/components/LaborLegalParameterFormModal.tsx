@@ -9,6 +9,7 @@ import {
   type CreateLaborLegalParameterFormValues,
   type UpdateLaborLegalParameterFormValues,
 } from '../types';
+import styles from './LaborLegalParameterFormModal.module.scss';
 
 interface CreateModeProps {
   mode: 'create';
@@ -154,9 +155,9 @@ export function LaborLegalParameterFormModal(
           <RolFormField label="Parámetro (key) *" htmlFor={keyId} theme={theme}>
             <select
               id={keyId}
+              className={styles.select}
               value={key}
               onChange={(e) => setKey(e.target.value)}
-              style={{ width: '100%' }}
             >
               {LABOR_LEGAL_PARAMETER_KEYS.map((k) => (
                 <option key={k} value={k}>
@@ -223,9 +224,15 @@ export function LaborLegalParameterFormModal(
             onChange={setIsGlobal}
           />
         ) : null}
-        {!isEdit && !isGlobal ? <p>Se creará como override solo para tu tenant.</p> : null}
+        {!isEdit && !isGlobal ? (
+          <p className={styles.infoText}>Se creará como override solo para tu tenant.</p>
+        ) : null}
 
-        {error ? <p role="alert">{error}</p> : null}
+        {error ? (
+          <p role="alert" className={styles.errorText}>
+            {error}
+          </p>
+        ) : null}
       </div>
     </RolModal>
   );

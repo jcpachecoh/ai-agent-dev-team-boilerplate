@@ -117,9 +117,7 @@ export default function LaborLegalParametersView(): JSX.Element {
         <header className={styles.pageHeader}>
           <div>
             <h1>Parámetros legales</h1>
-            <p>
-              Valores legales versionados por vigencia (SMLV, recargos, jornada, etc.) — OS-585.
-            </p>
+            <p>Valores legales versionados por vigencia (SMLV, recargos, jornada, etc.)</p>
           </div>
           <button type="button" className={styles.newBtn} onClick={() => setCreating(true)}>
             <Plus size={14} aria-hidden />
