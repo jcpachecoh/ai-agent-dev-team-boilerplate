@@ -6,7 +6,6 @@ import { DOTACION_CATEGORY_NOMBRE } from '../../supplyitems/constants/dotacion.c
 import type {
   DotacionDeliveryEnriched,
   DotacionHistoryFilters,
-  DotacionPage,
   DotacionPageEnriched,
   DotacionPeriodFilters,
   DotacionWithSupplyItem,
@@ -128,7 +127,7 @@ export class DotacionesRepository {
     return items.filter((i) => eligible.has(i.employeeId));
   }
 
-  async findEmployeeHistory(filters: DotacionHistoryFilters): Promise<DotacionPage> {
+  async findEmployeeHistory(filters: DotacionHistoryFilters): Promise<DotacionPageEnriched> {
     const take = (filters.take ?? DEFAULT_PAGE_SIZE) + 1;
 
     const items = await this.prisma.dotacionDelivery.findMany({
@@ -146,10 +145,49 @@ export class DotacionesRepository {
     const hasNextPage = items.length > (filters.take ?? DEFAULT_PAGE_SIZE);
     const edges = hasNextPage ? items.slice(0, -1) : items;
 
+    const employee = await this.prisma.employeeDetails.findFirst({
+      where: { id: filters.employeeId, tenantId: filters.tenantId },
+      select: { name: true },
+    });
+    const employeeName = employee?.name ?? null;
+
+    const enrichedEdges: DotacionDeliveryEnriched[] = edges.map((d) => ({ ...d, employeeName }));
+
     return {
-      edges,
+      edges: enrichedEdges,
       pageInfo: { hasNextPage, endCursor: edges.at(-1)?.id ?? null },
     };
+  }
+
+  async createDeliveryForEmployee(
+    tenantId: string,
+    employeeId: string,
+    period: string,
+  ): Promise<DotacionWithSupplyItem> {
+    return this.prisma.dotacionDelivery.create({
+      data: {
+        tenantId,
+        employeeId,
+        period,
+        status: DotacionStatus.PENDIENTE,
+        quantity: 1,
+      },
+      include: { supplyItem: true },
+    });
+  }
+
+  async updateDeliveryFields(
+    id: string,
+    data: { deliveredAt?: Date; signedReceiptUrl?: string | null },
+  ): Promise<DotacionWithSupplyItem> {
+    return this.prisma.dotacionDelivery.update({
+      where: { id },
+      data: {
+        ...(data.deliveredAt !== undefined ? { deliveredAt: data.deliveredAt } : {}),
+        ...(data.signedReceiptUrl !== undefined ? { signedReceiptUrl: data.signedReceiptUrl } : {}),
+      },
+      include: { supplyItem: true },
+    });
   }
 
   async findAvailableSupplyItems(tenantId: string) {

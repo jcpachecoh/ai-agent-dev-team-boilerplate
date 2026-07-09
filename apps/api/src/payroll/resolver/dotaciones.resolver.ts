@@ -163,6 +163,20 @@ export class RegisterDotacionDeliveryInput {
   signedReceiptUrl?: string;
 }
 
+@InputType()
+export class UpdateDotacionDeliveryInput {
+  @Field(() => Date, { nullable: true })
+  @IsOptional()
+  @IsDate()
+  @Type(() => Date)
+  deliveredAt?: Date;
+
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsString()
+  signedReceiptUrl?: string | null;
+}
+
 // ── Resolver ──────────────────────────────────────────────────────────────────
 
 @Resolver()
@@ -253,6 +267,33 @@ export class DotacionesResolver {
   ): Promise<DotacionDeliveryType> {
     const tenantId = getTenantIdFromContext(ctx);
     return this.dotacionesService.markNotApplicable({ id, tenantId, reason });
+  }
+
+  @Mutation(() => DotacionDeliveryType)
+  @Roles(...PAYROLL_WRITE_ROLES)
+  async createDotacionForEmployee(
+    @Context() ctx: GqlRequestContext,
+    @Args('employeeId', { type: () => ID }) employeeId: string,
+    @Args('period') period: string,
+  ): Promise<DotacionDeliveryType> {
+    const tenantId = getTenantIdFromContext(ctx);
+    return this.dotacionesService.createForEmployee({ tenantId, employeeId, period });
+  }
+
+  @Mutation(() => DotacionDeliveryType)
+  @Roles(...PAYROLL_WRITE_ROLES)
+  async updateDotacionDelivery(
+    @Context() ctx: GqlRequestContext,
+    @Args('id', { type: () => ID }) id: string,
+    @Args('input') input: UpdateDotacionDeliveryInput,
+  ): Promise<DotacionDeliveryType> {
+    const tenantId = getTenantIdFromContext(ctx);
+    return this.dotacionesService.updateDelivery({
+      id,
+      tenantId,
+      deliveredAt: input.deliveredAt,
+      signedReceiptUrl: input.signedReceiptUrl,
+    });
   }
 
   @Mutation(() => BulkAssignResultType)

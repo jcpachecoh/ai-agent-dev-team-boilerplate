@@ -2159,9 +2159,9 @@ model DotacionDelivery {
 
   supplyItem SupplyItem? @relation(fields: [supplyItemId], references: [id])
 
-  @@unique([employeeId, period])
   @@index([tenantId])
   @@index([employeeId])
+  @@index([employeeId, period])
   @@index([supplyItemId])
   @@index([tenantId, period])
   @@index([deletedAt])

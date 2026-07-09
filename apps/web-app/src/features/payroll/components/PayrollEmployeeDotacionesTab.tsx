@@ -1,7 +1,14 @@
+import { useState } from 'react';
+
+import { canWritePayrollEmployee } from '@/config/rbac.config';
+import { useMe } from '@/features/auth/hooks/useMe';
+import { getRoleCodeFromToken } from '@/lib/auth-token';
+
 import { useEmployeeDotacionHistoryQuery } from '../hooks/useDotacionesQuery';
 import { usePayrollEmployeeQuery } from '../hooks/usePayrollEmployeeQuery';
 import { DOTACION_STATUS_LABELS } from '../types/dotaciones.types';
 import type { DotacionDelivery } from '../types/dotaciones.types';
+import { EmployeeDotacionModal } from './EmployeeDotacionModal';
 import { PayrollEmployeeProfileTabLoading } from './PayrollEmployeeProfileTabLoading';
 import styles from './PayrollEmployeeDotacionesTab.module.scss';
 
@@ -28,9 +35,16 @@ function StatusBadge({ status }: { status: DotacionDelivery['status'] }): React.
   return <span className={`${styles.badge} ${cls}`}>{DOTACION_STATUS_LABELS[status]}</span>;
 }
 
-export function PayrollEmployeeDotacionesTab({ userId, theme: _theme }: Props): React.JSX.Element {
+export function PayrollEmployeeDotacionesTab({ userId, theme }: Props): React.JSX.Element {
+  const { data: me } = useMe();
+  const roleCode = me?.roleCode ?? getRoleCodeFromToken();
+  const canWrite = canWritePayrollEmployee(roleCode);
+
+  const [modalOpen, setModalOpen] = useState(false);
+
   const employeeQuery = usePayrollEmployeeQuery(userId);
   const employeeId = employeeQuery.data?.id;
+  const employeeName = employeeQuery.data?.name ?? '';
 
   const historyQuery = useEmployeeDotacionHistoryQuery(employeeId);
 
@@ -41,66 +55,84 @@ export function PayrollEmployeeDotacionesTab({ userId, theme: _theme }: Props): 
   const deliveries = historyQuery.data?.edges ?? [];
 
   return (
-    <div className={styles.container}>
-      <div className={styles.header}>
-        <span className={styles.title}>Historial de dotación</span>
-      </div>
-
-      {deliveries.length === 0 ? (
-        <div className={styles.empty}>Sin registros de dotación</div>
-      ) : (
-        <div className={styles.list}>
-          {deliveries.map((delivery) => (
-            <div key={delivery.id} className={styles.card}>
-              <div className={styles.cardMain}>
-                <span className={styles.cardPeriod}>{delivery.period}</span>
-                {delivery.supplyItem ? (
-                  <span className={styles.cardItem}>
-                    {delivery.supplyItem.nombre}
-                    {delivery.supplyItem.talla ? ` · Talla ${delivery.supplyItem.talla}` : ''}
-                  </span>
-                ) : (
-                  <span
-                    className={styles.cardItem}
-                    style={{ color: 'var(--empleado-muted, #888)' }}
-                  >
-                    Sin ítem asignado
-                  </span>
-                )}
-                <span className={styles.cardMeta}>
-                  {delivery.deliveredAt
-                    ? `Entregado ${formatDate(delivery.deliveredAt)} · Cant. ${delivery.quantity}`
-                    : `Cantidad: ${delivery.quantity}`}
-                  {delivery.noAplicaReason ? ` · ${delivery.noAplicaReason}` : ''}
-                </span>
-                {delivery.signedReceiptUrl ? (
-                  <a
-                    className={styles.cardReceipt}
-                    href={delivery.signedReceiptUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    Ver comprobante
-                  </a>
-                ) : null}
-              </div>
-              <StatusBadge status={delivery.status} />
-            </div>
-          ))}
-        </div>
-      )}
-
-      {historyQuery.data?.pageInfo.hasNextPage ? (
-        <div className={styles.loadMore}>
-          <button
-            type="button"
-            className={styles.btnMore}
-            onClick={() => void historyQuery.refetch()}
-          >
-            Cargar más
-          </button>
-        </div>
+    <>
+      {employeeId ? (
+        <EmployeeDotacionModal
+          open={modalOpen}
+          employeeId={employeeId}
+          employeeName={employeeName}
+          theme={theme}
+          onClose={() => setModalOpen(false)}
+        />
       ) : null}
-    </div>
+
+      <div className={styles.container}>
+        <div className={styles.header}>
+          <span className={styles.title}>Historial de dotación</span>
+          {canWrite && employeeId ? (
+            <button
+              type="button"
+              className={styles.btnGestionar}
+              onClick={() => setModalOpen(true)}
+            >
+              Gestionar dotaciones
+            </button>
+          ) : null}
+        </div>
+
+        {deliveries.length === 0 ? (
+          <div className={styles.empty}>Sin registros de dotación</div>
+        ) : (
+          <div className={styles.list}>
+            {deliveries.map((delivery) => (
+              <div key={delivery.id} className={styles.card}>
+                <div className={styles.cardMain}>
+                  <span className={styles.cardPeriod}>{delivery.period}</span>
+                  {delivery.supplyItem ? (
+                    <span className={styles.cardItem}>
+                      {delivery.supplyItem.nombre}
+                      {delivery.supplyItem.talla ? ` · Talla ${delivery.supplyItem.talla}` : ''}
+                    </span>
+                  ) : (
+                    <span className={`${styles.cardItem} ${styles.cardItemMuted}`}>
+                      Sin ítem asignado
+                    </span>
+                  )}
+                  <span className={styles.cardMeta}>
+                    {delivery.deliveredAt
+                      ? `Entregado ${formatDate(delivery.deliveredAt)} · Cant. ${delivery.quantity}`
+                      : `Cantidad: ${delivery.quantity}`}
+                    {delivery.noAplicaReason ? ` · ${delivery.noAplicaReason}` : ''}
+                  </span>
+                  {delivery.signedReceiptUrl ? (
+                    <a
+                      className={styles.cardReceipt}
+                      href={delivery.signedReceiptUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Ver comprobante
+                    </a>
+                  ) : null}
+                </div>
+                <StatusBadge status={delivery.status} />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {historyQuery.data?.pageInfo.hasNextPage ? (
+          <div className={styles.loadMore}>
+            <button
+              type="button"
+              className={styles.btnMore}
+              onClick={() => void historyQuery.refetch()}
+            >
+              Cargar más
+            </button>
+          </div>
+        ) : null}
+      </div>
+    </>
   );
 }

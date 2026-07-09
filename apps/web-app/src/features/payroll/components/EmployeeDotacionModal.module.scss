@@ -1,0 +1,277 @@
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sectionTitle {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--receta-muted);
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--receta-border);
+}
+
+// ── Add row ───────────────────────────────────────────────────────────────────
+
+.addRow {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: end;
+}
+
+// ── Pending rows ──────────────────────────────────────────────────────────────
+
+.pendingRow {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--receta-border);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.rowHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.periodLabel {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--receta-text);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.625rem;
+  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.badgePendiente {
+  background: rgba(245, 158, 11, 0.12);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.badgeEntregada {
+  background: rgba(34, 197, 94, 0.1);
+  color: #22c55e;
+  border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+.badgeNoAplica {
+  background: rgba(148, 163, 184, 0.08);
+  color: #64748b;
+  border: 1px solid rgba(148, 163, 184, 0.15);
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: 1fr 80px 130px;
+  gap: 8px;
+  align-items: end;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.label {
+  color: var(--receta-muted);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.input {
+  min-height: 36px;
+  width: 100%;
+  padding: 0.4rem 0.65rem;
+  border: 1px solid var(--receta-border);
+  border-radius: 4px;
+  background: var(--receta-input);
+  color: var(--receta-text);
+  font-size: 0.8125rem;
+  box-sizing: border-box;
+
+  &::placeholder {
+    color: var(--receta-muted);
+  }
+
+  &:focus-visible {
+    outline: 2px solid rgba(245, 158, 11, 0.65);
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.receiptRow {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: end;
+  margin-top: 4px;
+}
+
+.error {
+  font-size: 0.6875rem;
+  color: #f87171;
+  margin-top: 2px;
+}
+
+.stockHint {
+  font-size: 0.625rem;
+  font-family: 'IBM Plex Mono', monospace;
+  color: var(--receta-muted);
+}
+
+.stockLow {
+  color: #f59e0b;
+}
+
+.btnRegister {
+  min-height: 36px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 4px;
+  background: #f59e0b;
+  color: #000;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+// ── Delivered rows ────────────────────────────────────────────────────────────
+
+.deliveredRow {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--receta-border);
+  border-radius: 6px;
+}
+
+.deliveredInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.deliveredItem {
+  font-size: 0.8125rem;
+  color: var(--receta-text);
+  font-weight: 500;
+}
+
+.deliveredMeta {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.625rem;
+  color: var(--receta-muted);
+}
+
+.editForm {
+  display: grid;
+  grid-template-columns: 130px 1fr auto;
+  gap: 8px;
+  align-items: end;
+  padding-top: 8px;
+  border-top: 1px solid var(--receta-border);
+}
+
+.btnEdit {
+  background: none;
+  border: none;
+  padding: 2px 6px;
+  color: var(--receta-muted);
+  cursor: pointer;
+  font-size: 0.75rem;
+  border-radius: 3px;
+
+  &:hover {
+    color: var(--receta-text);
+    background: rgba(255, 255, 255, 0.06);
+  }
+}
+
+.btnSave {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid #f59e0b;
+  border-radius: 4px;
+  background: transparent;
+  color: #f59e0b;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+// ── Read-only rows ────────────────────────────────────────────────────────────
+
+.naRow {
+  padding: 10px 12px;
+  border: 1px solid var(--receta-border);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  opacity: 0.7;
+}
+
+.naReason {
+  font-size: 0.75rem;
+  color: var(--receta-muted);
+  font-style: italic;
+}
+
+.empty {
+  padding: 12px;
+  text-align: center;
+  font-size: 0.8125rem;
+  color: var(--receta-muted);
+  border: 1px dashed var(--receta-border);
+  border-radius: 6px;
+}

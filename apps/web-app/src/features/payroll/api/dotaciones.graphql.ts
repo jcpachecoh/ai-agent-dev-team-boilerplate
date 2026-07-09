@@ -116,6 +116,22 @@ const BULK_ASSIGN_BY_POSITION_MUTATION = `
   }
 `;
 
+const CREATE_FOR_EMPLOYEE_MUTATION = `
+  mutation CreateDotacionForEmployee($employeeId: ID!, $period: String!) {
+    createDotacionForEmployee(employeeId: $employeeId, period: $period) {
+      ${DELIVERY_FIELDS}
+    }
+  }
+`;
+
+const UPDATE_DELIVERY_MUTATION = `
+  mutation UpdateDotacionDelivery($id: ID!, $input: UpdateDotacionDeliveryInput!) {
+    updateDotacionDelivery(id: $id, input: $input) {
+      ${DELIVERY_FIELDS}
+    }
+  }
+`;
+
 const MARK_NOT_APPLICABLE_MUTATION = `
   mutation MarkDotacionNotApplicable($id: ID!, $reason: String) {
     markDotacionNotApplicable(id: $id, reason: $reason) {
@@ -205,6 +221,28 @@ export async function bulkAssignDotacionByPosition(
     { input },
   );
   return result.bulkAssignDotacionByPosition;
+}
+
+export async function createDotacionForEmployee(
+  employeeId: string,
+  period: string,
+): Promise<DotacionDelivery> {
+  const result = await graphqlRequest<{ createDotacionForEmployee: DotacionDelivery }>(
+    CREATE_FOR_EMPLOYEE_MUTATION,
+    { employeeId, period },
+  );
+  return result.createDotacionForEmployee;
+}
+
+export async function updateDotacionDelivery(
+  id: string,
+  input: { deliveredAt?: string; signedReceiptUrl?: string | null },
+): Promise<DotacionDelivery> {
+  const result = await graphqlRequest<{ updateDotacionDelivery: DotacionDelivery }>(
+    UPDATE_DELIVERY_MUTATION,
+    { id, input },
+  );
+  return result.updateDotacionDelivery;
 }
 
 export async function markDotacionNotApplicable(
