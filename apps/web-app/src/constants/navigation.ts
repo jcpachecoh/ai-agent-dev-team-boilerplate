@@ -21,6 +21,7 @@ import {
   Monitor,
   Package,
   PackageCheck,
+  Scale,
   Settings,
   Shield,
   Truck,
@@ -238,6 +239,12 @@ export const navigationItems: NavItem[] = [
         path: '/payroll/dotaciones',
         icon: PackageCheck,
       },
+      {
+        id: 'payroll-legal-parameters',
+        label: 'Parámetros legales',
+        path: '/payroll/legal-parameters',
+        icon: Scale,
+      },
     ],
   },
   {
@@ -254,13 +261,6 @@ export const navigationItems: NavItem[] = [
       },
       { id: 'empresa-sedes', label: 'Sedes', path: '/empresa/sedes', icon: MapPin },
     ],
-  },
-  {
-    id: 'settings',
-    label: 'Configuración',
-    path: '/settings',
-    icon: Settings,
-    accent: 'teal',
   },
 ];
 
@@ -294,6 +294,7 @@ const routeLabels: Record<string, string> = {
   '/payroll/positions': 'Gestión de Cargos',
   '/payroll/salaries': 'Salarios',
   '/payroll/dotaciones': 'Dotación',
+  '/payroll/legal-parameters': 'Parámetros legales',
   '/asistencia': 'Panel de control',
   '/asistencia/colaboradores': 'Colaboradores',
   '/asistencia/turnos': 'Turnos',
