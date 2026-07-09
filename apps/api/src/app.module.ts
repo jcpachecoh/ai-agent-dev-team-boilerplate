@@ -38,6 +38,7 @@ import { TurnosModule } from './turnos/turnos.module';
 import { SupplierDocumentsModule } from './supplier-documents/supplier-documents.module';
 const conditionalModules = process.env.NODE_ENV !== 'production' ? [DevModule] : [];
 import { ReportsModule } from './reports/reports.module';
+import { LaborLegalParametersModule } from './labor-legal-parameters/labor-legal-parameters.module';
 
 @Module({
   imports: [
@@ -73,6 +74,7 @@ import { ReportsModule } from './reports/reports.module';
     TurnosModule,
     SupplierDocumentsModule,
     ReportsModule,
+    LaborLegalParametersModule,
   ],
   controllers: [AppController],
   providers: [

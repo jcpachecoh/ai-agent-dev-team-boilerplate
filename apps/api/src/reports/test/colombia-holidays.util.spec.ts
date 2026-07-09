@@ -1,8 +1,4 @@
-import {
-  getColombianHolidays,
-  getMaxWeeklyMinutesForYear,
-  isColombianHoliday,
-} from '../service/colombia-holidays.util';
+import { getColombianHolidays, isColombianHoliday } from '../service/colombia-holidays.util';
 
 describe('isColombianHoliday', () => {
   // ── Fixed holidays — same date every year ─────────────────────────────────
@@ -159,30 +155,5 @@ describe('getColombianHolidays', () => {
 
     // Assert — re-fetching returns original length
     expect(getColombianHolidays(2025)).toHaveLength(originalLength);
-  });
-});
-
-// ── getMaxWeeklyMinutesForYear ─────────────────────────────────────────────
-
-describe('getMaxWeeklyMinutesForYear', () => {
-  it('returns 46 * 60 = 2760 for 2025', () => {
-    expect(getMaxWeeklyMinutesForYear(2025)).toBe(46 * 60);
-  });
-
-  it('returns 44 * 60 = 2640 for 2026', () => {
-    expect(getMaxWeeklyMinutesForYear(2026)).toBe(44 * 60);
-  });
-
-  it('returns 42 * 60 = 2520 for 2027', () => {
-    expect(getMaxWeeklyMinutesForYear(2027)).toBe(42 * 60);
-  });
-
-  it('returns 42 * 60 = 2520 for years beyond 2027', () => {
-    expect(getMaxWeeklyMinutesForYear(2030)).toBe(42 * 60);
-    expect(getMaxWeeklyMinutesForYear(2099)).toBe(42 * 60);
-  });
-
-  it('returns 46 * 60 for years before 2025 (uses 2025 floor)', () => {
-    expect(getMaxWeeklyMinutesForYear(2024)).toBe(46 * 60);
   });
 });

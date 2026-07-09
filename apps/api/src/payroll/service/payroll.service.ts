@@ -16,11 +16,8 @@ import {
 } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
-import {
-  SMLV_2025,
-  TRANSPORT_SUBSIDY_THRESHOLD,
-  DEFAULT_EMPLOYEE_BOOTSTRAP_ROLE_CODE,
-} from '../payroll.constants';
+import { DEFAULT_EMPLOYEE_BOOTSTRAP_ROLE_CODE } from '../payroll.constants';
+import { LaborLegalParametersService } from '../../labor-legal-parameters/service/labor-legal-parameters.service';
 import { PayrollRepository } from '../repository/payroll.repository';
 import { EmployeePositionsService } from './employee-positions.service';
 import { IPayrollService } from '../interfaces/payroll.interfaces';
@@ -55,6 +52,7 @@ export class PayrollService implements IPayrollService {
     private readonly auditService: AuditService,
     private readonly socialProfileService: EmployeeSocialProfileService,
     private readonly userLocationsService: UserLocationsService,
+    private readonly legalParametersService: LaborLegalParametersService,
   ) {}
 
   /** Sedes permitidas para lectura: null = sin restricción; valida `requestedLocationId` si se pidió una sede puntual. */
@@ -78,7 +76,7 @@ export class PayrollService implements IPayrollService {
     data: any,
     changedBy?: string,
   ): Promise<EmployeeDetails & { user: User }> {
-    this.validateColombiaLaw(tenantId, data);
+    await this.validateColombiaLaw(tenantId, data);
 
     const linkedUserId = await this.resolveLinkedUserId(tenantId, data);
     await this.resolvePositionForEmployee(tenantId, data);
@@ -91,7 +89,7 @@ export class PayrollService implements IPayrollService {
 
     const roleId = await this.resolveRoleIdForCreate(tenantId, data.roleId, linkedUserId);
 
-    const hasTransportSubsidy = this.calculateTransportSubsidy(data.salaryAmount);
+    const hasTransportSubsidy = await this.calculateTransportSubsidy(tenantId, data.salaryAmount);
     const passwordHash =
       linkedUserId === undefined
         ? await bcrypt.hash(crypto.randomBytes(16).toString('hex'), SALT_ROUNDS)
@@ -285,8 +283,11 @@ export class PayrollService implements IPayrollService {
     }
 
     if (data.salaryAmount !== undefined) {
-      this.validateSalary(tenantId, { ...employee, ...data }, userId);
-      data.hasTransportSubsidy = this.calculateTransportSubsidy(Number(data.salaryAmount));
+      await this.validateSalary(tenantId, { ...employee, ...data }, userId);
+      data.hasTransportSubsidy = await this.calculateTransportSubsidy(
+        tenantId,
+        Number(data.salaryAmount),
+      );
     }
 
     if (data.contractType !== undefined || data.contractEnd !== undefined) {
@@ -407,40 +408,37 @@ export class PayrollService implements IPayrollService {
     }
   }
 
-  private validateColombiaLaw(tenantId: string, data: any, userId?: string) {
-    this.validateSalary(tenantId, data, userId);
+  private async validateColombiaLaw(tenantId: string, data: any, userId?: string): Promise<void> {
+    await this.validateSalary(tenantId, data, userId);
     this.validateContractDates(tenantId, data, userId);
   }
 
-  private validateSalary(tenantId: string, data: any, userId?: string) {
+  private async validateSalary(tenantId: string, data: any, userId?: string): Promise<void> {
     const amount = Number(data.salaryAmount);
+    const smlv = await this.legalParametersService.getValueAt('SMLV', new Date(), tenantId);
 
     if (amount <= 0) {
       this.logAndThrow(tenantId, 'Salary amount must be greater than 0', userId);
     }
 
-    if (data.contractType === EmployeeContractType.PRESTACION && amount < SMLV_2025) {
-      this.logAndThrow(
-        tenantId,
-        `PRESTACION contract must have at least 1 SMLV (${SMLV_2025})`,
-        userId,
-      );
+    if (data.contractType === EmployeeContractType.PRESTACION && amount < smlv) {
+      this.logAndThrow(tenantId, `PRESTACION contract must have at least 1 SMLV (${smlv})`, userId);
     }
 
     if (data.contractType === EmployeeContractType.APRENDIZAJE) {
-      if (amount < SMLV_2025 * 0.5 || amount > SMLV_2025) {
+      if (amount < smlv * 0.5 || amount > smlv) {
         this.logAndThrow(
           tenantId,
-          `APRENDIZAJE contract must be between 0.5 and 1 SMLV (${SMLV_2025 * 0.5} - ${SMLV_2025})`,
+          `APRENDIZAJE contract must be between 0.5 and 1 SMLV (${smlv * 0.5} - ${smlv})`,
           userId,
         );
       }
     }
 
-    if (data.salaryType === SalaryType.INTEGRAL && amount < SMLV_2025 * 13) {
+    if (data.salaryType === SalaryType.INTEGRAL && amount < smlv * 13) {
       this.logAndThrow(
         tenantId,
-        `INTEGRAL salary type must have at least 13 SMLV (${SMLV_2025 * 13})`,
+        `INTEGRAL salary type must have at least 13 SMLV (${smlv * 13})`,
         userId,
       );
     }
@@ -472,8 +470,12 @@ export class PayrollService implements IPayrollService {
     }
   }
 
-  private calculateTransportSubsidy(salaryAmount: number): boolean {
-    return salaryAmount <= TRANSPORT_SUBSIDY_THRESHOLD;
+  private async calculateTransportSubsidy(
+    tenantId: string,
+    salaryAmount: number,
+  ): Promise<boolean> {
+    const smlv = await this.legalParametersService.getValueAt('SMLV', new Date(), tenantId);
+    return salaryAmount <= smlv * 2;
   }
 
   private async syncBeneficiaries(

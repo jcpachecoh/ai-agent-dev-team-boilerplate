@@ -22,6 +22,7 @@ import { StorageService } from '../../storage/service/storage.service';
 import { AuditService } from '../../audit/service/audit.service';
 import { EmployeeSocialProfileService } from '../../employee-social-profile/service/employee-social-profile.service';
 import { UserLocationsService } from '../../locations/service/user-locations.service';
+import { LaborLegalParametersService } from '../../labor-legal-parameters/service/labor-legal-parameters.service';
 import { SMLV_2025 } from '../payroll.constants';
 import { StorageDomain } from '../../storage/enums/storage.enums';
 
@@ -143,6 +144,14 @@ describe('PayrollService', () => {
           useValue: {
             resolveAllowedLocationIds: jest.fn().mockResolvedValue(null),
             assertLocationAllowed: jest.fn(),
+          },
+        },
+        {
+          provide: LaborLegalParametersService,
+          useValue: {
+            // Reproduces the pre-OS-585 hardcoded SMLV_2025 constant so existing
+            // salary-validation and transport-subsidy assertions keep passing unchanged.
+            getValueAt: jest.fn().mockResolvedValue(SMLV_2025),
           },
         },
       ],

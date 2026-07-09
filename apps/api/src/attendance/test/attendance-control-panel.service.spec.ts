@@ -91,6 +91,7 @@ describe('AttendanceControlPanelService', () => {
     service = new AttendanceControlPanelService(
       repositoryMock as never,
       userLocationsServiceMock as never,
+      { getValueAt: jest.fn().mockResolvedValue(21) } as never,
     );
     jest.clearAllMocks();
     userLocationsServiceMock.resolveAllowedLocationIds.mockResolvedValue(null);

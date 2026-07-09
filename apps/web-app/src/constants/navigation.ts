@@ -255,6 +255,13 @@ export const navigationItems: NavItem[] = [
       { id: 'empresa-sedes', label: 'Sedes', path: '/empresa/sedes', icon: MapPin },
     ],
   },
+  {
+    id: 'settings',
+    label: 'Configuración',
+    path: '/settings',
+    icon: Settings,
+    accent: 'teal',
+  },
 ];
 
 const routeLabels: Record<string, string> = {

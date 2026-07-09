@@ -4,6 +4,7 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { AuditModule } from '../audit/audit.module';
 import { EmployeeSocialProfileModule } from '../employee-social-profile/employee-social-profile.module';
 import { LocationsModule } from '../locations/locations.module';
+import { LaborLegalParametersModule } from '../labor-legal-parameters/labor-legal-parameters.module';
 import { PayrollController } from './controller/payroll.controller';
 import { EmployeeCatalogController } from './controller/employee-catalog.controller';
 import { EmployeePositionsController } from './controller/employee-positions.controller';
@@ -29,7 +30,14 @@ import { DotacionesResolver } from './resolver/dotaciones.resolver';
 import { PayrollCalculationService } from './service/payroll-calculation.service';
 
 @Module({
-  imports: [PrismaModule, AuthModule, AuditModule, EmployeeSocialProfileModule, LocationsModule],
+  imports: [
+    PrismaModule,
+    AuthModule,
+    AuditModule,
+    EmployeeSocialProfileModule,
+    LocationsModule,
+    LaborLegalParametersModule,
+  ],
   controllers: [
     PayrollController,
     EmployeeCatalogController,

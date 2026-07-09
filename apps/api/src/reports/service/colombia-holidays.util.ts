@@ -119,26 +119,6 @@ export function isColombianHoliday(date: Date | string): boolean {
   return HOLIDAY_SETS.get(year)?.has(dateStr) ?? false;
 }
 
-/**
- * Returns the maximum weekly working minutes (total jornada) under Ley 2101/2021.
- *
- * Schedule per Ley 2101/2021 (progressive reduction):
- *   ≤2025 → 46h (2760 min)
- *   2026  → 44h (2640 min)
- *   2027+ → 42h (2520 min)
- *
- * IMPORTANT — two separate weekly limits exist; this function covers only one of them:
- *   • Total jornada cap (THIS function) — Ley 2101/2021: total hours worked per week.
- *   • Overtime-only cap (WEEKLY_OVERTIME_LIMIT_MINUTES = 720 min) — CST art. 168:
- *     maximum 12h of extra hours per week on top of ordinary schedule.
- *     That cap is enforced separately in checkExceededOvertimeLimit (reports.service.ts)
- *     and must NOT be replaced by this function.
- *
- * Currently unused by NOM-04 MVP; reserved for future weekly working-time alert
- * (e.g., an attendanceReport field "exceededMaxJornada" based on total minutes worked per week).
- */
-export function getMaxWeeklyMinutesForYear(year: number): number {
-  if (year <= 2025) return 46 * 60; // 2760
-  if (year === 2026) return 44 * 60; // 2640
-  return 42 * 60; // 2520 — 2027+
-}
+// getMaxWeeklyMinutesForYear removed (OS-585) — was dead code (never wired into a real flow)
+// and legally imprecise (calendar-year boundaries instead of Ley 2101/2021's July 15 steps).
+// Replacement: LaborLegalParametersService.getValueAt('JORNADA_MAX_SEMANAL', date, tenantId).

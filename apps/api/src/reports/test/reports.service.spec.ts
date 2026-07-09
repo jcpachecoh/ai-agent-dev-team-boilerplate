@@ -10,6 +10,7 @@ import {
 import { Decimal } from '@prisma/client/runtime/library';
 import { SMLV_2025, TRANSPORT_SUBSIDY_2025 } from '../../payroll/payroll.constants';
 import { UserLocationsService } from '../../locations/service/user-locations.service';
+import { LaborLegalParametersService } from '../../labor-legal-parameters/service/labor-legal-parameters.service';
 import { PayrollCalculationService } from '../../payroll/service/payroll-calculation.service';
 import { EmployeeWithUserAndLocation, ReportsRepository } from '../repository/reports.repository';
 import { PayrollRepository } from '../../payroll/repository/payroll.repository';
@@ -23,6 +24,23 @@ import { MAX_EXPORT_ROWS } from '../reports.constants';
 const TENANT_ID = 'tenant-1';
 const PERIOD_JUNE_2025 = '2025-06';
 const OWNER_ACTOR = { userId: 'user-owner', roleCode: 'OWNER' };
+
+// Reproduces the pre-OS-585 hardcoded constants (NOCTURNO_START_HOUR=21,
+// TRANSPORT_SUBSIDY_2025=162000, FESTIVO_DIURNO surcharge=0.75, SMLV_2025) as values
+// resolved from a preloaded LegalParameterSnapshot, so existing nocturno/festivo/payroll
+// assertions keep passing unchanged.
+const LEGAL_PARAM_VALUES: Record<string, number> = {
+  SMLV: SMLV_2025,
+  AUXILIO_TRANSPORTE: TRANSPORT_SUBSIDY_2025,
+  RECARGO_DOMINICAL_FESTIVO: 0.75,
+  HORARIO_NOCTURNO_INICIO: 21,
+};
+
+function makeLegalSnapshot() {
+  return {
+    numberAt: jest.fn((key: string) => LEGAL_PARAM_VALUES[key]),
+  };
+}
 
 /** workDate stored as UTC midnight for the Colombia calendar date */
 function workDate(dateStr: string): Date {
@@ -222,6 +240,12 @@ describe('ReportsService', () => {
           useValue: {
             resolveAllowedLocationIds: jest.fn().mockResolvedValue(null),
             assertLocationAllowed: jest.fn(),
+          },
+        },
+        {
+          provide: LaborLegalParametersService,
+          useValue: {
+            preload: jest.fn().mockResolvedValue(makeLegalSnapshot()),
           },
         },
       ],

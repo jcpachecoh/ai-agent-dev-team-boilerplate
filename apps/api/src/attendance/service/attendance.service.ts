@@ -50,6 +50,7 @@ import { validateGeofence } from '../utils/attendance-geofence.util';
 import { AuthService } from '../../auth/service/auth.service';
 import { UserLocationsService } from '../../locations/service/user-locations.service';
 import { ShiftResolutionService } from '../../turnos/service/shift-resolution.service';
+import { LaborLegalParametersService } from '../../labor-legal-parameters/service/labor-legal-parameters.service';
 
 // Kiosk-auth security model:
 //   • Tenant scope: tenantId required on every call
@@ -72,6 +73,7 @@ export class AttendanceService implements IAttendanceService {
     private readonly authService: AuthService,
     private readonly shiftResolutionService: ShiftResolutionService,
     private readonly userLocationsService: UserLocationsService,
+    private readonly legalParametersService: LaborLegalParametersService,
   ) {}
 
   async kioskAuth(dto: KioskAuthInput, tenantId: string): Promise<KioskAuthResult> {
@@ -196,7 +198,12 @@ export class AttendanceService implements IAttendanceService {
       openEntry.workDate,
     );
 
-    const summary = calculateDaySummary(allLogsForDay, now);
+    const nocturnoStartHour = await this.legalParametersService.getValueAt(
+      'HORARIO_NOCTURNO_INICIO',
+      now,
+      tenantId,
+    );
+    const summary = calculateDaySummary(allLogsForDay, now, nocturnoStartHour);
 
     this.logger.log(
       `EXIT: employeeId=${employee.id} workDate=${openEntry.workDate.toISOString()} totalMin=${summary.totalMinutes}`,
@@ -381,7 +388,12 @@ export class AttendanceService implements IAttendanceService {
 
     const workDate = date ? normalizeWorkDate(date) : normalizeWorkDate(new Date());
     const logs = await this.attendanceRepository.findAllForDay(employee.id, workDate);
-    const summary = calculateDaySummary(logs, new Date());
+    const nocturnoStartHour = await this.legalParametersService.getValueAt(
+      'HORARIO_NOCTURNO_INICIO',
+      workDate,
+      tenantId,
+    );
+    const summary = calculateDaySummary(logs, new Date(), nocturnoStartHour);
 
     return {
       employeeId: employee.id,

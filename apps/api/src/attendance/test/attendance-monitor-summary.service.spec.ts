@@ -94,6 +94,7 @@ describe('AttendanceMonitorSummaryService', () => {
     service = new AttendanceMonitorSummaryService(
       repositoryMock as never,
       userLocationsServiceMock as never,
+      { getValueAt: jest.fn().mockResolvedValue(21) } as never,
     );
     jest.clearAllMocks();
     userLocationsServiceMock.resolveAllowedLocationIds.mockResolvedValue(null);

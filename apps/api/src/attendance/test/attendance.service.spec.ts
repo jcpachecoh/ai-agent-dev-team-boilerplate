@@ -20,6 +20,7 @@ import { MobileAttendanceRepository } from '../mobile/repository/mobile-attendan
 import { AuthService } from '../../auth/service/auth.service';
 import { UserLocationsService } from '../../locations/service/user-locations.service';
 import { ShiftResolutionService } from '../../turnos/service/shift-resolution.service';
+import { LaborLegalParametersService } from '../../labor-legal-parameters/service/labor-legal-parameters.service';
 
 const shiftResolutionMock = {
   resolveForDay: jest.fn().mockResolvedValue({ kind: 'NONE', targetMinutes: 0 }),
@@ -129,6 +130,12 @@ const userLocationsServiceMock = {
   assertLocationAllowed: jest.fn(),
 };
 
+// HORARIO_NOCTURNO_INICIO — resolves to 21 (the old NOCTURNO_START_HOUR default) so existing
+// nocturno-classification assertions keep passing unchanged.
+const legalParametersServiceMock = {
+  getValueAt: jest.fn().mockResolvedValue(21),
+};
+
 const ACTOR = { sub: 'user-001', roleCode: 'OWNER' };
 
 describe('AttendanceService', () => {
@@ -143,6 +150,7 @@ describe('AttendanceService', () => {
         { provide: AuthService, useValue: authServiceMock },
         { provide: ShiftResolutionService, useValue: shiftResolutionMock },
         { provide: UserLocationsService, useValue: userLocationsServiceMock },
+        { provide: LaborLegalParametersService, useValue: legalParametersServiceMock },
       ],
     }).compile();
 

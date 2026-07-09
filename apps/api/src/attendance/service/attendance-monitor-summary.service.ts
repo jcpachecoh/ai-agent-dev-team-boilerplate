@@ -9,6 +9,7 @@ import type {
 } from '../interfaces/attendance.interfaces';
 import { AttendanceRepository } from '../repository/attendance.repository';
 import { UserLocationsService } from '../../locations/service/user-locations.service';
+import { LaborLegalParametersService } from '../../labor-legal-parameters/service/labor-legal-parameters.service';
 import {
   calculateDaySummary,
   getBogotaHour,
@@ -41,6 +42,7 @@ export class AttendanceMonitorSummaryService {
   constructor(
     private readonly attendanceRepository: AttendanceRepository,
     private readonly userLocationsService: UserLocationsService,
+    private readonly legalParametersService: LaborLegalParametersService,
   ) {}
 
   async getMonitorSummary(
@@ -85,6 +87,12 @@ export class AttendanceMonitorSummaryService {
       : [];
     const activeEmployeeIds = new Set(activeToday.map((log) => log.employeeId));
 
+    // Resolved once for the whole aggregation (not per day/employee) — avoids N+1 queries.
+    const nocturnoStartHour = await this.legalParametersService.getValueAt(
+      'HORARIO_NOCTURNO_INICIO',
+      new Date(),
+      tenantId,
+    );
     const aggregates = this.buildAggregates(
       employees,
       logs,
@@ -92,6 +100,7 @@ export class AttendanceMonitorSummaryService {
       range.dateTo,
       activeEmployeeIds,
       isLive,
+      nocturnoStartHour,
     );
 
     const onShift = aggregates
@@ -151,6 +160,7 @@ export class AttendanceMonitorSummaryService {
     dateTo: string,
     activeEmployeeIds: Set<string>,
     isLive: boolean,
+    nocturnoStartHour: number,
   ): EmployeeAggregate[] {
     const workDates = enumerateWorkDates(dateFrom, dateTo);
     const logsByEmployeeDay = new Map<string, AttendanceLog[]>();
@@ -198,7 +208,7 @@ export class AttendanceMonitorSummaryService {
           }
         }
 
-        const summary = calculateDaySummary(dayLogs, new Date());
+        const summary = calculateDaySummary(dayLogs, new Date(), nocturnoStartHour);
         workedMinutes += summary.totalMinutes;
         overtimeMinutes += summary.overtimeMinutes;
       }

@@ -4,6 +4,7 @@ import { DotacionStatus } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 import { DotacionesRepository } from '../repository/dotaciones.repository';
 import { DotacionesService } from '../service/dotaciones.service';
+import { LaborLegalParametersService } from '../../labor-legal-parameters/service/labor-legal-parameters.service';
 import { SMLV_2025 } from '../payroll.constants';
 
 const THRESHOLD = SMLV_2025 * 2;
@@ -66,6 +67,14 @@ describe('DotacionesService', () => {
             registerDeliveryTransaction: jest.fn(),
             markNotApplicable: jest.fn(),
             findComplianceReport: jest.fn(),
+          },
+        },
+        {
+          provide: LaborLegalParametersService,
+          useValue: {
+            // Reproduces the pre-OS-585 hardcoded SMLV_2025 constant so the
+            // 2×SMLV dotación eligibility threshold assertion keeps passing unchanged.
+            getValueAt: jest.fn().mockResolvedValue(SMLV_2025),
           },
         },
       ],

@@ -12,16 +12,25 @@ import {
   EMPLOYER_SENA_PCT,
   INTEGRAL_CONTRIBUTIONS_BASE_PCT,
   MONTHLY_HOURS_BASE,
-  OVERTIME_SURCHARGE,
-  TRANSPORT_SUBSIDY_2025,
-  TRANSPORT_SUBSIDY_THRESHOLD,
 } from '../payroll.constants';
 import {
   AttendanceMonthSummary,
   EmployeePayrollInput,
   EmployeePayrollPeriod,
   OvertimeBreakdownItem,
+  PayrollLegalRates,
 } from '../interfaces/payroll-report.interfaces';
+
+/**
+ * Surcharge multipliers that are NOT sourced from LaborLegalParameter in this PR (OS-585
+ * scope is limited to RECARGO_DOMINICAL_FESTIVO — see ticket "Migración de hardcodes").
+ * DIURNO/NOCTURNO are the CST art. 168 overtime surcharges (25% / 75%), stable historically.
+ */
+const BASE_OVERTIME_SURCHARGE: Partial<Record<AttendanceOvertimeType, number>> = {
+  [AttendanceOvertimeType.REGULAR]: 0,
+  [AttendanceOvertimeType.DIURNO]: 0.25,
+  [AttendanceOvertimeType.NOCTURNO]: 0.75,
+};
 
 /** Returns days in a given month — used as calendarDays denominator */
 function daysInMonth(year: number, month: number): number {
@@ -51,6 +60,7 @@ export class PayrollCalculationService {
   calculateEmployeePeriod(
     employee: EmployeePayrollInput,
     attendance: AttendanceMonthSummary,
+    legalRates: PayrollLegalRates,
   ): EmployeePayrollPeriod {
     const { year, month } = attendance.period;
     const calendarDays = daysInMonth(year, month);
@@ -74,15 +84,25 @@ export class PayrollCalculationService {
     const eligibleForSubsidy =
       employee.hasTransportSubsidy &&
       !isIntegral &&
-      employee.salaryAmount <= TRANSPORT_SUBSIDY_THRESHOLD;
+      employee.salaryAmount <= legalRates.transportSubsidyThreshold;
 
     const transportSubsidy = eligibleForSubsidy
-      ? roundCOP(TRANSPORT_SUBSIDY_2025 * (workedDays / calendarDays))
+      ? roundCOP(legalRates.transportSubsidy * (workedDays / calendarDays))
       : 0;
 
     // ── 4. Overtime pay ───────────────────────────────────────────────────────
     // Hourly rate uses full (non-prorated) salary — CST art. 168
     const hourlyRate = employee.salaryAmount / MONTHLY_HOURS_BASE;
+
+    // FESTIVO_DIURNO/FESTIVO_NOCTURNO are versioned via RECARGO_DOMINICAL_FESTIVO (OS-585);
+    // FESTIVO_NOCTURNO combines the (stable, out-of-scope) nocturno surcharge with it.
+    const overtimeSurcharge: Partial<Record<AttendanceOvertimeType, number>> = {
+      ...BASE_OVERTIME_SURCHARGE,
+      [AttendanceOvertimeType.FESTIVO_DIURNO]: legalRates.recargoDominicalFestivo,
+      [AttendanceOvertimeType.FESTIVO_NOCTURNO]:
+        (BASE_OVERTIME_SURCHARGE[AttendanceOvertimeType.NOCTURNO] ?? 0) +
+        legalRates.recargoDominicalFestivo,
+    };
 
     const overtimeBreakdown: OvertimeBreakdownItem[] = [];
     let overtimePay = 0;
@@ -90,7 +110,7 @@ export class PayrollCalculationService {
     for (const [typeKey, minutes] of Object.entries(attendance.overtimeByType)) {
       const type = typeKey as AttendanceOvertimeType;
       if (!minutes || minutes <= 0) continue;
-      const surchargeRate = OVERTIME_SURCHARGE[type] ?? 0;
+      const surchargeRate = overtimeSurcharge[type] ?? 0;
       if (surchargeRate === 0) continue; // REGULAR — no extra pay
 
       const hours = minutes / 60;

@@ -1,5 +1,5 @@
-import ModulePlaceholderPage from '@/pages/ModulePlaceholderPage';
+import LaborLegalParametersView from './LaborLegalParametersView';
 
 export default function SettingsPage(): React.JSX.Element {
-  return <ModulePlaceholderPage title="Configuración" />;
+  return <LaborLegalParametersView />;
 }

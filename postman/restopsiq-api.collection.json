@@ -12933,6 +12933,650 @@
           ]
         }
       ]
+    },
+    {
+      "name": "NOM-06 Labor Legal Parameters",
+      "description": "OS-585 / NOM-06 — Motor de parámetros legales versionados por vigencia (SMLV, auxilio de transporte, recargo dominical/festivo, recargo nocturno, jornada máxima semanal, horario nocturno, interés de cesantías, UVT). Solo SuperAdmin/Owner (SYSTEM_ADMIN_ROLES) vía GraphQL; solo SUPER_ADMIN puede crear/editar parámetros globales (tenantId null), OWNER solo overrides de su propio tenant. Requiere {{graphqlUrl}}, {{tenantId}}, {{password}}. Ejecutar de arriba hacia abajo (login → lecturas → mutaciones → casos 403).",
+      "item": [
+        {
+          "name": "Login OWNER",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation Login($input: GlobalLoginInput!) { login(input: $input) { accessToken refreshToken } }\", \"variables\": {\"input\": {\"email\": \"mes-owner@palos-de-lena.dev\", \"password\": \"{{password}}\"}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{graphqlUrl}}",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('No GraphQL errors', () => { pm.expect(pm.response.json().errors).to.be.undefined; });",
+                  "const login = pm.response.json().data.login;",
+                  "pm.test('Has accessToken', () => pm.expect(login.accessToken).to.be.a('string'));",
+                  "if (login && login.accessToken) pm.collectionVariables.set('accessTokenOwner', login.accessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login SUPER_ADMIN",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation Login($input: GlobalLoginInput!) { login(input: $input) { accessToken refreshToken } }\", \"variables\": {\"input\": {\"email\": \"superadmin@opssynk.dev\", \"password\": \"{{password}}\"}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{graphqlUrl}}",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('No GraphQL errors', () => { pm.expect(pm.response.json().errors).to.be.undefined; });",
+                  "const login = pm.response.json().data.login;",
+                  "pm.test('Has accessToken', () => pm.expect(login.accessToken).to.be.a('string'));",
+                  "if (login && login.accessToken) pm.collectionVariables.set('accessTokenSuperAdmin', login.accessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login NOMINA (rol no autorizado)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation Login($input: GlobalLoginInput!) { login(input: $input) { accessToken refreshToken } }\", \"variables\": {\"input\": {\"email\": \"nomina@palos-de-lena.dev\", \"password\": \"{{password}}\"}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{graphqlUrl}}",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('No GraphQL errors', () => { pm.expect(pm.response.json().errors).to.be.undefined; });",
+                  "const login = pm.response.json().data.login;",
+                  "pm.test('Has accessToken', () => pm.expect(login.accessToken).to.be.a('string'));",
+                  "if (login && login.accessToken) pm.collectionVariables.set('accessTokenNomina', login.accessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Parámetros legales vigentes (OWNER)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenOwner}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"query LaborLegalParameters { laborLegalParameters { id tenantId key value validFrom validTo source isGlobal createdAt updatedAt deletedAt } }\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{graphqlUrl}}"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('No GraphQL errors', () => { pm.expect(pm.response.json().errors).to.be.undefined; });",
+                  "pm.test('laborLegalParameters es array', () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.data.laborLegalParameters).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Histórico por key — RECARGO_DOMINICAL_FESTIVO (OWNER)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenOwner}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"query LaborLegalParameterHistory($key: String!) { laborLegalParameterHistory(key: $key) { id tenantId key value validFrom validTo source isGlobal createdAt updatedAt deletedAt } }\", \"variables\": {\"key\": \"RECARGO_DOMINICAL_FESTIVO\"}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{graphqlUrl}}"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('No GraphQL errors', () => { pm.expect(pm.response.json().errors).to.be.undefined; });",
+                  "pm.test('Histórico tiene las 4 vigencias legales (0.75/0.80/0.90/1.00)', () => {",
+                  "  const rows = pm.response.json().data.laborLegalParameterHistory;",
+                  "  pm.expect(rows.length).to.be.at.least(4);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Valor vigente RECARGO_DOMINICAL_FESTIVO 2026-06-15 = 0.80",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenOwner}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"query V($key: String!, $date: DateTime!) { laborLegalParameterValueAt(key: $key, date: $date) }\", \"variables\": {\"key\": \"RECARGO_DOMINICAL_FESTIVO\", \"date\": \"2026-06-15T00:00:00.000Z\"}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{graphqlUrl}}"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('No GraphQL errors', () => { pm.expect(pm.response.json().errors).to.be.undefined; });",
+                  "pm.test('Valor = 0.80', () => {",
+                  "  pm.expect(pm.response.json().data.laborLegalParameterValueAt).to.eql(0.8);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Valor vigente RECARGO_DOMINICAL_FESTIVO 2026-07-01 = 0.90",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenOwner}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"query V($key: String!, $date: DateTime!) { laborLegalParameterValueAt(key: $key, date: $date) }\", \"variables\": {\"key\": \"RECARGO_DOMINICAL_FESTIVO\", \"date\": \"2026-07-01T00:00:00.000Z\"}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{graphqlUrl}}"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('No GraphQL errors', () => { pm.expect(pm.response.json().errors).to.be.undefined; });",
+                  "pm.test('Valor = 0.90 (límite exacto de vigencia)', () => {",
+                  "  pm.expect(pm.response.json().data.laborLegalParameterValueAt).to.eql(0.9);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Valor vigente HORARIO_NOCTURNO_INICIO 2025-12-24 = 21",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenOwner}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"query V($key: String!, $date: DateTime!) { laborLegalParameterValueAt(key: $key, date: $date) }\", \"variables\": {\"key\": \"HORARIO_NOCTURNO_INICIO\", \"date\": \"2025-12-24T00:00:00.000Z\"}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{graphqlUrl}}"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Valor = 21', () => { pm.expect(pm.response.json().data.laborLegalParameterValueAt).to.eql(21); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Valor vigente HORARIO_NOCTURNO_INICIO 2025-12-25 = 19",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenOwner}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"query V($key: String!, $date: DateTime!) { laborLegalParameterValueAt(key: $key, date: $date) }\", \"variables\": {\"key\": \"HORARIO_NOCTURNO_INICIO\", \"date\": \"2025-12-25T00:00:00.000Z\"}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{graphqlUrl}}"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Valor = 19 (Ley 2466 de 2025)', () => { pm.expect(pm.response.json().data.laborLegalParameterValueAt).to.eql(19); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Crear nueva vigencia global — UVT (SUPER_ADMIN)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenSuperAdmin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation Create($input: CreateLaborLegalParameterInput!) { createLaborLegalParameter(input: $input) { id tenantId key value validFrom validTo source isGlobal createdAt updatedAt deletedAt } }\", \"variables\": {\"input\": {\"key\": \"UVT\", \"value\": 99999, \"validFrom\": \"2025-01-01T00:00:00.000Z\", \"source\": \"Postman test fixture \\u2014 NO es un valor oficial de la UVT\"}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{graphqlUrl}}"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('No GraphQL errors', () => { pm.expect(pm.response.json().errors).to.be.undefined; });",
+                  "const created = pm.response.json().data.createLaborLegalParameter;",
+                  "pm.test('Creado como global (tenantId null)', () => { pm.expect(created.isGlobal).to.be.true; });",
+                  "if (created && created.id) pm.collectionVariables.set('laborLegalParameterId', created.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH Actualizar vigencia (SUPER_ADMIN)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenSuperAdmin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation Update($id: ID!, $input: UpdateLaborLegalParameterInput!) { updateLaborLegalParameter(id: $id, input: $input) { id tenantId key value validFrom validTo source isGlobal createdAt updatedAt deletedAt } }\", \"variables\": {\"id\": \"{{laborLegalParameterId}}\", \"input\": {\"value\": 88888}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{graphqlUrl}}"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('No GraphQL errors', () => { pm.expect(pm.response.json().errors).to.be.undefined; });",
+                  "pm.test('Valor actualizado', () => {",
+                  "  pm.expect(pm.response.json().data.updateLaborLegalParameter.value).to.eql(88888);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Crear vigencia — 403 rol no autorizado (NOMINA)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenNomina}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation Create($input: CreateLaborLegalParameterInput!) { createLaborLegalParameter(input: $input) { id tenantId key value validFrom validTo source isGlobal createdAt updatedAt deletedAt } }\", \"variables\": {\"input\": {\"key\": \"UVT\", \"value\": 1, \"validFrom\": \"2030-01-01T00:00:00.000Z\", \"source\": \"No deber\\u00eda crearse \\u2014 403 esperado\"}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{graphqlUrl}}"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200 (GraphQL siempre responde 200, error va en el body)', () => pm.response.to.have.status(200));",
+                  "pm.test('PERMISSION_DENIED — NOMINA no es OWNER/SUPER_ADMIN', () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.errors).to.be.an('array').that.is.not.empty;",
+                  "  pm.expect(body.errors[0].extensions.code).to.eql('PERMISSION_DENIED');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Crear vigencia global — 403 OWNER no puede (solo SUPER_ADMIN)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenOwner}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation Create($input: CreateLaborLegalParameterInput!) { createLaborLegalParameter(input: $input) { id tenantId key value validFrom validTo source isGlobal createdAt updatedAt deletedAt } }\", \"variables\": {\"input\": {\"key\": \"UVT\", \"value\": 2, \"validFrom\": \"2031-01-01T00:00:00.000Z\", \"source\": \"No deber\\u00eda crearse \\u2014 403 esperado (OWNER intentando global)\"}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{graphqlUrl}}"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200 (GraphQL siempre responde 200, error va en el body)', () => pm.response.to.have.status(200));",
+                  "pm.test('GraphQL error — OWNER no puede crear parámetros globales', () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.errors).to.be.an('array').that.is.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE Soft delete vigencia (SUPER_ADMIN)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenSuperAdmin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation Delete($id: ID!) { deleteLaborLegalParameter(id: $id) }\", \"variables\": {\"id\": \"{{laborLegalParameterId}}\"}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{graphqlUrl}}"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('No GraphQL errors', () => { pm.expect(pm.response.json().errors).to.be.undefined; });",
+                  "pm.test('deleteLaborLegalParameter = true', () => {",
+                  "  pm.expect(pm.response.json().data.deleteLaborLegalParameter).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
     }
   ]
 }
