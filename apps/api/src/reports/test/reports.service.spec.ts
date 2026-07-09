@@ -11,6 +11,7 @@ import { Decimal } from '@prisma/client/runtime/library';
 import { SMLV_2025, TRANSPORT_SUBSIDY_2025 } from '../../payroll/payroll.constants';
 import { UserLocationsService } from '../../locations/service/user-locations.service';
 import { LaborLegalParametersService } from '../../labor-legal-parameters/service/labor-legal-parameters.service';
+import type { LegalParameterSnapshot } from '../../labor-legal-parameters/service/legal-parameter-snapshot';
 import { PayrollCalculationService } from '../../payroll/service/payroll-calculation.service';
 import { EmployeeWithUserAndLocation, ReportsRepository } from '../repository/reports.repository';
 import { PayrollRepository } from '../../payroll/repository/payroll.repository';
@@ -34,11 +35,34 @@ const LEGAL_PARAM_VALUES: Record<string, number> = {
   AUXILIO_TRANSPORTE: TRANSPORT_SUBSIDY_2025,
   RECARGO_DOMINICAL_FESTIVO: 0.75,
   HORARIO_NOCTURNO_INICIO: 21,
+  RECARGO_HORA_EXTRA_DIURNA: 0.25,
+  RECARGO_HORA_EXTRA_NOCTURNA: 0.75,
+  JORNADA_MAX_SEMANAL: 46, // June 2025 vigencia — monthlyHoursBase = 46 × 5 = 230
 };
 
 function makeLegalSnapshot() {
   return {
     numberAt: jest.fn((key: string) => LEGAL_PARAM_VALUES[key]),
+  };
+}
+
+/**
+ * A snapshot whose JORNADA_MAX_SEMANAL varies by date — 44h before `cutoverDate`, 42h from
+ * it onward — to prove overtime is resolved per work-day date, not per period's last day
+ * (OS-586). Mirrors the real July-15 vigencia step-down, which does not align to a
+ * calendar-month payroll period boundary.
+ */
+function makeCutoverLegalSnapshot(cutoverDate: string): {
+  numberAt: jest.Mock<number, [string, Date]>;
+} {
+  const cutover = new Date(`${cutoverDate}T00:00:00.000Z`);
+  return {
+    numberAt: jest.fn((key: string, date: Date): number => {
+      if (key === 'JORNADA_MAX_SEMANAL') {
+        return date < cutover ? 44 : 42;
+      }
+      return LEGAL_PARAM_VALUES[key];
+    }),
   };
 }
 
@@ -214,6 +238,7 @@ describe('ReportsService', () => {
   let service: ReportsService;
   let repository: jest.Mocked<ReportsRepository>;
   let payrollRepository: jest.Mocked<PayrollRepository>;
+  let legalParametersService: jest.Mocked<LaborLegalParametersService>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -254,6 +279,7 @@ describe('ReportsService', () => {
     service = module.get<ReportsService>(ReportsService);
     repository = module.get(ReportsRepository);
     payrollRepository = module.get(PayrollRepository);
+    legalParametersService = module.get(LaborLegalParametersService);
   });
 
   afterEach(() => jest.clearAllMocks());
@@ -329,6 +355,33 @@ describe('ReportsService', () => {
       const diurno = row.overtimeBreakdown.find((b) => b.type === 'DIURNO');
       expect(diurno).toBeDefined();
       expect(diurno!.surchargeRate).toBe(0.25);
+    });
+
+    it('overtime surcharge/divisor resolve per work-day date, not per period last day (OS-586)', async (): Promise<void> => {
+      // JORNADA_MAX_SEMANAL steps down mid-period (like the real July-15 vigencia, which does
+      // not align to a calendar-month boundary): 44h before Jun 15, 42h from Jun 15 onward.
+      legalParametersService.preload.mockResolvedValue(
+        makeCutoverLegalSnapshot('2025-06-15') as unknown as LegalParameterSnapshot,
+      );
+      const logs = [
+        ...overtimeDayLogs('emp-1', '2025-06-03'), // before cutover → monthlyHoursBase = 44 × 5 = 220
+        ...overtimeDayLogs('emp-1', '2025-06-20'), // after cutover  → monthlyHoursBase = 42 × 5 = 210
+      ];
+      repository.findActiveEmployees.mockResolvedValue([mockEmployee]);
+      repository.findAttendanceLogsByDateRange.mockResolvedValue(logs);
+
+      const result = await service.getPayrollReport(TENANT_ID, { period: '2025-06' }, OWNER_ACTOR);
+      const row = result.employees[0];
+
+      const diurnoEntries = row.overtimeBreakdown.filter((b): boolean => b.type === 'DIURNO');
+      // Two separate buckets — same type, different monthlyHoursBase — because a single flat
+      // divisor for the whole period would misclassify the days on one side of the cutover.
+      expect(diurnoEntries).toHaveLength(2);
+      const hourlyRates = diurnoEntries
+        .map((e): number => e.hourlyRate)
+        .sort((a, b): number => a - b);
+      expect(hourlyRates[0]).toBeCloseTo(SMLV_2025 / 220, 2);
+      expect(hourlyRates[1]).toBeCloseTo(SMLV_2025 / 210, 2);
     });
 
     // ── Festivos — Task04A ─────────────────────────────────────────────────

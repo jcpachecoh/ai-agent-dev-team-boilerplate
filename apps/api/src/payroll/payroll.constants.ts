@@ -20,9 +20,10 @@ export const TRANSPORT_SUBSIDY_THRESHOLD = SMLV_2025 * 2;
 // GAP(Task04): verificar y actualizar para 2026 cuando se publique el decreto anual
 export const TRANSPORT_SUBSIDY_2025 = Number(process.env.TRANSPORT_SUBSIDY_AMOUNT) || 162000;
 
-// Horas teóricas por mes para cálculo de valor hora ordinaria
-// 30 días × 8 h/día — base estándar Colombia para liquidación mensual
-export const MONTHLY_HOURS_BASE = 240;
+// MONTHLY_HOURS_BASE (240 = 30 días × 8h/día) removido (OS-586) — el divisor de la hora
+// ordinaria ahora se deriva de JORNADA_MAX_SEMANAL(fecha) × 5, resuelto por
+// LaborLegalParametersService.getValueAt(...) por cada día de asistencia (ver
+// OvertimeMinutesEntry.monthlyHoursBase en payroll-report.interfaces.ts).
 
 // Base de aportes para salario integral — CST art. 132 par. 2
 export const INTEGRAL_CONTRIBUTIONS_BASE_PCT = 0.7;
@@ -54,15 +55,4 @@ export const ARL_RATES: Record<ArlRiskLevel, number> = {
   [ArlRiskLevel.RIESGO_III]: 0.02436,
   [ArlRiskLevel.RIESGO_IV]: 0.0435,
   [ArlRiskLevel.RIESGO_V]: 0.0696,
-};
-
-// Recargos sobre valor hora ordinaria — CST arts. 168 (extras) y 179 (festivos)
-// FESTIVO_NOCTURNO = 1.50: combinación CST art. 168 (recargo nocturno 75%) + art. 179 (recargo festivo 75%)
-// Fuente: Concepto MinTrabajo 171671/2021; corregido de 1.10 en Task04A.
-export const OVERTIME_SURCHARGE: Record<AttendanceOvertimeType, number> = {
-  [AttendanceOvertimeType.REGULAR]: 0,
-  [AttendanceOvertimeType.DIURNO]: 0.25,
-  [AttendanceOvertimeType.NOCTURNO]: 0.75,
-  [AttendanceOvertimeType.FESTIVO_DIURNO]: 0.75,
-  [AttendanceOvertimeType.FESTIVO_NOCTURNO]: 1.5,
 };

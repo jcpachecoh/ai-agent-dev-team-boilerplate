@@ -17,6 +17,22 @@ export interface EmployeePayrollInput {
   arlRiskLevel: ArlRiskLevel;
 }
 
+/**
+ * Overtime minutes for one (type, monthlyHoursBase, surchargeRate) bucket. Both rates are
+ * resolved by the caller as of the calendar date the minutes were actually worked (OS-586) —
+ * NOT a single flat value for the whole payroll period. A type can appear more than once if
+ * the underlying legal parameters change mid-period (e.g. JORNADA_MAX_SEMANAL steps down on
+ * July 15 each year, which does not align to a calendar-month payroll period boundary).
+ */
+export type OvertimeMinutesEntry = {
+  type: AttendanceOvertimeType;
+  minutes: number;
+  /** JORNADA_MAX_SEMANAL(date) × 5 — see LaborLegalParametersService.getValueAt (OS-586). */
+  monthlyHoursBase: number;
+  /** RECARGO_DOMINICAL_FESTIVO / RECARGO_HORA_EXTRA_DIURNA|NOCTURNA(date), combined for FESTIVO_NOCTURNO. */
+  surchargeRate: number;
+};
+
 export interface AttendanceMonthSummary {
   employeeId: string;
   period: { year: number; month: number };
@@ -28,23 +44,26 @@ export interface AttendanceMonthSummary {
   regularMinutes: number;
   overtimeMinutes: number;
   /**
-   * Overtime minutes classified by type.
+   * Overtime minutes classified by type, each bucket carrying its own already-resolved rates.
    * GAP(Task04): FESTIVO_* will be 0 until the Colombian festivos calendar is implemented.
-   * In Task01, callers may populate DIURNO/NOCTURNO based on AttendanceService.isNocturno.
+   * GAP(OS-586): all overtime minutes here are liquidated regardless of approval status —
+   * there is no approval workflow yet (blocked on OS-605/OS-606, CONN-04a/04b). Once that
+   * model exists, the caller building this summary must exclude non-approved minutes before
+   * they reach PayrollCalculationService.
    */
-  overtimeByType: Partial<Record<AttendanceOvertimeType, number>>;
+  overtimeEntries: OvertimeMinutesEntry[];
 }
 
 /**
  * Legal rates resolved from LaborLegalParametersService for the period being calculated.
- * Resolved once per report run (not per employee) — see ReportsService.getPayrollReport,
- * which preloads these "as of" the period's last day before looping over employees.
+ * Resolved once per report run (not per employee) — see ReportsService.getPayrollReport.
+ * Only period-level (not date-varying-within-period) values live here; overtime surcharges
+ * and the hourly-rate divisor are resolved per work-day date instead — see OvertimeMinutesEntry.
  */
 export interface PayrollLegalRates {
   smlv: number;
   transportSubsidyThreshold: number;
   transportSubsidy: number;
-  recargoDominicalFestivo: number;
 }
 
 // ── Output types ─────────────────────────────────────────────────────────────

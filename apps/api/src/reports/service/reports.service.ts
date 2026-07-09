@@ -8,11 +8,11 @@ import { UserLocationsService } from '../../locations/service/user-locations.ser
 import {
   AttendanceMonthSummary,
   EmployeePayrollInput,
+  OvertimeMinutesEntry,
   PayrollLegalRates,
 } from '../../payroll/interfaces/payroll-report.interfaces';
 import { PayrollCalculationService } from '../../payroll/service/payroll-calculation.service';
 import { LaborLegalParametersService } from '../../labor-legal-parameters/service/labor-legal-parameters.service';
-import type { LegalParameterSnapshot } from '../../labor-legal-parameters/service/legal-parameter-snapshot';
 import { decimalToNumber } from '../../common/utils/decimal.util';
 import { EmployeeWithUserAndLocation, ReportsRepository } from '../repository/reports.repository';
 import { PayrollRepository } from '../../payroll/repository/payroll.repository';
@@ -185,14 +185,48 @@ function buildDayRecords(
   return records;
 }
 
+/**
+ * Legal-rate resolvers used while building an AttendanceMonthSummary — each is called with
+ * the actual calendar date the minutes were worked (OS-586), not the period's last day.
+ */
+export type OvertimeLegalRateResolvers = {
+  nocturnoStartHourAt: (date: Date) => number;
+  recargoDominicalFestivoAt: (date: Date) => number;
+  recargoHoraExtraDiurnaAt: (date: Date) => number;
+  recargoHoraExtraNocturnaAt: (date: Date) => number;
+  /** JORNADA_MAX_SEMANAL(date) × 5 — see payroll-report.interfaces.ts OvertimeMinutesEntry. */
+  monthlyHoursBaseAt: (date: Date) => number;
+};
+
+/** Adds minutes to the matching (type, monthlyHoursBase, surchargeRate) bucket, or opens a new one. */
+function addOvertimeMinutes(
+  entries: OvertimeMinutesEntry[],
+  type: AttendanceOvertimeType,
+  minutes: number,
+  monthlyHoursBase: number,
+  surchargeRate: number,
+): void {
+  const existing = entries.find(
+    (e): boolean =>
+      e.type === type &&
+      e.monthlyHoursBase === monthlyHoursBase &&
+      e.surchargeRate === surchargeRate,
+  );
+  if (existing) {
+    existing.minutes += minutes;
+  } else {
+    entries.push({ type, minutes, monthlyHoursBase, surchargeRate });
+  }
+}
+
 function buildAttendanceSummary(
   employeeId: string,
   logs: AttendanceLog[],
   period: { year: number; month: number },
   totalCalendarDays: number,
-  nocturnoStartHourAt: (date: Date) => number,
+  resolvers: OvertimeLegalRateResolvers,
 ): AttendanceMonthSummary {
-  const dayRecords = buildDayRecords(logs, nocturnoStartHourAt);
+  const dayRecords = buildDayRecords(logs, resolvers.nocturnoStartHourAt);
 
   const presentDays = dayRecords.length;
   const totalWorkedMinutes = dayRecords.reduce((s, r) => s + r.workedMinutes, 0);
@@ -202,21 +236,33 @@ function buildAttendanceSummary(
   );
   const overtimeMinutes = dayRecords.reduce((s, r) => s + r.overtimeMinutes, 0);
 
-  const overtimeByType: Partial<Record<AttendanceOvertimeType, number>> = {};
+  const overtimeEntries: OvertimeMinutesEntry[] = [];
   for (const r of dayRecords) {
     if (r.overtimeMinutes <= 0) continue;
-    // Ley 51/1983: festivo + nocturno → FESTIVO_NOCTURNO (surcharge 1.50, CST art. 168+179)
-    //              festivo + diurno  → FESTIVO_DIURNO  (surcharge 0.75, CST art. 179)
-    //              non-festivo       → NOCTURNO / DIURNO as before
+    const date = parseCalendarDateKey(r.dateKey);
+    // Ley 51/1983: festivo + nocturno → FESTIVO_NOCTURNO (surcharge nocturno + dominical/festivo)
+    //              festivo + diurno  → FESTIVO_DIURNO  (surcharge RECARGO_DOMINICAL_FESTIVO)
+    //              non-festivo       → NOCTURNO / DIURNO, surcharge RECARGO_HORA_EXTRA_*
     let type: AttendanceOvertimeType;
+    let surchargeRate: number;
     if (r.isFestivo) {
-      type = r.isNocturno
-        ? AttendanceOvertimeType.FESTIVO_NOCTURNO
-        : AttendanceOvertimeType.FESTIVO_DIURNO;
+      if (r.isNocturno) {
+        type = AttendanceOvertimeType.FESTIVO_NOCTURNO;
+        surchargeRate =
+          resolvers.recargoHoraExtraNocturnaAt(date) + resolvers.recargoDominicalFestivoAt(date);
+      } else {
+        type = AttendanceOvertimeType.FESTIVO_DIURNO;
+        surchargeRate = resolvers.recargoDominicalFestivoAt(date);
+      }
+    } else if (r.isNocturno) {
+      type = AttendanceOvertimeType.NOCTURNO;
+      surchargeRate = resolvers.recargoHoraExtraNocturnaAt(date);
     } else {
-      type = r.isNocturno ? AttendanceOvertimeType.NOCTURNO : AttendanceOvertimeType.DIURNO;
+      type = AttendanceOvertimeType.DIURNO;
+      surchargeRate = resolvers.recargoHoraExtraDiurnaAt(date);
     }
-    overtimeByType[type] = (overtimeByType[type] ?? 0) + r.overtimeMinutes;
+    const monthlyHoursBase = resolvers.monthlyHoursBaseAt(date);
+    addOvertimeMinutes(overtimeEntries, type, r.overtimeMinutes, monthlyHoursBase, surchargeRate);
   }
 
   return {
@@ -227,7 +273,7 @@ function buildAttendanceSummary(
     totalWorkedMinutes,
     regularMinutes,
     overtimeMinutes,
-    overtimeByType,
+    overtimeEntries,
   };
 }
 
@@ -350,21 +396,46 @@ export class ReportsService implements IReportsService {
 
     // Preload once per report run (not per employee) — see LegalParameterSnapshot.
     const legalSnapshot = await this.legalParametersService.preload(
-      ['SMLV', 'AUXILIO_TRANSPORTE', 'RECARGO_DOMINICAL_FESTIVO', 'HORARIO_NOCTURNO_INICIO'],
+      [
+        'SMLV',
+        'AUXILIO_TRANSPORTE',
+        'RECARGO_DOMINICAL_FESTIVO',
+        'HORARIO_NOCTURNO_INICIO',
+        'RECARGO_HORA_EXTRA_DIURNA',
+        'RECARGO_HORA_EXTRA_NOCTURNA',
+        'JORNADA_MAX_SEMANAL',
+      ],
       from,
       to,
       tenantId,
     );
-    const nocturnoStartHourAt = (date: Date): number =>
-      legalSnapshot.numberAt('HORARIO_NOCTURNO_INICIO', date);
-    // SMLV/auxilio/recargo resolved as of the period's last day — a single flat rate per
-    // period, matching the historical pre-OS-585 behaviour (one hardcoded value per month).
+    // Overtime surcharges and the hourly-rate divisor vary by the date the minutes were
+    // actually worked (OS-586) — e.g. JORNADA_MAX_SEMANAL steps down on July 15, which does
+    // not align to a calendar-month period boundary. Resolved per work-day inside
+    // buildAttendanceSummary, NOT once here for the whole period.
+    const rateResolvers: OvertimeLegalRateResolvers = {
+      nocturnoStartHourAt: (date: Date): number =>
+        legalSnapshot.numberAt('HORARIO_NOCTURNO_INICIO', date),
+      recargoDominicalFestivoAt: (date: Date): number =>
+        legalSnapshot.numberAt('RECARGO_DOMINICAL_FESTIVO', date),
+      recargoHoraExtraDiurnaAt: (date: Date): number =>
+        legalSnapshot.numberAt('RECARGO_HORA_EXTRA_DIURNA', date),
+      recargoHoraExtraNocturnaAt: (date: Date): number =>
+        legalSnapshot.numberAt('RECARGO_HORA_EXTRA_NOCTURNA', date),
+      monthlyHoursBaseAt: (date: Date): number =>
+        legalSnapshot.numberAt('JORNADA_MAX_SEMANAL', date) * 5,
+    };
+    // smlv/transportSubsidy/transportSubsidyThreshold stay flat per period (resolved once,
+    // as of the period's last day) because SMLV and AUXILIO_TRANSPORTE have annual vigencias
+    // that always start January 1st — a boundary that already aligns with a calendar-month
+    // payroll period, so there is no mid-period cutover to miss. Recargos and JORNADA_MAX_SEMANAL
+    // are different: their vigencias can start mid-month (e.g. July 15, December 25), so they
+    // are resolved per work-day date instead — see rateResolvers / OvertimeMinutesEntry above.
     const smlv = legalSnapshot.numberAt('SMLV', to);
     const legalRates: PayrollLegalRates = {
       smlv,
       transportSubsidyThreshold: smlv * 2,
       transportSubsidy: legalSnapshot.numberAt('AUXILIO_TRANSPORTE', to),
-      recargoDominicalFestivo: legalSnapshot.numberAt('RECARGO_DOMINICAL_FESTIVO', to),
     };
 
     const rows: PayrollEmployeeRowDto[] = [];
@@ -376,7 +447,7 @@ export class ReportsService implements IReportsService {
         empLogs,
         period,
         calendarDays,
-        nocturnoStartHourAt,
+        rateResolvers,
       );
 
       const input: EmployeePayrollInput = {

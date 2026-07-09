@@ -11,8 +11,6 @@ import {
   EMPLOYER_PENSION_PCT,
   EMPLOYER_SENA_PCT,
   INTEGRAL_CONTRIBUTIONS_BASE_PCT,
-  MONTHLY_HOURS_BASE,
-  OVERTIME_SURCHARGE,
   SMLV_2025,
   TRANSPORT_SUBSIDY_2025,
   TRANSPORT_SUBSIDY_THRESHOLD,
@@ -21,6 +19,7 @@ import { PayrollCalculationService } from '../service/payroll-calculation.servic
 import {
   AttendanceMonthSummary,
   EmployeePayrollInput,
+  OvertimeMinutesEntry,
   PayrollLegalRates,
 } from '../interfaces/payroll-report.interfaces';
 
@@ -28,15 +27,32 @@ import {
 
 const PERIOD = { year: 2025, month: 6 }; // June 2025 — 30 calendar days
 
-// Reproduces the pre-OS-585 hardcoded constants (SMLV_2025, TRANSPORT_SUBSIDY_2025, and the
-// old FESTIVO_DIURNO=0.75 / FESTIVO_NOCTURNO=1.5 surcharges) as resolved
-// LaborLegalParametersService values, so existing assertions keep passing unchanged.
+// CST art. 168 overtime surcharges — stable historically, versioned via NOM-06 since OS-586.
+const RECARGO_HORA_EXTRA_DIURNA = 0.25;
+const RECARGO_HORA_EXTRA_NOCTURNA = 0.75;
+const RECARGO_DOMINICAL_FESTIVO = 0.75;
+
+// JORNADA_MAX_SEMANAL(date) × 5 — see OvertimeMinutesEntry.monthlyHoursBase. 48h/semana × 5 = 240,
+// matching the pre-OS-586 hardcoded MONTHLY_HOURS_BASE so existing assertions keep passing unchanged.
+const TEST_MONTHLY_HOURS_BASE = 240;
+
+// Reproduces the pre-OS-585 hardcoded constants (SMLV_2025, TRANSPORT_SUBSIDY_2025) as resolved
+// LaborLegalParametersService values, so existing assertions keep passing unchanged. Overtime
+// surcharges/divisor are no longer period-flat — see makeOvertimeEntry below (OS-586).
 const LEGAL_RATES: PayrollLegalRates = {
   smlv: SMLV_2025,
   transportSubsidyThreshold: TRANSPORT_SUBSIDY_THRESHOLD,
   transportSubsidy: TRANSPORT_SUBSIDY_2025,
-  recargoDominicalFestivo: 0.75,
 };
+
+function makeOvertimeEntry(
+  type: AttendanceOvertimeType,
+  minutes: number,
+  surchargeRate: number,
+  monthlyHoursBase: number = TEST_MONTHLY_HOURS_BASE,
+): OvertimeMinutesEntry {
+  return { type, minutes, monthlyHoursBase, surchargeRate };
+}
 
 function makeEmployee(overrides: Partial<EmployeePayrollInput> = {}): EmployeePayrollInput {
   return {
@@ -62,7 +78,7 @@ function makeAttendance(overrides: Partial<AttendanceMonthSummary> = {}): Attend
     totalWorkedMinutes: 30 * 480, // 30 days × 8h
     regularMinutes: 30 * 480,
     overtimeMinutes: 0,
-    overtimeByType: {},
+    overtimeEntries: [],
     ...overrides,
   };
 }
@@ -193,7 +209,7 @@ describe('PayrollCalculationService', () => {
       const result = service.calculateEmployeePeriod(
         makeEmployee(),
         makeAttendance({
-          overtimeByType: { [AttendanceOvertimeType.REGULAR]: 240 },
+          overtimeEntries: [makeOvertimeEntry(AttendanceOvertimeType.REGULAR, 240, 0)],
         }),
         LEGAL_RATES,
       );
@@ -204,15 +220,15 @@ describe('PayrollCalculationService', () => {
     it('DIURNO overtime 2h → pays 25% surcharge', () => {
       const salary = 3_000_000;
       const hours = 2;
-      const hourlyRate = salary / MONTHLY_HOURS_BASE;
-      const expected = roundCOP(
-        hourlyRate * (1 + OVERTIME_SURCHARGE[AttendanceOvertimeType.DIURNO]) * hours,
-      );
+      const hourlyRate = salary / TEST_MONTHLY_HOURS_BASE;
+      const expected = roundCOP(hourlyRate * (1 + RECARGO_HORA_EXTRA_DIURNA) * hours);
 
       const result = service.calculateEmployeePeriod(
         makeEmployee({ salaryAmount: salary }),
         makeAttendance({
-          overtimeByType: { [AttendanceOvertimeType.DIURNO]: hours * 60 },
+          overtimeEntries: [
+            makeOvertimeEntry(AttendanceOvertimeType.DIURNO, hours * 60, RECARGO_HORA_EXTRA_DIURNA),
+          ],
         }),
         LEGAL_RATES,
       );
@@ -224,15 +240,19 @@ describe('PayrollCalculationService', () => {
     it('NOCTURNO overtime 1h → pays 75% surcharge', () => {
       const salary = 3_000_000;
       const hours = 1;
-      const hourlyRate = salary / MONTHLY_HOURS_BASE;
-      const expected = roundCOP(
-        hourlyRate * (1 + OVERTIME_SURCHARGE[AttendanceOvertimeType.NOCTURNO]) * hours,
-      );
+      const hourlyRate = salary / TEST_MONTHLY_HOURS_BASE;
+      const expected = roundCOP(hourlyRate * (1 + RECARGO_HORA_EXTRA_NOCTURNA) * hours);
 
       const result = service.calculateEmployeePeriod(
         makeEmployee({ salaryAmount: salary }),
         makeAttendance({
-          overtimeByType: { [AttendanceOvertimeType.NOCTURNO]: hours * 60 },
+          overtimeEntries: [
+            makeOvertimeEntry(
+              AttendanceOvertimeType.NOCTURNO,
+              hours * 60,
+              RECARGO_HORA_EXTRA_NOCTURNA,
+            ),
+          ],
         }),
         LEGAL_RATES,
       );
@@ -243,15 +263,19 @@ describe('PayrollCalculationService', () => {
     it('FESTIVO_DIURNO 2h → pays 75% surcharge', () => {
       const salary = 3_000_000;
       const hours = 2;
-      const hourlyRate = salary / MONTHLY_HOURS_BASE;
-      const expected = roundCOP(
-        hourlyRate * (1 + OVERTIME_SURCHARGE[AttendanceOvertimeType.FESTIVO_DIURNO]) * hours,
-      );
+      const hourlyRate = salary / TEST_MONTHLY_HOURS_BASE;
+      const expected = roundCOP(hourlyRate * (1 + RECARGO_DOMINICAL_FESTIVO) * hours);
 
       const result = service.calculateEmployeePeriod(
         makeEmployee({ salaryAmount: salary }),
         makeAttendance({
-          overtimeByType: { [AttendanceOvertimeType.FESTIVO_DIURNO]: hours * 60 },
+          overtimeEntries: [
+            makeOvertimeEntry(
+              AttendanceOvertimeType.FESTIVO_DIURNO,
+              hours * 60,
+              RECARGO_DOMINICAL_FESTIVO,
+            ),
+          ],
         }),
         LEGAL_RATES,
       );
@@ -261,7 +285,7 @@ describe('PayrollCalculationService', () => {
     it('FESTIVO_NOCTURNO 1h → pays 150% surcharge (CST art. 168+179, corrected in Task04A)', () => {
       const salary = 3_000_000;
       const hours = 1;
-      const hourlyRate = salary / MONTHLY_HOURS_BASE;
+      const hourlyRate = salary / TEST_MONTHLY_HOURS_BASE;
       // Corrected from 1.10 → 1.50 in Task04A: CST art. 168 (nocturno 75%) + art. 179 (festivo 75%)
       // Source: Concepto MinTrabajo 171671/2021
       const expected = roundCOP(hourlyRate * (1 + 1.5) * hours);
@@ -269,7 +293,9 @@ describe('PayrollCalculationService', () => {
       const result = service.calculateEmployeePeriod(
         makeEmployee({ salaryAmount: salary }),
         makeAttendance({
-          overtimeByType: { [AttendanceOvertimeType.FESTIVO_NOCTURNO]: hours * 60 },
+          overtimeEntries: [
+            makeOvertimeEntry(AttendanceOvertimeType.FESTIVO_NOCTURNO, hours * 60, 1.5),
+          ],
         }),
         LEGAL_RATES,
       );
@@ -279,7 +305,7 @@ describe('PayrollCalculationService', () => {
 
     it('multiple overtime types → breakdown has one item per type and sum is correct', () => {
       const salary = 4_000_000;
-      const hourlyRate = salary / MONTHLY_HOURS_BASE;
+      const hourlyRate = salary / TEST_MONTHLY_HOURS_BASE;
       const diurnoHours = 3;
       const nocturnoHours = 2;
       const expectedDiurno = roundCOP(hourlyRate * (1 + 0.25) * diurnoHours);
@@ -288,10 +314,10 @@ describe('PayrollCalculationService', () => {
       const result = service.calculateEmployeePeriod(
         makeEmployee({ salaryAmount: salary }),
         makeAttendance({
-          overtimeByType: {
-            [AttendanceOvertimeType.DIURNO]: diurnoHours * 60,
-            [AttendanceOvertimeType.NOCTURNO]: nocturnoHours * 60,
-          },
+          overtimeEntries: [
+            makeOvertimeEntry(AttendanceOvertimeType.DIURNO, diurnoHours * 60, 0.25),
+            makeOvertimeEntry(AttendanceOvertimeType.NOCTURNO, nocturnoHours * 60, 0.75),
+          ],
         }),
         LEGAL_RATES,
       );
@@ -299,16 +325,41 @@ describe('PayrollCalculationService', () => {
       expect(result.overtimePay).toBe(expectedDiurno + expectedNocturno);
     });
 
+    it('two vigencias of the same type in one period → two separate breakdown rows (OS-586)', (): void => {
+      // e.g. a payroll period straddling a JORNADA_MAX_SEMANAL cutover (July 15): the same
+      // DIURNO type carries a different monthlyHoursBase before/after the cutover date.
+      const salary = 4_000_000;
+      const beforeCutoverHourlyRate = salary / 220; // 44h/semana × 5
+      const afterCutoverHourlyRate = salary / 210; // 42h/semana × 5
+      const expectedBefore = roundCOP(beforeCutoverHourlyRate * (1 + 0.25) * 2);
+      const expectedAfter = roundCOP(afterCutoverHourlyRate * (1 + 0.25) * 2);
+
+      const result = service.calculateEmployeePeriod(
+        makeEmployee({ salaryAmount: salary }),
+        makeAttendance({
+          overtimeEntries: [
+            makeOvertimeEntry(AttendanceOvertimeType.DIURNO, 120, 0.25, 220),
+            makeOvertimeEntry(AttendanceOvertimeType.DIURNO, 120, 0.25, 210),
+          ],
+        }),
+        LEGAL_RATES,
+      );
+      expect(result.overtimeBreakdown).toHaveLength(2);
+      expect(result.overtimePay).toBe(expectedBefore + expectedAfter);
+    });
+
     it('overtime hourly rate uses full salary, not prorated salary', () => {
       const salary = 3_000_000;
       const hours = 2;
-      const expectedHourlyRate = salary / MONTHLY_HOURS_BASE; // uses full salary
+      const expectedHourlyRate = salary / TEST_MONTHLY_HOURS_BASE; // uses full salary
 
       const result = service.calculateEmployeePeriod(
         makeEmployee({ salaryAmount: salary }),
         makeAttendance({
           presentDays: 15, // partial month
-          overtimeByType: { [AttendanceOvertimeType.DIURNO]: hours * 60 },
+          overtimeEntries: [
+            makeOvertimeEntry(AttendanceOvertimeType.DIURNO, hours * 60, RECARGO_HORA_EXTRA_DIURNA),
+          ],
         }),
         LEGAL_RATES,
       );
@@ -322,13 +373,15 @@ describe('PayrollCalculationService', () => {
     it('grossPay = salaryBase + transportSubsidy + overtimePay', () => {
       const salary = 2_000_000;
       const hours = 4;
-      const hourlyRate = salary / MONTHLY_HOURS_BASE;
+      const hourlyRate = salary / TEST_MONTHLY_HOURS_BASE;
       const overtime = roundCOP(hourlyRate * (1 + 0.25) * hours);
 
       const result = service.calculateEmployeePeriod(
         makeEmployee({ salaryAmount: salary }),
         makeAttendance({
-          overtimeByType: { [AttendanceOvertimeType.DIURNO]: hours * 60 },
+          overtimeEntries: [
+            makeOvertimeEntry(AttendanceOvertimeType.DIURNO, hours * 60, RECARGO_HORA_EXTRA_DIURNA),
+          ],
         }),
         LEGAL_RATES,
       );
