@@ -15,6 +15,11 @@ export interface EmployeePayrollInput {
   /** True when salary ≤ 2 SMLV — already validated by PayrollService on create/update */
   hasTransportSubsidy: boolean;
   arlRiskLevel: ArlRiskLevel;
+  medicalLeaveEmployerDays?: number;
+  medicalLeaveEmployerPay?: number;
+  medicalLeaveEpsArlDays?: number;
+  medicalLeaveEpsArlPay?: number;
+  medicalLeaveOrdinaryDaysExcluded?: number;
 }
 
 /**
@@ -100,8 +105,13 @@ export interface EmployeePayrollPeriod {
   /** Sum of all overtime surcharge amounts (COP) */
   overtimePay: number;
   overtimeBreakdown: OvertimeBreakdownItem[];
-  /** salaryBase + transportSubsidy + overtimePay (COP) */
+  /** salaryBase + transportSubsidy + overtimePay + medicalLeaveEmployerPay (COP) */
   grossPay: number;
+  medicalLeaveEmployerDays: number;
+  medicalLeaveEmployerPay: number;
+  medicalLeaveEpsArlDays: number;
+  medicalLeaveEpsArlPay: number;
+  medicalLeaveOrdinaryDaysExcluded: number;
 
   // ── Deducciones empleado ───────────────────────────────────────────────────
   /** 4% of contributionBase (COP) */

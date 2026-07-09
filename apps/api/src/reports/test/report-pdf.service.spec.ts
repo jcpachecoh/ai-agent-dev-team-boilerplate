@@ -39,6 +39,11 @@ function makeEmployee(
     employerCajaContribution: 72000,
     totalEmployerContributions: 540399,
     totalPayrollCost: 2358399,
+    medicalLeaveEmployerDays: 0,
+    medicalLeaveEmployerPay: 0,
+    medicalLeaveEpsArlDays: 0,
+    medicalLeaveEpsArlPay: 0,
+    medicalLeaveOrdinaryDaysExcluded: 0,
     ...overrides,
   };
 }

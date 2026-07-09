@@ -1,0 +1,117 @@
+.row {
+  display: grid;
+  grid-template-columns: var(--empleado-columns);
+  column-gap: 20px;
+  align-items: center;
+  min-height: 58px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--empleado-border-subtle);
+}
+
+.employeeCell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.employeeText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.name {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--empleado-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.meta {
+  font-size: 0.625rem;
+  color: var(--empleado-faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.textCell {
+  font-size: 0.75rem;
+  color: var(--empleado-text-secondary);
+  min-width: 0;
+}
+
+.periodCell {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.6875rem;
+  color: var(--empleado-muted);
+  min-width: 0;
+}
+
+.centerCell {
+  justify-self: center;
+  text-align: center;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.6875rem;
+  color: var(--empleado-muted);
+  min-width: 0;
+}
+
+.amountCell {
+  justify-self: center;
+  text-align: center;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.6875rem;
+  color: var(--empleado-text);
+  min-width: 0;
+}
+
+.statusCell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: center;
+  min-width: 0;
+}
+
+.actionsCell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+.textAction {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font-size: 0.6875rem;
+  cursor: pointer;
+  color: var(--empleado-text-secondary);
+}
+
+.textAction:hover {
+  color: var(--empleado-text);
+}
+
+.textAction:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.rejectAction {
+  background: rgb(239 68 68 / 12%);
+  border-color: rgb(239 68 68 / 35%);
+  color: #ef4444;
+}
+
+.rejectAction:hover:not(:disabled) {
+  background: rgb(239 68 68 / 18%);
+  color: #dc2626;
+}

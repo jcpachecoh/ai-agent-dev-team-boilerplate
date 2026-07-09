@@ -190,6 +190,14 @@ export function canWriteTurnoAssignments(roleCode: string | null | undefined): b
   return (TURNO_ASSIGNMENTS_WRITE_ROLES as readonly string[]).includes(roleCode);
 }
 
+/** NOM-13 — registro y cambio de estado de incapacidades médicas. */
+export const MEDICAL_LEAVES_WRITE_ROLES: readonly RoleCode[] = [...SYSTEM_ADMIN_ROLES, 'NOMINA'];
+
+export function canWriteMedicalLeaves(roleCode: string | null | undefined): boolean {
+  if (!roleCode) return false;
+  return (MEDICAL_LEAVES_WRITE_ROLES as readonly string[]).includes(roleCode);
+}
+
 /** OS-582 — únicos roles que pueden asignar/eliminar en fechas pasadas. */
 export function canOverridePastDateAssignments(roleCode: string | null | undefined): boolean {
   if (!roleCode) return false;

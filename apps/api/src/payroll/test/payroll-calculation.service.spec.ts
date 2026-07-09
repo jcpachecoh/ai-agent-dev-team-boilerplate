@@ -654,4 +654,58 @@ describe('PayrollCalculationService', () => {
       expect(result.totalPayrollCost).toBe(grossPay + totalEmployer);
     });
   });
+
+  // ── 13. Medical leave adjustments ─────────────────────────────────────────
+
+  describe('medical leave adjustments', () => {
+    it('adds employer medical pay and reduces salary base for EPS/ARL days', () => {
+      const salary = 3_000_000;
+      const dailySalary = salary / 30;
+
+      const result = service.calculateEmployeePeriod(
+        makeEmployee({
+          salaryAmount: salary,
+          hasTransportSubsidy: false,
+          medicalLeaveEmployerDays: 2,
+          medicalLeaveEmployerPay: roundCOP(dailySalary * 2),
+          medicalLeaveEpsArlDays: 3,
+          medicalLeaveEpsArlPay: roundCOP(dailySalary * 3 * 0.6667),
+          medicalLeaveOrdinaryDaysExcluded: 3,
+        }),
+        makeAttendance({ presentDays: 15 }),
+        LEGAL_RATES,
+      );
+
+      const baseWithoutMedical = roundCOP(salary * (15 / 30));
+      expect(result.salaryBase).toBe(Math.max(0, baseWithoutMedical - roundCOP(dailySalary * 3)));
+      expect(result.medicalLeaveEmployerPay).toBe(roundCOP(dailySalary * 2));
+      expect(result.grossPay).toBe(
+        result.salaryBase +
+          result.transportSubsidy +
+          result.overtimePay +
+          result.medicalLeaveEmployerPay,
+      );
+    });
+
+    it('excludes all laboral days from ordinary salary base', () => {
+      const salary = 3_000_000;
+      const dailySalary = salary / 30;
+
+      const result = service.calculateEmployeePeriod(
+        makeEmployee({
+          salaryAmount: salary,
+          hasTransportSubsidy: false,
+          medicalLeaveEpsArlDays: 5,
+          medicalLeaveEpsArlPay: roundCOP(dailySalary * 5),
+          medicalLeaveOrdinaryDaysExcluded: 5,
+        }),
+        makeAttendance({ presentDays: 0 }),
+        LEGAL_RATES,
+      );
+
+      expect(result.salaryBase).toBe(0);
+      expect(result.medicalLeaveEmployerPay).toBe(0);
+      expect(result.medicalLeaveOrdinaryDaysExcluded).toBe(5);
+    });
+  });
 });

@@ -20,7 +20,8 @@ import { AttendanceQueryDto, PeriodQueryDto } from '../controller/dto/report-que
 import { AttendanceReportStatusFilter } from '../controller/dto/attendance-export-query.dto';
 import { MAX_EXPORT_ROWS } from '../reports.constants';
 import { VacationsService } from '../../vacations/service/vacations.service';
-import { VacationType } from '@prisma/client';
+import { VacationType, LeaveOrigin } from '@prisma/client';
+import { MedicalLeavesRepository } from '../../medical-leaves/repository/medical-leaves.repository';
 
 // ── Fixtures ─────────────────────────────────────────────────────────────────
 
@@ -242,6 +243,9 @@ describe('ReportsService', () => {
   let payrollRepository: jest.Mocked<PayrollRepository>;
   let legalParametersService: jest.Mocked<LaborLegalParametersService>;
   let vacationsService: jest.Mocked<VacationsService>;
+  let medicalLeavesRepository: jest.Mocked<
+    Pick<MedicalLeavesRepository, 'findOverlappingForPayrollPeriodByEmployeeIds'>
+  >;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -277,6 +281,12 @@ describe('ReportsService', () => {
           },
         },
         {
+          provide: MedicalLeavesRepository,
+          useValue: {
+            findOverlappingForPayrollPeriodByEmployeeIds: jest.fn().mockResolvedValue([]),
+          },
+        },
+        {
           provide: LaborLegalParametersService,
           useValue: {
             preload: jest.fn().mockResolvedValue(makeLegalSnapshot()),
@@ -290,6 +300,7 @@ describe('ReportsService', () => {
     payrollRepository = module.get(PayrollRepository);
     legalParametersService = module.get(LaborLegalParametersService);
     vacationsService = module.get(VacationsService);
+    medicalLeavesRepository = module.get(MedicalLeavesRepository);
   });
 
   afterEach(() => jest.clearAllMocks());
@@ -605,6 +616,35 @@ describe('ReportsService', () => {
       const nocturno = row.overtimeBreakdown.find((b) => b.type === 'NOCTURNO');
       expect(nocturno).toBeDefined();
       expect(nocturno!.surchargeRate).toBe(0.75);
+    });
+
+    it('applies medical leave adjustments for a COMUN incapacity in the payroll period', async () => {
+      repository.findActiveEmployees.mockResolvedValue([mockEmployee]);
+      repository.findAttendanceLogsByDateRange.mockResolvedValue([]);
+      medicalLeavesRepository.findOverlappingForPayrollPeriodByEmployeeIds.mockResolvedValue([
+        {
+          id: 'leave-1',
+          employeeId: 'emp-1',
+          origin: LeaveOrigin.COMUN,
+          startDate: workDate('2025-06-01'),
+          endDate: workDate('2025-06-05'),
+          totalDays: 5,
+          employerPaidDays: 2,
+          epsArlPaidDays: 3,
+          employerAmount: new Decimal('200000'),
+          epsArlAmount: new Decimal('200010'),
+        },
+      ]);
+
+      const result = await service.getPayrollReport(TENANT_ID, query, OWNER_ACTOR);
+      const row = result.employees[0];
+      const dailySalary = Math.round(SMLV_2025 / 30);
+
+      expect(row.medicalLeaveEmployerDays).toBe(2);
+      expect(row.medicalLeaveEpsArlDays).toBe(3);
+      expect(row.medicalLeaveEmployerPay).toBe(dailySalary * 2);
+      expect(row.medicalLeaveOrdinaryDaysExcluded).toBe(3);
+      expect(row.grossPay).toBeGreaterThanOrEqual(row.medicalLeaveEmployerPay);
     });
   });
 

@@ -53,11 +53,24 @@ export class PayrollCalculationService {
     const calendarDays = daysInMonth(year, month);
     const workedDays = attendance.presentDays;
 
+    const medicalLeaveEmployerDays = employee.medicalLeaveEmployerDays ?? 0;
+    const medicalLeaveEmployerPay = employee.medicalLeaveEmployerPay ?? 0;
+    const medicalLeaveEpsArlDays = employee.medicalLeaveEpsArlDays ?? 0;
+    const medicalLeaveEpsArlPay = employee.medicalLeaveEpsArlPay ?? 0;
+    const medicalLeaveOrdinaryDaysExcluded = employee.medicalLeaveOrdinaryDaysExcluded ?? 0;
+
     const isIntegral = employee.salaryType === SalaryType.INTEGRAL;
     const isExempt = EXEMPT_CONTRACT_TYPES.has(employee.contractType);
 
     // ── 1. Salary base (prorated) ─────────────────────────────────────────────
-    const salaryBase = roundCOP(employee.salaryAmount * (workedDays / calendarDays));
+    const dailySalary = employee.salaryAmount / 30;
+    let salaryBase = roundCOP(employee.salaryAmount * (workedDays / calendarDays));
+    if (medicalLeaveOrdinaryDaysExcluded > 0) {
+      salaryBase = Math.max(
+        0,
+        salaryBase - roundCOP(dailySalary * medicalLeaveOrdinaryDaysExcluded),
+      );
+    }
 
     // ── 2. Contribution base ──────────────────────────────────────────────────
     // INTEGRAL: 70% of prorated salary (CST art. 132 par. 2)
@@ -103,7 +116,7 @@ export class PayrollCalculationService {
     }
 
     // ── 5. Gross pay ──────────────────────────────────────────────────────────
-    const grossPay = salaryBase + transportSubsidy + overtimePay;
+    const grossPay = salaryBase + transportSubsidy + overtimePay + medicalLeaveEmployerPay;
 
     // ── 6. Employee deductions ────────────────────────────────────────────────
     const healthDeduction = roundCOP(contributionBase * EMPLOYEE_HEALTH_PCT);
@@ -160,6 +173,11 @@ export class PayrollCalculationService {
       overtimePay,
       overtimeBreakdown,
       grossPay,
+      medicalLeaveEmployerDays,
+      medicalLeaveEmployerPay,
+      medicalLeaveEpsArlDays,
+      medicalLeaveEpsArlPay,
+      medicalLeaveOrdinaryDaysExcluded,
       healthDeduction,
       pensionDeduction,
       incomeTaxWithholding,

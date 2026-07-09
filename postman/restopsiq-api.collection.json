@@ -554,6 +554,36 @@
     {
       "key": "attendanceUserLastEntryLogId",
       "value": ""
+    },
+    {
+      "key": "medicalLeaveEmployeeId",
+      "value": "",
+      "type": "string",
+      "description": "EmployeeDetails.id capturado de GET /api/employees (NOM-13)"
+    },
+    {
+      "key": "medicalLeaveId",
+      "value": "",
+      "type": "string",
+      "description": "MedicalLeave.id capturado al registrar incapacidad"
+    },
+    {
+      "key": "medicalLeaveStartDate",
+      "value": "2026-03-01",
+      "type": "string",
+      "description": "Fecha inicio incapacidad (YYYY-MM-DD)"
+    },
+    {
+      "key": "medicalLeaveEndDate",
+      "value": "2026-03-05",
+      "type": "string",
+      "description": "Fecha fin incapacidad (YYYY-MM-DD)"
+    },
+    {
+      "key": "medicalLeaveMonth",
+      "value": "2026-03",
+      "type": "string",
+      "description": "Filtro mes listado incapacidades (YYYY-MM)"
     }
   ],
   "item": [
@@ -13854,6 +13884,285 @@
               "script": {
                 "type": "text/javascript",
                 "exec": ["pm.test('letter pendiente: 404', () => pm.response.to.have.status(404));"]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "NOM-13 Medical Leaves",
+      "description": "Incapacidades médicas NOM-13 — registro RRHH, estados y soporte escaneado.\n\nPrerrequisitos:\n1. Ejecutar **NOM-06** → Login NOMINA para obtener `{{accessTokenNomina}}`\n2. Headers: `Authorization: Bearer {{accessTokenNomina}}`, `x-tenant-id: {{tenantId}}`\n3. Opcional: `GET /api/employees` (NOM-02) para fijar `{{medicalLeaveEmployeeId}}` (EmployeeDetails.id)\n\nOrden feliz: Register → List → Detail → Upload soporte → Radicar EPS → Recobrada → URL soporte.\n\nNota upload: adjunta manualmente un PDF/JPG/PNG en el campo `file` del request de soporte.",
+      "item": [
+        {
+          "name": "GET Employees — capturar employeeId",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenNomina}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": "{{baseUrl}}/api/employees?limit=5"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('employees: status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('employees: array', () => pm.expect(body).to.be.an('array'));",
+                  "if (Array.isArray(body) && body[0]?.id) {",
+                  "  pm.collectionVariables.set('medicalLeaveEmployeeId', body[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Register — incapacidad COMUN",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenNomina}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": \"{{medicalLeaveEmployeeId}}\",\n  \"origin\": \"COMUN\",\n  \"startDate\": \"{{medicalLeaveStartDate}}\",\n  \"endDate\": \"{{medicalLeaveEndDate}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/medical-leaves"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('register: status 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('register: status REGISTRADA', () => pm.expect(body.status).to.eql('REGISTRADA'));",
+                  "pm.test('register: incluye split calculado', () => {",
+                  "  pm.expect(body).to.have.property('employerPaidDays');",
+                  "  pm.expect(body).to.have.property('annualAccumulatedDays');",
+                  "  pm.expect(body).to.have.property('exceeds180DayThreshold');",
+                  "});",
+                  "pm.collectionVariables.set('medicalLeaveId', body.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET List — filtros mes y sede",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenNomina}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": "{{baseUrl}}/api/medical-leaves?month={{medicalLeaveMonth}}&take=20"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('list: status 200', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json()).to.be.an('array');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Detail — por id",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenNomina}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": "{{baseUrl}}/api/medical-leaves/{{medicalLeaveId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('detail: status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.id).to.eql(pm.collectionVariables.get('medicalLeaveId'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Support document — adjuntar PDF",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenNomina}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "",
+                  "description": "Adjunta manualmente un PDF/JPG/PNG (máx. 10 MB)"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/api/medical-leaves/{{medicalLeaveId}}/support-document"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('support upload: status 200 or 201', () => {",
+                  "  pm.expect([200, 201]).to.include(pm.response.code);",
+                  "});",
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  pm.expect(pm.response.json().supportStorageObjectId).to.be.a('string');",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH Status — RADICADA_EPS",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenNomina}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"RADICADA_EPS\"\n}"
+            },
+            "url": "{{baseUrl}}/api/medical-leaves/{{medicalLeaveId}}/status"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('radicar: status 200', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().status).to.eql('RADICADA_EPS');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH Status — RECOBRADA",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenNomina}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"RECOBRADA\"\n}"
+            },
+            "url": "{{baseUrl}}/api/medical-leaves/{{medicalLeaveId}}/status"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('recobrada: status 200', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().status).to.eql('RECOBRADA');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Support document URL",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenNomina}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": "{{baseUrl}}/api/medical-leaves/{{medicalLeaveId}}/support-document/url"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('support url: status 200', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().url).to.be.a('string');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Negative: OPERATOR no puede registrar",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenOperator}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": \"{{medicalLeaveEmployeeId}}\",\n  \"origin\": \"COMUN\",\n  \"startDate\": \"{{medicalLeaveStartDate}}\",\n  \"endDate\": \"{{medicalLeaveEndDate}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/medical-leaves"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('operator register: 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE Soft delete",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenNomina}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": "{{baseUrl}}/api/medical-leaves/{{medicalLeaveId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('delete: status 200', () => pm.response.to.have.status(200));"]
               }
             }
           ]

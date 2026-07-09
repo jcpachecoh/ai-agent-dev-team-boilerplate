@@ -27,6 +27,7 @@ import {
   Settings,
   Shield,
   ShieldCheck,
+  Stethoscope,
   Truck,
   Tags,
   TriangleAlert,
@@ -251,6 +252,12 @@ export const navigationItems: NavItem[] = [
         icon: Scale,
       },
       {
+        id: 'payroll-novedades-incapacidades',
+        label: 'Incapacidades',
+        path: '/payroll/novedades/incapacidades',
+        icon: Stethoscope,
+      },
+      {
         id: 'payroll-vacations',
         label: 'Vacaciones',
         path: '/payroll/vacations',
@@ -344,6 +351,7 @@ const routeLabels: Record<string, string> = {
   '/payroll/salaries': 'Salarios',
   '/payroll/dotaciones': 'Dotación',
   '/payroll/legal-parameters': 'Parámetros legales',
+  '/payroll/novedades/incapacidades': 'Incapacidades médicas',
   '/payroll/vacations': 'Vacaciones',
   '/mi-perfil': 'Mi perfil',
   '/mi-perfil/informacion-personal': 'Información personal',

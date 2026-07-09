@@ -45,6 +45,8 @@ import {
 } from '../controller/dto/social-security-report-response.dto';
 import { VacationsService } from '../../vacations/service/vacations.service';
 import { countApprovedVacationDaysInRange } from '../../attendance/service/vacation-attendance.guard';
+import { MedicalLeavesRepository } from '../../medical-leaves/repository/medical-leaves.repository';
+import { calculateMedicalLeaveMonthAdjustment } from '../../payroll/utils/medical-leave-payroll.utils';
 
 // CST art. 168: maximum 2h/day and 12h/week of extra (overtime) hours.
 // These are OT-only caps — distinct from the total jornada limit (Ley 2101/2021), which is
@@ -337,6 +339,11 @@ function mapToPayrollEmployeeRow(
     employerCajaContribution: calc.employerCajaContribution,
     totalEmployerContributions: calc.totalEmployerContributions,
     totalPayrollCost: calc.totalPayrollCost,
+    medicalLeaveEmployerDays: calc.medicalLeaveEmployerDays,
+    medicalLeaveEmployerPay: calc.medicalLeaveEmployerPay,
+    medicalLeaveEpsArlDays: calc.medicalLeaveEpsArlDays,
+    medicalLeaveEpsArlPay: calc.medicalLeaveEpsArlPay,
+    medicalLeaveOrdinaryDaysExcluded: calc.medicalLeaveOrdinaryDaysExcluded,
   };
 }
 
@@ -351,6 +358,7 @@ export class ReportsService implements IReportsService {
     private readonly userLocationsService: UserLocationsService,
     private readonly legalParametersService: LaborLegalParametersService,
     @Optional() private readonly vacationsService?: VacationsService,
+    @Optional() private readonly medicalLeavesRepository?: MedicalLeavesRepository,
   ) {}
 
   private async countVacationDaysForEmployee(
@@ -370,6 +378,50 @@ export class ReportsService implements IReportsService {
       dateTo,
     );
     return countApprovedVacationDaysInRange(ranges, dateFrom, dateTo);
+  }
+
+  private async buildMedicalLeaveAdjustmentsByEmployee(
+    tenantId: string,
+    employeeIds: string[],
+    periodStart: Date,
+    periodEnd: Date,
+    salaryByEmployeeId: Map<string, number>,
+  ): Promise<Map<string, ReturnType<typeof calculateMedicalLeaveMonthAdjustment>>> {
+    const adjustments = new Map<string, ReturnType<typeof calculateMedicalLeaveMonthAdjustment>>();
+
+    if (!this.medicalLeavesRepository || employeeIds.length === 0) {
+      return adjustments;
+    }
+
+    const leaves = await this.medicalLeavesRepository.findOverlappingForPayrollPeriodByEmployeeIds(
+      tenantId,
+      employeeIds,
+      periodStart,
+      periodEnd,
+    );
+
+    const leavesByEmployee = new Map<string, typeof leaves>();
+    for (const leave of leaves) {
+      const bucket = leavesByEmployee.get(leave.employeeId) ?? [];
+      bucket.push(leave);
+      leavesByEmployee.set(leave.employeeId, bucket);
+    }
+
+    for (const employeeId of employeeIds) {
+      const employeeLeaves = leavesByEmployee.get(employeeId) ?? [];
+      if (employeeLeaves.length === 0) {
+        continue;
+      }
+
+      const salaryAmount = salaryByEmployeeId.get(employeeId) ?? 0;
+      const dailySalary = salaryAmount / 30;
+      adjustments.set(
+        employeeId,
+        calculateMedicalLeaveMonthAdjustment(employeeLeaves, periodStart, periodEnd, dailySalary),
+      );
+    }
+
+    return adjustments;
   }
 
   private async resolveLocationScope(
@@ -463,6 +515,17 @@ export class ReportsService implements IReportsService {
 
     const rows: PayrollEmployeeRowDto[] = [];
 
+    const salaryByEmployeeId = new Map(
+      employees.map((emp) => [emp.id, decimalToNumber(emp.salaryAmount)]),
+    );
+    const medicalLeaveAdjustments = await this.buildMedicalLeaveAdjustmentsByEmployee(
+      tenantId,
+      employeeIds,
+      from,
+      to,
+      salaryByEmployeeId,
+    );
+
     for (const emp of employees) {
       const empLogs = logsByEmployee.get(emp.id) ?? [];
       const vacationDays = await this.countVacationDaysForEmployee(tenantId, emp.id, from, to);
@@ -475,6 +538,8 @@ export class ReportsService implements IReportsService {
         rateResolvers,
       );
 
+      const medicalLeave = medicalLeaveAdjustments.get(emp.id);
+
       const input: EmployeePayrollInput = {
         employeeId: emp.id,
         userId: emp.userId,
@@ -485,6 +550,11 @@ export class ReportsService implements IReportsService {
         salaryAmount: decimalToNumber(emp.salaryAmount),
         hasTransportSubsidy: emp.hasTransportSubsidy,
         arlRiskLevel: emp.arlRiskLevel,
+        medicalLeaveEmployerDays: medicalLeave?.medicalLeaveEmployerDays ?? 0,
+        medicalLeaveEmployerPay: medicalLeave?.medicalLeaveEmployerPay ?? 0,
+        medicalLeaveEpsArlDays: medicalLeave?.medicalLeaveEpsArlDays ?? 0,
+        medicalLeaveEpsArlPay: medicalLeave?.medicalLeaveEpsArlPay ?? 0,
+        medicalLeaveOrdinaryDaysExcluded: medicalLeave?.medicalLeaveOrdinaryDaysExcluded ?? 0,
       };
 
       const calc = this.payrollCalculationService.calculateEmployeePeriod(

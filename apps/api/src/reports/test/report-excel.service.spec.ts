@@ -55,6 +55,11 @@ function makeEmployee(overrides: Partial<PayrollEmployeeRowDto> = {}): PayrollEm
     employerCajaContribution: 30_000,
     totalEmployerContributions: 427_500,
     totalPayrollCost: 2_164_500,
+    medicalLeaveEmployerDays: 0,
+    medicalLeaveEmployerPay: 0,
+    medicalLeaveEpsArlDays: 0,
+    medicalLeaveEpsArlPay: 0,
+    medicalLeaveOrdinaryDaysExcluded: 0,
     ...overrides,
   };
 }

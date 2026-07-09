@@ -1,6 +1,7 @@
 import type { PayrollEmployeesFilters } from '../types/payroll.types';
 import type { AttendanceReportQuery, PayrollReportQuery } from '../types/payroll-reports.types';
 import type { ListEmployeePositionsFilters } from '../types/employee-position.types';
+import type { ListMedicalLeavesFilters } from '../types/medical-leaves.types';
 
 export const payrollKeys = {
   all: ['payroll'] as const,
@@ -36,6 +37,10 @@ export const payrollKeys = {
     [...payrollKeys.reports(), 'payroll', query] as const,
   attendanceReport: (query: AttendanceReportQuery) =>
     [...payrollKeys.reports(), 'attendance', query] as const,
+  medicalLeaves: () => [...payrollKeys.all, 'medical-leaves'] as const,
+  medicalLeaveList: (filters: ListMedicalLeavesFilters = {}) =>
+    [...payrollKeys.medicalLeaves(), filters] as const,
+  medicalLeaveDetail: (id: string) => [...payrollKeys.medicalLeaves(), 'detail', id] as const,
   vacations: () => [...payrollKeys.all, 'vacations'] as const,
   vacationBalance: (employeeId: string) =>
     [...payrollKeys.vacations(), 'balance', employeeId] as const,

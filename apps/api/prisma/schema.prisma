@@ -67,6 +67,7 @@ model StorageObject {
   employeeAssets           EmployeeAsset[]
   employeeDocuments        EmployeeDocument[]
   vacationRequestLetters   VacationRequest[]
+  medicalLeaveSupportDocs  MedicalLeave[]
 
   @@index([tenantId])
   @@index([tenantId, domain])
@@ -808,6 +809,7 @@ model EmployeeDetails {
   employeeShiftAssignments EmployeeShiftAssignment[]
   vacationBalance          VacationBalance?
   vacationRequests         VacationRequest[]
+  medicalLeaves            MedicalLeave[]
 
   @@index([tenantId])
   @@index([locationId])
@@ -2227,7 +2229,8 @@ model VacationRequest {
   @@index([tenantId, status])
   @@index([tenantId, isActive])
   @@map("vacation_requests")
-  }
+}
+
 // OS-585 / NOM-06 — MOTOR DE PARÁMETROS LEGALES CON VIGENCIA
 // ─────────────────────────────────────────────────────────────────────────────
 // key: ver LABOR_LEGAL_PARAMETER_KEYS (src/labor-legal-parameters/labor-legal-parameters.constants.ts)
@@ -2240,21 +2243,70 @@ model VacationRequest {
 //   NULL <> NULL en un unique index, así que dos filas globales con la misma key/validFrom
 //   pasarían el @@unique. tenantScope resuelve esto: siempre tiene un valor no nulo.
 model LaborLegalParameter {
-  id         String    @id @default(cuid())
-  tenantId   String? // null = parámetro global; valor = override de un tenant específico
-  tenantScope String   @default("GLOBAL") // = tenantId ?? 'GLOBAL' — normalizado por el service, ver nota arriba
-  key        String
-  value      Decimal   @db.Decimal(14, 4)
-  validFrom  DateTime
-  validTo    DateTime?
-  source     String? // referencia legal (ej. "Decreto 2481/2025", "Ley 2101/2021")
-  deletedAt  DateTime?
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  id          String    @id @default(cuid())
+  tenantId    String? // null = parámetro global; valor = override de un tenant específico
+  tenantScope String    @default("GLOBAL") // = tenantId ?? 'GLOBAL' — normalizado por el service, ver nota arriba
+  key         String
+  value       Decimal   @db.Decimal(14, 4)
+  validFrom   DateTime
+  validTo     DateTime?
+  source      String? // referencia legal (ej. "Decreto 2481/2025", "Ley 2101/2021")
+  deletedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@unique([tenantScope, key, validFrom])
   @@index([key, validFrom])
   @@index([tenantId, key, validFrom])
   @@index([deletedAt])
   @@map("labor_legal_parameters")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INCAPACIDADES MÉDICAS — comunes y laborales (NOM-13)
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum LeaveOrigin {
+  COMUN
+  LABORAL
+}
+
+enum LeaveStatus {
+  REGISTRADA
+  RADICADA_EPS
+  RECOBRADA
+  RECHAZADA
+}
+
+model MedicalLeave {
+  id                     String      @id @default(cuid())
+  tenantId               String
+  employeeId             String
+  origin                 LeaveOrigin
+  startDate              DateTime    @db.Date
+  endDate                DateTime    @db.Date
+  totalDays              Int
+  employerPaidDays       Int
+  epsArlPaidDays         Int
+  epsArlAmount           Decimal?    @db.Decimal(12, 2)
+  employerAmount         Decimal     @db.Decimal(12, 2)
+  supportStorageObjectId String?
+  status                 LeaveStatus @default(REGISTRADA)
+  radicatedAt            DateTime?
+  recoveredAt            DateTime?
+  rejectedAt             DateTime?
+  rejectionReason        String?
+  createdAt              DateTime    @default(now())
+  updatedAt              DateTime    @updatedAt
+  deletedAt              DateTime?
+
+  employee        EmployeeDetails @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  supportDocument StorageObject?  @relation(fields: [supportStorageObjectId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([tenantId, employeeId])
+  @@index([tenantId, status])
+  @@index([tenantId, deletedAt])
+  @@index([tenantId, startDate, endDate])
+  @@map("medical_leaves")
 }

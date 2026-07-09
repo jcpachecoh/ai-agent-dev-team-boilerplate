@@ -345,4 +345,4 @@ enum VacationStatus {
 
 - **Depende de:** OS-377, OS-379.
 - **Relacionado con:** OS-535 (perfil empleado RRHH — **sin** vacaciones; Mi perfil es módulo aparte).
-- **Bloquea:** NOM-12, NOM-14, NOM-18.
+- **Bloquea:** NOM-12, NOM-13, NOM-18.

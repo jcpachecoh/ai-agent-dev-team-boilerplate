@@ -38,6 +38,11 @@ export class PayrollEmployeeRowDto {
   @ApiProperty() employerCajaContribution!: number;
   @ApiProperty() totalEmployerContributions!: number;
   @ApiProperty() totalPayrollCost!: number;
+  @ApiProperty() medicalLeaveEmployerDays!: number;
+  @ApiProperty() medicalLeaveEmployerPay!: number;
+  @ApiProperty() medicalLeaveEpsArlDays!: number;
+  @ApiProperty() medicalLeaveEpsArlPay!: number;
+  @ApiProperty() medicalLeaveOrdinaryDaysExcluded!: number;
 }
 
 export class LocationPayrollTotalsDto {

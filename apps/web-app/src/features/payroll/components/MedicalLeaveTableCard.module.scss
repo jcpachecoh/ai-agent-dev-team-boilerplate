@@ -1,0 +1,81 @@
+$mobile-breakpoint: 768px;
+
+.card {
+  display: none;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--empleado-border);
+  border-radius: 4px;
+  background: var(--empleado-surface);
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .card {
+    display: flex;
+  }
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.employeeCell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.employeeText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.name {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--empleado-text);
+}
+
+.meta {
+  margin: 2px 0 0;
+  font-size: 0.6875rem;
+  color: var(--empleado-faint);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.metric {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--empleado-muted);
+}
+
+.value {
+  font-size: 0.75rem;
+  color: var(--empleado-text-secondary);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
