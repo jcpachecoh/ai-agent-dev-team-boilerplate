@@ -254,6 +254,11 @@ export class PayrollService implements IPayrollService {
     return employee;
   }
 
+  /** Autoservicio — empleado vinculado al usuario autenticado (sin scoping de sede). */
+  async findSelf(tenantId: string, userId: string): Promise<EmployeeDetails & { user: User }> {
+    return this.findEmployeeOrThrow(tenantId, userId);
+  }
+
   /** Búsqueda sin scoping de sede: uso interno de `update`/`remove` (escritura, ya acotada por PAYROLL_WRITE_ROLES). */
   private async findEmployeeOrThrow(
     tenantId: string,

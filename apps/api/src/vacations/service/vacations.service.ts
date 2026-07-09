@@ -29,6 +29,7 @@ import {
 import { VacationsRepository } from '../repository/vacations.repository';
 import { VacationAccrualService } from './vacation-accrual.service';
 import { getAccrualThroughMonth, startOfMonth } from '../utils/vacation-accrual.utils';
+import { isEmployeeEligibleForVacations } from '../utils/vacation-eligibility.utils';
 
 const LEVEL1_APPROVER_ROLES = new Set(['SUPERVISOR', 'MANAGER']);
 const LEVEL2_APPROVER_ROLES = new Set(['NOMINA']);
@@ -63,9 +64,13 @@ export class VacationsService implements IVacationsService {
   ) {}
 
   async getBalance(tenantId: string, employeeId: string): Promise<VacationBalanceRecord> {
-    const hireDate = await this.repository.findEmployeeHireDate(tenantId, employeeId);
-    if (!hireDate) {
+    const profile = await this.repository.findEmployeeVacationProfile(tenantId, employeeId);
+    if (!profile) {
       throw new NotFoundException(`Empleado ${employeeId} no encontrado`);
+    }
+
+    if (!isEmployeeEligibleForVacations(profile.contractType)) {
+      return this.resolveIneligibleEmployeeBalance(tenantId, employeeId);
     }
 
     let balance = await this.repository.findBalanceByEmployee(tenantId, employeeId);
@@ -75,7 +80,7 @@ export class VacationsService implements IVacationsService {
       const synced = await this.vacationAccrualService.syncEmployeeBalance(
         tenantId,
         employeeId,
-        hireDate,
+        profile.hireDate,
         referenceDate,
       );
       balance = synced.balance;
@@ -90,6 +95,7 @@ export class VacationsService implements IVacationsService {
     input: RequestVacationInput,
   ): Promise<VacationRequestRecord> {
     await this.assertCanRequestForEmployee(tenantId, actorUserId, input.employeeId);
+    await this.assertEmployeeCanRequestVacations(tenantId, input.employeeId);
 
     if (input.startDate > input.endDate) {
       throw new BadRequestException(
@@ -200,6 +206,20 @@ export class VacationsService implements IVacationsService {
     return this.repository.listRequestSummaries(tenantId, options);
   }
 
+  async getMyBalance(tenantId: string, actorUserId: string): Promise<VacationBalanceRecord> {
+    const employeeId = await this.requireEmployeeIdForUser(tenantId, actorUserId);
+    return this.getBalance(tenantId, employeeId);
+  }
+
+  async listMyRequests(
+    tenantId: string,
+    actorUserId: string,
+    options: Omit<ListVacationRequestsOptions, 'employeeId'>,
+  ): Promise<VacationRequestSummary[]> {
+    const employeeId = await this.requireEmployeeIdForUser(tenantId, actorUserId);
+    return this.listRequests(tenantId, { ...options, employeeId });
+  }
+
   async getApprovedDisfruteRanges(
     tenantId: string,
     employeeId: string,
@@ -301,6 +321,39 @@ export class VacationsService implements IVacationsService {
     }
   }
 
+  private async assertEmployeeCanRequestVacations(
+    tenantId: string,
+    employeeId: string,
+  ): Promise<void> {
+    const profile = await this.repository.findEmployeeVacationProfile(tenantId, employeeId);
+    if (!profile) {
+      throw new NotFoundException(`Empleado ${employeeId} no encontrado`);
+    }
+
+    if (!isEmployeeEligibleForVacations(profile.contractType)) {
+      throw new BadRequestException(
+        'Los colaboradores con contrato por prestación de servicios no pueden solicitar vacaciones',
+      );
+    }
+  }
+
+  private async resolveIneligibleEmployeeBalance(
+    tenantId: string,
+    employeeId: string,
+  ): Promise<VacationBalanceRecord> {
+    const existing = await this.repository.findBalanceByEmployee(tenantId, employeeId);
+    if (existing) {
+      return existing;
+    }
+
+    return this.repository.upsertBalance(tenantId, employeeId, {
+      accruedDays: new Decimal(0),
+      takenDays: new Decimal(0),
+      compensatedDays: new Decimal(0),
+      lastAccrualDate: new Date(0),
+    });
+  }
+
   private async assertCanApproveLevel2(tenantId: string, actorUserId: string): Promise<void> {
     const actor = await this.repository.findActorUser(tenantId, actorUserId);
     if (!actor || !LEVEL2_APPROVER_ROLES.has(actor.roleCode)) {
@@ -390,6 +443,14 @@ export class VacationsService implements IVacationsService {
       throw new NotFoundException(`Solicitud de vacaciones ${requestId} no encontrada`);
     }
     return request;
+  }
+
+  private async requireEmployeeIdForUser(tenantId: string, userId: string): Promise<string> {
+    const employeeId = await this.repository.findEmployeeIdByUserId(tenantId, userId);
+    if (!employeeId) {
+      throw new NotFoundException('No tiene un registro de empleado vinculado a su usuario');
+    }
+    return employeeId;
   }
 
   private isBalanceStale(lastAccrualDate: Date, referenceDate: Date): boolean {

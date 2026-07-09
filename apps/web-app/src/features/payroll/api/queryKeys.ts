@@ -36,4 +36,9 @@ export const payrollKeys = {
     [...payrollKeys.reports(), 'payroll', query] as const,
   attendanceReport: (query: AttendanceReportQuery) =>
     [...payrollKeys.reports(), 'attendance', query] as const,
+  vacations: () => [...payrollKeys.all, 'vacations'] as const,
+  vacationBalance: (employeeId: string) =>
+    [...payrollKeys.vacations(), 'balance', employeeId] as const,
+  vacationRequests: (filters: Record<string, unknown> = {}) =>
+    [...payrollKeys.vacations(), 'requests', filters] as const,
 };

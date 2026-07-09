@@ -27,8 +27,12 @@
 }
 
 .emptyState {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 48px 24px;
   border: 1px dashed var(--empleado-border);
-  border-radius: 6px;
+  border-radius: 8px;
   background: var(--empleado-surface-raised);
 }
 

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma, VacationStatus, VacationType } from '@prisma/client';
+import { EmployeeContractType, Prisma, VacationStatus, VacationType } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 
 import { PrismaService } from '../../prisma/prisma.service';
@@ -8,6 +8,7 @@ import type {
   ApprovedVacationRange,
   CreateVacationRequestData,
   EmployeeApprovalContext,
+  EmployeeVacationProfile,
   IVacationsRepository,
   ListVacationRequestsOptions,
   UpdateVacationRequestData,
@@ -267,7 +268,12 @@ export class VacationsRepository implements IVacationsRepository {
 
   async findActiveEmployeesForAccrual(tenantId: string): Promise<AccrualEmployeeRecord[]> {
     return this.prisma.employeeDetails.findMany({
-      where: { tenantId, isActive: true, deletedAt: null },
+      where: {
+        tenantId,
+        isActive: true,
+        deletedAt: null,
+        contractType: { not: EmployeeContractType.PRESTACION },
+      },
       select: { id: true, hireDate: true },
       orderBy: { hireDate: 'asc' },
     });
@@ -303,12 +309,23 @@ export class VacationsRepository implements IVacationsRepository {
     return employee?.id ?? null;
   }
 
-  async findEmployeeHireDate(tenantId: string, employeeId: string): Promise<Date | null> {
+  async findEmployeeVacationProfile(
+    tenantId: string,
+    employeeId: string,
+  ): Promise<EmployeeVacationProfile | null> {
     const employee = await this.prisma.employeeDetails.findFirst({
       where: { tenantId, id: employeeId, isActive: true, deletedAt: null },
-      select: { hireDate: true },
+      select: { hireDate: true, contractType: true },
     });
-    return employee?.hireDate ?? null;
+
+    if (!employee) {
+      return null;
+    }
+
+    return {
+      hireDate: employee.hireDate,
+      contractType: employee.contractType,
+    };
   }
 
   private buildListRequestsWhere(

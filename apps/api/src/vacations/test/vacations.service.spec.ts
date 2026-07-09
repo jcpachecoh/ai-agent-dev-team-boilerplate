@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { VacationStatus, VacationType } from '@prisma/client';
+import { EmployeeContractType, VacationStatus, VacationType } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 
 import { UserLocationsService } from '../../locations/service/user-locations.service';
@@ -84,7 +84,7 @@ describe('VacationsService', () => {
       findActiveEmployeesForAccrual: jest.fn(),
       findActorUser: jest.fn(),
       findEmployeeIdByUserId: jest.fn(),
-      findEmployeeHireDate: jest.fn(),
+      findEmployeeVacationProfile: jest.fn(),
     } as unknown as jest.Mocked<VacationsRepository>;
 
     userLocationsService = {
@@ -118,6 +118,10 @@ describe('VacationsService', () => {
     it('allows an employee to request vacation for themselves', async () => {
       // Arrange
       repository.findEmployeeIdByUserId.mockResolvedValue(EMPLOYEE_ID);
+      repository.findEmployeeVacationProfile.mockResolvedValue({
+        hireDate: new Date(2024, 0, 1),
+        contractType: EmployeeContractType.INDEFINIDO,
+      });
       repository.createRequest.mockResolvedValue(buildRequest());
 
       // Act
@@ -138,6 +142,26 @@ describe('VacationsService', () => {
         }),
       );
       expect(result.status).toBe(VacationStatus.SOLICITADA);
+    });
+
+    it('rejects vacation requests for prestación de servicios contracts', async () => {
+      // Arrange
+      repository.findEmployeeIdByUserId.mockResolvedValue(EMPLOYEE_ID);
+      repository.findEmployeeVacationProfile.mockResolvedValue({
+        hireDate: new Date(2024, 0, 1),
+        contractType: EmployeeContractType.PRESTACION,
+      });
+
+      // Act & Assert
+      await expect(
+        service.requestVacation(TENANT, ACTOR_USER, {
+          employeeId: EMPLOYEE_ID,
+          startDate: new Date(2026, 7, 1),
+          endDate: new Date(2026, 7, 5),
+          type: VacationType.DISFRUTE,
+        }),
+      ).rejects.toThrow(BadRequestException);
+      expect(repository.createRequest).not.toHaveBeenCalled();
     });
   });
 
@@ -233,7 +257,10 @@ describe('VacationsService', () => {
           }),
         );
       repository.findActorUser.mockResolvedValue({ roleCode: 'NOMINA', positionId: null });
-      repository.findEmployeeHireDate.mockResolvedValue(new Date(2024, 0, 1));
+      repository.findEmployeeVacationProfile.mockResolvedValue({
+        hireDate: new Date(2024, 0, 1),
+        contractType: EmployeeContractType.INDEFINIDO,
+      });
       repository.findBalanceByEmployee.mockResolvedValue(buildBalance());
       vacationAccrualService.syncEmployeeBalance.mockResolvedValue({
         balance: buildBalance(),
@@ -269,7 +296,10 @@ describe('VacationsService', () => {
         }),
       );
       repository.findActorUser.mockResolvedValue({ roleCode: 'NOMINA', positionId: null });
-      repository.findEmployeeHireDate.mockResolvedValue(new Date(2024, 0, 1));
+      repository.findEmployeeVacationProfile.mockResolvedValue({
+        hireDate: new Date(2024, 0, 1),
+        contractType: EmployeeContractType.INDEFINIDO,
+      });
       repository.findBalanceByEmployee.mockResolvedValue(buildBalance());
 
       // Act & Assert
@@ -288,7 +318,10 @@ describe('VacationsService', () => {
         }),
       );
       repository.findActorUser.mockResolvedValue({ roleCode: 'NOMINA', positionId: null });
-      repository.findEmployeeHireDate.mockResolvedValue(new Date(2024, 0, 1));
+      repository.findEmployeeVacationProfile.mockResolvedValue({
+        hireDate: new Date(2024, 0, 1),
+        contractType: EmployeeContractType.INDEFINIDO,
+      });
       repository.findBalanceByEmployee.mockResolvedValue(
         buildBalance({ accruedDays: new Decimal(15), compensatedDays: new Decimal(0) }),
       );
@@ -367,7 +400,10 @@ describe('VacationsService', () => {
     it('syncs balance when employee has no vacation record', async () => {
       // Arrange
       const hireDate = new Date(2024, 0, 1);
-      repository.findEmployeeHireDate.mockResolvedValue(hireDate);
+      repository.findEmployeeVacationProfile.mockResolvedValue({
+        hireDate,
+        contractType: EmployeeContractType.INDEFINIDO,
+      });
       repository.findBalanceByEmployee.mockResolvedValue(null);
       vacationAccrualService.syncEmployeeBalance.mockResolvedValue({
         balance: buildBalance(),
@@ -391,7 +427,10 @@ describe('VacationsService', () => {
     it('syncs balance when lastAccrualDate is behind', async () => {
       // Arrange
       const hireDate = new Date(2024, 0, 1);
-      repository.findEmployeeHireDate.mockResolvedValue(hireDate);
+      repository.findEmployeeVacationProfile.mockResolvedValue({
+        hireDate,
+        contractType: EmployeeContractType.INDEFINIDO,
+      });
       repository.findBalanceByEmployee.mockResolvedValue(
         buildBalance({ lastAccrualDate: new Date(2024, 0, 1) }),
       );
@@ -410,7 +449,7 @@ describe('VacationsService', () => {
 
     it('throws when employee does not exist', async () => {
       // Arrange
-      repository.findEmployeeHireDate.mockResolvedValue(null);
+      repository.findEmployeeVacationProfile.mockResolvedValue(null);
 
       // Act & Assert
       await expect(service.getBalance(TENANT, EMPLOYEE_ID)).rejects.toThrow(NotFoundException);
@@ -418,7 +457,10 @@ describe('VacationsService', () => {
 
     it('syncs balance when lastAccrualDate is epoch zero', async () => {
       const hireDate = new Date(2024, 0, 1);
-      repository.findEmployeeHireDate.mockResolvedValue(hireDate);
+      repository.findEmployeeVacationProfile.mockResolvedValue({
+        hireDate,
+        contractType: EmployeeContractType.INDEFINIDO,
+      });
       repository.findBalanceByEmployee.mockResolvedValue(
         buildBalance({ lastAccrualDate: new Date(0) }),
       );
@@ -436,7 +478,10 @@ describe('VacationsService', () => {
     it('returns existing balance when accrual is current', async () => {
       const hireDate = new Date(2024, 0, 1);
       const currentBalance = buildBalance({ lastAccrualDate: new Date(2026, 6, 1) });
-      repository.findEmployeeHireDate.mockResolvedValue(hireDate);
+      repository.findEmployeeVacationProfile.mockResolvedValue({
+        hireDate,
+        contractType: EmployeeContractType.INDEFINIDO,
+      });
       repository.findBalanceByEmployee.mockResolvedValue(currentBalance);
 
       const result = await service.getBalance(TENANT, EMPLOYEE_ID);
@@ -444,9 +489,36 @@ describe('VacationsService', () => {
       expect(result).toBe(currentBalance);
       expect(vacationAccrualService.syncEmployeeBalance).not.toHaveBeenCalled();
     });
+
+    it('does not accrue balance for prestación de servicios contracts', async () => {
+      repository.findEmployeeVacationProfile.mockResolvedValue({
+        hireDate: new Date(2024, 0, 1),
+        contractType: EmployeeContractType.PRESTACION,
+      });
+      repository.findBalanceByEmployee.mockResolvedValue(null);
+      repository.upsertBalance.mockResolvedValue(
+        buildBalance({
+          accruedDays: new Decimal(0),
+          takenDays: new Decimal(0),
+          compensatedDays: new Decimal(0),
+        }),
+      );
+
+      await service.getBalance(TENANT, EMPLOYEE_ID);
+
+      expect(vacationAccrualService.syncEmployeeBalance).not.toHaveBeenCalled();
+      expect(repository.upsertBalance).toHaveBeenCalled();
+    });
   });
 
   describe('requestVacation validations', () => {
+    beforeEach(() => {
+      repository.findEmployeeVacationProfile.mockResolvedValue({
+        hireDate: new Date(2024, 0, 1),
+        contractType: EmployeeContractType.INDEFINIDO,
+      });
+    });
+
     it('allows RRHH to request vacation on behalf of employee', async () => {
       repository.findEmployeeIdByUserId.mockResolvedValue('other-emp');
       repository.findActorUser.mockResolvedValue({ roleCode: 'NOMINA', positionId: null });
@@ -664,7 +736,10 @@ describe('VacationsService', () => {
           }),
         );
       repository.findActorUser.mockResolvedValue({ roleCode: 'NOMINA', positionId: null });
-      repository.findEmployeeHireDate.mockResolvedValue(new Date(2024, 0, 1));
+      repository.findEmployeeVacationProfile.mockResolvedValue({
+        hireDate: new Date(2024, 0, 1),
+        contractType: EmployeeContractType.INDEFINIDO,
+      });
       repository.findBalanceByEmployee.mockResolvedValue(buildBalance());
       vacationAccrualService.syncEmployeeBalance.mockResolvedValue({
         balance: buildBalance(),
@@ -769,7 +844,10 @@ describe('VacationsService', () => {
         .mockResolvedValueOnce(buildRequest({ status: VacationStatus.APROBADA_NIVEL_1 }))
         .mockResolvedValueOnce(buildRequest({ status: VacationStatus.APROBADA }));
       repository.findActorUser.mockResolvedValue({ roleCode: 'NOMINA', positionId: null });
-      repository.findEmployeeHireDate.mockResolvedValue(new Date(2024, 0, 1));
+      repository.findEmployeeVacationProfile.mockResolvedValue({
+        hireDate: new Date(2024, 0, 1),
+        contractType: EmployeeContractType.INDEFINIDO,
+      });
       repository.findBalanceByEmployee.mockResolvedValue(buildBalance());
       vacationAccrualService.syncEmployeeBalance.mockResolvedValue({
         balance: buildBalance(),

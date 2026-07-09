@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { VacationStatus, VacationType } from '@prisma/client';
+import { EmployeeContractType, VacationStatus, VacationType } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 
 import { PrismaService } from '../../prisma/prisma.service';
@@ -203,7 +203,7 @@ describe('VacationsRepository', () => {
   });
 
   describe('findActiveEmployeesForAccrual', () => {
-    it('filters active employees by tenantId', async () => {
+    it('filters active employees by tenantId and excludes prestación contracts', async () => {
       // Arrange
       prisma.employeeDetails.findMany.mockResolvedValue([
         { id: EMPLOYEE_ID, hireDate: new Date('2024-01-01') },
@@ -214,7 +214,12 @@ describe('VacationsRepository', () => {
 
       // Assert
       expect(prisma.employeeDetails.findMany).toHaveBeenCalledWith({
-        where: { tenantId: TENANT, isActive: true, deletedAt: null },
+        where: {
+          tenantId: TENANT,
+          isActive: true,
+          deletedAt: null,
+          contractType: { not: EmployeeContractType.PRESTACION },
+        },
         select: { id: true, hireDate: true },
         orderBy: { hireDate: 'asc' },
       });
@@ -534,20 +539,26 @@ describe('VacationsRepository', () => {
     });
   });
 
-  describe('findEmployeeHireDate', () => {
-    it('returns hire date for active employee', async () => {
+  describe('findEmployeeVacationProfile', () => {
+    it('returns hire date and contract type for active employee', async () => {
       const hireDate = new Date('2024-01-01');
-      prisma.employeeDetails.findFirst.mockResolvedValue({ hireDate });
+      prisma.employeeDetails.findFirst.mockResolvedValue({
+        hireDate,
+        contractType: EmployeeContractType.INDEFINIDO,
+      });
 
-      const result = await repository.findEmployeeHireDate(TENANT, EMPLOYEE_ID);
+      const result = await repository.findEmployeeVacationProfile(TENANT, EMPLOYEE_ID);
 
-      expect(result).toEqual(hireDate);
+      expect(result).toEqual({
+        hireDate,
+        contractType: EmployeeContractType.INDEFINIDO,
+      });
     });
 
     it('returns null when employee is not found', async () => {
       prisma.employeeDetails.findFirst.mockResolvedValue(null);
 
-      const result = await repository.findEmployeeHireDate(TENANT, EMPLOYEE_ID);
+      const result = await repository.findEmployeeVacationProfile(TENANT, EMPLOYEE_ID);
 
       expect(result).toBeNull();
     });

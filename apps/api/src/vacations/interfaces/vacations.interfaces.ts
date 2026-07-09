@@ -111,6 +111,12 @@ export interface AccrualEmployeeRecord {
   hireDate: Date;
 }
 
+/** Perfil mínimo del empleado para vacaciones (acumulación y elegibilidad). */
+export interface EmployeeVacationProfile {
+  hireDate: Date;
+  contractType: import('@prisma/client').EmployeeContractType;
+}
+
 export interface IVacationsRepository {
   findBalanceByEmployee(
     tenantId: string,
@@ -163,7 +169,10 @@ export interface IVacationsRepository {
     userId: string,
   ): Promise<{ roleCode: string; positionId: string | null } | null>;
   findEmployeeIdByUserId(tenantId: string, userId: string): Promise<string | null>;
-  findEmployeeHireDate(tenantId: string, employeeId: string): Promise<Date | null>;
+  findEmployeeVacationProfile(
+    tenantId: string,
+    employeeId: string,
+  ): Promise<EmployeeVacationProfile | null>;
 }
 
 export interface IVacationLetterService {
@@ -203,6 +212,12 @@ export interface IVacationsService {
   listRequests(
     tenantId: string,
     options: ListVacationRequestsOptions,
+  ): Promise<VacationRequestSummary[]>;
+  getMyBalance(tenantId: string, actorUserId: string): Promise<VacationBalanceRecord>;
+  listMyRequests(
+    tenantId: string,
+    actorUserId: string,
+    options: Omit<ListVacationRequestsOptions, 'employeeId'>,
   ): Promise<VacationRequestSummary[]>;
   getApprovedDisfruteRanges(
     tenantId: string,

@@ -1,0 +1,93 @@
+.calendar {
+  border: 1px solid var(--empleado-border, #e4e7ec);
+  border-radius: 12px;
+  padding: 1rem;
+  background: var(--empleado-surface, #fff);
+}
+
+.header h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.subtitle {
+  margin: 0.25rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--empleado-muted, #667085);
+}
+
+.weekdays,
+.grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.35rem;
+}
+
+.weekdays {
+  margin-top: 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--empleado-muted, #667085);
+}
+
+.grid {
+  margin-top: 0.35rem;
+}
+
+.cell {
+  min-height: 6.25rem;
+  border: 1px solid var(--empleado-border, #e4e7ec);
+  border-radius: 8px;
+  padding: 0.35rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.outside {
+  opacity: 0.45;
+}
+
+.dayNumber {
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.events {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.event {
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.25;
+  border-radius: 4px;
+  padding: 0.15rem 0.35rem;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  word-break: break-word;
+}
+
+.status_SOLICITADA {
+  background: #eff8ff;
+  color: #175cd3;
+}
+
+.status_APROBADA_NIVEL_1 {
+  background: #fef0c7;
+  color: #b54708;
+}
+
+.status_APROBADA {
+  background: #ecfdf3;
+  color: #027a48;
+}
+
+.more {
+  font-size: 0.65rem;
+  color: var(--empleado-muted, #667085);
+}

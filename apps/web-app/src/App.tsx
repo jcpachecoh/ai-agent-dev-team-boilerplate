@@ -16,6 +16,7 @@ import InventoryProductsPage from '@/pages/InventoryProductsPage';
 import InventoryReportsPage from '@/pages/InventoryReportsPage';
 import ActivateAccountPage from '@/pages/ActivateAccountPage/ActivateAccountPage';
 import LoginPage from '@/pages/LoginPage';
+import MyProfilePage from '@/pages/MyProfilePage/MyProfilePage';
 import NotFoundPage from '@/pages/NotFoundPage';
 import PayrollPage from '@/pages/PayrollPage';
 import AttendancePage from '@/pages/AttendancePage/AttendancePage';
@@ -218,6 +219,14 @@ export default function App(): React.JSX.Element {
               element={
                 <ProtectedRoute module={AppModule.NOMINA}>
                   <PayrollPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/mi-perfil/*"
+              element={
+                <ProtectedRoute module={AppModule.MI_PERFIL}>
+                  <MyProfilePage />
                 </ProtectedRoute>
               }
             />

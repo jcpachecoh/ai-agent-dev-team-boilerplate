@@ -1,0 +1,22 @@
+.screen {
+  min-height: 100%;
+}
+
+.content {
+  min-height: 0;
+}
+
+.state {
+  padding: 3rem 1rem;
+  text-align: center;
+  color: var(--empleado-muted, #667085);
+
+  button {
+    margin-top: 0.75rem;
+    border: 1px solid var(--empleado-border, #d0d5dd);
+    border-radius: 8px;
+    padding: 0.45rem 0.9rem;
+    background: transparent;
+    cursor: pointer;
+  }
+}

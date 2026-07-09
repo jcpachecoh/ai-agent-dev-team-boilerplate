@@ -1,0 +1,8 @@
+.state {
+  border: 1px solid var(--empleado-border, #2e2e2e);
+  border-radius: 4px;
+  background: var(--empleado-surface, #111);
+  color: var(--empleado-subtle, #666);
+  padding: 1rem;
+  text-align: center;
+}

@@ -1,0 +1,57 @@
+@use '@/styles/tokens' as t;
+
+.modalContent {
+  background-color: var(--color-bg-surface) !important;
+  color: var(--color-text-primary) !important;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label {
+  color: var(--color-text-secondary);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.control {
+  width: 100%;
+  min-height: 40px;
+}
+
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  width: 100%;
+}
+
+.error {
+  margin: 0;
+  color: var(--color-danger);
+  font-size: t.$font-size-xs;
+}
+
+.preview {
+  margin: 0;
+  font-size: t.$font-size-sm;
+  color: var(--color-text-secondary);
+}
+
+.warning {
+  margin: 0;
+  font-size: t.$font-size-xs;
+  color: #b54708;
+}

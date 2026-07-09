@@ -1,0 +1,64 @@
+.metrics {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 8px;
+  overflow-x: auto;
+}
+
+.metrics > * {
+  flex: 1 1 0;
+  min-width: 120px;
+  max-width: none;
+}
+
+.searchRow {
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+.filterField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  width: 100%;
+}
+
+.filterField > :not(.filterLabel) {
+  width: 100%;
+  min-width: 0;
+  --control-width: 100%;
+  --control-min-height: 40px;
+}
+
+.filterLabel {
+  color: var(--empleado-muted, #888);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.dateInput {
+  width: 100%;
+  min-height: 40px;
+}
+
+.state {
+  border: 1px solid var(--empleado-border, #2e2e2e);
+  border-radius: 4px;
+  background: var(--empleado-surface, #111);
+  color: var(--empleado-subtle, #666);
+  padding: 1rem;
+  text-align: center;
+
+  button {
+    margin-top: 0.75rem;
+    border: 1px solid var(--empleado-border, #d0d5dd);
+    border-radius: 4px;
+    padding: 0.45rem 0.9rem;
+    background: transparent;
+    cursor: pointer;
+  }
+}

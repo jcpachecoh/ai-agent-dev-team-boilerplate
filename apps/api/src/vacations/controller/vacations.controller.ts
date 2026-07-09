@@ -92,6 +92,31 @@ function mapRequestSummary(record: VacationRequestSummary): VacationRequestSumma
 export class VacationsController {
   constructor(private readonly vacationsService: VacationsService) {}
 
+  @ApiOperation({ summary: 'Consultar saldo de vacaciones del usuario autenticado' })
+  @ApiResponse({ status: 200, type: VacationBalanceResponseDto })
+  @Get('me/balance')
+  async getMyBalance(@CurrentUser() user: JwtPayload): Promise<VacationBalanceResponseDto> {
+    const balance = await this.vacationsService.getMyBalance(user.tenantId, user.sub);
+    return mapBalance(balance);
+  }
+
+  @ApiOperation({ summary: 'Listar solicitudes de vacaciones del usuario autenticado' })
+  @ApiResponse({ status: 200, type: [VacationRequestSummaryResponseDto] })
+  @Get('me/requests')
+  async listMyRequests(
+    @CurrentUser() user: JwtPayload,
+    @Query() query: ListVacationRequestsQueryDto,
+  ): Promise<VacationRequestSummaryResponseDto[]> {
+    const records = await this.vacationsService.listMyRequests(user.tenantId, user.sub, {
+      status: query.status,
+      dateFrom: query.dateFrom ? parseCalendarDateInput(query.dateFrom) : undefined,
+      dateTo: query.dateTo ? parseCalendarDateInput(query.dateTo) : undefined,
+      cursor: query.cursor,
+      take: query.take,
+    });
+    return records.map(mapRequestSummary);
+  }
+
   @ApiOperation({ summary: 'Consultar saldo de vacaciones de un empleado' })
   @ApiResponse({ status: 200, type: VacationBalanceResponseDto })
   @Get('balance/:employeeId')

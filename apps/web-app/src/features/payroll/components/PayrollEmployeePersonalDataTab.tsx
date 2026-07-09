@@ -120,11 +120,14 @@ function validateForm(values: UpdateEmployeePersonalDataInput): Partial<Record<s
 interface PayrollEmployeePersonalDataTabProps {
   userId: string;
   theme: 'light' | 'dark';
+  /** Oculta datos laborales y beneficiarios (autoservicio en Mi perfil). */
+  showEmploymentSection?: boolean;
 }
 
 export function PayrollEmployeePersonalDataTab({
   userId,
   theme,
+  showEmploymentSection = true,
 }: PayrollEmployeePersonalDataTabProps): React.JSX.Element {
   const uiTheme = useUiTheme();
   const { data: me } = useMe();
@@ -555,73 +558,75 @@ export function PayrollEmployeePersonalDataTab({
         </div>
       </form>
 
-      <section className={styles.employmentSection}>
-        <div className={styles.employmentHeader}>
-          <p className={styles.sectionTitle}>Datos laborales</p>
-          {canEditEmployment && !editingEmployment && employee ? (
-            <RecetaFormButton
-              type="button"
-              theme={theme}
-              variant="add"
-              label="Editar"
-              onClick={() => setEditingEmployment(true)}
-            />
-          ) : null}
-        </div>
-
-        {employeeQuery.isLoading ? (
-          <PayrollEmployeeProfileTabLoading />
-        ) : employeeQuery.isError || !employee ? (
-          <div className={styles.state}>
-            <p>No se pudieron cargar los datos laborales.</p>
-            <button type="button" onClick={() => void employeeQuery.refetch()}>
-              Reintentar
-            </button>
+      {showEmploymentSection ? (
+        <section className={styles.employmentSection}>
+          <div className={styles.employmentHeader}>
+            <p className={styles.sectionTitle}>Datos laborales</p>
+            {canEditEmployment && !editingEmployment && employee ? (
+              <RecetaFormButton
+                type="button"
+                theme={theme}
+                variant="add"
+                label="Editar"
+                onClick={() => setEditingEmployment(true)}
+              />
+            ) : null}
           </div>
-        ) : editingEmployment ? (
-          <PayrollEmployeeForm
-            mode="edit"
-            initialValues={employee}
-            wizardStep="personal"
-            sectionScope="employment-only"
-            submitting={submittingEmployment}
-            onCancel={handleEmploymentCancel}
-            onSubmit={(formValues) => void handleEmploymentSubmit(formValues)}
-          />
-        ) : (
-          <>
-            <div className={styles.grid}>
-              {employmentFields.map((field) => (
-                <Field key={field.label} label={field.label}>
-                  <Readonly value={field.value} />
-                </Field>
-              ))}
-            </div>
 
-            <div className={styles.beneficiariesSection}>
-              <p className={styles.sectionTitle}>Beneficiarios</p>
-              {employee.beneficiaries && employee.beneficiaries.length > 0 ? (
-                <div className={styles.beneficiaryTable}>
-                  <div className={styles.beneficiaryHeader}>
-                    <span>Tipo</span>
-                    <span>Nombre completo</span>
-                    <span>Edad</span>
-                  </div>
-                  {employee.beneficiaries.map((beneficiary) => (
-                    <div key={beneficiary.id} className={styles.beneficiaryRow}>
-                      <span>{formatBeneficiaryType(beneficiary.relationshipType)}</span>
-                      <span>{beneficiary.fullName}</span>
-                      <span>{beneficiary.age}</span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className={styles.emptyHint}>Sin beneficiarios registrados.</p>
-              )}
+          {employeeQuery.isLoading ? (
+            <PayrollEmployeeProfileTabLoading />
+          ) : employeeQuery.isError || !employee ? (
+            <div className={styles.state}>
+              <p>No se pudieron cargar los datos laborales.</p>
+              <button type="button" onClick={() => void employeeQuery.refetch()}>
+                Reintentar
+              </button>
             </div>
-          </>
-        )}
-      </section>
+          ) : editingEmployment ? (
+            <PayrollEmployeeForm
+              mode="edit"
+              initialValues={employee}
+              wizardStep="personal"
+              sectionScope="employment-only"
+              submitting={submittingEmployment}
+              onCancel={handleEmploymentCancel}
+              onSubmit={(formValues) => void handleEmploymentSubmit(formValues)}
+            />
+          ) : (
+            <>
+              <div className={styles.grid}>
+                {employmentFields.map((field) => (
+                  <Field key={field.label} label={field.label}>
+                    <Readonly value={field.value} />
+                  </Field>
+                ))}
+              </div>
+
+              <div className={styles.beneficiariesSection}>
+                <p className={styles.sectionTitle}>Beneficiarios</p>
+                {employee.beneficiaries && employee.beneficiaries.length > 0 ? (
+                  <div className={styles.beneficiaryTable}>
+                    <div className={styles.beneficiaryHeader}>
+                      <span>Tipo</span>
+                      <span>Nombre completo</span>
+                      <span>Edad</span>
+                    </div>
+                    {employee.beneficiaries.map((beneficiary) => (
+                      <div key={beneficiary.id} className={styles.beneficiaryRow}>
+                        <span>{formatBeneficiaryType(beneficiary.relationshipType)}</span>
+                        <span>{beneficiary.fullName}</span>
+                        <span>{beneficiary.age}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className={styles.emptyHint}>Sin beneficiarios registrados.</p>
+                )}
+              </div>
+            </>
+          )}
+        </section>
+      ) : null}
     </div>
   );
 }

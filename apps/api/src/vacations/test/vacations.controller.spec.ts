@@ -65,8 +65,10 @@ describe('VacationsController', () => {
           useValue: {
             assertCanViewEmployee: jest.fn(),
             getBalance: jest.fn(),
+            getMyBalance: jest.fn(),
             requestVacation: jest.fn(),
             listRequests: jest.fn(),
+            listMyRequests: jest.fn(),
             approveLevel1: jest.fn(),
             approveLevel2: jest.fn(),
             reject: jest.fn(),
@@ -97,6 +99,39 @@ describe('VacationsController', () => {
       expect(service.assertCanViewEmployee).toHaveBeenCalledWith(TENANT_ID, USER_ID, EMPLOYEE_ID);
       expect(service.getBalance).toHaveBeenCalledWith(TENANT_ID, EMPLOYEE_ID);
       expect(result.availableDays).toBe(15);
+    });
+  });
+
+  describe('getMyBalance', () => {
+    it('delega al service con el usuario autenticado', async () => {
+      service.getMyBalance.mockResolvedValue(balanceRecord);
+
+      const result = await controller.getMyBalance(jwtUser);
+
+      expect(service.getMyBalance).toHaveBeenCalledWith(TENANT_ID, USER_ID);
+      expect(result.employeeId).toBe(EMPLOYEE_ID);
+    });
+  });
+
+  describe('listMyRequests', () => {
+    it('lista solicitudes propias sin employeeId en query', async () => {
+      service.listMyRequests.mockResolvedValue([
+        {
+          ...requestRecord,
+          employeeName: 'Operario',
+          locationId: 'loc-1',
+          locationName: 'PL-01',
+        },
+      ]);
+
+      const result = await controller.listMyRequests(jwtUser, { take: 20 });
+
+      expect(service.listMyRequests).toHaveBeenCalledWith(
+        TENANT_ID,
+        USER_ID,
+        expect.objectContaining({ take: 20 }),
+      );
+      expect(result[0]?.employeeName).toBe('Operario');
     });
   });
 

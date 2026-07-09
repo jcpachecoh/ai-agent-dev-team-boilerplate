@@ -228,6 +228,10 @@ export function getPayrollEmployeeByUserId(userId: string): Promise<PayrollEmplo
   return payrollFetch<PayrollEmployee>(`/employees/${userId}`);
 }
 
+export function getMyPayrollEmployee(): Promise<PayrollEmployee> {
+  return payrollFetch<PayrollEmployee>('/employees/me');
+}
+
 export function createPayrollEmployee(input: CreatePayrollEmployeeInput): Promise<PayrollEmployee> {
   return payrollFetch<PayrollEmployee>('/employees', {
     method: 'POST',
