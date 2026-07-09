@@ -20,8 +20,8 @@ export class AttendanceCardDaySummaryDto {
   @ApiProperty()
   overtimeMinutes!: number;
 
-  @ApiProperty({ enum: ['ASSIGNED', 'REST', 'NONE'] })
-  resolvedKind!: 'ASSIGNED' | 'REST' | 'NONE';
+  @ApiProperty({ enum: ['ASSIGNED', 'REST', 'NONE', 'VACACIONES'] })
+  resolvedKind!: 'ASSIGNED' | 'REST' | 'NONE' | 'VACACIONES';
 
   @ApiProperty({ nullable: true })
   shiftName!: string | null;

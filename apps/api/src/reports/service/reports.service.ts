@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { AttendanceEventType, AttendanceLog } from '@prisma/client';
 import { COLOMBIA_TZ, REGULAR_DAY_MINUTES } from '../../attendance/attendance.constants';
 import { AttendanceOvertimeType } from '../../payroll/payroll.constants';
@@ -43,6 +43,8 @@ import {
   SocialSecurityEmployeeRowDto,
   SocialSecurityReportResponseDto,
 } from '../controller/dto/social-security-report-response.dto';
+import { VacationsService } from '../../vacations/service/vacations.service';
+import { countApprovedVacationDaysInRange } from '../../attendance/service/vacation-attendance.guard';
 
 // CST art. 168: maximum 2h/day and 12h/week of extra (overtime) hours.
 // These are OT-only caps — distinct from the total jornada limit (Ley 2101/2021), which is
@@ -224,6 +226,7 @@ function buildAttendanceSummary(
   logs: AttendanceLog[],
   period: { year: number; month: number },
   totalCalendarDays: number,
+  vacationDays = 0,
   resolvers: OvertimeLegalRateResolvers,
 ): AttendanceMonthSummary {
   const dayRecords = buildDayRecords(logs, resolvers.nocturnoStartHourAt);
@@ -269,7 +272,7 @@ function buildAttendanceSummary(
     employeeId,
     period,
     presentDays,
-    absentDays: Math.max(0, totalCalendarDays - presentDays),
+    absentDays: Math.max(0, totalCalendarDays - presentDays - vacationDays),
     totalWorkedMinutes,
     regularMinutes,
     overtimeMinutes,
@@ -347,7 +350,27 @@ export class ReportsService implements IReportsService {
     private readonly payrollCalculationService: PayrollCalculationService,
     private readonly userLocationsService: UserLocationsService,
     private readonly legalParametersService: LaborLegalParametersService,
+    @Optional() private readonly vacationsService?: VacationsService,
   ) {}
+
+  private async countVacationDaysForEmployee(
+    tenantId: string,
+    employeeId: string,
+    dateFrom: Date,
+    dateTo: Date,
+  ): Promise<number> {
+    if (!this.vacationsService) {
+      return 0;
+    }
+
+    const ranges = await this.vacationsService.getApprovedDisfruteRanges(
+      tenantId,
+      employeeId,
+      dateFrom,
+      dateTo,
+    );
+    return countApprovedVacationDaysInRange(ranges, dateFrom, dateTo);
+  }
 
   private async resolveLocationScope(
     tenantId: string,
@@ -442,11 +465,13 @@ export class ReportsService implements IReportsService {
 
     for (const emp of employees) {
       const empLogs = logsByEmployee.get(emp.id) ?? [];
+      const vacationDays = await this.countVacationDaysForEmployee(tenantId, emp.id, from, to);
       const attendance = buildAttendanceSummary(
         emp.id,
         empLogs,
         period,
         calendarDays,
+        vacationDays,
         rateResolvers,
       );
 
@@ -523,32 +548,35 @@ export class ReportsService implements IReportsService {
     const nocturnoStartHourAt = (date: Date): number =>
       legalSnapshot.numberAt('HORARIO_NOCTURNO_INICIO', date);
 
-    let rows: AttendanceEmployeeRowDto[] = employees.map((emp) => {
-      const empLogs = logsByEmployee.get(emp.id) ?? [];
-      const dayRecords = buildDayRecords(empLogs, nocturnoStartHourAt);
+    let rows: AttendanceEmployeeRowDto[] = await Promise.all(
+      employees.map(async (emp) => {
+        const empLogs = logsByEmployee.get(emp.id) ?? [];
+        const dayRecords = buildDayRecords(empLogs, nocturnoStartHourAt);
 
-      const totalWorkedMinutes = dayRecords.reduce((s, r) => s + r.workedMinutes, 0);
-      const regularMinutes = dayRecords.reduce(
-        (s, r) => s + Math.min(r.workedMinutes, REGULAR_DAY_MINUTES),
-        0,
-      );
-      const overtimeMinutes = dayRecords.reduce((s, r) => s + r.overtimeMinutes, 0);
-      const activeDays = dayRecords.length;
+        const totalWorkedMinutes = dayRecords.reduce((s, r) => s + r.workedMinutes, 0);
+        const regularMinutes = dayRecords.reduce(
+          (s, r) => s + Math.min(r.workedMinutes, REGULAR_DAY_MINUTES),
+          0,
+        );
+        const overtimeMinutes = dayRecords.reduce((s, r) => s + r.overtimeMinutes, 0);
+        const activeDays = dayRecords.length;
+        const vacationDays = await this.countVacationDaysForEmployee(tenantId, emp.id, from, to);
 
-      return {
-        employeeId: emp.id,
-        employeeName: emp.name,
-        cedula: emp.user.cedula,
-        locationId: emp.locationId,
-        locationName: emp.location.name,
-        totalWorkedMinutes,
-        regularMinutes,
-        overtimeMinutes,
-        activeDays,
-        absentDays: Math.max(0, calendarDays - activeDays),
-        exceededLegalOvertimeLimit: checkExceededOvertimeLimit(dayRecords),
-      };
-    });
+        return {
+          employeeId: emp.id,
+          employeeName: emp.name,
+          cedula: emp.user.cedula,
+          locationId: emp.locationId,
+          locationName: emp.location.name,
+          totalWorkedMinutes,
+          regularMinutes,
+          overtimeMinutes,
+          activeDays,
+          absentDays: Math.max(0, calendarDays - activeDays - vacationDays),
+          exceededLegalOvertimeLimit: checkExceededOvertimeLimit(dayRecords),
+        };
+      }),
+    );
 
     rows = this.filterAttendanceRows(rows, query.status);
 

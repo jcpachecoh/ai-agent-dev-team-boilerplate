@@ -20,6 +20,8 @@ import { MobileAttendanceRepository } from '../mobile/repository/mobile-attendan
 import { AuthService } from '../../auth/service/auth.service';
 import { UserLocationsService } from '../../locations/service/user-locations.service';
 import { ShiftResolutionService } from '../../turnos/service/shift-resolution.service';
+import { VacationsService } from '../../vacations/service/vacations.service';
+import { VACATION_MARKING_BLOCKED_MESSAGE } from '../service/vacation-attendance.guard';
 import { LaborLegalParametersService } from '../../labor-legal-parameters/service/labor-legal-parameters.service';
 
 const shiftResolutionMock = {
@@ -130,6 +132,11 @@ const userLocationsServiceMock = {
   assertLocationAllowed: jest.fn(),
 };
 
+const vacationsServiceMock = {
+  findApprovedDisfruteByDate: jest.fn().mockResolvedValue(null),
+  getApprovedDisfruteRanges: jest.fn().mockResolvedValue([]),
+};
+
 // HORARIO_NOCTURNO_INICIO — resolves to 21 (the old NOCTURNO_START_HOUR default) so existing
 // nocturno-classification assertions keep passing unchanged.
 const legalParametersServiceMock = {
@@ -150,6 +157,7 @@ describe('AttendanceService', () => {
         { provide: AuthService, useValue: authServiceMock },
         { provide: ShiftResolutionService, useValue: shiftResolutionMock },
         { provide: UserLocationsService, useValue: userLocationsServiceMock },
+        { provide: VacationsService, useValue: vacationsServiceMock },
         { provide: LaborLegalParametersService, useValue: legalParametersServiceMock },
       ],
     }).compile();
@@ -161,6 +169,7 @@ describe('AttendanceService', () => {
       refreshToken: 'refresh-token',
     });
     userLocationsServiceMock.resolveAllowedLocationIds.mockResolvedValue(null);
+    vacationsServiceMock.findApprovedDisfruteByDate.mockResolvedValue(null);
   });
 
   // ── kioskAuth ──────────────────────────────────────────────────────────────
@@ -281,6 +290,23 @@ describe('AttendanceService', () => {
       expect(result.logId).toBe('log-new-entry');
       expect(result.employeeId).toBe(emp.id);
       expect(result.userId).toBe(dto.userId);
+    });
+
+    it('rechaza marcación cuando el empleado tiene vacaciones aprobadas (D6)', async () => {
+      const emp = makeEmployee('emp-vacation');
+      repoMock.findEmployeeByUserAndLocation.mockResolvedValue(emp);
+      repoMock.findOpenEntry.mockResolvedValue(null);
+      vacationsServiceMock.findApprovedDisfruteByDate.mockResolvedValue({
+        employeeId: emp.id,
+        startDate: WORK_DATE,
+        endDate: WORK_DATE,
+        type: 'DISFRUTE',
+      });
+
+      await expect(service.registerEntry(dto, TENANT)).rejects.toThrow(
+        VACATION_MARKING_BLOCKED_MESSAGE,
+      );
+      expect(repoMock.create).not.toHaveBeenCalled();
     });
   });
 
@@ -457,6 +483,26 @@ describe('AttendanceService', () => {
       ).rejects.toThrow(ConflictException);
 
       expect(repoMock.createEventLog).not.toHaveBeenCalled();
+      expect(mobileRepoMock.create).not.toHaveBeenCalled();
+    });
+
+    it('rechaza marcación móvil cuando el empleado tiene vacaciones aprobadas (D6)', async () => {
+      vacationsServiceMock.findApprovedDisfruteByDate.mockResolvedValue({
+        employeeId: 'emp-001',
+        startDate: WORK_DATE,
+        endDate: WORK_DATE,
+        type: 'DISFRUTE',
+      });
+
+      await expect(
+        service.registerEvent({
+          ...baseInput,
+          source: AttendanceLogSource.APP_MOVIL,
+          clientLatitude: 4.6097,
+          clientLongitude: -74.0817,
+        }),
+      ).rejects.toThrow(VACATION_MARKING_BLOCKED_MESSAGE);
+
       expect(mobileRepoMock.create).not.toHaveBeenCalled();
     });
 

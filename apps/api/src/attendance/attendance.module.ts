@@ -5,6 +5,7 @@ import { EmailModule } from '../email/email.module';
 import { LocationsModule } from '../locations/locations.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { TurnosModule } from '../turnos/turnos.module';
+import { VacationsModule } from '../vacations/vacations.module';
 import { LaborLegalParametersModule } from '../labor-legal-parameters/labor-legal-parameters.module';
 import { MobileAttendanceRepository } from './mobile/repository/mobile-attendance.repository';
 import { MobileAttendanceResolver } from './mobile/resolver/mobile-attendance.resolver';
@@ -30,6 +31,7 @@ import { AttendanceCollaboratorsRepository } from './repository/attendance-colla
     LocationsModule,
     EmailModule,
     TurnosModule,
+    VacationsModule,
     LaborLegalParametersModule,
   ],
   controllers: [AttendanceController],

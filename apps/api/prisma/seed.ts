@@ -1365,6 +1365,8 @@ async function seedEmployeeDetails(
       isActive: true,
       pinHash: operatorPinHashEmployee,
       name: 'Operario de Planta',
+      positionId: 'pos-pdl-002',
+      position: 'ADMINISTRADOR JUNIOR',
       costCenter: CostCenter.PLANTA,
       laborClassification: LaborClassification.COCINA,
       barrio: 'Laureles',
@@ -1375,7 +1377,8 @@ async function seedEmployeeDetails(
       tenantId: OPERATIONAL_TENANT_ID,
       name: 'Operario de Planta',
       locationId: locationId,
-      position: 'Operario de Planta',
+      positionId: 'pos-pdl-002',
+      position: 'ADMINISTRADOR JUNIOR',
       area: 'Producción',
       department: 'Cocina',
       contractType: EmployeeContractType.FIJO,
@@ -1402,6 +1405,58 @@ async function seedEmployeeDetails(
   });
 
   console.log('EmployeeDetails: Seeded for owner and operator');
+}
+
+/** OS-589 — saldos de vacaciones de prueba (idempotente). */
+async function seedVacationDemoBalances(ownerUserId: string, operatorUserId: string) {
+  const employees = await prisma.employeeDetails.findMany({
+    where: { userId: { in: [ownerUserId, operatorUserId] } },
+    select: { id: true, tenantId: true, userId: true },
+  });
+
+  const ownerEmployee = employees.find((employee) => employee.userId === ownerUserId);
+  const operatorEmployee = employees.find((employee) => employee.userId === operatorUserId);
+
+  if (ownerEmployee) {
+    await prisma.vacationBalance.upsert({
+      where: { employeeId: ownerEmployee.id },
+      update: {},
+      create: {
+        id: 'seed-vacation-balance-owner-001',
+        tenantId: ownerEmployee.tenantId,
+        employeeId: ownerEmployee.id,
+        accruedDays: 15.0,
+        takenDays: 0,
+        compensatedDays: 0,
+        lastAccrualDate: new Date('2026-07-01'),
+      },
+    });
+    console.log('VacationBalance: seeded for owner employee');
+  } else {
+    console.warn('VacationBalance: owner employee not found — skipping');
+  }
+
+  if (operatorEmployee) {
+    await prisma.vacationBalance.upsert({
+      where: { employeeId: operatorEmployee.id },
+      update: {},
+      create: {
+        id: 'seed-vacation-balance-operator-001',
+        tenantId: operatorEmployee.tenantId,
+        employeeId: operatorEmployee.id,
+        accruedDays: 15.0,
+        takenDays: 0,
+        compensatedDays: 0,
+        lastAccrualDate: new Date('2026-07-01'),
+      },
+    });
+    console.log(
+      'VacationBalance: seeded for operator employee (use mes-operator for L1 approval flow)',
+      operatorEmployee.id,
+    );
+  } else {
+    console.warn('VacationBalance: operator employee not found — skipping');
+  }
 }
 
 /**
@@ -2364,6 +2419,7 @@ async function main() {
   const { seedEmployeeOrgChart } = await import('./seeds/employee-org-chart.seed');
   await seedEmployeeOrgChart(prisma);
   await seedEmployeeDetails(ownerGlobalUser.id, operatorGlobalUser.id, firstLocationId);
+  await seedVacationDemoBalances(ownerGlobalUser.id, operatorGlobalUser.id);
   await seedSupervisorManagerDemoUsers(
     supervisorGlobalUser.id,
     managerGlobalUser.id,

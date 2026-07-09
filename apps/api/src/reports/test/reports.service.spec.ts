@@ -19,6 +19,8 @@ import { ReportsService } from '../service/reports.service';
 import { AttendanceQueryDto, PeriodQueryDto } from '../controller/dto/report-query.dto';
 import { AttendanceReportStatusFilter } from '../controller/dto/attendance-export-query.dto';
 import { MAX_EXPORT_ROWS } from '../reports.constants';
+import { VacationsService } from '../../vacations/service/vacations.service';
+import { VacationType } from '@prisma/client';
 
 // ── Fixtures ─────────────────────────────────────────────────────────────────
 
@@ -239,6 +241,7 @@ describe('ReportsService', () => {
   let repository: jest.Mocked<ReportsRepository>;
   let payrollRepository: jest.Mocked<PayrollRepository>;
   let legalParametersService: jest.Mocked<LaborLegalParametersService>;
+  let vacationsService: jest.Mocked<VacationsService>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -268,6 +271,12 @@ describe('ReportsService', () => {
           },
         },
         {
+          provide: VacationsService,
+          useValue: {
+            getApprovedDisfruteRanges: jest.fn().mockResolvedValue([]),
+          },
+        },
+        {
           provide: LaborLegalParametersService,
           useValue: {
             preload: jest.fn().mockResolvedValue(makeLegalSnapshot()),
@@ -280,6 +289,7 @@ describe('ReportsService', () => {
     repository = module.get(ReportsRepository);
     payrollRepository = module.get(PayrollRepository);
     legalParametersService = module.get(LaborLegalParametersService);
+    vacationsService = module.get(VacationsService);
   });
 
   afterEach(() => jest.clearAllMocks());
@@ -644,6 +654,29 @@ describe('ReportsService', () => {
 
       expect(row.activeDays).toBe(15);
       expect(row.absentDays).toBe(15);
+    });
+
+    it('excluye días de vacaciones aprobadas de absentDays (PC-1)', async () => {
+      const logs = Array.from({ length: 15 }, (_, i) => {
+        const day = String(i + 1).padStart(2, '0');
+        return fullDayLogs('emp-1', `2025-06-${day}`);
+      }).flat();
+      repository.findActiveEmployees.mockResolvedValue([mockEmployee]);
+      repository.findAttendanceLogsByDateRange.mockResolvedValue(logs);
+      vacationsService.getApprovedDisfruteRanges.mockResolvedValue([
+        {
+          employeeId: 'emp-1',
+          startDate: workDate('2025-06-20'),
+          endDate: workDate('2025-06-22'),
+          type: VacationType.DISFRUTE,
+        },
+      ]);
+
+      const result = await service.getAttendanceReport(TENANT_ID, query, OWNER_ACTOR);
+      const row = result.employees[0];
+
+      expect(row.activeDays).toBe(15);
+      expect(row.absentDays).toBe(12);
     });
 
     it('exceededLegalOvertimeLimit=true when daily overtime > 120 min', async () => {
