@@ -11,6 +11,7 @@ function makeDelivery(overrides: Partial<Record<string, unknown>> = {}) {
     id: 'delivery-1',
     tenantId,
     employeeId: 'emp-1',
+    employeeName: 'Empleado Test',
     period: '2026-04',
     supplyItemId: null,
     quantity: 1,

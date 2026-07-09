@@ -1,3 +1,5 @@
+$mobile-breakpoint: 768px;
+
 .screen {
   min-height: 100%;
   min-width: 0;
@@ -74,6 +76,17 @@
 .summaryValue {
   font-weight: 600;
   color: var(--empleado-text, #e0e0e0);
+}
+
+.tableScroll {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.desktopOnly {
+  @media (max-width: $mobile-breakpoint) {
+    display: none;
+  }
 }
 
 .table {
@@ -232,4 +245,82 @@
 
 .receiptLink:hover {
   text-decoration: underline;
+}
+
+.sinAsignar {
+  font-size: 0.75rem;
+  color: var(--empleado-muted, #888);
+}
+
+.cardList {
+  display: none;
+  flex-direction: column;
+  gap: 10px;
+
+  @media (max-width: $mobile-breakpoint) {
+    display: flex;
+  }
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--empleado-surface, #111);
+  border: 1px solid var(--empleado-border, #2e2e2e);
+  border-radius: 6px;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.cardTitle {
+  min-width: 0;
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--empleado-text, #e0e0e0);
+  word-break: break-word;
+}
+
+.cardDetails {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.cardDetailRow {
+  display: grid;
+  grid-template-columns: 96px 1fr;
+  align-items: start;
+  gap: 8px;
+
+  dt {
+    margin: 0;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.625rem;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--empleado-muted, #888);
+  }
+
+  dd {
+    min-width: 0;
+    margin: 0;
+    font-size: 0.75rem;
+    color: var(--empleado-text, #e0e0e0);
+    word-break: break-word;
+  }
+}
+
+.cardFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
 }
