@@ -105,6 +105,42 @@ const JORNADA_ROWS: LaborLegalParameter[] = [
   }),
 ];
 
+/** Mirrors SMLV vigencias in prisma/seeds/labor-legal-parameters.seed.ts. */
+const SMLV_ROWS: LaborLegalParameter[] = [
+  makeRow({
+    id: 'smlv-2025',
+    key: 'SMLV',
+    value: 1423500 as unknown as Prisma.Decimal,
+    validFrom: new Date('2025-01-01T00:00:00.000Z'),
+    validTo: new Date('2025-12-31T23:59:59.999Z'),
+  }),
+  makeRow({
+    id: 'smlv-2026',
+    key: 'SMLV',
+    value: 1750905 as unknown as Prisma.Decimal,
+    validFrom: new Date('2026-01-01T00:00:00.000Z'),
+    validTo: null,
+  }),
+];
+
+/** Mirrors AUXILIO_TRANSPORTE vigencias in prisma/seeds/labor-legal-parameters.seed.ts. */
+const AUXILIO_ROWS: LaborLegalParameter[] = [
+  makeRow({
+    id: 'auxilio-2025',
+    key: 'AUXILIO_TRANSPORTE',
+    value: 200000 as unknown as Prisma.Decimal,
+    validFrom: new Date('2025-01-01T00:00:00.000Z'),
+    validTo: new Date('2025-12-31T23:59:59.999Z'),
+  }),
+  makeRow({
+    id: 'auxilio-2026',
+    key: 'AUXILIO_TRANSPORTE',
+    value: 249095 as unknown as Prisma.Decimal,
+    validFrom: new Date('2026-01-01T00:00:00.000Z'),
+    validTo: null,
+  }),
+];
+
 /** Fake repository — filters an in-memory dataset the same way the real Prisma query does. */
 function findActiveAtFake(
   dataset: LaborLegalParameter[],
@@ -168,7 +204,11 @@ describe('LaborLegalParametersService', () => {
             ? HORARIO_ROWS
             : key === 'JORNADA_MAX_SEMANAL'
               ? JORNADA_ROWS
-              : RECARGO_ROWS;
+              : key === 'SMLV'
+                ? SMLV_ROWS
+                : key === 'AUXILIO_TRANSPORTE'
+                  ? AUXILIO_ROWS
+                  : RECARGO_ROWS;
         return Promise.resolve(findActiveAtFake(dataset, tenantScope, key, date));
       });
     });
@@ -243,6 +283,19 @@ describe('LaborLegalParametersService', () => {
         new Date('2026-07-15T00:00:00.000Z'),
       );
       expect(value).toBe(42);
+    });
+
+    it('SMLV en 2026-07-09 resuelve a 1750905 (Decreto 1469 de 2025)', async () => {
+      const value = await service.getValueAt('SMLV', new Date('2026-07-09T00:00:00.000Z'));
+      expect(value).toBe(1750905);
+    });
+
+    it('AUXILIO_TRANSPORTE en 2026-07-09 resuelve a 249095 (Decreto 1470 de 2025)', async () => {
+      const value = await service.getValueAt(
+        'AUXILIO_TRANSPORTE',
+        new Date('2026-07-09T00:00:00.000Z'),
+      );
+      expect(value).toBe(249095);
     });
 
     it('override de tenant gana sobre el valor global para la misma fecha', async () => {

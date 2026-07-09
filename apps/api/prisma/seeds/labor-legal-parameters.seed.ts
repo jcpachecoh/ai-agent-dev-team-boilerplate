@@ -23,10 +23,6 @@ type LegalParameterSeed = {
  */
 const LEGAL_PARAMETER_SEEDS: LegalParameterSeed[] = [
   // ── SMLV — Salario Mínimo Legal Vigente ─────────────────────────────────────
-  // TODO(OS-585): agregar vigencia 2026-01-01 cuando se confirme el Decreto oficial.
-  // validTo acotado a 2025-12-31 a propósito: NO reutilizar el valor 2025 para fechas 2026+
-  // silenciosamente. Hasta que se seedee la vigencia real, getValueAt('SMLV', <fecha ≥2026-01-01>)
-  // lanza NotFoundException — falla ruidoso en vez de liquidar con un SMLV desactualizado.
   {
     key: 'SMLV',
     value: 1423500,
@@ -34,16 +30,28 @@ const LEGAL_PARAMETER_SEEDS: LegalParameterSeed[] = [
     validTo: '2025-12-31',
     source: 'Decreto 2481 de 2024',
   },
+  {
+    key: 'SMLV',
+    value: 1750905,
+    validFrom: '2026-01-01',
+    validTo: null,
+    source: 'Decreto 1469 de 2025',
+  },
 
   // ── AUXILIO_TRANSPORTE ───────────────────────────────────────────────────────
-  // TODO(OS-585): agregar vigencia 2026-01-01 cuando se confirme el Decreto oficial.
-  // Mismo criterio que SMLV — validTo acotado, no reutilizar el valor 2025 para 2026+.
   {
     key: 'AUXILIO_TRANSPORTE',
-    value: 162000,
+    value: 200000,
     validFrom: '2025-01-01',
     validTo: '2025-12-31',
     source: 'Decreto 2461 de 2024 art. 1',
+  },
+  {
+    key: 'AUXILIO_TRANSPORTE',
+    value: 249095,
+    validFrom: '2026-01-01',
+    validTo: null,
+    source: 'Decreto 1470 de 2025',
   },
 
   // ── RECARGO_DOMINICAL_FESTIVO — incremento progresivo Ley 2466 de 2025 ──────
