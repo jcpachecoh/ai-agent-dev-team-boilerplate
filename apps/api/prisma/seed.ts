@@ -72,6 +72,10 @@ const SEED_CATEGORY_ASEO_ID = 'bbbbbbbb-0000-0000-0000-000000000007';
 const SEED_CATEGORY_EMPAQUE_ID = 'bbbbbbbb-0000-0000-0000-000000000008';
 const SEED_SUPPLY_ITEM_ID = 'ffffffff-0000-0000-0000-000000000006';
 const SEED_SUPPLY_ITEM_ARROZ_ID = 'ffffffff-0000-0000-0000-000000000007';
+const SEED_CATEGORY_DOTACION_ID = 'bbbbbbbb-0000-0000-0000-000000000025';
+const SEED_SUPPLY_ITEM_CAMISA_ID = 'ffffffff-0000-0000-0000-000000000008';
+const SEED_SUPPLY_ITEM_PANTALON_ID = 'ffffffff-0000-0000-0000-000000000009';
+const SEED_SUPPLY_ITEM_BOTAS_ID = 'ffffffff-0000-0000-0000-000000000010';
 const SEED_SUPPLIER_ID = 'dddddddd-0000-0000-0000-000000000001';
 const SEED_SUPPLIER_PRODUCT_ID = 'eeeeeeee-0000-0000-0000-000000000001';
 
@@ -1817,6 +1821,72 @@ async function main() {
     }
 
     console.log('SupplyCategory:', row.nombre, '—', row.id);
+  }
+
+  // ── Dotación supply items (for the "Registrar entrega de dotación" modal) ─
+  const dotacionItems = [
+    {
+      id: SEED_SUPPLY_ITEM_CAMISA_ID,
+      codigoInterno: 'SEED-DOT-CAMISA-M',
+      nombre: 'Camisa de Trabajo (seed)',
+      subcategoria: 'Camisas/Camisetas',
+      genero: 'Masculino',
+      talla: 'M',
+    },
+    {
+      id: SEED_SUPPLY_ITEM_PANTALON_ID,
+      codigoInterno: 'SEED-DOT-PANTALON-32',
+      nombre: 'Pantalón Operario (seed)',
+      subcategoria: 'Pantalones/Overoles',
+      genero: 'Masculino',
+      talla: '32',
+    },
+    {
+      id: SEED_SUPPLY_ITEM_BOTAS_ID,
+      codigoInterno: 'SEED-DOT-BOTAS-40',
+      nombre: 'Botas de Seguridad (seed)',
+      subcategoria: 'Calzado',
+      genero: 'Unisex',
+      talla: '40',
+    },
+  ] as const;
+
+  for (const item of dotacionItems) {
+    const supplyItemDotacion = await prisma.supplyItem.upsert({
+      where: { id: item.id },
+      update: {
+        tenantId: OPERATIONAL_TENANT_ID,
+        categoriaId: SEED_CATEGORY_DOTACION_ID,
+        nombre: item.nombre,
+        subcategoria: item.subcategoria,
+        genero: item.genero,
+        talla: item.talla,
+        stockActualBodega: 20,
+        locationId: firstLocationId,
+        isActive: true,
+      },
+      create: {
+        id: item.id,
+        tenantId: OPERATIONAL_TENANT_ID,
+        nombre: item.nombre,
+        codigoInterno: item.codigoInterno,
+        categoriaId: SEED_CATEGORY_DOTACION_ID,
+        unidadBase: StockUnit.UNIT,
+        factorConversion: 1,
+        costoPromedioPonderado: 0,
+        stockMinimoBodega: 5,
+        stockMaximoBodega: 100,
+        stockActualBodega: 20,
+        locationId: firstLocationId,
+        subcategoria: item.subcategoria,
+        genero: item.genero,
+        talla: item.talla,
+        aplicaVencimiento: false,
+        aplicaLote: false,
+        isActive: true,
+      },
+    });
+    console.log('SupplyItem:', supplyItemDotacion.codigoInterno, '—', supplyItemDotacion.id);
   }
 
   const supplyItemArroz = await prisma.supplyItem.upsert({

@@ -235,21 +235,37 @@ export function DotacionesScreen(): React.JSX.Element {
             <p>Usa el botón "Generar período" para crear los registros de empleados elegibles.</p>
           </div>
         ) : (
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>Empleado</th>
-                <th>Ítem entregado</th>
-                <th>Cantidad</th>
-                <th>Estado</th>
-                <th>Fecha entrega</th>
-                <th>Comprobante</th>
-                <th>Acción</th>
-              </tr>
-            </thead>
-            <tbody>
+          <>
+            <div className={`${styles.tableScroll} ${styles.desktopOnly}`}>
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th>Empleado</th>
+                    <th>Ítem entregado</th>
+                    <th>Cantidad</th>
+                    <th>Estado</th>
+                    <th>Fecha entrega</th>
+                    <th>Comprobante</th>
+                    <th>Acción</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {deliveries.map((delivery) => (
+                    <DotacionRow
+                      key={delivery.id}
+                      delivery={delivery}
+                      onRegister={() => setRegisterTarget(delivery)}
+                      onMarkNA={() => void handleMarkNotApplicable(delivery)}
+                      markingNA={markNaMutation.isPending}
+                    />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className={styles.cardList}>
               {deliveries.map((delivery) => (
-                <DotacionRow
+                <DotacionCard
                   key={delivery.id}
                   delivery={delivery}
                   onRegister={() => setRegisterTarget(delivery)}
@@ -257,8 +273,8 @@ export function DotacionesScreen(): React.JSX.Element {
                   markingNA={markNaMutation.isPending}
                 />
               ))}
-            </tbody>
-          </table>
+            </div>
+          </>
         )}
 
         {periodQuery.data?.pageInfo.hasNextPage ? (
@@ -326,9 +342,7 @@ function DotacionRow({
             ) : null}
           </>
         ) : (
-          <span style={{ color: 'var(--empleado-muted, #888)', fontSize: '0.75rem' }}>
-            Sin asignar
-          </span>
+          <span className={styles.sinAsignar}>Sin asignar</span>
         )}
       </td>
       <td>{delivery.quantity}</td>
@@ -380,5 +394,102 @@ function DotacionRow({
         </div>
       </td>
     </tr>
+  );
+}
+
+function DotacionCard({
+  delivery,
+  onRegister,
+  onMarkNA,
+  markingNA,
+}: {
+  delivery: DotacionDelivery;
+  onRegister: () => void;
+  onMarkNA: () => void;
+  markingNA: boolean;
+}): React.JSX.Element {
+  const statusClass =
+    delivery.status === 'ENTREGADA'
+      ? styles.entregada
+      : delivery.status === 'NO_APLICA'
+        ? styles.noAplica
+        : styles.pendiente;
+
+  return (
+    <article className={styles.card}>
+      <header className={styles.cardHeader}>
+        <p className={styles.cardTitle}>{delivery.employeeName ?? delivery.employeeId}</p>
+        <span className={`${styles.statusBadge} ${statusClass}`}>
+          {DOTACION_STATUS_LABELS[delivery.status]}
+        </span>
+      </header>
+
+      <dl className={styles.cardDetails}>
+        <div className={styles.cardDetailRow}>
+          <dt>Ítem</dt>
+          <dd>
+            {delivery.supplyItem ? (
+              <>
+                <span className={styles.itemName}>{delivery.supplyItem.nombre}</span>
+                {delivery.supplyItem.talla ? (
+                  <span className={styles.itemTalla}> · Talla {delivery.supplyItem.talla}</span>
+                ) : null}
+              </>
+            ) : (
+              <span className={styles.sinAsignar}>Sin asignar</span>
+            )}
+          </dd>
+        </div>
+        <div className={styles.cardDetailRow}>
+          <dt>Cantidad</dt>
+          <dd>{delivery.quantity}</dd>
+        </div>
+        <div className={styles.cardDetailRow}>
+          <dt>Entrega</dt>
+          <dd>
+            {delivery.deliveredAt
+              ? new Date(delivery.deliveredAt).toLocaleDateString('es-CO', {
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric',
+                })
+              : '—'}
+          </dd>
+        </div>
+        <div className={styles.cardDetailRow}>
+          <dt>Comprobante</dt>
+          <dd>
+            {delivery.signedReceiptUrl ? (
+              <a
+                className={styles.receiptLink}
+                href={delivery.signedReceiptUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Ver comprobante
+              </a>
+            ) : (
+              '—'
+            )}
+          </dd>
+        </div>
+      </dl>
+
+      {delivery.status === 'PENDIENTE' ? (
+        <footer className={styles.cardFooter}>
+          <button type="button" className={styles.btnPrimary} onClick={onRegister}>
+            Registrar entrega
+          </button>
+          <button
+            type="button"
+            className={styles.btnSecondary}
+            onClick={onMarkNA}
+            disabled={markingNA}
+          >
+            N/A
+          </button>
+        </footer>
+      ) : null}
+    </article>
   );
 }

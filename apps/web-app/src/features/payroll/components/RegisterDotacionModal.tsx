@@ -116,7 +116,7 @@ export function RegisterDotacionModal({
       size="md"
       theme={modalTheme}
       title="Registrar entrega de dotación"
-      description={`Período ${period} · Empleado ${delivery.employeeId}`}
+      description={`Período ${period} · Empleado ${delivery.employeeName ?? delivery.employeeId}`}
       onInteractOutside={(event) => {
         if (busy) event.preventDefault();
       }}
