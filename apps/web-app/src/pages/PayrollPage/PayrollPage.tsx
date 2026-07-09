@@ -1,7 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 
 import {
-  DotacionesScreen,
   EmployeePositionsListScreen,
   PayrollEmployeeProfileScreen,
   PayrollEmployeesListScreen,
@@ -21,7 +20,6 @@ export default function PayrollPage(): React.JSX.Element {
       <Route path="positions" element={<EmployeePositionsListScreen />} />
       <Route path="attendance/*" element={<RedirectLegacyPayrollAttendance />} />
       <Route path="salaries" element={<ModulePlaceholderPage title="Salarios" />} />
-      <Route path="dotaciones" element={<DotacionesScreen />} />
       <Route path="legal-parameters" element={<PayrollLegalParametersScreen />} />
       <Route path="*" element={<Navigate to="/payroll" replace />} />
     </Routes>

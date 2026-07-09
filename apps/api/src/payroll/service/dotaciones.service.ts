@@ -5,6 +5,7 @@ import type {
   BulkAssignByPositionData,
   BulkAssignResult,
   ComplianceReportRow,
+  CreateDotacionForEmployeeData,
   DotacionHistoryFilters,
   DotacionPage,
   DotacionPageEnriched,
@@ -13,6 +14,7 @@ import type {
   GenerateEntitlementsResult,
   MarkNotApplicableData,
   RegisterDotacionDeliveryData,
+  UpdateDotacionDeliveryData,
 } from '../interfaces/dotaciones.interfaces';
 import { LaborLegalParametersService } from '../../labor-legal-parameters/service/labor-legal-parameters.service';
 import { DotacionesRepository } from '../repository/dotaciones.repository';
@@ -116,6 +118,22 @@ export class DotacionesService {
       data.signedReceiptUrl,
       currentStock,
     );
+  }
+
+  async createForEmployee(data: CreateDotacionForEmployeeData): Promise<DotacionWithSupplyItem> {
+    this.validatePeriodFormat(data.period);
+    return this.repo.createDeliveryForEmployee(data.tenantId, data.employeeId, data.period);
+  }
+
+  async updateDelivery(data: UpdateDotacionDeliveryData): Promise<DotacionWithSupplyItem> {
+    const delivery = await this.repo.findById(data.id, data.tenantId);
+    if (!delivery) {
+      throw new NotFoundException(`Dotación ${data.id} no encontrada`);
+    }
+    return this.repo.updateDeliveryFields(data.id, {
+      deliveredAt: data.deliveredAt,
+      signedReceiptUrl: data.signedReceiptUrl,
+    });
   }
 
   async markNotApplicable(data: MarkNotApplicableData): Promise<DotacionWithSupplyItem> {

@@ -20,7 +20,6 @@ import {
   MapPin,
   Monitor,
   Package,
-  PackageCheck,
   Scale,
   Settings,
   Shield,
@@ -233,12 +232,6 @@ export const navigationItems: NavItem[] = [
         icon: Briefcase,
       },
       { id: 'payroll-salaries', label: 'Salarios', path: '/payroll/salaries', icon: BarChart3 },
-      {
-        id: 'payroll-dotaciones',
-        label: 'Dotación',
-        path: '/payroll/dotaciones',
-        icon: PackageCheck,
-      },
       {
         id: 'payroll-legal-parameters',
         label: 'Parámetros legales',

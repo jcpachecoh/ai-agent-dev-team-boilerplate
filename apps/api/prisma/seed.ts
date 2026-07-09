@@ -742,9 +742,8 @@ async function seedPermissions() {
 
   for (const permissionSeed of PERMISSION_SEEDS) {
     const permission = await prisma.permission.upsert({
-      where: { id: permissionSeed.id },
+      where: { code: permissionSeed.code },
       update: {
-        code: permissionSeed.code,
         name: permissionSeed.name,
         description: permissionSeed.description,
         module: permissionSeed.module,

@@ -2,7 +2,6 @@ import {
   Clock3,
   FileText,
   Landmark,
-  Package,
   PackageCheck,
   Receipt,
   ShieldCheck,
@@ -18,7 +17,6 @@ export type PayrollEmployeeProfileTabId =
   | 'attendance'
   | 'bank-accounts'
   // | 'taxes'
-  | 'assets'
   | 'documents'
   | 'dotaciones';
 
@@ -82,13 +80,6 @@ export const PAYROLL_EMPLOYEE_PROFILE_TABS: PayrollEmployeeProfileTabDefinition[
       'Próximamente — historial de pagos, salario base, novedades y comprobantes.',
   },
   {
-    id: 'assets',
-    label: 'Activos',
-    icon: <Package {...iconProps} />,
-    placeholderTitle: 'Activos del colaborador',
-    placeholderDescription: 'Equipos y recursos asignados al colaborador.',
-  },
-  {
     id: 'documents',
     label: 'Documentos',
     icon: <FileText {...iconProps} />,
@@ -97,9 +88,9 @@ export const PAYROLL_EMPLOYEE_PROFILE_TABS: PayrollEmployeeProfileTabDefinition[
   },
   {
     id: 'dotaciones',
-    label: 'Dotación',
+    label: 'Dotaciones',
     icon: <PackageCheck {...iconProps} />,
-    placeholderTitle: 'Dotación',
+    placeholderTitle: 'Dotaciones',
     placeholderDescription: 'Historial de entregas de calzado y vestido de labor — Art. 230 CST.',
   },
 ];

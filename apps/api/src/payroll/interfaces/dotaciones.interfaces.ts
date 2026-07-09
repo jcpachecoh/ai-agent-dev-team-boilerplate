@@ -62,6 +62,19 @@ export interface EligibleEmployee {
   locationId: string;
 }
 
+export interface CreateDotacionForEmployeeData {
+  tenantId: string;
+  employeeId: string;
+  period: string;
+}
+
+export interface UpdateDotacionDeliveryData {
+  id: string;
+  tenantId: string;
+  deliveredAt?: Date;
+  signedReceiptUrl?: string | null;
+}
+
 export interface BulkAssignByPositionData {
   tenantId: string;
   period: string;

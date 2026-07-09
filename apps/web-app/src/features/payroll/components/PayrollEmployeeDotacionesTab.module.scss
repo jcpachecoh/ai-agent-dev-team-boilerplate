@@ -1,14 +1,32 @@
 .container {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 20px;
+  padding: 20px 24px 24px;
 }
 
 .header {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
   margin-bottom: 4px;
+}
+
+.btnGestionar {
+  padding: 4px 12px;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  border-radius: 4px;
+  background: rgba(245, 158, 11, 0.08);
+  color: #f59e0b;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+
+  &:hover {
+    background: rgba(245, 158, 11, 0.15);
+  }
 }
 
 .title {
@@ -59,6 +77,10 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.cardItemMuted {
+  color: var(--empleado-muted, #888);
 }
 
 .cardMeta {
