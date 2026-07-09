@@ -450,6 +450,30 @@ Legacy environment variables (do not use for live flows):
 
 ---
 
+## OS-589 — Vacations (folder `OS-589 Vacations`)
+
+REST flow for vacation balance, request, double approval (Supervisor → NOMINA), and presigned letter PDF.
+
+### Users (seed)
+
+| Role        | Email                              | Password       | Token variable              |
+| ----------- | ---------------------------------- | -------------- | --------------------------- |
+| Solicitante | `mes-operator@palos-de-lena.dev`   | `TestPass123!` | `{{accessTokenOperator}}`   |
+| Supervisor  | `mes-supervisor@palos-de-lena.dev` | `TestPass123!` | `{{accessTokenSupervisor}}` |
+| RRHH        | `nomina@palos-de-lena.dev`         | `TestPass123!` | `{{accessTokenNomina}}`     |
+
+> **Jerarquía L1:** el supervisor (`pos-pdl-006`) solo aprueba empleados con cargo subordinado (`pos-pdl-002`). El operario del seed tiene ese cargo y saldo de vacaciones. `mes-owner` (AUDITOR u otro cargo fuera del árbol) devuelve **403** en Approve L1 — comportamiento esperado.
+
+### Run order
+
+1. **01 — Global Auth → Login Global Operator** → `accessTokenOperator` (o login REST equivalente)
+2. Login supervisor and nomina manually; paste tokens into `accessTokenSupervisor` / `accessTokenNomina`
+3. Set `vacationEmployeeId` al `EmployeeDetails.id` del operario (o run **GET Balance** con token del operario)
+4. Happy path: Balance → Request → Approve L1 → Approve L2 → Letter
+5. For negative cases, create a separate request and set `vacationPendingRequestId` while still `SOLICITADA`
+
+---
+
 ## Environment Variables Reference
 
 | Variable                               | Required                      | Set by                                                         |

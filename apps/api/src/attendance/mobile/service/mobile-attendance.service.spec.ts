@@ -1,4 +1,9 @@
-import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import {
   AttendanceEventType,
@@ -10,6 +15,7 @@ import { StorageService } from '../../../storage/service/storage.service';
 import { AttendanceService } from '../../service/attendance.service';
 import { MobileAttendanceRepository } from '../repository/mobile-attendance.repository';
 import { haversineDistanceMeters, MobileAttendanceService } from './mobile-attendance.service';
+import { VACATION_MARKING_BLOCKED_MESSAGE } from '../../service/vacation-attendance.guard';
 
 const TENANT_ID = 'tenant-001';
 const USER_ID = 'user-001';
@@ -124,6 +130,18 @@ describe('MobileAttendanceService', () => {
           clientLatitude: 4.6097,
           clientLongitude: -74.0817,
         }),
+      );
+    });
+
+    it('rechaza marcación cuando registerEvent detecta vacaciones aprobadas (D6)', async () => {
+      repo.findEmployeeByUserId.mockResolvedValue(mockEmployee);
+      repo.findLocationById.mockResolvedValue(mockLocation);
+      attendanceService.registerEvent.mockRejectedValue(
+        new ConflictException(VACATION_MARKING_BLOCKED_MESSAGE),
+      );
+
+      await expect(service.registrarMarcacion(validInput, USER_ID, TENANT_ID)).rejects.toThrow(
+        VACATION_MARKING_BLOCKED_MESSAGE,
       );
     });
 

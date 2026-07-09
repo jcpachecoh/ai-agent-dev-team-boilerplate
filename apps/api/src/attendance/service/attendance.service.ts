@@ -5,6 +5,7 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  Optional,
   UnauthorizedException,
   UnprocessableEntityException,
 } from '@nestjs/common';
@@ -50,6 +51,8 @@ import { validateGeofence } from '../utils/attendance-geofence.util';
 import { AuthService } from '../../auth/service/auth.service';
 import { UserLocationsService } from '../../locations/service/user-locations.service';
 import { ShiftResolutionService } from '../../turnos/service/shift-resolution.service';
+import { VacationsService } from '../../vacations/service/vacations.service';
+import { assertNotOnApprovedVacation } from './vacation-attendance.guard';
 import { LaborLegalParametersService } from '../../labor-legal-parameters/service/labor-legal-parameters.service';
 
 // Kiosk-auth security model:
@@ -74,6 +77,7 @@ export class AttendanceService implements IAttendanceService {
     private readonly shiftResolutionService: ShiftResolutionService,
     private readonly userLocationsService: UserLocationsService,
     private readonly legalParametersService: LaborLegalParametersService,
+    @Optional() private readonly vacationsService?: VacationsService,
   ) {}
 
   async kioskAuth(dto: KioskAuthInput, tenantId: string): Promise<KioskAuthResult> {
@@ -142,6 +146,7 @@ export class AttendanceService implements IAttendanceService {
 
     const now = new Date();
     const workDate = normalizeWorkDate(now);
+    await assertNotOnApprovedVacation(this.vacationsService, tenantId, employee.id, workDate);
     const shift = detectShift(now);
 
     const log = await this.attendanceRepository.create({
@@ -182,6 +187,12 @@ export class AttendanceService implements IAttendanceService {
     }
 
     const now = new Date();
+    await assertNotOnApprovedVacation(
+      this.vacationsService,
+      tenantId,
+      employee.id,
+      openEntry.workDate,
+    );
 
     const log = await this.attendanceRepository.create({
       tenantId,
@@ -255,6 +266,13 @@ export class AttendanceService implements IAttendanceService {
       shift = shift ?? detectShift(input.timestamp);
       await this.assertManualMarkingWithinAssignedShift(input, workDate);
     }
+
+    await assertNotOnApprovedVacation(
+      this.vacationsService,
+      input.tenantId,
+      input.employeeId,
+      workDate,
+    );
 
     let validationStatus = null;
     let distanceMeters: number | null = null;

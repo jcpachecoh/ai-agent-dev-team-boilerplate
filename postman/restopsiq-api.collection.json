@@ -13577,6 +13577,288 @@
           ]
         }
       ]
+    },
+    {
+      "name": "OS-589 Vacations",
+      "description": "Vacaciones OS-589 — flujo REST de solicitud, doble aprobación y carta PDF.\n\nPrerrequisitos:\n1. Login solicitante **`mes-operator@palos-de-lena.dev`** / `TestPass123!` → `{{accessTokenOperator}}` (cargo subordinado del supervisor en seed)\n2. Login Supervisor (`mes-supervisor@palos-de-lena.dev`) → `{{accessTokenSupervisor}}`\n3. Login NOMINA (`nomina@palos-de-lena.dev`) → `{{accessTokenNomina}}`\n4. Headers: `Authorization: Bearer <token>`, `x-tenant-id: {{tenantId}}`\n\nOrden feliz: Balance → Request → Approve L1 → Approve L2 → Letter.\n\nNota: `mes-owner` fuera de la jerarquía del supervisor devuelve 403 en Approve L1 (esperado).",
+      "item": [
+        {
+          "name": "GET Balance — empleado propio",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenOperator}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": "{{baseUrl}}/api/vacations/balance/{{vacationEmployeeId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('balance: status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('balance: tiene accruedDays y availableDays', () => {",
+                  "  pm.expect(body).to.have.property('accruedDays');",
+                  "  pm.expect(body).to.have.property('availableDays');",
+                  "});",
+                  "if (body.employeeId) {",
+                  "  pm.collectionVariables.set('vacationEmployeeId', body.employeeId);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Request — crear DISFRUTE",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenOperator}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": \"{{vacationEmployeeId}}\",\n  \"startDate\": \"{{vacationStartDate}}\",\n  \"endDate\": \"{{vacationEndDate}}\",\n  \"type\": \"DISFRUTE\"\n}"
+            },
+            "url": "{{baseUrl}}/api/vacations/requests"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('request: status 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('request: status SOLICITADA', () => pm.expect(body.status).to.eql('SOLICITADA'));",
+                  "pm.collectionVariables.set('vacationRequestId', body.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Requests — listar",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenNomina}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": "{{baseUrl}}/api/vacations/requests?take=20"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('list: status 200', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json()).to.be.an('array');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Approve Level 1 — Supervisor",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenSupervisor}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": "{{baseUrl}}/api/vacations/requests/{{vacationRequestId}}/approve-level-1"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('approve L1: status 200', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().status).to.eql('APROBADA_NIVEL_1');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Approve Level 2 — NOMINA",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenNomina}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": "{{baseUrl}}/api/vacations/requests/{{vacationRequestId}}/approve-level-2"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('approve L2: status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('approve L2: APROBADA con carta', () => {",
+                  "  pm.expect(body.status).to.eql('APROBADA');",
+                  "  pm.expect(body.letterStorageObjectId).to.be.a('string').and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Letter — URL prefirmada",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": "{{baseUrl}}/api/vacations/requests/{{vacationRequestId}}/letter"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('letter: status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('letter: url no vacía', () => {",
+                  "  pm.expect(body.url).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.collectionVariables.set('vacationLetterUrl', body.url);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Reject — con rejectionReason",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenSupervisor}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rejectionReason\": \"Temporada alta de operación\"\n}"
+            },
+            "url": "{{baseUrl}}/api/vacations/requests/{{vacationPendingRequestId}}/reject"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('reject: status 200', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().status).to.eql('RECHAZADA');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Negative: Reject sin rejectionReason",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenSupervisor}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": "{{baseUrl}}/api/vacations/requests/{{vacationPendingRequestId}}/reject"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('reject sin motivo: 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Negative: Approve L1 como empleado",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": "{{baseUrl}}/api/vacations/requests/{{vacationPendingRequestId}}/approve-level-1"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('approve L1 empleado: 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Negative: Approve L2 como Supervisor",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenSupervisor}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": "{{baseUrl}}/api/vacations/requests/{{vacationPendingRequestId}}/approve-level-2"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('approve L2 supervisor: 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Negative: Letter antes de aprobación",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": "{{baseUrl}}/api/vacations/requests/{{vacationPendingRequestId}}/letter"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('letter pendiente: 404', () => pm.response.to.have.status(404));"]
+              }
+            }
+          ]
+        }
+      ]
     }
   ]
 }

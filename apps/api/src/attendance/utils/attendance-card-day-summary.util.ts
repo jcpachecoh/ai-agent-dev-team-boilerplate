@@ -44,9 +44,10 @@ export function buildAttendanceCardDaySummaries(params: {
   dateFrom: Date;
   dateTo: Date;
   logs: AttendanceLogFull[];
+  vacationDateKeys?: Set<string>;
   resolveForDay: (workDate: Date) => Promise<ResolvedShift>;
 }): Promise<AttendanceCardDaySummary[]> {
-  const { dateFrom, dateTo, logs, resolveForDay } = params;
+  const { dateFrom, dateTo, logs, vacationDateKeys, resolveForDay } = params;
   const dates = listDatesInRange(dateFrom, dateTo);
 
   const logsByDate = new Map<string, { entry?: AttendanceLogFull; exit?: AttendanceLogFull }>();
@@ -66,6 +67,21 @@ export function buildAttendanceCardDaySummaries(params: {
   return Promise.all(
     dates.map(async (workDate): Promise<AttendanceCardDaySummary> => {
       const workDateKey = formatCalendarDate(workDate);
+
+      if (vacationDateKeys?.has(workDateKey)) {
+        return {
+          workDate: workDateKey,
+          targetMinutes: 0,
+          targetHours: '—',
+          ordinaryMinutes: 0,
+          unworkedMinutes: 0,
+          overtimeMinutes: 0,
+          resolvedKind: 'VACACIONES',
+          shiftName: 'Vacaciones',
+          shiftRange: null,
+        };
+      }
+
       const resolved = await resolveForDay(workDate);
       const targetMinutes = resolved.targetMinutes;
       const dayLogs = logsByDate.get(workDateKey);

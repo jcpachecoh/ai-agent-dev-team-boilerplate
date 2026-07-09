@@ -8,6 +8,8 @@ import { AttendanceRepository } from '../repository/attendance.repository';
 import { AttendanceCardService } from '../service/attendance-card.service';
 import { AttendanceService } from '../service/attendance.service';
 import { UserLocationsService } from '../../locations/service/user-locations.service';
+import { VacationsService } from '../../vacations/service/vacations.service';
+import { VacationType } from '@prisma/client';
 
 const TENANT = 'tenant-1';
 const LOCATION_A = 'loc-A';
@@ -40,6 +42,7 @@ describe('AttendanceCardService', () => {
   let audit: jest.Mocked<AuditService>;
   let attendanceService: jest.Mocked<AttendanceService>;
   let userLocationsService: jest.Mocked<UserLocationsService>;
+  let vacationsService: jest.Mocked<VacationsService>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -73,6 +76,12 @@ describe('AttendanceCardService', () => {
             assertLocationAllowed: jest.fn(),
           },
         },
+        {
+          provide: VacationsService,
+          useValue: {
+            getApprovedDisfruteRanges: jest.fn().mockResolvedValue([]),
+          },
+        },
       ],
     }).compile();
 
@@ -81,6 +90,7 @@ describe('AttendanceCardService', () => {
     audit = module.get(AuditService);
     attendanceService = module.get(AttendanceService);
     userLocationsService = module.get(UserLocationsService);
+    vacationsService = module.get(VacationsService);
   });
 
   describe('getCard', () => {
@@ -107,6 +117,34 @@ describe('AttendanceCardService', () => {
       expect(result.logs).toEqual([log]);
       expect(result.observations).toEqual([{ id: 'obs-1' }]);
       expect(result.daySummaries.length).toBeGreaterThan(0);
+    });
+
+    it('marca días de vacación aprobada como VACACIONES sin unworkedMinutes', async () => {
+      const employee = makeEmployee();
+      repo.findEmployeeByUserId.mockResolvedValue(employee as never);
+      repo.listHistory.mockResolvedValue([] as never);
+      repo.listObservationsInRange.mockResolvedValue([] as never);
+      vacationsService.getApprovedDisfruteRanges.mockResolvedValue([
+        {
+          employeeId: employee.id,
+          startDate: new Date('2026-06-10T00:00:00.000Z'),
+          endDate: new Date('2026-06-10T00:00:00.000Z'),
+          type: VacationType.DISFRUTE,
+        },
+      ]);
+
+      const result = await service.getCard(
+        'user-1',
+        TENANT,
+        '2026-06-10',
+        '2026-06-10',
+        makeActingUser(),
+      );
+
+      expect(result.daySummaries).toHaveLength(1);
+      expect(result.daySummaries[0].resolvedKind).toBe('VACACIONES');
+      expect(result.daySummaries[0].unworkedMinutes).toBe(0);
+      expect(result.daySummaries[0].shiftName).toBe('Vacaciones');
     });
 
     it('empleado fuera de tenant falla', async () => {

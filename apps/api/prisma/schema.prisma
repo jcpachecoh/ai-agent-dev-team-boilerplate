@@ -66,6 +66,7 @@ model StorageObject {
   supplierDocumentVersions SupplierDocumentVersion[]
   employeeAssets           EmployeeAsset[]
   employeeDocuments        EmployeeDocument[]
+  vacationRequestLetters   VacationRequest[]
 
   @@index([tenantId])
   @@index([tenantId, domain])
@@ -430,13 +431,13 @@ model SupplyItem {
   createdAt              DateTime  @default(now())
   updatedAt              DateTime  @updatedAt
 
-  categoria        SupplyCategory             @relation(fields: [categoriaId], references: [id])
-  location         Location?                  @relation(fields: [locationId], references: [id], onDelete: SetNull)
-  supplierProducts SupplierProduct[]
-  priceHistory     SupplyItemPriceHistory[]
-  orderMaterials   ProductionOrderMaterial[]
-  alertResolutions InventoryAlertResolution[]
-  compositionLines RecipeCompositionLine[]
+  categoria          SupplyCategory             @relation(fields: [categoriaId], references: [id])
+  location           Location?                  @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  supplierProducts   SupplierProduct[]
+  priceHistory       SupplyItemPriceHistory[]
+  orderMaterials     ProductionOrderMaterial[]
+  alertResolutions   InventoryAlertResolution[]
+  compositionLines   RecipeCompositionLine[]
   dotacionDeliveries DotacionDelivery[]
 
   @@unique([tenantId, codigoInterno])
@@ -791,20 +792,22 @@ model EmployeeDetails {
   updatedAt            DateTime             @updatedAt
   deletedAt            DateTime?
 
-  user                   User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  location               Location                  @relation(fields: [locationId], references: [id])
-  positionRef            EmployeePosition?         @relation(fields: [positionId], references: [id], onDelete: SetNull)
-  photoStorageObject     StorageObject?            @relation(fields: [photoStorageObjectId], references: [id], onDelete: SetNull)
-  positionHistory        EmployeePositionHistory[]
-  assets                 EmployeeAsset[]
-  documents              EmployeeDocument[]
-  attendanceLogs         AttendanceLog[]
-  attendanceObservations AttendanceObservation[]
-  socialProfiles         EmployeeSocialProfile[]
-  financialProfile       EmployeeFinancialProfile?
-  personalData           EmployeePersonalData?
-  turnoAssignments       TurnoAssignment[]
-    employeeShiftAssignments EmployeeShiftAssignment[]
+  user                     User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  location                 Location                  @relation(fields: [locationId], references: [id])
+  positionRef              EmployeePosition?         @relation(fields: [positionId], references: [id], onDelete: SetNull)
+  photoStorageObject       StorageObject?            @relation(fields: [photoStorageObjectId], references: [id], onDelete: SetNull)
+  positionHistory          EmployeePositionHistory[]
+  assets                   EmployeeAsset[]
+  documents                EmployeeDocument[]
+  attendanceLogs           AttendanceLog[]
+  attendanceObservations   AttendanceObservation[]
+  socialProfiles           EmployeeSocialProfile[]
+  financialProfile         EmployeeFinancialProfile?
+  personalData             EmployeePersonalData?
+  turnoAssignments         TurnoAssignment[]
+  employeeShiftAssignments EmployeeShiftAssignment[]
+  vacationBalance          VacationBalance?
+  vacationRequests         VacationRequest[]
 
   @@index([tenantId])
   @@index([locationId])
@@ -909,14 +912,14 @@ model EmployeePositionHistory {
 }
 
 model EmployeeAsset {
-  id             String      @id @default(cuid())
-  tenantId       String
-  employeeId     String
-  assetName      String
-  type           AssetType
-  assignmentDate DateTime    @default(now())
-  value          Decimal     @db.Decimal(12, 2)
-  status         AssetStatus @default(ACTIVO)
+  id              String      @id @default(cuid())
+  tenantId        String
+  employeeId      String
+  assetName       String
+  type            AssetType
+  assignmentDate  DateTime    @default(now())
+  value           Decimal     @db.Decimal(12, 2)
+  status          AssetStatus @default(ACTIVO)
   notes           String?
   storageObjectId String?
   createdAt       DateTime    @default(now())
@@ -2140,13 +2143,13 @@ model DotacionDelivery {
   id               String         @id @default(cuid())
   tenantId         String
   employeeId       String
-  period           String         // "2026-04" | "2026-08" | "2026-12"
-  supplyItemId     String?        // null until delivery is registered
+  period           String // "2026-04" | "2026-08" | "2026-12"
+  supplyItemId     String? // null until delivery is registered
   quantity         Int            @default(1)
   deliveredAt      DateTime?
   status           DotacionStatus @default(PENDIENTE)
   signedReceiptUrl String?
-  stockMovementId  String?        // ID of SupplyItemPriceHistory generated at delivery
+  stockMovementId  String? // ID of SupplyItemPriceHistory generated at delivery
   noAplicaReason   String?
   deletedAt        DateTime?
   createdAt        DateTime       @default(now())
@@ -2164,6 +2167,67 @@ model DotacionDelivery {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// VACACIONES — CST Art. 186 (OS-589)
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum VacationType {
+  DISFRUTE
+  COMPENSACION
+}
+
+enum VacationStatus {
+  SOLICITADA
+  APROBADA_NIVEL_1
+  APROBADA
+  RECHAZADA
+}
+
+model VacationBalance {
+  id              String   @id @default(cuid())
+  tenantId        String
+  employeeId      String   @unique
+  accruedDays     Decimal  @default(0) @db.Decimal(6, 2)
+  takenDays       Decimal  @default(0) @db.Decimal(6, 2)
+  compensatedDays Decimal  @default(0) @db.Decimal(6, 2)
+  lastAccrualDate DateTime
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  employee EmployeeDetails @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+
+  @@unique([tenantId, employeeId])
+  @@index([tenantId])
+  @@map("vacation_balances")
+}
+
+model VacationRequest {
+  id                    String         @id @default(cuid())
+  tenantId              String
+  employeeId            String
+  startDate             DateTime
+  endDate               DateTime
+  daysRequested         Decimal        @db.Decimal(6, 2)
+  type                  VacationType
+  status                VacationStatus @default(SOLICITADA)
+  level1ApprovedBy      String?
+  level1ActedAt         DateTime?
+  level2ApprovedBy      String?
+  level2ActedAt         DateTime?
+  rejectionReason       String?
+  letterStorageObjectId String?
+  isActive              Boolean        @default(true)
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+
+  employee            EmployeeDetails @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  letterStorageObject StorageObject?  @relation(fields: [letterStorageObjectId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([tenantId, employeeId])
+  @@index([tenantId, status])
+  @@index([tenantId, isActive])
+  @@map("vacation_requests")
+  }
 // OS-585 / NOM-06 — MOTOR DE PARÁMETROS LEGALES CON VIGENCIA
 // ─────────────────────────────────────────────────────────────────────────────
 // key: ver LABOR_LEGAL_PARAMETER_KEYS (src/labor-legal-parameters/labor-legal-parameters.constants.ts)

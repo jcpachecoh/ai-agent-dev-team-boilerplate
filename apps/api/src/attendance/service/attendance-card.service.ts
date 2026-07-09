@@ -3,6 +3,7 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import { AttendanceLog, AttendanceLogSource, AttendanceObservation } from '@prisma/client';
 import { AuditService } from '../../audit/service/audit.service';
@@ -18,6 +19,8 @@ import type {
 import { UserLocationsService } from '../../locations/service/user-locations.service';
 import { AttendanceRepository, normalizeWorkDate } from '../repository/attendance.repository';
 import { AttendanceService } from './attendance.service';
+import { VacationsService } from '../../vacations/service/vacations.service';
+import { buildVacationDateKeySet } from './vacation-attendance.guard';
 import {
   isCardDateRangeWithinLimit,
   parseCalendarDate,
@@ -32,6 +35,7 @@ export class AttendanceCardService {
     private readonly attendanceService: AttendanceService,
     private readonly shiftResolutionService: ShiftResolutionService,
     private readonly userLocationsService: UserLocationsService,
+    @Optional() private readonly vacationsService?: VacationsService,
   ) {}
 
   async getCard(
@@ -47,7 +51,7 @@ export class AttendanceCardService {
     const to = parseCalendarDate(dateTo);
     this.assertDateRange(from, to);
 
-    const [logs, observations] = await Promise.all([
+    const [logs, observations, vacationRanges] = await Promise.all([
       this.attendanceRepository.listHistory({
         tenantId,
         employeeId: employee.id,
@@ -56,12 +60,18 @@ export class AttendanceCardService {
         limit: ATTENDANCE_CARD_HISTORY_LIMIT,
       }),
       this.attendanceRepository.listObservationsInRange(tenantId, employee.id, from, to),
+      this.vacationsService
+        ? this.vacationsService.getApprovedDisfruteRanges(tenantId, employee.id, from, to)
+        : Promise.resolve([]),
     ]);
+
+    const vacationDateKeys = buildVacationDateKeySet(vacationRanges, from, to);
 
     const daySummaries = await buildAttendanceCardDaySummaries({
       dateFrom: from,
       dateTo: to,
       logs,
+      vacationDateKeys,
       resolveForDay: (workDate) =>
         this.shiftResolutionService.resolveForDay({
           tenantId,

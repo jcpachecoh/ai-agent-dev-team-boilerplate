@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { AttendanceEventType, AttendanceLog } from '@prisma/client';
 import type {
   AttendanceActingUser,
@@ -9,6 +9,8 @@ import type {
 } from '../interfaces/attendance.interfaces';
 import { AttendanceRepository } from '../repository/attendance.repository';
 import { UserLocationsService } from '../../locations/service/user-locations.service';
+import { VacationsService } from '../../vacations/service/vacations.service';
+import { hasApprovedVacationInRange } from './vacation-attendance.guard';
 import { LaborLegalParametersService } from '../../labor-legal-parameters/service/labor-legal-parameters.service';
 import {
   calculateDaySummary,
@@ -34,6 +36,8 @@ interface EmployeeAggregate {
   lateMinutes: number;
   lastEntryAt?: Date;
   hasEntryInRange: boolean;
+  /** DISFRUTE APROBADA en el rango: no contar como ausencia (PC-1). VACACIONES ≠ AUSENTE. */
+  hasApprovedVacationInRange: boolean;
   isOnShiftToday: boolean;
 }
 
@@ -43,6 +47,7 @@ export class AttendanceMonitorSummaryService {
     private readonly attendanceRepository: AttendanceRepository,
     private readonly userLocationsService: UserLocationsService,
     private readonly legalParametersService: LaborLegalParametersService,
+    @Optional() private readonly vacationsService?: VacationsService,
   ) {}
 
   async getMonitorSummary(
@@ -103,12 +108,19 @@ export class AttendanceMonitorSummaryService {
       nocturnoStartHour,
     );
 
+    const vacationByEmployee = await this.resolveVacationCoverage(
+      tenantId,
+      employees,
+      workDateFromIso(range.dateFrom),
+      workDateFromIso(range.dateTo),
+    );
+
     const onShift = aggregates
       .filter((item) => (isLive ? item.isOnShiftToday : item.daysPresent > 0))
       .map((item) => this.toEmployeeDto(item, 'on-shift', isLive));
 
     const absent = aggregates
-      .filter((item) => !item.hasEntryInRange)
+      .filter((item) => !item.hasEntryInRange && !vacationByEmployee.get(item.employee.id))
       .map((item) => this.toEmployeeDto(item, 'absent', isLive));
 
     const late = aggregates
@@ -222,9 +234,37 @@ export class AttendanceMonitorSummaryService {
         lateMinutes,
         lastEntryAt,
         hasEntryInRange,
+        hasApprovedVacationInRange: false,
         isOnShiftToday: isLive && activeEmployeeIds.has(employee.id),
       };
     });
+  }
+
+  private async resolveVacationCoverage(
+    tenantId: string,
+    employees: EmployeeWithUser[],
+    dateFrom: Date,
+    dateTo: Date,
+  ): Promise<Map<string, boolean>> {
+    const coverage = new Map<string, boolean>();
+    if (!this.vacationsService) {
+      return coverage;
+    }
+
+    await Promise.all(
+      employees.map(async (employee) => {
+        const onVacation = await hasApprovedVacationInRange(
+          this.vacationsService,
+          tenantId,
+          employee.id,
+          dateFrom,
+          dateTo,
+        );
+        coverage.set(employee.id, onVacation);
+      }),
+    );
+
+    return coverage;
   }
 
   private toEmployeeDto(

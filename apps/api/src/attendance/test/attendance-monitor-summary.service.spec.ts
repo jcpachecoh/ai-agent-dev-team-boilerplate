@@ -87,6 +87,11 @@ const userLocationsServiceMock = {
   assertLocationAllowed: jest.fn(),
 };
 
+const vacationsServiceMock = {
+  getApprovedDisfruteRanges: jest.fn().mockResolvedValue([]),
+  findApprovedDisfruteByDate: jest.fn().mockResolvedValue(null),
+};
+
 describe('AttendanceMonitorSummaryService', () => {
   let service: AttendanceMonitorSummaryService;
 
@@ -95,9 +100,12 @@ describe('AttendanceMonitorSummaryService', () => {
       repositoryMock as never,
       userLocationsServiceMock as never,
       { getValueAt: jest.fn().mockResolvedValue(21) } as never,
+      vacationsServiceMock as never,
     );
     jest.clearAllMocks();
     userLocationsServiceMock.resolveAllowedLocationIds.mockResolvedValue(null);
+    vacationsServiceMock.getApprovedDisfruteRanges.mockResolvedValue([]);
+    vacationsServiceMock.findApprovedDisfruteByDate.mockResolvedValue(null);
     repositoryMock.findLocationById.mockResolvedValue({ id: locationId, tenantId, name: 'Sede 1' });
     repositoryMock.findEmployeesAtLocation.mockResolvedValue([employee]);
     repositoryMock.listHistory.mockResolvedValue([]);
@@ -130,6 +138,28 @@ describe('AttendanceMonitorSummaryService', () => {
     expect(result.metrics.absent).toBe(1);
     expect(result.employees.absent).toHaveLength(1);
     expect(result.employees.onShift).toHaveLength(0);
+  });
+
+  it('no clasifica como ausente a empleado con vacaciones aprobadas (PC-1)', async () => {
+    vacationsServiceMock.getApprovedDisfruteRanges.mockResolvedValue([
+      {
+        employeeId: employee.id,
+        startDate: new Date('2026-06-18T00:00:00.000Z'),
+        endDate: new Date('2026-06-18T00:00:00.000Z'),
+        type: 'DISFRUTE',
+      },
+    ]);
+    repositoryMock.listHistory.mockResolvedValue([]);
+    repositoryMock.listActiveAtLocation.mockResolvedValue([]);
+
+    const result = await service.getMonitorSummary(
+      { locationId, period: 'day', anchorDate: '2026-06-18' },
+      tenantId,
+      actor,
+    );
+
+    expect(result.metrics.absent).toBe(0);
+    expect(result.employees.absent).toHaveLength(0);
   });
 
   it('clasifica en turno cuando hay entrada activa hoy', async () => {

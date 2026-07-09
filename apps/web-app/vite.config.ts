@@ -4,7 +4,7 @@ import { resolve } from 'node:path';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
-  const apiTarget = env.VITE_API_URL ?? 'http://localhost:4000';
+  const apiTarget = env.VITE_API_URL ?? 'http://localhost:3001';
   const graphqlTarget = env.VITE_GRAPHQL_TARGET_URL ?? apiTarget;
 
   return {

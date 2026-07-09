@@ -3,6 +3,7 @@ import { AuthModule } from '../auth/auth.module';
 import { LocationsModule } from '../locations/locations.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { PayrollModule } from '../payroll/payroll.module';
+import { VacationsModule } from '../vacations/vacations.module';
 import { LaborLegalParametersModule } from '../labor-legal-parameters/labor-legal-parameters.module';
 import { ReportsController } from './controller/reports.controller';
 import { ReportsService } from './service/reports.service';
@@ -11,7 +12,14 @@ import { ReportPdfService } from './service/report-pdf.service';
 import { ReportExcelService } from './service/report-excel.service';
 
 @Module({
-  imports: [PrismaModule, PayrollModule, AuthModule, LocationsModule, LaborLegalParametersModule],
+  imports: [
+    PrismaModule,
+    PayrollModule,
+    AuthModule,
+    LocationsModule,
+    VacationsModule,
+    LaborLegalParametersModule,
+  ],
   controllers: [ReportsController],
   providers: [ReportsService, ReportsRepository, ReportPdfService, ReportExcelService],
 })

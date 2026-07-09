@@ -220,7 +220,8 @@ export interface AttendanceCardDaySummary {
   ordinaryMinutes: number;
   unworkedMinutes: number;
   overtimeMinutes: number;
-  resolvedKind: 'ASSIGNED' | 'REST' | 'NONE';
+  /** VACACIONES = DISFRUTE APROBADA (PC-1); no cuenta como ausencia. */
+  resolvedKind: 'ASSIGNED' | 'REST' | 'NONE' | 'VACACIONES';
   shiftName: string | null;
   shiftRange: string | null;
 }
