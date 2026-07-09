@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { DotacionStatus, Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../prisma/prisma.service';
+import { DOTACION_CATEGORY_NOMBRE } from '../../supplyitems/constants/dotacion.constants';
 import type {
   DotacionDeliveryEnriched,
   DotacionHistoryFilters,
@@ -12,7 +13,6 @@ import type {
   EligibleEmployee,
 } from '../interfaces/dotaciones.interfaces';
 
-const DOTACION_CATEGORY_NAME = 'DOTACION';
 const DEFAULT_PAGE_SIZE = 20;
 
 @Injectable()
@@ -156,7 +156,7 @@ export class DotacionesRepository {
     const category = await this.prisma.supplyCategory.findFirst({
       where: {
         tenantId,
-        nombre: { equals: DOTACION_CATEGORY_NAME, mode: 'insensitive' },
+        nombre: { equals: DOTACION_CATEGORY_NOMBRE, mode: 'insensitive' },
         isActive: true,
       },
       select: { id: true },
