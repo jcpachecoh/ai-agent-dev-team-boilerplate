@@ -2492,6 +2492,9 @@ async function main() {
 
   const { seedNovedadTypeConfigs } = await import('./seeds/novedad-type-config.seed');
   await seedNovedadTypeConfigs(prisma, OPERATIONAL_TENANT_ID);
+
+  const { seedDataProcessingPolicy } = await import('./seeds/data-processing-policy.seed');
+  await seedDataProcessingPolicy(prisma, OPERATIONAL_TENANT_ID);
 }
 
 main()

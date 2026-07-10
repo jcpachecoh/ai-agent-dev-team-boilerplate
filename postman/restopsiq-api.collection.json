@@ -538,6 +538,18 @@
       "description": "CONN-04a — período nómina YYYY-MM para inbox/summary"
     },
     {
+      "key": "dataConsentPolicyVersion",
+      "value": "2026.07.1",
+      "type": "string",
+      "description": "Ley 1581 — versión vigente de política; sobrescrita por GET activeDataProcessingPolicy"
+    },
+    {
+      "key": "dataConsentEmployeeUserId",
+      "value": "11111111-0000-0000-0000-000000000005",
+      "type": "string",
+      "description": "Ley 1581 — global User.id del empleado (mes-operator seed); capturado en Me OPERATOR"
+    },
+    {
       "key": "authLockoutEmail",
       "value": "",
       "type": "string",
@@ -14114,6 +14126,425 @@
                   "pm.test('deleteLaborLegalParameter = true', () => {",
                   "  pm.expect(pm.response.json().data.deleteLaborLegalParameter).to.eql(true);",
                   "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Ley 1581 — Data Consent (biométrico + geo)",
+      "description": "Consentimiento informado Ley 1581 — datos biométricos faciales y geolocalización (OS-499/500/505, app móvil OS-555).\n\n**Prerrequisitos:** API en :3001, migración `20260710160000_data_consent_ley1581`, política sembrada (`pnpm prisma db seed` o seed `data-processing-policy`).\n\n**Variables:** `{{graphqlUrl}}`, `{{tenantId}}`, `{{password}}`, `{{dataConsentPolicyVersion}}` (default `2026.07.1`), `{{dataConsentEmployeeUserId}}` (userId del empleado; capturado en Me OPERATOR).\n\n**Orden:** Login OPERATOR → Login OWNER → Login SUPER_ADMIN → Política vigente → Estado propio → Consulta RRHH → Otorgar → Revocar → Listar políticas (SuperAdmin).\n\n**Notas:** `grantDataConsent` solo el propio empleado. `revokeDataConsent` solo el propio empleado. `publishDataProcessingPolicy` solo OWNER/SUPER_ADMIN.",
+      "item": [
+        {
+          "name": "Login OPERATOR (empleado)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation Login($input: GlobalLoginInput!) { login(input: $input) { accessToken refreshToken } }\", \"variables\": {\"input\": {\"email\": \"mes-operator@palos-de-lena.dev\", \"password\": \"{{password}}\"}}}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{graphqlUrl}}",
+            "auth": { "type": "noauth" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('No GraphQL errors', () => pm.expect(pm.response.json().errors).to.be.undefined);",
+                  "const login = pm.response.json().data.login;",
+                  "if (login?.accessToken) pm.collectionVariables.set('accessTokenOperator', login.accessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login OWNER (RRHH)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation Login($input: GlobalLoginInput!) { login(input: $input) { accessToken refreshToken } }\", \"variables\": {\"input\": {\"email\": \"mes-owner@palos-de-lena.dev\", \"password\": \"{{password}}\"}}}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{graphqlUrl}}",
+            "auth": { "type": "noauth" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const login = pm.response.json().data.login;",
+                  "if (login?.accessToken) pm.collectionVariables.set('accessTokenOwner', login.accessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login SUPER_ADMIN",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation Login($input: GlobalLoginInput!) { login(input: $input) { accessToken refreshToken } }\", \"variables\": {\"input\": {\"email\": \"superadmin@opssynk.dev\", \"password\": \"{{password}}\"}}}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{graphqlUrl}}",
+            "auth": { "type": "noauth" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const login = pm.response.json().data.login;",
+                  "if (login?.accessToken) pm.collectionVariables.set('accessTokenSuperAdmin', login.accessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Me OPERATOR — capturar userId",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenOperator}}" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"query Me { me { id email roleCode } }\"}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{graphqlUrl}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const me = pm.response.json().data?.me;",
+                  "pm.test('me.id presente', () => pm.expect(me?.id).to.be.a('string'));",
+                  "if (me?.id) {",
+                  "  pm.collectionVariables.set('dataConsentEmployeeUserId', me.id);",
+                  "  try { pm.environment.set('dataConsentEmployeeUserId', me.id); } catch(e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Política vigente — activeDataProcessingPolicy",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenOperator}}" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"query ActiveDataProcessingPolicy { activeDataProcessingPolicy { id tenantId version title content consentLabel publishedAt isActive } }\"}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{graphqlUrl}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('No GraphQL errors', () => pm.expect(pm.response.json().errors).to.be.undefined);",
+                  "const policy = pm.response.json().data?.activeDataProcessingPolicy;",
+                  "pm.test('Política activa', () => { pm.expect(policy.isActive).to.eql(true); });",
+                  "if (policy?.version) {",
+                  "  pm.collectionVariables.set('dataConsentPolicyVersion', policy.version);",
+                  "  try { pm.environment.set('dataConsentPolicyVersion', policy.version); } catch(e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Mi estado — myDataConsentStatus",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenOperator}}" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"query MyDataConsentStatus { myDataConsentStatus { activePolicyVersion biometricEnrolled alternateMethodAvailable consents { consentType granted policyVersion grantedAt revokedAt canUseFeature } policy { version title } } }\"}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{graphqlUrl}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('No GraphQL errors', () => pm.expect(pm.response.json().errors).to.be.undefined);",
+                  "const summary = pm.response.json().data?.myDataConsentStatus;",
+                  "pm.test('consents es array de 2 tipos', () => pm.expect(summary.consents).to.have.lengthOf(2));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Consentimientos empleado (OWNER/RRHH)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenOwner}}" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"query EmployeeDataConsents($userId: ID!) { employeeDataConsents(userId: $userId) { activePolicyVersion biometricEnrolled alternateMethodAvailable consents { consentType granted policyVersion grantedAt revokedAt canUseFeature } policy { version title } } }\", \"variables\": {\"userId\": \"{{dataConsentEmployeeUserId}}\"}}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{graphqlUrl}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('No GraphQL errors', () => pm.expect(pm.response.json().errors).to.be.undefined);",
+                  "pm.test('employeeDataConsents presente', () => {",
+                  "  pm.expect(pm.response.json().data.employeeDataConsents).to.be.an('object');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Otorgar consentimiento — grantDataConsent",
+          "description": "Otorga BIOMETRICO_FACIAL + GEOLOCALIZACION para la versión vigente. Requiere accepted: true (checkbox explícito en app móvil).",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenOperator}}" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation GrantDataConsent($input: GrantDataConsentInput!) { grantDataConsent(input: $input) { id tenantId employeeId consentType granted policyVersion grantedAt revokedAt } }\",\n  \"variables\": {\n    \"input\": {\n      \"policyVersion\": \"{{dataConsentPolicyVersion}}\",\n      \"consentTypes\": [\"BIOMETRICO_FACIAL\", \"GEOLOCALIZACION\"],\n      \"accepted\": true,\n      \"deviceId\": \"postman-device-001\"\n    }\n  }\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{graphqlUrl}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('No GraphQL errors', () => pm.expect(pm.response.json().errors).to.be.undefined);",
+                  "const rows = pm.response.json().data?.grantDataConsent;",
+                  "pm.test('2 consentimientos otorgados', () => pm.expect(rows).to.have.lengthOf(2));",
+                  "pm.test('granted = true', () => rows.forEach(r => pm.expect(r.granted).to.eql(true)));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Revocar — BIOMETRICO_FACIAL",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenOperator}}" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation RevokeDataConsent($input: RevokeDataConsentInput!) { revokeDataConsent(input: $input) { id consentType granted revokedAt policyVersion } }\", \"variables\": {\"input\": {\"consentType\": \"BIOMETRICO_FACIAL\"}}}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{graphqlUrl}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('No GraphQL errors', () => pm.expect(pm.response.json().errors).to.be.undefined);",
+                  "const row = pm.response.json().data?.revokeDataConsent;",
+                  "pm.test('granted = false', () => pm.expect(row.granted).to.eql(false));",
+                  "pm.test('revokedAt presente', () => pm.expect(row.revokedAt).to.be.a('string'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Revocar — GEOLOCALIZACION",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenOperator}}" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation RevokeDataConsent($input: RevokeDataConsentInput!) { revokeDataConsent(input: $input) { id consentType granted revokedAt policyVersion } }\", \"variables\": {\"input\": {\"consentType\": \"GEOLOCALIZACION\"}}}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{graphqlUrl}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('No GraphQL errors', () => pm.expect(pm.response.json().errors).to.be.undefined);",
+                  "pm.test('granted = false', () => pm.expect(pm.response.json().data.revokeDataConsent.granted).to.eql(false));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "❌ grantDataConsent — accepted false",
+          "description": "Debe fallar: el checkbox no puede estar premarcado / accepted debe ser true.",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenOperator}}" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation GrantDataConsent($input: GrantDataConsentInput!) { grantDataConsent(input: $input) { id } }\", \"variables\": {\"input\": {\"policyVersion\": \"{{dataConsentPolicyVersion}}\", \"consentTypes\": [\"GEOLOCALIZACION\"], \"accepted\": false}}}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{graphqlUrl}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200 (GraphQL error envelope)', () => pm.response.to.have.status(200));",
+                  "pm.test('Tiene errors', () => pm.expect(pm.response.json().errors).to.be.an('array').that.is.not.empty);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Histórico políticas — dataProcessingPolicies (SUPER_ADMIN)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenSuperAdmin}}" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"query DataProcessingPolicies { dataProcessingPolicies { id tenantId version title isActive publishedAt } }\"}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{graphqlUrl}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('No GraphQL errors', () => pm.expect(pm.response.json().errors).to.be.undefined);",
+                  "pm.test('dataProcessingPolicies es array', () => {",
+                  "  pm.expect(pm.response.json().data.dataProcessingPolicies).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Publicar política — publishDataProcessingPolicy (SUPER_ADMIN)",
+          "description": "Publica nueva versión y desactiva la anterior. Usar solo en dev — texto es borrador legal.",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenSuperAdmin}}" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation PublishDataProcessingPolicy($input: PublishDataProcessingPolicyInput!) { publishDataProcessingPolicy(input: $input) { id version title isActive publishedAt } }\",\n  \"variables\": {\n    \"input\": {\n      \"version\": \"2026.07.2-postman\",\n      \"title\": \"Política de tratamiento de datos biométricos y geolocalización\",\n      \"content\": \"[BORRADOR POSTMAN] Texto de prueba — reemplazar tras revisión legal.\",\n      \"consentLabel\": \"Autorizo el tratamiento de mi dato biométrico facial y de geolocalización para los fines aquí descritos.\"\n    }\n  }\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{graphqlUrl}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('No GraphQL errors', () => pm.expect(pm.response.json().errors).to.be.undefined);",
+                  "const policy = pm.response.json().data?.publishDataProcessingPolicy;",
+                  "pm.test('isActive = true', () => pm.expect(policy.isActive).to.eql(true));",
+                  "if (policy?.version) pm.collectionVariables.set('dataConsentPolicyVersion', policy.version);"
                 ]
               }
             }

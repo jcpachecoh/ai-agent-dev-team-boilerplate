@@ -4,6 +4,7 @@ import {
   Landmark,
   PackageCheck,
   Receipt,
+  ShieldAlert,
   ShieldCheck,
   UserRound,
   type LucideIcon,
@@ -18,7 +19,8 @@ export type PayrollEmployeeProfileTabId =
   | 'bank-accounts'
   // | 'taxes'
   | 'documents'
-  | 'dotaciones';
+  | 'dotaciones'
+  | 'data-consent';
 
 export interface PayrollEmployeeProfileTabDefinition {
   id: PayrollEmployeeProfileTabId;
@@ -92,6 +94,14 @@ export const PAYROLL_EMPLOYEE_PROFILE_TABS: PayrollEmployeeProfileTabDefinition[
     icon: <PackageCheck {...iconProps} />,
     placeholderTitle: 'Dotaciones',
     placeholderDescription: 'Historial de entregas de calzado y vestido de labor — Art. 230 CST.',
+  },
+  {
+    id: 'data-consent',
+    label: 'Privacidad',
+    icon: <ShieldAlert {...iconProps} />,
+    placeholderTitle: 'Consentimiento de datos',
+    placeholderDescription:
+      'Estado de autorizaciones para datos biométricos y geolocalización (Ley 1581 de 2012).',
   },
 ];
 
