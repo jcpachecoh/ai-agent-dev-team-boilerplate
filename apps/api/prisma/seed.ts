@@ -2476,6 +2476,9 @@ async function main() {
 
   const { seedLaborLegalParameters } = await import('./seeds/labor-legal-parameters.seed');
   await seedLaborLegalParameters(prisma);
+
+  const { seedNovedadTypeConfigs } = await import('./seeds/novedad-type-config.seed');
+  await seedNovedadTypeConfigs(prisma, OPERATIONAL_TENANT_ID);
 }
 
 main()

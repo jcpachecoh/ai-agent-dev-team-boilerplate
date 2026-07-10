@@ -1,0 +1,88 @@
+$mobile-breakpoint: 768px;
+
+.payrollNovedadesScreen {
+  min-height: 100%;
+  min-width: 0;
+}
+
+.tabs {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.tabButton,
+.tabButtonActive {
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border-subtle, #e2e8f0);
+  cursor: pointer;
+  background: transparent;
+}
+
+.tabButtonActive {
+  background: var(--surface-elevated, #f8fafc);
+  font-weight: 600;
+}
+
+.filtersBar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(160px, 100%), 1fr));
+  gap: 12px;
+  width: 100%;
+  align-items: end;
+  margin-bottom: 16px;
+}
+
+.filterField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  width: 100%;
+}
+
+.filterField > :not(.filterLabel) {
+  width: 100%;
+  min-width: 0;
+  --control-width: 100%;
+}
+
+.datePicker,
+.textInput,
+.combobox {
+  width: 100%;
+  min-height: 40px;
+  --control-width: 100%;
+}
+
+.filterLabel {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.625rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--empleado-muted);
+}
+
+.sectionTitle {
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.state {
+  border: 1px solid var(--empleado-border);
+  border-radius: 4px;
+  background: var(--empleado-surface);
+  color: var(--empleado-subtle);
+  padding: 2rem;
+  text-align: center;
+  font-size: 0.875rem;
+}
+
+.createForm {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
+  gap: 12px;
+  align-items: end;
+}

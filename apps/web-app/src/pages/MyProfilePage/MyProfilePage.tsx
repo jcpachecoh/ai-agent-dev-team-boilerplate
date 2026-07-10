@@ -5,6 +5,7 @@ import { PayrollEmployeeDocumentsTab } from '@/features/payroll/components/Payro
 import { PayrollEmployeeSocialSecurityTab } from '@/features/payroll/components/PayrollEmployeeSocialSecurityTab';
 import type { MyProfileOutletContext } from '@/features/my-profile/screens/MyProfileScreen';
 import { MyProfileScreen } from '@/features/my-profile/screens/MyProfileScreen';
+import { MyProfileNovedadesTab } from '@/features/my-profile/screens/MyProfileNovedadesTab';
 import { MyProfilePersonalTab } from '@/features/my-profile/screens/MyProfilePersonalTab';
 import { MyProfileVacationsTab } from '@/features/my-profile/screens/MyProfileVacationsTab';
 import { useTheme } from '@/providers/ThemeProvider';
@@ -22,6 +23,11 @@ function MyProfilePersonalRoute(): React.JSX.Element {
 function MyProfileVacationsRoute(): React.JSX.Element {
   const { employeeId, contractType } = useOutletContext<MyProfileOutletContext>();
   return <MyProfileVacationsTab employeeId={employeeId} contractType={contractType} />;
+}
+
+function MyProfileNovedadesRoute(): React.JSX.Element {
+  const { employeeId } = useOutletContext<MyProfileOutletContext>();
+  return <MyProfileNovedadesTab employeeId={employeeId} />;
 }
 
 function MyProfileSocialSecurityRoute(): React.JSX.Element {
@@ -64,6 +70,7 @@ export default function MyProfilePage(): React.JSX.Element {
         <Route index element={<Navigate to="informacion-personal" replace />} />
         <Route path="informacion-personal" element={<MyProfilePersonalRoute />} />
         <Route path="vacaciones" element={<MyProfileVacationsRoute />} />
+        <Route path="novedades" element={<MyProfileNovedadesRoute />} />
         <Route path="seguridad-social" element={<MyProfileSocialSecurityRoute />} />
         <Route path="bancos" element={<MyProfileBankAccountsRoute />} />
         <Route path="documentos" element={<MyProfileDocumentsRoute />} />

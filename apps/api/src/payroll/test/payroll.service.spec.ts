@@ -788,10 +788,20 @@ describe('PayrollService', () => {
   });
 
   describe('remove', () => {
-    it('should perform soft delete on employee details only', async () => {
+    it('should perform soft delete on employee details only and return the deactivated employee', async () => {
       (repository.findByUserId as jest.Mock).mockResolvedValue({ tenantId: mockTenantId });
-      await service.remove(mockTenantId, 'user-1');
+      const deactivatedEmployee = {
+        tenantId: mockTenantId,
+        userId: 'user-1',
+        isActive: false,
+        deletedAt: new Date('2026-07-09T00:00:00.000Z'),
+      };
+      (repository.softDelete as jest.Mock).mockResolvedValue(deactivatedEmployee);
+
+      const result = await service.remove(mockTenantId, 'user-1');
+
       expect(repository.softDelete).toHaveBeenCalledWith('user-1');
+      expect(result).toEqual(deactivatedEmployee);
     });
   });
 

@@ -9,7 +9,7 @@
 - `EmployeeResolver`: Implementación de Queries y Mutations reutilizando el `EmployeeService`.
   - Query: `employee(id)`, `employees(filter)` (con soporte para `includeInactive`).
   - Mutation: `createEmployee`, `updateEmployee`.
-  - Mutation: `deactivateEmployee` (Soft delete mapeado al service).
+  - Mutation: `deactivateEmployee(userId: ID!): EmployeeDetails!` (Soft delete mapeado al service, retorna el empleado desactivado).
 - Extracción de `tenantId` del contexto GraphQL usando `getTenantIdFromContext`.
 
 ### Archivos Permitidos:
@@ -26,7 +26,7 @@
 ### Criterios de Aceptación:
 
 - Queries y Mutations funcionales desde Apollo Playground.
-- `deactivateEmployee` realiza el soft delete correcto (isActive: false, deletedAt: now).
+- `deactivateEmployee` realiza el soft delete correcto (isActive: false, deletedAt: now) y retorna el `EmployeeDetails` actualizado (no un `Boolean`).
 - Consistencia en el manejo de errores con el resto de la API.
 
 ### Validaciones:

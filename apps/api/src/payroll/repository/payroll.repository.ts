@@ -340,12 +340,15 @@ export class PayrollRepository implements IPayrollRepository {
     return patch;
   }
 
-  async softDelete(userId: string): Promise<void> {
-    await this.prisma.employeeDetails.update({
+  async softDelete(userId: string): Promise<EmployeeDetails & { user: User }> {
+    return this.prisma.employeeDetails.update({
       where: { userId },
       data: {
         isActive: false,
         deletedAt: new Date(),
+      },
+      include: {
+        user: true,
       },
     });
   }

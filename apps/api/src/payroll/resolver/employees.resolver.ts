@@ -286,16 +286,16 @@ export class EmployeesResolver {
     return toEmployeeResponse(employee) as any;
   }
 
-  @Mutation(() => Boolean)
+  @Mutation(() => EmployeeDetailsType)
   @Roles(...PAYROLL_WRITE_ROLES)
   async deactivateEmployee(
     @CurrentUser() user: any,
     @Context() context: any,
     @Args('userId', { type: () => ID }) userId: string,
-  ): Promise<boolean> {
+  ): Promise<EmployeeDetailsType> {
     const tenantId = this.resolveTenantId(user, context);
-    await this.employeesService.remove(tenantId, userId);
-    return true;
+    const employee = await this.employeesService.remove(tenantId, userId);
+    return toEmployeeResponse(employee) as any;
   }
 
   private resolveTenantId(user: any, context: any): string {

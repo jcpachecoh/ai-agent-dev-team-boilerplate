@@ -429,6 +429,9 @@ describe('PayrollRepository', (): void => {
         isActive: false,
         deletedAt: expect.any(Date),
       },
+      include: {
+        user: true,
+      },
     });
   });
 
@@ -515,6 +518,25 @@ describe('PayrollRepository', (): void => {
 
     expect(syncSalaryHistoryTx).not.toHaveBeenCalled();
     expect(syncFundHistoryTx).not.toHaveBeenCalled();
+  });
+
+  it('softDelete returns the deactivated employee record', async (): Promise<void> => {
+    (prisma.employeeDetails.update as jest.Mock).mockResolvedValue({
+      userId: 'user-1',
+      isActive: false,
+      deletedAt: new Date('2026-07-09T00:00:00.000Z'),
+      user: { id: 'user-1' },
+    });
+
+    const result = await repository.softDelete('user-1');
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        userId: 'user-1',
+        isActive: false,
+        deletedAt: expect.any(Date),
+      }),
+    );
   });
 
   it('count applies active filters by default', async (): Promise<void> => {

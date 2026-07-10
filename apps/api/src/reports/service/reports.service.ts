@@ -46,7 +46,9 @@ import {
 import { VacationsService } from '../../vacations/service/vacations.service';
 import { countApprovedVacationDaysInRange } from '../../attendance/service/vacation-attendance.guard';
 import { MedicalLeavesRepository } from '../../medical-leaves/repository/medical-leaves.repository';
+import { PayrollNovedadesRepository } from '../../payroll-novedades/repository/payroll-novedades.repository';
 import { calculateMedicalLeaveMonthAdjustment } from '../../payroll/utils/medical-leave-payroll.utils';
+import { calculatePayrollNovedadMonthAdjustment } from '../../payroll/utils/payroll-novedad-payroll.utils';
 
 // CST art. 168: maximum 2h/day and 12h/week of extra (overtime) hours.
 // These are OT-only caps — distinct from the total jornada limit (Ley 2101/2021), which is
@@ -359,6 +361,7 @@ export class ReportsService implements IReportsService {
     private readonly legalParametersService: LaborLegalParametersService,
     @Optional() private readonly vacationsService?: VacationsService,
     @Optional() private readonly medicalLeavesRepository?: MedicalLeavesRepository,
+    @Optional() private readonly payrollNovedadesRepository?: PayrollNovedadesRepository,
   ) {}
 
   private async countVacationDaysForEmployee(
@@ -418,6 +421,58 @@ export class ReportsService implements IReportsService {
       adjustments.set(
         employeeId,
         calculateMedicalLeaveMonthAdjustment(employeeLeaves, periodStart, periodEnd, dailySalary),
+      );
+    }
+
+    return adjustments;
+  }
+
+  private async buildPayrollNovedadAdjustmentsByEmployee(
+    tenantId: string,
+    employeeIds: string[],
+    periodStart: Date,
+    periodEnd: Date,
+    salaryByEmployeeId: Map<string, number>,
+  ): Promise<Map<string, ReturnType<typeof calculatePayrollNovedadMonthAdjustment>>> {
+    const adjustments = new Map<
+      string,
+      ReturnType<typeof calculatePayrollNovedadMonthAdjustment>
+    >();
+
+    if (!this.payrollNovedadesRepository || employeeIds.length === 0) {
+      return adjustments;
+    }
+
+    const novedades = await this.payrollNovedadesRepository.findApprovedForPeriodByEmployeeIds(
+      tenantId,
+      employeeIds,
+      periodStart,
+      periodEnd,
+    );
+
+    const novedadesByEmployee = new Map<string, typeof novedades>();
+    for (const novedad of novedades) {
+      const bucket = novedadesByEmployee.get(novedad.employeeId) ?? [];
+      bucket.push(novedad);
+      novedadesByEmployee.set(novedad.employeeId, bucket);
+    }
+
+    for (const employeeId of employeeIds) {
+      const employeeNovedades = novedadesByEmployee.get(employeeId) ?? [];
+      if (employeeNovedades.length === 0) {
+        continue;
+      }
+
+      const salaryAmount = salaryByEmployeeId.get(employeeId) ?? 0;
+      const dailySalary = salaryAmount / 30;
+      adjustments.set(
+        employeeId,
+        calculatePayrollNovedadMonthAdjustment(
+          employeeNovedades,
+          periodStart,
+          periodEnd,
+          dailySalary,
+        ),
       );
     }
 
@@ -525,6 +580,13 @@ export class ReportsService implements IReportsService {
       to,
       salaryByEmployeeId,
     );
+    const payrollNovedadAdjustments = await this.buildPayrollNovedadAdjustmentsByEmployee(
+      tenantId,
+      employeeIds,
+      from,
+      to,
+      salaryByEmployeeId,
+    );
 
     for (const emp of employees) {
       const empLogs = logsByEmployee.get(emp.id) ?? [];
@@ -539,6 +601,7 @@ export class ReportsService implements IReportsService {
       );
 
       const medicalLeave = medicalLeaveAdjustments.get(emp.id);
+      const payrollNovedad = payrollNovedadAdjustments.get(emp.id);
 
       const input: EmployeePayrollInput = {
         employeeId: emp.id,
@@ -555,6 +618,9 @@ export class ReportsService implements IReportsService {
         medicalLeaveEpsArlDays: medicalLeave?.medicalLeaveEpsArlDays ?? 0,
         medicalLeaveEpsArlPay: medicalLeave?.medicalLeaveEpsArlPay ?? 0,
         medicalLeaveOrdinaryDaysExcluded: medicalLeave?.medicalLeaveOrdinaryDaysExcluded ?? 0,
+        payrollNovedadUnpaidDays: payrollNovedad?.payrollNovedadUnpaidDays ?? 0,
+        payrollNovedadUnpaidDeduction: payrollNovedad?.payrollNovedadUnpaidDeduction ?? 0,
+        payrollNovedadPaidDays: payrollNovedad?.payrollNovedadPaidDays ?? 0,
       };
 
       const calc = this.payrollCalculationService.calculateEmployeePeriod(

@@ -92,10 +92,23 @@ describe('EmployeesResolver', () => {
   });
 
   describe('deactivateEmployee', () => {
-    it('should delegate to service.remove', async () => {
-      (service.remove as jest.Mock).mockResolvedValue(undefined);
+    it('should delegate to service.remove and return the deactivated employee', async () => {
+      const deactivatedEmployee = {
+        id: 'emp-1',
+        userId: 'user-1',
+        salaryAmount: '1000',
+        isActive: false,
+        deletedAt: new Date('2026-07-09T00:00:00.000Z'),
+      };
+      (service.remove as jest.Mock).mockResolvedValue(deactivatedEmployee);
       const result = await resolver.deactivateEmployee(mockUser, mockContext, 'user-1');
-      expect(result).toBe(true);
+      expect(result).toEqual(
+        expect.objectContaining({
+          userId: 'user-1',
+          isActive: false,
+          deletedAt: deactivatedEmployee.deletedAt,
+        }),
+      );
       expect(service.remove).toHaveBeenCalledWith(mockTenantId, 'user-1');
     });
   });

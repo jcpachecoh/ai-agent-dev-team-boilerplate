@@ -370,9 +370,9 @@ export class PayrollService implements IPayrollService {
     }
   }
 
-  async remove(tenantId: string, userId: string): Promise<void> {
+  async remove(tenantId: string, userId: string): Promise<EmployeeDetails & { user: User }> {
     await this.findEmployeeOrThrow(tenantId, userId);
-    await this.payrollRepository.softDelete(userId);
+    return this.payrollRepository.softDelete(userId);
   }
 
   async findByLocation(

@@ -1,0 +1,26 @@
+@use '@/styles/tokens' as t;
+
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.uploadZone {
+  width: 100%;
+}
+
+.disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.error {
+  font-size: 0.75rem;
+  color: t.$color-danger;
+}
+
+.hint {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+}
