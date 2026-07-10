@@ -127,6 +127,7 @@ export class PayrollService implements IPayrollService {
         laborClassification: data.laborClassification,
         nonSalaryAmount: data.nonSalaryAmount,
         hasTransportSubsidy,
+        changedBy,
       });
 
       if (positionId) {
@@ -328,7 +329,7 @@ export class PayrollService implements IPayrollService {
       await this.validateAndSwapPhoto(tenantId, employee, data.photoStorageObjectId);
     }
 
-    const payload = this.buildUpdatePayload(data);
+    const payload = this.buildUpdatePayload(data, changedBy);
 
     try {
       const updated = await this.payrollRepository.update(userId, payload);
@@ -549,7 +550,10 @@ export class PayrollService implements IPayrollService {
     }
   }
 
-  private buildUpdatePayload(data: Record<string, unknown>): UpdateEmployeePayload {
+  private buildUpdatePayload(
+    data: Record<string, unknown>,
+    changedBy?: string,
+  ): UpdateEmployeePayload {
     const employee: UpdateEmployeePayload['employee'] = {};
     const user: NonNullable<UpdateEmployeePayload['user']> = {};
 
@@ -602,7 +606,7 @@ export class PayrollService implements IPayrollService {
     if (data.email !== undefined) user.email = data.email as string;
     if (data.roleId !== undefined) user.roleId = data.roleId as string;
 
-    const payload: UpdateEmployeePayload = { employee };
+    const payload: UpdateEmployeePayload = { employee, changedBy };
     if (Object.keys(user).length > 0) {
       payload.user = user;
     }

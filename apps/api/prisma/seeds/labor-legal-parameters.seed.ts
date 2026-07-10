@@ -160,6 +160,18 @@ const LEGAL_PARAMETER_SEEDS: LegalParameterSeed[] = [
     source: 'Ley 52 de 1975 art. 1',
   },
 
+  // ── DIVISOR_CESANTIAS — año comercial de 360 días (30 días/mes) usado para prorratear
+  // cesantías e intereses (OS-588). Convención estable del régimen de liquidación anual,
+  // sin vigencias históricas distintas conocidas — se versiona igual que el resto para no
+  // hardcodear "360" en el motor de cálculo.
+  {
+    key: 'DIVISOR_CESANTIAS',
+    value: 360,
+    validFrom: '2020-01-01',
+    validTo: null,
+    source: 'CST art. 249 / Ley 50 de 1990 — año comercial de 360 días',
+  },
+
   // UVT (Unidad de Valor Tributario) — NO seeded. Value changes yearly via resolución DIAN
   // and nothing in this PR consumes it yet (GAP(Task04) — retención en la fuente still pending).
   // getValueAt('UVT', ...) will throw NotFoundException until a real vigencia is added; that is

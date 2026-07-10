@@ -5,8 +5,10 @@ import {
   SalaryType,
   ArlRiskLevel,
 } from '@prisma/client';
+
+import type { PrismaService } from '../../prisma/prisma.service';
+import type { EmployeeHistoryRepository } from '../repository/employee-history.repository';
 import { PayrollRepository } from '../repository/payroll.repository';
-import { PrismaService } from '../../prisma/prisma.service';
 
 const photoInclude = {
   select: { id: true, key: true, visibility: true, status: true, deletedAt: true },
@@ -21,32 +23,49 @@ const employeeInclude = {
   socialProfiles: socialProfileInclude,
 } as const;
 
-describe('PayrollRepository', () => {
+describe('PayrollRepository', (): void => {
   const userCreate = jest.fn();
   const userUpdate = jest.fn();
   const employeeDetailsCreate = jest.fn();
+  // Nombradas aparte (en vez de acceder vía prisma.employeeDetails.findMany, etc.) para
+  // que su tipo estático sea `jest.Mock` y no el método real de Prisma — evita
+  // @typescript-eslint/unbound-method al referenciarlas en expect(...).
+  const employeeDetailsFindMany = jest.fn();
+  const employeeDetailsFindUnique = jest.fn();
+  const employeeDetailsCount = jest.fn();
+  const employeeDetailsUpdateMock = jest.fn();
+  const userFindFirst = jest.fn();
+  const locationFindUnique = jest.fn();
+  const roleFindUnique = jest.fn();
 
   const prisma = {
     $transaction: jest.fn(),
     employeeDetails: {
-      findMany: jest.fn(),
-      findUnique: jest.fn(),
-      update: jest.fn(),
-      count: jest.fn(),
+      findMany: employeeDetailsFindMany,
+      findUnique: employeeDetailsFindUnique,
+      update: employeeDetailsUpdateMock,
+      count: employeeDetailsCount,
     },
     user: {
-      findFirst: jest.fn(),
+      findFirst: userFindFirst,
       create: userCreate,
     },
     location: {
-      findUnique: jest.fn(),
+      findUnique: locationFindUnique,
     },
     role: {
-      findUnique: jest.fn(),
+      findUnique: roleFindUnique,
     },
   } as unknown as PrismaService;
 
-  const repository = new PayrollRepository(prisma);
+  const syncSalaryHistoryTx = jest.fn();
+  const syncFundHistoryTx = jest.fn();
+  const employeeHistoryRepository = {
+    syncSalaryHistoryTx,
+    syncFundHistoryTx,
+  } as unknown as EmployeeHistoryRepository;
+
+  const repository = new PayrollRepository(prisma, employeeHistoryRepository);
 
   const baseCreateData = {
     tenantId: 'tenant-1',
@@ -75,20 +94,22 @@ describe('PayrollRepository', () => {
     laborClassification: LaborClassification.ADMINISTRATIVO,
   };
 
-  beforeEach(() => {
+  beforeEach((): void => {
     jest.clearAllMocks();
 
-    (prisma.$transaction as jest.Mock).mockImplementation(async (callback: unknown) => {
-      const tx = {
-        user: { update: userUpdate, create: userCreate },
-        employeeDetails: { create: employeeDetailsCreate },
-      };
+    (prisma.$transaction as jest.Mock).mockImplementation(
+      async (callback: unknown): Promise<unknown> => {
+        const tx = {
+          user: { update: userUpdate, create: userCreate },
+          employeeDetails: { create: employeeDetailsCreate },
+        };
 
-      return (callback as (arg: typeof tx) => Promise<unknown>)(tx);
-    });
+        return (callback as (arg: typeof tx) => Promise<unknown>)(tx);
+      },
+    );
   });
 
-  it('creates user and employee atomically when userId is omitted', async () => {
+  it('creates user and employee atomically when userId is omitted', async (): Promise<void> => {
     userCreate.mockResolvedValue({ id: 'user-new' });
     employeeDetailsCreate.mockResolvedValue({
       id: 'emp-new',
@@ -121,7 +142,7 @@ describe('PayrollRepository', () => {
     );
   });
 
-  it('links an existing user and creates employee with null contractEnd when omitted', async () => {
+  it('links an existing user and creates employee with null contractEnd when omitted', async (): Promise<void> => {
     employeeDetailsCreate.mockResolvedValue({
       id: 'emp-1',
       userId: 'user-1',
@@ -147,7 +168,7 @@ describe('PayrollRepository', () => {
     );
   });
 
-  it('creates employee with a Date contractEnd when provided', async () => {
+  it('creates employee with a Date contractEnd when provided', async (): Promise<void> => {
     userUpdate.mockResolvedValue({ id: 'user-2' });
     employeeDetailsCreate.mockResolvedValue({
       id: 'emp-2',
@@ -166,16 +187,90 @@ describe('PayrollRepository', () => {
       position: 'Supervisor',
     });
 
-    const createArg = employeeDetailsCreate.mock.calls[0][0];
-    expect(createArg.data.contractEnd).toBeInstanceOf(Date);
+    const calls = employeeDetailsCreate.mock.calls as { data: { contractEnd: unknown } }[][];
+    expect(calls[0][0].data.contractEnd).toBeInstanceOf(Date);
   });
 
-  it('findAll applies default active filters and pagination defaults', async () => {
-    (prisma.employeeDetails.findMany as jest.Mock).mockResolvedValue([]);
+  it('seeds salary and fund history in the same transaction on create, using contractStart as effectiveFrom', async (): Promise<void> => {
+    const contractStart = new Date('2026-03-01');
+    employeeDetailsCreate.mockResolvedValue({
+      id: 'emp-3',
+      userId: 'user-1',
+      user: { id: 'user-1' },
+      tenantId: 'tenant-1',
+      salaryType: SalaryType.ORDINARIO,
+      salaryAmount: 2500000,
+      cesantiasFundName: 'Cesantias',
+      pensionFundName: 'Pension',
+      contractStart,
+      hireDate: contractStart,
+    });
+
+    await repository.create({
+      ...baseCreateData,
+      contractEnd: null,
+      hasTransportSubsidy: true,
+      changedBy: 'user-9',
+    });
+
+    expect(syncSalaryHistoryTx).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        tenantId: 'tenant-1',
+        employeeDetailsId: 'emp-3',
+        salaryType: SalaryType.ORDINARIO,
+        salaryAmount: 2500000,
+        effectiveFrom: contractStart,
+        changedBy: 'user-9',
+      }),
+    );
+    expect(syncFundHistoryTx).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        fundType: 'CESANTIAS_FUND',
+        fundName: 'Cesantias',
+        effectiveFrom: contractStart,
+      }),
+    );
+    expect(syncFundHistoryTx).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        fundType: 'PENSION_FUND',
+        fundName: 'Pension',
+        effectiveFrom: contractStart,
+      }),
+    );
+  });
+
+  it('propagates a history-sync failure out of create() instead of swallowing it (garantía de rollback)', async (): Promise<void> => {
+    employeeDetailsCreate.mockResolvedValue({
+      id: 'emp-4',
+      userId: 'user-1',
+      user: { id: 'user-1' },
+      tenantId: 'tenant-1',
+      salaryType: SalaryType.ORDINARIO,
+      salaryAmount: 2500000,
+      cesantiasFundName: 'Cesantias',
+      pensionFundName: 'Pension',
+    });
+    const dbError = new Error('CHECK constraint violated');
+    syncSalaryHistoryTx.mockRejectedValueOnce(dbError);
+
+    await expect(
+      repository.create({
+        ...baseCreateData,
+        contractEnd: null,
+        hasTransportSubsidy: true,
+      }),
+    ).rejects.toThrow(dbError);
+  });
+
+  it('findAll applies default active filters and pagination defaults', async (): Promise<void> => {
+    employeeDetailsFindMany.mockResolvedValue([]);
 
     await repository.findAll({ tenantId: 'tenant-1' });
 
-    expect(prisma.employeeDetails.findMany).toHaveBeenCalledWith({
+    expect(employeeDetailsFindMany).toHaveBeenCalledWith({
       where: {
         tenantId: 'tenant-1',
         isActive: true,
@@ -188,8 +283,8 @@ describe('PayrollRepository', () => {
     });
   });
 
-  it('findAll applies location, contractType and includeInactive with explicit isActive', async () => {
-    (prisma.employeeDetails.findMany as jest.Mock).mockResolvedValue([]);
+  it('findAll applies location, contractType and includeInactive with explicit isActive', async (): Promise<void> => {
+    employeeDetailsFindMany.mockResolvedValue([]);
 
     await repository.findAll({
       tenantId: 'tenant-1',
@@ -201,7 +296,7 @@ describe('PayrollRepository', () => {
       offset: 10,
     });
 
-    expect(prisma.employeeDetails.findMany).toHaveBeenCalledWith({
+    expect(employeeDetailsFindMany).toHaveBeenCalledWith({
       where: {
         tenantId: 'tenant-1',
         locationId: 'loc-1',
@@ -215,12 +310,12 @@ describe('PayrollRepository', () => {
     });
   });
 
-  it('findAll with includeInactive true and no isActive omits active/deleted filters', async () => {
-    (prisma.employeeDetails.findMany as jest.Mock).mockResolvedValue([]);
+  it('findAll with includeInactive true and no isActive omits active/deleted filters', async (): Promise<void> => {
+    employeeDetailsFindMany.mockResolvedValue([]);
 
     await repository.findAll({ tenantId: 'tenant-1', includeInactive: true });
 
-    expect(prisma.employeeDetails.findMany).toHaveBeenCalledWith({
+    expect(employeeDetailsFindMany).toHaveBeenCalledWith({
       where: {
         tenantId: 'tenant-1',
       },
@@ -231,17 +326,17 @@ describe('PayrollRepository', () => {
     });
   });
 
-  it('findById and findByUserId include user relation', async () => {
-    (prisma.employeeDetails.findUnique as jest.Mock).mockResolvedValue(null);
+  it('findById and findByUserId include user relation', async (): Promise<void> => {
+    employeeDetailsFindUnique.mockResolvedValue(null);
 
     await repository.findById('emp-1');
     await repository.findByUserId('user-1');
 
-    expect(prisma.employeeDetails.findUnique).toHaveBeenNthCalledWith(1, {
+    expect(employeeDetailsFindUnique).toHaveBeenNthCalledWith(1, {
       where: { id: 'emp-1' },
       include: employeeInclude,
     });
-    expect(prisma.employeeDetails.findUnique).toHaveBeenNthCalledWith(2, {
+    expect(employeeDetailsFindUnique).toHaveBeenNthCalledWith(2, {
       where: { userId: 'user-1' },
       include: {
         user: true,
@@ -251,7 +346,7 @@ describe('PayrollRepository', () => {
     });
   });
 
-  it('update applies user changes only when employee patch is empty', async () => {
+  it('update applies user changes only when employee patch is empty', async (): Promise<void> => {
     const userUpdate = jest.fn();
     const findUniqueOrThrow = jest.fn().mockResolvedValue({
       userId: 'user-1',
@@ -259,17 +354,19 @@ describe('PayrollRepository', () => {
       location: { id: 'loc-1', name: 'Sede 1' },
     });
 
-    (prisma.$transaction as jest.Mock).mockImplementation(async (callback: unknown) => {
-      const tx = {
-        user: { update: userUpdate },
-        employeeDetails: {
-          update: jest.fn(),
-          findUniqueOrThrow,
-        },
-      };
+    (prisma.$transaction as jest.Mock).mockImplementation(
+      async (callback: unknown): Promise<unknown> => {
+        const tx = {
+          user: { update: userUpdate },
+          employeeDetails: {
+            update: jest.fn(),
+            findUniqueOrThrow,
+          },
+        };
 
-      return (callback as (arg: typeof tx) => Promise<unknown>)(tx);
-    });
+        return (callback as (arg: typeof tx) => Promise<unknown>)(tx);
+      },
+    );
 
     await repository.update('user-1', {
       employee: {},
@@ -291,24 +388,26 @@ describe('PayrollRepository', () => {
     });
   });
 
-  it('update and softDelete call employeeDetails.update with expected data', async () => {
+  it('update and softDelete call employeeDetails.update with expected data', async (): Promise<void> => {
     const employeeDetailsUpdate = jest.fn().mockResolvedValue({
       userId: 'user-1',
       user: { id: 'user-1' },
       location: { id: 'loc-1', name: 'Sede 1' },
     });
 
-    (prisma.$transaction as jest.Mock).mockImplementation(async (callback: unknown) => {
-      const tx = {
-        user: { update: jest.fn() },
-        employeeDetails: {
-          update: employeeDetailsUpdate,
-          findUniqueOrThrow: jest.fn(),
-        },
-      };
+    (prisma.$transaction as jest.Mock).mockImplementation(
+      async (callback: unknown): Promise<unknown> => {
+        const tx = {
+          user: { update: jest.fn() },
+          employeeDetails: {
+            update: employeeDetailsUpdate,
+            findUniqueOrThrow: jest.fn(),
+          },
+        };
 
-      return (callback as (arg: typeof tx) => Promise<unknown>)(tx);
-    });
+        return (callback as (arg: typeof tx) => Promise<unknown>)(tx);
+      },
+    );
 
     await repository.update('user-1', { employee: { position: 'Lead' } });
     await repository.softDelete('user-1');
@@ -324,7 +423,7 @@ describe('PayrollRepository', () => {
       },
     });
 
-    expect(prisma.employeeDetails.update).toHaveBeenCalledWith({
+    expect(employeeDetailsUpdateMock).toHaveBeenCalledWith({
       where: { userId: 'user-1' },
       data: {
         isActive: false,
@@ -333,12 +432,97 @@ describe('PayrollRepository', () => {
     });
   });
 
-  it('count applies active filters by default', async () => {
-    (prisma.employeeDetails.count as jest.Mock).mockResolvedValue(3);
+  it('update syncs salary and fund history in the same transaction when those fields change', async (): Promise<void> => {
+    const updatedRow = {
+      id: 'emp-1',
+      tenantId: 'tenant-1',
+      userId: 'user-1',
+      user: { id: 'user-1' },
+      location: { id: 'loc-1', name: 'Sede 1' },
+      salaryType: SalaryType.INTEGRAL,
+      salaryAmount: 5000000,
+      cesantiasFundName: 'Protección',
+      pensionFundName: 'Colpensiones',
+    };
+    const employeeDetailsUpdate = jest.fn().mockResolvedValue(updatedRow);
+
+    (prisma.$transaction as jest.Mock).mockImplementation(
+      async (callback: unknown): Promise<unknown> => {
+        const tx = {
+          user: { update: jest.fn() },
+          employeeDetails: { update: employeeDetailsUpdate, findUniqueOrThrow: jest.fn() },
+        };
+        return (callback as (arg: typeof tx) => Promise<unknown>)(tx);
+      },
+    );
+
+    await repository.update('user-1', {
+      employee: {
+        salaryType: SalaryType.INTEGRAL,
+        salaryAmount: 5000000,
+        cesantiasFundName: 'Protección',
+      },
+      changedBy: 'user-9',
+    });
+
+    expect(syncSalaryHistoryTx).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        tenantId: 'tenant-1',
+        employeeDetailsId: 'emp-1',
+        salaryType: SalaryType.INTEGRAL,
+        salaryAmount: 5000000,
+        changedBy: 'user-9',
+      }),
+    );
+    expect(syncFundHistoryTx).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        tenantId: 'tenant-1',
+        employeeDetailsId: 'emp-1',
+        fundType: 'CESANTIAS_FUND',
+        fundName: 'Protección',
+        changedBy: 'user-9',
+      }),
+    );
+    // pensionFundName no vino en el patch: no debe sincronizarse.
+    expect(syncFundHistoryTx).not.toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ fundType: 'PENSION_FUND' }),
+    );
+  });
+
+  it('update does not touch salary/fund history when unrelated fields change', async (): Promise<void> => {
+    const employeeDetailsUpdate = jest.fn().mockResolvedValue({
+      id: 'emp-1',
+      tenantId: 'tenant-1',
+      userId: 'user-1',
+      user: { id: 'user-1' },
+      location: { id: 'loc-1', name: 'Sede 1' },
+    });
+
+    (prisma.$transaction as jest.Mock).mockImplementation(
+      async (callback: unknown): Promise<unknown> => {
+        const tx = {
+          user: { update: jest.fn() },
+          employeeDetails: { update: employeeDetailsUpdate, findUniqueOrThrow: jest.fn() },
+        };
+        return (callback as (arg: typeof tx) => Promise<unknown>)(tx);
+      },
+    );
+
+    await repository.update('user-1', { employee: { area: 'Cocina' } });
+
+    expect(syncSalaryHistoryTx).not.toHaveBeenCalled();
+    expect(syncFundHistoryTx).not.toHaveBeenCalled();
+  });
+
+  it('count applies active filters by default', async (): Promise<void> => {
+    employeeDetailsCount.mockResolvedValue(3);
 
     await repository.count({ tenantId: 'tenant-1' });
 
-    expect(prisma.employeeDetails.count).toHaveBeenCalledWith({
+    expect(employeeDetailsCount).toHaveBeenCalledWith({
       where: {
         tenantId: 'tenant-1',
         isActive: true,
@@ -347,8 +531,8 @@ describe('PayrollRepository', () => {
     });
   });
 
-  it('count applies optional filters when provided and includeInactive true', async () => {
-    (prisma.employeeDetails.count as jest.Mock).mockResolvedValue(1);
+  it('count applies optional filters when provided and includeInactive true', async (): Promise<void> => {
+    employeeDetailsCount.mockResolvedValue(1);
 
     await repository.count({
       tenantId: 'tenant-1',
@@ -357,7 +541,7 @@ describe('PayrollRepository', () => {
       includeInactive: true,
     });
 
-    expect(prisma.employeeDetails.count).toHaveBeenCalledWith({
+    expect(employeeDetailsCount).toHaveBeenCalledWith({
       where: {
         tenantId: 'tenant-1',
         locationId: 'loc-1',
@@ -366,15 +550,15 @@ describe('PayrollRepository', () => {
     });
   });
 
-  it('delegates lookup helpers to prisma with expected query shape', async () => {
-    (prisma.user.findFirst as jest.Mock)
+  it('delegates lookup helpers to prisma with expected query shape', async (): Promise<void> => {
+    userFindFirst
       .mockResolvedValueOnce({ id: 'user-1' })
       .mockResolvedValueOnce({ id: 'user-1', email: 'employee@example.com', cedula: '123456' });
-    (prisma.location.findUnique as jest.Mock).mockResolvedValue({
+    locationFindUnique.mockResolvedValue({
       id: 'loc-1',
       tenantId: 'tenant-1',
     });
-    (prisma.role.findUnique as jest.Mock).mockResolvedValue({
+    roleFindUnique.mockResolvedValue({
       id: 'role-1',
       tenantId: 'tenant-1',
     });
@@ -384,7 +568,7 @@ describe('PayrollRepository', () => {
     await repository.findLocationById('loc-1');
     await repository.findRoleById('role-1');
 
-    expect(prisma.user.findFirst).toHaveBeenNthCalledWith(1, {
+    expect(userFindFirst).toHaveBeenNthCalledWith(1, {
       where: {
         tenantId: 'tenant-1',
         OR: [{ email: 'employee@example.com' }, { cedula: '123456' }],
@@ -392,7 +576,7 @@ describe('PayrollRepository', () => {
       select: { id: true },
     });
 
-    expect(prisma.user.findFirst).toHaveBeenNthCalledWith(2, {
+    expect(userFindFirst).toHaveBeenNthCalledWith(2, {
       where: {
         tenantId: 'tenant-1',
         email: 'employee@example.com',
@@ -402,12 +586,12 @@ describe('PayrollRepository', () => {
       select: { id: true, email: true, cedula: true },
     });
 
-    expect(prisma.location.findUnique).toHaveBeenCalledWith({
+    expect(locationFindUnique).toHaveBeenCalledWith({
       where: { id: 'loc-1' },
       select: { id: true, tenantId: true },
     });
 
-    expect(prisma.role.findUnique).toHaveBeenCalledWith({
+    expect(roleFindUnique).toHaveBeenCalledWith({
       where: { id: 'role-1' },
       select: { id: true, tenantId: true },
     });

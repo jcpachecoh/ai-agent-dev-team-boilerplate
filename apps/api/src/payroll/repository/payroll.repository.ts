@@ -1,4 +1,7 @@
 import { Injectable } from '@nestjs/common';
+import { EmployeeCatalogType, EmployeeDetails, User } from '@prisma/client';
+
+import { EmployeeHistoryRepository } from './employee-history.repository';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
   CreateEmployeeData,
@@ -8,11 +11,14 @@ import {
   UpdateEmployeeData,
   UpdateEmployeePayload,
 } from '../interfaces/payroll.interfaces';
-import { EmployeeDetails, User } from '@prisma/client';
+import { resolveInitialEffectiveDate } from '../utils/employee-history-effective-date.util';
 
 @Injectable()
 export class PayrollRepository implements IPayrollRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly employeeHistoryRepository: EmployeeHistoryRepository,
+  ) {}
 
   private buildListWhere(filters: ListEmployeesFilters): Record<string, unknown> {
     const where: Record<string, unknown> = {
@@ -117,6 +123,35 @@ export class PayrollRepository implements IPayrollRepository {
         include: { user: true, socialProfiles: { where: { deletedAt: null } } },
       });
 
+      // OS-588 — el historial se siembra en la misma transacción que crea EmployeeDetails,
+      // usando la fecha de inicio de contrato (no "ahora") como vigencia inicial: es la
+      // fecha en que el salario/fondo realmente tomó efecto. Misma regla que el backfill.
+      const effectiveFrom = resolveInitialEffectiveDate(employeeDetails);
+      await this.employeeHistoryRepository.syncSalaryHistoryTx(tx, {
+        tenantId: employeeDetails.tenantId,
+        employeeDetailsId: employeeDetails.id,
+        salaryType: employeeDetails.salaryType,
+        salaryAmount: employeeDetails.salaryAmount,
+        effectiveFrom,
+        changedBy: data.changedBy,
+      });
+      await this.employeeHistoryRepository.syncFundHistoryTx(tx, {
+        tenantId: employeeDetails.tenantId,
+        employeeDetailsId: employeeDetails.id,
+        fundType: EmployeeCatalogType.CESANTIAS_FUND,
+        fundName: employeeDetails.cesantiasFundName,
+        effectiveFrom,
+        changedBy: data.changedBy,
+      });
+      await this.employeeHistoryRepository.syncFundHistoryTx(tx, {
+        tenantId: employeeDetails.tenantId,
+        employeeDetailsId: employeeDetails.id,
+        fundType: EmployeeCatalogType.PENSION_FUND,
+        fundName: employeeDetails.pensionFundName,
+        effectiveFrom,
+        changedBy: data.changedBy,
+      });
+
       return employeeDetails as EmployeeDetails & { user: User };
     });
   }
@@ -196,7 +231,7 @@ export class PayrollRepository implements IPayrollRepository {
         });
       }
 
-      return tx.employeeDetails.update({
+      const updated = await tx.employeeDetails.update({
         where: { userId },
         data: employeeData,
         include: {
@@ -207,6 +242,45 @@ export class PayrollRepository implements IPayrollRepository {
           socialProfiles: socialProfileInclude,
         },
       });
+
+      // OS-588 — misma transacción que el update de EmployeeDetails. Solo se sincroniza el
+      // atributo cuyo campo vino en el patch (`'salaryAmount' in employeeData`, etc.); el
+      // valor escrito es siempre el resultado final ya fusionado (`updated.*`), para que un
+      // patch que solo trae `salaryAmount` (sin `salaryType`) igual genere una entrada de
+      // historial consistente con ambos campos.
+      const effectiveFrom = new Date();
+      if ('salaryAmount' in employeeData || 'salaryType' in employeeData) {
+        await this.employeeHistoryRepository.syncSalaryHistoryTx(tx, {
+          tenantId: updated.tenantId,
+          employeeDetailsId: updated.id,
+          salaryType: updated.salaryType,
+          salaryAmount: updated.salaryAmount,
+          effectiveFrom,
+          changedBy: payload.changedBy,
+        });
+      }
+      if ('cesantiasFundName' in employeeData) {
+        await this.employeeHistoryRepository.syncFundHistoryTx(tx, {
+          tenantId: updated.tenantId,
+          employeeDetailsId: updated.id,
+          fundType: EmployeeCatalogType.CESANTIAS_FUND,
+          fundName: updated.cesantiasFundName,
+          effectiveFrom,
+          changedBy: payload.changedBy,
+        });
+      }
+      if ('pensionFundName' in employeeData) {
+        await this.employeeHistoryRepository.syncFundHistoryTx(tx, {
+          tenantId: updated.tenantId,
+          employeeDetailsId: updated.id,
+          fundType: EmployeeCatalogType.PENSION_FUND,
+          fundName: updated.pensionFundName,
+          effectiveFrom,
+          changedBy: payload.changedBy,
+        });
+      }
+
+      return updated;
     });
   }
 

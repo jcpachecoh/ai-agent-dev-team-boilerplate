@@ -41,6 +41,8 @@ export interface CreateEmployeeData {
   costCenter: CostCenter;
   laborClassification: LaborClassification;
   nonSalaryAmount?: number | Decimal | null;
+  /** OS-588 — actor que origina la creación, propagado al historial salarial/de fondos. */
+  changedBy?: string;
 }
 
 export interface UpdateEmployeeData {
@@ -88,6 +90,8 @@ export interface LinkedUserRecord {
 export interface UpdateEmployeePayload {
   employee: UpdateEmployeeData & { hasTransportSubsidy?: boolean };
   user?: UpdateEmployeeUserData;
+  /** OS-588 — actor que origina el update, propagado al historial salarial/de fondos. */
+  changedBy?: string;
 }
 
 export interface ListEmployeesFilters {

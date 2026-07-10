@@ -1,6 +1,13 @@
 import { Injectable } from '@nestjs/common';
-import { ArlRiskLevel, EmployeeContractType, OperationalRole, SalaryType } from '@prisma/client';
+import {
+  ArlRiskLevel,
+  EmployeeCatalogType,
+  EmployeeContractType,
+  OperationalRole,
+  SalaryType,
+} from '@prisma/client';
 
+import { EmployeeHistoryRepository } from '../../../payroll/repository/employee-history.repository';
 import { PrismaService } from '../../../prisma/prisma.service';
 import type {
   AdminRoleRef,
@@ -18,7 +25,10 @@ const ROLE_SELECT = { select: { id: true, code: true, name: true } } as const;
 
 @Injectable()
 export class AdminUsersRepository implements IAdminUsersRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly employeeHistoryRepository: EmployeeHistoryRepository,
+  ) {}
 
   async findAll(tenantId: string, includeInactive = false): Promise<AdminUserListItem[]> {
     const rows = await this.prisma.user.findMany({
@@ -252,7 +262,7 @@ export class AdminUsersRepository implements IAdminUsersRepository {
       });
 
       const now = new Date();
-      await tx.employeeDetails.create({
+      const employeeDetails = await tx.employeeDetails.create({
         data: {
           userId: user.id,
           tenantId,
@@ -273,6 +283,36 @@ export class AdminUsersRepository implements IAdminUsersRepository {
           arlRiskLevel: ArlRiskLevel.RIESGO_I,
           cajaCompensacion: 'Por definir',
         },
+      });
+
+      // OS-588 — misma transacción: onboarding rápido de admin crea EmployeeDetails con
+      // valores "Por definir" (incluyendo salaryAmount = 0). Se siembra igual el historial
+      // para que no exista ningún EmployeeDetails sin historial; cuando Nómina complete los
+      // datos reales vía PayrollService.update, syncSalaryHistoryTx/syncFundHistoryTx
+      // cerrarán esta entrada placeholder y abrirán la definitiva.
+      await this.employeeHistoryRepository.syncSalaryHistoryTx(tx, {
+        tenantId,
+        employeeDetailsId: employeeDetails.id,
+        salaryType: employeeDetails.salaryType,
+        salaryAmount: employeeDetails.salaryAmount,
+        effectiveFrom: now,
+        changedBy: data.createdBy,
+      });
+      await this.employeeHistoryRepository.syncFundHistoryTx(tx, {
+        tenantId,
+        employeeDetailsId: employeeDetails.id,
+        fundType: EmployeeCatalogType.CESANTIAS_FUND,
+        fundName: employeeDetails.cesantiasFundName,
+        effectiveFrom: now,
+        changedBy: data.createdBy,
+      });
+      await this.employeeHistoryRepository.syncFundHistoryTx(tx, {
+        tenantId,
+        employeeDetailsId: employeeDetails.id,
+        fundType: EmployeeCatalogType.PENSION_FUND,
+        fundName: employeeDetails.pensionFundName,
+        effectiveFrom: now,
+        changedBy: data.createdBy,
       });
 
       if (data.operationalUser) {

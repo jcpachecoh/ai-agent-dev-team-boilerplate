@@ -14448,6 +14448,232 @@
           ]
         }
       ]
+    },
+    {
+      "name": "OS-588 Cesantías",
+      "description": "Liquidación anual de cesantías e intereses (fase 2 — cálculo, listado y detalle). Requiere Bearer {{accessToken}} y x-tenant-id: {{tenantId}}. Calcular requiere rol de escritura de Nómina (OWNER/SUPER_ADMIN/SUPERVISOR/MANAGER).",
+      "item": [
+        {
+          "name": "POST /api/cesantias/calculate",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"year\": 2026\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/cesantias/calculate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cesantias", "calculate"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('calculate: status 201', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code === 201) {",
+                  "    const body = pm.response.json();",
+                  "    if (body.liquidations && body.liquidations.length > 0) {",
+                  "        pm.environment.set('cesantiasLiquidationId', body.liquidations[0].id);",
+                  "    }",
+                  "    pm.test('response has created/updated/skipped summary', () => {",
+                  "        pm.expect(body).to.have.property('created');",
+                  "        pm.expect(body).to.have.property('skipped');",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/cesantias/calculate — año fuera de rango (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"year\": 1899\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/cesantias/calculate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cesantias", "calculate"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('year out of range: status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/cesantias",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cesantias?year=2026&limit=20&offset=0",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cesantias"],
+              "query": [
+                { "key": "year", "value": "2026" },
+                { "key": "limit", "value": "20" },
+                { "key": "offset", "value": "0" }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('list: status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('list: paginated shape', () => {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body).to.have.property('items');",
+                  "    pm.expect(body).to.have.property('total');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/cesantias/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cesantias/{{cesantiasLiquidationId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cesantias", "{{cesantiasLiquidationId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('detail: status 200', () => pm.response.to.have.status(200));"]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/cesantias/:id — inexistente (404)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cesantias/no-existe-este-id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cesantias", "no-existe-este-id"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('detail not found: status 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/cesantias — sin token (401)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cesantias",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cesantias"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('no token: status 401', () => pm.response.to.have.status(401));"]
+              }
+            }
+          ]
+        }
+      ]
     }
   ]
 }
