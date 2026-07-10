@@ -118,7 +118,7 @@ export interface IPayrollRepository {
     userId: string,
     payload: UpdateEmployeePayload,
   ): Promise<EmployeeDetails & { user: User; location?: { id: string; name: string } }>;
-  softDelete(userId: string): Promise<void>;
+  softDelete(userId: string): Promise<EmployeeDetails & { user: User }>;
   count(filters: ListEmployeesFilters): Promise<number>;
   findExistingUser(tenantId: string, email: string, cedula: string): Promise<{ id: string } | null>;
   findUserByEmail(tenantId: string, email: string): Promise<LinkedUserRecord | null>;
@@ -163,7 +163,7 @@ export interface IPayrollService {
     userId: string,
     data: any,
   ): Promise<EmployeeDetails & { user: User; location?: { id: string; name: string } }>;
-  remove(tenantId: string, userId: string): Promise<void>;
+  remove(tenantId: string, userId: string): Promise<EmployeeDetails & { user: User }>;
   findByLocation(
     tenantId: string,
     locationId: string,
