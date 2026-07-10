@@ -7,6 +7,7 @@ import { VacationsModule } from '../vacations/vacations.module';
 import { MedicalLeavesModule } from '../medical-leaves/medical-leaves.module';
 import { PayrollNovedadesModule } from '../payroll-novedades/payroll-novedades.module';
 import { LaborLegalParametersModule } from '../labor-legal-parameters/labor-legal-parameters.module';
+import { OvertimeModule } from '../overtime/overtime.module';
 import { ReportsController } from './controller/reports.controller';
 import { ReportsService } from './service/reports.service';
 import { ReportsRepository } from './repository/reports.repository';
@@ -23,6 +24,7 @@ import { ReportExcelService } from './service/report-excel.service';
     MedicalLeavesModule,
     PayrollNovedadesModule,
     LaborLegalParametersModule,
+    OvertimeModule,
   ],
   controllers: [ReportsController],
   providers: [ReportsService, ReportsRepository, ReportPdfService, ReportExcelService],

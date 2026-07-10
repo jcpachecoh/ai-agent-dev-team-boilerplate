@@ -643,6 +643,7 @@ model User {
   attendanceLogsCreated                 AttendanceLog[]             @relation("AttendanceLogCreatedBy")
   attendanceObservationsCreated         AttendanceObservation[]     @relation("AttendanceObservationCreatedBy")
   attendanceObservationsUpdated         AttendanceObservation[]     @relation("AttendanceObservationUpdatedBy")
+  overtimeApprovals                     OvertimeApproval[]          @relation("OvertimeApprovalApprover")
 
   @@unique([tenantId, email])
   @@unique([tenantId, cedula])
@@ -733,6 +734,7 @@ model Location {
   productionRecipes         ProductionRecipeLocation[]
   supplierLogisticsCoverage SupplierLogisticsCoverage[]
   turnos                    Turno[]
+  overtimeRequests          OvertimeRequest[]
 
   @@unique([tenantId, name])
   @@unique([tenantId, code])
@@ -812,6 +814,7 @@ model EmployeeDetails {
   vacationRequests         VacationRequest[]
   medicalLeaves            MedicalLeave[]
   payrollNovedades         PayrollNovedad[]
+  overtimeRequests         OvertimeRequest[]
 
   @@index([tenantId])
   @@index([locationId])
@@ -2399,4 +2402,82 @@ model NovedadTypeConfig {
   @@unique([tenantId, type])
   @@index([tenantId])
   @@map("novedad_type_configs")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CONN-04a — Overtime detection & approval cascade
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum OvertimeRequestType {
+  DETECCION_AUTOMATICA
+  SOLICITUD_ADMINISTRATIVA
+}
+
+enum OvertimeStatus {
+  PENDIENTE_ADMIN
+  PENDIENTE_GERENCIA_OPERACIONES
+  PENDIENTE_GERENCIA_GENERAL
+  APROBADA
+  OBJETADA
+}
+
+enum OvertimeApprovalLevel {
+  ADMINISTRADOR
+  GERENCIA_OPERACIONES
+  GERENCIA_GENERAL
+}
+
+enum OvertimeApprovalDecision {
+  APROBADO
+  OBJETADO
+}
+
+model OvertimeRequest {
+  id                 String              @id @default(cuid())
+  tenantId           String
+  employeeId         String
+  locationId         String
+  type               OvertimeRequestType
+  shiftEndTime       DateTime
+  actualEndTime      DateTime
+  accumulatedMinutes Int
+  status             OvertimeStatus      @default(PENDIENTE_ADMIN)
+  payrollPeriod      String?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  deletedAt          DateTime?
+
+  employee  EmployeeDetails    @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  location  Location           @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  approvals OvertimeApproval[]
+
+  @@unique([tenantId, employeeId, locationId, payrollPeriod, type])
+  @@index([tenantId])
+  @@index([tenantId, employeeId])
+  @@index([tenantId, locationId])
+  @@index([tenantId, status])
+  @@index([tenantId, payrollPeriod])
+  @@index([tenantId, deletedAt])
+  @@map("overtime_requests")
+}
+
+model OvertimeApproval {
+  id                String                    @id @default(cuid())
+  tenantId          String
+  overtimeRequestId String
+  level             OvertimeApprovalLevel
+  approverId        String?
+  decision          OvertimeApprovalDecision?
+  decidedAt         DateTime?
+  comment           String?
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
+
+  overtimeRequest OvertimeRequest @relation(fields: [overtimeRequestId], references: [id], onDelete: Cascade)
+  approver        User?           @relation("OvertimeApprovalApprover", fields: [approverId], references: [id], onDelete: SetNull)
+
+  @@unique([overtimeRequestId, level])
+  @@index([tenantId])
+  @@index([tenantId, overtimeRequestId])
+  @@map("overtime_approvals")
 }

@@ -7,6 +7,7 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { TurnosModule } from '../turnos/turnos.module';
 import { VacationsModule } from '../vacations/vacations.module';
 import { LaborLegalParametersModule } from '../labor-legal-parameters/labor-legal-parameters.module';
+import { OvertimeModule } from '../overtime/overtime.module';
 import { MedicalLeavesModule } from '../medical-leaves/medical-leaves.module';
 import { PayrollNovedadesModule } from '../payroll-novedades/payroll-novedades.module';
 import { MobileAttendanceRepository } from './mobile/repository/mobile-attendance.repository';
@@ -36,6 +37,7 @@ import { ManualMarkingProvisionService } from './service/manual-marking-provisio
     TurnosModule,
     VacationsModule,
     LaborLegalParametersModule,
+    OvertimeModule,
     PayrollNovedadesModule,
     MedicalLeavesModule,
   ],

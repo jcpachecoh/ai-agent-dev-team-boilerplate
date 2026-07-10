@@ -27,6 +27,7 @@ import { useTheme } from '@/providers/ThemeProvider';
 
 import { ATTENDANCE_ROUTES } from '../constants/routes';
 import { useAttendanceCardData } from '../hooks/useAttendanceCardData';
+import { useOvertimeRequestsQuery } from '../hooks/useOvertimeRequests';
 import { useManualMarkingReasonsQuery } from '../hooks/useManualMarkingReasonsQuery';
 import {
   useCreateManualMarkingMutation,
@@ -47,6 +48,7 @@ import {
   validateAttendanceDateRange,
 } from '../utils/attendance-card-dates';
 import { createMarkDraft, nextMarkType } from '../utils/attendance-card-drafts';
+import { formatOvertimeApprovalIndicator } from '../types/overtime.types';
 
 import styles from './AttendanceCardScreen.module.scss';
 
@@ -100,6 +102,16 @@ export function AttendanceCardScreen(): React.JSX.Element {
     toIso: appliedTo,
     enabled: Boolean(userId && employeeId && locationId && hasLocationAccess),
   });
+
+  const overtimeQuery = useOvertimeRequestsQuery(
+    {
+      payrollPeriod: appliedFrom.slice(0, 7),
+      employeeId,
+      take: 5,
+    },
+    Boolean(employeeId),
+  );
+  const overtimeRequest = overtimeQuery.data?.items[0];
 
   const upsertObservationMutation = useUpsertObservationMutation();
   const createManualMarkingMutation = useCreateManualMarkingMutation();
@@ -169,6 +181,17 @@ export function AttendanceCardScreen(): React.JSX.Element {
     totalDays > ATTENDANCE_CARD_PAGE_SIZE
       ? sortedRows.slice((page - 1) * ATTENDANCE_CARD_PAGE_SIZE, page * ATTENDANCE_CARD_PAGE_SIZE)
       : sortedRows;
+
+  const paginatedRowsWithOvertime = useMemo(() => {
+    if (!overtimeRequest) return paginatedRows;
+    const indicator = formatOvertimeApprovalIndicator(
+      overtimeRequest.status,
+      overtimeRequest.accumulatedMinutes,
+    );
+    return paginatedRows.map((row) =>
+      row.overtimeHours !== '—' ? { ...row, approvedOvertimeHours: indicator } : row,
+    );
+  }, [paginatedRows, overtimeRequest]);
 
   const header = mapPayrollEmployeeToCardHeader(employee);
 
@@ -431,7 +454,7 @@ export function AttendanceCardScreen(): React.JSX.Element {
       theme={asistenciaTheme}
       header={header}
       summaryMetrics={summary}
-      rows={paginatedRows}
+      rows={paginatedRowsWithOvertime}
       sortKey={sortKey}
       sortDirection={sortDirection}
       openMenuRowId={openMenuRowId}

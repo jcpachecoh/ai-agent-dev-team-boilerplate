@@ -54,10 +54,8 @@ export interface AttendanceMonthSummary {
   /**
    * Overtime minutes classified by type, each bucket carrying its own already-resolved rates.
    * GAP(Task04): FESTIVO_* will be 0 until the Colombian festivos calendar is implemented.
-   * GAP(OS-586): all overtime minutes here are liquidated regardless of approval status —
-   * there is no approval workflow yet (blocked on OS-605/OS-606, CONN-04a/04b). Once that
-   * model exists, the caller building this summary must exclude non-approved minutes before
-   * they reach PayrollCalculationService.
+   * GAP(OS-586): resolved by CONN-04a — ReportsService.applyOvertimeApprovalGate excludes
+   * non-approved overtime before PayrollCalculationService consumes this summary.
    */
   overtimeEntries: OvertimeMinutesEntry[];
 }

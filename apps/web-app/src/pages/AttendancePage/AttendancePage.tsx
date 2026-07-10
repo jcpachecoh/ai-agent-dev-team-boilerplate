@@ -8,6 +8,7 @@ import {
   AttendanceLocationDetailScreen,
   AttendanceMonitorScreen,
   TurnosListScreen,
+  OvertimeInboxScreen,
 } from '@/features/attendance';
 import { ATTENDANCE_ROUTES } from '@/features/attendance/constants/routes';
 import ModulePlaceholderPage from '@/pages/ModulePlaceholderPage';
@@ -34,6 +35,7 @@ export default function AttendancePage(): React.JSX.Element {
         path="asistencias/:locationId/employees/:userId/card"
         element={<AttendanceCardScreen />}
       />
+      <Route path="tiempo-extra" element={<OvertimeInboxScreen />} />
       <Route
         path="reportes"
         element={<ModulePlaceholderPage title="Reportes" subtitle={ATTENDANCE_COMING_SOON} />}

@@ -221,6 +221,12 @@ export const navigationItems: NavItem[] = [
         icon: Monitor,
         end: false,
       },
+      {
+        id: 'attendance-overtime',
+        label: 'Tiempo extra',
+        path: '/asistencia/tiempo-extra',
+        icon: Clock,
+      },
     ],
   },
   {
@@ -370,6 +376,7 @@ const routeLabels: Record<string, string> = {
   '/asistencia/colaboradores': 'Colaboradores',
   '/asistencia/turnos': 'Turnos',
   '/asistencia/asistencias': 'Asistencias',
+  '/asistencia/tiempo-extra': 'Tiempo extra',
   '/asistencia/reportes': 'Reportes',
   '/empresa/informacion': 'Información del restaurante',
   '/empresa/sedes': 'Sedes',

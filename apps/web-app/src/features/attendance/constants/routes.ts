@@ -6,6 +6,7 @@ export const ATTENDANCE_ROUTES = {
   shiftsAssignment: '/asistencia/turnos/asignacion',
   monitor: '/asistencia/asistencias',
   reports: '/asistencia/reportes',
+  overtime: '/asistencia/tiempo-extra',
   locationDetail: (locationId: string) => `/asistencia/asistencias/${locationId}`,
   employeeCard: (locationId: string, userId: string) =>
     `/asistencia/asistencias/${locationId}/employees/${userId}/card`,

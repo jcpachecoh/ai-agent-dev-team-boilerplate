@@ -54,6 +54,7 @@ import { ShiftResolutionService } from '../../turnos/service/shift-resolution.se
 import { VacationsService } from '../../vacations/service/vacations.service';
 import { assertNotOnApprovedVacation } from './vacation-attendance.guard';
 import { LaborLegalParametersService } from '../../labor-legal-parameters/service/labor-legal-parameters.service';
+import { OvertimeDetectionService } from '../../overtime/service/overtime-detection.service';
 
 // Kiosk-auth security model:
 //   • Tenant scope: tenantId required on every call
@@ -78,6 +79,7 @@ export class AttendanceService implements IAttendanceService {
     private readonly userLocationsService: UserLocationsService,
     private readonly legalParametersService: LaborLegalParametersService,
     @Optional() private readonly vacationsService?: VacationsService,
+    @Optional() private readonly overtimeDetectionService?: OvertimeDetectionService,
   ) {}
 
   async kioskAuth(dto: KioskAuthInput, tenantId: string): Promise<KioskAuthResult> {
@@ -220,6 +222,14 @@ export class AttendanceService implements IAttendanceService {
       `EXIT: employeeId=${employee.id} workDate=${openEntry.workDate.toISOString()} totalMin=${summary.totalMinutes}`,
     );
 
+    this.triggerOvertimeDetection({
+      tenantId,
+      employeeId: employee.id,
+      locationId: dto.locationId,
+      workDate: log.workDate,
+      actualEndTime: log.timestamp,
+    });
+
     return {
       logId: log.id,
       employeeId: employee.id,
@@ -324,7 +334,31 @@ export class AttendanceService implements IAttendanceService {
       `EVENT ${input.eventType} source=${input.source}: employeeId=${input.employeeId} workDate=${workDate.toISOString()}`,
     );
 
+    if (input.eventType === AttendanceEventType.EXIT) {
+      this.triggerOvertimeDetection({
+        tenantId: input.tenantId,
+        employeeId: input.employeeId,
+        locationId: input.locationId,
+        workDate: log.workDate,
+        actualEndTime: log.timestamp,
+      });
+    }
+
     return log;
+  }
+
+  private triggerOvertimeDetection(payload: {
+    tenantId: string;
+    employeeId: string;
+    locationId: string;
+    workDate: Date;
+    actualEndTime: Date;
+  }): void {
+    if (!this.overtimeDetectionService) return;
+
+    void this.overtimeDetectionService.onExitRegistered(payload).catch((err: unknown) => {
+      this.logger.warn(`Overtime detection failed: ${String(err)}`);
+    });
   }
 
   async listHistory(

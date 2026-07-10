@@ -1,0 +1,179 @@
+import {
+  DatePicker,
+  EmpleadoPage,
+  EmpleadoPageHeader,
+  EmpleadoPageSection,
+  LoadingState,
+  toast,
+} from '@restopsiq/ui';
+import { format, isValid, parse } from 'date-fns';
+import { AlertTriangle } from 'lucide-react';
+import { useMemo, useState } from 'react';
+
+import { useMe } from '@/features/auth/hooks/useMe';
+import { getRoleCodeFromToken } from '@/lib/auth-token';
+import { useTheme } from '@/providers/ThemeProvider';
+
+import { OvertimeObjectModal } from '../components/OvertimeObjectModal';
+import { OvertimeTable } from '../components/OvertimeTable';
+import { usePayrollEmployeeQuery } from '../hooks/usePayrollEmployeeQuery';
+import {
+  useApproveOvertimeMutation,
+  useObjectOvertimeMutation,
+  useOvertimePeriodSummaryQuery,
+  useOvertimeRequestsQuery,
+} from '../hooks/useOvertimeRequests';
+import type { OvertimeRequestItem } from '../types/overtime.types';
+
+import styles from './OvertimeInboxScreen.module.scss';
+
+function currentPayrollPeriod(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function payrollPeriodToDate(period: string): Date | undefined {
+  const parsed = parse(`${period}-01`, 'yyyy-MM-dd', new Date());
+  return isValid(parsed) ? parsed : undefined;
+}
+
+function dateToPayrollPeriod(date: Date): string {
+  return format(date, 'yyyy-MM');
+}
+
+export function OvertimeInboxScreen(): React.JSX.Element {
+  const { theme } = useTheme();
+  const empleadoTheme = theme === 'light' ? 'light' : 'dark';
+  const [payrollPeriod, setPayrollPeriod] = useState(currentPayrollPeriod());
+  const [objectTarget, setObjectTarget] = useState<OvertimeRequestItem | null>(null);
+
+  const meQuery = useMe();
+  const roleCode = meQuery.data?.roleCode ?? getRoleCodeFromToken();
+  const employeeQuery = usePayrollEmployeeQuery(meQuery.data?.id ?? '');
+  const positionId = employeeQuery.data?.positionId ?? null;
+
+  const inboxQuery = useOvertimeRequestsQuery({ payrollPeriod, take: 50 });
+  const summaryQuery = useOvertimePeriodSummaryQuery(payrollPeriod);
+  const approveMutation = useApproveOvertimeMutation();
+  const objectMutation = useObjectOvertimeMutation();
+
+  const items = inboxQuery.data?.items ?? [];
+  const pendingCount = summaryQuery.data?.pendingCount ?? 0;
+
+  const subtitle = useMemo(
+    () => `Período ${payrollPeriod} · ${items.length} solicitud(es)`,
+    [payrollPeriod, items.length],
+  );
+
+  const handleApprove = async (item: OvertimeRequestItem) => {
+    try {
+      await approveMutation.mutateAsync({ id: item.id });
+      toast.success('Solicitud aprobada');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'No se pudo aprobar la solicitud');
+    }
+  };
+
+  if (inboxQuery.isLoading) {
+    return (
+      <LoadingState
+        message="Cargando solicitudes de tiempo extra…"
+        theme={empleadoTheme === 'dark' ? 'dark' : 'light'}
+        layout="compact"
+      />
+    );
+  }
+
+  if (inboxQuery.isError) {
+    return (
+      <div className={styles.state}>
+        <p>No fue posible cargar las solicitudes.</p>
+        <button type="button" onClick={() => void inboxQuery.refetch()}>
+          Reintentar
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <EmpleadoPage theme={empleadoTheme} className={styles.screen}>
+      <EmpleadoPageSection theme={empleadoTheme} variant="header" divider>
+        <EmpleadoPageHeader
+          title="Tiempo extra"
+          subtitle={subtitle}
+          theme={empleadoTheme}
+          size="md"
+        />
+      </EmpleadoPageSection>
+
+      {pendingCount > 0 ? (
+        <EmpleadoPageSection theme={empleadoTheme}>
+          <div className={styles.warningBanner} role="status">
+            <AlertTriangle size={18} aria-hidden />
+            <span>
+              Hay {pendingCount} solicitud(es) de tiempo extra pendientes de aprobación para este
+              período. Puede continuar el cierre de nómina, pero los minutos no aprobados no se
+              liquidarán.
+            </span>
+          </div>
+        </EmpleadoPageSection>
+      ) : null}
+
+      <EmpleadoPageSection theme={empleadoTheme}>
+        <div className={styles.filtersBar}>
+          <div className={styles.filterField}>
+            <span className={styles.filterLabel}>Período de nómina</span>
+            <DatePicker
+              value={payrollPeriodToDate(payrollPeriod)}
+              onChange={(date) => {
+                if (!date) return;
+                setPayrollPeriod(dateToPayrollPeriod(date));
+              }}
+              theme={empleadoTheme}
+              size="md"
+              className={styles.datePicker}
+              placeholder="mm/aaaa"
+            />
+          </div>
+        </div>
+
+        {items.length === 0 ? (
+          <div className={styles.state}>No hay solicitudes para este período.</div>
+        ) : (
+          <OvertimeTable
+            items={items}
+            theme={empleadoTheme}
+            roleCode={roleCode}
+            positionId={positionId}
+            actionsDisabled={approveMutation.isPending || objectMutation.isPending}
+            onApprove={(item) => void handleApprove(item)}
+            onObject={setObjectTarget}
+          />
+        )}
+      </EmpleadoPageSection>
+
+      <OvertimeObjectModal
+        open={objectTarget !== null}
+        loading={objectMutation.isPending}
+        onClose={() => setObjectTarget(null)}
+        onSubmit={(comment) => {
+          if (!objectTarget) return;
+          objectMutation.mutate(
+            { id: objectTarget.id, comment },
+            {
+              onSuccess: () => {
+                setObjectTarget(null);
+                toast.success('Solicitud objetada');
+              },
+              onError: (error) => {
+                toast.error(
+                  error instanceof Error ? error.message : 'No se pudo objetar la solicitud',
+                );
+              },
+            },
+          );
+        }}
+      />
+    </EmpleadoPage>
+  );
+}

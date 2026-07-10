@@ -4,6 +4,7 @@ export * from './screens/AttendanceReportsScreen';
 export * from './screens/AttendanceMonitorScreen';
 export * from './screens/AttendanceLocationDetailScreen';
 export * from './screens/AttendanceCardScreen';
+export * from './screens/OvertimeInboxScreen';
 export * from './screens/TurnosListScreen';
 export * from './screens/AsignacionTurnosScreen';
 export * from './api/attendance.client';

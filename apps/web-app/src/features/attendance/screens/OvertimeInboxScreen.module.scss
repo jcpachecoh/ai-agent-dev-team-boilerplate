@@ -1,0 +1,70 @@
+.screen {
+  min-height: 100%;
+  min-width: 0;
+}
+
+.filtersBar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr));
+  gap: 12px;
+  width: 100%;
+  align-items: end;
+  margin-bottom: 16px;
+}
+
+.filterField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  width: 100%;
+  max-width: 280px;
+}
+
+.filterField > :not(.filterLabel) {
+  width: 100%;
+  min-width: 0;
+  --control-width: 100%;
+}
+
+.datePicker {
+  width: 100%;
+  min-height: 40px;
+  --control-width: 100%;
+}
+
+.filterLabel {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.625rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--empleado-muted);
+}
+
+.warningBanner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+  border-radius: 4px;
+  background: rgb(245 158 11 / 12%);
+  border: 1px solid rgb(245 158 11 / 35%);
+  color: var(--empleado-text-secondary);
+  font-size: 0.875rem;
+}
+
+.state {
+  border: 1px solid var(--empleado-border);
+  border-radius: 4px;
+  background: var(--empleado-surface);
+  color: var(--empleado-subtle);
+  padding: 2rem;
+  text-align: center;
+  font-size: 0.875rem;
+}
+
+.state button {
+  margin-top: 0.75rem;
+  cursor: pointer;
+}

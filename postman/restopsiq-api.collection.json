@@ -508,6 +508,36 @@
       "description": "Global OPERATOR JWT — folder 11 Login Global Operator"
     },
     {
+      "key": "accessTokenManager",
+      "value": "",
+      "type": "string",
+      "description": "CONN-04a — MANAGER con cargo ADMINISTRADOR (pos-pdl-001) y UserLocation en la sede de la solicitud"
+    },
+    {
+      "key": "accessTokenOvertimeOps",
+      "value": "",
+      "type": "string",
+      "description": "CONN-04a — MANAGER con cargo DIRECTOR DE OPERACIONES (pos-pdl-003)"
+    },
+    {
+      "key": "accessTokenOvertimeGG",
+      "value": "",
+      "type": "string",
+      "description": "CONN-04a — MANAGER con cargo GERENTE GENERAL (pos-pdl-007)"
+    },
+    {
+      "key": "overtimeRequestId",
+      "value": "",
+      "type": "string",
+      "description": "CONN-04a — capturado de GET Inbox o GET Detail"
+    },
+    {
+      "key": "overtimePayrollPeriod",
+      "value": "2026-07",
+      "type": "string",
+      "description": "CONN-04a — período nómina YYYY-MM para inbox/summary"
+    },
+    {
       "key": "authLockoutEmail",
       "value": "",
       "type": "string",
@@ -15019,6 +15049,279 @@
                 "exec": [
                   "pm.test('patch type config: status 200', () => pm.response.to.have.status(200));",
                   "pm.expect(pm.response.json().type).to.eql('PERMISO_REMUNERADO');"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "CONN-04a Overtime Detection",
+      "description": "Detección automática de tiempo extra — bandeja, cascada de aprobación (3 niveles) y resumen por período.\n\nPrerrequisitos:\n1. Migración `overtime_requests` aplicada y `pnpm db:seed` (permiso `attendance.overtime.read`)\n2. Login **NOMINA** (`nomina@palos-de-lena.dev`) → `{{accessTokenNomina}}` (lectura histórica)\n3. Tokens de aprobadores con rol **MANAGER** y `EmployeeDetails.positionId`:\n   - Nivel 1 ADMINISTRADOR → `pos-pdl-001` + sede en `UserLocation` → `{{accessTokenManager}}`\n   - Nivel 2 GERENCIA OPERACIONES → `pos-pdl-003` → `{{accessTokenOvertimeOps}}`\n   - Nivel 3 GERENCIA GENERAL → `pos-pdl-007` → `{{accessTokenOvertimeGG}}`\n4. Headers: `Authorization: Bearer <token>`, `x-tenant-id: {{tenantId}}`\n5. Solicitud de prueba: registrar EXIT tardío (>30 min acumulados en `{{overtimePayrollPeriod}}`) vía asistencia, o fijar `{{overtimeRequestId}}` manualmente\n\nOrden feliz: Summary → Inbox (captura id) → Detail → Approve L1 → Approve L2 → Approve L3.\n\nFlujo objeción: usar POST Object en el nivel activo (comentario obligatorio). Tras OBJETADA no se crea nueva solicitud automática en el mismo período (D1b).",
+      "item": [
+        {
+          "name": "Login mes-manager (plantilla L1)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation Login($input: GlobalLoginInput!) { login(input: $input) { accessToken refreshToken } }\", \"variables\": {\"input\": {\"email\": \"mes-manager@palos-de-lena.dev\", \"password\": \"{{password}}\"}}}"
+            },
+            "url": "{{graphqlUrl}}",
+            "auth": { "type": "noauth" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const login = pm.response.json().data?.login;",
+                  "if (login?.accessToken) pm.collectionVariables.set('accessTokenManager', login.accessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Summary — pending by period",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenNomina}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": "{{baseUrl}}/api/attendance/overtime-requests/summary?payrollPeriod={{overtimePayrollPeriod}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('summary: status 200', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json()).to.have.property('pendingCount');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Inbox",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenNomina}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": "{{baseUrl}}/api/attendance/overtime-requests?payrollPeriod={{overtimePayrollPeriod}}&take=20"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('inbox: status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "if (body.items?.length) pm.collectionVariables.set('overtimeRequestId', body.items[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenNomina}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": "{{baseUrl}}/api/attendance/overtime-requests/{{overtimeRequestId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('detail: status 200', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().id).to.eql(pm.collectionVariables.get('overtimeRequestId'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Approve — level 1 (ADMINISTRADOR)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenManager}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"comment\": \"Aprobado nivel administrador\"\n}"
+            },
+            "url": "{{baseUrl}}/api/attendance/overtime-requests/{{overtimeRequestId}}/approve"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('approve L1: status 200', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().status).to.eql('PENDIENTE_GERENCIA_OPERACIONES');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Approve — level 2 (GERENCIA OPERACIONES)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenOvertimeOps}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"comment\": \"Aprobado gerencia de operaciones\"\n}"
+            },
+            "url": "{{baseUrl}}/api/attendance/overtime-requests/{{overtimeRequestId}}/approve"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('approve L2: status 200', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().status).to.eql('PENDIENTE_GERENCIA_GENERAL');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Approve — level 3 (GERENCIA GENERAL)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenOvertimeGG}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"comment\": \"Aprobado gerencia general\"\n}"
+            },
+            "url": "{{baseUrl}}/api/attendance/overtime-requests/{{overtimeRequestId}}/approve"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('approve L3: status 200', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().status).to.eql('APROBADA');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Object — level 1 (ADMINISTRADOR)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenManager}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"comment\": \"No autorizado por administrador de sede\"\n}"
+            },
+            "url": "{{baseUrl}}/api/attendance/overtime-requests/{{overtimeRequestId}}/object"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('object L1: status 200', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().status).to.eql('OBJETADA');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Object — level 2 (GERENCIA OPERACIONES)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenOvertimeOps}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"comment\": \"No autorizado por gerencia de operaciones\"\n}"
+            },
+            "url": "{{baseUrl}}/api/attendance/overtime-requests/{{overtimeRequestId}}/object"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('object L2: status 200', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().status).to.eql('OBJETADA');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Object — level 3 (GERENCIA GENERAL)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenOvertimeGG}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"comment\": \"Rechazado por gerencia general\"\n}"
+            },
+            "url": "{{baseUrl}}/api/attendance/overtime-requests/{{overtimeRequestId}}/object"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('object L3: status 200', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().status).to.eql('OBJETADA');"
                 ]
               }
             }
