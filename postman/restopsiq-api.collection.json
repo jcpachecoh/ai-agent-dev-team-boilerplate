@@ -8259,6 +8259,286 @@
           }
         },
         {
+          "name": "Create Supervisor Position (OS-633)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201 || pm.response.code === 200) {",
+                  "  const body = pm.response.json();",
+                  "  pm.environment.set('supervisorPositionId', body.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Gerente General\",\n  \"area\": \"Gerencia\",\n  \"baseSalaryRange\": 12000000\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/employee-positions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "employee-positions"]
+            }
+          },
+          "description": "OS-633 — crea el cargo que se usará como supervisor en los requests siguientes. Captura `supervisorPositionId` en el environment."
+        },
+        {
+          "name": "Create Employee Position with supervisorPositionIds (OS-633)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201 || pm.response.code === 200) {",
+                  "  const body = pm.response.json();",
+                  "  pm.environment.set('positionId', body.id);",
+                  "  pm.test('response includes the assigned supervisor', function () {",
+                  "    pm.expect(body.supervisors.map(s => s.id)).to.include(pm.environment.get('supervisorPositionId'));",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Contador\",\n  \"area\": \"Finanzas\",\n  \"baseSalaryRange\": 4500000,\n  \"supervisorPositionIds\": [\"{{supervisorPositionId}}\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/employee-positions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "employee-positions"]
+            }
+          },
+          "description": "OS-633 — crea un cargo asignándole `supervisorPositionIds`. El listado y el detalle deben reflejar esta relación."
+        },
+        {
+          "name": "Update Employee Position — Replace Supervisors (OS-633)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"supervisorPositionIds\": [\"{{supervisorPositionId}}\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/employee-positions/{{positionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "employee-positions", "{{positionId}}"]
+            }
+          },
+          "description": "OS-633 — reemplaza el set de supervisores del cargo. Editar cargo respetando la jerarquía existente."
+        },
+        {
+          "name": "Update Employee Position — Clear Supervisors (OS-633)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"supervisorPositionIds\": []\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/employee-positions/{{positionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "employee-positions", "{{positionId}}"]
+            }
+          },
+          "description": "OS-633 — limpia todos los supervisores del cargo (array vacío explícito)."
+        },
+        {
+          "name": "Update Employee Position — Reject Self Supervision (OS-633)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('rejects self-supervision with 400', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"supervisorPositionIds\": [\"{{positionId}}\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/employee-positions/{{positionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "employee-positions", "{{positionId}}"]
+            }
+          },
+          "description": "OS-633 — caso inválido: un cargo no puede ser su propio supervisor. Debe responder 400."
+        },
+        {
+          "name": "Update Employee Position — Reject Invalid/Cross-Tenant Supervisor (OS-633)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('rejects unknown/other-tenant supervisor id with 400', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"supervisorPositionIds\": [\"pos-does-not-exist-or-other-tenant\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/employee-positions/{{positionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "employee-positions", "{{positionId}}"]
+            }
+          },
+          "description": "OS-633 — caso inválido: id inexistente (o de otro tenant, ya que `findByIds` filtra por tenantId — un id de otro tenant no aparece y se reporta igual que uno inexistente). Debe responder 400."
+        },
+        {
+          "name": "Update Employee Position — Reject Hierarchy Cycle (OS-633)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('rejects cycle with 409', function () {",
+                  "  pm.response.to.have.status(409);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"supervisorPositionIds\": [\"{{positionId}}\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/employee-positions/{{supervisorPositionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "employee-positions", "{{supervisorPositionId}}"]
+            }
+          },
+          "description": "OS-633 — caso inválido: requiere haber corrido antes 'Replace Supervisors' (positionId ya reporta a supervisorPositionId). Intenta asignar positionId como supervisor de supervisorPositionId, cerrando un ciclo directo. Debe responder 409."
+        },
+        {
           "name": "Create Employee with positionId",
           "request": {
             "method": "POST",

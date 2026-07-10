@@ -17,6 +17,7 @@ export const employeePositionFormSchema = z.object({
       message: 'El salario base debe ser mayor a 0',
     }),
   isActive: z.boolean(),
+  supervisorPositionIds: z.array(z.string()),
 });
 
 export type EmployeePositionFormSchema = z.infer<typeof employeePositionFormSchema>;

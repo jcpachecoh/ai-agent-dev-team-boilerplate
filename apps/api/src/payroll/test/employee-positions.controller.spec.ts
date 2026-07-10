@@ -18,6 +18,7 @@ describe('EmployeePositionsController', () => {
     isActive: true,
     createdAt: new Date(),
     updatedAt: new Date(),
+    supervisors: [{ id: 'pos-boss', title: 'Gerente General' }],
   };
 
   beforeEach(async () => {
@@ -49,6 +50,7 @@ describe('EmployeePositionsController', () => {
 
     expect(service.findAll).toHaveBeenCalledWith(tenantId, {});
     expect(result[0].baseSalaryRange).toBe(4500000);
+    expect(result[0].supervisors).toEqual([{ id: 'pos-boss', title: 'Gerente General' }]);
   });
 
   it('gets position by id', async () => {
@@ -72,8 +74,27 @@ describe('EmployeePositionsController', () => {
       title: 'Contador',
       area: 'Finanzas',
       baseSalaryRange: '4500000',
+      supervisorPositionIds: undefined,
     });
     expect(result.title).toBe('Contador');
+  });
+
+  it('creates position with supervisorPositionIds', async () => {
+    service.create.mockResolvedValue(mockPosition);
+
+    await controller.create(user, tenantId, {
+      title: 'Contador',
+      area: 'Finanzas',
+      baseSalaryRange: 4500000,
+      supervisorPositionIds: ['pos-boss'],
+    });
+
+    expect(service.create).toHaveBeenCalledWith(tenantId, {
+      title: 'Contador',
+      area: 'Finanzas',
+      baseSalaryRange: '4500000',
+      supervisorPositionIds: ['pos-boss'],
+    });
   });
 
   it('updates position', async () => {
@@ -83,6 +104,26 @@ describe('EmployeePositionsController', () => {
 
     expect(service.update).toHaveBeenCalledWith(tenantId, 'pos-1', { title: 'Analista' });
     expect(result.title).toBe('Analista');
+  });
+
+  it('updates position replacing supervisorPositionIds', async () => {
+    service.update.mockResolvedValue(mockPosition);
+
+    await controller.update(user, tenantId, 'pos-1', { supervisorPositionIds: ['pos-boss'] });
+
+    expect(service.update).toHaveBeenCalledWith(tenantId, 'pos-1', {
+      supervisorPositionIds: ['pos-boss'],
+    });
+  });
+
+  it('updates position clearing supervisorPositionIds', async () => {
+    service.update.mockResolvedValue({ ...mockPosition, supervisors: [] });
+
+    await controller.update(user, tenantId, 'pos-1', { supervisorPositionIds: [] });
+
+    expect(service.update).toHaveBeenCalledWith(tenantId, 'pos-1', {
+      supervisorPositionIds: [],
+    });
   });
 
   it('deactivates position', async () => {

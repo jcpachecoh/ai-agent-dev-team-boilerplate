@@ -1,10 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { EmployeePosition, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { resolveSubordinatePositionIds } from '../utils/employee-position-hierarchy.util';
 import {
   CreateEmployeePositionData,
   EmployeePositionHistoryRecord,
   EmployeePositionRecord,
+  EmployeePositionSupervisorSummary,
   IEmployeePositionsRepository,
   ListEmployeePositionsOptions,
   UpdateEmployeePositionData,
@@ -37,21 +39,47 @@ export class EmployeePositionsRepository implements IEmployeePositionsRepository
       orderBy: [{ area: 'asc' }, { title: 'asc' }],
     });
 
-    return rows.map((row) => this.mapPosition(row));
+    const supervisorsByPosition = await this.findSupervisorsByPositionIds(
+      tenantId,
+      rows.map((row) => row.id),
+    );
+    return rows.map((row) => this.mapPosition(row, supervisorsByPosition.get(row.id) ?? []));
   }
 
   async findById(tenantId: string, id: string): Promise<EmployeePositionRecord | null> {
     const row = await this.prisma.employeePosition.findFirst({
       where: { id, tenantId },
     });
-    return row ? this.mapPosition(row) : null;
+    if (!row) {
+      return null;
+    }
+    const supervisorsByPosition = await this.findSupervisorsByPositionIds(tenantId, [row.id]);
+    return this.mapPosition(row, supervisorsByPosition.get(row.id) ?? []);
   }
 
   async findByTitle(tenantId: string, title: string): Promise<EmployeePositionRecord | null> {
     const row = await this.prisma.employeePosition.findFirst({
       where: { tenantId, title },
     });
-    return row ? this.mapPosition(row) : null;
+    if (!row) {
+      return null;
+    }
+    const supervisorsByPosition = await this.findSupervisorsByPositionIds(tenantId, [row.id]);
+    return this.mapPosition(row, supervisorsByPosition.get(row.id) ?? []);
+  }
+
+  async findByIds(tenantId: string, ids: string[]): Promise<EmployeePositionRecord[]> {
+    if (ids.length === 0) {
+      return [];
+    }
+    const rows = await this.prisma.employeePosition.findMany({
+      where: { tenantId, id: { in: ids } },
+    });
+    const supervisorsByPosition = await this.findSupervisorsByPositionIds(
+      tenantId,
+      rows.map((row) => row.id),
+    );
+    return rows.map((row) => this.mapPosition(row, supervisorsByPosition.get(row.id) ?? []));
   }
 
   async countActiveEmployeesByPosition(tenantId: string, positionId: string): Promise<number> {
@@ -65,45 +93,123 @@ export class EmployeePositionsRepository implements IEmployeePositionsRepository
     });
   }
 
+  /**
+   * OS-633 — la fila del cargo y sus supervisores (si vienen en `data.supervisorPositionIds`)
+   * se escriben en la misma transacción: si falla la creación de los vínculos de supervisor,
+   * la fila del cargo tampoco queda creada (rollback completo, mismo patrón que
+   * `AdminRolesRepository.duplicateRole`).
+   */
   async create(
     tenantId: string,
     data: CreateEmployeePositionData,
   ): Promise<EmployeePositionRecord> {
-    const row = await this.prisma.employeePosition.create({
-      data: {
-        tenantId,
-        title: data.title,
-        area: data.area,
-        baseSalaryRange: data.baseSalaryRange,
-      },
+    const supervisorPositionIds = data.supervisorPositionIds ?? [];
+
+    const row = await this.prisma.$transaction(async (tx): Promise<EmployeePosition> => {
+      const created = await tx.employeePosition.create({
+        data: {
+          tenantId,
+          title: data.title,
+          area: data.area,
+          baseSalaryRange: data.baseSalaryRange,
+        },
+      });
+
+      if (supervisorPositionIds.length > 0) {
+        await tx.employeePositionSupervisor.createMany({
+          data: supervisorPositionIds.map((supervisorPositionId) => ({
+            tenantId,
+            positionId: created.id,
+            supervisorPositionId,
+          })),
+        });
+      }
+
+      return created;
     });
-    return this.mapPosition(row);
+
+    const supervisorsByPosition = await this.findSupervisorsByPositionIds(tenantId, [row.id]);
+    return this.mapPosition(row, supervisorsByPosition.get(row.id) ?? []);
   }
 
+  /**
+   * OS-633 — misma garantía transaccional que `create`: la actualización de los campos del
+   * cargo y el reemplazo de sus supervisores (cuando `data.supervisorPositionIds` viene
+   * definido) ocurren en la misma transacción. `undefined` = no tocar la relación existente.
+   */
   async update(
     tenantId: string,
     id: string,
     data: UpdateEmployeePositionData,
   ): Promise<EmployeePositionRecord> {
-    const row = await this.prisma.employeePosition.update({
-      where: { id },
-      data: {
-        ...(data.title !== undefined ? { title: data.title } : {}),
-        ...(data.area !== undefined ? { area: data.area } : {}),
-        ...(data.baseSalaryRange !== undefined ? { baseSalaryRange: data.baseSalaryRange } : {}),
-        ...(data.isActive !== undefined ? { isActive: data.isActive } : {}),
-      },
+    const row = await this.prisma.$transaction(async (tx): Promise<EmployeePosition> => {
+      const updated = await tx.employeePosition.update({
+        where: { id },
+        data: {
+          ...(data.title !== undefined ? { title: data.title } : {}),
+          ...(data.area !== undefined ? { area: data.area } : {}),
+          ...(data.baseSalaryRange !== undefined ? { baseSalaryRange: data.baseSalaryRange } : {}),
+          ...(data.isActive !== undefined ? { isActive: data.isActive } : {}),
+        },
+      });
+
+      if (updated.tenantId !== tenantId) {
+        throw new Error('Tenant mismatch after update');
+      }
+
+      if (data.supervisorPositionIds !== undefined) {
+        await tx.employeePositionSupervisor.deleteMany({ where: { tenantId, positionId: id } });
+
+        if (data.supervisorPositionIds.length > 0) {
+          await tx.employeePositionSupervisor.createMany({
+            data: data.supervisorPositionIds.map((supervisorPositionId) => ({
+              tenantId,
+              positionId: id,
+              supervisorPositionId,
+            })),
+          });
+        }
+      }
+
+      return updated;
     });
 
-    if (row.tenantId !== tenantId) {
-      throw new Error('Tenant mismatch after update');
-    }
-
-    return this.mapPosition(row);
+    const supervisorsByPosition = await this.findSupervisorsByPositionIds(tenantId, [id]);
+    return this.mapPosition(row, supervisorsByPosition.get(id) ?? []);
   }
 
   async deactivate(tenantId: string, id: string): Promise<EmployeePositionRecord> {
     return this.update(tenantId, id, { isActive: false });
+  }
+
+  /** OS-633 — cargos supervisores directos por cada `positionId`, agrupados (`title` asc). */
+  async findSupervisorsByPositionIds(
+    tenantId: string,
+    positionIds: string[],
+  ): Promise<Map<string, EmployeePositionSupervisorSummary[]>> {
+    const result = new Map<string, EmployeePositionSupervisorSummary[]>();
+    if (positionIds.length === 0) {
+      return result;
+    }
+
+    const rows = await this.prisma.employeePositionSupervisor.findMany({
+      where: { tenantId, positionId: { in: positionIds } },
+      select: { positionId: true, supervisorPosition: { select: { id: true, title: true } } },
+      orderBy: { supervisorPosition: { title: 'asc' } },
+    });
+
+    for (const row of rows) {
+      const list = result.get(row.positionId) ?? [];
+      list.push({ id: row.supervisorPosition.id, title: row.supervisorPosition.title });
+      result.set(row.positionId, list);
+    }
+
+    return result;
+  }
+
+  /** OS-633 — subordinados transitivos de `positionId`, mismo BFS reutilizado de OS-550. */
+  async findSubordinatePositionIds(tenantId: string, positionId: string): Promise<string[]> {
+    return resolveSubordinatePositionIds(this.prisma, tenantId, positionId);
   }
 
   async findHistoryByEmployee(
@@ -151,16 +257,19 @@ export class EmployeePositionsRepository implements IEmployeePositionsRepository
     return this.mapHistory(row);
   }
 
-  private mapPosition(row: {
-    id: string;
-    tenantId: string;
-    title: string;
-    area: string;
-    baseSalaryRange: Prisma.Decimal;
-    isActive: boolean;
-    createdAt: Date;
-    updatedAt: Date;
-  }): EmployeePositionRecord {
+  private mapPosition(
+    row: {
+      id: string;
+      tenantId: string;
+      title: string;
+      area: string;
+      baseSalaryRange: Prisma.Decimal;
+      isActive: boolean;
+      createdAt: Date;
+      updatedAt: Date;
+    },
+    supervisors: EmployeePositionSupervisorSummary[],
+  ): EmployeePositionRecord {
     return {
       id: row.id,
       tenantId: row.tenantId,
@@ -170,6 +279,7 @@ export class EmployeePositionsRepository implements IEmployeePositionsRepository
       isActive: row.isActive,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
+      supervisors,
     };
   }
 

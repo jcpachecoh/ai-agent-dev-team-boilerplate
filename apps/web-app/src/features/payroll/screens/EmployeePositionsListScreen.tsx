@@ -57,6 +57,7 @@ function toCreateInput(values: EmployeePositionFormValues): CreateEmployeePositi
     title: values.title.trim(),
     area: values.area.trim(),
     baseSalaryRange: parseEmployeePositionSalary(values.baseSalaryRange),
+    supervisorPositionIds: values.supervisorPositionIds,
   };
 }
 
@@ -66,6 +67,7 @@ function toUpdateInput(values: EmployeePositionFormValues): UpdateEmployeePositi
     area: values.area.trim(),
     baseSalaryRange: parseEmployeePositionSalary(values.baseSalaryRange),
     isActive: values.isActive,
+    supervisorPositionIds: values.supervisorPositionIds,
   };
 }
 
@@ -318,6 +320,7 @@ export function EmployeePositionsListScreen(): React.JSX.Element {
                 id={position.id}
                 title={position.title}
                 area={position.area}
+                supervisors={position.supervisors.map((supervisor) => supervisor.title)}
                 baseSalaryRange={position.baseSalaryRange}
                 isActive={position.isActive}
                 theme={cargoTheme}

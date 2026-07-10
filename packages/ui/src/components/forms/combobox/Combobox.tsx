@@ -14,8 +14,11 @@ export interface ComboboxProps {
   options: ComboboxOption[];
   value?: string | string[];
   onChange?: (value: string | string[]) => void;
+  /** Notifica cada búsqueda (con debounce) — útil para búsqueda server-side. No reemplaza el filtro local. */
   onSearch?: (query: string) => void;
   placeholder?: string;
+  searchPlaceholder?: string;
+  emptyMessage?: string;
   multiple?: boolean;
   loading?: boolean;
   theme?: 'light' | 'dark';
@@ -23,12 +26,22 @@ export interface ComboboxProps {
   size?: 'sm' | 'md' | 'xl';
 }
 
+function normalizeForMatch(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '');
+}
+
 export const Combobox: React.FC<ComboboxProps> = ({
   options,
   value,
   onChange,
   onSearch,
-  placeholder = 'Select option...',
+  placeholder = 'Seleccionar...',
+  searchPlaceholder = 'Buscar...',
+  emptyMessage = 'Sin resultados.',
   multiple = false,
   loading = false,
   theme = 'dark',
@@ -37,6 +50,17 @@ export const Combobox: React.FC<ComboboxProps> = ({
 }) => {
   const [isOpen, setIsOpen] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState('');
+
+  // Filtro local por defecto (case/acento-insensitive): `options` suele ser una lista ya
+  // cargada en memoria, no paginada — sin esto el buscador no filtraba nada y solo quedaba
+  // el callback `onSearch` externo, que ningún consumidor actual conecta a un filtro real.
+  const filteredOptions = React.useMemo(() => {
+    const needle = normalizeForMatch(searchQuery);
+    if (!needle) {
+      return options;
+    }
+    return options.filter((option) => normalizeForMatch(option.label).includes(needle));
+  }, [options, searchQuery]);
 
   const isSelected = (optionValue: string): boolean => {
     if (multiple && Array.isArray(value)) {
@@ -125,9 +149,13 @@ export const Combobox: React.FC<ComboboxProps> = ({
         >
           <div className={styles.searchWrapper}>
             <SearchInput
-              placeholder="Search..."
+              placeholder={searchPlaceholder}
               theme={theme}
               value={searchQuery}
+              // El filtro de `filteredOptions` es local (en memoria) — no hay razón para
+              // esperar el debounce de 300ms pensado para búsquedas contra servidor, y ese
+              // retraso es justamente lo que se sentía como lag al escribir.
+              debounce={0}
               onSearch={(q) => {
                 setSearchQuery(q);
                 onSearch?.(q);
@@ -137,10 +165,10 @@ export const Combobox: React.FC<ComboboxProps> = ({
             />
           </div>
           <div className={styles.list}>
-            {options.length === 0 && !loading && (
-              <div className={styles.empty}>No results found.</div>
+            {filteredOptions.length === 0 && !loading && (
+              <div className={styles.empty}>{emptyMessage}</div>
             )}
-            {options.map((option) => (
+            {filteredOptions.map((option) => (
               <div
                 key={option.value}
                 className={[styles.item, isSelected(option.value) && styles.selected]

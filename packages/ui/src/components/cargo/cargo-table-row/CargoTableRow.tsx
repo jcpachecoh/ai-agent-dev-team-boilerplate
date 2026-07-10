@@ -12,6 +12,7 @@ export interface CargoTableRowProps {
   id?: string;
   title?: string;
   area?: string;
+  supervisors?: string[];
   baseSalaryRange?: number | string;
   isActive?: boolean;
   onEdit?: () => void;
@@ -27,6 +28,7 @@ export function CargoTableRow({
   id,
   title = 'Cargo',
   area,
+  supervisors,
   baseSalaryRange,
   isActive = true,
   onEdit,
@@ -39,6 +41,8 @@ export function CargoTableRow({
 }: CargoTableRowProps): JSX.Element {
   const showActions = showActionsProp ?? Boolean(onEdit || onToggleStatus);
   const gridTemplate = useCargoTableGridTemplate(getCargoGridTemplate(showActions));
+  const supervisorsLabel =
+    supervisors && supervisors.length > 0 ? supervisors.join(', ') : 'Sin supervisor';
 
   return (
     <div
@@ -54,6 +58,9 @@ export function CargoTableRow({
       </span>
       <span className={styles.areaCell} role="cell">
         {area ?? '-'}
+      </span>
+      <span className={styles.supervisorsCell} role="cell" title={supervisorsLabel}>
+        {supervisorsLabel}
       </span>
       <span className={styles.salaryCell} role="cell">
         {formatCargoSalary(baseSalaryRange)}

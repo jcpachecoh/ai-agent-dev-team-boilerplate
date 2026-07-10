@@ -1,5 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger';
 
+export class EmployeePositionSupervisorResponseDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty()
+  title!: string;
+}
+
 export class EmployeePositionResponseDto {
   @ApiProperty()
   id!: string;
@@ -21,4 +29,7 @@ export class EmployeePositionResponseDto {
 
   @ApiProperty()
   updatedAt!: Date;
+
+  @ApiProperty({ type: [EmployeePositionSupervisorResponseDto] })
+  supervisors!: EmployeePositionSupervisorResponseDto[];
 }

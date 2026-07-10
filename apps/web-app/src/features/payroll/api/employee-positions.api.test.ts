@@ -29,7 +29,7 @@ describe('employee-positions.api', () => {
     vi.spyOn(global, 'fetch').mockResolvedValue({
       ok: true,
       status: 200,
-      json: async () => mockResponse,
+      text: () => Promise.resolve(JSON.stringify(mockResponse)),
     } as Response);
 
     const result = await listEmployeePositions({ includeInactive: false });
@@ -46,7 +46,7 @@ describe('employee-positions.api', () => {
     vi.spyOn(global, 'fetch').mockResolvedValue({
       ok: true,
       status: 200,
-      json: async () => ({ id: 'pos-1', ...payload, isActive: true }),
+      text: () => Promise.resolve(JSON.stringify({ id: 'pos-1', ...payload, isActive: true })),
     } as Response);
 
     await createEmployeePosition(payload);
@@ -57,11 +57,35 @@ describe('employee-positions.api', () => {
     );
   });
 
+  it('creates employee position with supervisorPositionIds', async () => {
+    const payload = {
+      title: 'Contador',
+      area: 'Finanzas',
+      baseSalaryRange: 4500000,
+      supervisorPositionIds: ['pos-boss'],
+    };
+    vi.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      status: 200,
+      text: () =>
+        Promise.resolve(
+          JSON.stringify({ id: 'pos-1', ...payload, isActive: true, supervisors: [] }),
+        ),
+    } as Response);
+
+    await createEmployeePosition(payload);
+
+    const [, requestInit] = vi.mocked(global.fetch).mock.calls[0] as [string, RequestInit];
+    expect(JSON.parse(requestInit.body as string)).toEqual(
+      expect.objectContaining({ supervisorPositionIds: ['pos-boss'] }),
+    );
+  });
+
   it('updates employee position', async () => {
     vi.spyOn(global, 'fetch').mockResolvedValue({
       ok: true,
       status: 200,
-      json: async () => ({ id: 'pos-1' }),
+      text: () => Promise.resolve(JSON.stringify({ id: 'pos-1' })),
     } as Response);
 
     await updateEmployeePosition('pos-1', { title: 'Analista' });
@@ -76,7 +100,7 @@ describe('employee-positions.api', () => {
     vi.spyOn(global, 'fetch').mockResolvedValue({
       ok: true,
       status: 200,
-      json: async () => ({ id: 'pos-1', isActive: false }),
+      text: () => Promise.resolve(JSON.stringify({ id: 'pos-1', isActive: false })),
     } as Response);
 
     await deactivateEmployeePosition('pos-1');
