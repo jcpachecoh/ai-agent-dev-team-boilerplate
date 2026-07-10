@@ -5,5 +5,6 @@ export * from './screens/PayrollReportsScreen';
 export * from './screens/DotacionesScreen';
 export * from './screens/PayrollLegalParametersScreen';
 export * from './screens/MedicalLeavesScreen';
+export * from './screens/PayrollNovedadesScreen';
 export * from './screens/VacationApprovalsScreen';
 export * from './components/PayrollEmployeeDotacionesTab';

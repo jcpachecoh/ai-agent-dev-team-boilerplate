@@ -2,6 +2,10 @@ import type { PayrollEmployeesFilters } from '../types/payroll.types';
 import type { AttendanceReportQuery, PayrollReportQuery } from '../types/payroll-reports.types';
 import type { ListEmployeePositionsFilters } from '../types/employee-position.types';
 import type { ListMedicalLeavesFilters } from '../types/medical-leaves.types';
+import type {
+  ListMyPayrollNovedadesFilters,
+  ListPayrollNovedadesFilters,
+} from '../types/payroll-novedades.types';
 
 export const payrollKeys = {
   all: ['payroll'] as const,
@@ -46,4 +50,13 @@ export const payrollKeys = {
     [...payrollKeys.vacations(), 'balance', employeeId] as const,
   vacationRequests: (filters: Record<string, unknown> = {}) =>
     [...payrollKeys.vacations(), 'requests', filters] as const,
+  payrollNovedades: () => [...payrollKeys.all, 'payroll-novedades'] as const,
+  payrollNovedadList: (filters: ListPayrollNovedadesFilters = {}) =>
+    [...payrollKeys.payrollNovedades(), filters] as const,
+  payrollNovedadDetail: (id: string) => [...payrollKeys.payrollNovedades(), 'detail', id] as const,
+  novedadTypeConfig: () => [...payrollKeys.payrollNovedades(), 'type-config'] as const,
+  myPayrollNovedades: (filters: ListMyPayrollNovedadesFilters = {}) =>
+    [...payrollKeys.payrollNovedades(), 'me', filters] as const,
+  employeeNovedadTypeConfig: () =>
+    [...payrollKeys.payrollNovedades(), 'me', 'type-config'] as const,
 };

@@ -584,6 +584,30 @@
       "value": "2026-03",
       "type": "string",
       "description": "Filtro mes listado incapacidades (YYYY-MM)"
+    },
+    {
+      "key": "payrollNovedadEmployeeId",
+      "value": "",
+      "type": "string",
+      "description": "EmployeeDetails.id capturado de GET /api/employees (NOM-14)"
+    },
+    {
+      "key": "payrollNovedadId",
+      "value": "",
+      "type": "string",
+      "description": "PayrollNovedad.id capturado al registrar novedad"
+    },
+    {
+      "key": "payrollNovedadStartDate",
+      "value": "2026-07-01",
+      "type": "string",
+      "description": "Fecha inicio novedad (YYYY-MM-DD)"
+    },
+    {
+      "key": "payrollNovedadEndDate",
+      "value": "2026-07-03",
+      "type": "string",
+      "description": "Fecha fin novedad (YYYY-MM-DD)"
     }
   ],
   "item": [
@@ -14443,6 +14467,380 @@
               "script": {
                 "type": "text/javascript",
                 "exec": ["pm.test('delete: status 200', () => pm.response.to.have.status(200));"]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "NOM-14 Payroll Novedades",
+      "description": "Novedades de nómina NOM-14 — ausencias, permisos y licencias con flujo supervisor → RRHH.\n\nPrerrequisitos:\n1. Login **NOMINA** (`nomina@palos-de-lena.dev`) → `{{accessTokenNomina}}`\n2. Login **Supervisor** (`mes-supervisor@palos-de-lena.dev`) → `{{accessTokenSupervisor}}`\n3. Login **Operador** (`mes-operator@palos-de-lena.dev`) → `{{accessTokenOperator}}` (solicitud empleado)\n4. Headers: `Authorization: Bearer <token>`, `x-tenant-id: {{tenantId}}`\n5. Ejecutar migración `payroll_novedades` y seed (`pnpm db:seed`)\n\nOrden feliz (permiso remunerado): GET employees → POST submit (OPERATOR) → Approve supervisor → Approve RRHH.\n\nOrden feliz (licencia maternidad): POST submit directo a bandeja RRHH sin paso supervisor.\n\nNota upload: adjunta manualmente PDF/JPG/PNG en POST Support.",
+      "item": [
+        {
+          "name": "GET Employees — capturar employeeId",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenNomina}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": "{{baseUrl}}/api/employees?limit=5"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('employees: status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "if (Array.isArray(body) && body[0]?.id) {",
+                  "  pm.collectionVariables.set('payrollNovedadEmployeeId', body[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Type config",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenNomina}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": "{{baseUrl}}/api/payroll-novedades/type-config"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('type config: status 200', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json()).to.be.an('array');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Submit — PERMISO_REMUNERADO (empleado)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenOperator}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": \"{{payrollNovedadEmployeeId}}\",\n  \"type\": \"PERMISO_REMUNERADO\",\n  \"startDate\": \"{{payrollNovedadStartDate}}\",\n  \"endDate\": \"{{payrollNovedadEndDate}}\",\n  \"requestedBy\": \"EMPLEADO\"\n}"
+            },
+            "url": "{{baseUrl}}/api/payroll-novedades"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('submit permiso: status 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('submit: incluye novedad', () => pm.expect(body.novedad).to.be.an('object'));",
+                  "pm.test('submit: PENDIENTE_SUPERVISOR o PENDIENTE_RRHH', () => {",
+                  "  pm.expect(['PENDIENTE_SUPERVISOR', 'PENDIENTE_RRHH']).to.include(body.novedad.status);",
+                  "});",
+                  "pm.collectionVariables.set('payrollNovedadId', body.novedad.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET List — bandeja RRHH",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenNomina}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": "{{baseUrl}}/api/payroll-novedades?rrhhInbox=true&take=20"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('list rrhh: status 200', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json()).to.be.an('array');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET List — bandeja supervisor",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenSupervisor}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": "{{baseUrl}}/api/payroll-novedades?supervisorInbox=true&take=20"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('list supervisor: status 200', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json()).to.be.an('array');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Detail — por id",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenNomina}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": "{{baseUrl}}/api/payroll-novedades/{{payrollNovedadId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('detail: status 200', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().id).to.eql(pm.collectionVariables.get('payrollNovedadId'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Approve — supervisor",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenSupervisor}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": "{{baseUrl}}/api/payroll-novedades/{{payrollNovedadId}}/approve/supervisor"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('approve supervisor: status 200', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().status).to.eql('PENDIENTE_RRHH');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Approve — RRHH",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenNomina}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": "{{baseUrl}}/api/payroll-novedades/{{payrollNovedadId}}/approve/rrhh"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('approve rrhh: status 200', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().status).to.eql('APROBADA');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Submit — LICENCIA_NO_REMUNERADA (RRHH)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenNomina}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": \"{{payrollNovedadEmployeeId}}\",\n  \"type\": \"LICENCIA_NO_REMUNERADA\",\n  \"startDate\": \"{{payrollNovedadStartDate}}\",\n  \"endDate\": \"{{payrollNovedadEndDate}}\",\n  \"requestedBy\": \"RRHH\"\n}"
+            },
+            "url": "{{baseUrl}}/api/payroll-novedades"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('submit licencia RRHH: status 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.novedad.status).to.eql('PENDIENTE_RRHH');",
+                  "pm.collectionVariables.set('payrollNovedadId', body.novedad.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Negative: rechazo sin motivo",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenNomina}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rejectionReason\": \"\"\n}"
+            },
+            "url": "{{baseUrl}}/api/payroll-novedades/{{payrollNovedadId}}/reject/rrhh"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('reject sin motivo: 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Reject — RRHH (motivo obligatorio)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenNomina}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rejectionReason\": \"Documentación incompleta para la licencia\"\n}"
+            },
+            "url": "{{baseUrl}}/api/payroll-novedades/{{payrollNovedadId}}/reject/rrhh"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('reject rrhh: status 200', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().status).to.eql('RECHAZADA');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Support — adjuntar PDF",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenNomina}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "",
+                  "description": "Adjunta manualmente un PDF/JPG/PNG (máx. 10 MB)"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/api/payroll-novedades/{{payrollNovedadId}}/support"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('support upload: status 200 or 201', () => {",
+                  "  pm.expect([200, 201]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Support download URL",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenNomina}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": "{{baseUrl}}/api/payroll-novedades/{{payrollNovedadId}}/support/download"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('support url: status 200', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().url).to.be.a('string');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH Type config — PERMISO_REMUNERADO",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenNomina}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"requiresSupervisorApproval\": true,\n  \"requiresSupportDocument\": false\n}"
+            },
+            "url": "{{baseUrl}}/api/payroll-novedades/type-config/PERMISO_REMUNERADO"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('patch type config: status 200', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().type).to.eql('PERMISO_REMUNERADO');"
+                ]
               }
             }
           ]

@@ -20,6 +20,9 @@ export interface EmployeePayrollInput {
   medicalLeaveEpsArlDays?: number;
   medicalLeaveEpsArlPay?: number;
   medicalLeaveOrdinaryDaysExcluded?: number;
+  payrollNovedadUnpaidDays?: number;
+  payrollNovedadUnpaidDeduction?: number;
+  payrollNovedadPaidDays?: number;
 }
 
 /**
@@ -112,6 +115,9 @@ export interface EmployeePayrollPeriod {
   medicalLeaveEpsArlDays: number;
   medicalLeaveEpsArlPay: number;
   medicalLeaveOrdinaryDaysExcluded: number;
+  payrollNovedadUnpaidDays: number;
+  payrollNovedadUnpaidDeduction: number;
+  payrollNovedadPaidDays: number;
 
   // ── Deducciones empleado ───────────────────────────────────────────────────
   /** 4% of contributionBase (COP) */

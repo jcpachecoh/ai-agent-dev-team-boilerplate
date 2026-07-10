@@ -58,6 +58,9 @@ export class PayrollCalculationService {
     const medicalLeaveEpsArlDays = employee.medicalLeaveEpsArlDays ?? 0;
     const medicalLeaveEpsArlPay = employee.medicalLeaveEpsArlPay ?? 0;
     const medicalLeaveOrdinaryDaysExcluded = employee.medicalLeaveOrdinaryDaysExcluded ?? 0;
+    const payrollNovedadUnpaidDays = employee.payrollNovedadUnpaidDays ?? 0;
+    const payrollNovedadUnpaidDeduction = employee.payrollNovedadUnpaidDeduction ?? 0;
+    const payrollNovedadPaidDays = employee.payrollNovedadPaidDays ?? 0;
 
     const isIntegral = employee.salaryType === SalaryType.INTEGRAL;
     const isExempt = EXEMPT_CONTRACT_TYPES.has(employee.contractType);
@@ -70,6 +73,9 @@ export class PayrollCalculationService {
         0,
         salaryBase - roundCOP(dailySalary * medicalLeaveOrdinaryDaysExcluded),
       );
+    }
+    if (payrollNovedadUnpaidDays > 0) {
+      salaryBase = Math.max(0, salaryBase - payrollNovedadUnpaidDeduction);
     }
 
     // ── 2. Contribution base ──────────────────────────────────────────────────
@@ -178,6 +184,9 @@ export class PayrollCalculationService {
       medicalLeaveEpsArlDays,
       medicalLeaveEpsArlPay,
       medicalLeaveOrdinaryDaysExcluded,
+      payrollNovedadUnpaidDays,
+      payrollNovedadUnpaidDeduction,
+      payrollNovedadPaidDays,
       healthDeduction,
       pensionDeduction,
       incomeTaxWithholding,

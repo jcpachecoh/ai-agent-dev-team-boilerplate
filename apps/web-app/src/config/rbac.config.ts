@@ -198,6 +198,14 @@ export function canWriteMedicalLeaves(roleCode: string | null | undefined): bool
   return (MEDICAL_LEAVES_WRITE_ROLES as readonly string[]).includes(roleCode);
 }
 
+/** NOM-14 — registro y aprobación RRHH de novedades de nómina. */
+export const PAYROLL_NOVEDADES_WRITE_ROLES: readonly RoleCode[] = [...SYSTEM_ADMIN_ROLES, 'NOMINA'];
+
+export function canWritePayrollNovedades(roleCode: string | null | undefined): boolean {
+  if (!roleCode) return false;
+  return (PAYROLL_NOVEDADES_WRITE_ROLES as readonly string[]).includes(roleCode);
+}
+
 /** OS-582 — únicos roles que pueden asignar/eliminar en fechas pasadas. */
 export function canOverridePastDateAssignments(roleCode: string | null | undefined): boolean {
   if (!roleCode) return false;

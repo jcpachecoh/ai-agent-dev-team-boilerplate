@@ -62,12 +62,13 @@ model StorageObject {
   updatedAt    DateTime            @updatedAt
   deletedAt    DateTime?
 
-  employeePhotos           EmployeeDetails[]
-  supplierDocumentVersions SupplierDocumentVersion[]
-  employeeAssets           EmployeeAsset[]
-  employeeDocuments        EmployeeDocument[]
-  vacationRequestLetters   VacationRequest[]
-  medicalLeaveSupportDocs  MedicalLeave[]
+  employeePhotos            EmployeeDetails[]
+  supplierDocumentVersions  SupplierDocumentVersion[]
+  employeeAssets            EmployeeAsset[]
+  employeeDocuments         EmployeeDocument[]
+  vacationRequestLetters    VacationRequest[]
+  medicalLeaveSupportDocs   MedicalLeave[]
+  payrollNovedadSupportDocs PayrollNovedad[]
 
   @@index([tenantId])
   @@index([tenantId, domain])
@@ -810,6 +811,7 @@ model EmployeeDetails {
   vacationBalance          VacationBalance?
   vacationRequests         VacationRequest[]
   medicalLeaves            MedicalLeave[]
+  payrollNovedades         PayrollNovedad[]
 
   @@index([tenantId])
   @@index([locationId])
@@ -2309,4 +2311,83 @@ model MedicalLeave {
   @@index([tenantId, deletedAt])
   @@index([tenantId, startDate, endDate])
   @@map("medical_leaves")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// NOVEDADES DE NÓMINA — ausencias, permisos y licencias (NOM-14)
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum NovedadType {
+  AUSENCIA_INJUSTIFICADA
+  LICENCIA_LUTO
+  LICENCIA_PATERNIDAD
+  LICENCIA_MATERNIDAD
+  LICENCIA_NO_REMUNERADA
+  PERMISO_REMUNERADO
+  CALAMIDAD_DOMESTICA
+  DIA_FAMILIA
+}
+
+enum NovedadRequestSource {
+  EMPLEADO
+  RRHH
+}
+
+enum NovedadStatus {
+  SOLICITADA
+  PENDIENTE_SUPERVISOR
+  PENDIENTE_RRHH
+  APROBADA
+  RECHAZADA
+}
+
+model PayrollNovedad {
+  id                     String               @id @default(cuid())
+  tenantId               String
+  employeeId             String
+  type                   NovedadType
+  startDate              DateTime             @db.Date
+  endDate                DateTime             @db.Date
+  isPaid                 Boolean
+  linkedLeaveId          String?
+  supportStorageObjectId String?
+  notes                  String?
+  requestedBy            NovedadRequestSource
+  status                 NovedadStatus        @default(SOLICITADA)
+  supervisorApproverId   String?
+  supervisorDecisionAt   DateTime?
+  supervisorComment      String?
+  rrhhApproverId         String?
+  rrhhDecisionAt         DateTime?
+  rejectionReason        String?
+  overlapWarningAck      Boolean              @default(false)
+  createdAt              DateTime             @default(now())
+  updatedAt              DateTime             @updatedAt
+  deletedAt              DateTime?
+
+  employee        EmployeeDetails @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  supportDocument StorageObject?  @relation(fields: [supportStorageObjectId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([tenantId, employeeId])
+  @@index([tenantId, status])
+  @@index([tenantId, deletedAt])
+  @@index([tenantId, startDate, endDate])
+  @@index([tenantId, type])
+  @@map("payroll_novedades")
+}
+
+model NovedadTypeConfig {
+  id                         String      @id @default(cuid())
+  tenantId                   String
+  type                       NovedadType
+  requiresSupervisorApproval Boolean     @default(false)
+  requiresSupportDocument    Boolean     @default(false)
+  isPaidDefault              Boolean     @default(true)
+  createdAt                  DateTime    @default(now())
+  updatedAt                  DateTime    @updatedAt
+
+  @@unique([tenantId, type])
+  @@index([tenantId])
+  @@map("novedad_type_configs")
 }

@@ -6,6 +6,7 @@ import {
   PayrollEmployeeProfileScreen,
   PayrollEmployeesListScreen,
   PayrollLegalParametersScreen,
+  PayrollNovedadesScreen,
   PayrollReportsScreen,
   VacationApprovalsScreen,
 } from '@/features/payroll';
@@ -23,6 +24,7 @@ export default function PayrollPage(): React.JSX.Element {
       <Route path="attendance/*" element={<RedirectLegacyPayrollAttendance />} />
       <Route path="salaries" element={<ModulePlaceholderPage title="Salarios" />} />
       <Route path="legal-parameters" element={<PayrollLegalParametersScreen />} />
+      <Route path="novedades" element={<PayrollNovedadesScreen />} />
       <Route path="novedades/incapacidades" element={<MedicalLeavesScreen />} />
       <Route path="vacations" element={<VacationApprovalsScreen />} />
       <Route path="*" element={<Navigate to="/payroll" replace />} />
