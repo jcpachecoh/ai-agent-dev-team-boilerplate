@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
+import { resolveSubordinatePositionIds } from '../../payroll/utils/employee-position-hierarchy.util';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ATTENDANCE_COLLABORATORS_SUPERVISOR_ROLES } from '../attendance-collaborators.constants';
 import type {
@@ -287,42 +288,14 @@ export class AttendanceCollaboratorsRepository implements IAttendanceCollaborato
    * traer Director de Operaciones, Administrador, Administrador Junior, Cocina, Parrillero, etc.
    * — todo lo que cuelga de él en el organigrama, no un solo nivel.
    *
-   * BFS nivel por nivel (una query por nivel de profundidad, no por nodo) en vez de un CTE
-   * recursivo en SQL: el modelo no valida ciclos (`EmployeePositionSupervisor` no lo impone a
-   * nivel de BD — ver riesgos documentados), y un `WITH RECURSIVE` sin guarda de ciclo puede
-   * loopear indefinidamente si alguna vez se crea uno por error. El `Set` de visitados corta
-   * cualquier ciclo en la primera repetición, y el organigrama real tiene ~5-6 niveles como
-   * máximo, así que el costo de N queries (N = profundidad) es despreciable.
+   * OS-633: BFS compartido con `VacationsRepository` y `EmployeePositionsRepository` — ver
+   * `resolveSubordinatePositionIds` para el detalle de la traversal y su justificación.
    */
   async findSubordinatePositionIds(
     tenantId: string,
     supervisorPositionId: string,
   ): Promise<string[]> {
-    // Sembrado con la propia raíz: si un ciclo en los datos vuelve a apuntar a ella, ya está
-    // en `visited` y el corte ocurre ahí — sin esto, un ciclo A→B→A nunca se corta (B ve a A
-    // como "no visitado" y lo re-encola indefinidamente).
-    const visited = new Set<string>([supervisorPositionId]);
-    const result = new Set<string>();
-    let frontier = [supervisorPositionId];
-
-    while (frontier.length > 0) {
-      const rows = await this.prisma.employeePositionSupervisor.findMany({
-        where: { tenantId, supervisorPositionId: { in: frontier } },
-        select: { positionId: true },
-      });
-
-      const nextFrontier: string[] = [];
-      for (const row of rows) {
-        if (!visited.has(row.positionId)) {
-          visited.add(row.positionId);
-          result.add(row.positionId);
-          nextFrontier.push(row.positionId);
-        }
-      }
-      frontier = nextFrontier;
-    }
-
-    return [...result];
+    return resolveSubordinatePositionIds(this.prisma, tenantId, supervisorPositionId);
   }
 
   /** OS-550 follow-up — título(s) del/los cargo(s) supervisor(es) de cada `positionId`, para la columna Supervisor. */

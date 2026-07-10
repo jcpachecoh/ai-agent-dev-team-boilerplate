@@ -49,8 +49,21 @@ export class EmployeePositionsService implements IEmployeePositionsService {
       throw new ConflictException('An active employee position with this title already exists');
     }
 
+    const supervisorPositionIds = await this.validateSupervisorPositionIds(
+      tenantId,
+      undefined,
+      data.supervisorPositionIds,
+    );
+
     try {
-      return await this.employeePositionsRepository.create(tenantId, data);
+      // La fila del cargo y sus supervisores se persisten en una misma transacción dentro
+      // del repository — si falla uno, no queda el otro parcialmente escrito.
+      return await this.employeePositionsRepository.create(tenantId, {
+        title: data.title,
+        area: data.area,
+        baseSalaryRange: data.baseSalaryRange,
+        supervisorPositionIds,
+      });
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
         throw new ConflictException('An active employee position with this title already exists');
@@ -77,14 +90,76 @@ export class EmployeePositionsService implements IEmployeePositionsService {
       }
     }
 
+    const supervisorPositionIds =
+      data.supervisorPositionIds !== undefined
+        ? await this.validateSupervisorPositionIds(tenantId, id, data.supervisorPositionIds)
+        : undefined;
+
     try {
-      return await this.employeePositionsRepository.update(tenantId, id, data);
+      // Igual que en `create`: los campos del cargo y el reemplazo de supervisores (si
+      // `supervisorPositionIds` viene definido) se persisten en una misma transacción.
+      return await this.employeePositionsRepository.update(tenantId, id, {
+        ...(data.title !== undefined ? { title: data.title } : {}),
+        ...(data.area !== undefined ? { area: data.area } : {}),
+        ...(data.baseSalaryRange !== undefined ? { baseSalaryRange: data.baseSalaryRange } : {}),
+        ...(data.isActive !== undefined ? { isActive: data.isActive } : {}),
+        ...(supervisorPositionIds !== undefined ? { supervisorPositionIds } : {}),
+      });
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
         throw new ConflictException('An active employee position with this title already exists');
       }
       throw error;
     }
+  }
+
+  /**
+   * OS-633 — valida el set de `supervisorPositionIds` antes de persistirlo:
+   *  1. Un cargo no puede supervisarse a sí mismo.
+   *  2. Todos los ids deben existir y pertenecer al mismo tenant (`findByIds` ya filtra por tenant,
+   *     así que un id de otro tenant simplemente no aparece — se reporta como inválido).
+   *  3. Ninguno puede ya ser subordinado (directo o transitivo) del cargo — eso cerraría un ciclo.
+   *     `positionId` es `undefined` en creación: un cargo nuevo no tiene subordinados todavía,
+   *     así que el chequeo de ciclos no aplica.
+   */
+  private async validateSupervisorPositionIds(
+    tenantId: string,
+    positionId: string | undefined,
+    supervisorPositionIds: string[] | undefined,
+  ): Promise<string[]> {
+    if (!supervisorPositionIds || supervisorPositionIds.length === 0) {
+      return [];
+    }
+
+    const uniqueIds = [...new Set(supervisorPositionIds)];
+
+    if (positionId && uniqueIds.includes(positionId)) {
+      throw new BadRequestException('A position cannot be its own supervisor');
+    }
+
+    const existingPositions = await this.employeePositionsRepository.findByIds(tenantId, uniqueIds);
+    if (existingPositions.length !== uniqueIds.length) {
+      const foundIds = new Set(existingPositions.map((position) => position.id));
+      const missingIds = uniqueIds.filter((supervisorId) => !foundIds.has(supervisorId));
+      throw new BadRequestException(
+        `Invalid supervisor position id(s) for this tenant: ${missingIds.join(', ')}`,
+      );
+    }
+
+    if (positionId) {
+      const subordinateIds = await this.employeePositionsRepository.findSubordinatePositionIds(
+        tenantId,
+        positionId,
+      );
+      const cyclicIds = uniqueIds.filter((supervisorId) => subordinateIds.includes(supervisorId));
+      if (cyclicIds.length > 0) {
+        throw new ConflictException(
+          `Assigning position(s) ${cyclicIds.join(', ')} as supervisor would create a hierarchy cycle`,
+        );
+      }
+    }
+
+    return uniqueIds;
   }
 
   async deactivate(tenantId: string, id: string): Promise<EmployeePositionRecord> {

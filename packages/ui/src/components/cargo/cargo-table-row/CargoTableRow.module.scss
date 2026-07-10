@@ -32,6 +32,15 @@
   text-overflow: ellipsis;
 }
 
+.supervisorsCell {
+  font-size: 0.75rem;
+  color: var(--cargo-text-secondary);
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .salaryCell {
   justify-self: end;
   text-align: right;

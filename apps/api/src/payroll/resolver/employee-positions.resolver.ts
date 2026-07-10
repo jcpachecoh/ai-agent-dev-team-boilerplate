@@ -12,6 +12,7 @@ import {
   Resolver,
 } from '@nestjs/graphql';
 import {
+  IsArray,
   IsBoolean,
   IsNotEmpty,
   IsNumber,
@@ -33,6 +34,12 @@ import {
 import { EmployeePositionsService } from '../service/employee-positions.service';
 import type { EmployeePositionRecord } from '../interfaces/employee-positions.interfaces';
 
+@ObjectType('EmployeePositionSupervisor')
+export class EmployeePositionSupervisorType {
+  @Field(() => ID) id!: string;
+  @Field() title!: string;
+}
+
 @ObjectType('EmployeePosition')
 export class EmployeePositionType {
   @Field(() => ID) id!: string;
@@ -42,6 +49,7 @@ export class EmployeePositionType {
   @Field() isActive!: boolean;
   @Field() createdAt!: Date;
   @Field() updatedAt!: Date;
+  @Field(() => [EmployeePositionSupervisorType]) supervisors!: EmployeePositionSupervisorType[];
 }
 
 @ObjectType('EmployeePositionHistory')
@@ -73,6 +81,12 @@ export class CreateEmployeePositionInput {
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
   baseSalaryRange!: number;
+
+  @Field(() => [ID], { nullable: true })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  supervisorPositionIds?: string[];
 }
 
 @InputType()
@@ -92,6 +106,10 @@ function toPositionType(position: EmployeePositionRecord): EmployeePositionType 
     isActive: position.isActive,
     createdAt: position.createdAt,
     updatedAt: position.updatedAt,
+    supervisors: position.supervisors.map((supervisor) => ({
+      id: supervisor.id,
+      title: supervisor.title,
+    })),
   };
 }
 
@@ -151,6 +169,7 @@ export class EmployeePositionsResolver {
       title: input.title,
       area: input.area,
       baseSalaryRange: String(input.baseSalaryRange),
+      supervisorPositionIds: input.supervisorPositionIds,
     });
     return toPositionType(position);
   }
@@ -171,6 +190,9 @@ export class EmployeePositionsResolver {
         ? { baseSalaryRange: String(input.baseSalaryRange) }
         : {}),
       ...(input.isActive !== undefined ? { isActive: input.isActive } : {}),
+      ...(input.supervisorPositionIds !== undefined
+        ? { supervisorPositionIds: input.supervisorPositionIds }
+        : {}),
     });
     return toPositionType(position);
   }

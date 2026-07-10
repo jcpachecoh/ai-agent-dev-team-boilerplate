@@ -43,6 +43,10 @@ function toPositionResponse(position: EmployeePositionRecord): EmployeePositionR
     isActive: position.isActive,
     createdAt: position.createdAt,
     updatedAt: position.updatedAt,
+    supervisors: position.supervisors.map((supervisor) => ({
+      id: supervisor.id,
+      title: supervisor.title,
+    })),
   };
 }
 
@@ -106,6 +110,7 @@ export class EmployeePositionsController {
       title: body.title,
       area: body.area,
       baseSalaryRange: String(body.baseSalaryRange),
+      supervisorPositionIds: body.supervisorPositionIds,
     });
     return toPositionResponse(position);
   }
@@ -128,6 +133,9 @@ export class EmployeePositionsController {
         ? { baseSalaryRange: String(body.baseSalaryRange) }
         : {}),
       ...(body.isActive !== undefined ? { isActive: body.isActive } : {}),
+      ...(body.supervisorPositionIds !== undefined
+        ? { supervisorPositionIds: body.supervisorPositionIds }
+        : {}),
     });
     return toPositionResponse(position);
   }

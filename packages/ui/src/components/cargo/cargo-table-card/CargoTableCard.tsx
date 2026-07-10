@@ -12,6 +12,7 @@ export function CargoTableCard({
   id,
   title = 'Cargo',
   area,
+  supervisors,
   baseSalaryRange,
   isActive = true,
   onEdit,
@@ -23,6 +24,8 @@ export function CargoTableCard({
   className,
 }: CargoTableCardProps): JSX.Element {
   const showActions = showActionsProp ?? Boolean(onEdit || onToggleStatus);
+  const supervisorsLabel =
+    supervisors && supervisors.length > 0 ? supervisors.join(', ') : 'Sin supervisor';
 
   return (
     <article
@@ -43,6 +46,10 @@ export function CargoTableCard({
         <div className={styles.detailRow}>
           <dt>Área</dt>
           <dd>{area ?? '-'}</dd>
+        </div>
+        <div className={styles.detailRow}>
+          <dt>Supervisor(es)</dt>
+          <dd>{supervisorsLabel}</dd>
         </div>
         <div className={styles.detailRow}>
           <dt>Rango salarial base</dt>

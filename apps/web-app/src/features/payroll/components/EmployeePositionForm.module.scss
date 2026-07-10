@@ -18,6 +18,10 @@
   gap: 0.3rem;
 }
 
+.fieldWide {
+  grid-column: 1 / -1;
+}
+
 .fieldLabel {
   font-size: t.$font-size-xs;
   color: var(--color-text-secondary);

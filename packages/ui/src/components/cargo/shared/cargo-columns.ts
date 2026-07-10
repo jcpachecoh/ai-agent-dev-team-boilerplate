@@ -24,6 +24,11 @@ export const defaultCargoColumns: CargoColumnDef[] = [
   { key: 'title', label: 'Nombre del cargo', sortable: true, width: 'minmax(200px, 1.4fr)' },
   { key: 'area', label: 'Área', sortable: true, width: 'minmax(140px, 1fr)' },
   {
+    key: 'supervisors',
+    label: 'Supervisor(es)',
+    width: 'minmax(160px, 1.3fr)',
+  },
+  {
     key: 'salary',
     label: 'Rango salarial base',
     width: 'minmax(148px, 0.9fr)',

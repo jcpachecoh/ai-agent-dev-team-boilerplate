@@ -1,3 +1,8 @@
+export interface EmployeePositionSupervisorSummary {
+  id: string;
+  title: string;
+}
+
 export interface EmployeePosition {
   id: string;
   tenantId?: string;
@@ -8,6 +13,8 @@ export interface EmployeePosition {
   employeeCount?: number;
   createdAt: string;
   updatedAt: string;
+  /** OS-633 — cargos supervisores directos (fuente de verdad: EmployeePositionSupervisor). */
+  supervisors: EmployeePositionSupervisorSummary[];
 }
 
 export interface ListEmployeePositionsFilters {
@@ -20,6 +27,7 @@ export interface CreateEmployeePositionInput {
   title: string;
   area: string;
   baseSalaryRange: number;
+  supervisorPositionIds?: string[];
 }
 
 export type UpdateEmployeePositionInput = Partial<CreateEmployeePositionInput> & {
@@ -31,6 +39,7 @@ export interface EmployeePositionFormValues {
   area: string;
   baseSalaryRange: string;
   isActive: boolean;
+  supervisorPositionIds: string[];
 }
 
 export function employeePositionToFormValues(
@@ -46,6 +55,7 @@ export function employeePositionToFormValues(
     area: position.area,
     baseSalaryRange: salary,
     isActive: position.isActive,
+    supervisorPositionIds: position.supervisors.map((supervisor) => supervisor.id),
   };
 }
 

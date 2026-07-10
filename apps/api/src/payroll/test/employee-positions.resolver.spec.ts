@@ -18,6 +18,7 @@ describe('EmployeePositionsResolver', () => {
     isActive: true,
     createdAt: new Date(),
     updatedAt: new Date(),
+    supervisors: [{ id: 'pos-boss', title: 'Gerente General' }],
   };
 
   beforeEach(async () => {
@@ -81,6 +82,25 @@ describe('EmployeePositionsResolver', () => {
     });
 
     expect(result.baseSalaryRange).toBe(4500000);
+    expect(result.supervisors).toEqual([{ id: 'pos-boss', title: 'Gerente General' }]);
+  });
+
+  it('creates employee position with supervisorPositionIds', async () => {
+    service.create.mockResolvedValue(mockPosition);
+
+    await resolver.createEmployeePosition(user, context, {
+      title: 'Contador',
+      area: 'Finanzas',
+      baseSalaryRange: 4500000,
+      supervisorPositionIds: ['pos-boss'],
+    });
+
+    expect(service.create).toHaveBeenCalledWith(tenantId, {
+      title: 'Contador',
+      area: 'Finanzas',
+      baseSalaryRange: '4500000',
+      supervisorPositionIds: ['pos-boss'],
+    });
   });
 
   it('updates employee position', async () => {
@@ -91,6 +111,18 @@ describe('EmployeePositionsResolver', () => {
     });
 
     expect(result.title).toBe('Analista');
+  });
+
+  it('updates employee position replacing supervisorPositionIds', async () => {
+    service.update.mockResolvedValue(mockPosition);
+
+    await resolver.updateEmployeePosition(user, context, 'pos-1', {
+      supervisorPositionIds: ['pos-boss'],
+    });
+
+    expect(service.update).toHaveBeenCalledWith(tenantId, 'pos-1', {
+      supervisorPositionIds: ['pos-boss'],
+    });
   });
 
   it('deactivates employee position', async () => {

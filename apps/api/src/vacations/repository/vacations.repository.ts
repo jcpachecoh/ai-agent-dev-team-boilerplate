@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { EmployeeContractType, Prisma, VacationStatus, VacationType } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 
+import { resolveSubordinatePositionIds } from '../../payroll/utils/employee-position-hierarchy.util';
 import { PrismaService } from '../../prisma/prisma.service';
 import type {
   AccrualEmployeeRecord,
@@ -218,32 +219,15 @@ export class VacationsRepository implements IVacationsRepository {
     return row ? this.mapApprovedRange(row) : null;
   }
 
+  /**
+   * OS-550 follow-up. OS-633: BFS compartido con `AttendanceCollaboratorsRepository` y
+   * `EmployeePositionsRepository` — ver `resolveSubordinatePositionIds`.
+   */
   async findSubordinatePositionIds(
     tenantId: string,
     supervisorPositionId: string,
   ): Promise<string[]> {
-    const visited = new Set<string>([supervisorPositionId]);
-    const result = new Set<string>();
-    let frontier = [supervisorPositionId];
-
-    while (frontier.length > 0) {
-      const rows = await this.prisma.employeePositionSupervisor.findMany({
-        where: { tenantId, supervisorPositionId: { in: frontier } },
-        select: { positionId: true },
-      });
-
-      const nextFrontier: string[] = [];
-      for (const row of rows) {
-        if (!visited.has(row.positionId)) {
-          visited.add(row.positionId);
-          result.add(row.positionId);
-          nextFrontier.push(row.positionId);
-        }
-      }
-      frontier = nextFrontier;
-    }
-
-    return [...result];
+    return resolveSubordinatePositionIds(this.prisma, tenantId, supervisorPositionId);
   }
 
   async findEmployeeApprovalContext(
