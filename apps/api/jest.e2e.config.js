@@ -16,6 +16,7 @@ module.exports = {
     // Stub — replaces the real email package (BullMQ + React Email) with a
     // no-op so AppModule boots without Redis in e2e tests.
     '^@restopsiq/email(.*)$': '<rootDir>/test/__mocks__/restopsiq-email.ts',
+    '^@restopsiq/shared(.*)$': '<rootDir>/../../../packages/shared/src$1',
     '^@restopsiq/types(.*)$': '<rootDir>/../../packages/types/src$1',
     '^@restopsiq/utils(.*)$': '<rootDir>/../../packages/utils/src$1',
   },

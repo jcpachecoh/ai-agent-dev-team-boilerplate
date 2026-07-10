@@ -1,3 +1,5 @@
+import { MANUAL_MARKING_REASON_CATALOG } from '@restopsiq/shared';
+
 export type AsistenciaTheme = 'light' | 'dark';
 
 export type AsistenciaSize = 'sm' | 'md';
@@ -116,6 +118,9 @@ export interface AsistenciaTarjetaDayRow {
   hasManualMarking?: boolean;
   isAutomaticEntry?: boolean;
   isAutomaticExit?: boolean;
+  /** Texto de estado (vacaciones, novedad, incapacidad) en lugar de hora. */
+  entryTimeIsStatusLabel?: boolean;
+  exitTimeIsStatusLabel?: boolean;
 }
 
 export type AsistenciaTarjetaSortKey =
@@ -152,11 +157,11 @@ export interface AsistenciaTarjetaMarkReasonOption {
   label: string;
 }
 
+/** Catálogo unificado CONN-05 (placeholder + motivos de nómina/incapacidad/corrección). */
 export const ASISTENCIA_TARJETA_MARK_REASONS: AsistenciaTarjetaMarkReasonOption[] = [
-  { value: '', label: 'Seleccione…' },
-  { value: 'FORGOT', label: 'Olvido de marcación' },
-  { value: 'DEVICE_FAILURE', label: 'Falla de dispositivo' },
-  { value: 'SUPERVISOR_CORRECTION', label: 'Corrección de supervisor' },
-  { value: 'SYSTEM_ERROR', label: 'Error del sistema' },
-  { value: 'OTHER', label: 'Otro' },
+  { value: '', label: 'Seleccione motivo de cambio…' },
+  ...MANUAL_MARKING_REASON_CATALOG.map((option) => ({
+    value: option.code,
+    label: option.label,
+  })),
 ];

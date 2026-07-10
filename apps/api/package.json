@@ -44,6 +44,7 @@
     "@nestjs/websockets": "^10.4.15",
     "@prisma/client": "^5.22.0",
     "@restopsiq/email": "workspace:*",
+    "@restopsiq/shared": "workspace:*",
     "@restopsiq/types": "workspace:*",
     "@restopsiq/utils": "workspace:*",
     "ai": "^6.0.189",

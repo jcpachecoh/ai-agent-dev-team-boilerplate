@@ -1,7 +1,8 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { AttendanceEventType } from '@prisma/client';
-import { IsEnum, IsIn, IsISO8601, IsOptional, IsString } from 'class-validator';
+import { IsEnum, IsIn, IsISO8601, IsOptional, IsString, ValidateIf } from 'class-validator';
 import { ATTENDANCE_MANUAL_MARKING_REASONS } from '../../attendance.constants';
+import { CORRECCION_MARCACION_REASON } from '../../interfaces/manual-marking-provision.interfaces';
 import type { CreateManualMarkingInput } from '../../interfaces/attendance.interfaces';
 
 export class CreateManualMarkingDto implements CreateManualMarkingInput {
@@ -9,13 +10,20 @@ export class CreateManualMarkingDto implements CreateManualMarkingInput {
   @IsISO8601()
   workDate!: string;
 
-  @ApiProperty({ enum: AttendanceEventType })
+  @ApiPropertyOptional({
+    enum: AttendanceEventType,
+    description: 'Requerido solo para corrección de marcación',
+  })
+  @ValidateIf((dto: CreateManualMarkingDto) => dto.reason === CORRECCION_MARCACION_REASON)
   @IsEnum(AttendanceEventType)
-  eventType!: AttendanceEventType;
+  eventType?: AttendanceEventType;
 
-  @ApiProperty({ description: 'Fecha y hora de la marcación (ISO 8601)' })
+  @ApiPropertyOptional({
+    description: 'Fecha y hora de la marcación (ISO 8601). Solo corrección.',
+  })
+  @ValidateIf((dto: CreateManualMarkingDto) => dto.reason === CORRECCION_MARCACION_REASON)
   @IsISO8601()
-  timestamp!: string;
+  timestamp?: string;
 
   @ApiProperty({
     enum: ATTENDANCE_MANUAL_MARKING_REASONS,
@@ -28,4 +36,11 @@ export class CreateManualMarkingDto implements CreateManualMarkingInput {
   @IsString()
   @IsOptional()
   parentLogId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Soporte obligatorio para motivos de nómina que lo requieren (NOM-14)',
+  })
+  @IsString()
+  @IsOptional()
+  supportStorageObjectId?: string;
 }

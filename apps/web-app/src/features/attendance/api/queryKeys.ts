@@ -16,6 +16,7 @@ export const attendanceKeys = {
   active: (locationId: string) => [...attendanceKeys.all, 'active', locationId] as const,
   card: (userId: string, dateFrom: string, dateTo: string) =>
     [...attendanceKeys.all, 'card', userId, dateFrom, dateTo] as const,
+  manualMarkingReasons: () => [...attendanceKeys.all, 'manual-marking-reasons'] as const,
   overtime: (userId: string, date?: string) =>
     [...attendanceKeys.all, 'overtime', userId, date ?? 'today'] as const,
   monitorSummary: (locationId: string, period: AttendanceMonitorPeriod, anchorDate: string) =>

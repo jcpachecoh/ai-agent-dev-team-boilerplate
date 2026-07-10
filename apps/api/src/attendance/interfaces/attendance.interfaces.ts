@@ -224,6 +224,8 @@ export interface AttendanceCardDaySummary {
   resolvedKind: 'ASSIGNED' | 'REST' | 'NONE' | 'VACACIONES';
   shiftName: string | null;
   shiftRange: string | null;
+  /** Etiqueta para ENTRADA/SALIDA cuando no hay marcación (vacaciones, novedad, incapacidad). */
+  absenceLabel?: string | null;
 }
 
 export interface UpsertObservationInput {
@@ -233,10 +235,12 @@ export interface UpsertObservationInput {
 
 export interface CreateManualMarkingInput {
   workDate: string;
-  eventType: AttendanceEventType;
-  timestamp: string;
+  eventType?: AttendanceEventType;
+  timestamp?: string;
   reason: string;
   parentLogId?: string;
+  /** Requerido cuando el motivo provisiona una novedad NOM-14 con soporte obligatorio. */
+  supportStorageObjectId?: string;
 }
 
 export interface CreateManualLogData {

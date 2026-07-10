@@ -1989,6 +1989,9 @@ model AttendanceLog {
   manualParentLog AttendanceLog?  @relation("AttendanceLogManualParent", fields: [manualParentLogId], references: [id], onDelete: SetNull)
   manualChildLogs AttendanceLog[] @relation("AttendanceLogManualParent")
 
+  payrollNovedadFromSource PayrollNovedad? @relation("PayrollNovedadSourceAttendanceLog")
+  medicalLeaveFromSource   MedicalLeave?   @relation("MedicalLeaveSourceAttendanceLog")
+
   @@index([tenantId, employeeId, workDate])
   @@index([tenantId, locationId, workDate])
   @@index([tenantId, workDate])
@@ -2298,18 +2301,21 @@ model MedicalLeave {
   recoveredAt            DateTime?
   rejectedAt             DateTime?
   rejectionReason        String?
+  sourceAttendanceLogId  String?     @unique
   createdAt              DateTime    @default(now())
   updatedAt              DateTime    @updatedAt
   deletedAt              DateTime?
 
-  employee        EmployeeDetails @relation(fields: [employeeId], references: [id], onDelete: Restrict)
-  supportDocument StorageObject?  @relation(fields: [supportStorageObjectId], references: [id], onDelete: SetNull)
+  employee            EmployeeDetails @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  supportDocument     StorageObject?  @relation(fields: [supportStorageObjectId], references: [id], onDelete: SetNull)
+  sourceAttendanceLog AttendanceLog?  @relation("MedicalLeaveSourceAttendanceLog", fields: [sourceAttendanceLogId], references: [id], onDelete: SetNull)
 
   @@index([tenantId])
   @@index([tenantId, employeeId])
   @@index([tenantId, status])
   @@index([tenantId, deletedAt])
   @@index([tenantId, startDate, endDate])
+  @@index([tenantId, sourceAttendanceLogId])
   @@map("medical_leaves")
 }
 
@@ -2361,12 +2367,14 @@ model PayrollNovedad {
   rrhhDecisionAt         DateTime?
   rejectionReason        String?
   overlapWarningAck      Boolean              @default(false)
+  sourceAttendanceLogId  String?              @unique
   createdAt              DateTime             @default(now())
   updatedAt              DateTime             @updatedAt
   deletedAt              DateTime?
 
-  employee        EmployeeDetails @relation(fields: [employeeId], references: [id], onDelete: Restrict)
-  supportDocument StorageObject?  @relation(fields: [supportStorageObjectId], references: [id], onDelete: SetNull)
+  employee            EmployeeDetails @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  supportDocument     StorageObject?  @relation(fields: [supportStorageObjectId], references: [id], onDelete: SetNull)
+  sourceAttendanceLog AttendanceLog?  @relation("PayrollNovedadSourceAttendanceLog", fields: [sourceAttendanceLogId], references: [id], onDelete: SetNull)
 
   @@index([tenantId])
   @@index([tenantId, employeeId])
@@ -2374,6 +2382,7 @@ model PayrollNovedad {
   @@index([tenantId, deletedAt])
   @@index([tenantId, startDate, endDate])
   @@index([tenantId, type])
+  @@index([tenantId, sourceAttendanceLogId])
   @@map("payroll_novedades")
 }
 

@@ -25,6 +25,7 @@ import type {
   AttendanceOvertimeSummary,
   CreateManualMarkingInput,
   DismissAlertResult,
+  ManualMarkingReasonOption,
   UpsertAttendanceObservationInput,
 } from '../types/attendance.types';
 
@@ -251,10 +252,18 @@ export function upsertAttendanceObservation(
 }
 
 export function createManualMarking(userId: string, input: CreateManualMarkingInput) {
+  const body = Object.fromEntries(
+    Object.entries(input).filter(([, value]) => value !== undefined && value !== ''),
+  );
+
   return attendanceFetch(`/attendance/employees/${userId}/manual-markings`, {
     method: 'POST',
-    body: JSON.stringify(input),
+    body: JSON.stringify(body),
   });
+}
+
+export function fetchManualMarkingReasons(): Promise<ManualMarkingReasonOption[]> {
+  return attendanceFetch<ManualMarkingReasonOption[]>('/attendance/manual-marking-reasons');
 }
 
 export function deleteManualMarking(logId: string): Promise<void> {

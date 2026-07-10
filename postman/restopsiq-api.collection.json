@@ -12077,6 +12077,185 @@
       ]
     },
     {
+      "name": "CONN-05 Unified Novedades Motivos",
+      "description": "Catálogo unificado OS-553/CONN-05: motivos de marcación manual alineados con NOM-14/NOM-13. Provisionamiento automático de PayrollNovedad o MedicalLeave según motivo. Requiere token con PAYROLL_WRITE_ROLES y rol NOMINA/OWNER/SUPER_ADMIN para motivos de nómina.",
+      "item": [
+        {
+          "name": "GET Manual Marking Reasons",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/manual-marking-reasons",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "manual-marking-reasons"]
+            },
+            "description": "Retorna ManualMarkingReasonOption[] (CONN-05 catálogo shared)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('catalog: 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('catalog includes CORRECCION_MARCACION', () => {",
+                  "    pm.expect(body.some((o) => o.code === 'CORRECCION_MARCACION')).to.be.true;",
+                  "});",
+                  "pm.test('catalog includes PERMISO_REMUNERADO', () => {",
+                  "    pm.expect(body.some((o) => o.code === 'PERMISO_REMUNERADO')).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Manual Marking — CORRECCION_MARCACION (sin novedad)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workDate\": \"2026-02-10\",\n  \"eventType\": \"ENTRY\",\n  \"timestamp\": \"2026-02-10T08:00:00.000Z\",\n  \"reason\": \"CORRECCION_MARCACION\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/employees/{{attendanceUserId}}/manual-markings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "employees", "{{attendanceUserId}}", "manual-markings"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('correccion: 201 sin side-effect nómina', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code === 201) {",
+                  "    pm.environment.set('conn05CorrectionLogId', pm.response.json().id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Manual Marking — PERMISO_REMUNERADO (provisiona novedad)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workDate\": \"2026-02-11\",\n  \"eventType\": \"ENTRY\",\n  \"timestamp\": \"2026-02-11T08:00:00.000Z\",\n  \"reason\": \"PERMISO_REMUNERADO\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/employees/{{attendanceUserId}}/manual-markings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "employees", "{{attendanceUserId}}", "manual-markings"]
+            },
+            "description": "Requiere actor NOMINA/OWNER/SUPER_ADMIN. Crea PayrollNovedad con sourceAttendanceLogId."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('permiso remunerado: 201', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code === 201) {",
+                  "    pm.environment.set('conn05NovedadLogId', pm.response.json().id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Manual Marking — INCAPACIDAD_COMUN (provisiona incapacidad)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workDate\": \"2026-02-12\",\n  \"eventType\": \"ENTRY\",\n  \"timestamp\": \"2026-02-12T08:00:00.000Z\",\n  \"reason\": \"INCAPACIDAD_COMUN\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/employees/{{attendanceUserId}}/manual-markings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "employees", "{{attendanceUserId}}", "manual-markings"]
+            },
+            "description": "Requiere actor NOMINA/OWNER/SUPER_ADMIN. Crea MedicalLeave con origin COMUN."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('incapacidad comun: 201', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code === 201) {",
+                  "    pm.environment.set('conn05MedicalLeaveLogId', pm.response.json().id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Manual Marking — reason inválido (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workDate\": \"2026-02-10\",\n  \"eventType\": \"ENTRY\",\n  \"timestamp\": \"2026-02-10T08:00:00.000Z\",\n  \"reason\": \"FORGOT\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/employees/{{attendanceUserId}}/manual-markings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "employees", "{{attendanceUserId}}", "manual-markings"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('reason legacy FORGOT -> 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "OS-550 Attendance Collaborators",
       "description": "Listado de Colaboradores de Asistencia con búsqueda (case+accent insensitive), filtros (positionId/contractType/area/locationId/supervisorUserId/laborClassification), scoping de sede real en backend (OWNER/SUPER_ADMIN/NOMINA tenant-wide; SUPERVISOR/MANAGER solo UserLocation) y paginación real con total. Requiere 'NOM-03 Attendance' ejecutado antes (captura attendanceUserId/attendanceLocationId). Solo lectura: PAYROLL_MODULE_ROLES (OWNER, SUPER_ADMIN, SUPERVISOR, MANAGER, NOMINA). OS-550 follow-up agrega: Portal trabajador (PATCH, solo OWNER/SUPER_ADMIN), exportaciones Excel/PDF del dataset filtrado completo (GET .../export, mismos roles que el listado), envío por correo con adjunto (POST .../export/email), e historial mínimo de auditoría (GET .../:employeeDetailsId/audit, solo OWNER/SUPER_ADMIN). Portal real de autoservicio y módulo avanzado de auditoría quedan fuera de alcance (ver tasks/attendance/OS-550-attendance-collaborators.md).",
       "item": [
