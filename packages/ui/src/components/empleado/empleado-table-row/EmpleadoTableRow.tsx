@@ -34,6 +34,8 @@ export interface EmpleadoTableRowProps {
   /** Override del aria-label/tooltip del botón "ver" (p.ej. "Ver tarjeta de asistencia" en OS-550). */
   viewLabel?: string;
   onEdit?: () => void;
+  /** Override del aria-label del botón editar (p.ej. cuando abre consulta de perfil). */
+  editLabel?: string;
   onToggleStatus?: () => void;
   /** OS-550 follow-up — acción "Historial" (solo OWNER/SUPER_ADMIN). */
   onHistory?: () => void;
@@ -81,6 +83,7 @@ export function EmpleadoTableRow({
   onView,
   viewLabel,
   onEdit,
+  editLabel,
   onToggleStatus,
   onHistory,
   showActions: showActionsProp,
@@ -193,7 +196,12 @@ export function EmpleadoTableRow({
             />
           ) : null}
           {onEdit ? (
-            <EmpleadoRowActionButton variant="edit" theme={theme} onClick={onEdit} />
+            <EmpleadoRowActionButton
+              variant="edit"
+              theme={theme}
+              onClick={onEdit}
+              aria-label={editLabel}
+            />
           ) : null}
           {onToggleStatus ? (
             <EmpleadoRowActionButton

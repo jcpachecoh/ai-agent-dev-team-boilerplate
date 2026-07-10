@@ -160,9 +160,9 @@ function ProfileTabPanel({
     return <PayrollEmployeePaymentsTab userId={userId} theme={theme} />;
   }
 
-  // if (tabId === 'taxes') {
-  //   return <PayrollEmployeeTaxTab userId={userId} theme={theme} />;
-  // }
+  if (tabId === 'taxes') {
+    return <PayrollEmployeeTaxTab userId={userId} theme={theme} readOnly />;
+  }
 
   if (tabId === 'documents') {
     return <PayrollEmployeeDocumentsTab userId={userId} theme={theme} />;

@@ -41,6 +41,7 @@ export function EmpleadoTableCard({
   onView,
   viewLabel,
   onEdit,
+  editLabel,
   onToggleStatus,
   onHistory,
   showActions: showActionsProp,
@@ -169,7 +170,12 @@ export function EmpleadoTableCard({
             />
           ) : null}
           {onEdit ? (
-            <EmpleadoRowActionButton variant="edit" theme={theme} onClick={onEdit} />
+            <EmpleadoRowActionButton
+              variant="edit"
+              theme={theme}
+              onClick={onEdit}
+              aria-label={editLabel}
+            />
           ) : null}
           {onToggleStatus ? (
             <EmpleadoRowActionButton

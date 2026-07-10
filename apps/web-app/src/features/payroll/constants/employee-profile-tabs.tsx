@@ -6,6 +6,7 @@ import {
   Receipt,
   ShieldCheck,
   UserRound,
+  Building2,
   type LucideIcon,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
@@ -16,7 +17,7 @@ export type PayrollEmployeeProfileTabId =
   | 'social-security'
   | 'attendance'
   | 'bank-accounts'
-  // | 'taxes'
+  | 'taxes'
   | 'documents'
   | 'dotaciones';
 
@@ -64,13 +65,14 @@ export const PAYROLL_EMPLOYEE_PROFILE_TABS: PayrollEmployeeProfileTabDefinition[
     placeholderDescription:
       'Próximamente — cuentas para dispersión de nómina con datos enmascarados.',
   },
-  // {
-  //   id: 'taxes',
-  //   label: 'Impuestos',
-  //   icon: <Building2 {...iconProps} />,
-  //   placeholderTitle: 'Información de impuestos',
-  //   placeholderDescription: 'Próximamente — retención en la fuente y certificados tributarios.',
-  // },
+  {
+    id: 'taxes',
+    label: 'Impuestos',
+    icon: <Building2 {...iconProps} />,
+    placeholderTitle: 'Información de impuestos',
+    placeholderDescription:
+      'NIT/RUT y retención en la fuente calculada según parámetros de Contabilidad.',
+  },
   {
     id: 'payments',
     label: 'Pagos',

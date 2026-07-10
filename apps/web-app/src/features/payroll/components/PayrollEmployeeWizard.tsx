@@ -10,7 +10,6 @@ import {
 import { useEmployeeBankAccountsQuery } from '../hooks/useEmployeeBankAccountsQuery';
 import { useEmployeePersonalDataQuery } from '../hooks/useEmployeePersonalDataQuery';
 import { useEmployeePositions } from '../hooks/useEmployeePositions';
-import { useEmployeeTaxInformationQuery } from '../hooks/useEmployeeTaxInformationQuery';
 import type { PayrollEmployee, PayrollEmployeeFormValues } from '../types/payroll.types';
 import type {
   PayrollEmployeeCreateBankDraft,
@@ -22,33 +21,23 @@ import {
   validatePayrollEmployeeBankStep,
   validatePayrollEmployeePersonalStep,
   validatePayrollEmployeeSocialStep,
-  validatePayrollEmployeeTaxStep,
 } from '../utils/payroll-employee-create-wizard-validation';
 import {
   bankAccountToWizardDraft,
   mergePersonalDataIntoFormValues,
   payrollEmployeeToFormValues,
-  taxInformationToWizardDraft,
 } from '../utils/payroll-employee-wizard-form-values';
 import { EmployeePhotoUploader } from './EmployeePhotoUploader';
 import { PAYROLL_EMPLOYEE_FORM_EMPTY_VALUES, PayrollEmployeeForm } from './PayrollEmployeeForm';
 import { PayrollEmployeeDocumentsTab } from './PayrollEmployeeDocumentsTab';
 import { PayrollEmployeeWizardAssetsStep } from './PayrollEmployeeWizardAssetsStep';
 import { PayrollEmployeeWizardBankStep } from './PayrollEmployeeWizardBankStep';
-import { PayrollEmployeeWizardTaxStep } from './PayrollEmployeeWizardTaxStep';
 import styles from './PayrollEmployeeCreateWizard.module.scss';
 
 const EMPTY_BANK_DRAFT: PayrollEmployeeCreateBankDraft = {
   bankCode: '',
   accountType: 'SAVINGS',
   accountNumber: '',
-};
-
-const EMPTY_TAX_DRAFT = {
-  taxId: '',
-  taxRegime: 'ORDINARIO',
-  withholdingApplicable: false,
-  withholdingRatePercent: '',
 };
 
 const themeClasses: Record<'light' | 'dark', string> = {
@@ -84,7 +73,6 @@ export function PayrollEmployeeWizard({
   const personalDataQuery = useEmployeePersonalDataQuery(
     isEditMode && open ? employee?.userId : undefined,
   );
-  const taxQuery = useEmployeeTaxInformationQuery(isEditMode && open ? employee?.id : undefined);
   const bankAccountsQuery = useEmployeeBankAccountsQuery(
     isEditMode && open ? employee?.id : undefined,
   );
@@ -96,10 +84,8 @@ export function PayrollEmployeeWizard({
     PAYROLL_EMPLOYEE_FORM_EMPTY_VALUES,
   );
   const [bankDraft, setBankDraft] = useState(EMPTY_BANK_DRAFT);
-  const [taxDraft, setTaxDraft] = useState(EMPTY_TAX_DRAFT);
   const [assetDrafts, setAssetDrafts] = useState<EmployeeAssetDraft[]>([]);
   const [bankErrors, setBankErrors] = useState<Partial<Record<string, string>>>({});
-  const [taxErrors, setTaxErrors] = useState<Partial<Record<string, string>>>({});
   const [error, setError] = useState<string | null>(null);
   const [localPhotoUrl, setLocalPhotoUrl] = useState<string | null>(null);
   const initialBankDraftRef = useRef<PayrollEmployeeCreateBankDraft>(EMPTY_BANK_DRAFT);
@@ -108,7 +94,7 @@ export function PayrollEmployeeWizard({
     isEditMode &&
     open &&
     Boolean(employee) &&
-    (personalDataQuery.isLoading || taxQuery.isLoading || bankAccountsQuery.isLoading);
+    (personalDataQuery.isLoading || bankAccountsQuery.isLoading);
 
   useEffect(() => {
     if (!open) return;
@@ -116,10 +102,8 @@ export function PayrollEmployeeWizard({
     setCurrentStep('personal');
     setMaxReachedStep(isEditMode ? 'documents' : 'personal');
     setBankDraft(EMPTY_BANK_DRAFT);
-    setTaxDraft(EMPTY_TAX_DRAFT);
     setAssetDrafts([]);
     setBankErrors({});
-    setTaxErrors({});
     setError(null);
     setLocalPhotoUrl(null);
     initialBankDraftRef.current = EMPTY_BANK_DRAFT;
@@ -131,7 +115,6 @@ export function PayrollEmployeeWizard({
           ? mergePersonalDataIntoFormValues(baseValues, personalDataQuery.data)
           : baseValues,
       );
-      setTaxDraft(taxInformationToWizardDraft(taxQuery.data));
       const loadedBankDraft = bankAccountToWizardDraft(bankAccountsQuery.data);
       setBankDraft(loadedBankDraft);
       initialBankDraftRef.current = loadedBankDraft;
@@ -139,7 +122,7 @@ export function PayrollEmployeeWizard({
     }
 
     setEmployeeValues(PAYROLL_EMPLOYEE_FORM_EMPTY_VALUES);
-  }, [employee, isEditMode, open, personalDataQuery.data, taxQuery.data, bankAccountsQuery.data]);
+  }, [employee, isEditMode, open, personalDataQuery.data, bankAccountsQuery.data]);
 
   useEffect(() => {
     if (!open) return;
@@ -203,16 +186,6 @@ export function PayrollEmployeeWizard({
     }
     setBankErrors({});
 
-    const taxError = validatePayrollEmployeeTaxStep(taxDraft);
-    if (taxError) {
-      if (taxError.includes('NIT')) {
-        setTaxErrors({ taxId: taxError });
-      } else {
-        setTaxErrors({ withholdingRatePercent: taxError });
-      }
-      return { stepId: 'taxes', message: taxError };
-    }
-    setTaxErrors({});
     return null;
   };
 
@@ -235,20 +208,6 @@ export function PayrollEmployeeWizard({
         return bankValidation.message;
       }
       setBankErrors({});
-      return null;
-    }
-
-    if (currentStep === 'taxes') {
-      const taxError = validatePayrollEmployeeTaxStep(taxDraft);
-      if (taxError) {
-        if (taxError.includes('NIT')) {
-          setTaxErrors({ taxId: taxError });
-        } else {
-          setTaxErrors({ withholdingRatePercent: taxError });
-        }
-        return taxError;
-      }
-      setTaxErrors({});
       return null;
     }
 
@@ -329,13 +288,6 @@ export function PayrollEmployeeWizard({
     const bankAccountPayload = resolveBankDraftPayload(bankDraft, initialBankDraftRef.current);
     if (bankAccountPayload) {
       payload.bankAccount = bankAccountPayload;
-    }
-
-    if (taxDraft.taxId.trim()) {
-      payload.taxInformation = {
-        ...taxDraft,
-        taxId: taxDraft.taxId.trim(),
-      };
     }
 
     const validDrafts = assetDrafts.filter((d) => d.assetName.trim() && d.type && d.value.trim());
@@ -470,24 +422,6 @@ export function PayrollEmployeeWizard({
                 onChange={(nextValues) => {
                   setBankDraft(nextValues);
                   setBankErrors({});
-                  setError(null);
-                }}
-              />
-            ) : null}
-
-            {currentStep === 'taxes' ? (
-              <PayrollEmployeeWizardTaxStep
-                theme={theme}
-                values={taxDraft}
-                errors={taxErrors}
-                hint={
-                  isEditMode && taxQuery.data
-                    ? 'El NIT/RUT registrado termina en los dígitos visibles del perfil. Déjalo vacío para conservar el actual o ingresa uno nuevo para actualizar.'
-                    : undefined
-                }
-                onChange={(nextValues) => {
-                  setTaxDraft(nextValues);
-                  setTaxErrors({});
                   setError(null);
                 }}
               />
