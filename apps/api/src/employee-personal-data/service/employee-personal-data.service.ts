@@ -4,9 +4,10 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { DocumentType } from '@prisma/client';
+import { DocumentType, ConsentType } from '@prisma/client';
 import { AuditService } from '../../audit/service/audit.service';
 import { PAYROLL_MODULE_ROLES, PAYROLL_WRITE_ROLES } from '../../common/config/rbac.config';
+import { DataConsentService } from '../../data-consent/service/data-consent.service';
 import { StorageDomain, ImageProfile, StorageVisibility } from '../../storage/enums/storage.enums';
 import { StorageService } from '../../storage/service/storage.service';
 import type {
@@ -45,6 +46,7 @@ export class EmployeePersonalDataService implements IEmployeePersonalDataService
     private readonly repository: EmployeePersonalDataRepository,
     private readonly auditService: AuditService,
     private readonly storageService: StorageService,
+    private readonly dataConsentService: DataConsentService,
   ) {}
 
   async getByUserId(
@@ -165,6 +167,12 @@ export class EmployeePersonalDataService implements IEmployeePersonalDataService
     if (!editableFields.has('profilePhotoStorageObjectId')) {
       throw new ForbiddenException('No puede actualizar la foto de perfil');
     }
+
+    await this.dataConsentService.assertConsentForFeature({
+      userId,
+      tenantId,
+      consentType: ConsentType.BIOMETRICO_FACIAL,
+    });
 
     const allowed = new Set(['image/jpeg', 'image/png', 'image/jpg']);
     if (!allowed.has(file.mimetype)) {

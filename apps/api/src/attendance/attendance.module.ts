@@ -10,6 +10,7 @@ import { LaborLegalParametersModule } from '../labor-legal-parameters/labor-lega
 import { OvertimeModule } from '../overtime/overtime.module';
 import { MedicalLeavesModule } from '../medical-leaves/medical-leaves.module';
 import { PayrollNovedadesModule } from '../payroll-novedades/payroll-novedades.module';
+import { DataConsentModule } from '../data-consent/data-consent.module';
 import { MobileAttendanceRepository } from './mobile/repository/mobile-attendance.repository';
 import { MobileAttendanceResolver } from './mobile/resolver/mobile-attendance.resolver';
 import { MobileAttendanceService } from './mobile/service/mobile-attendance.service';
@@ -40,6 +41,7 @@ import { ManualMarkingProvisionService } from './service/manual-marking-provisio
     OvertimeModule,
     PayrollNovedadesModule,
     MedicalLeavesModule,
+    DataConsentModule,
   ],
   controllers: [AttendanceController],
   providers: [
