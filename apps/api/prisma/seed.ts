@@ -7,6 +7,7 @@
  *   mes-operator@palos-de-lena.dev        / TestPass123!
  *   operations.admin@palos-de-lena.dev    / TestPass123!  (OPERATIONS_ADMIN — committee modal)
  *   nomina@palos-de-lena.dev              / TestPass123!  (NOMINA — payroll read-only)
+ *   overtime-gg@palos-de-lena.dev         / TestPass123!  (CONN-04a — Gerente General demo)
  *
  * Operational tenant palos-de-lena (supply catalog + MES + plant):
  *   tenantId / mesTenantId = palos-de-lena  (x-tenant-id on supply-items & MES login)
@@ -573,6 +574,16 @@ const PERMISSION_SEEDS = [
     resource: 'mobile',
     action: 'read',
   },
+  // CONN-04a — bandeja de aprobación de tiempo extra
+  {
+    id: 'cccccccc-0000-0000-0000-000000000063',
+    code: 'attendance.overtime.read',
+    name: 'Consultar tiempo extra',
+    description: 'Consultar bandeja y resumen de solicitudes de tiempo extra por aprobación.',
+    module: 'attendance',
+    resource: 'overtime',
+    action: 'read',
+  },
   // OS-585 / NOM-06 — Parámetros legales con vigencia (SuperAdmin/Owner only, ver ROLE_PERMISSION_MATRIX)
   {
     id: 'cccccccc-0000-0000-0000-000000000027',
@@ -630,6 +641,7 @@ const OPERATIONS_ADMIN_PERMISSION_CODES = ['plant.orders.read', 'plant.committee
 // OS-499/OS-505 — marcaciones móviles (crear = self-service desde app; leer = admin/nómina)
 const MOBILE_ATTENDANCE_CREATE_CODES = ['attendance.mobile.create'] as const;
 const MOBILE_ATTENDANCE_READ_CODES = ['attendance.mobile.read'] as const;
+const OVERTIME_READ_CODES = ['attendance.overtime.read'] as const;
 
 // OS-560 — todos los roles de nómina gestionan perfiles sociales
 const SOCIAL_PROFILE_PERMISSION_CODES = [
@@ -691,6 +703,7 @@ const ROLE_PERMISSION_MATRIX: Record<string, readonly string[]> = {
     ...TURNOS_CATALOG_READ_CODES,
     ...SUPPLIER_DOCUMENT_READ_CODES,
     ...SUPPLIER_DOCUMENT_WRITE_CODES,
+    ...OVERTIME_READ_CODES,
   ],
   OPERATOR: [...OPERATOR_PERMISSION_CODES, ...MOBILE_ATTENDANCE_CREATE_CODES],
   OPERATIONS_ADMIN: OPERATIONS_ADMIN_PERMISSION_CODES,
@@ -702,6 +715,7 @@ const ROLE_PERMISSION_MATRIX: Record<string, readonly string[]> = {
     ...TURNO_ASSIGNMENT_READ_CODES,
     ...TURNOS_CATALOG_READ_CODES,
     ...SUPPLIER_DOCUMENT_READ_CODES,
+    ...OVERTIME_READ_CODES,
   ],
 };
 
@@ -2472,6 +2486,10 @@ async function main() {
   await seedAttendance(prisma);
   await seedHistoricalAttendance(prisma);
   await seedMonitorOvertime(prisma);
+
+  const { seedOvertimeDemo } = await import('./seeds/overtime-demo.seed');
+  await seedOvertimeDemo(prisma);
+
   await seedSignupUserLocations(prisma, locations);
 
   const { seedLaborLegalParameters } = await import('./seeds/labor-legal-parameters.seed');
@@ -2479,6 +2497,9 @@ async function main() {
 
   const { seedNovedadTypeConfigs } = await import('./seeds/novedad-type-config.seed');
   await seedNovedadTypeConfigs(prisma, OPERATIONAL_TENANT_ID);
+
+  const { seedDataProcessingPolicy } = await import('./seeds/data-processing-policy.seed');
+  await seedDataProcessingPolicy(prisma, OPERATIONAL_TENANT_ID);
 }
 
 main()

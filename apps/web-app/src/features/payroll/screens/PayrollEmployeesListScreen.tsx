@@ -34,11 +34,9 @@ import type {
   CreatePayrollEmployeeInput,
   PayrollEmployee,
   PayrollEmployeeFormValues,
-  UpdatePayrollEmployeeInput,
 } from '../types/payroll.types';
 import { PayrollDeactivateEmployeeDialog } from '../components/PayrollDeactivateEmployeeDialog';
 import { PayrollEmployeeCreateModal } from '../components/PayrollEmployeeCreateModal';
-import { PayrollEmployeeEditDrawer } from '../components/PayrollEmployeeEditDrawer';
 import { PayrollExportMenu } from '../components/PayrollExportMenu';
 import { PayrollFilterBar } from '../components/PayrollFilterBar';
 import { PayrollApiError, exportEmployeeList } from '../api/payroll.client';
@@ -48,10 +46,7 @@ import { useEmployeePositions } from '../hooks/useEmployeePositions';
 import { usePayrollExport } from '../hooks/usePayrollExport';
 import { applyPayrollEmployeeCreateFinancialProfile } from '../utils/applyPayrollEmployeeCreateFinancialProfile';
 import { applyPayrollEmployeeCreatePersonalData } from '../utils/applyPayrollEmployeeCreatePersonalData';
-import {
-  payrollEmployeeFormValuesToCreateInput,
-  payrollEmployeeFormValuesToUpdateInput,
-} from '../utils/payroll-employee-form-mappers';
+import { payrollEmployeeFormValuesToCreateInput } from '../utils/payroll-employee-form-mappers';
 import { sortPayrollEmployees } from '../utils/sortPayrollEmployees';
 import styles from './PayrollEmployeesListScreen.module.scss';
 
@@ -66,10 +61,6 @@ const CONTRACT_FILTER_OPTIONS = [
 
 function toCreateInput(values: PayrollEmployeeFormValues): CreatePayrollEmployeeInput {
   return payrollEmployeeFormValuesToCreateInput(values);
-}
-
-function toUpdateInput(values: PayrollEmployeeFormValues): UpdatePayrollEmployeeInput {
-  return payrollEmployeeFormValuesToUpdateInput(values);
 }
 
 function getErrorMessage(error: unknown): string {
@@ -116,7 +107,6 @@ export function PayrollEmployeesListScreen(): React.JSX.Element {
   const removeEmployee = useRemovePayrollEmployeeMutation();
 
   const [createOpen, setCreateOpen] = useState(false);
-  const [editingEmployee, setEditingEmployee] = useState<PayrollEmployee | undefined>();
   const [statusChangeEmployee, setStatusChangeEmployee] = useState<PayrollEmployee | undefined>();
   const [sortColumn, setSortColumn] = useState<EmpleadoSortColumnKey | null>(null);
   const [sortDirection, setSortDirection] = useState<EmpleadoSortDirection>('asc');
@@ -167,23 +157,6 @@ export function PayrollEmployeesListScreen(): React.JSX.Element {
       await applyPayrollEmployeeCreateFinancialProfile(employee.id, payload, queryClient);
       toast.success('Empleado creado correctamente');
       setCreateOpen(false);
-    } catch (error) {
-      toast.error(getErrorMessage(error));
-    }
-  };
-
-  const handleEdit = async (payload: PayrollEmployeeCreateWizardPayload) => {
-    if (!editingEmployee) return;
-
-    try {
-      await updateEmployee.mutateAsync({
-        userId: editingEmployee.userId,
-        input: toUpdateInput(payload.employee),
-      });
-      await applyPayrollEmployeeCreatePersonalData(editingEmployee.userId, payload.employee);
-      await applyPayrollEmployeeCreateFinancialProfile(editingEmployee.id, payload, queryClient);
-      toast.success('Empleado actualizado');
-      setEditingEmployee(undefined);
     } catch (error) {
       toast.error(getErrorMessage(error));
     }
@@ -264,8 +237,8 @@ export function PayrollEmployeesListScreen(): React.JSX.Element {
       <EmpleadoPageSection theme={empleadoTheme} divider variant="toolbar">
         {readOnly ? (
           <p className={styles.readOnlyBanner} role="status">
-            Tu rol solo permite consultar empleados. Para crear, editar o desactivar registros,
-            contacta a un administrador.
+            Tu rol solo permite consultar empleados. Para crear o desactivar registros, contacta a
+            un administrador.
           </p>
         ) : null}
         <div className={styles.searchRow}>
@@ -377,8 +350,8 @@ export function PayrollEmployeesListScreen(): React.JSX.Element {
                 hireDate={employee.hireDate}
                 isActive={employee.isActive}
                 theme={empleadoTheme}
-                onView={() => navigate(`/payroll/employees/${employee.userId}/profile`)}
-                onEdit={readOnly ? undefined : () => setEditingEmployee(employee)}
+                onEdit={() => navigate(`/payroll/employees/${employee.userId}/profile`)}
+                editLabel="Ver perfil del empleado"
                 onToggleStatus={readOnly ? undefined : () => setStatusChangeEmployee(employee)}
               />
             ))}
@@ -394,15 +367,6 @@ export function PayrollEmployeesListScreen(): React.JSX.Element {
             theme={empleadoTheme}
             onClose={() => setCreateOpen(false)}
             onSubmit={(values) => void handleCreate(values)}
-          />
-
-          <PayrollEmployeeEditDrawer
-            employee={editingEmployee}
-            open={Boolean(editingEmployee)}
-            submitting={updateEmployee.isPending}
-            theme={empleadoTheme}
-            onClose={() => setEditingEmployee(undefined)}
-            onSubmit={(payload) => void handleEdit(payload)}
           />
 
           <PayrollDeactivateEmployeeDialog

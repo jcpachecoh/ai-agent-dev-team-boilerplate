@@ -2,6 +2,7 @@ import { BadRequestException, ForbiddenException, NotFoundException } from '@nes
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuditService } from '../../audit/service/audit.service';
 import { StorageService } from '../../storage/service/storage.service';
+import { DataConsentService } from '../../data-consent/service/data-consent.service';
 import { EmployeePersonalDataRepository } from '../repository/employee-personal-data.repository';
 import { EmployeePersonalDataService } from '../service/employee-personal-data.service';
 
@@ -72,6 +73,10 @@ describe('EmployeePersonalDataService', () => {
             getPresignedUrl: jest.fn(),
             uploadFile: jest.fn(),
           },
+        },
+        {
+          provide: DataConsentService,
+          useValue: { assertConsentForFeature: jest.fn().mockResolvedValue(undefined) },
         },
       ],
     }).compile();

@@ -643,6 +643,7 @@ model User {
   attendanceLogsCreated                 AttendanceLog[]             @relation("AttendanceLogCreatedBy")
   attendanceObservationsCreated         AttendanceObservation[]     @relation("AttendanceObservationCreatedBy")
   attendanceObservationsUpdated         AttendanceObservation[]     @relation("AttendanceObservationUpdatedBy")
+  overtimeApprovals                     OvertimeApproval[]          @relation("OvertimeApprovalApprover")
 
   @@unique([tenantId, email])
   @@unique([tenantId, cedula])
@@ -733,6 +734,7 @@ model Location {
   productionRecipes         ProductionRecipeLocation[]
   supplierLogisticsCoverage SupplierLogisticsCoverage[]
   turnos                    Turno[]
+  overtimeRequests          OvertimeRequest[]
 
   @@unique([tenantId, name])
   @@unique([tenantId, code])
@@ -815,6 +817,8 @@ model EmployeeDetails {
   medicalLeaves            MedicalLeave[]
   cesantiasLiquidations    CesantiasLiquidation[]
   payrollNovedades         PayrollNovedad[]
+  overtimeRequests         OvertimeRequest[]
+  dataConsents             DataConsent[]
 
   @@index([tenantId])
   @@index([locationId])
@@ -2042,6 +2046,9 @@ model AttendanceLog {
   manualParentLog AttendanceLog?  @relation("AttendanceLogManualParent", fields: [manualParentLogId], references: [id], onDelete: SetNull)
   manualChildLogs AttendanceLog[] @relation("AttendanceLogManualParent")
 
+  payrollNovedadFromSource PayrollNovedad? @relation("PayrollNovedadSourceAttendanceLog")
+  medicalLeaveFromSource   MedicalLeave?   @relation("MedicalLeaveSourceAttendanceLog")
+
   @@index([tenantId, employeeId, workDate])
   @@index([tenantId, locationId, workDate])
   @@index([tenantId, workDate])
@@ -2351,18 +2358,21 @@ model MedicalLeave {
   recoveredAt            DateTime?
   rejectedAt             DateTime?
   rejectionReason        String?
+  sourceAttendanceLogId  String?     @unique
   createdAt              DateTime    @default(now())
   updatedAt              DateTime    @updatedAt
   deletedAt              DateTime?
 
-  employee        EmployeeDetails @relation(fields: [employeeId], references: [id], onDelete: Restrict)
-  supportDocument StorageObject?  @relation(fields: [supportStorageObjectId], references: [id], onDelete: SetNull)
+  employee            EmployeeDetails @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  supportDocument     StorageObject?  @relation(fields: [supportStorageObjectId], references: [id], onDelete: SetNull)
+  sourceAttendanceLog AttendanceLog?  @relation("MedicalLeaveSourceAttendanceLog", fields: [sourceAttendanceLogId], references: [id], onDelete: SetNull)
 
   @@index([tenantId])
   @@index([tenantId, employeeId])
   @@index([tenantId, status])
   @@index([tenantId, deletedAt])
   @@index([tenantId, startDate, endDate])
+  @@index([tenantId, sourceAttendanceLogId])
   @@map("medical_leaves")
 }
 
@@ -2493,12 +2503,14 @@ model PayrollNovedad {
   rrhhDecisionAt         DateTime?
   rejectionReason        String?
   overlapWarningAck      Boolean              @default(false)
+  sourceAttendanceLogId  String?              @unique
   createdAt              DateTime             @default(now())
   updatedAt              DateTime             @updatedAt
   deletedAt              DateTime?
 
-  employee        EmployeeDetails @relation(fields: [employeeId], references: [id], onDelete: Restrict)
-  supportDocument StorageObject?  @relation(fields: [supportStorageObjectId], references: [id], onDelete: SetNull)
+  employee            EmployeeDetails @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  supportDocument     StorageObject?  @relation(fields: [supportStorageObjectId], references: [id], onDelete: SetNull)
+  sourceAttendanceLog AttendanceLog?  @relation("PayrollNovedadSourceAttendanceLog", fields: [sourceAttendanceLogId], references: [id], onDelete: SetNull)
 
   @@index([tenantId])
   @@index([tenantId, employeeId])
@@ -2506,6 +2518,7 @@ model PayrollNovedad {
   @@index([tenantId, deletedAt])
   @@index([tenantId, startDate, endDate])
   @@index([tenantId, type])
+  @@index([tenantId, sourceAttendanceLogId])
   @@map("payroll_novedades")
 }
 
@@ -2522,4 +2535,134 @@ model NovedadTypeConfig {
   @@unique([tenantId, type])
   @@index([tenantId])
   @@map("novedad_type_configs")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CONN-04a — Overtime detection & approval cascade
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum OvertimeRequestType {
+  DETECCION_AUTOMATICA
+  SOLICITUD_ADMINISTRATIVA
+}
+
+enum OvertimeStatus {
+  PENDIENTE_ADMIN
+  PENDIENTE_GERENCIA_OPERACIONES
+  PENDIENTE_GERENCIA_GENERAL
+  APROBADA
+  OBJETADA
+}
+
+enum OvertimeApprovalLevel {
+  ADMINISTRADOR
+  GERENCIA_OPERACIONES
+  GERENCIA_GENERAL
+}
+
+enum OvertimeApprovalDecision {
+  APROBADO
+  OBJETADO
+}
+
+model OvertimeRequest {
+  id                 String              @id @default(cuid())
+  tenantId           String
+  employeeId         String
+  locationId         String
+  type               OvertimeRequestType
+  shiftEndTime       DateTime
+  actualEndTime      DateTime
+  accumulatedMinutes Int
+  status             OvertimeStatus      @default(PENDIENTE_ADMIN)
+  payrollPeriod      String?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  deletedAt          DateTime?
+
+  employee  EmployeeDetails    @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  location  Location           @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  approvals OvertimeApproval[]
+
+  @@unique([tenantId, employeeId, locationId, payrollPeriod, type])
+  @@index([tenantId])
+  @@index([tenantId, employeeId])
+  @@index([tenantId, locationId])
+  @@index([tenantId, status])
+  @@index([tenantId, payrollPeriod])
+  @@index([tenantId, deletedAt])
+  @@map("overtime_requests")
+}
+
+model OvertimeApproval {
+  id                String                    @id @default(cuid())
+  tenantId          String
+  overtimeRequestId String
+  level             OvertimeApprovalLevel
+  approverId        String?
+  decision          OvertimeApprovalDecision?
+  decidedAt         DateTime?
+  comment           String?
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
+
+  overtimeRequest OvertimeRequest @relation(fields: [overtimeRequestId], references: [id], onDelete: Cascade)
+  approver        User?           @relation("OvertimeApprovalApprover", fields: [approverId], references: [id], onDelete: SetNull)
+
+  @@unique([overtimeRequestId, level])
+  @@index([tenantId])
+  @@index([tenantId, overtimeRequestId])
+  @@map("overtime_approvals")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DATA CONSENT — Ley 1581 (biométrico + geolocalización, OS-499/500/505)
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum ConsentType {
+  BIOMETRICO_FACIAL
+  GEOLOCALIZACION
+}
+
+model DataProcessingPolicy {
+  id           String    @id @default(cuid())
+  tenantId     String
+  version      String
+  title        String
+  content      String    @db.Text
+  consentLabel String    @db.Text
+  publishedAt  DateTime
+  isActive     Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+  @@unique([tenantId, version])
+  @@index([tenantId])
+  @@index([tenantId, isActive])
+  @@index([deletedAt])
+  @@map("data_processing_policies")
+}
+
+model DataConsent {
+  id            String      @id @default(cuid())
+  tenantId      String
+  employeeId    String
+  consentType   ConsentType
+  granted       Boolean
+  policyVersion String
+  grantedAt     DateTime?
+  revokedAt     DateTime?
+  ipAddress     String?
+  deviceId      String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  employee EmployeeDetails @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, consentType, policyVersion])
+  @@index([tenantId])
+  @@index([employeeId])
+  @@index([tenantId, employeeId, consentType])
+  @@map("data_consents")
 }

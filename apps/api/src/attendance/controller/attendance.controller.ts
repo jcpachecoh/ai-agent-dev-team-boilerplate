@@ -59,6 +59,8 @@ import { AttendanceCardResponseDto } from './dto/attendance-card.response';
 import { UpsertAttendanceObservationDto } from './dto/upsert-attendance-observation.dto';
 import { AttendanceObservationResponseDto } from './dto/attendance-observation.response';
 import { CreateManualMarkingDto } from './dto/create-manual-marking.dto';
+import { ManualMarkingReasonOptionDto } from './dto/manual-marking-reason-option.dto';
+import { MANUAL_MARKING_REASON_CATALOG } from '../manual-marking-reason.constants';
 import { ListAttendanceCollaboratorsQueryDto } from './dto/list-attendance-collaborators-query.dto';
 import {
   AttendanceCollaboratorSupervisorOptionDto,
@@ -364,6 +366,16 @@ export class AttendanceController {
       user,
       dto,
     ) as unknown as Promise<AttendanceObservationResponseDto>;
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(RolesGuard)
+  @Roles(...PAYROLL_WRITE_ROLES)
+  @Get('manual-marking-reasons')
+  @ApiOperation({ summary: 'Catálogo unificado de motivos de cambio (OS-553 / CONN-05)' })
+  @ApiResponse({ status: 200, type: [ManualMarkingReasonOptionDto] })
+  listManualMarkingReasons(): ManualMarkingReasonOptionDto[] {
+    return MANUAL_MARKING_REASON_CATALOG;
   }
 
   @ApiBearerAuth()

@@ -5,7 +5,7 @@
 .backdrop {
   position: fixed;
   inset: 0;
-  z-index: 50;
+  z-index: 120;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -299,6 +299,23 @@
     color: var(--marking-brand-strong);
     text-decoration: underline;
   }
+}
+
+.supportField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dayAbsenceNote {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--marking-brand-border);
+  border-radius: 6px;
+  background: var(--marking-brand-soft);
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--asistencia-text);
 }
 
 .reasonField {

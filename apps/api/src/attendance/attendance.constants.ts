@@ -24,17 +24,16 @@ export const LATE_ARRIVAL_TOLERANCE_MINUTES = 5;
 export const ATTENDANCE_CARD_MAX_RANGE_MONTHS = 3;
 export const ATTENDANCE_CARD_HISTORY_LIMIT = 1000;
 
-// OS-553 — motivos de cambio permitidos para marcaciones manuales
-// (debe coincidir con ASISTENCIA_TARJETA_MARK_REASONS en packages/ui/src/components/asistencia/shared/asistencia-types.ts)
-export const ATTENDANCE_MANUAL_MARKING_REASONS = [
-  'FORGOT',
-  'DEVICE_FAILURE',
-  'SUPERVISOR_CORRECTION',
-  'SYSTEM_ERROR',
-  'OTHER',
-] as const;
+// OS-553 / CONN-05 — motivos de cambio para marcaciones manuales (catálogo unificado)
+export {
+  MANUAL_MARKING_REASON_CATALOG,
+  MANUAL_MARKING_REASON_CODES,
+} from './manual-marking-reason.constants';
 
-export type AttendanceManualMarkingReason = (typeof ATTENDANCE_MANUAL_MARKING_REASONS)[number];
+/** @deprecated Usar MANUAL_MARKING_REASON_CODES (CONN-05). */
+export { MANUAL_MARKING_REASON_CODES as ATTENDANCE_MANUAL_MARKING_REASONS } from './manual-marking-reason.constants';
+
+export type { ManualMarkingReasonCode as AttendanceManualMarkingReason } from './manual-marking-reason.constants';
 
 // ASIS-UNI — ventana para detectar marcaciones duplicadas (mismo empleado, tipo, source y timestamp)
 export const ATTENDANCE_DUPLICATE_WINDOW_MS = 60_000;

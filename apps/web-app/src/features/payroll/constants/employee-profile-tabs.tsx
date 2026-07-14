@@ -4,8 +4,10 @@ import {
   Landmark,
   PackageCheck,
   Receipt,
+  ShieldAlert,
   ShieldCheck,
   UserRound,
+  Building2,
   type LucideIcon,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
@@ -16,9 +18,10 @@ export type PayrollEmployeeProfileTabId =
   | 'social-security'
   | 'attendance'
   | 'bank-accounts'
-  // | 'taxes'
+  | 'taxes'
   | 'documents'
-  | 'dotaciones';
+  | 'dotaciones'
+  | 'data-consent';
 
 export interface PayrollEmployeeProfileTabDefinition {
   id: PayrollEmployeeProfileTabId;
@@ -64,13 +67,14 @@ export const PAYROLL_EMPLOYEE_PROFILE_TABS: PayrollEmployeeProfileTabDefinition[
     placeholderDescription:
       'Próximamente — cuentas para dispersión de nómina con datos enmascarados.',
   },
-  // {
-  //   id: 'taxes',
-  //   label: 'Impuestos',
-  //   icon: <Building2 {...iconProps} />,
-  //   placeholderTitle: 'Información de impuestos',
-  //   placeholderDescription: 'Próximamente — retención en la fuente y certificados tributarios.',
-  // },
+  {
+    id: 'taxes',
+    label: 'Impuestos',
+    icon: <Building2 {...iconProps} />,
+    placeholderTitle: 'Información de impuestos',
+    placeholderDescription:
+      'NIT/RUT y retención en la fuente calculada según parámetros de Contabilidad.',
+  },
   {
     id: 'payments',
     label: 'Pagos',
@@ -92,6 +96,14 @@ export const PAYROLL_EMPLOYEE_PROFILE_TABS: PayrollEmployeeProfileTabDefinition[
     icon: <PackageCheck {...iconProps} />,
     placeholderTitle: 'Dotaciones',
     placeholderDescription: 'Historial de entregas de calzado y vestido de labor — Art. 230 CST.',
+  },
+  {
+    id: 'data-consent',
+    label: 'Privacidad',
+    icon: <ShieldAlert {...iconProps} />,
+    placeholderTitle: 'Consentimiento de datos',
+    placeholderDescription:
+      'Estado de autorizaciones para datos biométricos y geolocalización (Ley 1581 de 2012).',
   },
 ];
 

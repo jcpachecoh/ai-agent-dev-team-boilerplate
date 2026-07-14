@@ -41,6 +41,8 @@ import { ReportsModule } from './reports/reports.module';
 import { VacationsModule } from './vacations/vacations.module';
 import { PayrollNovedadesModule } from './payroll-novedades/payroll-novedades.module';
 import { LaborLegalParametersModule } from './labor-legal-parameters/labor-legal-parameters.module';
+import { OvertimeModule } from './overtime/overtime.module';
+import { DataConsentModule } from './data-consent/data-consent.module';
 
 @Module({
   imports: [
@@ -79,6 +81,8 @@ import { LaborLegalParametersModule } from './labor-legal-parameters/labor-legal
     VacationsModule,
     PayrollNovedadesModule,
     LaborLegalParametersModule,
+    OvertimeModule,
+    DataConsentModule,
   ],
   controllers: [AppController],
   providers: [

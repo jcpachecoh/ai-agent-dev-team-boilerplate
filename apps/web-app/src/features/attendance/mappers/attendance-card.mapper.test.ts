@@ -88,6 +88,61 @@ describe('buildAttendanceCardRows', () => {
     expect(rows).toHaveLength(91);
     expect(rows.find((row) => row.id === '2026-05-15')?.entryTime).not.toBe('—');
   });
+
+  it('muestra etiqueta de ausencia en entrada y salida cuando no hay marcación', () => {
+    const daySummaries = [
+      {
+        workDate: '2026-06-10',
+        targetMinutes: 0,
+        targetHours: '—',
+        ordinaryMinutes: 0,
+        unworkedMinutes: 0,
+        overtimeMinutes: 0,
+        resolvedKind: 'VACACIONES' as const,
+        shiftName: 'Vacaciones',
+        shiftRange: null,
+        absenceLabel: 'Vacaciones',
+      },
+    ];
+
+    const rows = buildAttendanceCardRows('2026-06-10', '2026-06-10', [], [], daySummaries);
+
+    expect(rows[0].entryTime).toBe('Vacaciones');
+    expect(rows[0].exitTime).toBe('Vacaciones');
+    expect(rows[0].entryTimeIsStatusLabel).toBe(true);
+    expect(rows[0].variant).toBe('rest');
+  });
+
+  it('prioriza hora de marcación sobre etiqueta de ausencia', () => {
+    const daySummaries = [
+      {
+        workDate: '2026-06-10',
+        targetMinutes: 480,
+        targetHours: '08:00:00',
+        ordinaryMinutes: 480,
+        unworkedMinutes: 0,
+        overtimeMinutes: 0,
+        resolvedKind: 'ASSIGNED' as const,
+        shiftName: 'ADM.08:00-17:00',
+        shiftRange: '08:00-17:00',
+        absenceLabel: null,
+      },
+    ];
+    const logs = [
+      makeLog({ id: 'log-entry', eventType: 'ENTRY', source: 'DEVICE' }),
+      makeLog({
+        id: 'log-exit',
+        eventType: 'EXIT',
+        timestamp: '2026-06-10T22:00:00.000Z',
+        source: 'DEVICE',
+      }),
+    ];
+
+    const rows = buildAttendanceCardRows('2026-06-10', '2026-06-10', logs, [], daySummaries);
+
+    expect(rows[0].entryTime).not.toBe('Vacaciones');
+    expect(rows[0].entryTimeIsStatusLabel).toBe(false);
+  });
 });
 
 describe('buildAttendanceCardSummaryMetrics', () => {

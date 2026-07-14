@@ -35,6 +35,7 @@ module.exports = {
   // ── Module path aliases ───────────────────────────────────────────────────
   moduleNameMapper: {
     '^@restopsiq/email(.*)$': '<rootDir>/../../../packages/email/src$1',
+    '^@restopsiq/shared(.*)$': '<rootDir>/../../../packages/shared/src$1',
     '^@restopsiq/types(.*)$': '<rootDir>/../../packages/types/src$1',
     '^@restopsiq/utils(.*)$': '<rootDir>/../../packages/utils/src$1',
   },

@@ -7,8 +7,11 @@ import type { AttendanceActingUser } from '../interfaces/attendance.interfaces';
 import { AttendanceRepository } from '../repository/attendance.repository';
 import { AttendanceCardService } from '../service/attendance-card.service';
 import { AttendanceService } from '../service/attendance.service';
+import { ManualMarkingProvisionService } from '../service/manual-marking-provision.service';
 import { UserLocationsService } from '../../locations/service/user-locations.service';
 import { VacationsService } from '../../vacations/service/vacations.service';
+import { PayrollNovedadesRepository } from '../../payroll-novedades/repository/payroll-novedades.repository';
+import { MedicalLeavesRepository } from '../../medical-leaves/repository/medical-leaves.repository';
 import { VacationType } from '@prisma/client';
 
 const TENANT = 'tenant-1';
@@ -43,8 +46,25 @@ describe('AttendanceCardService', () => {
   let attendanceService: jest.Mocked<AttendanceService>;
   let userLocationsService: jest.Mocked<UserLocationsService>;
   let vacationsService: jest.Mocked<VacationsService>;
+  let payrollNovedadesRepository: jest.Mocked<
+    Pick<PayrollNovedadesRepository, 'findActiveRangesForEmployeeInPeriod'>
+  >;
+  let medicalLeavesRepository: jest.Mocked<
+    Pick<MedicalLeavesRepository, 'findOverlappingForPayrollPeriod'>
+  >;
+  let manualMarkingProvisionService: jest.Mocked<
+    Pick<
+      ManualMarkingProvisionService,
+      'provisionAfterManualMarking' | 'validateBeforeManualMarking'
+    >
+  >;
 
   beforeEach(async () => {
+    manualMarkingProvisionService = {
+      provisionAfterManualMarking: jest.fn().mockResolvedValue({ provisioned: false }),
+      validateBeforeManualMarking: jest.fn().mockResolvedValue(undefined),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AttendanceCardService,
@@ -82,6 +102,22 @@ describe('AttendanceCardService', () => {
             getApprovedDisfruteRanges: jest.fn().mockResolvedValue([]),
           },
         },
+        {
+          provide: PayrollNovedadesRepository,
+          useValue: {
+            findActiveRangesForEmployeeInPeriod: jest.fn().mockResolvedValue([]),
+          },
+        },
+        {
+          provide: MedicalLeavesRepository,
+          useValue: {
+            findOverlappingForPayrollPeriod: jest.fn().mockResolvedValue([]),
+          },
+        },
+        {
+          provide: ManualMarkingProvisionService,
+          useValue: manualMarkingProvisionService,
+        },
       ],
     }).compile();
 
@@ -91,6 +127,8 @@ describe('AttendanceCardService', () => {
     attendanceService = module.get(AttendanceService);
     userLocationsService = module.get(UserLocationsService);
     vacationsService = module.get(VacationsService);
+    payrollNovedadesRepository = module.get(PayrollNovedadesRepository);
+    medicalLeavesRepository = module.get(MedicalLeavesRepository);
   });
 
   describe('getCard', () => {
@@ -145,6 +183,32 @@ describe('AttendanceCardService', () => {
       expect(result.daySummaries[0].resolvedKind).toBe('VACACIONES');
       expect(result.daySummaries[0].unworkedMinutes).toBe(0);
       expect(result.daySummaries[0].shiftName).toBe('Vacaciones');
+      expect(result.daySummaries[0].absenceLabel).toBe('Vacaciones');
+    });
+
+    it('expone absenceLabel para novedad de nómina activa sin marcación', async () => {
+      const employee = makeEmployee();
+      repo.findEmployeeByUserId.mockResolvedValue(employee as never);
+      repo.listHistory.mockResolvedValue([] as never);
+      repo.listObservationsInRange.mockResolvedValue([] as never);
+      payrollNovedadesRepository.findActiveRangesForEmployeeInPeriod.mockResolvedValue([
+        {
+          startDate: new Date('2026-06-10T00:00:00.000Z'),
+          endDate: new Date('2026-06-10T00:00:00.000Z'),
+          type: 'LICENCIA_LUTO',
+        },
+      ] as never);
+
+      const result = await service.getCard(
+        'user-1',
+        TENANT,
+        '2026-06-10',
+        '2026-06-10',
+        makeActingUser(),
+      );
+
+      expect(result.daySummaries[0].absenceLabel).toBe('Licencia de luto');
+      expect(result.daySummaries[0].shiftName).toBe('Licencia de luto');
     });
 
     it('empleado fuera de tenant falla', async () => {
@@ -278,7 +342,7 @@ describe('AttendanceCardService', () => {
       workDate: '2026-06-10',
       eventType: AttendanceEventType.ENTRY,
       timestamp: '2026-06-10T08:00:00.000Z',
-      reason: 'Olvidó marcar entrada',
+      reason: 'CORRECCION_MARCACION',
     };
 
     it('crea marcación manual ENTRY con source=MANUAL', async () => {
@@ -296,8 +360,15 @@ describe('AttendanceCardService', () => {
           eventType: AttendanceEventType.ENTRY,
           source: 'MANUAL',
           createdByUserId: 'actor-1',
-          manualReason: 'Olvidó marcar entrada',
+          manualReason: 'CORRECCION_MARCACION',
           manualParentLogId: null,
+        }),
+      );
+      expect(manualMarkingProvisionService.provisionAfterManualMarking).toHaveBeenCalledWith(
+        expect.objectContaining({
+          tenantId: TENANT,
+          actorUserId: 'actor-1',
+          reason: 'CORRECCION_MARCACION',
         }),
       );
       expect(audit.log).toHaveBeenCalledWith(
@@ -406,6 +477,32 @@ describe('AttendanceCardService', () => {
       await expect(
         service.createManualMarking('user-x', TENANT, makeActingUser(), baseInput),
       ).rejects.toThrow(NotFoundException);
+    });
+
+    it('motivo de nómina registra ausencia del día sin crear AttendanceLog', async () => {
+      const employee = makeEmployee();
+      repo.findEmployeeByUserId.mockResolvedValue(employee as never);
+      manualMarkingProvisionService.provisionAfterManualMarking.mockResolvedValue({
+        provisioned: true,
+        payrollNovedadId: 'nov-1',
+      });
+
+      await service.createManualMarking('user-1', TENANT, makeActingUser({ roleCode: 'NOMINA' }), {
+        workDate: '2026-06-10',
+        reason: 'LICENCIA_LUTO',
+        supportStorageObjectId: 'storage-1',
+      });
+
+      expect(attendanceService.registerEvent).not.toHaveBeenCalled();
+      expect(manualMarkingProvisionService.provisionAfterManualMarking).toHaveBeenCalledWith(
+        expect.objectContaining({
+          reason: 'LICENCIA_LUTO',
+          supportStorageObjectId: 'storage-1',
+        }),
+      );
+      expect(audit.log).toHaveBeenCalledWith(
+        expect.objectContaining({ entityType: 'PayrollNovedad', entityId: 'nov-1' }),
+      );
     });
   });
 

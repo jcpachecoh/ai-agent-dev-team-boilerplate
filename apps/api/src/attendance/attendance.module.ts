@@ -7,6 +7,10 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { TurnosModule } from '../turnos/turnos.module';
 import { VacationsModule } from '../vacations/vacations.module';
 import { LaborLegalParametersModule } from '../labor-legal-parameters/labor-legal-parameters.module';
+import { OvertimeModule } from '../overtime/overtime.module';
+import { MedicalLeavesModule } from '../medical-leaves/medical-leaves.module';
+import { PayrollNovedadesModule } from '../payroll-novedades/payroll-novedades.module';
+import { DataConsentModule } from '../data-consent/data-consent.module';
 import { MobileAttendanceRepository } from './mobile/repository/mobile-attendance.repository';
 import { MobileAttendanceResolver } from './mobile/resolver/mobile-attendance.resolver';
 import { MobileAttendanceService } from './mobile/service/mobile-attendance.service';
@@ -22,6 +26,7 @@ import { AttendanceCollaboratorsExcelService } from './service/attendance-collab
 import { AttendanceCollaboratorsPdfService } from './service/attendance-collaborators-pdf.service';
 import { AttendanceRepository } from './repository/attendance.repository';
 import { AttendanceCollaboratorsRepository } from './repository/attendance-collaborators.repository';
+import { ManualMarkingProvisionService } from './service/manual-marking-provision.service';
 
 @Module({
   imports: [
@@ -33,11 +38,16 @@ import { AttendanceCollaboratorsRepository } from './repository/attendance-colla
     TurnosModule,
     VacationsModule,
     LaborLegalParametersModule,
+    OvertimeModule,
+    PayrollNovedadesModule,
+    MedicalLeavesModule,
+    DataConsentModule,
   ],
   controllers: [AttendanceController],
   providers: [
     AttendanceService,
     AttendanceCardService,
+    ManualMarkingProvisionService,
     AttendanceMonitorSummaryService,
     AttendanceControlPanelService,
     AttendanceComparisonService,

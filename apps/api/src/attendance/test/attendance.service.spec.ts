@@ -23,6 +23,7 @@ import { ShiftResolutionService } from '../../turnos/service/shift-resolution.se
 import { VacationsService } from '../../vacations/service/vacations.service';
 import { VACATION_MARKING_BLOCKED_MESSAGE } from '../service/vacation-attendance.guard';
 import { LaborLegalParametersService } from '../../labor-legal-parameters/service/labor-legal-parameters.service';
+import { OvertimeDetectionService } from '../../overtime/service/overtime-detection.service';
 
 const shiftResolutionMock = {
   resolveForDay: jest.fn().mockResolvedValue({ kind: 'NONE', targetMinutes: 0 }),
@@ -159,6 +160,10 @@ describe('AttendanceService', () => {
         { provide: UserLocationsService, useValue: userLocationsServiceMock },
         { provide: VacationsService, useValue: vacationsServiceMock },
         { provide: LaborLegalParametersService, useValue: legalParametersServiceMock },
+        {
+          provide: OvertimeDetectionService,
+          useValue: { onExitRegistered: jest.fn().mockResolvedValue(undefined) },
+        },
       ],
     }).compile();
 

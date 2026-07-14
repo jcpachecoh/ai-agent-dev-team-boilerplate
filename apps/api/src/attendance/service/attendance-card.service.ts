@@ -5,7 +5,12 @@ import {
   NotFoundException,
   Optional,
 } from '@nestjs/common';
-import { AttendanceLog, AttendanceLogSource, AttendanceObservation } from '@prisma/client';
+import {
+  AttendanceLog,
+  AttendanceLogSource,
+  AttendanceObservation,
+  AttendanceEventType,
+} from '@prisma/client';
 import { AuditService } from '../../audit/service/audit.service';
 import { ShiftResolutionService } from '../../turnos/service/shift-resolution.service';
 import { ATTENDANCE_CARD_HISTORY_LIMIT } from '../attendance.constants';
@@ -20,12 +25,22 @@ import { UserLocationsService } from '../../locations/service/user-locations.ser
 import { AttendanceRepository, normalizeWorkDate } from '../repository/attendance.repository';
 import { AttendanceService } from './attendance.service';
 import { VacationsService } from '../../vacations/service/vacations.service';
+import { PayrollNovedadesRepository } from '../../payroll-novedades/repository/payroll-novedades.repository';
+import { MedicalLeavesRepository } from '../../medical-leaves/repository/medical-leaves.repository';
 import { buildVacationDateKeySet } from './vacation-attendance.guard';
 import {
   isCardDateRangeWithinLimit,
   parseCalendarDate,
 } from '../utils/attendance-calculation.util';
 import { buildAttendanceCardDaySummaries } from '../utils/attendance-card-day-summary.util';
+import {
+  buildAttendanceCardAbsenceLabelMap,
+  mapMedicalLeaveRangesToAbsenceRanges,
+  mapPayrollNovedadRangesToAbsenceRanges,
+  mergeAttendanceCardAbsenceLabelMaps,
+} from '../utils/attendance-card-absence-labels.util';
+import { resolveManualMarkingReason } from '../interfaces/manual-marking-provision.interfaces';
+import { ManualMarkingProvisionService } from './manual-marking-provision.service';
 
 @Injectable()
 export class AttendanceCardService {
@@ -35,6 +50,9 @@ export class AttendanceCardService {
     private readonly attendanceService: AttendanceService,
     private readonly shiftResolutionService: ShiftResolutionService,
     private readonly userLocationsService: UserLocationsService,
+    private readonly manualMarkingProvisionService: ManualMarkingProvisionService,
+    private readonly payrollNovedadesRepository: PayrollNovedadesRepository,
+    private readonly medicalLeavesRepository: MedicalLeavesRepository,
     @Optional() private readonly vacationsService?: VacationsService,
   ) {}
 
@@ -51,27 +69,53 @@ export class AttendanceCardService {
     const to = parseCalendarDate(dateTo);
     this.assertDateRange(from, to);
 
-    const [logs, observations, vacationRanges] = await Promise.all([
-      this.attendanceRepository.listHistory({
-        tenantId,
-        employeeId: employee.id,
-        dateFrom: from,
-        dateTo: to,
-        limit: ATTENDANCE_CARD_HISTORY_LIMIT,
-      }),
-      this.attendanceRepository.listObservationsInRange(tenantId, employee.id, from, to),
-      this.vacationsService
-        ? this.vacationsService.getApprovedDisfruteRanges(tenantId, employee.id, from, to)
-        : Promise.resolve([]),
-    ]);
+    const [logs, observations, vacationRanges, payrollNovedadRanges, medicalLeaveRanges] =
+      await Promise.all([
+        this.attendanceRepository.listHistory({
+          tenantId,
+          employeeId: employee.id,
+          dateFrom: from,
+          dateTo: to,
+          limit: ATTENDANCE_CARD_HISTORY_LIMIT,
+        }),
+        this.attendanceRepository.listObservationsInRange(tenantId, employee.id, from, to),
+        this.vacationsService
+          ? this.vacationsService.getApprovedDisfruteRanges(tenantId, employee.id, from, to)
+          : Promise.resolve([]),
+        this.payrollNovedadesRepository.findActiveRangesForEmployeeInPeriod(
+          tenantId,
+          employee.id,
+          from,
+          to,
+        ),
+        this.medicalLeavesRepository.findOverlappingForPayrollPeriod(
+          tenantId,
+          employee.id,
+          from,
+          to,
+        ),
+      ]);
 
     const vacationDateKeys = buildVacationDateKeySet(vacationRanges, from, to);
+    const absenceLabelsByDate = mergeAttendanceCardAbsenceLabelMaps(
+      buildAttendanceCardAbsenceLabelMap(
+        from,
+        to,
+        mapPayrollNovedadRangesToAbsenceRanges(payrollNovedadRanges),
+      ),
+      buildAttendanceCardAbsenceLabelMap(
+        from,
+        to,
+        mapMedicalLeaveRangesToAbsenceRanges(medicalLeaveRanges),
+      ),
+    );
 
     const daySummaries = await buildAttendanceCardDaySummaries({
       dateFrom: from,
       dateTo: to,
       logs,
       vacationDateKeys,
+      absenceLabelsByDate,
       resolveForDay: (workDate) =>
         this.shiftResolutionService.resolveForDay({
           tenantId,
@@ -132,6 +176,68 @@ export class AttendanceCardService {
     await this.assertEmployeeLocationAllowed(tenantId, actingUser, employee.locationId);
 
     const workDate = parseCalendarDate(input.workDate);
+    const resolved = resolveManualMarkingReason(input.reason);
+    if (!resolved) {
+      throw new BadRequestException('Motivo de marcación inválido');
+    }
+
+    await this.manualMarkingProvisionService.validateBeforeManualMarking(
+      tenantId,
+      actingUser.roleCode,
+      input.reason,
+      input.supportStorageObjectId,
+    );
+
+    if (resolved.target !== 'ATTENDANCE_ONLY') {
+      const provisioned = await this.manualMarkingProvisionService.provisionAfterManualMarking({
+        tenantId,
+        actorUserId: actingUser.sub,
+        actorRoleCode: actingUser.roleCode,
+        employeeId: employee.id,
+        reason: input.reason,
+        workDate,
+        supportStorageObjectId: input.supportStorageObjectId,
+      });
+
+      const entityId = provisioned.payrollNovedadId ?? provisioned.medicalLeaveId ?? '';
+      const entityType = provisioned.payrollNovedadId ? 'PayrollNovedad' : 'MedicalLeave';
+
+      await this.auditService.log({
+        tenantId,
+        action: 'CREATE',
+        entityType,
+        entityId,
+        actorUserId: actingUser.sub,
+        oldValue: null,
+        newValue: {
+          reason: input.reason,
+          workDate: input.workDate,
+          provisioned,
+        },
+        payload: { reason: input.reason, workDate: input.workDate },
+      });
+
+      return {
+        id: entityId,
+        employeeId: employee.id,
+        locationId: employee.locationId,
+        eventType: AttendanceEventType.ENTRY,
+        timestamp: workDate,
+        workDate,
+        source: AttendanceLogSource.MANUAL,
+        manualReason: input.reason,
+        manualParentLogId: null,
+        createdByUserId: actingUser.sub,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        deletedAt: null,
+      } as unknown as AttendanceLog;
+    }
+
+    if (!input.eventType || !input.timestamp) {
+      throw new BadRequestException('La corrección de marcación requiere tipo y fecha/hora');
+    }
+
     const timestamp = new Date(input.timestamp);
     if (Number.isNaN(timestamp.getTime())) {
       throw new BadRequestException('timestamp inválido');
@@ -171,6 +277,17 @@ export class AttendanceCardService {
       oldValue: parentLog ? this.serializeLog(parentLog) : null,
       newValue: this.serializeLog(created),
       payload: { reason: input.reason, parentLogId: input.parentLogId ?? null },
+    });
+
+    await this.manualMarkingProvisionService.provisionAfterManualMarking({
+      tenantId,
+      actorUserId: actingUser.sub,
+      actorRoleCode: actingUser.roleCode,
+      employeeId: employee.id,
+      attendanceLogId: created.id,
+      reason: input.reason,
+      workDate,
+      supportStorageObjectId: input.supportStorageObjectId,
     });
 
     return created;

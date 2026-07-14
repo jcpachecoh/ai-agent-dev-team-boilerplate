@@ -1,5 +1,6 @@
 import { Info, Lock, Trash2, X } from 'lucide-react';
-import type { JSX } from 'react';
+import { type JSX, type ReactNode, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 import type {
   AsistenciaTarjetaMarkDraft,
@@ -8,6 +9,7 @@ import type {
   AsistenciaTheme,
 } from '../shared/asistencia-types';
 import { ASISTENCIA_TARJETA_MARK_REASONS } from '../shared/asistencia-types';
+import { RecetaFilterSelect } from '../../receta/receta-filter-select/RecetaFilterSelect';
 import styles from './AsistenciaTarjetaMarkingModal.module.scss';
 
 export interface AsistenciaTarjetaExistingMark {
@@ -38,6 +40,8 @@ export interface AsistenciaTarjetaMarkingModalProps {
   changeReason: string;
   reasonOptions?: AsistenciaTarjetaMarkReasonOption[];
   existingMarks?: AsistenciaTarjetaExistingMark[];
+  supportDocumentSlot?: ReactNode;
+  showMarkTimeFields?: boolean;
   theme?: AsistenciaTheme;
   onClose: () => void;
   onReset: () => void;
@@ -57,6 +61,8 @@ export function AsistenciaTarjetaMarkingModal({
   changeReason,
   reasonOptions = ASISTENCIA_TARJETA_MARK_REASONS,
   existingMarks = [],
+  supportDocumentSlot,
+  showMarkTimeFields = true,
   theme = 'dark',
   onClose,
   onReset,
@@ -68,9 +74,18 @@ export function AsistenciaTarjetaMarkingModal({
   onChangeReasonChange,
   onDeleteExistingMark,
 }: AsistenciaTarjetaMarkingModalProps): JSX.Element | null {
+  useEffect(() => {
+    if (!open) return undefined;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [open]);
+
   if (!open) return null;
 
-  return (
+  const modal = (
     <div className={styles.backdrop} role="presentation" onClick={onClose}>
       <div
         className={[styles.dialog, styles[`theme--${theme}`]].join(' ')}
@@ -105,6 +120,23 @@ export function AsistenciaTarjetaMarkingModal({
                 Marcas está habilitado en el lugar de trabajo.
               </p>
             </div>
+          </div>
+
+          <div className={styles.reasonField}>
+            <label className={styles.reasonLabel} htmlFor="mark-change-reason">
+              Motivo de cambio:
+            </label>
+            <RecetaFilterSelect
+              id="mark-change-reason"
+              className={styles.reasonSelect}
+              options={reasonOptions}
+              value={changeReason}
+              onChange={onChangeReasonChange}
+              theme={theme}
+              size="md"
+              placeholder="Seleccione motivo de cambio…"
+              aria-label="Motivo de cambio"
+            />
           </div>
 
           {existingMarks.length > 0 ? (
@@ -151,92 +183,87 @@ export function AsistenciaTarjetaMarkingModal({
             </div>
           ) : null}
 
-          <div className={styles.markTable}>
-            <div className={styles.markHeader}>
-              <span>Entrada</span>
-              <span>Salida</span>
-              <span className={styles.markHeaderAction} aria-hidden />
-            </div>
-
-            {marks.length === 0 ? (
-              <p className={styles.emptyMarks}>No hay marcas manuales para este día.</p>
-            ) : (
-              marks.map((mark) => (
-                <div key={mark.id} className={styles.markRow}>
-                  <div className={styles.markCell}>
-                    {mark.type === 'ENTRY' ? (
-                      <input
-                        type="datetime-local"
-                        step={1}
-                        className={styles.datetimeInput}
-                        value={mark.datetimeLocal}
-                        onChange={(event) => onMarkDatetimeChange(mark.id, event.target.value)}
-                        aria-label="Fecha y hora de entrada"
-                      />
-                    ) : (
-                      <button
-                        type="button"
-                        className={styles.useColumnButton}
-                        onClick={() => onMarkTypeChange(mark.id, 'ENTRY')}
-                      >
-                        Usar columna Entrada
-                      </button>
-                    )}
-                  </div>
-                  <div className={styles.markCell}>
-                    {mark.type === 'EXIT' ? (
-                      <input
-                        type="datetime-local"
-                        step={1}
-                        className={styles.datetimeInput}
-                        value={mark.datetimeLocal}
-                        onChange={(event) => onMarkDatetimeChange(mark.id, event.target.value)}
-                        aria-label="Fecha y hora de salida"
-                      />
-                    ) : (
-                      <button
-                        type="button"
-                        className={styles.useColumnButton}
-                        onClick={() => onMarkTypeChange(mark.id, 'EXIT')}
-                      >
-                        Usar columna Salida
-                      </button>
-                    )}
-                  </div>
-                  <button
-                    type="button"
-                    className={styles.deleteButton}
-                    onClick={() => onRemoveMark(mark.id)}
-                    aria-label="Eliminar marca"
-                  >
-                    <Trash2 aria-hidden />
-                  </button>
+          {showMarkTimeFields ? (
+            <>
+              <div className={styles.markTable}>
+                <div className={styles.markHeader}>
+                  <span>Entrada</span>
+                  <span>Salida</span>
+                  <span className={styles.markHeaderAction} aria-hidden />
                 </div>
-              ))
-            )}
-          </div>
 
-          <button type="button" className={styles.addMarkButton} onClick={onAddMark}>
-            Añadir marca
-          </button>
+                {marks.length === 0 ? (
+                  <p className={styles.emptyMarks}>No hay marcas manuales para este día.</p>
+                ) : (
+                  marks.map((mark) => (
+                    <div key={mark.id} className={styles.markRow}>
+                      <div className={styles.markCell}>
+                        {mark.type === 'ENTRY' ? (
+                          <input
+                            type="datetime-local"
+                            step={1}
+                            className={styles.datetimeInput}
+                            value={mark.datetimeLocal}
+                            onChange={(event) => onMarkDatetimeChange(mark.id, event.target.value)}
+                            aria-label="Fecha y hora de entrada"
+                          />
+                        ) : (
+                          <button
+                            type="button"
+                            className={styles.useColumnButton}
+                            onClick={() => onMarkTypeChange(mark.id, 'ENTRY')}
+                          >
+                            Usar columna Entrada
+                          </button>
+                        )}
+                      </div>
+                      <div className={styles.markCell}>
+                        {mark.type === 'EXIT' ? (
+                          <input
+                            type="datetime-local"
+                            step={1}
+                            className={styles.datetimeInput}
+                            value={mark.datetimeLocal}
+                            onChange={(event) => onMarkDatetimeChange(mark.id, event.target.value)}
+                            aria-label="Fecha y hora de salida"
+                          />
+                        ) : (
+                          <button
+                            type="button"
+                            className={styles.useColumnButton}
+                            onClick={() => onMarkTypeChange(mark.id, 'EXIT')}
+                          >
+                            Usar columna Salida
+                          </button>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        className={styles.deleteButton}
+                        onClick={() => onRemoveMark(mark.id)}
+                        aria-label="Eliminar marca"
+                      >
+                        <Trash2 aria-hidden />
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
 
-          <div className={styles.reasonField}>
-            <label className={styles.reasonLabel} htmlFor="mark-change-reason">
-              Motivo de cambio:
-            </label>
-            <select
-              id="mark-change-reason"
-              className={styles.reasonSelect}
-              value={changeReason}
-              onChange={(event) => onChangeReasonChange(event.target.value)}
-            >
-              {reasonOptions.map((option) => (
-                <option key={option.value || 'empty'} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
+              <button type="button" className={styles.addMarkButton} onClick={onAddMark}>
+                Añadir marca
+              </button>
+            </>
+          ) : changeReason ? (
+            <p className={styles.dayAbsenceNote} role="note">
+              Se registrará ausencia del día completo ({dateLabel}). No se requiere hora de entrada
+              ni salida.
+            </p>
+          ) : null}
+
+          {supportDocumentSlot ? (
+            <div className={styles.supportField}>{supportDocumentSlot}</div>
+          ) : null}
         </div>
 
         <footer className={styles.footer}>
@@ -255,6 +282,12 @@ export function AsistenciaTarjetaMarkingModal({
       </div>
     </div>
   );
+
+  if (typeof document === 'undefined') {
+    return modal;
+  }
+
+  return createPortal(modal, document.body);
 }
 
 export default AsistenciaTarjetaMarkingModal;

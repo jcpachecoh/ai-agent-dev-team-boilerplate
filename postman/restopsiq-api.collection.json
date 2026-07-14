@@ -508,6 +508,48 @@
       "description": "Global OPERATOR JWT — folder 11 Login Global Operator"
     },
     {
+      "key": "accessTokenManager",
+      "value": "",
+      "type": "string",
+      "description": "CONN-04a — MANAGER con cargo ADMINISTRADOR (pos-pdl-001) y UserLocation en la sede de la solicitud"
+    },
+    {
+      "key": "accessTokenOvertimeOps",
+      "value": "",
+      "type": "string",
+      "description": "CONN-04a — MANAGER con cargo DIRECTOR DE OPERACIONES (pos-pdl-003)"
+    },
+    {
+      "key": "accessTokenOvertimeGG",
+      "value": "",
+      "type": "string",
+      "description": "CONN-04a — MANAGER con cargo GERENTE GENERAL (pos-pdl-007)"
+    },
+    {
+      "key": "overtimeRequestId",
+      "value": "",
+      "type": "string",
+      "description": "CONN-04a — capturado de GET Inbox o GET Detail"
+    },
+    {
+      "key": "overtimePayrollPeriod",
+      "value": "2026-07",
+      "type": "string",
+      "description": "CONN-04a — período nómina YYYY-MM para inbox/summary"
+    },
+    {
+      "key": "dataConsentPolicyVersion",
+      "value": "2026.07.1",
+      "type": "string",
+      "description": "Ley 1581 — versión vigente de política; sobrescrita por GET activeDataProcessingPolicy"
+    },
+    {
+      "key": "dataConsentEmployeeUserId",
+      "value": "11111111-0000-0000-0000-000000000005",
+      "type": "string",
+      "description": "Ley 1581 — global User.id del empleado (mes-operator seed); capturado en Me OPERATOR"
+    },
+    {
       "key": "authLockoutEmail",
       "value": "",
       "type": "string",
@@ -12053,6 +12095,185 @@
       ]
     },
     {
+      "name": "CONN-05 Unified Novedades Motivos",
+      "description": "Catálogo unificado OS-553/CONN-05: motivos de marcación manual alineados con NOM-14/NOM-13. Provisionamiento automático de PayrollNovedad o MedicalLeave según motivo. Requiere token con PAYROLL_WRITE_ROLES y rol NOMINA/OWNER/SUPER_ADMIN para motivos de nómina.",
+      "item": [
+        {
+          "name": "GET Manual Marking Reasons",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/manual-marking-reasons",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "manual-marking-reasons"]
+            },
+            "description": "Retorna ManualMarkingReasonOption[] (CONN-05 catálogo shared)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('catalog: 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('catalog includes CORRECCION_MARCACION', () => {",
+                  "    pm.expect(body.some((o) => o.code === 'CORRECCION_MARCACION')).to.be.true;",
+                  "});",
+                  "pm.test('catalog includes PERMISO_REMUNERADO', () => {",
+                  "    pm.expect(body.some((o) => o.code === 'PERMISO_REMUNERADO')).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Manual Marking — CORRECCION_MARCACION (sin novedad)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workDate\": \"2026-02-10\",\n  \"eventType\": \"ENTRY\",\n  \"timestamp\": \"2026-02-10T08:00:00.000Z\",\n  \"reason\": \"CORRECCION_MARCACION\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/employees/{{attendanceUserId}}/manual-markings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "employees", "{{attendanceUserId}}", "manual-markings"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('correccion: 201 sin side-effect nómina', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code === 201) {",
+                  "    pm.environment.set('conn05CorrectionLogId', pm.response.json().id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Manual Marking — PERMISO_REMUNERADO (provisiona novedad)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workDate\": \"2026-02-11\",\n  \"eventType\": \"ENTRY\",\n  \"timestamp\": \"2026-02-11T08:00:00.000Z\",\n  \"reason\": \"PERMISO_REMUNERADO\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/employees/{{attendanceUserId}}/manual-markings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "employees", "{{attendanceUserId}}", "manual-markings"]
+            },
+            "description": "Requiere actor NOMINA/OWNER/SUPER_ADMIN. Crea PayrollNovedad con sourceAttendanceLogId."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('permiso remunerado: 201', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code === 201) {",
+                  "    pm.environment.set('conn05NovedadLogId', pm.response.json().id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Manual Marking — INCAPACIDAD_COMUN (provisiona incapacidad)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workDate\": \"2026-02-12\",\n  \"eventType\": \"ENTRY\",\n  \"timestamp\": \"2026-02-12T08:00:00.000Z\",\n  \"reason\": \"INCAPACIDAD_COMUN\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/employees/{{attendanceUserId}}/manual-markings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "employees", "{{attendanceUserId}}", "manual-markings"]
+            },
+            "description": "Requiere actor NOMINA/OWNER/SUPER_ADMIN. Crea MedicalLeave con origin COMUN."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('incapacidad comun: 201', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code === 201) {",
+                  "    pm.environment.set('conn05MedicalLeaveLogId', pm.response.json().id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Manual Marking — reason inválido (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workDate\": \"2026-02-10\",\n  \"eventType\": \"ENTRY\",\n  \"timestamp\": \"2026-02-10T08:00:00.000Z\",\n  \"reason\": \"FORGOT\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/employees/{{attendanceUserId}}/manual-markings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "employees", "{{attendanceUserId}}", "manual-markings"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('reason legacy FORGOT -> 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "OS-550 Attendance Collaborators",
       "description": "Listado de Colaboradores de Asistencia con búsqueda (case+accent insensitive), filtros (positionId/contractType/area/locationId/supervisorUserId/laborClassification), scoping de sede real en backend (OWNER/SUPER_ADMIN/NOMINA tenant-wide; SUPERVISOR/MANAGER solo UserLocation) y paginación real con total. Requiere 'NOM-03 Attendance' ejecutado antes (captura attendanceUserId/attendanceLocationId). Solo lectura: PAYROLL_MODULE_ROLES (OWNER, SUPER_ADMIN, SUPERVISOR, MANAGER, NOMINA). OS-550 follow-up agrega: Portal trabajador (PATCH, solo OWNER/SUPER_ADMIN), exportaciones Excel/PDF del dataset filtrado completo (GET .../export, mismos roles que el listado), envío por correo con adjunto (POST .../export/email), e historial mínimo de auditoría (GET .../:employeeDetailsId/audit, solo OWNER/SUPER_ADMIN). Portal real de autoservicio y módulo avanzado de auditoría quedan fuera de alcance (ver tasks/attendance/OS-550-attendance-collaborators.md).",
       "item": [
@@ -13889,6 +14110,425 @@
       ]
     },
     {
+      "name": "Ley 1581 — Data Consent (biométrico + geo)",
+      "description": "Consentimiento informado Ley 1581 — datos biométricos faciales y geolocalización (OS-499/500/505, app móvil OS-555).\n\n**Prerrequisitos:** API en :3001, migración `20260710160000_data_consent_ley1581`, política sembrada (`pnpm prisma db seed` o seed `data-processing-policy`).\n\n**Variables:** `{{graphqlUrl}}`, `{{tenantId}}`, `{{password}}`, `{{dataConsentPolicyVersion}}` (default `2026.07.1`), `{{dataConsentEmployeeUserId}}` (userId del empleado; capturado en Me OPERATOR).\n\n**Orden:** Login OPERATOR → Login OWNER → Login SUPER_ADMIN → Política vigente → Estado propio → Consulta RRHH → Otorgar → Revocar → Listar políticas (SuperAdmin).\n\n**Notas:** `grantDataConsent` solo el propio empleado. `revokeDataConsent` solo el propio empleado. `publishDataProcessingPolicy` solo OWNER/SUPER_ADMIN.",
+      "item": [
+        {
+          "name": "Login OPERATOR (empleado)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation Login($input: GlobalLoginInput!) { login(input: $input) { accessToken refreshToken } }\", \"variables\": {\"input\": {\"email\": \"mes-operator@palos-de-lena.dev\", \"password\": \"{{password}}\"}}}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{graphqlUrl}}",
+            "auth": { "type": "noauth" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('No GraphQL errors', () => pm.expect(pm.response.json().errors).to.be.undefined);",
+                  "const login = pm.response.json().data.login;",
+                  "if (login?.accessToken) pm.collectionVariables.set('accessTokenOperator', login.accessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login OWNER (RRHH)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation Login($input: GlobalLoginInput!) { login(input: $input) { accessToken refreshToken } }\", \"variables\": {\"input\": {\"email\": \"mes-owner@palos-de-lena.dev\", \"password\": \"{{password}}\"}}}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{graphqlUrl}}",
+            "auth": { "type": "noauth" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const login = pm.response.json().data.login;",
+                  "if (login?.accessToken) pm.collectionVariables.set('accessTokenOwner', login.accessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login SUPER_ADMIN",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation Login($input: GlobalLoginInput!) { login(input: $input) { accessToken refreshToken } }\", \"variables\": {\"input\": {\"email\": \"superadmin@opssynk.dev\", \"password\": \"{{password}}\"}}}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{graphqlUrl}}",
+            "auth": { "type": "noauth" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const login = pm.response.json().data.login;",
+                  "if (login?.accessToken) pm.collectionVariables.set('accessTokenSuperAdmin', login.accessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Me OPERATOR — capturar userId",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenOperator}}" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"query Me { me { id email roleCode } }\"}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{graphqlUrl}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const me = pm.response.json().data?.me;",
+                  "pm.test('me.id presente', () => pm.expect(me?.id).to.be.a('string'));",
+                  "if (me?.id) {",
+                  "  pm.collectionVariables.set('dataConsentEmployeeUserId', me.id);",
+                  "  try { pm.environment.set('dataConsentEmployeeUserId', me.id); } catch(e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Política vigente — activeDataProcessingPolicy",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenOperator}}" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"query ActiveDataProcessingPolicy { activeDataProcessingPolicy { id tenantId version title content consentLabel publishedAt isActive } }\"}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{graphqlUrl}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('No GraphQL errors', () => pm.expect(pm.response.json().errors).to.be.undefined);",
+                  "const policy = pm.response.json().data?.activeDataProcessingPolicy;",
+                  "pm.test('Política activa', () => { pm.expect(policy.isActive).to.eql(true); });",
+                  "if (policy?.version) {",
+                  "  pm.collectionVariables.set('dataConsentPolicyVersion', policy.version);",
+                  "  try { pm.environment.set('dataConsentPolicyVersion', policy.version); } catch(e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Mi estado — myDataConsentStatus",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenOperator}}" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"query MyDataConsentStatus { myDataConsentStatus { activePolicyVersion biometricEnrolled alternateMethodAvailable consents { consentType granted policyVersion grantedAt revokedAt canUseFeature } policy { version title } } }\"}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{graphqlUrl}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('No GraphQL errors', () => pm.expect(pm.response.json().errors).to.be.undefined);",
+                  "const summary = pm.response.json().data?.myDataConsentStatus;",
+                  "pm.test('consents es array de 2 tipos', () => pm.expect(summary.consents).to.have.lengthOf(2));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Consentimientos empleado (OWNER/RRHH)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenOwner}}" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"query EmployeeDataConsents($userId: ID!) { employeeDataConsents(userId: $userId) { activePolicyVersion biometricEnrolled alternateMethodAvailable consents { consentType granted policyVersion grantedAt revokedAt canUseFeature } policy { version title } } }\", \"variables\": {\"userId\": \"{{dataConsentEmployeeUserId}}\"}}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{graphqlUrl}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('No GraphQL errors', () => pm.expect(pm.response.json().errors).to.be.undefined);",
+                  "pm.test('employeeDataConsents presente', () => {",
+                  "  pm.expect(pm.response.json().data.employeeDataConsents).to.be.an('object');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Otorgar consentimiento — grantDataConsent",
+          "description": "Otorga BIOMETRICO_FACIAL + GEOLOCALIZACION para la versión vigente. Requiere accepted: true (checkbox explícito en app móvil).",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenOperator}}" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation GrantDataConsent($input: GrantDataConsentInput!) { grantDataConsent(input: $input) { id tenantId employeeId consentType granted policyVersion grantedAt revokedAt } }\",\n  \"variables\": {\n    \"input\": {\n      \"policyVersion\": \"{{dataConsentPolicyVersion}}\",\n      \"consentTypes\": [\"BIOMETRICO_FACIAL\", \"GEOLOCALIZACION\"],\n      \"accepted\": true,\n      \"deviceId\": \"postman-device-001\"\n    }\n  }\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{graphqlUrl}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('No GraphQL errors', () => pm.expect(pm.response.json().errors).to.be.undefined);",
+                  "const rows = pm.response.json().data?.grantDataConsent;",
+                  "pm.test('2 consentimientos otorgados', () => pm.expect(rows).to.have.lengthOf(2));",
+                  "pm.test('granted = true', () => rows.forEach(r => pm.expect(r.granted).to.eql(true)));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Revocar — BIOMETRICO_FACIAL",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenOperator}}" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation RevokeDataConsent($input: RevokeDataConsentInput!) { revokeDataConsent(input: $input) { id consentType granted revokedAt policyVersion } }\", \"variables\": {\"input\": {\"consentType\": \"BIOMETRICO_FACIAL\"}}}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{graphqlUrl}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('No GraphQL errors', () => pm.expect(pm.response.json().errors).to.be.undefined);",
+                  "const row = pm.response.json().data?.revokeDataConsent;",
+                  "pm.test('granted = false', () => pm.expect(row.granted).to.eql(false));",
+                  "pm.test('revokedAt presente', () => pm.expect(row.revokedAt).to.be.a('string'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Revocar — GEOLOCALIZACION",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenOperator}}" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation RevokeDataConsent($input: RevokeDataConsentInput!) { revokeDataConsent(input: $input) { id consentType granted revokedAt policyVersion } }\", \"variables\": {\"input\": {\"consentType\": \"GEOLOCALIZACION\"}}}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{graphqlUrl}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('No GraphQL errors', () => pm.expect(pm.response.json().errors).to.be.undefined);",
+                  "pm.test('granted = false', () => pm.expect(pm.response.json().data.revokeDataConsent.granted).to.eql(false));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "❌ grantDataConsent — accepted false",
+          "description": "Debe fallar: el checkbox no puede estar premarcado / accepted debe ser true.",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenOperator}}" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation GrantDataConsent($input: GrantDataConsentInput!) { grantDataConsent(input: $input) { id } }\", \"variables\": {\"input\": {\"policyVersion\": \"{{dataConsentPolicyVersion}}\", \"consentTypes\": [\"GEOLOCALIZACION\"], \"accepted\": false}}}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{graphqlUrl}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200 (GraphQL error envelope)', () => pm.response.to.have.status(200));",
+                  "pm.test('Tiene errors', () => pm.expect(pm.response.json().errors).to.be.an('array').that.is.not.empty);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Histórico políticas — dataProcessingPolicies (SUPER_ADMIN)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenSuperAdmin}}" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"query DataProcessingPolicies { dataProcessingPolicies { id tenantId version title isActive publishedAt } }\"}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{graphqlUrl}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('No GraphQL errors', () => pm.expect(pm.response.json().errors).to.be.undefined);",
+                  "pm.test('dataProcessingPolicies es array', () => {",
+                  "  pm.expect(pm.response.json().data.dataProcessingPolicies).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Publicar política — publishDataProcessingPolicy (SUPER_ADMIN)",
+          "description": "Publica nueva versión y desactiva la anterior. Usar solo en dev — texto es borrador legal.",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenSuperAdmin}}" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation PublishDataProcessingPolicy($input: PublishDataProcessingPolicyInput!) { publishDataProcessingPolicy(input: $input) { id version title isActive publishedAt } }\",\n  \"variables\": {\n    \"input\": {\n      \"version\": \"2026.07.2-postman\",\n      \"title\": \"Política de tratamiento de datos biométricos y geolocalización\",\n      \"content\": \"[BORRADOR POSTMAN] Texto de prueba — reemplazar tras revisión legal.\",\n      \"consentLabel\": \"Autorizo el tratamiento de mi dato biométrico facial y de geolocalización para los fines aquí descritos.\"\n    }\n  }\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{graphqlUrl}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('No GraphQL errors', () => pm.expect(pm.response.json().errors).to.be.undefined);",
+                  "const policy = pm.response.json().data?.publishDataProcessingPolicy;",
+                  "pm.test('isActive = true', () => pm.expect(policy.isActive).to.eql(true));",
+                  "if (policy?.version) pm.collectionVariables.set('dataConsentPolicyVersion', policy.version);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "OS-589 Vacations",
       "description": "Vacaciones OS-589 — flujo REST de solicitud, doble aprobación y carta PDF.\n\nPrerrequisitos:\n1. Login solicitante **`mes-operator@palos-de-lena.dev`** / `TestPass123!` → `{{accessTokenOperator}}` (cargo subordinado del supervisor en seed)\n2. Login Supervisor (`mes-supervisor@palos-de-lena.dev`) → `{{accessTokenSupervisor}}`\n3. Login NOMINA (`nomina@palos-de-lena.dev`) → `{{accessTokenNomina}}`\n4. Headers: `Authorization: Bearer <token>`, `x-tenant-id: {{tenantId}}`\n\nOrden feliz: Balance → Request → Approve L1 → Approve L2 → Letter.\n\nNota: `mes-owner` fuera de la jerarquía del supervisor devuelve 403 en Approve L1 (esperado).",
       "item": [
@@ -15513,6 +16153,279 @@
                 "exec": [
                   "pm.test('patch type config: status 200', () => pm.response.to.have.status(200));",
                   "pm.expect(pm.response.json().type).to.eql('PERMISO_REMUNERADO');"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "CONN-04a Overtime Detection",
+      "description": "Detección automática de tiempo extra — bandeja, cascada de aprobación (3 niveles) y resumen por período.\n\nPrerrequisitos:\n1. Migración `overtime_requests` aplicada y `pnpm db:seed` (permiso `attendance.overtime.read`)\n2. Login **NOMINA** (`nomina@palos-de-lena.dev`) → `{{accessTokenNomina}}` (lectura histórica)\n3. Tokens de aprobadores con rol **MANAGER** y `EmployeeDetails.positionId`:\n   - Nivel 1 ADMINISTRADOR → `pos-pdl-001` + sede en `UserLocation` → `{{accessTokenManager}}`\n   - Nivel 2 GERENCIA OPERACIONES → `pos-pdl-003` → `{{accessTokenOvertimeOps}}`\n   - Nivel 3 GERENCIA GENERAL → `pos-pdl-007` → `{{accessTokenOvertimeGG}}`\n4. Headers: `Authorization: Bearer <token>`, `x-tenant-id: {{tenantId}}`\n5. Solicitud de prueba: registrar EXIT tardío (>30 min acumulados en `{{overtimePayrollPeriod}}`) vía asistencia, o fijar `{{overtimeRequestId}}` manualmente\n\nOrden feliz: Summary → Inbox (captura id) → Detail → Approve L1 → Approve L2 → Approve L3.\n\nFlujo objeción: usar POST Object en el nivel activo (comentario obligatorio). Tras OBJETADA no se crea nueva solicitud automática en el mismo período (D1b).",
+      "item": [
+        {
+          "name": "Login mes-manager (plantilla L1)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation Login($input: GlobalLoginInput!) { login(input: $input) { accessToken refreshToken } }\", \"variables\": {\"input\": {\"email\": \"mes-manager@palos-de-lena.dev\", \"password\": \"{{password}}\"}}}"
+            },
+            "url": "{{graphqlUrl}}",
+            "auth": { "type": "noauth" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const login = pm.response.json().data?.login;",
+                  "if (login?.accessToken) pm.collectionVariables.set('accessTokenManager', login.accessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Summary — pending by period",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenNomina}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": "{{baseUrl}}/api/attendance/overtime-requests/summary?payrollPeriod={{overtimePayrollPeriod}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('summary: status 200', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json()).to.have.property('pendingCount');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Inbox",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenNomina}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": "{{baseUrl}}/api/attendance/overtime-requests?payrollPeriod={{overtimePayrollPeriod}}&take=20"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('inbox: status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "if (body.items?.length) pm.collectionVariables.set('overtimeRequestId', body.items[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenNomina}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": "{{baseUrl}}/api/attendance/overtime-requests/{{overtimeRequestId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('detail: status 200', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().id).to.eql(pm.collectionVariables.get('overtimeRequestId'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Approve — level 1 (ADMINISTRADOR)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenManager}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"comment\": \"Aprobado nivel administrador\"\n}"
+            },
+            "url": "{{baseUrl}}/api/attendance/overtime-requests/{{overtimeRequestId}}/approve"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('approve L1: status 200', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().status).to.eql('PENDIENTE_GERENCIA_OPERACIONES');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Approve — level 2 (GERENCIA OPERACIONES)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenOvertimeOps}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"comment\": \"Aprobado gerencia de operaciones\"\n}"
+            },
+            "url": "{{baseUrl}}/api/attendance/overtime-requests/{{overtimeRequestId}}/approve"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('approve L2: status 200', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().status).to.eql('PENDIENTE_GERENCIA_GENERAL');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Approve — level 3 (GERENCIA GENERAL)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenOvertimeGG}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"comment\": \"Aprobado gerencia general\"\n}"
+            },
+            "url": "{{baseUrl}}/api/attendance/overtime-requests/{{overtimeRequestId}}/approve"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('approve L3: status 200', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().status).to.eql('APROBADA');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Object — level 1 (ADMINISTRADOR)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenManager}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"comment\": \"No autorizado por administrador de sede\"\n}"
+            },
+            "url": "{{baseUrl}}/api/attendance/overtime-requests/{{overtimeRequestId}}/object"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('object L1: status 200', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().status).to.eql('OBJETADA');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Object — level 2 (GERENCIA OPERACIONES)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenOvertimeOps}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"comment\": \"No autorizado por gerencia de operaciones\"\n}"
+            },
+            "url": "{{baseUrl}}/api/attendance/overtime-requests/{{overtimeRequestId}}/object"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('object L2: status 200', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().status).to.eql('OBJETADA');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Object — level 3 (GERENCIA GENERAL)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessTokenOvertimeGG}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"comment\": \"Rechazado por gerencia general\"\n}"
+            },
+            "url": "{{baseUrl}}/api/attendance/overtime-requests/{{overtimeRequestId}}/object"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('object L3: status 200', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().status).to.eql('OBJETADA');"
                 ]
               }
             }

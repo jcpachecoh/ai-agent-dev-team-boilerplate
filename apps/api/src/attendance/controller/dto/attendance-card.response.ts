@@ -28,6 +28,12 @@ export class AttendanceCardDaySummaryDto {
 
   @ApiProperty({ nullable: true })
   shiftRange!: string | null;
+
+  @ApiProperty({
+    nullable: true,
+    description: 'Etiqueta para ENTRADA/SALIDA (vacaciones, novedad, incapacidad)',
+  })
+  absenceLabel!: string | null;
 }
 
 export class AttendanceCardResponseDto {

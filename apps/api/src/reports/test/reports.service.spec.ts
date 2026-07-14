@@ -22,6 +22,8 @@ import { MAX_EXPORT_ROWS } from '../reports.constants';
 import { VacationsService } from '../../vacations/service/vacations.service';
 import { VacationType, LeaveOrigin } from '@prisma/client';
 import { MedicalLeavesRepository } from '../../medical-leaves/repository/medical-leaves.repository';
+import { OvertimeRepository } from '../../overtime/repository/overtime.repository';
+import { OvertimeStatus } from '@prisma/client';
 
 // ── Fixtures ─────────────────────────────────────────────────────────────────
 
@@ -246,6 +248,9 @@ describe('ReportsService', () => {
   let medicalLeavesRepository: jest.Mocked<
     Pick<MedicalLeavesRepository, 'findOverlappingForPayrollPeriodByEmployeeIds'>
   >;
+  let overtimeRepository: jest.Mocked<
+    Pick<OvertimeRepository, 'findApprovalStatusByEmployeeIdsForPeriod'>
+  >;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -292,6 +297,12 @@ describe('ReportsService', () => {
             preload: jest.fn().mockResolvedValue(makeLegalSnapshot()),
           },
         },
+        {
+          provide: OvertimeRepository,
+          useValue: {
+            findApprovalStatusByEmployeeIdsForPeriod: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -301,6 +312,15 @@ describe('ReportsService', () => {
     legalParametersService = module.get(LaborLegalParametersService);
     vacationsService = module.get(VacationsService);
     medicalLeavesRepository = module.get(MedicalLeavesRepository);
+    overtimeRepository = module.get(OvertimeRepository);
+    overtimeRepository.findApprovalStatusByEmployeeIdsForPeriod.mockImplementation(
+      async (_tenantId, employeeIds) =>
+        employeeIds.map((employeeId) => ({
+          employeeId,
+          status: OvertimeStatus.APROBADA,
+          accumulatedMinutes: 60,
+        })),
+    );
   });
 
   afterEach(() => jest.clearAllMocks());
@@ -616,6 +636,35 @@ describe('ReportsService', () => {
       const nocturno = row.overtimeBreakdown.find((b) => b.type === 'NOCTURNO');
       expect(nocturno).toBeDefined();
       expect(nocturno!.surchargeRate).toBe(0.75);
+    });
+
+    it('CONN-04a: excludes overtime when automatic request is not APROBADA', async () => {
+      repository.findActiveEmployees.mockResolvedValue([mockEmployee]);
+      repository.findAttendanceLogsByDateRange.mockResolvedValue(
+        fullDayLogs('emp-1', '2025-06-01'),
+      );
+      overtimeRepository.findApprovalStatusByEmployeeIdsForPeriod.mockResolvedValue([
+        {
+          employeeId: 'emp-1',
+          status: OvertimeStatus.PENDIENTE_ADMIN,
+          accumulatedMinutes: 120,
+        },
+      ]);
+
+      const result = await service.getPayrollReport(TENANT_ID, query, OWNER_ACTOR);
+      expect(result.employees[0].overtimePay).toBe(0);
+      expect(result.employees[0].overtimeBreakdown).toHaveLength(0);
+    });
+
+    it('CONN-04a: excludes overtime when no approval record exists', async () => {
+      repository.findActiveEmployees.mockResolvedValue([mockEmployee]);
+      repository.findAttendanceLogsByDateRange.mockResolvedValue(
+        fullDayLogs('emp-1', '2025-06-01'),
+      );
+      overtimeRepository.findApprovalStatusByEmployeeIdsForPeriod.mockResolvedValue([]);
+
+      const result = await service.getPayrollReport(TENANT_ID, query, OWNER_ACTOR);
+      expect(result.employees[0].overtimePay).toBe(0);
     });
 
     it('applies medical leave adjustments for a COMUN incapacity in the payroll period', async () => {

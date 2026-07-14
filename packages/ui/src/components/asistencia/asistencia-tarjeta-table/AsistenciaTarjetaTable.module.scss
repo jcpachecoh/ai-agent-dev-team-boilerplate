@@ -21,6 +21,11 @@
   border: 1px solid var(--asistencia-border);
   border-radius: 6px;
   background: var(--asistencia-surface);
+
+  // Evita que el dropdown del kebab quede recortado y sin click en la última columna.
+  td:last-child {
+    overflow: visible;
+  }
 }
 
 .table {
@@ -146,6 +151,16 @@
 .placeholder {
   color: var(--asistencia-table-muted, var(--asistencia-subtle));
   font-family: $font-family-mono;
+}
+
+.statusLabel {
+  display: inline-block;
+  max-width: 9rem;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--asistencia-text);
+  white-space: normal;
+  line-height: 1.25;
 }
 
 .timeCell {

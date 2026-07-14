@@ -9,6 +9,51 @@ const upsertAttendanceObservationMock = vi.fn();
 const createManualMarkingMock = vi.fn();
 const deleteManualMarkingMock = vi.fn();
 
+const MOCK_MANUAL_MARKING_REASONS = [
+  {
+    code: 'CORRECCION_MARCACION',
+    label: 'Corrección de marcación',
+    target: 'ATTENDANCE_ONLY' as const,
+  },
+  {
+    code: 'PERMISO_REMUNERADO',
+    label: 'Permiso remunerado',
+    target: 'PAYROLL_NOVEDAD' as const,
+    novedadType: 'PERMISO_REMUNERADO',
+  },
+  {
+    code: 'LICENCIA_LUTO',
+    label: 'Licencia de luto',
+    target: 'PAYROLL_NOVEDAD' as const,
+    novedadType: 'LICENCIA_LUTO',
+  },
+  {
+    code: 'INCAPACIDAD_COMUN',
+    label: 'Incapacidad médica (común)',
+    target: 'MEDICAL_LEAVE' as const,
+    leaveOrigin: 'COMUN' as const,
+  },
+];
+
+vi.mock('../hooks/useManualMarkingReasonsQuery', () => ({
+  useManualMarkingReasonsQuery: () => ({
+    data: MOCK_MANUAL_MARKING_REASONS,
+    isLoading: false,
+    isError: false,
+  }),
+}));
+
+vi.mock('@/features/payroll/hooks/useNovedadTypeConfigQuery', () => ({
+  useNovedadTypeConfigQuery: () => ({
+    data: [
+      { type: 'PERMISO_REMUNERADO', requiresSupportDocument: false },
+      { type: 'LICENCIA_LUTO', requiresSupportDocument: true },
+    ],
+    isLoading: false,
+    isError: false,
+  }),
+}));
+
 vi.mock('../api/attendance.client', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../api/attendance.client')>();
   return {
@@ -36,9 +81,34 @@ vi.mock('@/features/payroll/api/payroll.client', async (importOriginal) => {
   };
 });
 
+async function findFirstObservationButton() {
+  const buttons = await screen.findAllByLabelText(/Ver observación de/);
+  return buttons[0]!;
+}
+
+async function findFirstManualMarkIndicator() {
+  const elements = await screen.findAllByTitle('Marcación manual');
+  return elements[0]!;
+}
+
+async function selectChangeReason(label: string) {
+  fireEvent.click(screen.getByLabelText('Motivo de cambio'));
+  fireEvent.click(await screen.findByRole('option', { name: label }));
+}
+
 const monthRange = getCurrentMonthRange();
 const WORK_DATE = toIsoDate(monthRange.from);
 const ROW_ACTIONS_NAME = `Acciones para ${formatDisplayDate(WORK_DATE)}`;
+
+function clickRowActionsMenu() {
+  const buttons = screen.getAllByRole('button', { name: ROW_ACTIONS_NAME });
+  fireEvent.click(buttons[0]!);
+}
+
+function clickMarkingMenuItem() {
+  const items = screen.getAllByRole('menuitem', { name: 'Crear/Editar Marcación' });
+  fireEvent.click(items[0]!);
+}
 
 const employee = {
   id: 'emp-1',
@@ -98,13 +168,13 @@ describe('AttendanceCardScreen', () => {
   it('muestra el indicador de observación para el día con nota guardada en backend', async () => {
     renderScreen();
 
-    expect(await screen.findByLabelText(/Ver observación de/)).toBeInTheDocument();
+    expect(await findFirstObservationButton()).toBeInTheDocument();
   });
 
   it('clic directo en el ícono de observación abre el modal con la nota y el editor', async () => {
     renderScreen();
 
-    fireEvent.click(await screen.findByLabelText(/Ver observación de/));
+    fireEvent.click(await findFirstObservationButton());
 
     expect(screen.getByRole('dialog')).toBeInTheDocument();
     expect(screen.getByLabelText(/Nota/)).toHaveValue('Llegó tarde por transporte público');
@@ -115,9 +185,10 @@ describe('AttendanceCardScreen', () => {
     upsertAttendanceObservationMock.mockResolvedValue({ id: 'obs-1', note: 'Nueva nota' });
     renderScreen();
 
-    await screen.findByLabelText(/Ver observación de/);
-    fireEvent.click(screen.getByRole('button', { name: ROW_ACTIONS_NAME }));
-    fireEvent.click(screen.getByRole('menuitem', { name: 'Observación' }));
+    await findFirstObservationButton();
+    clickRowActionsMenu();
+    const observationItems = screen.getAllByRole('menuitem', { name: 'Observación' });
+    fireEvent.click(observationItems[0]!);
 
     const textarea = screen.getByLabelText(/Nota/);
     fireEvent.change(textarea, { target: { value: 'Nueva nota' } });
@@ -149,7 +220,7 @@ describe('AttendanceCardScreen', () => {
 
     renderScreen();
 
-    expect(await screen.findByTitle('Marcación manual')).toBeInTheDocument();
+    expect(await findFirstManualMarkIndicator()).toBeInTheDocument();
   });
 
   it('muestra motivo y autor de una marcación manual existente al abrir el modal de edición', async () => {
@@ -173,9 +244,9 @@ describe('AttendanceCardScreen', () => {
 
     renderScreen();
 
-    await screen.findByTitle('Marcación manual');
-    fireEvent.click(screen.getByRole('button', { name: ROW_ACTIONS_NAME }));
-    fireEvent.click(screen.getByRole('menuitem', { name: 'Crear/Editar Marcación' }));
+    await findFirstManualMarkIndicator();
+    clickRowActionsMenu();
+    clickMarkingMenuItem();
 
     expect(screen.getByText(/Marcaciones registradas este día/)).toBeInTheDocument();
     expect(screen.getByText(/Motivo: Olvidó marcar entrada/)).toBeInTheDocument();
@@ -186,13 +257,11 @@ describe('AttendanceCardScreen', () => {
     createManualMarkingMock.mockResolvedValue({ id: 'log-manual-1', source: 'MANUAL' });
     renderScreen();
 
-    await screen.findByLabelText(/Ver observación de/);
-    fireEvent.click(screen.getByRole('button', { name: ROW_ACTIONS_NAME }));
-    fireEvent.click(screen.getByRole('menuitem', { name: 'Crear/Editar Marcación' }));
+    await findFirstObservationButton();
+    clickRowActionsMenu();
+    clickMarkingMenuItem();
 
-    fireEvent.change(screen.getByLabelText('Motivo de cambio:'), {
-      target: { value: 'FORGOT' },
-    });
+    await selectChangeReason('Corrección de marcación');
     fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
 
     await waitFor(() => {
@@ -200,7 +269,7 @@ describe('AttendanceCardScreen', () => {
         workDate: WORK_DATE,
         eventType: 'ENTRY',
         timestamp: expect.any(String),
-        reason: 'FORGOT',
+        reason: 'CORRECCION_MARCACION',
       });
     });
   });
@@ -210,9 +279,9 @@ describe('AttendanceCardScreen', () => {
 
     renderScreen();
 
-    await screen.findByLabelText(/Ver observación de/);
-    fireEvent.click(screen.getByRole('button', { name: ROW_ACTIONS_NAME }));
-    fireEvent.click(screen.getByRole('menuitem', { name: 'Crear/Editar Marcación' }));
+    await findFirstObservationButton();
+    clickRowActionsMenu();
+    clickMarkingMenuItem();
 
     expect(createManualMarkingMock).not.toHaveBeenCalled();
   });
@@ -248,9 +317,9 @@ describe('AttendanceCardScreen', () => {
 
     async function openMarkingModal() {
       renderScreen();
-      await screen.findByTitle('Marcación manual');
-      fireEvent.click(screen.getByRole('button', { name: ROW_ACTIONS_NAME }));
-      fireEvent.click(screen.getByRole('menuitem', { name: 'Crear/Editar Marcación' }));
+      await findFirstManualMarkIndicator();
+      clickRowActionsMenu();
+      clickMarkingMenuItem();
     }
 
     it('muestra el texto principal del alert tal como pide la referencia', async () => {
@@ -302,33 +371,18 @@ describe('AttendanceCardScreen', () => {
       confirmSpy.mockRestore();
     });
 
-    it('el select de motivo de cambio solo ofrece los códigos aceptados por el backend', async () => {
+    it('el selector de motivo ofrece el catálogo unificado CONN-05', async () => {
       mockDayWithMarks();
       await openMarkingModal();
 
-      const select = screen.getByLabelText('Motivo de cambio:') as HTMLSelectElement;
-      const values = Array.from(select.options).map((option) => option.value);
+      fireEvent.click(screen.getByLabelText('Motivo de cambio'));
 
-      expect(values).toEqual(
-        expect.arrayContaining([
-          'FORGOT',
-          'DEVICE_FAILURE',
-          'SUPERVISOR_CORRECTION',
-          'SYSTEM_ERROR',
-          'OTHER',
-        ]),
-      );
-      // Ningún valor fuera de este catálogo (más la opción vacía inicial).
-      values.forEach((value) => {
-        expect([
-          '',
-          'FORGOT',
-          'DEVICE_FAILURE',
-          'SUPERVISOR_CORRECTION',
-          'SYSTEM_ERROR',
-          'OTHER',
-        ]).toContain(value);
-      });
+      expect(screen.getByRole('option', { name: 'Corrección de marcación' })).toBeInTheDocument();
+      expect(screen.getByRole('option', { name: 'Permiso remunerado' })).toBeInTheDocument();
+      expect(
+        screen.getByRole('option', { name: 'Incapacidad médica (común)' }),
+      ).toBeInTheDocument();
+      expect(screen.queryByRole('option', { name: 'Olvido de marcación' })).not.toBeInTheDocument();
     });
   });
 });

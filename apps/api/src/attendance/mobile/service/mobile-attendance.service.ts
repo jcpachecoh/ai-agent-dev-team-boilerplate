@@ -9,9 +9,11 @@ import {
   AttendanceEventType,
   AttendanceLogSource,
   AttendanceValidationStatus,
+  ConsentType,
   StorageDomain,
 } from '@prisma/client';
 import { StorageService } from '../../../storage/service/storage.service';
+import { DataConsentService } from '../../../data-consent/service/data-consent.service';
 import { AttendanceService } from '../../service/attendance.service';
 import type {
   IMobileAttendanceService,
@@ -38,6 +40,7 @@ export class MobileAttendanceService implements IMobileAttendanceService {
     private readonly repo: MobileAttendanceRepository,
     private readonly storageService: StorageService,
     private readonly attendanceService: AttendanceService,
+    private readonly dataConsentService: DataConsentService,
   ) {}
 
   async registrarMarcacion(
@@ -60,6 +63,24 @@ export class MobileAttendanceService implements IMobileAttendanceService {
 
     if (employee.locationId !== input.locationId) {
       throw new ForbiddenException('El empleado no está asignado a esta sede');
+    }
+
+    await this.dataConsentService.assertConsentForFeature({
+      userId,
+      tenantId,
+      consentType: ConsentType.GEOLOCALIZACION,
+    });
+
+    const usesFacialEvidence =
+      Boolean(input.storageObjectId) ||
+      input.facialMatchScore != null ||
+      Boolean(input.facialMatchResult);
+    if (usesFacialEvidence) {
+      await this.dataConsentService.assertConsentForFeature({
+        userId,
+        tenantId,
+        consentType: ConsentType.BIOMETRICO_FACIAL,
+      });
     }
 
     const now = new Date();

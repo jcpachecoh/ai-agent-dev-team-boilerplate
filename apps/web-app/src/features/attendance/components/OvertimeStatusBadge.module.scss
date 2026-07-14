@@ -1,0 +1,27 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.pendingAdmin,
+.pendingOps,
+.pendingGg {
+  background: rgb(245 158 11 / 16%);
+  color: #b45309;
+}
+
+.approved {
+  background: rgb(16 185 129 / 16%);
+  color: #047857;
+}
+
+.objected {
+  background: rgb(239 68 68 / 14%);
+  color: #b91c1c;
+}

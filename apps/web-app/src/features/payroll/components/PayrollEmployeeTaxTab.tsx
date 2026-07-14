@@ -36,15 +36,18 @@ const TAX_REGIME_OPTIONS = ['ORDINARIO', 'SIMPLE'] as const;
 interface PayrollEmployeeTaxTabProps {
   userId: string;
   theme: 'light' | 'dark';
+  /** Consulta del perfil: solo lectura; la edición pasa al módulo de Contabilidad. */
+  readOnly?: boolean;
 }
 
 export function PayrollEmployeeTaxTab({
   userId,
   theme,
+  readOnly = false,
 }: PayrollEmployeeTaxTabProps): React.JSX.Element {
   const { data: me } = useMe();
   const roleCode = me?.roleCode ?? getRoleCodeFromToken();
-  const canWrite = canWriteFinancialProfile(roleCode);
+  const canWrite = !readOnly && canWriteFinancialProfile(roleCode);
 
   const employeeQuery = usePayrollEmployeeQuery(userId);
   const employeeId = employeeQuery.data?.id;
@@ -127,8 +130,9 @@ export function PayrollEmployeeTaxTab({
         <div>
           <h2 className={styles.title}>Información fiscal</h2>
           <p className={styles.subtitle}>
-            NIT/RUT y configuración de retención en la fuente. Los datos sensibles se muestran
-            enmascarados.
+            {readOnly
+              ? 'Consulta de NIT/RUT y retención en la fuente. Los cálculos tributarios se gestionan desde el módulo de Contabilidad.'
+              : 'NIT/RUT y configuración de retención en la fuente. Los datos sensibles se muestran enmascarados.'}
           </p>
         </div>
         {canWrite && !editing ? (
@@ -152,7 +156,11 @@ export function PayrollEmployeeTaxTab({
           variant="create"
           icon={<Building2 size={44} strokeWidth={1.5} />}
           title="Sin información fiscal registrada"
-          description="Registra el NIT/RUT y la configuración de retención del colaborador."
+          description={
+            readOnly
+              ? 'Aún no hay datos tributarios asociados a este colaborador.'
+              : 'Registra el NIT/RUT y la configuración de retención del colaborador.'
+          }
           action={
             canWrite ? (
               <RecetaFormButton

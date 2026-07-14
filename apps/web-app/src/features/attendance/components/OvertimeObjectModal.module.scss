@@ -1,0 +1,69 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgb(15 23 42 / 45%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 40;
+}
+
+.modal {
+  width: min(100%, 28rem);
+  background: var(--surface-primary, #fff);
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  box-shadow: 0 20px 45px rgb(15 23 42 / 18%);
+}
+
+.title {
+  margin: 0;
+  font-size: 1.125rem;
+}
+
+.help {
+  margin: 0.5rem 0 0.75rem;
+  color: var(--text-secondary, #6b7280);
+  font-size: 0.875rem;
+}
+
+.textarea {
+  width: 100%;
+  resize: vertical;
+  border: 1px solid var(--border-subtle, #d1d5db);
+  border-radius: 0.5rem;
+  padding: 0.65rem 0.75rem;
+  font: inherit;
+}
+
+.error {
+  margin: 0.5rem 0 0;
+  color: #b91c1c;
+  font-size: 0.8125rem;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.cancelButton,
+.submitButton {
+  border-radius: 0.5rem;
+  padding: 0.45rem 0.85rem;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+
+.cancelButton {
+  background: transparent;
+  border-color: var(--border-subtle, #d1d5db);
+}
+
+.submitButton {
+  background: #b91c1c;
+  color: #fff;
+}

@@ -13,6 +13,7 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
 import { useTheme } from '@/providers/ThemeProvider';
 
+import { PayrollEmployeeDataConsentTab } from '../components/PayrollEmployeeDataConsentTab';
 import { PayrollEmployeeDotacionesTab } from '../components/PayrollEmployeeDotacionesTab';
 import { PayrollEmployeeDocumentsTab } from '../components/PayrollEmployeeDocumentsTab';
 import { PayrollEmployeeAttendanceTab } from '../components/PayrollEmployeeAttendanceTab';
@@ -160,9 +161,9 @@ function ProfileTabPanel({
     return <PayrollEmployeePaymentsTab userId={userId} theme={theme} />;
   }
 
-  // if (tabId === 'taxes') {
-  //   return <PayrollEmployeeTaxTab userId={userId} theme={theme} />;
-  // }
+  if (tabId === 'taxes') {
+    return <PayrollEmployeeTaxTab userId={userId} theme={theme} readOnly />;
+  }
 
   if (tabId === 'documents') {
     return <PayrollEmployeeDocumentsTab userId={userId} theme={theme} />;
@@ -170,6 +171,10 @@ function ProfileTabPanel({
 
   if (tabId === 'dotaciones') {
     return <PayrollEmployeeDotacionesTab userId={userId} theme={theme} />;
+  }
+
+  if (tabId === 'data-consent') {
+    return <PayrollEmployeeDataConsentTab userId={userId} theme={theme} />;
   }
 
   return (

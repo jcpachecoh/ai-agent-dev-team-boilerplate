@@ -20,6 +20,7 @@ import { AttendanceComparisonQueryDto } from '../controller/dto/attendance-compa
 import { AttendanceCardQueryDto } from '../controller/dto/attendance-card-query.dto';
 import { UpsertAttendanceObservationDto } from '../controller/dto/upsert-attendance-observation.dto';
 import { CreateManualMarkingDto } from '../controller/dto/create-manual-marking.dto';
+import { MANUAL_MARKING_REASON_CATALOG } from '../manual-marking-reason.constants';
 import type { JwtPayload } from '../../auth/interfaces/auth.interfaces';
 
 function makeJwtUser(overrides?: Partial<JwtPayload>): JwtPayload {
@@ -397,6 +398,17 @@ describe('AttendanceController', () => {
     });
   });
 
+  describe('listManualMarkingReasons', () => {
+    it('retorna el catálogo unificado CONN-05', () => {
+      const result = controller.listManualMarkingReasons();
+
+      expect(result).toEqual(MANUAL_MARKING_REASON_CATALOG);
+      expect(result.some((option) => option.code === 'CORRECCION_MARCACION')).toBe(true);
+      expect(result.some((option) => option.code === 'PERMISO_REMUNERADO')).toBe(true);
+      expect(result.some((option) => option.code === 'INCAPACIDAD_COMUN')).toBe(true);
+    });
+  });
+
   describe('createManualMarking', () => {
     it('delega al AttendanceCardService pasando el JwtPayload completo (para scoping de sede)', async () => {
       const user = makeJwtUser({ sub: 'actor-1', roleCode: 'SUPERVISOR', locationId: 'loc-1' });
@@ -404,7 +416,7 @@ describe('AttendanceController', () => {
         workDate: '2026-06-10',
         eventType: 'ENTRY',
         timestamp: '2026-06-10T08:00:00.000Z',
-        reason: 'Olvidó marcar',
+        reason: 'CORRECCION_MARCACION',
       });
       cardServiceMock.createManualMarking.mockResolvedValue({ id: 'log-manual-1' });
 

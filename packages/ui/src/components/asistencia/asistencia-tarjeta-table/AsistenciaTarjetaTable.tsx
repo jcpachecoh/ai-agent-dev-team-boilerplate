@@ -61,13 +61,19 @@ function TimeCell({
   value,
   automatic,
   manual,
+  isStatusLabel,
 }: {
   value: string;
   automatic?: boolean;
   manual?: boolean;
+  isStatusLabel?: boolean;
 }): JSX.Element {
   if (value === '—') {
     return <span className={styles.placeholder}>—</span>;
+  }
+
+  if (isStatusLabel) {
+    return <span className={styles.statusLabel}>{value}</span>;
   }
 
   return (
@@ -108,7 +114,10 @@ function RowActions({
           type="button"
           className={styles.observationButton}
           aria-label={`Ver observación de ${row.dateLabel}`}
-          onClick={() => onRowAction?.(row, 'observation')}
+          onClick={(event) => {
+            event.stopPropagation();
+            onRowAction?.(row, 'observation');
+          }}
         >
           <StickyNote className={styles.observationMark} size={14} aria-hidden />
         </button>
@@ -117,17 +126,27 @@ function RowActions({
         type="button"
         className={styles.menuButton}
         aria-label={`Acciones para ${row.dateLabel}`}
-        onClick={() => onToggleMenu?.(row.id)}
+        onClick={(event) => {
+          event.stopPropagation();
+          onToggleMenu?.(row.id);
+        }}
       >
         <MoreVertical size={16} />
       </button>
       {openMenuRowId === row.id ? (
-        <div className={styles.menuPanel} role="menu">
+        <div
+          className={styles.menuPanel}
+          role="menu"
+          onMouseDown={(event) => event.stopPropagation()}
+        >
           <button
             type="button"
             className={styles.menuItem}
             role="menuitem"
-            onClick={() => onRowAction?.(row, 'observation')}
+            onClick={(event) => {
+              event.stopPropagation();
+              onRowAction?.(row, 'observation');
+            }}
           >
             Observación
           </button>
@@ -135,7 +154,10 @@ function RowActions({
             type="button"
             className={styles.menuItem}
             role="menuitem"
-            onClick={() => onRowAction?.(row, 'marking')}
+            onClick={(event) => {
+              event.stopPropagation();
+              onRowAction?.(row, 'marking');
+            }}
           >
             Crear/Editar Marcación
           </button>
@@ -170,10 +192,15 @@ function TarjetaTableRow({
           value={row.entryTime}
           automatic={row.isAutomaticEntry}
           manual={row.hasManualMarking}
+          isStatusLabel={row.entryTimeIsStatusLabel}
         />
       </td>
       <td>
-        <TimeCell value={row.exitTime} automatic={row.isAutomaticExit} />
+        <TimeCell
+          value={row.exitTime}
+          automatic={row.isAutomaticExit}
+          isStatusLabel={row.exitTimeIsStatusLabel}
+        />
       </td>
       <td className={styles.mono}>{row.ordinaryHours}</td>
       <td className={styles.mono}>{row.unworkedHours}</td>
@@ -236,9 +263,14 @@ function TarjetaDayCard({
                   value={row.entryTime}
                   automatic={row.isAutomaticEntry}
                   manual={row.hasManualMarking}
+                  isStatusLabel={row.entryTimeIsStatusLabel}
                 />
               ) : field.key === 'exitTime' ? (
-                <TimeCell value={row.exitTime} automatic={row.isAutomaticExit} />
+                <TimeCell
+                  value={row.exitTime}
+                  automatic={row.isAutomaticExit}
+                  isStatusLabel={row.exitTimeIsStatusLabel}
+                />
               ) : (
                 <span className={styles.mono}>{row[field.key]}</span>
               )}

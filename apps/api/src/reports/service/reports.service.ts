@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException, Optional } from '@nestjs/common';
-import { AttendanceEventType, AttendanceLog } from '@prisma/client';
+import { AttendanceEventType, AttendanceLog, OvertimeStatus } from '@prisma/client';
 import { COLOMBIA_TZ, REGULAR_DAY_MINUTES } from '../../attendance/attendance.constants';
 import { AttendanceOvertimeType } from '../../payroll/payroll.constants';
 import { isColombianHoliday } from './colombia-holidays.util';
@@ -28,6 +28,7 @@ import {
 } from '../controller/dto/employee-list-report-response.dto';
 import { MAX_EXPORT_ROWS } from '../reports.constants';
 import { buildAttendanceFiltersSummary } from './export-filters-summary.util';
+import { OvertimeRepository } from '../../overtime/repository/overtime.repository';
 import { buildEmployeeListFiltersSummary } from './export-filters-summary.util';
 import {
   LocationPayrollTotalsDto,
@@ -349,6 +350,27 @@ function mapToPayrollEmployeeRow(
   };
 }
 
+function payrollPeriodKey(period: { year: number; month: number }): string {
+  return `${period.year}-${String(period.month).padStart(2, '0')}`;
+}
+
+/**
+ * CONN-04a — closes GAP(OS-586): only liquidate overtime when the automatic request is APROBADA.
+ */
+function applyOvertimeApprovalGate(
+  summary: AttendanceMonthSummary,
+  approvalStatus: OvertimeStatus | null | undefined,
+): AttendanceMonthSummary {
+  if (approvalStatus !== OvertimeStatus.APROBADA) {
+    return {
+      ...summary,
+      overtimeMinutes: 0,
+      overtimeEntries: [],
+    };
+  }
+  return summary;
+}
+
 // ── Service ──────────────────────────────────────────────────────────────────
 
 @Injectable()
@@ -362,6 +384,7 @@ export class ReportsService implements IReportsService {
     @Optional() private readonly vacationsService?: VacationsService,
     @Optional() private readonly medicalLeavesRepository?: MedicalLeavesRepository,
     @Optional() private readonly payrollNovedadesRepository?: PayrollNovedadesRepository,
+    @Optional() private readonly overtimeRepository?: OvertimeRepository,
   ) {}
 
   private async countVacationDaysForEmployee(
@@ -524,6 +547,19 @@ export class ReportsService implements IReportsService {
 
     const logsByEmployee = groupLogsByEmployee(allLogs);
 
+    const payrollPeriod = payrollPeriodKey(period);
+    let overtimeApprovalByEmployee = new Map<string, OvertimeStatus>();
+    if (this.overtimeRepository && employeeIds.length > 0) {
+      const approvalRows = await this.overtimeRepository.findApprovalStatusByEmployeeIdsForPeriod(
+        tenantId,
+        employeeIds,
+        payrollPeriod,
+      );
+      overtimeApprovalByEmployee = new Map(
+        approvalRows.map((row) => [row.employeeId, row.status as OvertimeStatus]),
+      );
+    }
+
     // Preload once per report run (not per employee) — see LegalParameterSnapshot.
     const legalSnapshot = await this.legalParametersService.preload(
       [
@@ -599,6 +635,10 @@ export class ReportsService implements IReportsService {
         vacationDays,
         rateResolvers,
       );
+      const gatedAttendance = applyOvertimeApprovalGate(
+        attendance,
+        overtimeApprovalByEmployee.get(emp.id) ?? null,
+      );
 
       const medicalLeave = medicalLeaveAdjustments.get(emp.id);
       const payrollNovedad = payrollNovedadAdjustments.get(emp.id);
@@ -625,7 +665,7 @@ export class ReportsService implements IReportsService {
 
       const calc = this.payrollCalculationService.calculateEmployeePeriod(
         input,
-        attendance,
+        gatedAttendance,
         legalRates,
       );
       rows.push(mapToPayrollEmployeeRow(emp, input as EmployeePayrollInput, calc));

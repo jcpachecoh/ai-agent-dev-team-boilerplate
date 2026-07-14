@@ -65,7 +65,14 @@ function shiftSchedule(shift?: string | null): string {
   }
 }
 
-function resolveVariant(isoDate: string, hasAttendance: boolean): AsistenciaTarjetaRowVariant {
+function resolveVariant(
+  isoDate: string,
+  hasAttendance: boolean,
+  daySummary?: AttendanceCardDaySummary,
+): AsistenciaTarjetaRowVariant {
+  if (daySummary?.absenceLabel) {
+    return daySummary.resolvedKind === 'VACACIONES' ? 'rest' : 'absence';
+  }
   if (isColombianHoliday(isoDate)) return 'festive';
   if (isWeekend(isoDate)) return 'rest';
   if (!hasAttendance) return 'absence';
@@ -176,6 +183,8 @@ export function buildAttendanceCardRows(
       source === 'APP_MOVIL' || source === 'DEVICE';
 
     const hasAttendance = Boolean(entryTimestamp || exitTimestamp);
+    const absenceLabel =
+      !hasAttendance && daySummary?.absenceLabel ? daySummary.absenceLabel : null;
     const workedMinutes = computeWorkedMinutes(entry, exit);
     const isWorkday = !isRestOrFestiveDay(isoDate);
     const targetMinutes = summaryTargetMinutes(daySummary, isWorkday);
@@ -193,7 +202,7 @@ export function buildAttendanceCardRows(
           ? targetMinutes
           : 0);
 
-    const variant = resolveVariant(isoDate, hasAttendance);
+    const variant = resolveVariant(isoDate, hasAttendance, daySummary);
     const shiftName =
       daySummary?.shiftName ??
       (variant === 'rest'
@@ -212,8 +221,8 @@ export function buildAttendanceCardRows(
       shiftRange:
         daySummary?.shiftRange ??
         (entry || exit ? shiftSchedule(entry?.shift ?? exit?.shift) : '—'),
-      entryTime: formatTimeLabel(entryTimestamp),
-      exitTime: formatTimeLabel(exitTimestamp),
+      entryTime: absenceLabel ?? formatTimeLabel(entryTimestamp),
+      exitTime: absenceLabel ?? formatTimeLabel(exitTimestamp),
       ordinaryHours: workedMinutes > 0 || daySummary ? formatMinutesAsHours(ordinaryMinutes) : '—',
       unworkedHours: unworkedMinutes > 0 ? formatMinutesAsHours(unworkedMinutes) : '—',
       overtimeHours: overtimeMinutes > 0 ? formatMinutesAsHours(overtimeMinutes) : '—',
@@ -227,6 +236,8 @@ export function buildAttendanceCardRows(
       hasManualMarking: hasManualEntry || hasManualExit,
       isAutomaticEntry: Boolean(entry && isAutomaticSource(entry.source)),
       isAutomaticExit: Boolean(exit && isAutomaticSource(exit.source)),
+      entryTimeIsStatusLabel: Boolean(absenceLabel),
+      exitTimeIsStatusLabel: Boolean(absenceLabel),
     };
   });
 }

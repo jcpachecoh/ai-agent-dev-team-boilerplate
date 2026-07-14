@@ -70,9 +70,10 @@ export interface AttendanceCardDaySummary {
   ordinaryMinutes: number;
   unworkedMinutes: number;
   overtimeMinutes: number;
-  resolvedKind: 'ASSIGNED' | 'REST' | 'NONE';
+  resolvedKind: 'ASSIGNED' | 'REST' | 'NONE' | 'VACACIONES';
   shiftName: string | null;
   shiftRange: string | null;
+  absenceLabel?: string | null;
 }
 
 export interface AttendanceCardResult {
@@ -88,10 +89,19 @@ export interface UpsertAttendanceObservationInput {
 
 export interface CreateManualMarkingInput {
   workDate: string;
-  eventType: AttendanceEventType;
-  timestamp: string;
+  eventType?: AttendanceEventType;
+  timestamp?: string;
   reason: string;
   parentLogId?: string;
+  supportStorageObjectId?: string;
+}
+
+export interface ManualMarkingReasonOption {
+  code: string;
+  label: string;
+  target: 'ATTENDANCE_ONLY' | 'PAYROLL_NOVEDAD' | 'MEDICAL_LEAVE';
+  novedadType?: string;
+  leaveOrigin?: 'COMUN' | 'LABORAL';
 }
 
 export interface AttendanceActiveEntry {

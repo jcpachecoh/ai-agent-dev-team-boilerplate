@@ -9,10 +9,12 @@ import {
   AttendanceEventType,
   AttendanceLogSource,
   AttendanceValidationStatus,
+  ConsentType,
   StorageDomain,
 } from '@prisma/client';
 import { StorageService } from '../../../storage/service/storage.service';
 import { AttendanceService } from '../../service/attendance.service';
+import { DataConsentService } from '../../../data-consent/service/data-consent.service';
 import { MobileAttendanceRepository } from '../repository/mobile-attendance.repository';
 import { haversineDistanceMeters, MobileAttendanceService } from './mobile-attendance.service';
 import { VACATION_MARKING_BLOCKED_MESSAGE } from '../../service/vacation-attendance.guard';
@@ -65,6 +67,7 @@ describe('MobileAttendanceService', () => {
   let storageService: jest.Mocked<StorageService>;
 
   let attendanceService: jest.Mocked<AttendanceService>;
+  let dataConsentService: jest.Mocked<DataConsentService>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -91,6 +94,10 @@ describe('MobileAttendanceService', () => {
           },
         },
         { provide: AttendanceService, useValue: { registerEvent: jest.fn() } },
+        {
+          provide: DataConsentService,
+          useValue: { assertConsentForFeature: jest.fn().mockResolvedValue(undefined) },
+        },
       ],
     }).compile();
 
@@ -98,6 +105,7 @@ describe('MobileAttendanceService', () => {
     repo = module.get(MobileAttendanceRepository);
     storageService = module.get(StorageService);
     attendanceService = module.get(AttendanceService);
+    dataConsentService = module.get(DataConsentService);
   });
 
   // ── registrarMarcacion ─────────────────────────────────────────────────────
@@ -287,6 +295,55 @@ describe('MobileAttendanceService', () => {
           TENANT_ID,
         ),
       ).rejects.toThrow(BadRequestException);
+    });
+
+    it('valida consentimiento biométrico cuando hay evidencia facial', async () => {
+      repo.findEmployeeByUserId.mockResolvedValue(mockEmployee);
+      repo.findLocationById.mockResolvedValue(mockLocation);
+      attendanceService.registerEvent.mockResolvedValue(mockLog);
+
+      await service.registrarMarcacion(
+        { ...validInput, facialMatchScore: 0.92 },
+        USER_ID,
+        TENANT_ID,
+      );
+
+      expect(dataConsentService.assertConsentForFeature).toHaveBeenCalledWith({
+        userId: USER_ID,
+        tenantId: TENANT_ID,
+        consentType: ConsentType.GEOLOCALIZACION,
+      });
+      expect(dataConsentService.assertConsentForFeature).toHaveBeenCalledWith({
+        userId: USER_ID,
+        tenantId: TENANT_ID,
+        consentType: ConsentType.BIOMETRICO_FACIAL,
+      });
+    });
+
+    it('propaga photoUrl cuando la marcación incluye storageObjectId válido', async () => {
+      repo.findEmployeeByUserId.mockResolvedValue(mockEmployee);
+      repo.findLocationById.mockResolvedValue(mockLocation);
+      storageService.findById.mockResolvedValue({
+        id: 'storage-001',
+        tenantId: TENANT_ID,
+        uploadedBy: USER_ID,
+        domain: StorageDomain.PAYROLL,
+        publicUrl: 'https://r2.example.com/img.jpg',
+      } as any);
+      attendanceService.registerEvent.mockResolvedValue(mockLog);
+
+      await service.registrarMarcacion(
+        { ...validInput, storageObjectId: 'storage-001' },
+        USER_ID,
+        TENANT_ID,
+      );
+
+      expect(attendanceService.registerEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          storageObjectId: 'storage-001',
+          photoUrl: 'https://r2.example.com/img.jpg',
+        }),
+      );
     });
 
     it('no permite pasar employeeId desde el input — siempre lo deriva del userId JWT', async () => {

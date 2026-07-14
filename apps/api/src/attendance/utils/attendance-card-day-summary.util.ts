@@ -45,9 +45,10 @@ export function buildAttendanceCardDaySummaries(params: {
   dateTo: Date;
   logs: AttendanceLogFull[];
   vacationDateKeys?: Set<string>;
+  absenceLabelsByDate?: Map<string, string>;
   resolveForDay: (workDate: Date) => Promise<ResolvedShift>;
 }): Promise<AttendanceCardDaySummary[]> {
-  const { dateFrom, dateTo, logs, vacationDateKeys, resolveForDay } = params;
+  const { dateFrom, dateTo, logs, vacationDateKeys, absenceLabelsByDate, resolveForDay } = params;
   const dates = listDatesInRange(dateFrom, dateTo);
 
   const logsByDate = new Map<string, { entry?: AttendanceLogFull; exit?: AttendanceLogFull }>();
@@ -67,8 +68,9 @@ export function buildAttendanceCardDaySummaries(params: {
   return Promise.all(
     dates.map(async (workDate): Promise<AttendanceCardDaySummary> => {
       const workDateKey = formatCalendarDate(workDate);
+      const payrollAbsenceLabel = absenceLabelsByDate?.get(workDateKey) ?? null;
 
-      if (vacationDateKeys?.has(workDateKey)) {
+      if (vacationDateKeys?.has(workDateKey) && !payrollAbsenceLabel) {
         return {
           workDate: workDateKey,
           targetMinutes: 0,
@@ -79,6 +81,7 @@ export function buildAttendanceCardDaySummaries(params: {
           resolvedKind: 'VACACIONES',
           shiftName: 'Vacaciones',
           shiftRange: null,
+          absenceLabel: 'Vacaciones',
         };
       }
 
@@ -92,6 +95,7 @@ export function buildAttendanceCardDaySummaries(params: {
         targetMinutes,
       );
       const labels = mapResolvedShiftLabels(resolved);
+      const absenceLabel = payrollAbsenceLabel ?? null;
 
       return {
         workDate: workDateKey,
@@ -99,15 +103,18 @@ export function buildAttendanceCardDaySummaries(params: {
         targetHours: targetMinutes > 0 ? formatMinutesAsHours(targetMinutes) : '—',
         ordinaryMinutes: hasAttendance ? ordinaryMinutes : 0,
         unworkedMinutes:
-          targetMinutes > 0 && !hasAttendance
-            ? targetMinutes
-            : targetMinutes > 0
-              ? unworkedMinutes
-              : 0,
+          absenceLabel || targetMinutes === 0
+            ? 0
+            : targetMinutes > 0 && !hasAttendance
+              ? targetMinutes
+              : targetMinutes > 0
+                ? unworkedMinutes
+                : 0,
         overtimeMinutes: hasAttendance ? overtimeMinutes : 0,
         resolvedKind: resolved.kind,
-        shiftName: labels.shiftName,
+        shiftName: absenceLabel && !hasAttendance ? absenceLabel : labels.shiftName,
         shiftRange: labels.shiftRange,
+        absenceLabel: hasAttendance ? null : absenceLabel,
       };
     }),
   );

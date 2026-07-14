@@ -143,6 +143,26 @@ export class PayrollNovedadesRepository implements IPayrollNovedadesRepository {
     };
   }
 
+  async findActiveRangesForEmployeeInPeriod(
+    tenantId: string,
+    employeeId: string,
+    periodStart: Date,
+    periodEnd: Date,
+  ): Promise<Array<{ startDate: Date; endDate: Date; type: NovedadType }>> {
+    return this.prisma.payrollNovedad.findMany({
+      where: {
+        tenantId,
+        employeeId,
+        deletedAt: null,
+        status: { in: ACTIVE_OVERLAP_STATUSES },
+        startDate: { lte: periodEnd },
+        endDate: { gte: periodStart },
+      },
+      select: { startDate: true, endDate: true, type: true },
+      orderBy: { startDate: 'asc' },
+    });
+  }
+
   async findApprovedForPeriodByEmployeeIds(
     tenantId: string,
     employeeIds: string[],

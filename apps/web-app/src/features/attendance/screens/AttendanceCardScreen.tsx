@@ -9,6 +9,7 @@ import {
   type AsistenciaTarjetaDayRow,
   type AsistenciaTarjetaExistingMark,
   type AsistenciaTarjetaMarkDraft,
+  type AsistenciaTarjetaMarkReasonOption,
   type AsistenciaTarjetaMarkType,
   type AsistenciaTarjetaRowAction,
   type AsistenciaTarjetaSortDirection,
@@ -18,10 +19,16 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { useMe } from '@/features/auth/hooks/useMe';
+import { canWritePayrollEmployee } from '@/config/rbac.config';
+import { PayrollNovedadSupportFileUpload } from '@/features/payroll/components/PayrollNovedadSupportFileUpload';
+import { uploadPayrollNovedadSupportDraft } from '@/features/payroll/api/payroll-novedades.client';
+import { useNovedadTypeConfigQuery } from '@/features/payroll/hooks/useNovedadTypeConfigQuery';
 import { useTheme } from '@/providers/ThemeProvider';
 
 import { ATTENDANCE_ROUTES } from '../constants/routes';
 import { useAttendanceCardData } from '../hooks/useAttendanceCardData';
+import { useOvertimeRequestsQuery } from '../hooks/useOvertimeRequests';
+import { useManualMarkingReasonsQuery } from '../hooks/useManualMarkingReasonsQuery';
 import {
   useCreateManualMarkingMutation,
   useDeleteManualMarkingMutation,
@@ -41,11 +48,12 @@ import {
   validateAttendanceDateRange,
 } from '../utils/attendance-card-dates';
 import { createMarkDraft, nextMarkType } from '../utils/attendance-card-drafts';
+import { formatOvertimeApprovalIndicator } from '../types/overtime.types';
 
 import styles from './AttendanceCardScreen.module.scss';
 
 const SUPER_ROLES = new Set(['OWNER', 'SUPER_ADMIN', 'ADMIN']);
-const MARKING_ROLES = new Set(['OWNER', 'SUPER_ADMIN', 'SUPERVISOR', 'MANAGER']);
+const PAYROLL_PROVISION_ROLES = new Set(['NOMINA', 'OWNER', 'SUPER_ADMIN']);
 
 interface LocationState {
   employeeId?: string;
@@ -74,6 +82,9 @@ export function AttendanceCardScreen(): React.JSX.Element {
   const [markingRow, setMarkingRow] = useState<AsistenciaTarjetaDayRow | null>(null);
   const [markDrafts, setMarkDrafts] = useState<AsistenciaTarjetaMarkDraft[]>([]);
   const [changeReason, setChangeReason] = useState('');
+  const [supportFile, setSupportFile] = useState<File | null>(null);
+  const [supportFileError, setSupportFileError] = useState<string | null>(null);
+  const [supportUploadResetKey, setSupportUploadResetKey] = useState(0);
   const menuRef = useRef<HTMLDivElement | null>(null);
 
   const employeeQuery = usePayrollEmployeeQuery(userId);
@@ -82,7 +93,7 @@ export function AttendanceCardScreen(): React.JSX.Element {
 
   const roleCode = meQuery.data?.roleCode?.toUpperCase() ?? '';
   const canAccessAnyLocation = SUPER_ROLES.has(roleCode);
-  const canEditMarking = MARKING_ROLES.has(roleCode);
+  const canEditMarking = canWritePayrollEmployee(roleCode);
   const hasLocationAccess = canAccessAnyLocation || !employee || employee.locationId === locationId;
 
   const { cardQuery, rows, summary } = useAttendanceCardData({
@@ -92,9 +103,72 @@ export function AttendanceCardScreen(): React.JSX.Element {
     enabled: Boolean(userId && employeeId && locationId && hasLocationAccess),
   });
 
+  const overtimeQuery = useOvertimeRequestsQuery(
+    {
+      payrollPeriod: appliedFrom.slice(0, 7),
+      employeeId,
+      take: 5,
+    },
+    Boolean(employeeId),
+  );
+  const overtimeRequest = overtimeQuery.data?.items[0];
+
   const upsertObservationMutation = useUpsertObservationMutation();
   const createManualMarkingMutation = useCreateManualMarkingMutation();
   const deleteManualMarkingMutation = useDeleteManualMarkingMutation();
+  const manualMarkingReasonsQuery = useManualMarkingReasonsQuery(canEditMarking);
+  const novedadTypeConfigQuery = useNovedadTypeConfigQuery(Boolean(markingRow));
+
+  const selectedManualReason = useMemo(
+    () => manualMarkingReasonsQuery.data?.find((option) => option.code === changeReason.trim()),
+    [manualMarkingReasonsQuery.data, changeReason],
+  );
+
+  const requiresMarkTimes =
+    changeReason.trim() === 'CORRECCION_MARCACION' ||
+    selectedManualReason?.target === 'ATTENDANCE_ONLY';
+
+  const requiresSupportDocument = useMemo(() => {
+    if (selectedManualReason?.target !== 'PAYROLL_NOVEDAD' || !selectedManualReason.novedadType) {
+      return false;
+    }
+    const config = novedadTypeConfigQuery.data?.find(
+      (item) => item.type === selectedManualReason.novedadType,
+    );
+    return config?.requiresSupportDocument ?? false;
+  }, [novedadTypeConfigQuery.data, selectedManualReason]);
+
+  const reasonOptions = useMemo((): AsistenciaTarjetaMarkReasonOption[] => {
+    const catalog = manualMarkingReasonsQuery.data ?? [];
+    const canProvisionPayroll = PAYROLL_PROVISION_ROLES.has(roleCode);
+    const filtered = canProvisionPayroll
+      ? catalog
+      : catalog.filter((option) => option.target === 'ATTENDANCE_ONLY');
+
+    return [
+      { value: '', label: 'Seleccione motivo de cambio…' },
+      ...filtered.map((option) => ({ value: option.code, label: option.label })),
+    ];
+  }, [manualMarkingReasonsQuery.data, roleCode]);
+
+  useEffect(() => {
+    if (!requiresSupportDocument) {
+      setSupportFile(null);
+      setSupportFileError(null);
+      setSupportUploadResetKey((current) => current + 1);
+    }
+  }, [requiresSupportDocument]);
+
+  useEffect(() => {
+    if (!markingRow) return;
+    if (requiresMarkTimes) {
+      setMarkDrafts((current) =>
+        current.length > 0 ? current : [createMarkDraft(markingRow.id, 'ENTRY')],
+      );
+      return;
+    }
+    setMarkDrafts([]);
+  }, [markingRow, requiresMarkTimes]);
 
   const sortedRows = useMemo(
     () => sortAttendanceCardRows(rows, sortKey, sortDirection),
@@ -107,6 +181,17 @@ export function AttendanceCardScreen(): React.JSX.Element {
     totalDays > ATTENDANCE_CARD_PAGE_SIZE
       ? sortedRows.slice((page - 1) * ATTENDANCE_CARD_PAGE_SIZE, page * ATTENDANCE_CARD_PAGE_SIZE)
       : sortedRows;
+
+  const paginatedRowsWithOvertime = useMemo(() => {
+    if (!overtimeRequest) return paginatedRows;
+    const indicator = formatOvertimeApprovalIndicator(
+      overtimeRequest.status,
+      overtimeRequest.accumulatedMinutes,
+    );
+    return paginatedRows.map((row) =>
+      row.overtimeHours !== '—' ? { ...row, approvedOvertimeHours: indicator } : row,
+    );
+  }, [paginatedRows, overtimeRequest]);
 
   const header = mapPayrollEmployeeToCardHeader(employee);
 
@@ -144,8 +229,8 @@ export function AttendanceCardScreen(): React.JSX.Element {
         setOpenMenuRowId(null);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
   }, []);
 
   const handleSearch = () => {
@@ -180,15 +265,21 @@ export function AttendanceCardScreen(): React.JSX.Element {
       return;
     }
 
+    if (action !== 'marking') return;
+
+    setOpenMenuRowId(null);
+
     if (!canEditMarking) {
       toast.error('No tienes permisos para editar marcaciones.');
       return;
     }
 
-    setOpenMenuRowId(null);
     setMarkingRow(row);
-    setMarkDrafts([createMarkDraft(row.id, 'ENTRY')]);
+    setMarkDrafts([]);
     setChangeReason('');
+    setSupportFile(null);
+    setSupportFileError(null);
+    setSupportUploadResetKey((current) => current + 1);
   };
 
   const saveObservationModal = async () => {
@@ -213,12 +304,22 @@ export function AttendanceCardScreen(): React.JSX.Element {
     setMarkingRow(null);
     setMarkDrafts([]);
     setChangeReason('');
+    setSupportFile(null);
+    setSupportFileError(null);
+    setSupportUploadResetKey((current) => current + 1);
   };
 
   const resetMarkingModal = () => {
     if (!markingRow) return;
-    setMarkDrafts([createMarkDraft(markingRow.id, 'ENTRY')]);
     setChangeReason('');
+    setMarkDrafts([]);
+    setSupportFile(null);
+    setSupportFileError(null);
+    setSupportUploadResetKey((current) => current + 1);
+  };
+
+  const handleChangeReason = (value: string) => {
+    setChangeReason(value);
   };
 
   const saveMarkingModal = async () => {
@@ -229,20 +330,60 @@ export function AttendanceCardScreen(): React.JSX.Element {
       return;
     }
 
+    if (requiresSupportDocument && !supportFile) {
+      setSupportFileError('Adjunte el soporte requerido para este tipo');
+      toast.error('Adjunte el soporte requerido para este tipo');
+      return;
+    }
+
+    if (!employeeId) {
+      toast.error('No se pudo identificar al colaborador.');
+      return;
+    }
+
     try {
-      for (const draft of markDrafts) {
+      const selectedReason = manualMarkingReasonsQuery.data?.find(
+        (option) => option.code === changeReason.trim(),
+      );
+      const provisionsPayroll =
+        selectedReason?.target === 'PAYROLL_NOVEDAD' || selectedReason?.target === 'MEDICAL_LEAVE';
+
+      let supportStorageObjectId: string | undefined;
+      if (requiresSupportDocument && supportFile) {
+        const uploaded = await uploadPayrollNovedadSupportDraft(employeeId, supportFile);
+        supportStorageObjectId = uploaded.id;
+      }
+
+      if (requiresMarkTimes) {
+        if (markDrafts.length === 0) {
+          toast.error('Agregue al menos una marca manual.');
+          return;
+        }
+
+        for (const draft of markDrafts) {
+          await createManualMarkingMutation.mutateAsync({
+            userId,
+            input: {
+              workDate: markingRow.id,
+              eventType: draft.type,
+              timestamp: new Date(draft.datetimeLocal).toISOString(),
+              reason: 'CORRECCION_MARCACION',
+              supportStorageObjectId,
+            },
+          });
+        }
+      } else {
         await createManualMarkingMutation.mutateAsync({
           userId,
           input: {
             workDate: markingRow.id,
-            eventType: draft.type,
-            timestamp: new Date(draft.datetimeLocal).toISOString(),
             reason: changeReason.trim(),
+            ...(supportStorageObjectId ? { supportStorageObjectId } : {}),
           },
         });
       }
       closeMarkingModal();
-      toast.success('Marcación guardada');
+      toast.success(provisionsPayroll ? 'Marcación y novedad registradas' : 'Marcación guardada');
     } catch {
       toast.error('No se pudo guardar la marcación.');
     }
@@ -313,7 +454,7 @@ export function AttendanceCardScreen(): React.JSX.Element {
       theme={asistenciaTheme}
       header={header}
       summaryMetrics={summary}
-      rows={paginatedRows}
+      rows={paginatedRowsWithOvertime}
       sortKey={sortKey}
       sortDirection={sortDirection}
       openMenuRowId={openMenuRowId}
@@ -392,7 +533,22 @@ export function AttendanceCardScreen(): React.JSX.Element {
             dateLabel={markingRow?.dateLabel ?? ''}
             marks={markDrafts}
             changeReason={changeReason}
+            reasonOptions={reasonOptions}
             existingMarks={existingMarksForDay}
+            supportDocumentSlot={
+              requiresSupportDocument ? (
+                <AsistenciaTarjetaModalField label="Soporte requerido (PDF, JPG o PNG)">
+                  <PayrollNovedadSupportFileUpload
+                    onChange={setSupportFile}
+                    error={supportFileError}
+                    onErrorChange={setSupportFileError}
+                    resetKey={supportUploadResetKey}
+                    disabled={createManualMarkingMutation.isPending}
+                  />
+                </AsistenciaTarjetaModalField>
+              ) : undefined
+            }
+            showMarkTimeFields={requiresMarkTimes}
             theme={asistenciaTheme}
             onClose={closeMarkingModal}
             onReset={resetMarkingModal}
@@ -401,7 +557,7 @@ export function AttendanceCardScreen(): React.JSX.Element {
             onRemoveMark={removeMarkDraft}
             onMarkTypeChange={updateMarkDraftType}
             onMarkDatetimeChange={updateMarkDraftDatetime}
-            onChangeReasonChange={setChangeReason}
+            onChangeReasonChange={handleChangeReason}
             onDeleteExistingMark={handleDeleteExistingMark}
           />
         </>
