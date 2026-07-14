@@ -1,8 +1,14 @@
 import { Test, type TestingModule } from '@nestjs/testing';
 import { DocumentType } from '@prisma/client';
 
+import { EmployeeHistoryRepository } from '../../../payroll/repository/employee-history.repository';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { AdminUsersRepository } from '../repository/admin-users.repository';
+
+const mockEmployeeHistoryRepository = {
+  syncSalaryHistoryTx: jest.fn(),
+  syncFundHistoryTx: jest.fn(),
+};
 
 const mockPrisma = {
   user: {
@@ -55,21 +61,25 @@ const baseRow = {
   employeeDetails: { name: 'Test User' },
 };
 
-describe('AdminUsersRepository', () => {
+describe('AdminUsersRepository', (): void => {
   let repo: AdminUsersRepository;
 
-  beforeEach(async () => {
+  beforeEach(async (): Promise<void> => {
     jest.clearAllMocks();
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [AdminUsersRepository, { provide: PrismaService, useValue: mockPrisma }],
+      providers: [
+        AdminUsersRepository,
+        { provide: PrismaService, useValue: mockPrisma },
+        { provide: EmployeeHistoryRepository, useValue: mockEmployeeHistoryRepository },
+      ],
     }).compile();
 
     repo = module.get<AdminUsersRepository>(AdminUsersRepository);
   });
 
-  describe('findAll', () => {
-    it('filters inactive users by default', async () => {
+  describe('findAll', (): void => {
+    it('filters inactive users by default', async (): Promise<void> => {
       mockPrisma.user.findMany.mockResolvedValue([baseRow]);
 
       await repo.findAll('t1');
@@ -81,7 +91,7 @@ describe('AdminUsersRepository', () => {
       );
     });
 
-    it('includes inactive when flag is true', async () => {
+    it('includes inactive when flag is true', async (): Promise<void> => {
       mockPrisma.user.findMany.mockResolvedValue([baseRow]);
 
       await repo.findAll('t1', true);
@@ -94,8 +104,8 @@ describe('AdminUsersRepository', () => {
     });
   });
 
-  describe('deactivate', () => {
-    it('sets isActive=false and deletedAt', async () => {
+  describe('deactivate', (): void => {
+    it('sets isActive=false and deletedAt', async (): Promise<void> => {
       mockPrisma.user.update.mockResolvedValue(baseRow);
 
       await repo.deactivate('t1', 'u1');
@@ -107,8 +117,67 @@ describe('AdminUsersRepository', () => {
     });
   });
 
-  describe('setUserPermissionOverrides', () => {
-    it('runs deleteMany + createMany in transaction', async () => {
+  describe('createWithEmployeeDetails', (): void => {
+    it('seeds placeholder salary and fund history in the same transaction (OS-588)', async (): Promise<void> => {
+      const createdUser = { id: 'user-new', role: baseRow.role, employeeDetails: null };
+      const createdEmployeeDetails = {
+        id: 'emp-new',
+        salaryType: 'ORDINARIO',
+        salaryAmount: 0,
+        cesantiasFundName: 'Por definir',
+        pensionFundName: 'Por definir',
+      };
+      const tx = {
+        user: { create: jest.fn().mockResolvedValue(createdUser) },
+        employeeDetails: { create: jest.fn().mockResolvedValue(createdEmployeeDetails) },
+        operationalUser: { create: jest.fn() },
+        userLocation: { create: jest.fn() },
+      };
+      mockPrisma.$transaction.mockImplementation((callback: (arg: typeof tx) => unknown): unknown =>
+        callback(tx),
+      );
+      mockPrisma.location.findFirst.mockResolvedValue({ id: 'loc-1' });
+
+      await repo.createWithEmployeeDetails('t1', {
+        name: 'New Employee',
+        cedula: '99999999',
+        documentType: DocumentType.CC,
+        email: 'new@test.com',
+        roleId: 'r1',
+        passwordHash: 'hash',
+        createdBy: 'admin-1',
+      });
+
+      expect(mockEmployeeHistoryRepository.syncSalaryHistoryTx).toHaveBeenCalledWith(
+        tx,
+        expect.objectContaining({
+          tenantId: 't1',
+          employeeDetailsId: 'emp-new',
+          salaryAmount: 0,
+          changedBy: 'admin-1',
+        }),
+      );
+      expect(mockEmployeeHistoryRepository.syncFundHistoryTx).toHaveBeenCalledWith(
+        tx,
+        expect.objectContaining({
+          tenantId: 't1',
+          employeeDetailsId: 'emp-new',
+          fundType: 'CESANTIAS_FUND',
+          fundName: 'Por definir',
+        }),
+      );
+      expect(mockEmployeeHistoryRepository.syncFundHistoryTx).toHaveBeenCalledWith(
+        tx,
+        expect.objectContaining({
+          fundType: 'PENSION_FUND',
+          fundName: 'Por definir',
+        }),
+      );
+    });
+  });
+
+  describe('setUserPermissionOverrides', (): void => {
+    it('runs deleteMany + createMany in transaction', async (): Promise<void> => {
       mockPrisma.$transaction.mockResolvedValue([]);
 
       await repo.setUserPermissionOverrides('u1', []);
@@ -117,8 +186,8 @@ describe('AdminUsersRepository', () => {
     });
   });
 
-  describe('findEmployeeProvisioningContext', () => {
-    it('returns null when user has no employee details', async () => {
+  describe('findEmployeeProvisioningContext', (): void => {
+    it('returns null when user has no employee details', async (): Promise<void> => {
       mockPrisma.user.findFirst.mockResolvedValue({
         id: 'u1',
         email: 'test@test.com',
@@ -133,7 +202,7 @@ describe('AdminUsersRepository', () => {
       expect(result).toBeNull();
     });
 
-    it('returns provisioning context when employee details exist', async () => {
+    it('returns provisioning context when employee details exist', async (): Promise<void> => {
       mockPrisma.user.findFirst.mockResolvedValue({
         id: 'u1',
         email: 'test@test.com',
@@ -157,8 +226,8 @@ describe('AdminUsersRepository', () => {
     });
   });
 
-  describe('completeEmployeeUserProvisioning', () => {
-    it('updates user, employee, operational profile and location in transaction', async () => {
+  describe('completeEmployeeUserProvisioning', (): void => {
+    it('updates user, employee, operational profile and location in transaction', async (): Promise<void> => {
       const tx = {
         user: {
           update: jest.fn(),
@@ -172,7 +241,9 @@ describe('AdminUsersRepository', () => {
         },
         userLocation: { upsert: jest.fn() },
       };
-      mockPrisma.$transaction.mockImplementation(async (callback) => callback(tx));
+      mockPrisma.$transaction.mockImplementation((callback: (arg: typeof tx) => unknown): unknown =>
+        callback(tx),
+      );
 
       const result = await repo.completeEmployeeUserProvisioning('t1', 'u1', {
         name: 'Updated Name',
@@ -196,7 +267,7 @@ describe('AdminUsersRepository', () => {
       expect(result.name).toBe('Updated Name');
     });
 
-    it('updates existing operational profile when already present', async () => {
+    it('updates existing operational profile when already present', async (): Promise<void> => {
       const tx = {
         user: {
           update: jest.fn(),
@@ -210,7 +281,9 @@ describe('AdminUsersRepository', () => {
         },
         userLocation: { upsert: jest.fn() },
       };
-      mockPrisma.$transaction.mockImplementation(async (callback) => callback(tx));
+      mockPrisma.$transaction.mockImplementation((callback: (arg: typeof tx) => unknown): unknown =>
+        callback(tx),
+      );
 
       await repo.completeEmployeeUserProvisioning('t1', 'u1', {
         name: 'Updated Name',

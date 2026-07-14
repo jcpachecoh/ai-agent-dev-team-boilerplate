@@ -1,6 +1,7 @@
 import { getGraphqlAuthToken } from '@/lib/auth-token';
 import { getTenantId } from '@/lib/tenant';
 
+import type { EmployeeCatalogOption, EmployeeCatalogType } from '../types/employee-catalog.types';
 import type {
   AttendanceExportQuery,
   AttendanceReportQuery,
@@ -17,7 +18,6 @@ import type {
   PayrollEmployeesFilters,
   UpdatePayrollEmployeeInput,
 } from '../types/payroll.types';
-import type { EmployeeCatalogOption, EmployeeCatalogType } from '../types/employee-catalog.types';
 
 export class PayrollApiError extends Error {
   constructor(
@@ -32,7 +32,9 @@ export class PayrollApiError extends Error {
 function toQueryString(params: Record<string, string | number | boolean | undefined>): string {
   const search = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
-    if (value === undefined || value === null || value === '') continue;
+    if (value === undefined || value === null || value === '') {
+      continue;
+    }
     search.set(key, String(value));
   }
   const encoded = search.toString();
@@ -40,11 +42,17 @@ function toQueryString(params: Record<string, string | number | boolean | undefi
 }
 
 async function parseErrorMessage(body: string, fallback: string): Promise<string> {
-  if (!body) return fallback;
+  if (!body) {
+    return fallback;
+  }
   try {
     const parsed = JSON.parse(body) as { message?: string | string[] };
-    if (Array.isArray(parsed.message)) return parsed.message.join('. ');
-    if (typeof parsed.message === 'string') return parsed.message;
+    if (Array.isArray(parsed.message)) {
+      return parsed.message.join('. ');
+    }
+    if (typeof parsed.message === 'string') {
+      return parsed.message;
+    }
   } catch {
     // Ignore parse errors and return plain text body
   }
@@ -126,6 +134,33 @@ async function payrollFetchBlob(path: string, init?: RequestInit): Promise<Blob>
   }
 
   return response.blob();
+}
+
+/** Variante de payrollFetchBlob que expone los headers de la respuesta — necesaria cuando
+ * el backend viaja metadata en headers custom (p.ej. X-Cesantias-Export-Skipped-Count) o
+ * en Content-Disposition, en vez de en el cuerpo (que aquí es binario). */
+export async function payrollFetchBlobWithHeaders(
+  path: string,
+  init?: RequestInit,
+): Promise<{ blob: Blob; headers: Headers }> {
+  const response = await fetch(buildPayrollUrl(path), {
+    ...init,
+    headers: buildPayrollHeaders(init),
+  });
+
+  if (response.status === 401) {
+    window.location.href = '/login';
+    throw new PayrollApiError('No autorizado', 401);
+  }
+
+  if (!response.ok) {
+    const body = await response.text();
+    const message = await parseErrorMessage(body, response.statusText);
+    throw new PayrollApiError(message, response.status);
+  }
+
+  const blob = await response.blob();
+  return { blob, headers: response.headers };
 }
 
 export function getPayrollReport(query: PayrollReportQuery): Promise<PayrollReportResponse> {

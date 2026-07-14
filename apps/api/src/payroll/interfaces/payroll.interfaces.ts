@@ -1,5 +1,6 @@
 import {
   EmployeeDetails,
+  EmployeePersonalData,
   User,
   EmployeeContractType,
   SalaryType,
@@ -41,6 +42,8 @@ export interface CreateEmployeeData {
   costCenter: CostCenter;
   laborClassification: LaborClassification;
   nonSalaryAmount?: number | Decimal | null;
+  /** OS-588 — actor que origina la creación, propagado al historial salarial/de fondos. */
+  changedBy?: string;
 }
 
 export interface UpdateEmployeeData {
@@ -88,6 +91,8 @@ export interface LinkedUserRecord {
 export interface UpdateEmployeePayload {
   employee: UpdateEmployeeData & { hasTransportSubsidy?: boolean };
   user?: UpdateEmployeeUserData;
+  /** OS-588 — actor que origina el update, propagado al historial salarial/de fondos. */
+  changedBy?: string;
 }
 
 export interface ListEmployeesFilters {
@@ -112,6 +117,15 @@ export interface IPayrollRepository {
     data: CreateEmployeeData & { hasTransportSubsidy: boolean },
   ): Promise<EmployeeDetails & { user: User }>;
   findAll(filters: ListEmployeesFilters): Promise<(EmployeeDetails & { user: User })[]>;
+  /**
+   * OS-588 (fase 3) — lectura en batch (sin paginar) para exportaciones: trae user +
+   * personalData de un conjunto puntual de employeeIds en una sola query, evitando N+1.
+   * `personalData` puede ser null (dato opcional por empleado, ver EmployeePersonalData).
+   */
+  findManyWithPersonalDataByIds(
+    tenantId: string,
+    employeeIds: string[],
+  ): Promise<(EmployeeDetails & { user: User; personalData: EmployeePersonalData | null })[]>;
   findById(id: string): Promise<(EmployeeDetails & { user: User }) | null>;
   findByUserId(userId: string): Promise<(EmployeeDetails & { user: User }) | null>;
   update(

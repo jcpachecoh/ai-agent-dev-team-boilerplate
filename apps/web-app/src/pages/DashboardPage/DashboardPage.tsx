@@ -1,10 +1,18 @@
 import { Activity } from 'lucide-react';
 
+import { CesantiasAlertBanner } from '@/features/payroll/components/CesantiasAlertBanner';
+
 import styles from './DashboardPage.module.scss';
 
 export default function DashboardPage(): React.JSX.Element {
   return (
     <section className={styles.page}>
+      {/* OS-588 (fase 4) — se oculta sola cuando no hay liquidaciones de cesantías
+          pendientes (sin dejar un contenedor vacío); el rol NOMINA no tiene acceso a este
+          módulo (DASHBOARD), por eso el mismo banner también se muestra en
+          /payroll/cesantias. */}
+      <CesantiasAlertBanner className={styles.alertBanner} />
+
       <div className={styles.heroIcon} aria-hidden>
         <Activity size={48} />
       </div>

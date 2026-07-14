@@ -14,6 +14,7 @@ import {
   StockUnit,
 } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { syncEmployeeCompensationHistory } from './employee-compensation-history.seed-util';
 
 const SALT_ROUNDS = 12;
 
@@ -940,7 +941,7 @@ export async function seedPlantSupervisor(prisma: PrismaClient): Promise<void> {
   const operator2PinHashEmployee = await bcrypt.hash('4321', SALT_ROUNDS);
   const opsAdminPinHashEmployee = await bcrypt.hash('5678', SALT_ROUNDS);
 
-  await prisma.employeeDetails.upsert({
+  const operator2Employee = await prisma.employeeDetails.upsert({
     where: { userId: GLOBAL_MES_OPERATOR2_USER_ID },
     update: { isActive: true, pinHash: operator2PinHashEmployee, name: 'Carlos Mendoza' },
     create: {
@@ -968,8 +969,9 @@ export async function seedPlantSupervisor(prisma: PrismaClient): Promise<void> {
       isActive: true,
     },
   });
+  await syncEmployeeCompensationHistory(prisma, operator2Employee);
 
-  await prisma.employeeDetails.upsert({
+  const opsAdminEmployee = await prisma.employeeDetails.upsert({
     where: { userId: GLOBAL_MES_OPERATIONS_ADMIN_USER_ID },
     update: { isActive: true, pinHash: opsAdminPinHashEmployee, name: 'Admin de Operaciones' },
     create: {
@@ -997,6 +999,7 @@ export async function seedPlantSupervisor(prisma: PrismaClient): Promise<void> {
       isActive: true,
     },
   });
+  await syncEmployeeCompensationHistory(prisma, opsAdminEmployee);
   console.log('EmployeeDetails: seeded for operator2 and operations_admin');
 
   console.log(

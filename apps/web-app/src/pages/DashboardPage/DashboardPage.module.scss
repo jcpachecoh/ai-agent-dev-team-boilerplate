@@ -9,6 +9,11 @@
   padding: t.$space-12 t.$space-8;
 }
 
+.alertBanner {
+  width: min(100%, 50rem);
+  margin-bottom: t.$space-6;
+}
+
 .heroIcon {
   display: inline-flex;
   align-items: center;

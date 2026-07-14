@@ -10,6 +10,7 @@ import {
 } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { detectShiftForTs, getTodayWorkDate } from './attendance.seed';
+import { syncEmployeeCompensationHistory } from './employee-compensation-history.seed-util';
 
 const SALT_ROUNDS = 12;
 const TENANT_ID = 'palos-de-lena';
@@ -231,6 +232,8 @@ export async function seedBulkAttendanceCollaborators(prisma: PrismaClient): Pro
         portalWorkerEnabled,
       },
     });
+
+    await syncEmployeeCompensationHistory(prisma, employee);
 
     await prisma.employeePersonalData.upsert({
       where: { employeeDetailsId: employee.id },

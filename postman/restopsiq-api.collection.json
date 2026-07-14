@@ -626,30 +626,6 @@
       "value": "2026-03",
       "type": "string",
       "description": "Filtro mes listado incapacidades (YYYY-MM)"
-    },
-    {
-      "key": "payrollNovedadEmployeeId",
-      "value": "",
-      "type": "string",
-      "description": "EmployeeDetails.id capturado de GET /api/employees (NOM-14)"
-    },
-    {
-      "key": "payrollNovedadId",
-      "value": "",
-      "type": "string",
-      "description": "PayrollNovedad.id capturado al registrar novedad"
-    },
-    {
-      "key": "payrollNovedadStartDate",
-      "value": "2026-07-01",
-      "type": "string",
-      "description": "Fecha inicio novedad (YYYY-MM-DD)"
-    },
-    {
-      "key": "payrollNovedadEndDate",
-      "value": "2026-07-03",
-      "type": "string",
-      "description": "Fecha fin novedad (YYYY-MM-DD)"
     }
   ],
   "item": [
@@ -14561,8 +14537,14 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessTokenOperator}}" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenOperator}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "url": "{{baseUrl}}/api/vacations/balance/{{vacationEmployeeId}}"
           },
@@ -14591,9 +14573,18 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessTokenOperator}}" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenOperator}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -14621,8 +14612,14 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessTokenNomina}}" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenNomina}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "url": "{{baseUrl}}/api/vacations/requests?take=20"
           },
@@ -14644,8 +14641,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessTokenSupervisor}}" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenSupervisor}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "url": "{{baseUrl}}/api/vacations/requests/{{vacationRequestId}}/approve-level-1"
           },
@@ -14667,8 +14670,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessTokenNomina}}" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenNomina}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "url": "{{baseUrl}}/api/vacations/requests/{{vacationRequestId}}/approve-level-2"
           },
@@ -14694,8 +14703,14 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "url": "{{baseUrl}}/api/vacations/requests/{{vacationRequestId}}/letter"
           },
@@ -14721,9 +14736,18 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessTokenSupervisor}}" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenSupervisor}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -14749,11 +14773,23 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessTokenSupervisor}}" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenSupervisor}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
-            "body": { "mode": "raw", "raw": "{}" },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
             "url": "{{baseUrl}}/api/vacations/requests/{{vacationPendingRequestId}}/reject"
           },
           "event": [
@@ -14773,8 +14809,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "url": "{{baseUrl}}/api/vacations/requests/{{vacationPendingRequestId}}/approve-level-1"
           },
@@ -14795,8 +14837,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessTokenSupervisor}}" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenSupervisor}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "url": "{{baseUrl}}/api/vacations/requests/{{vacationPendingRequestId}}/approve-level-2"
           },
@@ -14817,8 +14865,14 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "url": "{{baseUrl}}/api/vacations/requests/{{vacationPendingRequestId}}/letter"
           },
@@ -14843,8 +14897,14 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessTokenNomina}}" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenNomina}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "url": "{{baseUrl}}/api/employees?limit=5"
           },
@@ -14870,9 +14930,18 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessTokenNomina}}" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenNomina}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -14905,8 +14974,14 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessTokenNomina}}" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenNomina}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "url": "{{baseUrl}}/api/medical-leaves?month={{medicalLeaveMonth}}&take=20"
           },
@@ -14928,8 +15003,14 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessTokenNomina}}" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenNomina}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "url": "{{baseUrl}}/api/medical-leaves/{{medicalLeaveId}}"
           },
@@ -14952,8 +15033,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessTokenNomina}}" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenNomina}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "body": {
               "mode": "formdata",
@@ -14990,9 +15077,18 @@
           "request": {
             "method": "PATCH",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessTokenNomina}}" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenNomina}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -15018,9 +15114,18 @@
           "request": {
             "method": "PATCH",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessTokenNomina}}" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenNomina}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -15046,8 +15151,14 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessTokenNomina}}" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenNomina}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "url": "{{baseUrl}}/api/medical-leaves/{{medicalLeaveId}}/support-document/url"
           },
@@ -15069,9 +15180,18 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessTokenOperator}}" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenOperator}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -15096,8 +15216,14 @@
           "request": {
             "method": "DELETE",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessTokenNomina}}" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenNomina}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "url": "{{baseUrl}}/api/medical-leaves/{{medicalLeaveId}}"
           },
@@ -15114,6 +15240,454 @@
       ]
     },
     {
+      "name": "OS-588 Cesantías",
+      "description": "Liquidación anual de cesantías e intereses (fase 2 — cálculo, listado y detalle). Requiere Bearer {{accessToken}} y x-tenant-id: {{tenantId}}. Calcular requiere rol de escritura de Nómina (OWNER/SUPER_ADMIN/SUPERVISOR/MANAGER).",
+      "item": [
+        {
+          "name": "POST /api/cesantias/calculate",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"year\": 2026\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/cesantias/calculate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cesantias", "calculate"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('calculate: status 201', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code === 201) {",
+                  "    const body = pm.response.json();",
+                  "    if (body.liquidations && body.liquidations.length > 0) {",
+                  "        pm.environment.set('cesantiasLiquidationId', body.liquidations[0].id);",
+                  "    }",
+                  "    pm.test('response has created/updated/skipped summary', () => {",
+                  "        pm.expect(body).to.have.property('created');",
+                  "        pm.expect(body).to.have.property('skipped');",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/cesantias/calculate — año fuera de rango (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"year\": 1899\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/cesantias/calculate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cesantias", "calculate"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('year out of range: status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/cesantias",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cesantias?year=2026&limit=20&offset=0",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cesantias"],
+              "query": [
+                {
+                  "key": "year",
+                  "value": "2026"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('list: status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('list: paginated shape', () => {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body).to.have.property('items');",
+                  "    pm.expect(body).to.have.property('total');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/cesantias/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cesantias/{{cesantiasLiquidationId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cesantias", "{{cesantiasLiquidationId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('detail: status 200', () => pm.response.to.have.status(200));"]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/cesantias/:id — inexistente (404)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cesantias/no-existe-este-id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cesantias", "no-existe-este-id"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('detail not found: status 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/cesantias/alert-summary",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cesantias/alert-summary",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cesantias", "alert-summary"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('alert-summary: status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) {",
+                  "    const body = pm.response.json();",
+                  "    pm.test('response has targetYear/deadlineDate/pendingCount/daysUntilDeadline/status', () => {",
+                  "        pm.expect(body).to.have.property('targetYear');",
+                  "        pm.expect(body).to.have.property('deadlineDate');",
+                  "        pm.expect(body).to.have.property('pendingCount');",
+                  "        pm.expect(body).to.have.property('daysUntilDeadline');",
+                  "        pm.expect(body).to.have.property('status');",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/cesantias/export-availability",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cesantias/export-availability?year=2026",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cesantias", "export-availability"],
+              "query": [
+                {
+                  "key": "year",
+                  "value": "2026"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('export-availability: status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) {",
+                  "    const body = pm.response.json();",
+                  "    pm.test('response has fna/privateOperator booleans', () => {",
+                  "        pm.expect(body).to.have.property('fna');",
+                  "        pm.expect(body).to.have.property('privateOperator');",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/cesantias — sin token (401)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cesantias",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cesantias"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('no token: status 401', () => pm.response.to.have.status(401));"]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/cesantias/export/fna",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"year\": 2026\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/cesantias/export/fna",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cesantias", "export", "fna"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('export fna: status 201', () => pm.response.to.have.status(201));",
+                  "pm.test('export fna: content-type is xlsx', () => {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('spreadsheetml');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/cesantias/export/private-funds",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"year\": 2026\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/cesantias/export/private-funds",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cesantias", "export", "private-funds"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('export private-funds: status 201', () => pm.response.to.have.status(201));",
+                  "pm.test('export private-funds: content-type is xlsx', () => {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('spreadsheetml');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/cesantias/export/fna — año fuera de rango (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"year\": 1990\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/cesantias/export/fna",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cesantias", "export", "fna"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('export fna invalid year: status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "NOM-14 Payroll Novedades",
       "description": "Novedades de nómina NOM-14 — ausencias, permisos y licencias con flujo supervisor → RRHH.\n\nPrerrequisitos:\n1. Login **NOMINA** (`nomina@palos-de-lena.dev`) → `{{accessTokenNomina}}`\n2. Login **Supervisor** (`mes-supervisor@palos-de-lena.dev`) → `{{accessTokenSupervisor}}`\n3. Login **Operador** (`mes-operator@palos-de-lena.dev`) → `{{accessTokenOperator}}` (solicitud empleado)\n4. Headers: `Authorization: Bearer <token>`, `x-tenant-id: {{tenantId}}`\n5. Ejecutar migración `payroll_novedades` y seed (`pnpm db:seed`)\n\nOrden feliz (permiso remunerado): GET employees → POST submit (OPERATOR) → Approve supervisor → Approve RRHH.\n\nOrden feliz (licencia maternidad): POST submit directo a bandeja RRHH sin paso supervisor.\n\nNota upload: adjunta manualmente PDF/JPG/PNG en POST Support.",
       "item": [
@@ -15122,8 +15696,14 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessTokenNomina}}" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenNomina}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "url": "{{baseUrl}}/api/employees?limit=5"
           },
@@ -15148,8 +15728,14 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessTokenNomina}}" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenNomina}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "url": "{{baseUrl}}/api/payroll-novedades/type-config"
           },
@@ -15171,9 +15757,18 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessTokenOperator}}" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenOperator}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -15204,8 +15799,14 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessTokenNomina}}" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenNomina}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "url": "{{baseUrl}}/api/payroll-novedades?rrhhInbox=true&take=20"
           },
@@ -15227,8 +15828,14 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessTokenSupervisor}}" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenSupervisor}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "url": "{{baseUrl}}/api/payroll-novedades?supervisorInbox=true&take=20"
           },
@@ -15250,8 +15857,14 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessTokenNomina}}" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenNomina}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "url": "{{baseUrl}}/api/payroll-novedades/{{payrollNovedadId}}"
           },
@@ -15273,8 +15886,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessTokenSupervisor}}" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenSupervisor}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "url": "{{baseUrl}}/api/payroll-novedades/{{payrollNovedadId}}/approve/supervisor"
           },
@@ -15296,8 +15915,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessTokenNomina}}" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenNomina}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "url": "{{baseUrl}}/api/payroll-novedades/{{payrollNovedadId}}/approve/rrhh"
           },
@@ -15319,9 +15944,18 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessTokenNomina}}" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenNomina}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -15349,9 +15983,18 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessTokenNomina}}" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenNomina}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -15376,9 +16019,18 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessTokenNomina}}" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenNomina}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -15404,8 +16056,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessTokenNomina}}" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenNomina}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "body": {
               "mode": "formdata",
@@ -15439,8 +16097,14 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessTokenNomina}}" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenNomina}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "url": "{{baseUrl}}/api/payroll-novedades/{{payrollNovedadId}}/support/download"
           },
@@ -15462,9 +16126,18 @@
           "request": {
             "method": "PATCH",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessTokenNomina}}" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenNomina}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",

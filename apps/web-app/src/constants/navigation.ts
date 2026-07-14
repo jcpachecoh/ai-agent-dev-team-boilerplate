@@ -18,16 +18,15 @@ import {
   LayoutGrid,
   List,
   Map,
+  PiggyBank,
   MapPin,
   Monitor,
   Package,
   Scale,
   Palmtree,
-  Settings,
   Shield,
   ShieldCheck,
   Stethoscope,
-  Truck,
   Tags,
   TriangleAlert,
   Users,
@@ -268,6 +267,12 @@ export const navigationItems: NavItem[] = [
         path: '/payroll/vacations',
         icon: Palmtree,
       },
+      {
+        id: 'payroll-cesantias',
+        label: 'Cesantías',
+        path: '/payroll/cesantias',
+        icon: PiggyBank,
+      },
     ],
   },
   {
@@ -386,7 +391,9 @@ const routeLabels: Record<string, string> = {
 
 function findParentNavItem(pathname: string): NavItem | undefined {
   return navigationItems.find((item) => {
-    if (item.path === pathname) return true;
+    if (item.path === pathname) {
+      return true;
+    }
     return item.children?.some((child) => child.path === pathname);
   });
 }
@@ -414,7 +421,9 @@ export function getBreadcrumbsForPath(pathname: string): BreadcrumbItem[] {
 }
 
 export function isNavPathActive(pathname: string, path: string): boolean {
-  if (path === '/') return pathname === '/';
+  if (path === '/') {
+    return pathname === '/';
+  }
   return pathname === path || pathname.startsWith(`${path}/`);
 }
 
@@ -423,12 +432,16 @@ export function isNavChildPathActive(pathname: string, path: string, end = true)
   if (end) {
     return pathname === path;
   }
-  if (path === '/') return pathname === '/';
+  if (path === '/') {
+    return pathname === '/';
+  }
   return pathname === path || pathname.startsWith(`${path}/`);
 }
 
 export function isNavItemActive(pathname: string, item: NavItem): boolean {
-  if (item.path && isNavPathActive(pathname, item.path)) return true;
+  if (item.path && isNavPathActive(pathname, item.path)) {
+    return true;
+  }
   return (
     item.children?.some((child) => isNavChildPathActive(pathname, child.path, child.end ?? true)) ??
     false

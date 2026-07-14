@@ -1,34 +1,42 @@
 import { Module } from '@nestjs/common';
-import { AuthModule } from '../auth/auth.module';
-import { PrismaModule } from '../prisma/prisma.module';
+
 import { AuditModule } from '../audit/audit.module';
+import { AuthModule } from '../auth/auth.module';
 import { EmployeeSocialProfileModule } from '../employee-social-profile/employee-social-profile.module';
-import { LocationsModule } from '../locations/locations.module';
 import { LaborLegalParametersModule } from '../labor-legal-parameters/labor-legal-parameters.module';
+import { LocationsModule } from '../locations/locations.module';
+import { PrismaModule } from '../prisma/prisma.module';
+import { CesantiasController } from './controller/cesantias.controller';
+import { DotacionesController } from './controller/dotaciones.controller';
+import { EmployeeAssetsController } from './controller/employee-assets.controller';
+import { EmployeeCatalogController } from './controller/employee-catalog.controller';
+import { EmployeeDocumentsController } from './controller/employee-documents.controller';
+import { EmployeePositionsController } from './controller/employee-positions.controller';
 import { EmployeeSelfController } from './controller/employee-self.controller';
 import { PayrollController } from './controller/payroll.controller';
-import { EmployeeCatalogController } from './controller/employee-catalog.controller';
-import { EmployeePositionsController } from './controller/employee-positions.controller';
-import { EmployeeAssetsController } from './controller/employee-assets.controller';
-import { EmployeeDocumentsController } from './controller/employee-documents.controller';
-import { DotacionesController } from './controller/dotaciones.controller';
-import { PayrollService } from './service/payroll.service';
-import { EmployeeCatalogService } from './service/employee-catalog.service';
-import { EmployeePositionsService } from './service/employee-positions.service';
-import { EmployeeAssetsService } from './service/employee-assets.service';
-import { EmployeeDocumentsService } from './service/employee-documents.service';
-import { DotacionesService } from './service/dotaciones.service';
-import { PayrollRepository } from './repository/payroll.repository';
-import { EmployeeCatalogRepository } from './repository/employee-catalog.repository';
-import { EmployeePositionsRepository } from './repository/employee-positions.repository';
-import { EmployeeAssetsRepository } from './repository/employee-assets.repository';
-import { EmployeeDocumentsRepository } from './repository/employee-documents.repository';
+import { CesantiasRepository } from './repository/cesantias.repository';
 import { DotacionesRepository } from './repository/dotaciones.repository';
-import { EmployeesResolver } from './resolver/employees.resolver';
-import { EmployeePositionsResolver } from './resolver/employee-positions.resolver';
-import { EmployeeAssetsResolver } from './resolver/employee-assets.resolver';
+import { EmployeeAssetsRepository } from './repository/employee-assets.repository';
+import { EmployeeCatalogRepository } from './repository/employee-catalog.repository';
+import { EmployeeDocumentsRepository } from './repository/employee-documents.repository';
+import { EmployeeHistoryRepository } from './repository/employee-history.repository';
+import { EmployeePositionsRepository } from './repository/employee-positions.repository';
+import { PayrollRepository } from './repository/payroll.repository';
 import { DotacionesResolver } from './resolver/dotaciones.resolver';
+import { EmployeeAssetsResolver } from './resolver/employee-assets.resolver';
+import { EmployeePositionsResolver } from './resolver/employee-positions.resolver';
+import { EmployeesResolver } from './resolver/employees.resolver';
+import { CesantiasCalculationService } from './service/cesantias-calculation.service';
+import { CesantiasExportService } from './service/cesantias-export.service';
+import { CesantiasService } from './service/cesantias.service';
+import { DotacionesService } from './service/dotaciones.service';
+import { EmployeeAssetsService } from './service/employee-assets.service';
+import { EmployeeCatalogService } from './service/employee-catalog.service';
+import { EmployeeDocumentsService } from './service/employee-documents.service';
+import { EmployeeHistoryService } from './service/employee-history.service';
+import { EmployeePositionsService } from './service/employee-positions.service';
 import { PayrollCalculationService } from './service/payroll-calculation.service';
+import { PayrollService } from './service/payroll.service';
 
 @Module({
   imports: [
@@ -47,6 +55,7 @@ import { PayrollCalculationService } from './service/payroll-calculation.service
     EmployeeAssetsController,
     EmployeeDocumentsController,
     DotacionesController,
+    CesantiasController,
   ],
   providers: [
     PayrollService,
@@ -66,6 +75,12 @@ import { PayrollCalculationService } from './service/payroll-calculation.service
     DotacionesRepository,
     DotacionesResolver,
     PayrollCalculationService,
+    EmployeeHistoryRepository,
+    EmployeeHistoryService,
+    CesantiasRepository,
+    CesantiasCalculationService,
+    CesantiasService,
+    CesantiasExportService,
   ],
   exports: [
     PayrollService,
@@ -76,6 +91,8 @@ import { PayrollCalculationService } from './service/payroll-calculation.service
     EmployeeAssetsService,
     EmployeeDocumentsService,
     DotacionesService,
+    EmployeeHistoryRepository,
+    EmployeeHistoryService,
   ],
 })
 export class PayrollModule {}

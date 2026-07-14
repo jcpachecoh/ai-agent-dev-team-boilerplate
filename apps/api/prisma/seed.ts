@@ -55,6 +55,7 @@ import {
 } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
+import { syncEmployeeCompensationHistory } from './seeds/employee-compensation-history.seed-util';
 
 const prisma = new PrismaClient();
 
@@ -1329,7 +1330,7 @@ async function seedEmployeeDetails(
   // Seed for owner
   // NOM-03: pinHash = bcrypt('1234') — PIN de kiosko de asistencia (distinto de OperationalUser.pinHash)
   const ownerPinHashEmployee = await bcrypt.hash('1234', SALT_ROUNDS);
-  await prisma.employeeDetails.upsert({
+  const ownerEmployee = await prisma.employeeDetails.upsert({
     where: { userId: ownerUserId },
     update: {
       isActive: true,
@@ -1370,11 +1371,12 @@ async function seedEmployeeDetails(
       isActive: true,
     },
   });
+  await syncEmployeeCompensationHistory(prisma, ownerEmployee);
 
   // Seed for operator
   // NOM-03: pinHash = bcrypt('4321') — mismo PIN que OperationalUser del seed, para e2e de kiosko
   const operatorPinHashEmployee = await bcrypt.hash('4321', SALT_ROUNDS);
-  await prisma.employeeDetails.upsert({
+  const operatorEmployee = await prisma.employeeDetails.upsert({
     where: { userId: operatorUserId },
     update: {
       isActive: true,
@@ -1418,6 +1420,7 @@ async function seedEmployeeDetails(
       isActive: true,
     },
   });
+  await syncEmployeeCompensationHistory(prisma, operatorEmployee);
 
   console.log('EmployeeDetails: Seeded for owner and operator');
 }
@@ -1493,7 +1496,7 @@ async function seedSupervisorManagerDemoUsers(
     where: { id: 'pos-pdl-031' }, // JEFE DE COMPRAS — supervisa ANALISTA DE COMPRAS/FINANCIERA
   });
 
-  await prisma.employeeDetails.upsert({
+  const supervisorEmployee = await prisma.employeeDetails.upsert({
     where: { userId: supervisorUserId },
     update: {
       isActive: true,
@@ -1527,8 +1530,9 @@ async function seedSupervisorManagerDemoUsers(
       isActive: true,
     },
   });
+  await syncEmployeeCompensationHistory(prisma, supervisorEmployee);
 
-  await prisma.employeeDetails.upsert({
+  const managerEmployee = await prisma.employeeDetails.upsert({
     where: { userId: managerUserId },
     update: {
       isActive: true,
@@ -1562,6 +1566,7 @@ async function seedSupervisorManagerDemoUsers(
       isActive: true,
     },
   });
+  await syncEmployeeCompensationHistory(prisma, managerEmployee);
 
   console.log('EmployeeDetails: Seeded for supervisor and manager demo users');
 }
