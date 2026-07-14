@@ -1,5 +1,6 @@
 import { RecetaFormButton, RolCheckbox, RolFormField, RolModal, RolTextInput } from '@restopsiq/ui';
-import { useEffect, useId, useState, type JSX } from 'react';
+import { Calendar } from 'lucide-react';
+import { useEffect, useId, useRef, useState, type JSX } from 'react';
 
 import { useTheme } from '@/providers/ThemeProvider';
 
@@ -16,6 +17,8 @@ interface CreateModeProps {
   /** Only SUPER_ADMIN may create a global (tenantId null) parameter — OWNER always scopes to their own tenant. */
   canCreateGlobal: boolean;
   actorTenantId: string;
+  /** Increment after a successful save to clear the draft for the next create session. */
+  createResetKey?: number;
   onSave: (values: CreateLaborLegalParameterFormValues) => void;
 }
 
@@ -31,6 +34,54 @@ type LaborLegalParameterFormModalProps = (CreateModeProps | EditModeProps) & {
   saving?: boolean;
   onClose: () => void;
 };
+
+function isNumericDraft(value: string): boolean {
+  return value === '' || /^-?\d*(\.\d*)?$/.test(value);
+}
+
+interface DateFieldProps {
+  id: string;
+  theme: 'light' | 'dark';
+  value: string;
+  onChange: (value: string) => void;
+}
+
+function DateField({ id, theme, value, onChange }: DateFieldProps): JSX.Element {
+  const wrapRef = useRef<HTMLDivElement>(null);
+
+  const openPicker = () => {
+    const input = wrapRef.current?.querySelector('input');
+    if (!input || input.disabled) return;
+    input.focus();
+    input.showPicker?.();
+  };
+
+  return (
+    <div
+      ref={wrapRef}
+      className={styles.dateField}
+      onClick={openPicker}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          openPicker();
+        }
+      }}
+      role="presentation"
+    >
+      <RolTextInput
+        id={id}
+        theme={theme}
+        type="date"
+        className={styles.dateInput}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        onClick={openPicker}
+      />
+      <Calendar className={styles.calendarIcon} aria-hidden strokeWidth={1.75} />
+    </div>
+  );
+}
 
 export function LaborLegalParameterFormModal(
   props: LaborLegalParameterFormModalProps,
@@ -49,28 +100,33 @@ export function LaborLegalParameterFormModal(
   const [validFrom, setValidFrom] = useState('');
   const [validTo, setValidTo] = useState('');
   const [source, setSource] = useState('');
-  const [isGlobal, setIsGlobal] = useState(true);
+  const [isGlobal, setIsGlobal] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const isEdit = mode === 'edit';
+  const createResetKey = mode === 'create' ? props.createResetKey : undefined;
+  const canCreateGlobal = mode === 'create' ? props.canCreateGlobal : false;
 
   useEffect(() => {
-    if (!open) return;
+    if (isEdit) return;
+    setKey(LABOR_LEGAL_PARAMETER_KEYS[0]);
+    setValue('');
+    setValidFrom('');
+    setValidTo('');
+    setSource('');
+    setIsGlobal(canCreateGlobal);
     setError(null);
-    if (isEdit) {
-      setValue(String(props.initialValue.value));
-      setValidFrom(props.initialValue.validFrom.slice(0, 10));
-      setValidTo(props.initialValue.validTo ? props.initialValue.validTo.slice(0, 10) : '');
-      setSource(props.initialValue.source ?? '');
-    } else {
-      setKey(LABOR_LEGAL_PARAMETER_KEYS[0]);
-      setValue('');
-      setValidFrom('');
-      setValidTo('');
-      setSource('');
-      setIsGlobal(props.canCreateGlobal);
-    }
-  }, [open, isEdit, props]);
+  }, [isEdit, createResetKey, canCreateGlobal]);
+
+  useEffect(() => {
+    if (!open || mode !== 'edit') return;
+    const { initialValue } = props;
+    setError(null);
+    setValue(String(initialValue.value));
+    setValidFrom(initialValue.validFrom.slice(0, 10));
+    setValidTo(initialValue.validTo ? initialValue.validTo.slice(0, 10) : '');
+    setSource(initialValue.source ?? '');
+  }, [open, mode, mode === 'edit' ? props.initialValue : null]);
 
   useEffect(() => {
     if (!open) return;
@@ -172,22 +228,20 @@ export function LaborLegalParameterFormModal(
           <RolTextInput
             id={valueId}
             theme={theme}
-            type="number"
-            step="0.0001"
+            type="text"
+            inputMode="decimal"
+            className={styles.numericInput}
             value={value}
-            onChange={(e) => setValue(e.target.value)}
+            onChange={(event) => {
+              const next = event.target.value;
+              if (isNumericDraft(next)) setValue(next);
+            }}
             placeholder="Ej: 0.8 o 1423500"
           />
         </RolFormField>
 
         <RolFormField label="Vigente desde *" htmlFor={validFromId} theme={theme}>
-          <RolTextInput
-            id={validFromId}
-            theme={theme}
-            type="date"
-            value={validFrom}
-            onChange={(e) => setValidFrom(e.target.value)}
-          />
+          <DateField id={validFromId} theme={theme} value={validFrom} onChange={setValidFrom} />
         </RolFormField>
 
         <RolFormField
@@ -195,13 +249,7 @@ export function LaborLegalParameterFormModal(
           htmlFor={validToId}
           theme={theme}
         >
-          <RolTextInput
-            id={validToId}
-            theme={theme}
-            type="date"
-            value={validTo}
-            onChange={(e) => setValidTo(e.target.value)}
-          />
+          <DateField id={validToId} theme={theme} value={validTo} onChange={setValidTo} />
         </RolFormField>
 
         <RolFormField label="Fuente / referencia legal (opcional)" htmlFor={sourceId} theme={theme}>

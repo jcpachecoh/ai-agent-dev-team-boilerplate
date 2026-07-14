@@ -147,6 +147,7 @@ $teal-accent: #2ec4a0;
 .badgeGlobal,
 .badgeTenant,
 .badgeActive,
+.badgeUpcoming,
 .badgeInactive {
   display: inline-flex;
   align-items: center;
@@ -178,6 +179,12 @@ $teal-accent: #2ec4a0;
   color: $teal-accent;
   background: rgba(46, 196, 160, 0.1);
   border-color: rgba(46, 196, 160, 0.3);
+}
+
+.badgeUpcoming {
+  color: #d97706;
+  background: rgba(217, 119, 6, 0.1);
+  border-color: rgba(217, 119, 6, 0.3);
 }
 
 .badgeInactive {

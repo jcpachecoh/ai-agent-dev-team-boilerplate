@@ -584,9 +584,10 @@ const PERMISSION_SEEDS = [
     resource: 'overtime',
     action: 'read',
   },
-  // OS-585 / NOM-06 — Parámetros legales con vigencia (SuperAdmin/Owner only, ver ROLE_PERMISSION_MATRIX)
+  // OS-585 / NOM-06 — Parámetros legales con vigencia (SuperAdmin/Owner only, ver ROLE_PERMISSION_MATRIX).
+  // IDs 064/065: 027/028 ya estaban ocupados en envs existentes por nomina.roles.*.
   {
-    id: 'cccccccc-0000-0000-0000-000000000027',
+    id: 'cccccccc-0000-0000-0000-000000000064',
     code: 'configuracion.legal.read',
     name: 'Leer parámetros legales',
     description: 'Consultar parámetros legales vigentes y su histórico de vigencias.',
@@ -595,7 +596,7 @@ const PERMISSION_SEEDS = [
     action: 'read',
   },
   {
-    id: 'cccccccc-0000-0000-0000-000000000028',
+    id: 'cccccccc-0000-0000-0000-000000000065',
     code: 'configuracion.legal.write',
     name: 'Administrar parámetros legales',
     description: 'Crear, actualizar y eliminar vigencias de parámetros legales.',
@@ -756,10 +757,12 @@ async function seedPermissions() {
   const permissions: Record<string, { id: string; code: string }> = {};
 
   for (const permissionSeed of PERMISSION_SEEDS) {
+    // Upsert by `code` (@@unique), not by id: some envs already have the same codes with
+    // older deterministic ids (e.g. nomina.roles.* at 027–036). Upserting by id would
+    // try to CREATE a duplicate code and fail with P2002.
     const permission = await prisma.permission.upsert({
-      where: { id: permissionSeed.id },
+      where: { code: permissionSeed.code },
       update: {
-        code: permissionSeed.code,
         name: permissionSeed.name,
         description: permissionSeed.description,
         module: permissionSeed.module,

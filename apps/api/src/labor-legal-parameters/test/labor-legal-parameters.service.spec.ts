@@ -383,7 +383,7 @@ describe('LaborLegalParametersService', () => {
   });
 
   describe('listCurrent', () => {
-    it('devuelve un valor por key, con el override de tenant ganando sobre el global', async () => {
+    it('devuelve todas las filas activas/próximas sin colapsar por key', async () => {
       // Arrange — dos filas de la misma key, una global y una del tenant
       const globalRow = makeRow({ id: 'g1', key: 'SMLV' });
       const tenantRow = makeRow({
@@ -402,7 +402,7 @@ describe('LaborLegalParametersService', () => {
         [TENANT_ID, GLOBAL_TENANT_SCOPE],
         expect.any(Date),
       );
-      expect(rows).toEqual([tenantRow]);
+      expect(rows).toEqual([tenantRow, globalRow]);
     });
 
     it('mantiene el valor global si no hay override de tenant para esa key', async () => {
