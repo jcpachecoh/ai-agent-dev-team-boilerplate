@@ -78,23 +78,9 @@ export class LaborLegalParametersService implements ILaborLegalParametersService
     asOf: Date = new Date(),
   ): Promise<LaborLegalParameter[]> {
     const scopes = tenantId ? [tenantId, GLOBAL_TENANT_SCOPE] : [GLOBAL_TENANT_SCOPE];
-    const rows = await this.repository.findCurrentByScopes(scopes, asOf);
-
-    // One row per key — tenant override wins over global (rows are ordered [key asc, validFrom desc]).
-    const byKey = new Map<string, LaborLegalParameter>();
-    for (const row of rows) {
-      const existing = byKey.get(row.key);
-      if (!existing) {
-        byKey.set(row.key, row);
-        continue;
-      }
-      const rowIsTenantOverride = row.tenantId !== null;
-      const existingIsTenantOverride = existing.tenantId !== null;
-      if (rowIsTenantOverride && !existingIsTenantOverride) {
-        byKey.set(row.key, row);
-      }
-    }
-    return [...byKey.values()].sort((a, b) => a.key.localeCompare(b.key));
+    // Admin listing: all active + upcoming rows (global + tenant). No collapse by key —
+    // overrides and future vigencias must remain visible after create.
+    return this.repository.findCurrentByScopes(scopes, asOf);
   }
 
   async listHistory(

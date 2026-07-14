@@ -74,8 +74,15 @@ export class LaborLegalParametersRepository implements ILaborLegalParametersRepo
       where: {
         tenantScope: { in: tenantScopes },
         deletedAt: null,
-        validFrom: { lte: asOf },
-        OR: [{ validTo: null }, { validTo: { gte: asOf } }],
+        OR: [
+          // Vigencia activa a la fecha de consulta
+          {
+            validFrom: { lte: asOf },
+            OR: [{ validTo: null }, { validTo: { gte: asOf } }],
+          },
+          // Vigencias futuras (admin debe ver lo que acaba de programar)
+          { validFrom: { gt: asOf } },
+        ],
       },
       orderBy: [{ key: 'asc' }, { validFrom: 'desc' }],
     });

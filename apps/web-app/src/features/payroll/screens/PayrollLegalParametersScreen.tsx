@@ -30,12 +30,22 @@ function formatDate(value: string | null): string {
   return value.slice(0, 10);
 }
 
-function isCurrentlyActive(row: LaborLegalParameter): boolean {
+type VigenciaStatus = 'active' | 'upcoming' | 'expired';
+
+function getVigenciaStatus(row: LaborLegalParameter): VigenciaStatus {
   const today = new Date().toISOString().slice(0, 10);
   const from = row.validFrom.slice(0, 10);
   const to = row.validTo ? row.validTo.slice(0, 10) : null;
-  return from <= today && (!to || to >= today);
+  if (from > today) return 'upcoming';
+  if (to && to < today) return 'expired';
+  return 'active';
 }
+
+const VIGENCIA_STATUS_LABEL: Record<VigenciaStatus, string> = {
+  active: 'Vigente',
+  upcoming: 'Próxima',
+  expired: 'Fuera de vigencia',
+};
 
 export function PayrollLegalParametersScreen(): JSX.Element {
   const { theme } = useTheme();
@@ -52,6 +62,7 @@ export function PayrollLegalParametersScreen(): JSX.Element {
   const deleteMutation = useDeleteLaborLegalParameter();
 
   const [creating, setCreating] = useState(false);
+  const [createResetKey, setCreateResetKey] = useState(0);
   const [editing, setEditing] = useState<LaborLegalParameter | undefined>();
   const [deleting, setDeleting] = useState<LaborLegalParameter | undefined>();
   const [filterKey, setFilterKey] = useState<string>('ALL');
@@ -81,7 +92,10 @@ export function PayrollLegalParametersScreen(): JSX.Element {
     try {
       await createMutation.mutateAsync(values);
       toast.success(`Vigencia de "${values.key}" creada correctamente.`);
+      setCreateResetKey((current) => current + 1);
       setCreating(false);
+      setFilterKey(values.key);
+      setHistoryKey(values.key);
     } catch (err) {
       toast.error(getErrorMessage(err));
     }
@@ -192,13 +206,16 @@ export function PayrollLegalParametersScreen(): JSX.Element {
                     <td>{formatDate(row.validTo)}</td>
                     <td>{row.source ?? '—'}</td>
                     <td>
-                      <span
-                        className={
-                          isCurrentlyActive(row) ? styles.badgeActive : styles.badgeInactive
-                        }
-                      >
-                        {isCurrentlyActive(row) ? 'Vigente' : 'Fuera de vigencia'}
-                      </span>
+                      {(() => {
+                        const status = getVigenciaStatus(row);
+                        const badgeClass =
+                          status === 'active'
+                            ? styles.badgeActive
+                            : status === 'upcoming'
+                              ? styles.badgeUpcoming
+                              : styles.badgeInactive;
+                        return <span className={badgeClass}>{VIGENCIA_STATUS_LABEL[status]}</span>;
+                      })()}
                     </td>
                     <td>
                       <div className={styles.rowActions}>
@@ -263,17 +280,16 @@ export function PayrollLegalParametersScreen(): JSX.Element {
         ) : null}
       </div>
 
-      {creating ? (
-        <LaborLegalParameterFormModal
-          open={creating}
-          mode="create"
-          canCreateGlobal={isSuperAdmin}
-          actorTenantId={me?.tenantId ?? ''}
-          saving={isSaving}
-          onClose={() => setCreating(false)}
-          onSave={(values) => void handleCreate(values)}
-        />
-      ) : null}
+      <LaborLegalParameterFormModal
+        open={creating}
+        mode="create"
+        canCreateGlobal={isSuperAdmin}
+        actorTenantId={me?.tenantId ?? ''}
+        createResetKey={createResetKey}
+        saving={isSaving}
+        onClose={() => setCreating(false)}
+        onSave={(values) => void handleCreate(values)}
+      />
 
       {editing ? (
         <LaborLegalParameterFormModal
