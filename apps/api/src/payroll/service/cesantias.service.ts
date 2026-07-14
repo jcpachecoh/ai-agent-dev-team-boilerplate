@@ -29,7 +29,10 @@ import { CesantiasRepository } from '../repository/cesantias.repository';
 import { EmployeeHistoryRepository } from '../repository/employee-history.repository';
 import { PayrollRepository } from '../repository/payroll.repository';
 import { resolveFundAtDate, resolveSalarySegments } from '../utils/cesantias-days.util';
-import { resolveCesantiasDeadline } from '../utils/cesantias-deadline.util';
+import {
+  resolveCesantiasDeadline,
+  resolveCesantiasTargetYear,
+} from '../utils/cesantias-deadline.util';
 
 /**
  * OS-588 (fase 2) — contratos que, bajo el régimen laboral colombiano, no causan cesantías
@@ -297,7 +300,10 @@ export class CesantiasService implements ICesantiasService {
    */
   async getAlertSummary(tenantId: string): Promise<CesantiasAlertSummary> {
     const today = new Date();
-    const targetYear = today.getUTCFullYear() - 1;
+    // Misma regla que usa resolveCesantiasDeadline internamente (evita reimplementarla
+    // dos veces) — se necesita antes, por separado, para poder pedir el conteo de
+    // pendientes en paralelo con los parámetros legales.
+    const targetYear = resolveCesantiasTargetYear(today);
 
     const [plazoDia, plazoMes, pendingCount] = await Promise.all([
       this.legalParametersService.getValueAt('CESANTIAS_PLAZO_DIA', today, tenantId),

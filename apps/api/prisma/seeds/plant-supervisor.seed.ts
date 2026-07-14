@@ -5,6 +5,7 @@ import {
   IncidentType,
   PhaseExecutionStatus,
   PlantAlarmType,
+  PrismaClient,
   ProductionCommitteeStatus,
   ProductionOrderStatus,
   ProductionPriority,

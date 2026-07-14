@@ -18,7 +18,9 @@ export { formatCurrencyCop, formatDateOnly };
  */
 export function formatCesantiasDeadlineDate(value: string): string {
   const [year, month, day] = value.slice(0, 10).split('-').map(Number);
-  if (!year || !month || !day) return value;
+  if (!year || !month || !day) {
+    return value;
+  }
   return new Date(Date.UTC(year, month - 1, day)).toLocaleDateString('es-CO', {
     timeZone: 'UTC',
   });

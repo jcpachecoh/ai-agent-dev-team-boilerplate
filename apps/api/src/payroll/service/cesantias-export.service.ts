@@ -36,6 +36,10 @@ const COLUMN_HEADERS = [
   'Valor a Consignar',
 ] as const;
 
+// ExcelJS numera columnas desde 1 — derivado de COLUMN_HEADERS en vez de un índice
+// literal, para que no quede desincronizado si el orden de columnas cambia.
+const NUMERO_ID_COLUMN_INDEX = COLUMN_HEADERS.indexOf('Número ID') + 1;
+
 type ExportEmployeeInfo = EmployeeDetails & {
   user: User;
   personalData: EmployeePersonalData | null;
@@ -200,7 +204,7 @@ export class CesantiasExportService {
     // Número ID e IDs de documento como texto — evita que Excel los muestre en notación
     // científica o les quite ceros a la izquierda (hallazgo del archivo de referencia
     // original, ver tasks/OS-588.md §26.2).
-    sheet.getColumn(3).numFmt = '@';
+    sheet.getColumn(NUMERO_ID_COLUMN_INDEX).numFmt = '@';
 
     for (const row of rows) {
       sheet.addRow(row);
