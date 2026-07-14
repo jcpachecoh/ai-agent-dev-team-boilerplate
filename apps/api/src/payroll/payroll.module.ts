@@ -27,6 +27,7 @@ import { EmployeeAssetsResolver } from './resolver/employee-assets.resolver';
 import { EmployeePositionsResolver } from './resolver/employee-positions.resolver';
 import { EmployeesResolver } from './resolver/employees.resolver';
 import { CesantiasCalculationService } from './service/cesantias-calculation.service';
+import { CesantiasExportService } from './service/cesantias-export.service';
 import { CesantiasService } from './service/cesantias.service';
 import { DotacionesService } from './service/dotaciones.service';
 import { EmployeeAssetsService } from './service/employee-assets.service';
@@ -79,6 +80,7 @@ import { PayrollService } from './service/payroll.service';
     CesantiasRepository,
     CesantiasCalculationService,
     CesantiasService,
+    CesantiasExportService,
   ],
   exports: [
     PayrollService,

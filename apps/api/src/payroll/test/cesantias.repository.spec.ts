@@ -186,6 +186,21 @@ describe('CesantiasRepository', (): void => {
     expect(result).toBe(7);
   });
 
+  it('findExportableByTenantAndYear scopes by tenant+year and only CALCULADA/CONSIGNADA', async (): Promise<void> => {
+    findMany.mockResolvedValue([]);
+
+    await repository.findExportableByTenantAndYear('tenant-1', 2026);
+
+    expect(findMany).toHaveBeenCalledWith({
+      where: {
+        tenantId: 'tenant-1',
+        year: 2026,
+        cesantiasStatus: { in: ['CALCULADA', 'CONSIGNADA'] },
+      },
+      orderBy: { employeeId: 'asc' },
+    });
+  });
+
   it('findById scopes by tenantId', async (): Promise<void> => {
     findFirst.mockResolvedValue(null);
 

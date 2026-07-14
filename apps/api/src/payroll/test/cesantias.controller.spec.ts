@@ -3,6 +3,7 @@ import { Test, type TestingModule } from '@nestjs/testing';
 
 import type { JwtPayload } from '../../auth/interfaces/auth.interfaces';
 import { CesantiasController } from '../controller/cesantias.controller';
+import { CesantiasExportService } from '../service/cesantias-export.service';
 import { CesantiasService } from '../service/cesantias.service';
 
 function makeJwtUser(overrides?: Partial<JwtPayload>): JwtPayload {
@@ -22,6 +23,15 @@ interface MockCesantiasService {
   getDetail: jest.Mock;
 }
 
+interface MockCesantiasExportService {
+  generateFnaFile: jest.Mock;
+  generatePrivateFundsFile: jest.Mock;
+}
+
+function makeMockResponse(): { setHeader: jest.Mock; send: jest.Mock } {
+  return { setHeader: jest.fn(), send: jest.fn() };
+}
+
 describe('CesantiasController', (): void => {
   let controller: CesantiasController;
   // Tipado como el shape del mock (no como CesantiasService real) para que las
@@ -29,6 +39,7 @@ describe('CesantiasController', (): void => {
   // referenciarlas sueltas en `expect(...)` — mismo valor en runtime, solo cambia el tipo
   // estático con el que se accede.
   let mockService: MockCesantiasService;
+  let mockExportService: MockCesantiasExportService;
 
   beforeEach(async (): Promise<void> => {
     const module: TestingModule = await Test.createTestingModule({
@@ -42,11 +53,21 @@ describe('CesantiasController', (): void => {
             getDetail: jest.fn(),
           },
         },
+        {
+          provide: CesantiasExportService,
+          useValue: {
+            generateFnaFile: jest.fn(),
+            generatePrivateFundsFile: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
     controller = module.get<CesantiasController>(CesantiasController);
     mockService = module.get<CesantiasService>(CesantiasService) as unknown as MockCesantiasService;
+    mockExportService = module.get<CesantiasExportService>(
+      CesantiasExportService,
+    ) as unknown as MockCesantiasExportService;
   });
 
   describe('calculate', (): void => {
@@ -115,6 +136,91 @@ describe('CesantiasController', (): void => {
 
       expect(mockService.getDetail).toHaveBeenCalledWith('tenant-1', 'liq-1');
       expect(result).toEqual({ id: 'liq-1' });
+    });
+  });
+
+  describe('exportFna', (): void => {
+    it('delegates to CesantiasExportService (con el actor) and streams the buffer with xlsx headers', async (): Promise<void> => {
+      const buffer = Buffer.from('xlsx-bytes');
+      mockExportService.generateFnaFile.mockResolvedValue({
+        buffer,
+        filename: 'cesantias-fna-2026.xlsx',
+        rowCount: 1,
+        skipped: [],
+      });
+      const res = makeMockResponse();
+
+      await controller.exportFna(makeJwtUser(), 'header-tenant', { year: 2026 }, res as never);
+
+      expect(mockExportService.generateFnaFile).toHaveBeenCalledWith('tenant-1', 2026, 'user-1');
+      expect(res.setHeader).toHaveBeenCalledWith(
+        'Content-Type',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      );
+      expect(res.setHeader).toHaveBeenCalledWith(
+        'Content-Disposition',
+        'attachment; filename="cesantias-fna-2026.xlsx"',
+      );
+      expect(res.setHeader).toHaveBeenCalledWith('X-Cesantias-Export-Skipped-Count', '0');
+      expect(res.send).toHaveBeenCalledWith(buffer);
+    });
+
+    it('expone en el header cuántos empleados se excluyeron — nunca omisión silenciosa', async (): Promise<void> => {
+      mockExportService.generateFnaFile.mockResolvedValue({
+        buffer: Buffer.from('xlsx-bytes'),
+        filename: 'cesantias-fna-2026.xlsx',
+        rowCount: 3,
+        skipped: [
+          { employeeId: 'emp-1', reason: 'SIN_DATOS_PERSONALES' },
+          { employeeId: 'emp-2', reason: 'SIN_DATOS_PERSONALES' },
+        ],
+      });
+      const res = makeMockResponse();
+
+      await controller.exportFna(makeJwtUser(), 'header-tenant', { year: 2026 }, res as never);
+
+      expect(res.setHeader).toHaveBeenCalledWith('X-Cesantias-Export-Skipped-Count', '2');
+    });
+
+    it('throws BadRequestException when neither the JWT nor the header carry a tenant', async (): Promise<void> => {
+      const res = makeMockResponse();
+      await expect(
+        controller.exportFna(
+          makeJwtUser({ tenantId: undefined }),
+          '',
+          { year: 2026 },
+          res as never,
+        ),
+      ).rejects.toThrow(BadRequestException);
+      expect(mockExportService.generateFnaFile).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('exportPrivateFunds', (): void => {
+    it('delegates to CesantiasExportService (con el actor) and streams the buffer with xlsx headers', async (): Promise<void> => {
+      const buffer = Buffer.from('xlsx-bytes');
+      mockExportService.generatePrivateFundsFile.mockResolvedValue({
+        buffer,
+        filename: 'cesantias-fondos-privados-2026.xlsx',
+        rowCount: 1,
+        skipped: [],
+      });
+      const res = makeMockResponse();
+
+      await controller.exportPrivateFunds(
+        makeJwtUser(),
+        'header-tenant',
+        { year: 2026 },
+        res as never,
+      );
+
+      expect(mockExportService.generatePrivateFundsFile).toHaveBeenCalledWith(
+        'tenant-1',
+        2026,
+        'user-1',
+      );
+      expect(res.setHeader).toHaveBeenCalledWith('X-Cesantias-Export-Skipped-Count', '0');
+      expect(res.send).toHaveBeenCalledWith(buffer);
     });
   });
 });

@@ -128,6 +128,17 @@ export class CesantiasRepository implements ICesantiasRepository {
     return row ? this.map(row) : null;
   }
 
+  async findExportableByTenantAndYear(
+    tenantId: string,
+    year: number,
+  ): Promise<CesantiasLiquidationRecord[]> {
+    const rows = await this.prisma.cesantiasLiquidation.findMany({
+      where: { tenantId, year, cesantiasStatus: { in: ['CALCULADA', 'CONSIGNADA'] } },
+      orderBy: { employeeId: 'asc' },
+    });
+    return rows.map((row): CesantiasLiquidationRecord => this.map(row));
+  }
+
   private buildWhere(
     filters: ListCesantiasLiquidationsFilters,
   ): Prisma.CesantiasLiquidationWhereInput {

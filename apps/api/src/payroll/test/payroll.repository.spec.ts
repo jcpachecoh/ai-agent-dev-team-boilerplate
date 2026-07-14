@@ -326,6 +326,24 @@ describe('PayrollRepository', (): void => {
     });
   });
 
+  it('findManyWithPersonalDataByIds scopes by tenant + ids and includes personalData', async (): Promise<void> => {
+    employeeDetailsFindMany.mockResolvedValue([]);
+
+    await repository.findManyWithPersonalDataByIds('tenant-1', ['emp-1', 'emp-2']);
+
+    expect(employeeDetailsFindMany).toHaveBeenCalledWith({
+      where: { tenantId: 'tenant-1', id: { in: ['emp-1', 'emp-2'] } },
+      include: { user: true, personalData: true },
+    });
+  });
+
+  it('findManyWithPersonalDataByIds returns [] without querying when ids is empty', async (): Promise<void> => {
+    const result = await repository.findManyWithPersonalDataByIds('tenant-1', []);
+
+    expect(result).toEqual([]);
+    expect(employeeDetailsFindMany).not.toHaveBeenCalled();
+  });
+
   it('findById and findByUserId include user relation', async (): Promise<void> => {
     employeeDetailsFindUnique.mockResolvedValue(null);
 

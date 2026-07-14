@@ -79,4 +79,15 @@ export interface ICesantiasRepository {
   ): Promise<CesantiasLiquidationRecord[]>;
   countByTenantAndYear(filters: ListCesantiasLiquidationsFilters): Promise<number>;
   findById(tenantId: string, id: string): Promise<CesantiasLiquidationRecord | null>;
+  /**
+   * OS-588 (fase 3) — todas las liquidaciones exportables de un tenant+año, sin paginar
+   * (una exportación regulatoria debe incluir todos los registros, no una página). Solo
+   * `cesantiasStatus` CALCULADA/CONSIGNADA — ANULADA nunca se exporta. No filtra por
+   * `interestStatus`: la exportación de consignación de cesantías no incluye intereses
+   * (ver CesantiasExportService), así que ese estado es irrelevante aquí.
+   */
+  findExportableByTenantAndYear(
+    tenantId: string,
+    year: number,
+  ): Promise<CesantiasLiquidationRecord[]>;
 }

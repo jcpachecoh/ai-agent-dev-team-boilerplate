@@ -14831,6 +14831,132 @@
               }
             }
           ]
+        },
+        {
+          "name": "POST /api/cesantias/export/fna",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"year\": 2026\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/cesantias/export/fna",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cesantias", "export", "fna"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('export fna: status 201', () => pm.response.to.have.status(201));",
+                  "pm.test('export fna: content-type is xlsx', () => {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('spreadsheetml');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/cesantias/export/private-funds",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"year\": 2026\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/cesantias/export/private-funds",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cesantias", "export", "private-funds"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('export private-funds: status 201', () => pm.response.to.have.status(201));",
+                  "pm.test('export private-funds: content-type is xlsx', () => {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('spreadsheetml');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/cesantias/export/fna — año fuera de rango (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"year\": 1990\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/cesantias/export/fna",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cesantias", "export", "fna"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('export fna invalid year: status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
         }
       ]
     },

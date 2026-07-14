@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { EmployeeCatalogType, EmployeeDetails, User } from '@prisma/client';
+import { EmployeeCatalogType, EmployeeDetails, EmployeePersonalData, User } from '@prisma/client';
 
 import { EmployeeHistoryRepository } from './employee-history.repository';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -174,6 +174,19 @@ export class PayrollRepository implements IPayrollRepository {
       take: filters.limit || 50,
       skip: filters.offset || 0,
       orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async findManyWithPersonalDataByIds(
+    tenantId: string,
+    employeeIds: string[],
+  ): Promise<(EmployeeDetails & { user: User; personalData: EmployeePersonalData | null })[]> {
+    if (employeeIds.length === 0) {
+      return [];
+    }
+    return this.prisma.employeeDetails.findMany({
+      where: { tenantId, id: { in: employeeIds } },
+      include: { user: true, personalData: true },
     });
   }
 
