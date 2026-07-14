@@ -7,4 +7,5 @@ export * from './screens/PayrollLegalParametersScreen';
 export * from './screens/MedicalLeavesScreen';
 export * from './screens/PayrollNovedadesScreen';
 export * from './screens/VacationApprovalsScreen';
+export * from './screens/CesantiasScreen';
 export * from './components/PayrollEmployeeDotacionesTab';

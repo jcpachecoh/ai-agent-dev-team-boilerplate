@@ -171,6 +171,29 @@ describe('CesantiasRepository', (): void => {
     });
   });
 
+  it('findByTenantAndYear applies fundChannelSnapshot/fundNameSnapshot filters (canal/fondo)', async (): Promise<void> => {
+    findMany.mockResolvedValue([]);
+
+    await repository.findByTenantAndYear({
+      tenantId: 'tenant-1',
+      year: 2026,
+      fundChannelSnapshot: 'PRIVATE_OPERATOR',
+      fundNameSnapshot: 'Porvenir',
+    });
+
+    expect(findMany).toHaveBeenCalledWith({
+      where: {
+        tenantId: 'tenant-1',
+        year: 2026,
+        fundChannelSnapshot: 'PRIVATE_OPERATOR',
+        fundNameSnapshot: 'Porvenir',
+      },
+      orderBy: { employeeId: 'asc' },
+      take: 50,
+      skip: 0,
+    });
+  });
+
   it('countByTenantAndYear applies the same filters as findByTenantAndYear', async (): Promise<void> => {
     count.mockResolvedValue(7);
 
@@ -199,6 +222,56 @@ describe('CesantiasRepository', (): void => {
       },
       orderBy: { employeeId: 'asc' },
     });
+  });
+
+  it('countPendingByTenantAndYear scopes by tenant+year and only CALCULADA', async (): Promise<void> => {
+    count.mockResolvedValue(4);
+
+    const result = await repository.countPendingByTenantAndYear('tenant-1', 2025);
+
+    expect(count).toHaveBeenCalledWith({
+      where: { tenantId: 'tenant-1', year: 2025, cesantiasStatus: 'CALCULADA' },
+    });
+    expect(result).toBe(4);
+  });
+
+  it('countPendingByTenantAndYear no filtra por interestStatus — la consignación de cesantías es independiente del pago de intereses', async (): Promise<void> => {
+    count.mockResolvedValue(1);
+
+    await repository.countPendingByTenantAndYear('tenant-1', 2025);
+
+    const whereClause = (count.mock.calls as [{ where: Record<string, unknown> }][])[0][0].where;
+    expect(whereClause).not.toHaveProperty('interestStatus');
+  });
+
+  it('countExportableByTenantYearAndChannel scopes by tenant+year+canal y solo estados exportables (CALCULADA/CONSIGNADA)', async (): Promise<void> => {
+    count.mockResolvedValue(2);
+
+    const result = await repository.countExportableByTenantYearAndChannel('tenant-1', 2025, 'FNA');
+
+    expect(count).toHaveBeenCalledWith({
+      where: {
+        tenantId: 'tenant-1',
+        year: 2025,
+        fundChannelSnapshot: 'FNA',
+        cesantiasStatus: { in: ['CALCULADA', 'CONSIGNADA'] },
+      },
+    });
+    expect(result).toBe(2);
+  });
+
+  it('countExportableByTenantYearAndChannel usa la misma lista de estados que findExportableByTenantAndYear (regla centralizada)', async (): Promise<void> => {
+    findMany.mockResolvedValue([]);
+    count.mockResolvedValue(0);
+
+    await repository.findExportableByTenantAndYear('tenant-1', 2025);
+    await repository.countExportableByTenantYearAndChannel('tenant-1', 2025, 'PRIVATE_OPERATOR');
+
+    type WhereWithStatusIn = [{ where: { cesantiasStatus: { in: string[] } } }][];
+    const findManyStatuses = (findMany.mock.calls as WhereWithStatusIn)[0][0].where.cesantiasStatus
+      .in;
+    const countStatuses = (count.mock.calls as WhereWithStatusIn)[0][0].where.cesantiasStatus.in;
+    expect(countStatuses).toEqual(findManyStatuses);
   });
 
   it('findById scopes by tenantId', async (): Promise<void> => {

@@ -27,19 +27,27 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import type { CesantiasExportFileResult } from '../interfaces/cesantias-export.interfaces';
-import type { CesantiasCalculateForYearResult } from '../interfaces/cesantias-service.interfaces';
-import type { CesantiasLiquidationRecord } from '../interfaces/cesantias.interfaces';
+import type {
+  CesantiasAlertSummary,
+  CesantiasCalculateForYearResult,
+  CesantiasExportAvailability,
+} from '../interfaces/cesantias-service.interfaces';
+import type {
+  CesantiasLiquidationRecord,
+  CesantiasLiquidationSummary,
+} from '../interfaces/cesantias.interfaces';
 import { CesantiasExportService } from '../service/cesantias-export.service';
 import { CesantiasService } from '../service/cesantias.service';
 import { CalculateCesantiasDto } from './dto/cesantias-calculate.dto';
 import { ExportCesantiasDto } from './dto/cesantias-export.dto';
+import { ExportAvailabilityQueryDto } from './dto/export-availability-query.dto';
 import { ListCesantiasQueryDto } from './dto/list-cesantias-query.dto';
 
 const XLSX_CONTENT_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
 // `type`, no `interface` — ver nota en employee-history.interfaces.ts.
 type CesantiasListResponse = {
-  items: CesantiasLiquidationRecord[];
+  items: CesantiasLiquidationSummary[];
   total: number;
   limit: number;
   offset: number;
@@ -89,8 +97,38 @@ export class CesantiasController {
     const { items, total } = await this.cesantiasService.listByYear(tenantId, query.year, {
       limit: query.limit,
       offset: query.offset,
+      cesantiasStatus: query.cesantiasStatus,
+      interestStatus: query.interestStatus,
+      fundChannelSnapshot: query.fundChannelSnapshot,
+      fundNameSnapshot: query.fundNameSnapshot,
     });
     return { items, total, limit: query.limit ?? 50, offset: query.offset ?? 0 };
+  }
+
+  @ApiOperation({ summary: 'Resumen de alerta de vencimiento de consignación de cesantías' })
+  @ApiResponse({ status: 200 })
+  @Get('alert-summary')
+  async alertSummary(
+    @CurrentUser() user: JwtPayload,
+    @Headers('x-tenant-id') headerTenantId: string,
+  ): Promise<CesantiasAlertSummary> {
+    const tenantId = this.resolveTenantId(user, headerTenantId);
+    return this.cesantiasService.getAlertSummary(tenantId);
+  }
+
+  @ApiOperation({
+    summary:
+      'Disponibilidad de exportación por canal (habilita/deshabilita los botones de descarga)',
+  })
+  @ApiResponse({ status: 200 })
+  @Get('export-availability')
+  async exportAvailability(
+    @CurrentUser() user: JwtPayload,
+    @Headers('x-tenant-id') headerTenantId: string,
+    @Query() query: ExportAvailabilityQueryDto,
+  ): Promise<CesantiasExportAvailability> {
+    const tenantId = this.resolveTenantId(user, headerTenantId);
+    return this.cesantiasService.getExportAvailability(tenantId, query.year);
   }
 
   @ApiOperation({ summary: 'Detalle de una liquidación de cesantías' })

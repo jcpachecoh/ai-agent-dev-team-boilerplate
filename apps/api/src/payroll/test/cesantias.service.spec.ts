@@ -95,6 +95,7 @@ function writtenAt(mockFn: jest.Mock, callIndex = 0): UpsertCesantiasLiquidation
 describe('CesantiasService.calculateForYear', (): void => {
   let service: CesantiasService;
   let findAllEmployees: jest.Mock;
+  let findManyWithPersonalDataByIds: jest.Mock;
   let findSalaryHistoryByEmployees: jest.Mock;
   let findFundHistoryByEmployees: jest.Mock;
   let findMapByTenantAndYear: jest.Mock;
@@ -103,9 +104,13 @@ describe('CesantiasService.calculateForYear', (): void => {
   let findByTenantAndYear: jest.Mock;
   let countByTenantAndYear: jest.Mock;
   let findById: jest.Mock;
+  let countPendingByTenantAndYear: jest.Mock;
+  let countExportableByTenantYearAndChannel: jest.Mock;
+  let getValueAt: jest.Mock;
 
   beforeEach((): void => {
     findAllEmployees = jest.fn().mockResolvedValue([employee()]);
+    findManyWithPersonalDataByIds = jest.fn().mockResolvedValue([]);
     findSalaryHistoryByEmployees = jest
       .fn()
       .mockResolvedValue(new Map([['emp-1', [salaryEntry()]]]));
@@ -144,8 +149,22 @@ describe('CesantiasService.calculateForYear', (): void => {
     findByTenantAndYear = jest.fn().mockResolvedValue([]);
     countByTenantAndYear = jest.fn().mockResolvedValue(0);
     findById = jest.fn().mockResolvedValue(null);
+    countPendingByTenantAndYear = jest.fn().mockResolvedValue(0);
+    countExportableByTenantYearAndChannel = jest.fn().mockResolvedValue(0);
+    getValueAt = jest.fn().mockImplementation((key: string): Promise<number> => {
+      if (key === 'CESANTIAS_PLAZO_DIA') {
+        return Promise.resolve(14);
+      }
+      if (key === 'CESANTIAS_PLAZO_MES') {
+        return Promise.resolve(2);
+      }
+      throw new Error(`unexpected key in test: ${key}`);
+    });
 
-    const payrollRepository = { findAll: findAllEmployees } as unknown as PayrollRepository;
+    const payrollRepository = {
+      findAll: findAllEmployees,
+      findManyWithPersonalDataByIds,
+    } as unknown as PayrollRepository;
     const employeeHistoryRepository = {
       findSalaryHistoryByEmployees,
       findFundHistoryByEmployees,
@@ -156,8 +175,13 @@ describe('CesantiasService.calculateForYear', (): void => {
       findByTenantAndYear,
       countByTenantAndYear,
       findById,
+      countPendingByTenantAndYear,
+      countExportableByTenantYearAndChannel,
     } as unknown as CesantiasRepository;
-    const legalParametersService = { preload } as unknown as LaborLegalParametersService;
+    const legalParametersService = {
+      preload,
+      getValueAt,
+    } as unknown as LaborLegalParametersService;
 
     service = new CesantiasService(
       cesantiasRepository,
@@ -526,6 +550,34 @@ describe('CesantiasService.calculateForYear', (): void => {
       });
     });
 
+    it('resuelve employeeName en batch para cada fila (sin employeeId técnico en el response)', async (): Promise<void> => {
+      findByTenantAndYear.mockResolvedValue([
+        { id: 'liq-1', employeeId: 'emp-1' } as CesantiasLiquidationRecord,
+        { id: 'liq-2', employeeId: 'emp-2' } as CesantiasLiquidationRecord,
+      ]);
+      findManyWithPersonalDataByIds.mockResolvedValue([
+        { id: 'emp-1', name: 'Ana Gómez' },
+        { id: 'emp-2', name: 'Luis Pérez' },
+      ]);
+
+      const result = await service.listByYear('tenant-1', 2020, {});
+
+      expect(findManyWithPersonalDataByIds).toHaveBeenCalledWith('tenant-1', ['emp-1', 'emp-2']);
+      expect(result.items[0].employeeName).toBe('Ana Gómez');
+      expect(result.items[1].employeeName).toBe('Luis Pérez');
+    });
+
+    it('usa un fallback legible si el empleado no aparece en la resolución batch', async (): Promise<void> => {
+      findByTenantAndYear.mockResolvedValue([
+        { id: 'liq-1', employeeId: 'emp-missing' } as CesantiasLiquidationRecord,
+      ]);
+      findManyWithPersonalDataByIds.mockResolvedValue([]);
+
+      const result = await service.listByYear('tenant-1', 2020, {});
+
+      expect(result.items[0].employeeName).toBe('Empleado no encontrado');
+    });
+
     it('getDetail throws NotFoundException for a missing or cross-tenant id', async (): Promise<void> => {
       findById.mockResolvedValue(null);
 
@@ -540,6 +592,155 @@ describe('CesantiasService.calculateForYear', (): void => {
 
       expect(findById).toHaveBeenCalledWith('tenant-1', 'liq-1');
       expect(result).toBe(record);
+    });
+  });
+
+  describe('getAlertSummary', (): void => {
+    afterEach((): void => {
+      jest.useRealTimers();
+    });
+
+    it('resuelve targetYear como el último año calendario cerrado y consulta pendientes de ese año', async (): Promise<void> => {
+      jest.useFakeTimers().setSystemTime(new Date('2026-02-01T00:00:00.000Z'));
+      countPendingByTenantAndYear.mockResolvedValue(3);
+
+      const result = await service.getAlertSummary('tenant-1');
+
+      expect(countPendingByTenantAndYear).toHaveBeenCalledWith('tenant-1', 2025);
+      expect(result.targetYear).toBe(2025);
+      expect(result.pendingCount).toBe(3);
+    });
+
+    it('lee el día/mes límite desde LaborLegalParameter, scoped por tenant — nunca hardcodeado', async (): Promise<void> => {
+      jest.useFakeTimers().setSystemTime(new Date('2026-02-01T00:00:00.000Z'));
+
+      await service.getAlertSummary('tenant-1');
+
+      expect(getValueAt).toHaveBeenCalledWith('CESANTIAS_PLAZO_DIA', expect.any(Date), 'tenant-1');
+      expect(getValueAt).toHaveBeenCalledWith('CESANTIAS_PLAZO_MES', expect.any(Date), 'tenant-1');
+    });
+
+    it('status PROXIMA_A_VENCER cuando faltan <=15 días y hay pendientes', async (): Promise<void> => {
+      jest.useFakeTimers().setSystemTime(new Date('2026-02-01T00:00:00.000Z'));
+      countPendingByTenantAndYear.mockResolvedValue(2);
+
+      const result = await service.getAlertSummary('tenant-1');
+
+      expect(result.status).toBe('PROXIMA_A_VENCER');
+      expect(result.daysUntilDeadline).toBe(13);
+    });
+
+    it('status VENCIDA cuando ya pasó la fecha límite y aún hay pendientes', async (): Promise<void> => {
+      jest.useFakeTimers().setSystemTime(new Date('2026-03-01T00:00:00.000Z'));
+      countPendingByTenantAndYear.mockResolvedValue(1);
+
+      const result = await service.getAlertSummary('tenant-1');
+
+      expect(result.status).toBe('VENCIDA');
+    });
+
+    it('status COMPLETADA cuando no hay pendientes, incluso si ya pasó la fecha límite', async (): Promise<void> => {
+      jest.useFakeTimers().setSystemTime(new Date('2026-03-01T00:00:00.000Z'));
+      countPendingByTenantAndYear.mockResolvedValue(0);
+
+      const result = await service.getAlertSummary('tenant-1');
+
+      expect(result.status).toBe('COMPLETADA');
+    });
+
+    it('solo hay CONSIGNADA (nada CALCULADA) — pendingCount 0, se oculta (COMPLETADA)', async (): Promise<void> => {
+      // countPendingByTenantAndYear solo cuenta cesantiasStatus=CALCULADA (ver
+      // cesantias.repository.spec.ts) — si todo lo del año ya quedó CONSIGNADA, el
+      // repositorio real devolvería 0 aquí; se simula ese resultado directamente.
+      jest.useFakeTimers().setSystemTime(new Date('2026-02-01T00:00:00.000Z'));
+      countPendingByTenantAndYear.mockResolvedValue(0);
+
+      const result = await service.getAlertSummary('tenant-1');
+
+      expect(result.pendingCount).toBe(0);
+      expect(result.status).toBe('COMPLETADA');
+    });
+
+    it('solo hay ANULADA (nada CALCULADA) — pendingCount 0, se oculta (COMPLETADA), no VENCIDA', async (): Promise<void> => {
+      // Igual razonamiento que el caso anterior — ANULADA tampoco cuenta como pendiente.
+      jest.useFakeTimers().setSystemTime(new Date('2026-03-01T00:00:00.000Z'));
+      countPendingByTenantAndYear.mockResolvedValue(0);
+
+      const result = await service.getAlertSummary('tenant-1');
+
+      expect(result.pendingCount).toBe(0);
+      expect(result.status).toBe('COMPLETADA');
+    });
+
+    it('hay CALCULADA pendiente aunque los intereses ya estén PAGADO — sigue contando como pendiente', async (): Promise<void> => {
+      // pendingCount depende únicamente de cesantiasStatus (ver el test dedicado en
+      // cesantias.repository.spec.ts que confirma que el where no incluye
+      // interestStatus) — esta liquidación simulada tiene intereses pagados y aun así
+      // debe reportarse como pendiente de CONSIGNAR cesantías.
+      jest.useFakeTimers().setSystemTime(new Date('2026-02-01T00:00:00.000Z'));
+      countPendingByTenantAndYear.mockResolvedValue(1);
+
+      const result = await service.getAlertSummary('tenant-1');
+
+      expect(result.pendingCount).toBe(1);
+      expect(result.status).not.toBe('COMPLETADA');
+    });
+
+    it('tenant isolation — nunca consulta pendientes de otro tenant', async (): Promise<void> => {
+      jest.useFakeTimers().setSystemTime(new Date('2026-02-01T00:00:00.000Z'));
+
+      await service.getAlertSummary('tenant-a');
+
+      expect(countPendingByTenantAndYear).toHaveBeenCalledWith('tenant-a', expect.any(Number));
+      expect(countPendingByTenantAndYear).not.toHaveBeenCalledWith('tenant-b', expect.any(Number));
+    });
+  });
+
+  describe('getExportAvailability', (): void => {
+    it('fna es true solo si hay al menos una liquidación exportable del canal FNA', async (): Promise<void> => {
+      countExportableByTenantYearAndChannel.mockImplementation(
+        (_tenantId: string, _year: number, channel: string): Promise<number> =>
+          Promise.resolve(channel === 'FNA' ? 3 : 0),
+      );
+
+      const result = await service.getExportAvailability('tenant-1', 2025);
+
+      expect(result).toEqual({ fna: true, privateOperator: false });
+    });
+
+    it('privateOperator es true solo si hay al menos una liquidación exportable del canal privado', async (): Promise<void> => {
+      countExportableByTenantYearAndChannel.mockImplementation(
+        (_tenantId: string, _year: number, channel: string): Promise<number> =>
+          Promise.resolve(channel === 'PRIVATE_OPERATOR' ? 1 : 0),
+      );
+
+      const result = await service.getExportAvailability('tenant-1', 2025);
+
+      expect(result).toEqual({ fna: false, privateOperator: true });
+    });
+
+    it('ambos false cuando no hay liquidaciones exportables en ningún canal (p.ej. todas ANULADA)', async (): Promise<void> => {
+      countExportableByTenantYearAndChannel.mockResolvedValue(0);
+
+      const result = await service.getExportAvailability('tenant-1', 2025);
+
+      expect(result).toEqual({ fna: false, privateOperator: false });
+    });
+
+    it('delega en countExportableByTenantYearAndChannel con tenantId+año+canal para ambos canales', async (): Promise<void> => {
+      await service.getExportAvailability('tenant-1', 2025);
+
+      expect(countExportableByTenantYearAndChannel).toHaveBeenCalledWith('tenant-1', 2025, 'FNA');
+      expect(countExportableByTenantYearAndChannel).toHaveBeenCalledWith(
+        'tenant-1',
+        2025,
+        'PRIVATE_OPERATOR',
+      );
+    });
+
+    it('rechaza un año fuera de rango', async (): Promise<void> => {
+      await expect(service.getExportAvailability('tenant-1', 1999)).rejects.toThrow('Año inválido');
+      expect(countExportableByTenantYearAndChannel).not.toHaveBeenCalled();
     });
   });
 });

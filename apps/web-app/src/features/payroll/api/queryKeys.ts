@@ -1,11 +1,12 @@
-import type { PayrollEmployeesFilters } from '../types/payroll.types';
-import type { AttendanceReportQuery, PayrollReportQuery } from '../types/payroll-reports.types';
+import type { ListCesantiasFilters } from '../types/cesantias.types';
 import type { ListEmployeePositionsFilters } from '../types/employee-position.types';
 import type { ListMedicalLeavesFilters } from '../types/medical-leaves.types';
 import type {
   ListMyPayrollNovedadesFilters,
   ListPayrollNovedadesFilters,
 } from '../types/payroll-novedades.types';
+import type { AttendanceReportQuery, PayrollReportQuery } from '../types/payroll-reports.types';
+import type { PayrollEmployeesFilters } from '../types/payroll.types';
 
 export const payrollKeys = {
   all: ['payroll'] as const,
@@ -59,4 +60,10 @@ export const payrollKeys = {
     [...payrollKeys.payrollNovedades(), 'me', filters] as const,
   employeeNovedadTypeConfig: () =>
     [...payrollKeys.payrollNovedades(), 'me', 'type-config'] as const,
+  cesantias: () => [...payrollKeys.all, 'cesantias'] as const,
+  cesantiasList: (filters: ListCesantiasFilters = {}) =>
+    [...payrollKeys.cesantias(), filters] as const,
+  cesantiasAlertSummary: () => [...payrollKeys.cesantias(), 'alert-summary'] as const,
+  cesantiasExportAvailability: (year: number) =>
+    [...payrollKeys.cesantias(), 'export-availability', year] as const,
 };

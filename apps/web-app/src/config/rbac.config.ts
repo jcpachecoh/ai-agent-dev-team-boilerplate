@@ -111,12 +111,16 @@ export const PAYROLL_WRITE_ROLES: readonly RoleCode[] = [
 export const NOMINA_DEFAULT_ROUTE = '/payroll/employees';
 
 export function canAccessModule(roleCode: string | null | undefined, module: AppModule): boolean {
-  if (!roleCode) return false;
+  if (!roleCode) {
+    return false;
+  }
   return (MODULE_ROLES[module] as readonly string[]).includes(roleCode);
 }
 
 export function resolveModuleFromPath(pathname: string): AppModule | null {
-  if (pathname === '/') return AppModule.DASHBOARD;
+  if (pathname === '/') {
+    return AppModule.DASHBOARD;
+  }
 
   const match = ROUTE_PREFIX_TO_MODULE.find(
     ({ prefix }) => pathname === prefix || pathname.startsWith(`${prefix}/`),
@@ -127,7 +131,9 @@ export function resolveModuleFromPath(pathname: string): AppModule | null {
 
 export function canAccessPath(roleCode: string | null | undefined, pathname: string): boolean {
   const module = resolveModuleFromPath(pathname);
-  if (!module) return true;
+  if (!module) {
+    return true;
+  }
   return canAccessModule(roleCode, module);
 }
 
@@ -136,9 +142,15 @@ export const PRODUCCION_DEFAULT_ROUTE = '/produccion/ordenes';
 export const SUPER_ADMIN_DEFAULT_ROUTE = '/users/roles';
 
 export function getDefaultRouteForRole(roleCode: string | null | undefined): string {
-  if (roleCode === 'NOMINA') return NOMINA_DEFAULT_ROUTE;
-  if (roleCode === 'OPERATIONS_ADMIN') return PRODUCCION_DEFAULT_ROUTE;
-  if (roleCode === 'SUPER_ADMIN') return SUPER_ADMIN_DEFAULT_ROUTE;
+  if (roleCode === 'NOMINA') {
+    return NOMINA_DEFAULT_ROUTE;
+  }
+  if (roleCode === 'OPERATIONS_ADMIN') {
+    return PRODUCCION_DEFAULT_ROUTE;
+  }
+  if (roleCode === 'SUPER_ADMIN') {
+    return SUPER_ADMIN_DEFAULT_ROUTE;
+  }
   return '/';
 }
 
@@ -147,7 +159,9 @@ export function isPayrollReadOnlyRole(roleCode: string | null | undefined): bool
 }
 
 export function canWritePayrollEmployee(roleCode: string | null | undefined): boolean {
-  if (!roleCode) return false;
+  if (!roleCode) {
+    return false;
+  }
   return (PAYROLL_WRITE_ROLES as readonly string[]).includes(roleCode);
 }
 
@@ -155,7 +169,9 @@ export function canWritePayrollEmployee(roleCode: string | null | undefined): bo
 export const FINANCIAL_WRITE_ROLES: readonly RoleCode[] = [...SYSTEM_ADMIN_ROLES, 'MANAGER'];
 
 export function canWriteFinancialProfile(roleCode: string | null | undefined): boolean {
-  if (!roleCode) return false;
+  if (!roleCode) {
+    return false;
+  }
   return (FINANCIAL_WRITE_ROLES as readonly string[]).includes(roleCode);
 }
 
@@ -163,7 +179,9 @@ export function canWriteFinancialProfile(roleCode: string | null | undefined): b
 export const TURNOS_WRITE_ROLES: readonly RoleCode[] = [...SYSTEM_ADMIN_ROLES];
 
 export function canWriteTurnos(roleCode: string | null | undefined): boolean {
-  if (!roleCode) return false;
+  if (!roleCode) {
+    return false;
+  }
   return (TURNOS_WRITE_ROLES as readonly string[]).includes(roleCode);
 }
 
@@ -174,7 +192,9 @@ export const SUPPLIER_DOCUMENTS_WRITE_ROLES: readonly RoleCode[] = [
 ];
 
 export function canWriteSupplierDocuments(roleCode: string | null | undefined): boolean {
-  if (!roleCode) return false;
+  if (!roleCode) {
+    return false;
+  }
   return (SUPPLIER_DOCUMENTS_WRITE_ROLES as readonly string[]).includes(roleCode);
 }
 
@@ -186,7 +206,9 @@ export const TURNO_ASSIGNMENTS_WRITE_ROLES: readonly RoleCode[] = [
 ];
 
 export function canWriteTurnoAssignments(roleCode: string | null | undefined): boolean {
-  if (!roleCode) return false;
+  if (!roleCode) {
+    return false;
+  }
   return (TURNO_ASSIGNMENTS_WRITE_ROLES as readonly string[]).includes(roleCode);
 }
 
@@ -194,7 +216,9 @@ export function canWriteTurnoAssignments(roleCode: string | null | undefined): b
 export const MEDICAL_LEAVES_WRITE_ROLES: readonly RoleCode[] = [...SYSTEM_ADMIN_ROLES, 'NOMINA'];
 
 export function canWriteMedicalLeaves(roleCode: string | null | undefined): boolean {
-  if (!roleCode) return false;
+  if (!roleCode) {
+    return false;
+  }
   return (MEDICAL_LEAVES_WRITE_ROLES as readonly string[]).includes(roleCode);
 }
 
@@ -202,12 +226,22 @@ export function canWriteMedicalLeaves(roleCode: string | null | undefined): bool
 export const PAYROLL_NOVEDADES_WRITE_ROLES: readonly RoleCode[] = [...SYSTEM_ADMIN_ROLES, 'NOMINA'];
 
 export function canWritePayrollNovedades(roleCode: string | null | undefined): boolean {
-  if (!roleCode) return false;
+  if (!roleCode) {
+    return false;
+  }
   return (PAYROLL_NOVEDADES_WRITE_ROLES as readonly string[]).includes(roleCode);
+}
+
+/** OS-588 (fase 4) — calcular liquidación anual y exportar archivos de consignación.
+ * Mismos roles que ya usa el backend en CesantiasController (@Roles(...PAYROLL_WRITE_ROLES)). */
+export function canWriteCesantias(roleCode: string | null | undefined): boolean {
+  return canWritePayrollEmployee(roleCode);
 }
 
 /** OS-582 — únicos roles que pueden asignar/eliminar en fechas pasadas. */
 export function canOverridePastDateAssignments(roleCode: string | null | undefined): boolean {
-  if (!roleCode) return false;
+  if (!roleCode) {
+    return false;
+  }
   return (SYSTEM_ADMIN_ROLES as readonly string[]).includes(roleCode);
 }

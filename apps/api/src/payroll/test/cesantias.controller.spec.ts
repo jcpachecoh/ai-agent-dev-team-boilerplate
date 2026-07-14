@@ -21,6 +21,8 @@ interface MockCesantiasService {
   calculateForYear: jest.Mock;
   listByYear: jest.Mock;
   getDetail: jest.Mock;
+  getAlertSummary: jest.Mock;
+  getExportAvailability: jest.Mock;
 }
 
 interface MockCesantiasExportService {
@@ -51,6 +53,8 @@ describe('CesantiasController', (): void => {
             calculateForYear: jest.fn(),
             listByYear: jest.fn(),
             getDetail: jest.fn(),
+            getAlertSummary: jest.fn(),
+            getExportAvailability: jest.fn(),
           },
         },
         {
@@ -107,6 +111,10 @@ describe('CesantiasController', (): void => {
       expect(mockService.listByYear).toHaveBeenCalledWith('tenant-1', 2026, {
         limit: undefined,
         offset: undefined,
+        cesantiasStatus: undefined,
+        interestStatus: undefined,
+        fundChannelSnapshot: undefined,
+        fundNameSnapshot: undefined,
       });
       expect(result).toEqual({ items: [{ id: 'liq-1' }], total: 1, limit: 50, offset: 0 });
     });
@@ -122,9 +130,32 @@ describe('CesantiasController', (): void => {
       expect(mockService.listByYear).toHaveBeenCalledWith('tenant-1', undefined, {
         limit: 10,
         offset: 20,
+        cesantiasStatus: undefined,
+        interestStatus: undefined,
+        fundChannelSnapshot: undefined,
+        fundNameSnapshot: undefined,
       });
       expect(result.limit).toBe(10);
       expect(result.offset).toBe(20);
+    });
+
+    it('forwards fondo/canal filters (fundNameSnapshot/fundChannelSnapshot)', async (): Promise<void> => {
+      mockService.listByYear.mockResolvedValue({ items: [], total: 0 });
+
+      await controller.list(makeJwtUser(), 'header-tenant', {
+        year: 2026,
+        fundChannelSnapshot: 'PRIVATE_OPERATOR',
+        fundNameSnapshot: 'Porvenir',
+      });
+
+      expect(mockService.listByYear).toHaveBeenCalledWith('tenant-1', 2026, {
+        limit: undefined,
+        offset: undefined,
+        cesantiasStatus: undefined,
+        interestStatus: undefined,
+        fundChannelSnapshot: 'PRIVATE_OPERATOR',
+        fundNameSnapshot: 'Porvenir',
+      });
     });
   });
 
@@ -136,6 +167,50 @@ describe('CesantiasController', (): void => {
 
       expect(mockService.getDetail).toHaveBeenCalledWith('tenant-1', 'liq-1');
       expect(result).toEqual({ id: 'liq-1' });
+    });
+  });
+
+  describe('alertSummary', (): void => {
+    it('delegates to the service with tenantId', async (): Promise<void> => {
+      mockService.getAlertSummary.mockResolvedValue({
+        targetYear: 2025,
+        deadlineDate: new Date('2026-02-14'),
+        pendingCount: 3,
+        daysUntilDeadline: 13,
+        status: 'PROXIMA_A_VENCER',
+      });
+
+      const result = await controller.alertSummary(makeJwtUser(), 'header-tenant');
+
+      expect(mockService.getAlertSummary).toHaveBeenCalledWith('tenant-1');
+      expect(result.status).toBe('PROXIMA_A_VENCER');
+    });
+
+    it('throws BadRequestException when neither the JWT nor the header carry a tenant', async (): Promise<void> => {
+      await expect(
+        controller.alertSummary(makeJwtUser({ tenantId: undefined }), ''),
+      ).rejects.toThrow(BadRequestException);
+      expect(mockService.getAlertSummary).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('exportAvailability', (): void => {
+    it('delegates to the service with tenantId and year', async (): Promise<void> => {
+      mockService.getExportAvailability.mockResolvedValue({ fna: true, privateOperator: false });
+
+      const result = await controller.exportAvailability(makeJwtUser(), 'header-tenant', {
+        year: 2025,
+      });
+
+      expect(mockService.getExportAvailability).toHaveBeenCalledWith('tenant-1', 2025);
+      expect(result).toEqual({ fna: true, privateOperator: false });
+    });
+
+    it('throws BadRequestException when neither the JWT nor the header carry a tenant', async (): Promise<void> => {
+      await expect(
+        controller.exportAvailability(makeJwtUser({ tenantId: undefined }), '', { year: 2025 }),
+      ).rejects.toThrow(BadRequestException);
+      expect(mockService.getExportAvailability).not.toHaveBeenCalled();
     });
   });
 

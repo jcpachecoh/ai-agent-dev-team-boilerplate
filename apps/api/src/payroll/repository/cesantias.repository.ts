@@ -4,6 +4,7 @@ import { CesantiasLiquidation, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
   CesantiasLiquidationRecord,
+  EXPORTABLE_CESANTIAS_STATUSES,
   ICesantiasRepository,
   ListCesantiasLiquidationsFilters,
   UpsertCesantiasLiquidationData,
@@ -133,10 +134,31 @@ export class CesantiasRepository implements ICesantiasRepository {
     year: number,
   ): Promise<CesantiasLiquidationRecord[]> {
     const rows = await this.prisma.cesantiasLiquidation.findMany({
-      where: { tenantId, year, cesantiasStatus: { in: ['CALCULADA', 'CONSIGNADA'] } },
+      where: { tenantId, year, cesantiasStatus: { in: [...EXPORTABLE_CESANTIAS_STATUSES] } },
       orderBy: { employeeId: 'asc' },
     });
     return rows.map((row): CesantiasLiquidationRecord => this.map(row));
+  }
+
+  async countPendingByTenantAndYear(tenantId: string, year: number): Promise<number> {
+    return this.prisma.cesantiasLiquidation.count({
+      where: { tenantId, year, cesantiasStatus: 'CALCULADA' },
+    });
+  }
+
+  async countExportableByTenantYearAndChannel(
+    tenantId: string,
+    year: number,
+    fundChannelSnapshot: CesantiasLiquidation['fundChannelSnapshot'],
+  ): Promise<number> {
+    return this.prisma.cesantiasLiquidation.count({
+      where: {
+        tenantId,
+        year,
+        fundChannelSnapshot,
+        cesantiasStatus: { in: [...EXPORTABLE_CESANTIAS_STATUSES] },
+      },
+    });
   }
 
   private buildWhere(
@@ -147,6 +169,8 @@ export class CesantiasRepository implements ICesantiasRepository {
       ...(filters.year !== undefined ? { year: filters.year } : {}),
       ...(filters.cesantiasStatus ? { cesantiasStatus: filters.cesantiasStatus } : {}),
       ...(filters.interestStatus ? { interestStatus: filters.interestStatus } : {}),
+      ...(filters.fundChannelSnapshot ? { fundChannelSnapshot: filters.fundChannelSnapshot } : {}),
+      ...(filters.fundNameSnapshot ? { fundNameSnapshot: filters.fundNameSnapshot } : {}),
     };
   }
 

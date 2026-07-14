@@ -15,6 +15,9 @@ export const LABOR_LEGAL_PARAMETER_KEYS = [
   'INTERES_CESANTIAS',
   /** OS-588 — divisor de días para prorratear cesantías/intereses (año comercial de 360 días). */
   'DIVISOR_CESANTIAS',
+  /** OS-588 (fase 4) — día/mes límite de consignación de cesantías (Decreto 1176 de 1932). */
+  'CESANTIAS_PLAZO_DIA',
+  'CESANTIAS_PLAZO_MES',
   'UVT',
 ] as const;
 

@@ -13,18 +13,23 @@ import {
 } from './cesantias-calculation.service';
 import { LaborLegalParametersService } from '../../labor-legal-parameters/service/labor-legal-parameters.service';
 import {
+  CesantiasAlertSummary,
   CesantiasCalculateForYearResult,
+  CesantiasExportAvailability,
   CesantiasSkippedEmployee,
   ICesantiasService,
 } from '../interfaces/cesantias-service.interfaces';
 import {
   CesantiasLiquidationRecord,
+  CesantiasLiquidationSummary,
+  ListCesantiasLiquidationsFilters,
   UpsertCesantiasLiquidationData,
 } from '../interfaces/cesantias.interfaces';
 import { CesantiasRepository } from '../repository/cesantias.repository';
 import { EmployeeHistoryRepository } from '../repository/employee-history.repository';
 import { PayrollRepository } from '../repository/payroll.repository';
 import { resolveFundAtDate, resolveSalarySegments } from '../utils/cesantias-days.util';
+import { resolveCesantiasDeadline } from '../utils/cesantias-deadline.util';
 
 /**
  * OS-588 (fase 2) — contratos que, bajo el régimen laboral colombiano, no causan cesantías
@@ -241,17 +246,38 @@ export class CesantiasService implements ICesantiasService {
     };
   }
 
+  /**
+   * OS-588 (fase 4) — agrega `employeeName` a cada fila (resuelto en batch, una sola
+   * query adicional vía PayrollRepository, no N+1) para que el frontend nunca tenga que
+   * mostrar `employeeId` técnico. No es una fuente nueva de datos: `EmployeeDetails.name`
+   * es el mismo campo que ya usa el resto del módulo payroll para mostrar empleados.
+   */
   async listByYear(
     tenantId: string,
     year: number | undefined,
-    pagination: { limit?: number; offset?: number },
-  ): Promise<{ items: CesantiasLiquidationRecord[]; total: number }> {
-    const filters = { tenantId, year, limit: pagination.limit, offset: pagination.offset };
+    pagination: Omit<ListCesantiasLiquidationsFilters, 'tenantId' | 'year'>,
+  ): Promise<{ items: CesantiasLiquidationSummary[]; total: number }> {
+    const filters: ListCesantiasLiquidationsFilters = { tenantId, year, ...pagination };
     const [items, total] = await Promise.all([
       this.cesantiasRepository.findByTenantAndYear(filters),
       this.cesantiasRepository.countByTenantAndYear(filters),
     ]);
-    return { items, total };
+
+    const employeeIds = items.map((item): string => item.employeeId);
+    const employees = await this.payrollRepository.findManyWithPersonalDataByIds(
+      tenantId,
+      employeeIds,
+    );
+    const nameByEmployeeId = new Map(employees.map((e): [string, string] => [e.id, e.name]));
+
+    const withNames: CesantiasLiquidationSummary[] = items.map(
+      (item): CesantiasLiquidationSummary => ({
+        ...item,
+        employeeName: nameByEmployeeId.get(item.employeeId) ?? 'Empleado no encontrado',
+      }),
+    );
+
+    return { items: withNames, total };
   }
 
   async getDetail(tenantId: string, id: string): Promise<CesantiasLiquidationRecord> {
@@ -260,6 +286,64 @@ export class CesantiasService implements ICesantiasService {
       throw new NotFoundException(`Liquidación de cesantías "${id}" no encontrada`);
     }
     return record;
+  }
+
+  /**
+   * OS-588 (fase 4) — resumen para la alerta de vencimiento del dashboard/pantalla de
+   * cesantías. Año objetivo = último año calendario cerrado (ver
+   * cesantias-deadline.util.ts); día/mes límite vienen de LaborLegalParameter
+   * (CESANTIAS_PLAZO_DIA/CESANTIAS_PLAZO_MES) — nunca hardcodeados. No recalcula ni
+   * modifica ninguna liquidación, solo lee el conteo de pendientes ya persistido.
+   */
+  async getAlertSummary(tenantId: string): Promise<CesantiasAlertSummary> {
+    const today = new Date();
+    const targetYear = today.getUTCFullYear() - 1;
+
+    const [plazoDia, plazoMes, pendingCount] = await Promise.all([
+      this.legalParametersService.getValueAt('CESANTIAS_PLAZO_DIA', today, tenantId),
+      this.legalParametersService.getValueAt('CESANTIAS_PLAZO_MES', today, tenantId),
+      this.cesantiasRepository.countPendingByTenantAndYear(tenantId, targetYear),
+    ]);
+
+    const deadline = resolveCesantiasDeadline(today, plazoDia, plazoMes, pendingCount);
+
+    return {
+      targetYear: deadline.targetYear,
+      deadlineDate: deadline.deadlineDate,
+      pendingCount,
+      daysUntilDeadline: deadline.daysUntilDeadline,
+      status: deadline.status,
+    };
+  }
+
+  /**
+   * OS-588 (fase 4, revisión previa a commit) — usado por los botones de descarga del
+   * frontend para habilitarse/deshabilitarse. Reutiliza
+   * `countExportableByTenantYearAndChannel` (misma regla — `EXPORTABLE_CESANTIAS_STATUSES`
+   * — que usa `CesantiasExportService`/`findExportableByTenantAndYear` para decidir qué
+   * se incluye en el archivo real), así que nunca puede haber un botón habilitado cuyo
+   * archivo resultante esté vacío por un estado no exportable, ni viceversa.
+   */
+  async getExportAvailability(
+    tenantId: string,
+    year: number,
+  ): Promise<CesantiasExportAvailability> {
+    this.assertValidYear(year);
+
+    const [fnaCount, privateCount] = await Promise.all([
+      this.cesantiasRepository.countExportableByTenantYearAndChannel(
+        tenantId,
+        year,
+        CesantiasFundChannel.FNA,
+      ),
+      this.cesantiasRepository.countExportableByTenantYearAndChannel(
+        tenantId,
+        year,
+        CesantiasFundChannel.PRIVATE_OPERATOR,
+      ),
+    ]);
+
+    return { fna: fnaCount > 0, privateOperator: privateCount > 0 };
   }
 
   private deriveFundChannel(fundName: string): CesantiasFundChannel {

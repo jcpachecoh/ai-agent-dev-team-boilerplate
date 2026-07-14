@@ -14807,6 +14807,93 @@
           ]
         },
         {
+          "name": "GET /api/cesantias/alert-summary",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cesantias/alert-summary",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cesantias", "alert-summary"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('alert-summary: status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) {",
+                  "    const body = pm.response.json();",
+                  "    pm.test('response has targetYear/deadlineDate/pendingCount/daysUntilDeadline/status', () => {",
+                  "        pm.expect(body).to.have.property('targetYear');",
+                  "        pm.expect(body).to.have.property('deadlineDate');",
+                  "        pm.expect(body).to.have.property('pendingCount');",
+                  "        pm.expect(body).to.have.property('daysUntilDeadline');",
+                  "        pm.expect(body).to.have.property('status');",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/cesantias/export-availability",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cesantias/export-availability?year=2026",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cesantias", "export-availability"],
+              "query": [
+                {
+                  "key": "year",
+                  "value": "2026"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('export-availability: status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) {",
+                  "    const body = pm.response.json();",
+                  "    pm.test('response has fna/privateOperator booleans', () => {",
+                  "        pm.expect(body).to.have.property('fna');",
+                  "        pm.expect(body).to.have.property('privateOperator');",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "GET /api/cesantias — sin token (401)",
           "request": {
             "method": "GET",
