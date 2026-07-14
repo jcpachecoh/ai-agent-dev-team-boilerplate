@@ -5,7 +5,11 @@ import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import { PayrollApiError } from '@/features/payroll/api/payroll.client';
-import { calculateInclusiveCalendarDays } from '@/features/payroll/utils/vacation-display.utils';
+import {
+  calculateBusinessDaysInRange,
+  getMinVacationStartDateString,
+  VACATION_MIN_ADVANCE_DAYS,
+} from '@/features/payroll/utils/vacation-display.utils';
 import type { VacationType } from '@/features/payroll/types/vacations.types';
 import { useUiTheme } from '@/hooks/useUiTheme';
 import { useTheme } from '@/providers/ThemeProvider';
@@ -27,7 +31,21 @@ const schema = z
   .refine((data) => data.startDate <= data.endDate, {
     message: 'La fecha de fin debe ser posterior o igual al inicio',
     path: ['endDate'],
-  });
+  })
+  .refine((data) => data.startDate >= getMinVacationStartDateString(), {
+    message: `La fecha de inicio debe ser al menos ${VACATION_MIN_ADVANCE_DAYS} días después de hoy`,
+    path: ['startDate'],
+  })
+  .refine(
+    (data) =>
+      !data.startDate ||
+      !data.endDate ||
+      calculateBusinessDaysInRange(data.startDate, data.endDate) > 0,
+    {
+      message: 'El rango debe incluir al menos un día hábil (lunes a viernes)',
+      path: ['endDate'],
+    },
+  );
 
 type FormValues = z.infer<typeof schema>;
 
@@ -68,8 +86,9 @@ export function VacationRequestModal({
 
   const startDate = watch('startDate');
   const endDate = watch('endDate');
+  const minStartDate = useMemo(() => getMinVacationStartDateString(), []);
   const daysPreview = useMemo(
-    () => (startDate && endDate ? calculateInclusiveCalendarDays(startDate, endDate) : 0),
+    () => (startDate && endDate ? calculateBusinessDaysInRange(startDate, endDate) : 0),
     [startDate, endDate],
   );
   const exceedsBalance = daysPreview > availableDays;
@@ -134,6 +153,7 @@ export function VacationRequestModal({
                 theme={uiTheme}
                 className={styles.control}
                 value={field.value}
+                min={minStartDate}
                 onChange={field.onChange}
                 onBlur={field.onBlur}
               />
@@ -183,8 +203,8 @@ export function VacationRequestModal({
 
         {daysPreview > 0 ? (
           <p className={styles.preview}>
-            Días solicitados: <strong>{daysPreview}</strong> · Saldo disponible:{' '}
-            <strong>{availableDays}</strong>
+            Días hábiles solicitados: <strong>{daysPreview}</strong> (no incluye sábados ni
+            domingos) · Saldo disponible: <strong>{availableDays}</strong>
           </p>
         ) : null}
 

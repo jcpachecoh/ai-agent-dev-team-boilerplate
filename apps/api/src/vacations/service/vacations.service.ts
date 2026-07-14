@@ -29,28 +29,18 @@ import {
 import { VacationsRepository } from '../repository/vacations.repository';
 import { VacationAccrualService } from './vacation-accrual.service';
 import { getAccrualThroughMonth, startOfMonth } from '../utils/vacation-accrual.utils';
+import {
+  calculateBusinessDaysInRange,
+  getEarliestVacationStartDateString,
+  isVacationStartDateAllowed,
+  VACATION_MIN_ADVANCE_DAYS,
+} from '../utils/vacation-business-days.utils';
 import { isEmployeeEligibleForVacations } from '../utils/vacation-eligibility.utils';
 
 const LEVEL1_APPROVER_ROLES = new Set(['SUPERVISOR', 'MANAGER']);
 const LEVEL2_APPROVER_ROLES = new Set(['NOMINA']);
 const REQUEST_ON_BEHALF_ROLES = new Set(['NOMINA', 'OWNER', 'SUPER_ADMIN']);
 const VACATION_VIEW_ROLES = new Set(['NOMINA', 'OWNER', 'SUPER_ADMIN', 'SUPERVISOR', 'MANAGER']);
-
-/**
- * MVP (Q5): días calendario inclusivos entre startDate y endDate.
- * No excluye festivos ni domingos hasta definir calendario de días hábiles por sede.
- */
-function calculateInclusiveCalendarDays(startDate: Date, endDate: Date): number {
-  const start = new Date(startDate);
-  start.setHours(0, 0, 0, 0);
-  const end = new Date(endDate);
-  end.setHours(0, 0, 0, 0);
-  if (start > end) {
-    return 0;
-  }
-  const dayMs = 24 * 60 * 60 * 1000;
-  return Math.floor((end.getTime() - start.getTime()) / dayMs) + 1;
-}
 
 @Injectable()
 export class VacationsService implements IVacationsService {
@@ -103,9 +93,18 @@ export class VacationsService implements IVacationsService {
       );
     }
 
-    const daysRequested = calculateInclusiveCalendarDays(input.startDate, input.endDate);
+    if (!isVacationStartDateAllowed(input.startDate)) {
+      const earliestStart = getEarliestVacationStartDateString();
+      throw new BadRequestException(
+        `La fecha de inicio debe ser al menos ${VACATION_MIN_ADVANCE_DAYS} días después de hoy (desde ${earliestStart})`,
+      );
+    }
+
+    const daysRequested = calculateBusinessDaysInRange(input.startDate, input.endDate);
     if (daysRequested <= 0) {
-      throw new BadRequestException('El rango de fechas debe incluir al menos un día');
+      throw new BadRequestException(
+        'El rango debe incluir al menos un día hábil (lunes a viernes)',
+      );
     }
 
     return this.repository.createRequest(tenantId, {

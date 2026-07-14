@@ -1,6 +1,46 @@
 import type { EmployeeContractType } from '@/features/payroll/types/payroll.types';
 import type { VacationStatus } from '@/features/payroll/types/vacations.types';
 
+const BOGOTA_TZ = 'America/Bogota';
+
+export const VACATION_MIN_ADVANCE_DAYS = 15;
+
+function parseDateOnly(value: string): { year: number; month: number; day: number } {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) {
+    throw new Error(`Invalid date-only value: ${value}`);
+  }
+  return {
+    year: Number(match[1]),
+    month: Number(match[2]),
+    day: Number(match[3]),
+  };
+}
+
+function formatDateParts(year: number, month: number, day: number): string {
+  return `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}
+
+export function getBogotaTodayDateString(referenceDate: Date = new Date()): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: BOGOTA_TZ,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(referenceDate);
+}
+
+export function addCalendarDays(dateOnly: string, days: number): string {
+  const { year, month, day } = parseDateOnly(dateOnly);
+  const cursor = new Date(Date.UTC(year, month - 1, day));
+  cursor.setUTCDate(cursor.getUTCDate() + days);
+  return formatDateParts(cursor.getUTCFullYear(), cursor.getUTCMonth() + 1, cursor.getUTCDate());
+}
+
+export function getMinVacationStartDateString(referenceDate: Date = new Date()): string {
+  return addCalendarDays(getBogotaTodayDateString(referenceDate), VACATION_MIN_ADVANCE_DAYS);
+}
+
 export function calculateInclusiveCalendarDays(startDate: string, endDate: string): number {
   const start = new Date(`${startDate}T00:00:00`);
   const end = new Date(`${endDate}T00:00:00`);
@@ -9,6 +49,26 @@ export function calculateInclusiveCalendarDays(startDate: string, endDate: strin
   }
   const dayMs = 24 * 60 * 60 * 1000;
   return Math.floor((end.getTime() - start.getTime()) / dayMs) + 1;
+}
+
+export function calculateBusinessDaysInRange(startDate: string, endDate: string): number {
+  const start = new Date(`${startDate}T00:00:00.000Z`);
+  const end = new Date(`${endDate}T00:00:00.000Z`);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start > end) {
+    return 0;
+  }
+
+  let count = 0;
+  const cursor = new Date(start);
+  while (cursor <= end) {
+    const weekday = cursor.getUTCDay();
+    if (weekday !== 0 && weekday !== 6) {
+      count += 1;
+    }
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+
+  return count;
 }
 
 export function formatVacationDate(value: string): string {

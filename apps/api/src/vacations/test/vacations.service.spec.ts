@@ -115,6 +115,15 @@ describe('VacationsService', () => {
   });
 
   describe('requestVacation', () => {
+    beforeEach(() => {
+      jest.useFakeTimers();
+      jest.setSystemTime(new Date('2026-07-14T12:00:00.000Z'));
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
     it('allows an employee to request vacation for themselves', async () => {
       // Arrange
       repository.findEmployeeIdByUserId.mockResolvedValue(EMPLOYEE_ID);
@@ -127,8 +136,8 @@ describe('VacationsService', () => {
       // Act
       const result = await service.requestVacation(TENANT, ACTOR_USER, {
         employeeId: EMPLOYEE_ID,
-        startDate: new Date(2026, 7, 1),
-        endDate: new Date(2026, 7, 5),
+        startDate: new Date('2026-08-01T00:00:00.000Z'),
+        endDate: new Date('2026-08-05T00:00:00.000Z'),
         type: VacationType.DISFRUTE,
       });
 
@@ -137,7 +146,7 @@ describe('VacationsService', () => {
         TENANT,
         expect.objectContaining({
           employeeId: EMPLOYEE_ID,
-          daysRequested: 5,
+          daysRequested: 3,
           type: VacationType.DISFRUTE,
         }),
       );
@@ -156,8 +165,44 @@ describe('VacationsService', () => {
       await expect(
         service.requestVacation(TENANT, ACTOR_USER, {
           employeeId: EMPLOYEE_ID,
-          startDate: new Date(2026, 7, 1),
-          endDate: new Date(2026, 7, 5),
+          startDate: new Date('2026-08-01T00:00:00.000Z'),
+          endDate: new Date('2026-08-05T00:00:00.000Z'),
+          type: VacationType.DISFRUTE,
+        }),
+      ).rejects.toThrow(BadRequestException);
+      expect(repository.createRequest).not.toHaveBeenCalled();
+    });
+
+    it('rejects start dates within the next 15 days', async () => {
+      repository.findEmployeeIdByUserId.mockResolvedValue(EMPLOYEE_ID);
+      repository.findEmployeeVacationProfile.mockResolvedValue({
+        hireDate: new Date(2024, 0, 1),
+        contractType: EmployeeContractType.INDEFINIDO,
+      });
+
+      await expect(
+        service.requestVacation(TENANT, ACTOR_USER, {
+          employeeId: EMPLOYEE_ID,
+          startDate: new Date('2026-07-20T00:00:00.000Z'),
+          endDate: new Date('2026-07-24T00:00:00.000Z'),
+          type: VacationType.DISFRUTE,
+        }),
+      ).rejects.toThrow(BadRequestException);
+      expect(repository.createRequest).not.toHaveBeenCalled();
+    });
+
+    it('rejects weekend-only ranges', async () => {
+      repository.findEmployeeIdByUserId.mockResolvedValue(EMPLOYEE_ID);
+      repository.findEmployeeVacationProfile.mockResolvedValue({
+        hireDate: new Date(2024, 0, 1),
+        contractType: EmployeeContractType.INDEFINIDO,
+      });
+
+      await expect(
+        service.requestVacation(TENANT, ACTOR_USER, {
+          employeeId: EMPLOYEE_ID,
+          startDate: new Date('2026-08-01T00:00:00.000Z'),
+          endDate: new Date('2026-08-02T00:00:00.000Z'),
           type: VacationType.DISFRUTE,
         }),
       ).rejects.toThrow(BadRequestException);
@@ -513,10 +558,16 @@ describe('VacationsService', () => {
 
   describe('requestVacation validations', () => {
     beforeEach(() => {
+      jest.useFakeTimers();
+      jest.setSystemTime(new Date('2026-07-14T12:00:00.000Z'));
       repository.findEmployeeVacationProfile.mockResolvedValue({
         hireDate: new Date(2024, 0, 1),
         contractType: EmployeeContractType.INDEFINIDO,
       });
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
     });
 
     it('allows RRHH to request vacation on behalf of employee', async () => {
@@ -526,8 +577,8 @@ describe('VacationsService', () => {
 
       await service.requestVacation(TENANT, RRHH_USER, {
         employeeId: EMPLOYEE_ID,
-        startDate: new Date(2026, 7, 1),
-        endDate: new Date(2026, 7, 5),
+        startDate: new Date('2026-08-01T00:00:00.000Z'),
+        endDate: new Date('2026-08-05T00:00:00.000Z'),
         type: VacationType.DISFRUTE,
       });
 
@@ -541,8 +592,8 @@ describe('VacationsService', () => {
       await expect(
         service.requestVacation(TENANT, ACTOR_USER, {
           employeeId: EMPLOYEE_ID,
-          startDate: new Date(2026, 7, 1),
-          endDate: new Date(2026, 7, 5),
+          startDate: new Date('2026-08-01T00:00:00.000Z'),
+          endDate: new Date('2026-08-05T00:00:00.000Z'),
           type: VacationType.DISFRUTE,
         }),
       ).rejects.toThrow(ForbiddenException);
@@ -554,8 +605,8 @@ describe('VacationsService', () => {
       await expect(
         service.requestVacation(TENANT, ACTOR_USER, {
           employeeId: EMPLOYEE_ID,
-          startDate: new Date(2026, 7, 10),
-          endDate: new Date(2026, 7, 5),
+          startDate: new Date('2026-08-10T00:00:00.000Z'),
+          endDate: new Date('2026-08-05T00:00:00.000Z'),
           type: VacationType.DISFRUTE,
         }),
       ).rejects.toThrow(BadRequestException);

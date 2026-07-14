@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { monthToIsoDateRange } from './vacation-display.utils';
+import { monthToIsoDateRange, calculateBusinessDaysInRange } from './vacation-display.utils';
 
 describe('vacation month filter', () => {
   it('converts a selected month to inclusive ISO dates', () => {
@@ -19,5 +19,15 @@ describe('vacation month filter', () => {
 
   it('returns empty range when month is blank', () => {
     expect(monthToIsoDateRange('')).toEqual({});
+  });
+});
+
+describe('vacation business days', () => {
+  it('excludes weekends from the requested day count', () => {
+    expect(calculateBusinessDaysInRange('2026-08-01', '2026-08-05')).toBe(3);
+  });
+
+  it('returns zero for weekend-only ranges', () => {
+    expect(calculateBusinessDaysInRange('2026-08-01', '2026-08-02')).toBe(0);
   });
 });

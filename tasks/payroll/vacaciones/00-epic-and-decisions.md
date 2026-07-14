@@ -167,6 +167,20 @@ Reutilizar el organigrama ya existente (`EmployeePositionSupervisor`). **No** us
 
 - En el rango de un `DISFRUTE` **APROBADO**, la marcación (kiosko / app móvil) debe **rechazarse/bloquearse** con mensaje claro.
 - Complementa PC-1: además de no contar como ausencia, no permite registrar entradas/salidas.
+- El bloqueo usa el **rango calendario completo** (`startDate`–`endDate`), **incluyendo sábados y domingos**, aunque esos días no descuenten saldo (ver **D11**).
+
+### D11 — Antelación mínima 15 días (solicitud)
+
+- La fecha de inicio de una solicitud debe ser **≥ hoy + 15 días** (fecha civil, `America/Bogota`).
+- Aplica en backend (`requestVacation`) y en calendario de captura (web Mi perfil; app móvil OS-555 en otro repo).
+- Ver [task-12-web-vacation-request-rules.md](./task-12-web-vacation-request-rules.md).
+
+### D12 — Conteo de días hábiles en solicitud (sábado/domingo excluidos)
+
+- `daysRequested` y descuento de saldo cuentan solo **lunes a viernes** dentro del rango seleccionado.
+- **No** incluye festivos colombianos en MVP (Q5 sigue abierto para fase posterior).
+- Reemplaza el cálculo actual de días calendario inclusivos en `requestVacation`.
+- Ver [task-12-web-vacation-request-rules.md](./task-12-web-vacation-request-rules.md).
 
 ### D7 — Multi-tenant, soft delete y convenciones Prisma
 
@@ -298,19 +312,20 @@ enum VacationStatus {
 
 > Se implementan **una a la vez**. Cada archivo incluye Goal / Scope / Out of scope / Files allowed / Files forbidden / Acceptance / Validation.
 
-| #   | Archivo                                                                      | Descripción                                                                  |
-| --- | ---------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| 01  | [task-01-schema-migration.md](./task-01-schema-migration.md)                 | Modelos `VacationBalance`/`VacationRequest`, enums, refinamientos, migración |
-| 02  | [task-02-interfaces.md](./task-02-interfaces.md)                             | Contratos TS (repository/service, DTOs de dominio)                           |
-| 03  | [task-03-repository.md](./task-03-repository.md)                             | Acceso Prisma (saldo, solicitudes, rangos aprobados por fecha)               |
-| 04  | [task-04-accrual-job.md](./task-04-accrual-job.md)                           | Job mensual BullMQ: acumulación proporcional a `hireDate` (idempotente)      |
-| 05  | [task-05-request-approval-service.md](./task-05-request-approval-service.md) | `requestVacation` + máquina de estados de **doble aprobación** + saldo       |
-| 06  | [task-06-letter-pdf.md](./task-06-letter-pdf.md)                             | Generación de carta PDF (aprobación/negación) + storage + presigned URL      |
-| 07  | [task-07-attendance-integration.md](./task-07-attendance-integration.md)     | **No contar como ausencia** + **bloqueo de marcación** en rango DISFRUTE     |
-| 08  | [task-08-api-endpoints-dtos.md](./task-08-api-endpoints-dtos.md)             | Controller/Resolver + DTOs (solicitud, aprobación por nivel, rechazo)        |
-| 09  | [task-09-frontend-vacations.md](./task-09-frontend-vacations.md)             | **Mi perfil** (vacaciones + dotación + personal) + bandeja aprobación RRHH   |
-| 10  | [task-10-payroll-compensation.md](./task-10-payroll-compensation.md)         | Reflejar compensación en la siguiente liquidación de nómina                  |
-| 11  | [task-11-tests-validation.md](./task-11-tests-validation.md)                 | Tests BE/FE + criterios de aceptación + validación final                     |
+| #   | Archivo                                                                          | Descripción                                                                  |
+| --- | -------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| 01  | [task-01-schema-migration.md](./task-01-schema-migration.md)                     | Modelos `VacationBalance`/`VacationRequest`, enums, refinamientos, migración |
+| 02  | [task-02-interfaces.md](./task-02-interfaces.md)                                 | Contratos TS (repository/service, DTOs de dominio)                           |
+| 03  | [task-03-repository.md](./task-03-repository.md)                                 | Acceso Prisma (saldo, solicitudes, rangos aprobados por fecha)               |
+| 04  | [task-04-accrual-job.md](./task-04-accrual-job.md)                               | Job mensual BullMQ: acumulación proporcional a `hireDate` (idempotente)      |
+| 05  | [task-05-request-approval-service.md](./task-05-request-approval-service.md)     | `requestVacation` + máquina de estados de **doble aprobación** + saldo       |
+| 06  | [task-06-letter-pdf.md](./task-06-letter-pdf.md)                                 | Generación de carta PDF (aprobación/negación) + storage + presigned URL      |
+| 07  | [task-07-attendance-integration.md](./task-07-attendance-integration.md)         | **No contar como ausencia** + **bloqueo de marcación** en rango DISFRUTE     |
+| 08  | [task-08-api-endpoints-dtos.md](./task-08-api-endpoints-dtos.md)                 | Controller/Resolver + DTOs (solicitud, aprobación por nivel, rechazo)        |
+| 09  | [task-09-frontend-vacations.md](./task-09-frontend-vacations.md)                 | **Mi perfil** (vacaciones + dotación + personal) + bandeja aprobación RRHH   |
+| 10  | [task-10-payroll-compensation.md](./task-10-payroll-compensation.md)             | Reflejar compensación en la siguiente liquidación de nómina                  |
+| 11  | [task-11-tests-validation.md](./task-11-tests-validation.md)                     | Tests BE/FE + criterios de aceptación + validación final                     |
+| 12  | [task-12-web-vacation-request-rules.md](./task-12-web-vacation-request-rules.md) | Web Mi perfil + BE: antelación 15 días y días hábiles en solicitud           |
 
 **Orden de implementación:**
 
@@ -337,7 +352,7 @@ enum VacationStatus {
 - ~~**Q3 (D8):** ¿Punto exacto de integración con el motor de liquidación?~~ **Resuelto:** ver decisión **D8** — `getPayrollReport` + `calculateEmployeePeriod`; agregar línea `vacationCompensationPay` al `grossPay`.
 - **Q2 (D7):** ¿`VacationRequest` usa `isActive` (convención del repo) o `deletedAt` (por auditoría)?
 - **Q4 (D5):** ¿La plantilla/membrete es por tenant (multi-tenant branding) o único de Palos de Leña?
-- **Q5:** ¿"días hábiles" excluye festivos colombianos y domingos en el cálculo de `daysRequested`? (calendario de días hábiles por sede).
+- **Q5:** ¿"días hábiles" excluye festivos colombianos además de sábado/domingo? **Parcialmente resuelto (D12):** sábado y domingo excluidos; festivos CO quedan para fase posterior.
 
 ---
 
