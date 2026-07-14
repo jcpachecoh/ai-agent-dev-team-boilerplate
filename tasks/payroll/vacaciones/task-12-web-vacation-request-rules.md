@@ -50,8 +50,10 @@ La UI de captura ya existe (task 09); esta task ajusta validación, preview y ba
 
 - `apps/api/src/vacations/service/vacations.service.ts`
 - `apps/api/src/vacations/utils/vacation-business-days.utils.ts` — create
+- `apps/api/src/vacations/resolver/vacations.resolver.ts` — create
 - `apps/api/src/vacations/test/vacations.service.spec.ts`
 - `apps/api/src/vacations/test/vacation-business-days.utils.spec.ts` — create
+- `apps/api/src/vacations/test/vacations.resolver.spec.ts` — create
 
 ---
 
@@ -105,6 +107,7 @@ La UI de captura ya existe (task 09); esta task ajusta validación, preview y ba
 ```bash
 pnpm --filter api test -- vacations.service
 pnpm --filter api test -- vacation-business-days
+pnpm --filter api test -- vacations.resolver
 pnpm --filter web-app test -- VacationRequestModal
 pnpm --filter web-app test -- vacation-display.utils
 node scripts/validate-structure.js
@@ -114,13 +117,60 @@ node scripts/validate-structure.js
 
 ## Handoff OS-555 (app móvil, otro repo)
 
-Consumir la misma API REST/GraphQL que web Mi perfil:
+Consumir la misma API que web Mi perfil. **GraphQL disponible** (preferido para app móvil).
 
-| Acción    | REST                                          |
-| --------- | --------------------------------------------- |
-| Saldo     | `GET /api/vacations/balance/:employeeId`      |
-| Crear     | `POST /api/vacations/requests`                |
-| Historial | `GET /api/vacations/requests` (filtro propio) |
-| Carta     | `GET /api/vacations/requests/:id/letter`      |
+### GraphQL (empleado)
+
+```graphql
+query MyVacationBalance {
+  myVacationBalance {
+    accruedDays
+    takenDays
+    compensatedDays
+    availableDays
+    lastAccrualDate
+  }
+}
+
+query MyVacationRequests($take: Int) {
+  myVacationRequests(take: $take) {
+    id
+    startDate
+    endDate
+    daysRequested
+    type
+    status
+    rejectionReason
+    createdAt
+  }
+}
+
+mutation MyRequestVacation($input: MyRequestVacationInput!) {
+  myRequestVacation(input: $input) {
+    id
+    status
+    daysRequested
+    startDate
+    endDate
+  }
+}
+
+query VacationLetterUrl($requestId: ID!) {
+  vacationLetterUrl(requestId: $requestId) {
+    url
+  }
+}
+```
+
+`myRequestVacation` no requiere `employeeId` — el backend lo resuelve del JWT.
+
+### REST (alternativa)
+
+| Acción    | REST                                     |
+| --------- | ---------------------------------------- |
+| Saldo     | `GET /api/vacations/me/balance`          |
+| Crear     | `POST /api/vacations/requests`           |
+| Historial | `GET /api/vacations/me/requests`         |
+| Carta     | `GET /api/vacations/requests/:id/letter` |
 
 Reglas R1/R2 aplican en backend; el calendario móvil es UX, no fuente de verdad.

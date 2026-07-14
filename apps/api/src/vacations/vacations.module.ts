@@ -18,6 +18,7 @@ import { VacationLetterService } from './service/vacation-letter.service';
 import { VacationsService } from './service/vacations.service';
 import { VACATION_LETTER_SERVICE } from './interfaces/vacations.interfaces';
 import { VacationsController } from './controller/vacations.controller';
+import { VacationsResolver } from './resolver/vacations.resolver';
 
 @Module({
   imports: [PrismaModule, LocationsModule, StorageModule, ScheduleModule.forRoot(), AuthModule],
@@ -27,6 +28,7 @@ import { VacationsController } from './controller/vacations.controller';
     VacationAccrualService,
     VacationsService,
     VacationLetterService,
+    VacationsResolver,
     {
       provide: VACATION_LETTER_SERVICE,
       useExisting: VacationLetterService,
