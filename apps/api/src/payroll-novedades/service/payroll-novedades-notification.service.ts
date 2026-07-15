@@ -33,4 +33,14 @@ export class PayrollNovedadesNotificationService {
       `NOM-14 notify RRHH inbox tenant=${tenantId} novedad=${novedad.id} status=${novedad.status}`,
     );
   }
+
+  async notifyEmployeeNovedadEdited(
+    tenantId: string,
+    employeeUserId: string,
+    novedad: PayrollNovedadRecord,
+  ): Promise<void> {
+    this.logger.log(
+      `NOM-14 notify employee edit user=${employeeUserId} tenant=${tenantId} novedad=${novedad.id} type=${novedad.type}`,
+    );
+  }
 }

@@ -73,7 +73,10 @@ describe('PayrollNovedadesService', () => {
   let notificationService: jest.Mocked<
     Pick<
       PayrollNovedadesNotificationService,
-      'notifySupervisorPending' | 'notifyEmployeeStatusChange' | 'notifyRrhhInbox'
+      | 'notifySupervisorPending'
+      | 'notifyEmployeeStatusChange'
+      | 'notifyRrhhInbox'
+      | 'notifyEmployeeNovedadEdited'
     >
   >;
 
@@ -116,6 +119,7 @@ describe('PayrollNovedadesService', () => {
       notifySupervisorPending: jest.fn(),
       notifyEmployeeStatusChange: jest.fn(),
       notifyRrhhInbox: jest.fn(),
+      notifyEmployeeNovedadEdited: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -1017,6 +1021,11 @@ describe('PayrollNovedadesService', () => {
           changedByName: 'RRHH User',
         },
       ]);
+      repository.findEmployeeApprovalContext.mockResolvedValue({
+        userId: 'emp-user',
+        locationId: 'loc-1',
+        positionId: 'pos-1',
+      });
 
       const result = await service.edit(TENANT, RRHH_USER, 'nov-1', {
         endDate: new Date('2026-07-05T00:00:00.000Z'),
@@ -1024,6 +1033,7 @@ describe('PayrollNovedadesService', () => {
 
       expect(repository.updateEditableFields).toHaveBeenCalled();
       expect(result.auditLog.id).toBe('audit-1');
+      expect(notificationService.notifyEmployeeNovedadEdited).toHaveBeenCalled();
     });
 
     it('bloquea edición si la liquidación ya fue procesada', async () => {
