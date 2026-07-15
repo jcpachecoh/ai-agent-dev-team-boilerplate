@@ -197,6 +197,39 @@ const LEGAL_PARAMETER_SEEDS: LegalParameterSeed[] = [
   // and nothing in this PR consumes it yet (GAP(Task04) — retención en la fuente still pending).
   // getValueAt('UVT', ...) will throw NotFoundException until a real vigencia is added; that is
   // intentional — a wrong guessed UVT is worse than a loud failure. TODO(Task04): seed once wired up.
+
+  // ── PRIMA_DIVISOR_DIAS — semestre comercial de 180 días (30 días/mes), OS-591 fase 1 ──
+  {
+    key: 'PRIMA_DIVISOR_DIAS',
+    value: 180,
+    validFrom: '2020-01-01',
+    validTo: null,
+    source: 'CST art. 306 — semestre comercial de 180 días',
+  },
+
+  // ── INDEMNIZACION_UMBRAL_SMLV — umbral de SMLMV para la tabla de días de indemnización
+  // aplicable a contrato INDEFINIDO (CST art. 64 par. 1 num. 2). NO consumido todavía por
+  // ningún cálculo en esta fase — sembrado para que la fase 2 (fórmula de indemnización) no
+  // dependa de una migración adicional. Ver tasks/OS-591.md.
+  {
+    key: 'INDEMNIZACION_UMBRAL_SMLV',
+    value: 10,
+    validFrom: '2020-01-01',
+    validTo: null,
+    source: 'CST art. 64 par. 1 núm. 2 (Ley 789 de 2002)',
+  },
+
+  // ── INDEMNIZACION_FORMULA_VERSION — versión activa de la fórmula PROVISIONAL de
+  // indemnización (mecanismo de versionado, no un valor legal per se). Value=1 = primera
+  // versión provisional documentada en tasks/OS-591.md, pendiente de validación legal
+  // explícita antes de habilitar aprobación/pago (criterio de aceptación #4 del ticket).
+  {
+    key: 'INDEMNIZACION_FORMULA_VERSION',
+    value: 1,
+    validFrom: '2020-01-01',
+    validTo: null,
+    source: 'OS-591 — fórmula provisional pendiente de validación legal, ver tasks/OS-591.md',
+  },
 ];
 
 export async function seedLaborLegalParameters(prisma: PrismaClient): Promise<void> {

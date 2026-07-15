@@ -1,6 +1,7 @@
 import { Test, type TestingModule } from '@nestjs/testing';
 import { DocumentType } from '@prisma/client';
 
+import { EmployeeContractRepository } from '../../../payroll/repository/employee-contract.repository';
 import { EmployeeHistoryRepository } from '../../../payroll/repository/employee-history.repository';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { AdminUsersRepository } from '../repository/admin-users.repository';
@@ -8,6 +9,10 @@ import { AdminUsersRepository } from '../repository/admin-users.repository';
 const mockEmployeeHistoryRepository = {
   syncSalaryHistoryTx: jest.fn(),
   syncFundHistoryTx: jest.fn(),
+};
+
+const mockEmployeeContractRepository = {
+  createInitialContractTx: jest.fn(),
 };
 
 const mockPrisma = {
@@ -72,6 +77,7 @@ describe('AdminUsersRepository', (): void => {
         AdminUsersRepository,
         { provide: PrismaService, useValue: mockPrisma },
         { provide: EmployeeHistoryRepository, useValue: mockEmployeeHistoryRepository },
+        { provide: EmployeeContractRepository, useValue: mockEmployeeContractRepository },
       ],
     }).compile();
 
@@ -120,12 +126,16 @@ describe('AdminUsersRepository', (): void => {
   describe('createWithEmployeeDetails', (): void => {
     it('seeds placeholder salary and fund history in the same transaction (OS-588)', async (): Promise<void> => {
       const createdUser = { id: 'user-new', role: baseRow.role, employeeDetails: null };
+      const contractStart = new Date('2026-07-14');
       const createdEmployeeDetails = {
         id: 'emp-new',
         salaryType: 'ORDINARIO',
         salaryAmount: 0,
         cesantiasFundName: 'Por definir',
         pensionFundName: 'Por definir',
+        contractType: 'INDEFINIDO',
+        contractStart,
+        contractEnd: null,
       };
       const tx = {
         user: { create: jest.fn().mockResolvedValue(createdUser) },
@@ -171,6 +181,19 @@ describe('AdminUsersRepository', (): void => {
         expect.objectContaining({
           fundType: 'PENSION_FUND',
           fundName: 'Por definir',
+        }),
+      );
+      // OS-591 (fase 1) — este es el otro flujo de creación de EmployeeDetails fuera de
+      // PayrollRepository; también debe sembrar el contrato inicial en la misma transacción.
+      expect(mockEmployeeContractRepository.createInitialContractTx).toHaveBeenCalledWith(
+        tx,
+        expect.objectContaining({
+          tenantId: 't1',
+          employeeDetailsId: 'emp-new',
+          contractType: 'INDEFINIDO',
+          startDate: contractStart,
+          agreedEndDate: null,
+          changedBy: 'admin-1',
         }),
       );
     });

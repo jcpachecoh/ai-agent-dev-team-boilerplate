@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { EmployeeCatalogType, EmployeeDetails, EmployeePersonalData, User } from '@prisma/client';
 
+import { EmployeeContractRepository } from './employee-contract.repository';
 import { EmployeeHistoryRepository } from './employee-history.repository';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
@@ -18,6 +19,7 @@ export class PayrollRepository implements IPayrollRepository {
   constructor(
     private readonly prisma: PrismaService,
     private readonly employeeHistoryRepository: EmployeeHistoryRepository,
+    private readonly employeeContractRepository: EmployeeContractRepository,
   ) {}
 
   private buildListWhere(filters: ListEmployeesFilters): Record<string, unknown> {
@@ -149,6 +151,17 @@ export class PayrollRepository implements IPayrollRepository {
         fundType: EmployeeCatalogType.PENSION_FUND,
         fundName: employeeDetails.pensionFundName,
         effectiveFrom,
+        changedBy: data.changedBy,
+      });
+
+      // OS-591 (fase 1) — el contrato inicial se siembra en la misma transacción que crea
+      // EmployeeDetails, mismo patrón que el historial salarial/de fondos de arriba.
+      await this.employeeContractRepository.createInitialContractTx(tx, {
+        tenantId: employeeDetails.tenantId,
+        employeeDetailsId: employeeDetails.id,
+        contractType: employeeDetails.contractType,
+        startDate: employeeDetails.contractStart,
+        agreedEndDate: employeeDetails.contractEnd,
         changedBy: data.changedBy,
       });
 
@@ -289,6 +302,24 @@ export class PayrollRepository implements IPayrollRepository {
           fundType: EmployeeCatalogType.PENSION_FUND,
           fundName: updated.pensionFundName,
           effectiveFrom,
+          changedBy: payload.changedBy,
+        });
+      }
+
+      // OS-591 (fase 1) — ajusta el contrato ACTIVO en curso (NO crea uno nuevo: un update
+      // genérico de tipo/fechas de contrato es una corrección del contrato vigente, no una
+      // recontratación — ver EmployeeContractService.rehire para ese caso explícito).
+      if (
+        'contractType' in employeeData ||
+        'contractStart' in employeeData ||
+        'contractEnd' in employeeData
+      ) {
+        await this.employeeContractRepository.syncActiveContractTx(tx, {
+          tenantId: updated.tenantId,
+          employeeDetailsId: updated.id,
+          ...('contractType' in employeeData ? { contractType: updated.contractType } : {}),
+          ...('contractStart' in employeeData ? { startDate: updated.contractStart } : {}),
+          ...('contractEnd' in employeeData ? { agreedEndDate: updated.contractEnd } : {}),
           changedBy: payload.changedBy,
         });
       }

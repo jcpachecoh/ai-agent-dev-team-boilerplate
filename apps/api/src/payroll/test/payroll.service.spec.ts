@@ -1,10 +1,10 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import {
   UnprocessableEntityException,
   ConflictException,
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
+import { Test, type TestingModule } from '@nestjs/testing';
 import {
   EmployeeContractType,
   SalaryType,
@@ -15,16 +15,18 @@ import {
   EmployeeRelationshipType,
   Prisma,
 } from '@prisma/client';
-import { PayrollService } from '../service/payroll.service';
-import { PayrollRepository } from '../repository/payroll.repository';
-import { EmployeePositionsService } from '../service/employee-positions.service';
-import { StorageService } from '../../storage/service/storage.service';
+
 import { AuditService } from '../../audit/service/audit.service';
 import { EmployeeSocialProfileService } from '../../employee-social-profile/service/employee-social-profile.service';
-import { UserLocationsService } from '../../locations/service/user-locations.service';
 import { LaborLegalParametersService } from '../../labor-legal-parameters/service/labor-legal-parameters.service';
-import { SMLV_2025 } from '../payroll.constants';
+import { UserLocationsService } from '../../locations/service/user-locations.service';
 import { StorageDomain } from '../../storage/enums/storage.enums';
+import { StorageService } from '../../storage/service/storage.service';
+import { SMLV_2025 } from '../payroll.constants';
+import { PayrollRepository } from '../repository/payroll.repository';
+import { EmployeeDeactivationGuardService } from '../service/employee-deactivation-guard.service';
+import { EmployeePositionsService } from '../service/employee-positions.service';
+import { PayrollService } from '../service/payroll.service';
 
 describe('PayrollService', () => {
   let service: PayrollService;
@@ -33,6 +35,11 @@ describe('PayrollService', () => {
   let storageService: jest.Mocked<StorageService>;
   let auditService: AuditService;
   let socialProfileService: EmployeeSocialProfileService;
+  // Funciones nombradas (no `repository.X`/`deactivationGuard.X` sueltos) — evita
+  // @typescript-eslint/unbound-method al referenciarlas en `expect(...)`.
+  let mockAssertCanDeactivate: jest.Mock;
+  let mockUpdate: jest.Mock;
+  let mockSoftDelete: jest.Mock;
 
   const mockTenantId = 'tenant-1';
   const mockLocationId = 'loc-1';
@@ -90,6 +97,10 @@ describe('PayrollService', () => {
   };
 
   beforeEach(async () => {
+    mockAssertCanDeactivate = jest.fn().mockResolvedValue(undefined);
+    mockUpdate = jest.fn();
+    mockSoftDelete = jest.fn();
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         PayrollService,
@@ -99,8 +110,8 @@ describe('PayrollService', () => {
             create: jest.fn(),
             findAll: jest.fn(),
             findByUserId: jest.fn(),
-            update: jest.fn(),
-            softDelete: jest.fn(),
+            update: mockUpdate,
+            softDelete: mockSoftDelete,
             findExistingUser: jest.fn(),
             findUserByEmail: jest.fn(),
             findUserByCedula: jest.fn(),
@@ -152,6 +163,14 @@ describe('PayrollService', () => {
             // Reproduces the pre-OS-585 hardcoded SMLV_2025 constant so existing
             // salary-validation and transport-subsidy assertions keep passing unchanged.
             getValueAt: jest.fn().mockResolvedValue(SMLV_2025),
+          },
+        },
+        {
+          provide: EmployeeDeactivationGuardService,
+          useValue: {
+            // OS-591 (fase 3) — permite desactivar por defecto en estos tests; los casos
+            // de bloqueo se cubren en employee-deactivation-guard.service.spec.ts.
+            assertCanDeactivate: mockAssertCanDeactivate,
           },
         },
       ],
@@ -457,6 +476,30 @@ describe('PayrollService', () => {
       await expect(
         service.update(mockTenantId, 'user-1', { locationId: 'bad-loc' }),
       ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should run the deactivation guard when isActive:false is in the patch (ruta alterna)', async (): Promise<void> => {
+      // OS-591 (fase 3) — cierra la ruta alterna de desactivación (§15.5).
+      await service.update(mockTenantId, 'user-1', { isActive: false }, 'actor-1');
+
+      expect(mockAssertCanDeactivate).toHaveBeenCalledWith(mockTenantId, undefined, 'actor-1');
+    });
+
+    it('should not run the deactivation guard for updates that do not touch isActive', async (): Promise<void> => {
+      await service.update(mockTenantId, 'user-1', { position: 'Senior Dev' });
+
+      expect(mockAssertCanDeactivate).not.toHaveBeenCalled();
+    });
+
+    it('should propagate the deactivation guard rejection without updating (ruta alterna bloqueada)', async (): Promise<void> => {
+      mockAssertCanDeactivate.mockRejectedValueOnce(
+        new ConflictException('No se puede desactivar: falta liquidación aprobada'),
+      );
+
+      await expect(service.update(mockTenantId, 'user-1', { isActive: false })).rejects.toThrow(
+        ConflictException,
+      );
+      expect(mockUpdate).not.toHaveBeenCalled();
     });
 
     it('should throw BadRequestException when update role is invalid', async () => {
@@ -788,8 +831,11 @@ describe('PayrollService', () => {
   });
 
   describe('remove', () => {
-    it('should perform soft delete on employee details only and return the deactivated employee', async () => {
-      (repository.findByUserId as jest.Mock).mockResolvedValue({ tenantId: mockTenantId });
+    it('should perform soft delete on employee details only and return the deactivated employee', async (): Promise<void> => {
+      (repository.findByUserId as jest.Mock).mockResolvedValue({
+        id: 'emp-1',
+        tenantId: mockTenantId,
+      });
       const deactivatedEmployee = {
         tenantId: mockTenantId,
         userId: 'user-1',
@@ -798,10 +844,25 @@ describe('PayrollService', () => {
       };
       (repository.softDelete as jest.Mock).mockResolvedValue(deactivatedEmployee);
 
-      const result = await service.remove(mockTenantId, 'user-1');
+      const result = await service.remove(mockTenantId, 'user-1', 'actor-1');
 
+      expect(mockAssertCanDeactivate).toHaveBeenCalledWith(mockTenantId, 'emp-1', 'actor-1');
       expect(repository.softDelete).toHaveBeenCalledWith('user-1');
       expect(result).toEqual(deactivatedEmployee);
+    });
+
+    it('should propagate the deactivation guard rejection without soft-deleting', async (): Promise<void> => {
+      // OS-591 (fase 3) — gate único de desactivación (ver EmployeeDeactivationGuardService).
+      (repository.findByUserId as jest.Mock).mockResolvedValue({
+        id: 'emp-1',
+        tenantId: mockTenantId,
+      });
+      mockAssertCanDeactivate.mockRejectedValueOnce(
+        new ConflictException('No se puede desactivar: falta liquidación aprobada'),
+      );
+
+      await expect(service.remove(mockTenantId, 'user-1')).rejects.toThrow(ConflictException);
+      expect(mockSoftDelete).not.toHaveBeenCalled();
     });
   });
 

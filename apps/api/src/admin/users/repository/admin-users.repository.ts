@@ -7,6 +7,7 @@ import {
   SalaryType,
 } from '@prisma/client';
 
+import { EmployeeContractRepository } from '../../../payroll/repository/employee-contract.repository';
 import { EmployeeHistoryRepository } from '../../../payroll/repository/employee-history.repository';
 import { PrismaService } from '../../../prisma/prisma.service';
 import type {
@@ -28,6 +29,7 @@ export class AdminUsersRepository implements IAdminUsersRepository {
   constructor(
     private readonly prisma: PrismaService,
     private readonly employeeHistoryRepository: EmployeeHistoryRepository,
+    private readonly employeeContractRepository: EmployeeContractRepository,
   ) {}
 
   async findAll(tenantId: string, includeInactive = false): Promise<AdminUserListItem[]> {
@@ -312,6 +314,19 @@ export class AdminUsersRepository implements IAdminUsersRepository {
         fundType: EmployeeCatalogType.PENSION_FUND,
         fundName: employeeDetails.pensionFundName,
         effectiveFrom: now,
+        changedBy: data.createdBy,
+      });
+
+      // OS-591 (fase 1) — mismo criterio que el historial salarial/de fondos arriba: este
+      // es el único otro flujo de creación de EmployeeDetails fuera de PayrollRepository,
+      // así que también debe sembrar el contrato inicial en la misma transacción para que
+      // ningún EmployeeDetails quede sin EmploymentContract ACTIVO.
+      await this.employeeContractRepository.createInitialContractTx(tx, {
+        tenantId,
+        employeeDetailsId: employeeDetails.id,
+        contractType: employeeDetails.contractType,
+        startDate: employeeDetails.contractStart,
+        agreedEndDate: employeeDetails.contractEnd,
         changedBy: data.createdBy,
       });
 

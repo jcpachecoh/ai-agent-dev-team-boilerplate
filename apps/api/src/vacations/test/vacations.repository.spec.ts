@@ -158,6 +158,63 @@ describe('VacationsRepository', () => {
     });
   });
 
+  // OS-591 (fase 1, cierre de hallazgos) — fuente correcta de "tomado/compensado a una
+  // fecha pasada": filtra por level2ActedAt <= asOfDate, nunca por el contador mutable.
+  describe('sumApprovedMovementsUpTo', (): void => {
+    it('filtra por status APROBADA y level2ActedAt <= asOfDate (excluye aprobaciones futuras)', async (): Promise<void> => {
+      // Arrange
+      const asOfDate = new Date('2026-08-15');
+      prisma.vacationRequest.findMany.mockResolvedValue([]);
+
+      // Act
+      await repository.sumApprovedMovementsUpTo(TENANT, EMPLOYEE_ID, asOfDate);
+
+      // Assert
+      expect(prisma.vacationRequest.findMany).toHaveBeenCalledWith({
+        where: {
+          tenantId: TENANT,
+          employeeId: EMPLOYEE_ID,
+          status: VacationStatus.APROBADA,
+          level2ActedAt: { lte: asOfDate },
+        },
+        select: { type: true, daysRequested: true },
+      });
+    });
+
+    it('suma DISFRUTE en takenDays y COMPENSACION en compensatedDays por separado', async (): Promise<void> => {
+      // Arrange
+      prisma.vacationRequest.findMany.mockResolvedValue([
+        { type: VacationType.DISFRUTE, daysRequested: new Decimal(5) },
+        { type: VacationType.DISFRUTE, daysRequested: new Decimal(3) },
+        { type: VacationType.COMPENSACION, daysRequested: new Decimal(2) },
+      ]);
+
+      // Act
+      const result = await repository.sumApprovedMovementsUpTo(
+        TENANT,
+        EMPLOYEE_ID,
+        new Date('2026-08-15'),
+      );
+
+      // Assert
+      expect(result.takenDays.toNumber()).toBe(8);
+      expect(result.compensatedDays.toNumber()).toBe(2);
+    });
+
+    it('devuelve ceros si no hay solicitudes aprobadas hasta la fecha', async (): Promise<void> => {
+      prisma.vacationRequest.findMany.mockResolvedValue([]);
+
+      const result = await repository.sumApprovedMovementsUpTo(
+        TENANT,
+        EMPLOYEE_ID,
+        new Date('2026-08-15'),
+      );
+
+      expect(result.takenDays.toNumber()).toBe(0);
+      expect(result.compensatedDays.toNumber()).toBe(0);
+    });
+  });
+
   describe('createRequest', () => {
     it('creates request with SOLICITADA status', async () => {
       // Arrange

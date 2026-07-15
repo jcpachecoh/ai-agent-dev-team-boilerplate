@@ -67,4 +67,13 @@ export const payrollKeys = {
   cesantiasAlertSummary: () => [...payrollKeys.cesantias(), 'alert-summary'] as const,
   cesantiasExportAvailability: (year: number) =>
     [...payrollKeys.cesantias(), 'export-availability', year] as const,
+  finalSettlements: () => [...payrollKeys.all, 'final-settlements'] as const,
+  finalSettlementsByEmployee: (employeeDetailsId: string) =>
+    [...payrollKeys.finalSettlements(), 'employee', employeeDetailsId] as const,
+  finalSettlementDetail: (id: string) => [...payrollKeys.finalSettlements(), 'detail', id] as const,
+  pendingSalaryReconciliation: (settlementId: string) =>
+    [...payrollKeys.finalSettlements(), 'reconciliation', settlementId] as const,
+  legalFormulaValidations: () => [...payrollKeys.all, 'legal-formula-validations'] as const,
+  legalFormulaValidationActive: (formulaVersion: number) =>
+    [...payrollKeys.legalFormulaValidations(), 'active', formulaVersion] as const,
 };

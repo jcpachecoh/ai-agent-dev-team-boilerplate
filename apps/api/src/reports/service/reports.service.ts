@@ -49,6 +49,7 @@ import { countApprovedVacationDaysInRange } from '../../attendance/service/vacat
 import { MedicalLeavesRepository } from '../../medical-leaves/repository/medical-leaves.repository';
 import { PayrollNovedadesRepository } from '../../payroll-novedades/repository/payroll-novedades.repository';
 import { calculateMedicalLeaveMonthAdjustment } from '../../payroll/utils/medical-leave-payroll.utils';
+import { classifyOvertimeSurcharge } from '../../payroll/utils/overtime-surcharge.util';
 import { calculatePayrollNovedadMonthAdjustment } from '../../payroll/utils/payroll-novedad-payroll.utils';
 
 // CST art. 168: maximum 2h/day and 12h/week of extra (overtime) hours.
@@ -251,24 +252,13 @@ function buildAttendanceSummary(
     // Ley 51/1983: festivo + nocturno → FESTIVO_NOCTURNO (surcharge nocturno + dominical/festivo)
     //              festivo + diurno  → FESTIVO_DIURNO  (surcharge RECARGO_DOMINICAL_FESTIVO)
     //              non-festivo       → NOCTURNO / DIURNO, surcharge RECARGO_HORA_EXTRA_*
-    let type: AttendanceOvertimeType;
-    let surchargeRate: number;
-    if (r.isFestivo) {
-      if (r.isNocturno) {
-        type = AttendanceOvertimeType.FESTIVO_NOCTURNO;
-        surchargeRate =
-          resolvers.recargoHoraExtraNocturnaAt(date) + resolvers.recargoDominicalFestivoAt(date);
-      } else {
-        type = AttendanceOvertimeType.FESTIVO_DIURNO;
-        surchargeRate = resolvers.recargoDominicalFestivoAt(date);
-      }
-    } else if (r.isNocturno) {
-      type = AttendanceOvertimeType.NOCTURNO;
-      surchargeRate = resolvers.recargoHoraExtraNocturnaAt(date);
-    } else {
-      type = AttendanceOvertimeType.DIURNO;
-      surchargeRate = resolvers.recargoHoraExtraDiurnaAt(date);
-    }
+    // Regla centralizada en classifyOvertimeSurcharge (payroll/utils) — reutilizada tal
+    // cual por VariableAverageService (OS-591 fase 2) para la liquidación definitiva.
+    const { type, surchargeRate } = classifyOvertimeSurcharge(r.isNocturno, r.isFestivo, {
+      recargoHoraExtraDiurna: resolvers.recargoHoraExtraDiurnaAt(date),
+      recargoHoraExtraNocturna: resolvers.recargoHoraExtraNocturnaAt(date),
+      recargoDominicalFestivo: resolvers.recargoDominicalFestivoAt(date),
+    });
     const monthlyHoursBase = resolvers.monthlyHoursBaseAt(date);
     addOvertimeMinutes(overtimeEntries, type, r.overtimeMinutes, monthlyHoursBase, surchargeRate);
   }

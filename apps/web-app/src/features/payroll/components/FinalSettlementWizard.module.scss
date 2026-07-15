@@ -1,0 +1,83 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.65);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+.dialog {
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 820px);
+  max-height: min(90dvh, 860px);
+  overflow: hidden;
+  border: 1px solid var(--receta-border);
+  border-radius: 4px;
+  background: var(--receta-surface);
+  color: var(--receta-text);
+  box-sizing: border-box;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+.themeLight {
+  --receta-surface: #f6f4ef;
+  --receta-surface-raised: #fbfaf6;
+  --receta-border: rgba(0, 0, 0, 0.12);
+  --receta-border-strong: rgba(0, 0, 0, 0.18);
+  --receta-text: #111827;
+  --receta-text-secondary: #374151;
+  --receta-muted: #4b5563;
+  --receta-subtle: #6b7280;
+  --receta-input: #ffffff;
+  --receta-hover: rgba(0, 0, 0, 0.04);
+}
+
+.themeDark {
+  --receta-surface: #1c1c1c;
+  --receta-surface-raised: #202020;
+  --receta-border: #2e2e2e;
+  --receta-border-strong: rgba(255, 255, 255, 0.14);
+  --receta-text: #f5f5f0;
+  --receta-text-secondary: #cccccc;
+  --receta-muted: #888888;
+  --receta-subtle: #666666;
+  --receta-input: #1c1c1c;
+  --receta-hover: rgba(255, 255, 255, 0.04);
+}
+
+.wizard {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+}
+
+.stepContent {
+  padding: 16px 20px 20px;
+  min-height: 0;
+}
+
+.footerActions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  gap: 0.75rem;
+}
+
+.footerRightActions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-left: auto;
+}
+
+@media (width <= 720px) {
+  .stepContent {
+    padding: 12px 16px 16px;
+  }
+}

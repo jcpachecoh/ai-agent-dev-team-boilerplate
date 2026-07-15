@@ -604,6 +604,82 @@ const PERMISSION_SEEDS = [
     resource: 'legal',
     action: 'write',
   },
+  // OS-591 (fase 3) — Liquidación definitiva de contrato: permisos granulares por acción
+  // (separación de funciones — quien calcula no necesariamente aprueba/paga/anula).
+  {
+    id: 'cccccccc-0000-0000-0000-000000000064',
+    code: 'nomina.settlement.read',
+    name: 'Leer liquidaciones definitivas',
+    description: 'Consultar liquidaciones definitivas de contrato de un empleado.',
+    module: 'nomina',
+    resource: 'settlement',
+    action: 'read',
+  },
+  {
+    id: 'cccccccc-0000-0000-0000-000000000065',
+    code: 'nomina.settlement.calculate',
+    name: 'Calcular liquidaciones definitivas',
+    description: 'Previsualizar, calcular y recalcular liquidaciones definitivas (automáticas).',
+    module: 'nomina',
+    resource: 'settlement',
+    action: 'calculate',
+  },
+  {
+    id: 'cccccccc-0000-0000-0000-000000000066',
+    code: 'nomina.settlement.manual',
+    name: 'Registrar liquidaciones manuales',
+    description: 'Crear liquidaciones definitivas manuales con líneas y soporte documental.',
+    module: 'nomina',
+    resource: 'settlement',
+    action: 'manual',
+  },
+  {
+    id: 'cccccccc-0000-0000-0000-000000000067',
+    code: 'nomina.settlement.reconcile_pending_salary',
+    name: 'Reconciliar salario pendiente',
+    description:
+      'Registrar la reconciliación auditable de un tramo de salario pendiente antes de aprobar.',
+    module: 'nomina',
+    resource: 'settlement',
+    action: 'reconcile_pending_salary',
+  },
+  {
+    id: 'cccccccc-0000-0000-0000-000000000068',
+    code: 'nomina.settlement.approve',
+    name: 'Aprobar liquidaciones definitivas',
+    description:
+      'Aprobar una liquidación definitiva calculada — dispara la terminación real del contrato.',
+    module: 'nomina',
+    resource: 'settlement',
+    action: 'approve',
+  },
+  {
+    id: 'cccccccc-0000-0000-0000-000000000069',
+    code: 'nomina.settlement.pay',
+    name: 'Marcar liquidaciones como pagadas',
+    description: 'Registrar el pago efectivo de una liquidación definitiva aprobada.',
+    module: 'nomina',
+    resource: 'settlement',
+    action: 'pay',
+  },
+  {
+    id: 'cccccccc-0000-0000-0000-000000000070',
+    code: 'nomina.settlement.void',
+    name: 'Anular liquidaciones definitivas',
+    description: 'Anular una liquidación definitiva en DRAFT/CALCULATED.',
+    module: 'nomina',
+    resource: 'settlement',
+    action: 'void',
+  },
+  {
+    id: 'cccccccc-0000-0000-0000-000000000071',
+    code: 'nomina.settlement.validate_legal_formula',
+    name: 'Validar fórmula legal de indemnización',
+    description: 'Registrar la validación legal de una versión de la fórmula de indemnización.',
+    module: 'nomina',
+    resource: 'settlement',
+    action: 'validate_legal_formula',
+  },
 ] as const;
 
 const MANAGER_SUPERVISOR_PERMISSION_CODES = [
@@ -674,6 +750,16 @@ const TURNOS_CATALOG_READ_CODES = ['attendance.turnos.read'] as const;
 const SUPPLIER_DOCUMENT_READ_CODES = ['suppliers.documents.read'] as const;
 const SUPPLIER_DOCUMENT_WRITE_CODES = ['suppliers.documents.write'] as const;
 
+// OS-591 (fase 3) — Liquidación definitiva: permisos operativos (calcular/manual/
+// reconciliar) vs. permisos de autoridad (aprobar/pagar/anular/validar fórmula legal —
+// reservados a OWNER/SUPER_ADMIN vía ALL_PERMISSION_CODES, sin entrada explícita aquí).
+const SETTLEMENT_READ_CODES = ['nomina.settlement.read'] as const;
+const SETTLEMENT_CALCULATE_CODES = ['nomina.settlement.calculate'] as const;
+const SETTLEMENT_MANUAL_CODES = ['nomina.settlement.manual'] as const;
+const SETTLEMENT_RECONCILE_PENDING_SALARY_CODES = [
+  'nomina.settlement.reconcile_pending_salary',
+] as const;
+
 const ALL_PERMISSION_CODES = PERMISSION_SEEDS.map((permissionSeed) => permissionSeed.code);
 
 const ROLE_PERMISSION_MATRIX: Record<string, readonly string[]> = {
@@ -690,6 +776,7 @@ const ROLE_PERMISSION_MATRIX: Record<string, readonly string[]> = {
     ...TURNO_ASSIGNMENT_WRITE_CODES,
     ...TURNOS_CATALOG_READ_CODES,
     ...SUPPLIER_DOCUMENT_READ_CODES,
+    ...SETTLEMENT_READ_CODES,
   ],
   MANAGER: [
     ...MANAGER_PERMISSION_CODES,
@@ -705,6 +792,10 @@ const ROLE_PERMISSION_MATRIX: Record<string, readonly string[]> = {
     ...SUPPLIER_DOCUMENT_READ_CODES,
     ...SUPPLIER_DOCUMENT_WRITE_CODES,
     ...OVERTIME_READ_CODES,
+    ...SETTLEMENT_READ_CODES,
+    ...SETTLEMENT_CALCULATE_CODES,
+    ...SETTLEMENT_MANUAL_CODES,
+    ...SETTLEMENT_RECONCILE_PENDING_SALARY_CODES,
   ],
   OPERATOR: [...OPERATOR_PERMISSION_CODES, ...MOBILE_ATTENDANCE_CREATE_CODES],
   OPERATIONS_ADMIN: OPERATIONS_ADMIN_PERMISSION_CODES,
@@ -717,6 +808,8 @@ const ROLE_PERMISSION_MATRIX: Record<string, readonly string[]> = {
     ...TURNOS_CATALOG_READ_CODES,
     ...SUPPLIER_DOCUMENT_READ_CODES,
     ...OVERTIME_READ_CODES,
+    ...SETTLEMENT_READ_CODES,
+    ...SETTLEMENT_CALCULATE_CODES,
   ],
 };
 
@@ -2443,6 +2536,29 @@ async function main() {
   await seedEmployeeOrgChart(prisma);
   await seedEmployeeDetails(ownerGlobalUser.id, operatorGlobalUser.id, firstLocationId);
   await seedVacationDemoBalances(ownerGlobalUser.id, operatorGlobalUser.id);
+  const { seedOs591Fixtures, seedOs591Phase2Fixtures, seedOs591Phase3Fixtures } =
+    await import('./seeds/os591-final-settlement.seed');
+  await seedOs591Fixtures(prisma, {
+    tenantId: OPERATIONAL_TENANT_ID,
+    indefinidoEmployeeUserId: ownerGlobalUser.id,
+    fijoEmployeeUserId: operatorGlobalUser.id,
+    locationId: firstLocationId,
+    roleId: roles.OPERATOR.id,
+  });
+  await seedOs591Phase2Fixtures(prisma, {
+    tenantId: OPERATIONAL_TENANT_ID,
+    indefinidoEmployeeUserId: ownerGlobalUser.id,
+    fijoEmployeeUserId: operatorGlobalUser.id,
+    locationId: firstLocationId,
+    roleId: roles.OPERATOR.id,
+  });
+  await seedOs591Phase3Fixtures(prisma, {
+    tenantId: OPERATIONAL_TENANT_ID,
+    indefinidoEmployeeUserId: ownerGlobalUser.id,
+    fijoEmployeeUserId: operatorGlobalUser.id,
+    locationId: firstLocationId,
+    roleId: roles.OPERATOR.id,
+  });
   await seedSupervisorManagerDemoUsers(
     supervisorGlobalUser.id,
     managerGlobalUser.id,

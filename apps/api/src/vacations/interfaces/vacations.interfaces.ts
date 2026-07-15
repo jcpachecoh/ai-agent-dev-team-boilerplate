@@ -1,5 +1,5 @@
-import { VacationStatus, VacationType } from '@prisma/client';
-import { Decimal } from '@prisma/client/runtime/library';
+import type { VacationStatus, VacationType } from '@prisma/client';
+import type { Decimal } from '@prisma/client/runtime/library';
 
 /** Días de vacaciones acreditados por mes calendario completo (CST Art. 186). */
 export const MONTHLY_ACCRUAL_DAYS = 1.25;
@@ -132,6 +132,20 @@ export interface IVacationsRepository {
       >
     >,
   ): Promise<VacationBalanceRecord>;
+  /**
+   * OS-591 (fase 1, cierre de hallazgos) — suma de días DISFRUTE/COMPENSACION de
+   * solicitudes APROBADA cuya aprobación de nivel 2 (`level2ActedAt`, el momento en que
+   * `applyApprovedBalanceDelta` efectivamente descontó el saldo) ocurrió en o antes de
+   * `asOfDate`. Es la fuente correcta para "saldo tomado/compensado a una fecha pasada" —
+   * `VacationBalance.takenDays/compensatedDays` es un contador SIEMPRE-actual y no debe
+   * usarse para reconstruir un estado histórico (incluiría movimientos posteriores a
+   * `asOfDate` si el balance se sincronizó después). Ver VacationsService.calculateBalanceAsOf.
+   */
+  sumApprovedMovementsUpTo(
+    tenantId: string,
+    employeeId: string,
+    asOfDate: Date,
+  ): Promise<{ takenDays: Decimal; compensatedDays: Decimal }>;
   createRequest(tenantId: string, data: CreateVacationRequestData): Promise<VacationRequestRecord>;
   findRequestById(tenantId: string, id: string): Promise<VacationRequestRecord | null>;
   updateRequest(
@@ -187,8 +201,32 @@ export interface IVacationLetterService {
 
 export const VACATION_LETTER_SERVICE = Symbol('VACATION_LETTER_SERVICE');
 
+/**
+ * OS-591 (fase 1) — resultado de `calculateBalanceAsOf`: PURA previsualización, no persiste
+ * nada y NO aplica `MAX_COMPENSATION_RATIO` (ese tope solo rige la compensación en dinero
+ * durante la relación laboral vigente, no el saldo a liquidar en un retiro).
+ */
+export type VacationBalanceAsOf = {
+  asOfDate: Date;
+  accruedDays: Decimal;
+  takenDays: Decimal;
+  compensatedDays: Decimal;
+  pendingDays: Decimal;
+};
+
 export interface IVacationsService {
   getBalance(tenantId: string, employeeId: string): Promise<VacationBalanceRecord>;
+  /**
+   * OS-591 (fase 1) — saldo de vacaciones a una fecha arbitraria (p.ej. fecha de retiro),
+   * sin escribir en la base de datos y sin el tope de compensación del 50%. Entrega solo
+   * días (no valor monetario — la conversión a dinero requiere el salario vigente en esa
+   * fecha, que vive en el módulo payroll; ver tasks/OS-591.md).
+   */
+  calculateBalanceAsOf(
+    tenantId: string,
+    employeeId: string,
+    asOfDate: Date,
+  ): Promise<VacationBalanceAsOf>;
   requestVacation(
     tenantId: string,
     actorUserId: string,

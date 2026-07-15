@@ -177,7 +177,11 @@ export interface IPayrollService {
     userId: string,
     data: any,
   ): Promise<EmployeeDetails & { user: User; location?: { id: string; name: string } }>;
-  remove(tenantId: string, userId: string): Promise<EmployeeDetails & { user: User }>;
+  remove(
+    tenantId: string,
+    userId: string,
+    changedBy?: string,
+  ): Promise<EmployeeDetails & { user: User }>;
   findByLocation(
     tenantId: string,
     locationId: string,

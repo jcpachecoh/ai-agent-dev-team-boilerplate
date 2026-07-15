@@ -107,6 +107,9 @@ describe('CesantiasService.calculateForYear', (): void => {
   let countPendingByTenantAndYear: jest.Mock;
   let countExportableByTenantYearAndChannel: jest.Mock;
   let getValueAt: jest.Mock;
+  let findByIdPayroll: jest.Mock;
+  let findSalaryHistoryByEmployee: jest.Mock;
+  let findAllByEmployee: jest.Mock;
 
   beforeEach((): void => {
     findAllEmployees = jest.fn().mockResolvedValue([employee()]);
@@ -151,6 +154,9 @@ describe('CesantiasService.calculateForYear', (): void => {
     findById = jest.fn().mockResolvedValue(null);
     countPendingByTenantAndYear = jest.fn().mockResolvedValue(0);
     countExportableByTenantYearAndChannel = jest.fn().mockResolvedValue(0);
+    findByIdPayroll = jest.fn().mockResolvedValue(employee());
+    findSalaryHistoryByEmployee = jest.fn().mockResolvedValue([salaryEntry()]);
+    findAllByEmployee = jest.fn().mockResolvedValue([]);
     getValueAt = jest.fn().mockImplementation((key: string): Promise<number> => {
       if (key === 'CESANTIAS_PLAZO_DIA') {
         return Promise.resolve(14);
@@ -164,10 +170,12 @@ describe('CesantiasService.calculateForYear', (): void => {
     const payrollRepository = {
       findAll: findAllEmployees,
       findManyWithPersonalDataByIds,
+      findById: findByIdPayroll,
     } as unknown as PayrollRepository;
     const employeeHistoryRepository = {
       findSalaryHistoryByEmployees,
       findFundHistoryByEmployees,
+      findSalaryHistoryByEmployee,
     } as unknown as EmployeeHistoryRepository;
     const cesantiasRepository = {
       findMapByTenantAndYear,
@@ -177,6 +185,7 @@ describe('CesantiasService.calculateForYear', (): void => {
       findById,
       countPendingByTenantAndYear,
       countExportableByTenantYearAndChannel,
+      findAllByEmployee,
     } as unknown as CesantiasRepository;
     const legalParametersService = {
       preload,
@@ -741,6 +750,140 @@ describe('CesantiasService.calculateForYear', (): void => {
     it('rechaza un año fuera de rango', async (): Promise<void> => {
       await expect(service.getExportAvailability('tenant-1', 1999)).rejects.toThrow('Año inválido');
       expect(countExportableByTenantYearAndChannel).not.toHaveBeenCalled();
+    });
+  });
+
+  // OS-591 (fase 1) — consulta por empleado, sin batch, sin afectar otros empleados.
+  describe('getEmployeeBalanceAsOf', (): void => {
+    it('nunca invoca saveCalculations (no persiste, no afecta otros empleados)', async (): Promise<void> => {
+      await service.getEmployeeBalanceAsOf('tenant-1', 'emp-1', new Date('2020-06-30'));
+
+      expect(saveCalculations).not.toHaveBeenCalled();
+      expect(findAllEmployees).not.toHaveBeenCalled();
+    });
+
+    it('excluye del pendiente un año anterior CONSIGNADA/PAGADO (anti-doble-pago)', async (): Promise<void> => {
+      findAllByEmployee.mockResolvedValue([
+        {
+          id: 'liq-2019',
+          year: 2019,
+          cesantiasStatus: 'CONSIGNADA',
+          interestStatus: 'PAGADO',
+          cesantiasAmount: '500000',
+          interestAmount: '60000',
+        },
+      ]);
+
+      const result = await service.getEmployeeBalanceAsOf(
+        'tenant-1',
+        'emp-1',
+        new Date('2020-01-01'),
+      );
+
+      expect(result.pendingCesantias).not.toBe('500000');
+      expect(result.sourceLiquidations).toHaveLength(1);
+      expect(result.statesConsidered.excludedCesantiasStatuses).toContain('CONSIGNADA');
+      expect(result.statesConsidered.excludedInterestStatuses).toContain('PAGADO');
+    });
+
+    it('suma un año anterior CALCULADA (aún pendiente) al saldo', async (): Promise<void> => {
+      findAllByEmployee.mockResolvedValue([
+        {
+          id: 'liq-2019',
+          year: 2019,
+          cesantiasStatus: 'CALCULADA',
+          interestStatus: 'CALCULADO',
+          cesantiasAmount: '500000',
+          interestAmount: '60000',
+        },
+      ]);
+      findByIdPayroll.mockResolvedValue(employee({ hireDate: new Date('2019-01-01') }));
+
+      const result = await service.getEmployeeBalanceAsOf(
+        'tenant-1',
+        'emp-1',
+        new Date('2020-01-01'),
+      );
+
+      // 500000 del año anterior pendiente + el tramo en vivo de 2020 (1 día, ~ínfimo)
+      expect(Number(result.pendingCesantias)).toBeGreaterThanOrEqual(500000);
+      expect(Number(result.pendingInterest)).toBeGreaterThanOrEqual(60000);
+    });
+
+    it('lanza NotFoundException si el empleado no existe o es de otro tenant', async (): Promise<void> => {
+      findByIdPayroll.mockResolvedValue(null);
+
+      await expect(
+        service.getEmployeeBalanceAsOf('tenant-1', 'emp-x', new Date('2020-01-01')),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('no proyecta tramo en vivo para contratos exentos (PRESTACION/APRENDIZAJE)', async (): Promise<void> => {
+      findByIdPayroll.mockResolvedValue(
+        employee({ contractType: EmployeeContractType.PRESTACION }),
+      );
+
+      const result = await service.getEmployeeBalanceAsOf(
+        'tenant-1',
+        'emp-1',
+        new Date('2020-06-30'),
+      );
+
+      expect(result.pendingCesantias).toBe('0');
+      expect(findSalaryHistoryByEmployee).not.toHaveBeenCalled();
+    });
+
+    it('consolida un cálculo CALCULADA ya persistido del año en curso sin recalcular el año completo (anti-doble-conteo)', async (): Promise<void> => {
+      // Arrange — ya corrió un cálculo hasta el 30-jun (CALCULADA, no CONSIGNADA), y ahora
+      // se consulta el saldo al 15-sep. El tramo en vivo debe cubrir SOLO 1-jul → 15-sep,
+      // no todo el año desde enero (que sería sumar dos veces la porción ene-jun).
+      findAllByEmployee.mockResolvedValue([
+        {
+          id: 'liq-2020',
+          year: 2020,
+          cesantiasStatus: 'CALCULADA',
+          interestStatus: 'CALCULADO',
+          cesantiasAmount: '500000',
+          interestAmount: '10000',
+          periodEnd: new Date('2020-06-30'),
+        },
+      ]);
+
+      const result = await service.getEmployeeBalanceAsOf(
+        'tenant-1',
+        'emp-1',
+        new Date('2020-09-15'),
+      );
+
+      // Assert — 500000 (persistido) + 520833.33 (tramo 1-jul→15-sep: 75 días comerciales
+      // × 2500000/360). Si el código recalculara todo el año desde enero, el resultado
+      // sería ~1.77M en vez de ~1.02M — la aserción exacta descarta ambas formas de bug
+      // (ignorar lo persistido Y duplicar el tramo ya cubierto).
+      expect(result.pendingCesantias).toBe('1020833.33');
+      expect(result.currentPeriodStart).toEqual(new Date(Date.UTC(2020, 6, 1)));
+    });
+
+    it('descarta el monto de un año en curso ANULADA y recalcula limpio desde enero', async (): Promise<void> => {
+      findAllByEmployee.mockResolvedValue([
+        {
+          id: 'liq-2020',
+          year: 2020,
+          cesantiasStatus: 'ANULADA',
+          interestStatus: 'ANULADO',
+          cesantiasAmount: '999999999', // valor absurdo — no debe aparecer en el resultado
+          interestAmount: '999999999',
+          periodEnd: new Date('2020-06-30'),
+        },
+      ]);
+
+      const result = await service.getEmployeeBalanceAsOf(
+        'tenant-1',
+        'emp-1',
+        new Date('2020-01-31'),
+      );
+
+      // Assert — recalculado desde el 1-ene (31 días), no debe incluir el monto anulado.
+      expect(Number(result.pendingCesantias)).toBeLessThan(300000);
     });
   });
 });

@@ -50,6 +50,48 @@ export type CesantiasExportAvailability = {
   privateOperator: boolean;
 };
 
+/**
+ * OS-591 (fase 1) — liquidación persistida considerada al consolidar el saldo pendiente de
+ * un empleado (cualquier año/estado, no solo el año en curso).
+ */
+export type CesantiasSourceLiquidation = {
+  id: string;
+  year: number;
+  cesantiasStatus: CesantiasLiquidationRecord['cesantiasStatus'];
+  interestStatus: CesantiasLiquidationRecord['interestStatus'];
+  cesantiasAmount: string;
+  interestAmount: string;
+};
+
+/**
+ * OS-591 (fase 1) — contrato de consulta por empleado. `pendingCesantias`/`pendingInterest`
+ * consolidan años anteriores con estado pendiente (CALCULADA/CALCULADO, no CONSIGNADA/PAGADO
+ * ni ANULADA/ANULADO) más el año en curso calculado EN VIVO (no persistido) hasta
+ * `asOfDate` — ver CesantiasService.getEmployeeBalanceAsOf. NO usa
+ * `calculateForYear` (evita el riesgo de recalcular/afectar a otros empleados del tenant).
+ */
+export type EmployeeCesantiasBalanceAsOf = {
+  asOfDate: Date;
+  currentPeriodStart: Date;
+  currentPeriodEnd: Date;
+  calculationBase: string;
+  pendingCesantias: string;
+  pendingInterest: string;
+  sourceLiquidations: CesantiasSourceLiquidation[];
+  statesConsidered: {
+    pendingCesantiasStatuses: CesantiasLiquidationRecord['cesantiasStatus'][];
+    excludedCesantiasStatuses: CesantiasLiquidationRecord['cesantiasStatus'][];
+    pendingInterestStatuses: CesantiasLiquidationRecord['interestStatus'][];
+    excludedInterestStatuses: CesantiasLiquidationRecord['interestStatus'][];
+  };
+  legalParametersSnapshot: {
+    interestRate: string;
+    divisor: string;
+    transportSubsidyAmount: string;
+    transportSubsidyThreshold: string;
+  };
+};
+
 export interface ICesantiasService {
   calculateForYear(
     tenantId: string,
@@ -64,4 +106,9 @@ export interface ICesantiasService {
   getDetail(tenantId: string, id: string): Promise<CesantiasLiquidationRecord>;
   getAlertSummary(tenantId: string): Promise<CesantiasAlertSummary>;
   getExportAvailability(tenantId: string, year: number): Promise<CesantiasExportAvailability>;
+  getEmployeeBalanceAsOf(
+    tenantId: string,
+    employeeId: string,
+    asOfDate: Date,
+  ): Promise<EmployeeCesantiasBalanceAsOf>;
 }

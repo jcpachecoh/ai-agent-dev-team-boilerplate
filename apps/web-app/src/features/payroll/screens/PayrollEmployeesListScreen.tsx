@@ -18,37 +18,38 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { useTheme } from '@/providers/ThemeProvider';
 import { isPayrollReadOnlyRole } from '@/config/rbac.config';
 import { useMe } from '@/features/auth/hooks/useMe';
 import { useLocations } from '@/features/sedes/hooks/useLocations';
 import { getRoleCodeFromToken } from '@/lib/auth-token';
+import { useTheme } from '@/providers/ThemeProvider';
+
+import styles from './PayrollEmployeesListScreen.module.scss';
+import { PayrollApiError, exportEmployeeList } from '../api/payroll.client';
+import { FinalSettlementWizard } from '../components/FinalSettlementWizard';
+import { PayrollDeactivateEmployeeDialog } from '../components/PayrollDeactivateEmployeeDialog';
+import { PayrollEmployeeCreateModal } from '../components/PayrollEmployeeCreateModal';
+import { PayrollExportMenu } from '../components/PayrollExportMenu';
+import { PayrollFilterBar } from '../components/PayrollFilterBar';
+import { useEmployeePositions } from '../hooks/useEmployeePositions';
 import {
   useCreatePayrollEmployeeMutation,
-  useRemovePayrollEmployeeMutation,
   useUpdatePayrollEmployeeMutation,
 } from '../hooks/usePayrollEmployeeMutations';
 import { usePayrollEmployeesFilters } from '../hooks/usePayrollEmployeesFilters';
 import { usePayrollEmployeesQuery } from '../hooks/usePayrollEmployeesQuery';
+import { usePayrollExport } from '../hooks/usePayrollExport';
+import type { PayrollEmployeeCreateWizardPayload } from '../types/payroll-employee-create-wizard.types';
+import type { EmployeeListExportQuery } from '../types/payroll-reports.types';
 import type {
   CreatePayrollEmployeeInput,
   PayrollEmployee,
   PayrollEmployeeFormValues,
 } from '../types/payroll.types';
-import { PayrollDeactivateEmployeeDialog } from '../components/PayrollDeactivateEmployeeDialog';
-import { PayrollEmployeeCreateModal } from '../components/PayrollEmployeeCreateModal';
-import { PayrollExportMenu } from '../components/PayrollExportMenu';
-import { PayrollFilterBar } from '../components/PayrollFilterBar';
-import { PayrollApiError, exportEmployeeList } from '../api/payroll.client';
-import type { PayrollEmployeeCreateWizardPayload } from '../types/payroll-employee-create-wizard.types';
-import type { EmployeeListExportQuery } from '../types/payroll-reports.types';
-import { useEmployeePositions } from '../hooks/useEmployeePositions';
-import { usePayrollExport } from '../hooks/usePayrollExport';
 import { applyPayrollEmployeeCreateFinancialProfile } from '../utils/applyPayrollEmployeeCreateFinancialProfile';
 import { applyPayrollEmployeeCreatePersonalData } from '../utils/applyPayrollEmployeeCreatePersonalData';
 import { payrollEmployeeFormValuesToCreateInput } from '../utils/payroll-employee-form-mappers';
 import { sortPayrollEmployees } from '../utils/sortPayrollEmployees';
-import styles from './PayrollEmployeesListScreen.module.scss';
 
 const CONTRACT_FILTER_OPTIONS = [
   { value: 'all', label: 'Todos los contratos' },
@@ -104,7 +105,6 @@ export function PayrollEmployeesListScreen(): React.JSX.Element {
   const queryClient = useQueryClient();
   const createEmployee = useCreatePayrollEmployeeMutation();
   const updateEmployee = useUpdatePayrollEmployeeMutation();
-  const removeEmployee = useRemovePayrollEmployeeMutation();
 
   const [createOpen, setCreateOpen] = useState(false);
   const [statusChangeEmployee, setStatusChangeEmployee] = useState<PayrollEmployee | undefined>();
@@ -162,20 +162,21 @@ export function PayrollEmployeesListScreen(): React.JSX.Element {
     }
   };
 
-  const handleStatusChange = async () => {
-    if (!statusChangeEmployee) return;
+  // OS-591 (fase 4) — desactivar ya no es un toggle directo: requiere una liquidación
+  // definitiva APPROVED/PAID del contrato activo (gate en `EmployeeDeactivationGuardService`,
+  // ver tasks/OS-591.md §15.5) — ese flujo lo cubre `FinalSettlementWizard`. Reactivar sigue
+  // siendo un toggle directo (sin gate en el backend).
+  const handleReactivate = async (): Promise<void> => {
+    if (!statusChangeEmployee) {
+      return;
+    }
 
     try {
-      if (statusChangeEmployee.isActive) {
-        await removeEmployee.mutateAsync(statusChangeEmployee.userId);
-        toast.success('Empleado desactivado');
-      } else {
-        await updateEmployee.mutateAsync({
-          userId: statusChangeEmployee.userId,
-          input: { isActive: true },
-        });
-        toast.success('Empleado activado');
-      }
+      await updateEmployee.mutateAsync({
+        userId: statusChangeEmployee.userId,
+        input: { isActive: true },
+      });
+      toast.success('Empleado activado');
       setStatusChangeEmployee(undefined);
     } catch (error) {
       toast.error(getErrorMessage(error));
@@ -369,14 +370,23 @@ export function PayrollEmployeesListScreen(): React.JSX.Element {
             onSubmit={(values) => void handleCreate(values)}
           />
 
-          <PayrollDeactivateEmployeeDialog
-            employee={statusChangeEmployee}
-            open={Boolean(statusChangeEmployee)}
-            submitting={removeEmployee.isPending || updateEmployee.isPending}
-            theme={empleadoTheme}
-            onCancel={() => setStatusChangeEmployee(undefined)}
-            onConfirm={() => void handleStatusChange()}
-          />
+          {statusChangeEmployee?.isActive ? (
+            <FinalSettlementWizard
+              employee={statusChangeEmployee}
+              open={Boolean(statusChangeEmployee)}
+              theme={empleadoTheme}
+              onClose={() => setStatusChangeEmployee(undefined)}
+            />
+          ) : (
+            <PayrollDeactivateEmployeeDialog
+              employee={statusChangeEmployee}
+              open={Boolean(statusChangeEmployee)}
+              submitting={updateEmployee.isPending}
+              theme={empleadoTheme}
+              onCancel={() => setStatusChangeEmployee(undefined)}
+              onConfirm={() => void handleReactivate()}
+            />
+          )}
         </>
       ) : null}
     </EmpleadoPage>

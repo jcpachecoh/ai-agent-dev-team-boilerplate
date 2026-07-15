@@ -3,12 +3,7 @@ import { Decimal } from '@prisma/client/runtime/library';
 
 import type { VacationBalanceRecord } from '../interfaces/vacations.interfaces';
 import { VacationsRepository } from '../repository/vacations.repository';
-import {
-  addMonths,
-  calculateMonthlyAccrual,
-  getAccrualThroughMonth,
-  startOfMonth,
-} from '../utils/vacation-accrual.utils';
+import { projectAccrualThrough, startOfMonth } from '../utils/vacation-accrual.utils';
 
 export interface VacationAccrualTenantResult {
   tenantId: string;
@@ -79,26 +74,20 @@ export class VacationAccrualService {
     hireDate: Date,
     referenceDate: Date = new Date(),
   ): Promise<{ balance: VacationBalanceRecord; monthsAccrued: number; totalDaysAccrued: number }> {
-    const accrualThroughMonth = getAccrualThroughMonth(referenceDate);
     const existingBalance = await this.repository.findBalanceByEmployee(tenantId, employeeId);
+    const existingAccruedDays = existingBalance?.accruedDays ?? new Decimal(0);
+    const existingLastAccrualDate = existingBalance?.lastAccrualDate ?? new Date(0);
 
-    let currentMonth = this.resolveFirstMonthToProcess(existingBalance, hireDate);
-    let accruedDays = existingBalance?.accruedDays ?? new Decimal(0);
-    let monthsAccrued = 0;
-    let totalDaysAccrued = 0;
-    let lastAccrualDate = existingBalance?.lastAccrualDate ?? new Date(0);
-
-    while (currentMonth.getTime() <= accrualThroughMonth.getTime()) {
-      const delta = calculateMonthlyAccrual(hireDate, currentMonth);
-      if (delta > 0) {
-        accruedDays = accruedDays.plus(delta);
-        totalDaysAccrued += delta;
-      }
-
-      lastAccrualDate = startOfMonth(currentMonth);
-      monthsAccrued += 1;
-      currentMonth = addMonths(currentMonth, 1);
-    }
+    // OS-591 (fase 1) — bucle de acumulación extraído a `projectAccrualThrough` (utils), para
+    // que este flujo (que persiste) y `VacationsService.calculateBalanceAsOf` (que solo
+    // previsualiza) compartan exactamente la misma fórmula.
+    const { accruedDays, monthsAccrued, lastAccrualDate } = projectAccrualThrough(
+      hireDate,
+      existingAccruedDays,
+      existingLastAccrualDate,
+      referenceDate,
+    );
+    const totalDaysAccrued = accruedDays.minus(existingAccruedDays).toNumber();
 
     if (monthsAccrued === 0) {
       if (existingBalance) {
@@ -120,13 +109,5 @@ export class VacationAccrualService {
     });
 
     return { balance, monthsAccrued, totalDaysAccrued };
-  }
-
-  private resolveFirstMonthToProcess(balance: VacationBalanceRecord | null, hireDate: Date): Date {
-    if (!balance || balance.lastAccrualDate.getTime() === 0) {
-      return startOfMonth(hireDate);
-    }
-
-    return addMonths(startOfMonth(balance.lastAccrualDate), 1);
   }
 }

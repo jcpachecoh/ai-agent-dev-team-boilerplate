@@ -10,6 +10,7 @@ import {
 import { VacationStatus, VacationType } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 
+import { VacationAccrualService } from './vacation-accrual.service';
 import { UserLocationsService } from '../../locations/service/user-locations.service';
 import type {
   ApprovedVacationRange,
@@ -18,6 +19,7 @@ import type {
   ListVacationRequestsOptions,
   RejectVacationInput,
   RequestVacationInput,
+  VacationBalanceAsOf,
   VacationBalanceRecord,
   VacationRequestRecord,
   VacationRequestSummary,
@@ -27,8 +29,11 @@ import {
   VACATION_LETTER_SERVICE,
 } from '../interfaces/vacations.interfaces';
 import { VacationsRepository } from '../repository/vacations.repository';
-import { VacationAccrualService } from './vacation-accrual.service';
-import { getAccrualThroughMonth, startOfMonth } from '../utils/vacation-accrual.utils';
+import {
+  getAccrualThroughMonth,
+  projectAccrualThrough,
+  startOfMonth,
+} from '../utils/vacation-accrual.utils';
 import {
   calculateBusinessDaysInRange,
   getEarliestVacationStartDateString,
@@ -77,6 +82,61 @@ export class VacationsService implements IVacationsService {
     }
 
     return balance;
+  }
+
+  /**
+   * OS-591 (fase 1) — saldo a una fecha arbitraria (p.ej. fecha de retiro), sin persistir
+   * (`projectAccrualThrough` es puro) y sin el tope `MAX_COMPENSATION_RATIO` (ese tope solo
+   * aplica a `requestVacation`/`approveLevel2`, no a esta consulta de solo lectura). El
+   * flujo normal de solicitudes/aprobación de vacaciones queda sin cambios funcionales.
+   */
+  async calculateBalanceAsOf(
+    tenantId: string,
+    employeeId: string,
+    asOfDate: Date,
+  ): Promise<VacationBalanceAsOf> {
+    const profile = await this.repository.findEmployeeVacationProfile(tenantId, employeeId);
+    if (!profile) {
+      throw new NotFoundException(`Empleado ${employeeId} no encontrado`);
+    }
+
+    if (!isEmployeeEligibleForVacations(profile.contractType)) {
+      return {
+        asOfDate,
+        accruedDays: new Decimal(0),
+        takenDays: new Decimal(0),
+        compensatedDays: new Decimal(0),
+        pendingDays: new Decimal(0),
+      };
+    }
+
+    // OS-591 (fase 1, cierre de hallazgos) — reconstrucción histórica pura, NO desde el
+    // balance persistido (que es un contador SIEMPRE-actual y podría ya reflejar meses o
+    // solicitudes posteriores a `asOfDate` si se sincronizó/aprobó después). accruedDays se
+    // recalcula desde `hireDate` (calculateMonthlyAccrual es una función determinista de
+    // fecha de ingreso + mes calendario, independiente de cuándo corrió el último sync);
+    // taken/compensated se reconstruyen desde el historial real de solicitudes aprobadas
+    // hasta `asOfDate` (ver sumApprovedMovementsUpTo) — nunca desde VacationBalance.
+    const { accruedDays } = projectAccrualThrough(
+      profile.hireDate,
+      new Decimal(0),
+      new Date(0),
+      asOfDate,
+    );
+    const { takenDays, compensatedDays } = await this.repository.sumApprovedMovementsUpTo(
+      tenantId,
+      employeeId,
+      asOfDate,
+    );
+    const pendingDaysRaw = accruedDays.minus(takenDays).minus(compensatedDays);
+
+    return {
+      asOfDate,
+      accruedDays,
+      takenDays,
+      compensatedDays,
+      pendingDays: pendingDaysRaw.isNegative() ? new Decimal(0) : pendingDaysRaw,
+    };
   }
 
   async requestVacation(

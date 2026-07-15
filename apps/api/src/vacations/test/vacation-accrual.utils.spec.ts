@@ -1,4 +1,10 @@
-import { calculateMonthlyAccrual, formatYearMonth } from '../utils/vacation-accrual.utils';
+import { Decimal } from '@prisma/client/runtime/library';
+
+import {
+  calculateMonthlyAccrual,
+  formatYearMonth,
+  projectAccrualThrough,
+} from '../utils/vacation-accrual.utils';
 
 describe('calculateMonthlyAccrual', () => {
   it('accrues 1.25 days for a full worked month', () => {
@@ -68,5 +74,64 @@ describe('calculateMonthlyAccrual', () => {
 describe('formatYearMonth', () => {
   it('formats month with leading zero', () => {
     expect(formatYearMonth(new Date(2026, 6, 9))).toBe('2026-07');
+  });
+});
+
+// OS-591 (fase 1) — proyección pura reutilizada por VacationAccrualService.syncEmployeeBalance
+// (que persiste) y VacationsService.calculateBalanceAsOf (que solo previsualiza).
+describe('projectAccrualThrough', (): void => {
+  it('acumula desde cero para un empleado sin balance previo (lastAccrualDate epoch)', (): void => {
+    // Arrange
+    const hireDate = new Date(2026, 0, 1);
+
+    // Act
+    const result = projectAccrualThrough(
+      hireDate,
+      new Decimal(0),
+      new Date(0),
+      new Date(2026, 2, 15),
+    );
+
+    // Assert — enero + febrero completos = 2.5 días
+    expect(result.accruedDays.toNumber()).toBe(2.5);
+    expect(result.monthsAccrued).toBe(2);
+  });
+
+  it('continúa desde un balance existente sin reprocesar meses ya acreditados', (): void => {
+    // Arrange
+    const hireDate = new Date(2026, 0, 1);
+    const existingAccruedDays = new Decimal(1.25); // enero ya acreditado
+    const existingLastAccrualDate = new Date(2026, 0, 1);
+
+    // Act
+    const result = projectAccrualThrough(
+      hireDate,
+      existingAccruedDays,
+      existingLastAccrualDate,
+      new Date(2026, 2, 15),
+    );
+
+    // Assert — solo febrero se agrega (1.25), no se duplica enero
+    expect(result.accruedDays.toNumber()).toBe(2.5);
+    expect(result.monthsAccrued).toBe(1);
+  });
+
+  it('no acumula meses adicionales si asOfDate cae en el mismo mes que lastAccrualDate', (): void => {
+    // Arrange
+    const hireDate = new Date(2026, 0, 1);
+    const existingAccruedDays = new Decimal(1.25);
+    const existingLastAccrualDate = new Date(2026, 0, 1);
+
+    // Act
+    const result = projectAccrualThrough(
+      hireDate,
+      existingAccruedDays,
+      existingLastAccrualDate,
+      new Date(2026, 0, 20), // mismo mes de contratación, aún no cierra febrero
+    );
+
+    // Assert
+    expect(result.accruedDays.toNumber()).toBe(1.25);
+    expect(result.monthsAccrued).toBe(0);
   });
 });

@@ -24,26 +24,26 @@ import { useNavigate } from 'react-router-dom';
 
 import { isPayrollReadOnlyRole, SYSTEM_ADMIN_ROLES } from '@/config/rbac.config';
 import { useMe } from '@/features/auth/hooks/useMe';
-import { getRoleCodeFromToken } from '@/lib/auth-token';
-import { useTheme } from '@/providers/ThemeProvider';
+import { PayrollApiError } from '@/features/payroll/api/payroll.client';
+import { FinalSettlementWizard } from '@/features/payroll/components/FinalSettlementWizard';
 import { PayrollDeactivateEmployeeDialog } from '@/features/payroll/components/PayrollDeactivateEmployeeDialog';
 import { PayrollEmployeeEditDrawer } from '@/features/payroll/components/PayrollEmployeeEditDrawer';
-import { PayrollApiError } from '@/features/payroll/api/payroll.client';
 import { useEmployeePositions } from '@/features/payroll/hooks/useEmployeePositions';
-import {
-  useRemovePayrollEmployeeMutation,
-  useUpdatePayrollEmployeeMutation,
-} from '@/features/payroll/hooks/usePayrollEmployeeMutations';
+import { useUpdatePayrollEmployeeMutation } from '@/features/payroll/hooks/usePayrollEmployeeMutations';
+import type { PayrollEmployeeCreateWizardPayload } from '@/features/payroll/types/payroll-employee-create-wizard.types';
 import type {
   CreatePayrollEmployeeInput,
   PayrollEmployeeFormValues,
   UpdatePayrollEmployeeInput,
 } from '@/features/payroll/types/payroll.types';
-import type { PayrollEmployeeCreateWizardPayload } from '@/features/payroll/types/payroll-employee-create-wizard.types';
 import { applyPayrollEmployeeCreateFinancialProfile } from '@/features/payroll/utils/applyPayrollEmployeeCreateFinancialProfile';
 import { applyPayrollEmployeeCreatePersonalData } from '@/features/payroll/utils/applyPayrollEmployeeCreatePersonalData';
 import { buildEmployeeFullName } from '@/features/payroll/utils/employee-name';
+import { getRoleCodeFromToken } from '@/lib/auth-token';
+import { useTheme } from '@/providers/ThemeProvider';
 
+import styles from './AttendanceCollaboratorsScreen.module.scss';
+import { attendanceKeys } from '../api/queryKeys';
 import { downloadBlob } from '../api/turnos.api';
 import { ATTENDANCE_ROUTES } from '../constants/routes';
 import { useAttendanceCollaboratorAuditQuery } from '../hooks/useAttendanceCollaboratorAuditQuery';
@@ -52,13 +52,13 @@ import {
   useExportAttendanceCollaboratorsMutation,
   useTogglePortalWorkerMutation,
 } from '../hooks/useAttendanceCollaboratorMutations';
-import { useAttendanceCollaboratorSupervisorsQuery } from '../hooks/useAttendanceCollaboratorSupervisorsQuery';
-import { useAttendanceCollaboratorsQuery } from '../hooks/useAttendanceCollaboratorsQuery';
 import {
   ATTENDANCE_COLLABORATORS_PAGE_SIZE_OPTIONS,
   useAttendanceCollaboratorsFilters,
   type AttendanceCollaboratorsPageSize,
 } from '../hooks/useAttendanceCollaboratorsFilters';
+import { useAttendanceCollaboratorsQuery } from '../hooks/useAttendanceCollaboratorsQuery';
+import { useAttendanceCollaboratorSupervisorsQuery } from '../hooks/useAttendanceCollaboratorSupervisorsQuery';
 import { useAttendanceScopeLocations } from '../hooks/useAttendanceScopeLocations';
 import { usePayrollEmployeeQuery } from '../hooks/usePayrollEmployeeQuery';
 import {
@@ -71,7 +71,6 @@ import type {
   AttendanceCollaboratorExportFormat,
   AttendanceCollaboratorTodayShift,
 } from '../types/attendance.types';
-import styles from './AttendanceCollaboratorsScreen.module.scss';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const EXPORT_FORMAT_OPTIONS = [
@@ -135,8 +134,12 @@ function toUpdateInput(values: PayrollEmployeeFormValues): UpdatePayrollEmployee
 }
 
 function getErrorMessage(error: unknown): string {
-  if (error instanceof PayrollApiError) return error.message;
-  if (error instanceof Error) return error.message;
+  if (error instanceof PayrollApiError) {
+    return error.message;
+  }
+  if (error instanceof Error) {
+    return error.message;
+  }
   return 'Ocurrió un error inesperado.';
 }
 
@@ -144,17 +147,23 @@ function formatTodayShiftLabel(todayShift: AttendanceCollaboratorTodayShift): st
   if (todayShift.type === 'ASSIGNED' && todayShift.turno) {
     return `${todayShift.turno.sigla} ${todayShift.turno.horaInicio}-${todayShift.turno.horaFin}`;
   }
-  if (todayShift.type === 'REST') return 'Descanso';
+  if (todayShift.type === 'REST') {
+    return 'Descanso';
+  }
   return 'Turno Base';
 }
 
 function formatSupervisorsLabel(collaborator: AttendanceCollaborator): string {
-  if (collaborator.supervisors.length === 0) return 'N/A';
+  if (collaborator.supervisors.length === 0) {
+    return 'N/A';
+  }
   return collaborator.supervisors.map((supervisor) => supervisor.name).join(', ');
 }
 
 function formatAuditValue(value: unknown): string {
-  if (value === null || value === undefined) return '—';
+  if (value === null || value === undefined) {
+    return '—';
+  }
   if (typeof value === 'object') {
     return Object.entries(value as Record<string, unknown>)
       .map(([key, val]) => `${key}: ${String(val)}`)
@@ -210,7 +219,6 @@ export function AttendanceCollaboratorsScreen(): React.JSX.Element {
   const collaboratorsQuery = useAttendanceCollaboratorsQuery(queryFilters);
   const queryClient = useQueryClient();
   const updateEmployee = useUpdatePayrollEmployeeMutation();
-  const removeEmployee = useRemovePayrollEmployeeMutation();
 
   const [editingUserId, setEditingUserId] = useState<string | undefined>();
   const [statusChangeUserId, setStatusChangeUserId] = useState<string | undefined>();
@@ -340,7 +348,9 @@ export function AttendanceCollaboratorsScreen(): React.JSX.Element {
   ];
 
   const handleEdit = async (payload: PayrollEmployeeCreateWizardPayload) => {
-    if (!editingEmployeeQuery.data) return;
+    if (!editingEmployeeQuery.data) {
+      return;
+    }
 
     try {
       await updateEmployee.mutateAsync({
@@ -363,21 +373,22 @@ export function AttendanceCollaboratorsScreen(): React.JSX.Element {
     }
   };
 
-  const handleStatusChange = async () => {
+  // OS-591 (fase 4) — desactivar ya no es un toggle directo: requiere una liquidación
+  // definitiva APPROVED/PAID del contrato activo (gate en `EmployeeDeactivationGuardService`,
+  // ver tasks/OS-591.md §15.5) — ese flujo lo cubre `FinalSettlementWizard`. Reactivar sigue
+  // siendo un toggle directo (sin gate en el backend).
+  const handleReactivate = async (): Promise<void> => {
     const employee = statusChangeEmployeeQuery.data;
-    if (!employee) return;
+    if (!employee) {
+      return;
+    }
 
     try {
-      if (employee.isActive) {
-        await removeEmployee.mutateAsync(employee.userId);
-        toast.success('Colaborador desactivado');
-      } else {
-        await updateEmployee.mutateAsync({
-          userId: employee.userId,
-          input: { isActive: true },
-        });
-        toast.success('Colaborador activado');
-      }
+      await updateEmployee.mutateAsync({
+        userId: employee.userId,
+        input: { isActive: true },
+      });
+      toast.success('Colaborador activado');
       setStatusChangeUserId(undefined);
     } catch (error) {
       toast.error(getErrorMessage(error));
@@ -654,21 +665,37 @@ export function AttendanceCollaboratorsScreen(): React.JSX.Element {
             onSubmit={(payload) => void handleEdit(payload)}
           />
 
-          <PayrollDeactivateEmployeeDialog
-            employee={statusChangeEmployeeQuery.data}
-            open={Boolean(statusChangeUserId)}
-            submitting={removeEmployee.isPending || updateEmployee.isPending}
-            theme={empleadoTheme}
-            onCancel={() => setStatusChangeUserId(undefined)}
-            onConfirm={() => void handleStatusChange()}
-          />
+          {statusChangeEmployeeQuery.data?.isActive ? (
+            <FinalSettlementWizard
+              employee={statusChangeEmployeeQuery.data}
+              open={Boolean(statusChangeUserId)}
+              theme={empleadoTheme}
+              onClose={() => setStatusChangeUserId(undefined)}
+              onApproved={() =>
+                void queryClient.invalidateQueries({
+                  queryKey: [...attendanceKeys.all, 'collaborators'],
+                })
+              }
+            />
+          ) : (
+            <PayrollDeactivateEmployeeDialog
+              employee={statusChangeEmployeeQuery.data}
+              open={Boolean(statusChangeUserId)}
+              submitting={updateEmployee.isPending}
+              theme={empleadoTheme}
+              onCancel={() => setStatusChangeUserId(undefined)}
+              onConfirm={() => void handleReactivate()}
+            />
+          )}
         </>
       ) : null}
 
       <Modal
         open={emailModalOpen}
         onOpenChange={(next) => {
-          if (!next && !emailExportCollaborators.isPending) setEmailModalOpen(false);
+          if (!next && !emailExportCollaborators.isPending) {
+            setEmailModalOpen(false);
+          }
         }}
         size="md"
         theme={empleadoTheme}
@@ -721,7 +748,9 @@ export function AttendanceCollaboratorsScreen(): React.JSX.Element {
       <Modal
         open={Boolean(historyEmployeeDetailsId)}
         onOpenChange={(next) => {
-          if (!next) setHistoryEmployeeDetailsId(undefined);
+          if (!next) {
+            setHistoryEmployeeDetailsId(undefined);
+          }
         }}
         size="md"
         theme={empleadoTheme}
