@@ -14,6 +14,7 @@ const mockConfig = {
   requiresSupervisorApproval: true,
   requiresSupportDocument: false,
   isPaidDefault: true,
+  autoSolicitable: true,
   createdAt: new Date(),
   updatedAt: new Date(),
 };
