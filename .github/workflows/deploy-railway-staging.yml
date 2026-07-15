@@ -1,0 +1,30 @@
+name: Deploy → Railway Staging
+
+on:
+  push:
+    branches: [develop]
+    paths:
+      - "apps/api/**"
+      - "prisma/**"
+      - "packages/**"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-railway-staging
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy API a Railway (staging)
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Deploy a Railway
+        run: railway up --service api --detach
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
