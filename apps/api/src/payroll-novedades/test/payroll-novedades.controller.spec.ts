@@ -44,6 +44,13 @@ const mockNovedad = {
   deletedAt: null,
 };
 
+const mockAuditSnapshot = {
+  startDate: '2026-07-01',
+  endDate: '2026-07-03',
+  isPaid: true,
+  notes: null,
+};
+
 describe('PayrollNovedadesController', () => {
   let controller: PayrollNovedadesController;
   let service: jest.Mocked<
@@ -119,8 +126,8 @@ describe('PayrollNovedadesController', () => {
       novedadId: 'nov-1',
       changedBy: USER_ID,
       changedAt: new Date(),
-      previousValue: { endDate: '2026-07-03' },
-      newValue: { endDate: '2026-07-02' },
+      previousValue: { ...mockAuditSnapshot, endDate: '2026-07-03' },
+      newValue: { ...mockAuditSnapshot, endDate: '2026-07-02' },
     };
     service.edit.mockResolvedValue({ novedad: mockNovedad, auditLog });
 
@@ -148,8 +155,8 @@ describe('PayrollNovedadesController', () => {
         novedadId: 'nov-1',
         changedBy: USER_ID,
         changedAt: new Date(),
-        previousValue: {},
-        newValue: { notes: 'Actualizado' },
+        previousValue: { ...mockAuditSnapshot, notes: null },
+        newValue: { ...mockAuditSnapshot, notes: 'Actualizado' },
       },
     ]);
 

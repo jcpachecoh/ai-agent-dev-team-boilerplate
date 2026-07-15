@@ -23,6 +23,7 @@ const mockNovedad = {
   rrhhDecisionAt: null,
   rejectionReason: null,
   overlapWarningAck: false,
+  isEditable: true,
   createdAt: new Date(),
   updatedAt: new Date(),
   deletedAt: null,
