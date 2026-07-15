@@ -6,6 +6,8 @@ import { EmployeeSocialProfileModule } from '../employee-social-profile/employee
 import { LaborLegalParametersModule } from '../labor-legal-parameters/labor-legal-parameters.module';
 import { LocationsModule } from '../locations/locations.module';
 import { PrismaModule } from '../prisma/prisma.module';
+import { StorageModule } from '../storage/storage.module';
+import { VacationsModule } from '../vacations/vacations.module';
 import { CesantiasController } from './controller/cesantias.controller';
 import { DotacionesController } from './controller/dotaciones.controller';
 import { EmployeeAssetsController } from './controller/employee-assets.controller';
@@ -13,15 +15,22 @@ import { EmployeeCatalogController } from './controller/employee-catalog.control
 import { EmployeeDocumentsController } from './controller/employee-documents.controller';
 import { EmployeePositionsController } from './controller/employee-positions.controller';
 import { EmployeeSelfController } from './controller/employee-self.controller';
+import { FinalSettlementController } from './controller/final-settlement.controller';
+import { LegalFormulaValidationController } from './controller/legal-formula-validation.controller';
 import { PayrollController } from './controller/payroll.controller';
 import { CesantiasRepository } from './repository/cesantias.repository';
 import { DotacionesRepository } from './repository/dotaciones.repository';
 import { EmployeeAssetsRepository } from './repository/employee-assets.repository';
 import { EmployeeCatalogRepository } from './repository/employee-catalog.repository';
+import { EmployeeContractRepository } from './repository/employee-contract.repository';
 import { EmployeeDocumentsRepository } from './repository/employee-documents.repository';
 import { EmployeeHistoryRepository } from './repository/employee-history.repository';
 import { EmployeePositionsRepository } from './repository/employee-positions.repository';
+import { FinalSettlementRepository } from './repository/final-settlement.repository';
+import { LegalFormulaValidationRepository } from './repository/legal-formula-validation.repository';
 import { PayrollRepository } from './repository/payroll.repository';
+import { PendingSalaryReconciliationRepository } from './repository/pending-salary-reconciliation.repository';
+import { PrimaRepository } from './repository/prima.repository';
 import { DotacionesResolver } from './resolver/dotaciones.resolver';
 import { EmployeeAssetsResolver } from './resolver/employee-assets.resolver';
 import { EmployeePositionsResolver } from './resolver/employee-positions.resolver';
@@ -32,11 +41,23 @@ import { CesantiasService } from './service/cesantias.service';
 import { DotacionesService } from './service/dotaciones.service';
 import { EmployeeAssetsService } from './service/employee-assets.service';
 import { EmployeeCatalogService } from './service/employee-catalog.service';
+import { EmployeeContractService } from './service/employee-contract.service';
+import { EmployeeDeactivationGuardService } from './service/employee-deactivation-guard.service';
 import { EmployeeDocumentsService } from './service/employee-documents.service';
 import { EmployeeHistoryService } from './service/employee-history.service';
 import { EmployeePositionsService } from './service/employee-positions.service';
+import { FinalSettlementAggregatorService } from './service/final-settlement-aggregator.service';
+import { FinalSettlementReceiptPdfService } from './service/final-settlement-receipt-pdf.service';
+import { FinalSettlementService } from './service/final-settlement.service';
+import { IndemnificationCalculationService } from './service/indemnification-calculation.service';
+import { LegalFormulaValidationService } from './service/legal-formula-validation.service';
 import { PayrollCalculationService } from './service/payroll-calculation.service';
 import { PayrollService } from './service/payroll.service';
+import { PendingSalaryReconciliationService } from './service/pending-salary-reconciliation.service';
+import { PendingSalaryService } from './service/pending-salary.service';
+import { PrimaCalculationService } from './service/prima-calculation.service';
+import { PrimaService } from './service/prima.service';
+import { VariableAverageService } from './service/variable-average.service';
 
 @Module({
   imports: [
@@ -46,6 +67,8 @@ import { PayrollService } from './service/payroll.service';
     EmployeeSocialProfileModule,
     LocationsModule,
     LaborLegalParametersModule,
+    VacationsModule,
+    StorageModule,
   ],
   controllers: [
     EmployeeSelfController,
@@ -56,6 +79,8 @@ import { PayrollService } from './service/payroll.service';
     EmployeeDocumentsController,
     DotacionesController,
     CesantiasController,
+    FinalSettlementController,
+    LegalFormulaValidationController,
   ],
   providers: [
     PayrollService,
@@ -81,6 +106,23 @@ import { PayrollService } from './service/payroll.service';
     CesantiasCalculationService,
     CesantiasService,
     CesantiasExportService,
+    EmployeeContractRepository,
+    EmployeeContractService,
+    PrimaRepository,
+    PrimaCalculationService,
+    PrimaService,
+    FinalSettlementRepository,
+    IndemnificationCalculationService,
+    VariableAverageService,
+    PendingSalaryService,
+    FinalSettlementAggregatorService,
+    FinalSettlementService,
+    FinalSettlementReceiptPdfService,
+    LegalFormulaValidationRepository,
+    LegalFormulaValidationService,
+    PendingSalaryReconciliationRepository,
+    PendingSalaryReconciliationService,
+    EmployeeDeactivationGuardService,
   ],
   exports: [
     PayrollService,
@@ -93,6 +135,13 @@ import { PayrollService } from './service/payroll.service';
     DotacionesService,
     EmployeeHistoryRepository,
     EmployeeHistoryService,
+    EmployeeContractRepository,
+    EmployeeContractService,
+    PrimaRepository,
+    PrimaService,
+    FinalSettlementRepository,
+    IndemnificationCalculationService,
+    FinalSettlementService,
   ],
 })
 export class PayrollModule {}

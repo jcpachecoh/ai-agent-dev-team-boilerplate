@@ -109,7 +109,7 @@ describe('EmployeesResolver', () => {
           deletedAt: deactivatedEmployee.deletedAt,
         }),
       );
-      expect(service.remove).toHaveBeenCalledWith(mockTenantId, 'user-1');
+      expect(service.remove).toHaveBeenCalledWith(mockTenantId, 'user-1', 'user-id');
     });
   });
 });

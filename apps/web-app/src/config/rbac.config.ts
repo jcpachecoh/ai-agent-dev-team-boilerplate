@@ -253,3 +253,86 @@ export function canOverridePastDateAssignments(roleCode: string | null | undefin
   }
   return (SYSTEM_ADMIN_ROLES as readonly string[]).includes(roleCode);
 }
+
+/**
+ * OS-591 (fase 4) — permisos granulares de liquidación definitiva, espejo exacto de
+ * `ROLE_PERMISSION_MATRIX` (apps/api/prisma/seed.ts): SUPERVISOR solo lee; MANAGER/NOMINA
+ * calculan; MANAGER además crea liquidaciones manuales y reconcilia salario pendiente;
+ * aprobar/pagar/anular/validar la fórmula legal quedan reservados a OWNER/SUPER_ADMIN (no
+ * hay entrada explícita en el backend — `ALL_PERMISSION_CODES` los cubre solo para esos dos
+ * roles).
+ */
+export const SETTLEMENT_READ_ROLES: readonly RoleCode[] = [
+  ...SYSTEM_ADMIN_ROLES,
+  'SUPERVISOR',
+  'MANAGER',
+  'NOMINA',
+];
+
+export const SETTLEMENT_CALCULATE_ROLES: readonly RoleCode[] = [
+  ...SYSTEM_ADMIN_ROLES,
+  'MANAGER',
+  'NOMINA',
+];
+
+export const SETTLEMENT_MANUAL_ROLES: readonly RoleCode[] = [...SYSTEM_ADMIN_ROLES, 'MANAGER'];
+
+export const SETTLEMENT_RECONCILE_ROLES: readonly RoleCode[] = [...SYSTEM_ADMIN_ROLES, 'MANAGER'];
+
+export const SETTLEMENT_AUTHORITY_ROLES: readonly RoleCode[] = [...SYSTEM_ADMIN_ROLES];
+
+export function canReadFinalSettlement(roleCode: string | null | undefined): boolean {
+  if (!roleCode) {
+    return false;
+  }
+  return (SETTLEMENT_READ_ROLES as readonly string[]).includes(roleCode);
+}
+
+export function canCalculateFinalSettlement(roleCode: string | null | undefined): boolean {
+  if (!roleCode) {
+    return false;
+  }
+  return (SETTLEMENT_CALCULATE_ROLES as readonly string[]).includes(roleCode);
+}
+
+export function canCreateManualFinalSettlement(roleCode: string | null | undefined): boolean {
+  if (!roleCode) {
+    return false;
+  }
+  return (SETTLEMENT_MANUAL_ROLES as readonly string[]).includes(roleCode);
+}
+
+export function canReconcilePendingSalary(roleCode: string | null | undefined): boolean {
+  if (!roleCode) {
+    return false;
+  }
+  return (SETTLEMENT_RECONCILE_ROLES as readonly string[]).includes(roleCode);
+}
+
+export function canApproveFinalSettlement(roleCode: string | null | undefined): boolean {
+  if (!roleCode) {
+    return false;
+  }
+  return (SETTLEMENT_AUTHORITY_ROLES as readonly string[]).includes(roleCode);
+}
+
+export function canPayFinalSettlement(roleCode: string | null | undefined): boolean {
+  if (!roleCode) {
+    return false;
+  }
+  return (SETTLEMENT_AUTHORITY_ROLES as readonly string[]).includes(roleCode);
+}
+
+export function canVoidFinalSettlement(roleCode: string | null | undefined): boolean {
+  if (!roleCode) {
+    return false;
+  }
+  return (SETTLEMENT_AUTHORITY_ROLES as readonly string[]).includes(roleCode);
+}
+
+export function canValidateLegalFormula(roleCode: string | null | undefined): boolean {
+  if (!roleCode) {
+    return false;
+  }
+  return (SETTLEMENT_AUTHORITY_ROLES as readonly string[]).includes(roleCode);
+}

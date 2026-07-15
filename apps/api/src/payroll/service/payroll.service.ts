@@ -1,3 +1,5 @@
+import * as crypto from 'crypto';
+
 import {
   BadRequestException,
   ConflictException,
@@ -15,21 +17,23 @@ import {
   AuditAction,
 } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
-import * as crypto from 'crypto';
+
 import { DEFAULT_EMPLOYEE_BOOTSTRAP_ROLE_CODE } from '../payroll.constants';
-import { LaborLegalParametersService } from '../../labor-legal-parameters/service/labor-legal-parameters.service';
-import { PayrollRepository } from '../repository/payroll.repository';
+import { EmployeeDeactivationGuardService } from './employee-deactivation-guard.service';
 import { EmployeePositionsService } from './employee-positions.service';
-import { IPayrollService } from '../interfaces/payroll.interfaces';
-import type { UpdateEmployeePayload } from '../interfaces/payroll.interfaces';
-import { decimalToNumber } from '../../common/utils/decimal.util';
-import { StorageService } from '../../storage/service/storage.service';
-import { StorageDomain } from '../../storage/enums/storage.enums';
 import { AuditService } from '../../audit/service/audit.service';
 import { EmployeeSocialProfileService } from '../../employee-social-profile/service/employee-social-profile.service';
-import type { CreateBeneficiaryDto } from '../controller/dto/create-beneficiary.dto';
+import { LaborLegalParametersService } from '../../labor-legal-parameters/service/labor-legal-parameters.service';
 import { UserLocationsService } from '../../locations/service/user-locations.service';
-import type { PayrollActor } from '../interfaces/payroll.interfaces';
+import { StorageDomain } from '../../storage/enums/storage.enums';
+import { StorageService } from '../../storage/service/storage.service';
+import type { CreateBeneficiaryDto } from '../controller/dto/create-beneficiary.dto';
+import {
+  IPayrollService,
+  type PayrollActor,
+  type UpdateEmployeePayload,
+} from '../interfaces/payroll.interfaces';
+import { PayrollRepository } from '../repository/payroll.repository';
 
 const SALT_ROUNDS = 12;
 
@@ -53,6 +57,7 @@ export class PayrollService implements IPayrollService {
     private readonly socialProfileService: EmployeeSocialProfileService,
     private readonly userLocationsService: UserLocationsService,
     private readonly legalParametersService: LaborLegalParametersService,
+    private readonly deactivationGuard: EmployeeDeactivationGuardService,
   ) {}
 
   /** Sedes permitidas para lectura: null = sin restricción; valida `requestedLocationId` si se pidió una sede puntual. */
@@ -279,6 +284,15 @@ export class PayrollService implements IPayrollService {
     changedBy?: string,
   ): Promise<EmployeeDetails & { user: User; location?: { id: string; name: string } }> {
     const employee = await this.findEmployeeOrThrow(tenantId, userId);
+
+    // OS-591 (fase 3) — ruta alterna de desactivación (`isActive: false` vía update
+    // genérico). Debe pasar por el mismo gate que `remove()` — ver
+    // EmployeeDeactivationGuardService y tasks/OS-591.md §15.5.
+    const requestedIsActive = (data as { isActive?: boolean }).isActive;
+    if (requestedIsActive === false) {
+      await this.deactivationGuard.assertCanDeactivate(tenantId, employee.id, changedBy ?? null);
+    }
+
     const nextPositionId = data.positionId as string | undefined;
 
     if (nextPositionId !== undefined) {
@@ -370,8 +384,14 @@ export class PayrollService implements IPayrollService {
     }
   }
 
-  async remove(tenantId: string, userId: string): Promise<EmployeeDetails & { user: User }> {
-    await this.findEmployeeOrThrow(tenantId, userId);
+  async remove(
+    tenantId: string,
+    userId: string,
+    changedBy?: string,
+  ): Promise<EmployeeDetails & { user: User }> {
+    const employee = await this.findEmployeeOrThrow(tenantId, userId);
+    // OS-591 (fase 3) — gate único de desactivación (ver tasks/OS-591.md §15.5).
+    await this.deactivationGuard.assertCanDeactivate(tenantId, employee.id, changedBy ?? null);
     return this.payrollRepository.softDelete(userId);
   }
 
@@ -600,11 +620,18 @@ export class PayrollService implements IPayrollService {
       employee.contractEnd = (data.contractEnd as string | null) || null;
     }
 
-    if (data.cedula !== undefined) user.cedula = data.cedula as string;
-    if (data.documentType !== undefined)
+    if (data.cedula !== undefined) {
+      user.cedula = data.cedula as string;
+    }
+    if (data.documentType !== undefined) {
       user.documentType = data.documentType as User['documentType'];
-    if (data.email !== undefined) user.email = data.email as string;
-    if (data.roleId !== undefined) user.roleId = data.roleId as string;
+    }
+    if (data.email !== undefined) {
+      user.email = data.email as string;
+    }
+    if (data.roleId !== undefined) {
+      user.roleId = data.roleId as string;
+    }
 
     const payload: UpdateEmployeePayload = { employee, changedBy };
     if (Object.keys(user).length > 0) {

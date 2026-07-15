@@ -17,6 +17,8 @@ import {
   CesantiasCalculateForYearResult,
   CesantiasExportAvailability,
   CesantiasSkippedEmployee,
+  CesantiasSourceLiquidation,
+  EmployeeCesantiasBalanceAsOf,
   ICesantiasService,
 } from '../interfaces/cesantias-service.interfaces';
 import {
@@ -46,8 +48,14 @@ import {
  * dos valores, pero es un concepto legal distinto — exención de aportes a seguridad social,
  * no de cesantías — coincide en los miembros por motivos diferentes, no se debe importar
  * como si fuera la misma regla).
+ *
+ * OS-591 (fase 1) — SÍ se reutiliza (exportado) para prima de servicios
+ * (PrimaService/CESANTIAS_EXEMPT_CONTRACT_TYPES en prima.service.ts): a diferencia del caso
+ * anterior, aquí la razón legal ES la misma para ambas prestaciones — sin relación laboral
+ * (PRESTACION) o bajo régimen especial sin validar (APRENDIZAJE) no se causa NINGUNA
+ * prestación social del CST, ni cesantías ni prima. No se duplica el Set.
  */
-const CESANTIAS_EXEMPT_CONTRACT_TYPES = new Set<EmployeeContractType>([
+export const CESANTIAS_EXEMPT_CONTRACT_TYPES = new Set<EmployeeContractType>([
   EmployeeContractType.PRESTACION,
   EmployeeContractType.APRENDIZAJE,
 ]);
@@ -350,6 +358,208 @@ export class CesantiasService implements ICesantiasService {
     ]);
 
     return { fna: fnaCount > 0, privateOperator: privateCount > 0 };
+  }
+
+  /**
+   * OS-591 (fase 1) — saldo pendiente de cesantías/intereses de UN empleado a una fecha
+   * arbitraria. Deliberadamente NO usa `calculateForYear` (batch de todo el tenant, con el
+   * riesgo de recalcular/afectar a otros empleados ya documentado en tasks/OS-588.md) — el
+   * tramo del año en curso se calcula aquí mismo, en memoria, sin persistir nada.
+   *
+   * Anti-doble-pago: años anteriores solo se cuentan como pendientes si su estado es
+   * CALCULADA/CALCULADO — CONSIGNADA/PAGADO se excluye (ya pagado) y ANULADA/ANULADO
+   * también (liquidación sin efecto). Documentado explícitamente en `statesConsidered` para
+   * que el caller (fase 2) no tenga que adivinar la regla.
+   */
+  async getEmployeeBalanceAsOf(
+    tenantId: string,
+    employeeId: string,
+    asOfDate: Date,
+  ): Promise<EmployeeCesantiasBalanceAsOf> {
+    const employee = await this.payrollRepository.findById(employeeId);
+    if (!employee || employee.tenantId !== tenantId) {
+      throw new NotFoundException(`Empleado ${employeeId} no encontrado`);
+    }
+
+    const asOfYear = asOfDate.getUTCFullYear();
+    const allLiquidations = await this.cesantiasRepository.findAllByEmployee(tenantId, employeeId);
+
+    const sourceLiquidations: CesantiasSourceLiquidation[] = allLiquidations.map(
+      (l): CesantiasSourceLiquidation => ({
+        id: l.id,
+        year: l.year,
+        cesantiasStatus: l.cesantiasStatus,
+        interestStatus: l.interestStatus,
+        cesantiasAmount: l.cesantiasAmount,
+        interestAmount: l.interestAmount,
+      }),
+    );
+
+    const currentYearRecord = allLiquidations.find((l): boolean => l.year === asOfYear);
+
+    let pendingCesantias = allLiquidations
+      .filter((l): boolean => l.year !== asOfYear && l.cesantiasStatus === 'CALCULADA')
+      .reduce((sum, l): Prisma.Decimal => sum.plus(l.cesantiasAmount), new Prisma.Decimal(0));
+    let pendingInterest = allLiquidations
+      .filter((l): boolean => l.year !== asOfYear && l.interestStatus === 'CALCULADO')
+      .reduce((sum, l): Prisma.Decimal => sum.plus(l.interestAmount), new Prisma.Decimal(0));
+
+    // El año en curso: si ya está CONSIGNADA/PAGADO, no contribuye a lo pendiente (ya
+    // resuelto, no se proyecta nada). Si ya existe un cálculo persistido vigente
+    // (CALCULADA, no ANULADA), su monto SE CONSOLIDA una sola vez (no se descarta ni se
+    // recalcula desde cero) y el tramo en vivo arranca justo después de su `periodEnd` —
+    // nunca se solapa con lo ya consolidado, así que no hay riesgo de sumar el valor
+    // persistido y una proyección duplicada del mismo tramo. Si está ANULADA, su monto no
+    // cuenta (sin efecto) y sí se recalcula limpio desde el inicio del año.
+    const { periodStart, periodEndExclusive, periodEndInclusive } = this.resolveYearWindowAsOf(
+      asOfYear,
+      asOfDate,
+    );
+
+    const isCurrentYearClosed =
+      currentYearRecord !== undefined &&
+      (currentYearRecord.cesantiasStatus === 'CONSIGNADA' ||
+        currentYearRecord.interestStatus === 'PAGADO');
+    const isCurrentYearAnulada = currentYearRecord?.cesantiasStatus === 'ANULADA';
+    const hasConsolidatableCurrentYearRecord =
+      currentYearRecord !== undefined && !isCurrentYearClosed && !isCurrentYearAnulada;
+
+    if (hasConsolidatableCurrentYearRecord) {
+      pendingCesantias = pendingCesantias.plus(currentYearRecord.cesantiasAmount);
+      pendingInterest = pendingInterest.plus(currentYearRecord.interestAmount);
+    }
+
+    let calculationBase = new Prisma.Decimal(0);
+    let currentPeriodStart = periodStart;
+    let legalParametersSnapshot = {
+      interestRate: '0',
+      divisor: '0',
+      transportSubsidyAmount: '0',
+      transportSubsidyThreshold: '0',
+    };
+
+    const shouldProjectCurrentYear =
+      !isCurrentYearClosed && !CESANTIAS_EXEMPT_CONTRACT_TYPES.has(employee.contractType);
+
+    if (shouldProjectCurrentYear) {
+      const hireDate = this.toUtcMidnight(employee.hireDate);
+      const contractEndExclusive = employee.contractEnd
+        ? this.addDays(this.toUtcMidnight(employee.contractEnd), 1)
+        : null;
+      const baseWindowStart = this.maxDateOf(hireDate, periodStart);
+      // Si hay un registro consolidable, el tramo en vivo solo cubre el hueco después de
+      // su cierre — evita recalcular (y potencialmente divergir de) lo ya persistido.
+      const windowStart = hasConsolidatableCurrentYearRecord
+        ? this.maxDateOf(
+            baseWindowStart,
+            this.addDays(this.toUtcMidnight(currentYearRecord.periodEnd), 1),
+          )
+        : baseWindowStart;
+      const windowEndExclusive = contractEndExclusive
+        ? this.minDateOf(contractEndExclusive, periodEndExclusive)
+        : periodEndExclusive;
+      currentPeriodStart = windowStart;
+
+      if (windowStart < windowEndExclusive) {
+        const salaryHistory = await this.employeeHistoryRepository.findSalaryHistoryByEmployee(
+          tenantId,
+          employeeId,
+        );
+        const rawSegments = resolveSalarySegments(salaryHistory, windowStart, windowEndExclusive);
+
+        const legalSnapshot = await this.legalParametersService.preload(
+          ['INTERES_CESANTIAS', 'DIVISOR_CESANTIAS', 'AUXILIO_TRANSPORTE', 'SMLV'],
+          periodStart,
+          periodEndInclusive,
+          tenantId,
+        );
+        const interestRate = new Prisma.Decimal(
+          legalSnapshot.numberAt('INTERES_CESANTIAS', periodEndInclusive),
+        );
+        const divisor = new Prisma.Decimal(
+          legalSnapshot.numberAt('DIVISOR_CESANTIAS', periodEndInclusive),
+        );
+        const smlv = legalSnapshot.numberAt('SMLV', periodEndInclusive);
+        const transportSubsidyAmount = new Prisma.Decimal(
+          legalSnapshot.numberAt('AUXILIO_TRANSPORTE', periodEndInclusive),
+        );
+        const transportSubsidyThreshold = new Prisma.Decimal(smlv * 2);
+
+        const segmentInputs: CesantiasSegmentInput[] = rawSegments.map(
+          (s): CesantiasSegmentInput => ({
+            salaryType: s.salaryType,
+            salaryAmount: new Prisma.Decimal(s.salaryAmount),
+            commercialDays: s.commercialDays,
+          }),
+        );
+
+        const result = this.cesantiasCalculationService.calculate(
+          segmentInputs,
+          employee.hasTransportSubsidy,
+          { interestRate, divisor, transportSubsidyAmount, transportSubsidyThreshold },
+          rawSegments.map((s): { start: Date; endExclusive: Date } => ({
+            start: s.start,
+            endExclusive: s.endExclusive,
+          })),
+        );
+
+        pendingCesantias = pendingCesantias.plus(result.cesantiasAmount);
+        pendingInterest = pendingInterest.plus(result.interestAmount);
+        calculationBase = result.calculationBase;
+        legalParametersSnapshot = {
+          interestRate: interestRate.toString(),
+          divisor: divisor.toString(),
+          transportSubsidyAmount: transportSubsidyAmount.toString(),
+          transportSubsidyThreshold: transportSubsidyThreshold.toString(),
+        };
+      }
+    }
+
+    return {
+      asOfDate,
+      currentPeriodStart,
+      currentPeriodEnd: asOfDate,
+      calculationBase: calculationBase.toString(),
+      pendingCesantias: pendingCesantias
+        .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP)
+        .toString(),
+      pendingInterest: pendingInterest.toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP).toString(),
+      sourceLiquidations,
+      statesConsidered: {
+        pendingCesantiasStatuses: ['CALCULADA'],
+        excludedCesantiasStatuses: ['CONSIGNADA', 'ANULADA'],
+        pendingInterestStatuses: ['CALCULADO'],
+        excludedInterestStatuses: ['PAGADO', 'ANULADO'],
+      },
+      legalParametersSnapshot,
+    };
+  }
+
+  /**
+   * OS-591 (fase 1) — variante de `resolveYearWindow` que acota al `asOfDate` pedido en vez
+   * de "hoy" (permite previsualizar el saldo a una fecha pasada o futura dentro del año,
+   * no solo "hasta hoy"). No reemplaza a `resolveYearWindow` (que sigue usando `new Date()`
+   * para el batch anual real) para no cambiar el comportamiento de `calculateForYear`.
+   */
+  private resolveYearWindowAsOf(
+    year: number,
+    asOfDate: Date,
+  ): { periodStart: Date; periodEndExclusive: Date; periodEndInclusive: Date } {
+    const periodStart = new Date(Date.UTC(year, 0, 1));
+    const fullYearEndExclusive = new Date(Date.UTC(year + 1, 0, 1));
+    const asOfExclusive = this.addDays(this.toUtcMidnight(asOfDate), 1);
+    const periodEndExclusive =
+      asOfExclusive < fullYearEndExclusive ? asOfExclusive : fullYearEndExclusive;
+    const periodEndInclusive = new Date(periodEndExclusive.getTime() - 1);
+    return { periodStart, periodEndExclusive, periodEndInclusive };
+  }
+
+  private maxDateOf(a: Date, b: Date): Date {
+    return a > b ? a : b;
+  }
+
+  private minDateOf(a: Date, b: Date): Date {
+    return a < b ? a : b;
   }
 
   private deriveFundChannel(fundName: string): CesantiasFundChannel {

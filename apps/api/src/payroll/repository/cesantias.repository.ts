@@ -41,6 +41,17 @@ export class CesantiasRepository implements ICesantiasRepository {
     return row ? this.map(row) : null;
   }
 
+  async findAllByEmployee(
+    tenantId: string,
+    employeeId: string,
+  ): Promise<CesantiasLiquidationRecord[]> {
+    const rows = await this.prisma.cesantiasLiquidation.findMany({
+      where: { tenantId, employeeId },
+      orderBy: { year: 'asc' },
+    });
+    return rows.map((row): CesantiasLiquidationRecord => this.map(row));
+  }
+
   async upsertCalculationTx(
     tx: Prisma.TransactionClient,
     data: UpsertCesantiasLiquidationData,

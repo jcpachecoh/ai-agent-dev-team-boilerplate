@@ -4,7 +4,8 @@ import {
   ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
-import { Test, TestingModule } from '@nestjs/testing';
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { EmployeeContractType, VacationStatus, VacationType } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 
@@ -67,11 +68,20 @@ describe('VacationsService', () => {
   let userLocationsService: jest.Mocked<UserLocationsService>;
   let vacationAccrualService: jest.Mocked<VacationAccrualService>;
   let letterService: jest.Mocked<IVacationLetterService>;
+  // Named references kept outside the mock object so assertions in calculateBalanceAsOf
+  // can reference plain jest.Mock values instead of going through the typed mock — avoids
+  // the @typescript-eslint/unbound-method rule on the four new assertions added by OS-591.
+  let upsertBalance: jest.Mock;
+  let findBalanceByEmployee: jest.Mock;
+  let sumApprovedMovementsUpTo: jest.Mock;
 
   beforeEach(async () => {
+    upsertBalance = jest.fn();
+    findBalanceByEmployee = jest.fn();
+    sumApprovedMovementsUpTo = jest.fn();
     repository = {
-      findBalanceByEmployee: jest.fn(),
-      upsertBalance: jest.fn(),
+      findBalanceByEmployee,
+      upsertBalance,
       createRequest: jest.fn(),
       findRequestById: jest.fn(),
       updateRequest: jest.fn(),
@@ -85,6 +95,7 @@ describe('VacationsService', () => {
       findActorUser: jest.fn(),
       findEmployeeIdByUserId: jest.fn(),
       findEmployeeVacationProfile: jest.fn(),
+      sumApprovedMovementsUpTo,
     } as unknown as jest.Mocked<VacationsRepository>;
 
     userLocationsService = {
@@ -553,6 +564,114 @@ describe('VacationsService', () => {
 
       expect(vacationAccrualService.syncEmployeeBalance).not.toHaveBeenCalled();
       expect(repository.upsertBalance).toHaveBeenCalled();
+    });
+  });
+
+  // OS-591 (fase 1) — consulta pura para liquidación definitiva: sin persistir, sin tope 50%,
+  // reconstruida históricamente (nunca desde el contador SIEMPRE-actual de VacationBalance).
+  describe('calculateBalanceAsOf', (): void => {
+    it('nunca persiste (no llama upsertBalance) ni lee VacationBalance', async (): Promise<void> => {
+      // Arrange
+      repository.findEmployeeVacationProfile.mockResolvedValue({
+        hireDate: new Date(2024, 0, 1),
+        contractType: EmployeeContractType.INDEFINIDO,
+      });
+      repository.sumApprovedMovementsUpTo.mockResolvedValue({
+        takenDays: new Decimal(0),
+        compensatedDays: new Decimal(0),
+      });
+
+      // Act
+      await service.calculateBalanceAsOf(TENANT, EMPLOYEE_ID, new Date(2026, 5, 30));
+
+      // Assert — ni escribe, ni lee el contador mutable (evita el riesgo de "fuga" de
+      // estado posterior a asOfDate que ese contador podría contener).
+      expect(upsertBalance).not.toHaveBeenCalled();
+      expect(findBalanceByEmployee).not.toHaveBeenCalled();
+    });
+
+    it('calcula accruedDays puro desde hireDate hasta asOfDate, sin depender del balance persistido', async (): Promise<void> => {
+      // Arrange
+      repository.findEmployeeVacationProfile.mockResolvedValue({
+        hireDate: new Date(2024, 0, 1),
+        contractType: EmployeeContractType.INDEFINIDO,
+      });
+      repository.sumApprovedMovementsUpTo.mockResolvedValue({
+        takenDays: new Decimal(0),
+        compensatedDays: new Decimal(0),
+      });
+
+      // Act — de 2024-01-01 a 2026-04-15 hay 27 meses calendario completos acreditables
+      const result = await service.calculateBalanceAsOf(TENANT, EMPLOYEE_ID, new Date(2026, 3, 15));
+
+      // Assert — 27 meses × 1.25 = 33.75
+      expect(result.accruedDays.toNumber()).toBe(33.75);
+    });
+
+    it('no usa movimientos tomados/compensados posteriores a asOfDate — filtra por la fecha exacta pedida', async (): Promise<void> => {
+      // Arrange
+      repository.findEmployeeVacationProfile.mockResolvedValue({
+        hireDate: new Date(2024, 0, 1),
+        contractType: EmployeeContractType.INDEFINIDO,
+      });
+      repository.sumApprovedMovementsUpTo.mockResolvedValue({
+        takenDays: new Decimal(5),
+        compensatedDays: new Decimal(0),
+      });
+      const asOfDate = new Date(2026, 3, 15);
+
+      // Act
+      const result = await service.calculateBalanceAsOf(TENANT, EMPLOYEE_ID, asOfDate);
+
+      // Assert — la fuente de tomados/compensados es una consulta explícitamente acotada a
+      // asOfDate (verificado también a nivel de repositorio: level2ActedAt <= asOfDate),
+      // nunca el contador acumulado que podría incluir aprobaciones futuras.
+      expect(sumApprovedMovementsUpTo).toHaveBeenCalledWith(TENANT, EMPLOYEE_ID, asOfDate);
+      expect(result.takenDays.toNumber()).toBe(5);
+      expect(result.pendingDays.toNumber()).toBe(33.75 - 5);
+    });
+
+    it('no aplica el tope de compensación del 50% — entrega el saldo pendiente completo', async (): Promise<void> => {
+      // Arrange — compensatedDays ya al 60% de lo acreditado, algo que approveLevel2 bloquearía
+      repository.findEmployeeVacationProfile.mockResolvedValue({
+        hireDate: new Date(2024, 0, 1),
+        contractType: EmployeeContractType.INDEFINIDO,
+      });
+      repository.sumApprovedMovementsUpTo.mockResolvedValue({
+        takenDays: new Decimal(0),
+        compensatedDays: new Decimal(20.25), // 60% de 33.75
+      });
+
+      // Act
+      const result = await service.calculateBalanceAsOf(TENANT, EMPLOYEE_ID, new Date(2026, 3, 15));
+
+      // Assert — 33.75 - 20.25 = 13.5 días pendientes, sin bloqueo ni tope
+      expect(result.pendingDays.toNumber()).toBe(13.5);
+    });
+
+    it('devuelve ceros para contratos no elegibles (PRESTACION) sin consultar movimientos', async (): Promise<void> => {
+      // Arrange
+      repository.findEmployeeVacationProfile.mockResolvedValue({
+        hireDate: new Date(2024, 0, 1),
+        contractType: EmployeeContractType.PRESTACION,
+      });
+
+      // Act
+      const result = await service.calculateBalanceAsOf(TENANT, EMPLOYEE_ID, new Date(2026, 6, 1));
+
+      // Assert
+      expect(result.pendingDays.toNumber()).toBe(0);
+      expect(sumApprovedMovementsUpTo).not.toHaveBeenCalled();
+    });
+
+    it('lanza NotFoundException si el empleado no existe', async (): Promise<void> => {
+      // Arrange
+      repository.findEmployeeVacationProfile.mockResolvedValue(null);
+
+      // Act & Assert
+      await expect(service.calculateBalanceAsOf(TENANT, EMPLOYEE_ID, new Date())).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 

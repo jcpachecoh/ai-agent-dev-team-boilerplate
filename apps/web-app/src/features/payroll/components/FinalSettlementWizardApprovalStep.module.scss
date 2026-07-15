@@ -1,0 +1,75 @@
+@use '@/styles/tokens' as t;
+
+.stepBody {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.modeTag {
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.receiptButton {
+  margin-left: auto;
+}
+
+.gates {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.gateBlocked,
+.gateOk {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0.55rem 0.85rem;
+  border-radius: 6px;
+  font-size: 0.82rem;
+}
+
+.gateBlocked {
+  border: 1px solid rgb(239 68 68 / 35%);
+  background: rgb(239 68 68 / 8%);
+  color: #fca5a5;
+}
+
+.gateOk {
+  border: 1px solid rgb(34 197 94 / 35%);
+  background: rgb(34 197 94 / 8%);
+  color: #86efac;
+}
+
+.infoLine {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.permissionHint {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+
+  code {
+    font-family: 'IBM Plex Mono', t.$font-family-mono, monospace;
+  }
+}

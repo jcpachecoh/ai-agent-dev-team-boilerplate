@@ -61,3 +61,8 @@ apps/web-app/.env.test
 apps/web-app/playwright-report/
 apps/web-app/test-results/
 .claude/worktrees/
+
+# Documentos con datos personales — NUNCA versionar
+apps/api/docs/*.xlsx
+apps/api/docs/*.xls
+apps/api/docs/*.csv

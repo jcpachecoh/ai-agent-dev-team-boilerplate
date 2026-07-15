@@ -7,6 +7,7 @@ import {
 } from '@prisma/client';
 
 import type { PrismaService } from '../../prisma/prisma.service';
+import type { EmployeeContractRepository } from '../repository/employee-contract.repository';
 import type { EmployeeHistoryRepository } from '../repository/employee-history.repository';
 import { PayrollRepository } from '../repository/payroll.repository';
 
@@ -65,7 +66,18 @@ describe('PayrollRepository', (): void => {
     syncFundHistoryTx,
   } as unknown as EmployeeHistoryRepository;
 
-  const repository = new PayrollRepository(prisma, employeeHistoryRepository);
+  const createInitialContractTx = jest.fn();
+  const syncActiveContractTx = jest.fn();
+  const employeeContractRepository = {
+    createInitialContractTx,
+    syncActiveContractTx,
+  } as unknown as EmployeeContractRepository;
+
+  const repository = new PayrollRepository(
+    prisma,
+    employeeHistoryRepository,
+    employeeContractRepository,
+  );
 
   const baseCreateData = {
     tenantId: 'tenant-1',
@@ -536,6 +548,98 @@ describe('PayrollRepository', (): void => {
 
     expect(syncSalaryHistoryTx).not.toHaveBeenCalled();
     expect(syncFundHistoryTx).not.toHaveBeenCalled();
+  });
+
+  // OS-591 (fase 1, cierre de hallazgos) — cobertura explícita de los 3 invariantes
+  // pedidos: (a) actualizar datos contractuales sincroniza el contrato activo, (b)
+  // isActive:false por sí solo NO sincroniza/termina el contrato, (c) softDelete tampoco
+  // toca el contrato (la terminación real solo existe vía EmployeeContractService).
+  it('update syncs the active contract when contractType/contractStart/contractEnd change', async (): Promise<void> => {
+    const updatedRow = {
+      id: 'emp-1',
+      tenantId: 'tenant-1',
+      userId: 'user-1',
+      user: { id: 'user-1' },
+      location: { id: 'loc-1', name: 'Sede 1' },
+      contractType: EmployeeContractType.FIJO,
+      contractStart: new Date('2026-01-01'),
+      contractEnd: new Date('2026-12-31'),
+    };
+    const employeeDetailsUpdate = jest.fn().mockResolvedValue(updatedRow);
+
+    (prisma.$transaction as jest.Mock).mockImplementation(
+      async (callback: unknown): Promise<unknown> => {
+        const tx = {
+          user: { update: jest.fn() },
+          employeeDetails: { update: employeeDetailsUpdate, findUniqueOrThrow: jest.fn() },
+        };
+        return (callback as (arg: typeof tx) => Promise<unknown>)(tx);
+      },
+    );
+
+    await repository.update('user-1', {
+      employee: {
+        contractType: EmployeeContractType.FIJO,
+        contractEnd: '2026-12-31',
+      },
+      changedBy: 'user-9',
+    });
+
+    expect(syncActiveContractTx).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        tenantId: 'tenant-1',
+        employeeDetailsId: 'emp-1',
+        contractType: EmployeeContractType.FIJO,
+        agreedEndDate: new Date('2026-12-31'),
+        changedBy: 'user-9',
+      }),
+    );
+    // contractStart NO vino en el patch: no debe incluirse en el payload de sync.
+    const [, syncPayload] = syncActiveContractTx.mock.calls[0] as [
+      unknown,
+      Record<string, unknown>,
+    ];
+    expect('startDate' in syncPayload).toBe(false);
+  });
+
+  it('update does NOT sync/terminate the contract when only isActive changes', async (): Promise<void> => {
+    const employeeDetailsUpdate = jest.fn().mockResolvedValue({
+      id: 'emp-1',
+      tenantId: 'tenant-1',
+      userId: 'user-1',
+      user: { id: 'user-1' },
+      location: { id: 'loc-1', name: 'Sede 1' },
+      isActive: false,
+    });
+
+    (prisma.$transaction as jest.Mock).mockImplementation(
+      async (callback: unknown): Promise<unknown> => {
+        const tx = {
+          user: { update: jest.fn() },
+          employeeDetails: { update: employeeDetailsUpdate, findUniqueOrThrow: jest.fn() },
+        };
+        return (callback as (arg: typeof tx) => Promise<unknown>)(tx);
+      },
+    );
+
+    await repository.update('user-1', { employee: { isActive: false } });
+
+    expect(syncActiveContractTx).not.toHaveBeenCalled();
+  });
+
+  it('softDelete does not touch the employment contract (termination stays an explicit operation)', async (): Promise<void> => {
+    (prisma.employeeDetails.update as jest.Mock).mockResolvedValue({
+      userId: 'user-1',
+      isActive: false,
+      deletedAt: new Date('2026-07-09T00:00:00.000Z'),
+      user: { id: 'user-1' },
+    });
+
+    await repository.softDelete('user-1');
+
+    expect(syncActiveContractTx).not.toHaveBeenCalled();
+    expect(createInitialContractTx).not.toHaveBeenCalled();
   });
 
   it('softDelete returns the deactivated employee record', async (): Promise<void> => {

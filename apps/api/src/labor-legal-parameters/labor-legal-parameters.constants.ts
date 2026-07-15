@@ -19,6 +19,24 @@ export const LABOR_LEGAL_PARAMETER_KEYS = [
   'CESANTIAS_PLAZO_DIA',
   'CESANTIAS_PLAZO_MES',
   'UVT',
+  /** OS-591 (fase 1) — divisor de días para prorratear prima de servicios (semestre comercial de 180 días, CST art. 306). */
+  'PRIMA_DIVISOR_DIAS',
+  /**
+   * OS-591 (fase 1) — umbral de SMLMV (CST art. 64 par. 1 num. 2) que determina qué tabla
+   * de días por indemnización aplica a contrato INDEFINIDO. Parametrizado (no hardcodeado
+   * "10") porque es un umbral legal que, como el resto de este motor, puede cambiar por ley.
+   * NO se usa todavía en ningún cálculo en esta fase — ver tasks/OS-591.md fase 2.
+   */
+  'INDEMNIZACION_UMBRAL_SMLV',
+  /**
+   * OS-591 (fase 1) — versión activa de la fórmula PROVISIONAL de indemnización. No es un
+   * valor legal en sí (no hay "Decreto X" que lo respalde) sino un mecanismo de versionado:
+   * cuando Legal apruebe/corrija la fórmula, se cierra la vigencia de esta key y se abre una
+   * nueva con el siguiente entero — así cada liquidación (fase 2) puede hacer snapshot de
+   * QUÉ VERSIÓN de fórmula usó sin necesitar una columna nueva ni migración. Ver
+   * tasks/OS-591.md "Separación entre versión legal de fórmula y estado operativo".
+   */
+  'INDEMNIZACION_FORMULA_VERSION',
 ] as const;
 
 export type LaborLegalParameterKey = (typeof LABOR_LEGAL_PARAMETER_KEYS)[number];

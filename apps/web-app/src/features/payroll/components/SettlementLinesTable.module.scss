@@ -1,0 +1,73 @@
+@use '@/styles/tokens' as t;
+
+.tableWrap {
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: t.$border-radius-base;
+  background: var(--color-bg-surface);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+
+  th,
+  td {
+    padding: 0.55rem 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  td {
+    color: var(--color-text-primary);
+  }
+
+  th {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+    background: var(--color-bg-surface-raised, var(--color-bg-surface));
+  }
+
+  tfoot td {
+    border-top: 1px solid var(--color-border);
+    border-bottom: none;
+  }
+}
+
+.groupRow td {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  background: var(--color-bg-surface-raised, var(--color-bg-surface));
+}
+
+.empty {
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.justification {
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+}
+
+.numeric {
+  text-align: right;
+  font-family: 'IBM Plex Mono', t.$font-family-mono, monospace;
+}
+
+.totalsRow td {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.negativeRow td {
+  font-weight: 700;
+  color: #fca5a5;
+}

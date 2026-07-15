@@ -1,0 +1,95 @@
+@use '@/styles/tokens' as t;
+
+.stepBody {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.employeeName {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.employeeMeta {
+  margin: -8px 0 0;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-secondary);
+}
+
+.input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: t.$border-radius-base;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-surface-raised);
+  color: var(--color-text-primary);
+  font: inherit;
+  box-sizing: border-box;
+
+  &:focus-visible {
+    outline: 2px solid rgba(t.$color-accent, 0.65);
+    outline-offset: 1px;
+  }
+}
+
+.modeToggle {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: t.$border-radius-base;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-surface-raised);
+  width: fit-content;
+}
+
+.modeButton {
+  padding: 6px 14px;
+  border-radius: calc(t.$border-radius-base - 2px);
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.modeButtonActive {
+  background: var(--color-bg-surface);
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+
+.hint {
+  margin: -8px 0 0;
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+}
+
+@media (width <= 640px) {
+  .row {
+    grid-template-columns: 1fr;
+  }
+}

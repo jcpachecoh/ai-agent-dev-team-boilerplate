@@ -1,0 +1,13 @@
+.stepBody {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.manualPrompt {
+  padding: 1rem;
+  border-radius: 6px;
+  border: 1px dashed var(--color-border);
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}

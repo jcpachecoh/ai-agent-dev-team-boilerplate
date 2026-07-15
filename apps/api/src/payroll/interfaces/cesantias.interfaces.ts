@@ -89,6 +89,12 @@ export interface ICesantiasRepository {
     year: number,
   ): Promise<CesantiasLiquidationRecord | null>;
   /**
+   * OS-591 (fase 1) — todas las liquidaciones (cualquier año/estado) de UN empleado, sin
+   * paginar. Usado por `CesantiasService.getEmployeeBalanceAsOf` para consolidar pendientes
+   * de años anteriores sin depender del batch `calculateForYear`.
+   */
+  findAllByEmployee(tenantId: string, employeeId: string): Promise<CesantiasLiquidationRecord[]>;
+  /**
    * Crea o actualiza en el mismo registro (upsert por [employeeId, year]). El caller
    * (CesantiasService) decide ANTES de llamar esto si la liquidación existente está en un
    * estado recalculable — este método no lo revalida, siempre escribe.

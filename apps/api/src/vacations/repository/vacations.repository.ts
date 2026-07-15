@@ -64,6 +64,30 @@ export class VacationsRepository implements IVacationsRepository {
     return this.mapBalance(row);
   }
 
+  async sumApprovedMovementsUpTo(
+    tenantId: string,
+    employeeId: string,
+    asOfDate: Date,
+  ): Promise<{ takenDays: Decimal; compensatedDays: Decimal }> {
+    const rows = await this.prisma.vacationRequest.findMany({
+      where: {
+        tenantId,
+        employeeId,
+        status: VacationStatus.APROBADA,
+        level2ActedAt: { lte: asOfDate },
+      },
+      select: { type: true, daysRequested: true },
+    });
+
+    return rows.reduce(
+      (acc, row): { takenDays: Decimal; compensatedDays: Decimal } =>
+        row.type === VacationType.DISFRUTE
+          ? { ...acc, takenDays: acc.takenDays.plus(row.daysRequested) }
+          : { ...acc, compensatedDays: acc.compensatedDays.plus(row.daysRequested) },
+      { takenDays: new Decimal(0), compensatedDays: new Decimal(0) },
+    );
+  }
+
   async createRequest(
     tenantId: string,
     data: CreateVacationRequestData,

@@ -100,12 +100,12 @@ export class PayrollController {
   @Roles(...PAYROLL_WRITE_ROLES)
   @Delete(':userId')
   async remove(
-    @CurrentUser() user: any,
+    @CurrentUser() user: JwtPayload,
     @Headers('x-tenant-id') headerTenantId: string,
     @Param('userId') userId: string,
   ): Promise<boolean> {
     const tenantId = this.resolveTenantId(user, headerTenantId);
-    await this.payrollService.remove(tenantId, userId);
+    await this.payrollService.remove(tenantId, userId, user?.sub);
     return true;
   }
 

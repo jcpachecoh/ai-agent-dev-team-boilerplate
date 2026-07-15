@@ -121,7 +121,7 @@ describe('PayrollController', () => {
     it('should delegate to service.remove and return true', async () => {
       (service.remove as jest.Mock).mockResolvedValue(undefined);
       const result = await controller.remove(mockUser, mockTenantId, 'user-1');
-      expect(service.remove).toHaveBeenCalledWith(mockTenantId, 'user-1');
+      expect(service.remove).toHaveBeenCalledWith(mockTenantId, 'user-1', 'user-1');
       expect(result).toBe(true);
     });
   });

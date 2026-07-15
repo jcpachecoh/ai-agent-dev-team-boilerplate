@@ -819,6 +819,9 @@ model EmployeeDetails {
   payrollNovedades         PayrollNovedad[]
   overtimeRequests         OvertimeRequest[]
   dataConsents             DataConsent[]
+  employmentContracts      EmploymentContract[]
+  primaLiquidations        PrimaLiquidation[]
+  finalSettlements         FinalSettlement[]
 
   @@index([tenantId])
   @@index([locationId])
@@ -970,6 +973,76 @@ model EmployeeFundHistory {
   @@index([tenantId, employeeDetailsId, fundType])
   @@index([employeeDetailsId, fundType, effectiveFrom])
   @@map("employee_fund_history")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// OS-591 (fase 1 — fundaciones) — Historial contractual.
+//
+// A diferencia de EmployeeSalaryHistory/EmployeeFundHistory (que versionan un ATRIBUTO
+// de un único contrato implícito), EmploymentContract modela cada CONTRATO como una fila
+// propia — necesario para soportar recontrataciones (más de un contrato para el mismo
+// empleado a lo largo del tiempo) sin perder cuál contrato originó cada liquidación.
+//
+// EmployeeDetails.contractType/contractStart/contractEnd NO se eliminan en esta fase
+// (siguen siendo el snapshot vigente que ya consume el resto de NOM-04/OS-588/OS-589) —
+// este modelo es la fuente de verdad para HISTORIAL de contratos, sincronizada con esos
+// campos en el mismo flujo de create/update (ver PayrollRepository).
+//
+// "Un solo contrato ACTIVO por empleado" se hace cumplir en dos capas:
+//  1. Aplicación: EmployeeContractRepository valida antes de escribir.
+//  2. Base de datos: `activeSlot` es NULL para todo contrato TERMINADO y `true` únicamente
+//     mientras status=ACTIVO — Postgres no compara NULL como igual a NULL en un índice
+//     único, así que @@unique([tenantId, employeeDetailsId, activeSlot]) solo puede
+//     chocar entre dos filas ACTIVO, nunca entre TERMINADOs (mismo truco que
+//     "partial unique index" sin necesitar SQL crudo en el schema).
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum EmploymentContractStatus {
+  ACTIVO
+  TERMINADO
+}
+
+// CST art. 61/64 — motivo de terminación. Determina si la indemnización (fase 2) aplica:
+// RENUNCIA, JUSTA_CAUSA, MUTUO_ACUERDO y VENCIMIENTO_TERMINO producen indemnización = 0
+// en el alcance base del ticket OS-591; SIN_JUSTA_CAUSA es el único que activa la fórmula.
+enum ContractTerminationReason {
+  RENUNCIA
+  JUSTA_CAUSA
+  SIN_JUSTA_CAUSA
+  MUTUO_ACUERDO
+  VENCIMIENTO_TERMINO
+  MUERTE_TRABAJADOR
+  OTRA
+}
+
+model EmploymentContract {
+  id                String                     @id @default(cuid())
+  tenantId          String
+  employeeDetailsId String
+  contractType      EmployeeContractType
+  startDate         DateTime
+  // Fecha pactada de vencimiento (FIJO/OBRA) — snapshot al momento de firmar/editar el
+  // contrato. No confundir con `terminationDate` (fecha REAL de cierre, cualquier tipo).
+  agreedEndDate     DateTime?
+  status            EmploymentContractStatus   @default(ACTIVO)
+  terminationDate   DateTime?
+  terminationReason ContractTerminationReason?
+  terminationNotes  String?
+  // true solo mientras status=ACTIVO; NULL en TERMINADO — ver nota de unicidad arriba.
+  activeSlot        Boolean?                   @default(true)
+  changedBy         String?
+  createdAt         DateTime                   @default(now())
+  updatedAt         DateTime                   @updatedAt
+
+  employee         EmployeeDetails   @relation(fields: [employeeDetailsId], references: [id], onDelete: Restrict)
+  finalSettlements FinalSettlement[]
+
+  @@unique([tenantId, employeeDetailsId, activeSlot])
+  @@index([tenantId])
+  @@index([tenantId, employeeDetailsId])
+  @@index([employeeDetailsId, startDate])
+  @@index([tenantId, status])
+  @@map("employment_contracts")
 }
 
 model EmployeeAsset {
@@ -2456,6 +2529,77 @@ model CesantiasLiquidation {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// OS-591 (fase 1 — fundaciones) — Prima de servicios (CST art. 306, dominio "NOM-08" del
+// ticket — no confundir con `tasks/nom-08-turnos-backend`, que es un dominio distinto ya
+// existente en este repo con la misma numeración informal, ver tasks/OS-591.md).
+//
+// Un registro por (employeeId, year, half) — semestre calendario (1-jun / 1-dic-31),
+// mismo criterio de "no se borra, se ANULA vía estado" que CesantiasLiquidation. A
+// diferencia de cesantías (un solo monto + intereses), prima solo tiene un concepto
+// monetario, pero SÍ necesita rastrear pagos (`paidAmount`) de forma acumulativa para que
+// `getPrimaBalanceAsOf` pueda derivar saldo pendiente y sobrepago sin una tabla aparte de
+// pagos — ver PrimaService.
+//
+// A diferencia de CesantiasService.calculateForYear (batch de todo el tenant, con el
+// riesgo de recalcular/afectar a otros empleados ya documentado en tasks/OS-588.md), este
+// dominio se diseñó desde el inicio por EMPLEADO — ver PrimaService.calculateForEmployee.
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum PrimaHalf {
+  PRIMER_SEMESTRE
+  SEGUNDO_SEMESTRE
+}
+
+enum PrimaSettlementStatus {
+  CALCULADA
+  PAGADA
+  ANULADA
+}
+
+model PrimaLiquidation {
+  id          String    @id @default(cuid())
+  tenantId    String
+  employeeId  String
+  year        Int
+  half        PrimaHalf
+  periodStart DateTime  @db.Date
+  // Fin real considerado: min(30-jun/31-dic-year, contractEnd, hoy) — igual criterio que
+  // CesantiasLiquidation.periodEnd.
+  periodEnd   DateTime  @db.Date
+
+  // Días causados en convención comercial (30/mes) — PRIMA_DIVISOR_DIAS (180 = semestre).
+  accrualDays Int
+
+  // Base ponderada informativa — mismo criterio que CesantiasLiquidation.calculationBase
+  // (no es la fuente del cálculo, solo resumen para mostrar/auditar).
+  calculationBase Decimal @db.Decimal(12, 2)
+
+  accruedAmount Decimal @db.Decimal(14, 2)
+  // Acumulado de pagos registrados contra esta liquidación (puede ser parcial o, si hubo
+  // sobrepago, mayor que accruedAmount — ver PrimaService.getPrimaBalanceAsOf).
+  paidAmount    Decimal @default(0) @db.Decimal(14, 2)
+
+  // Snapshot de PRIMA_DIVISOR_DIAS (LaborLegalParameter) vigente al cierre — trazabilidad
+  // si el divisor cambiara en el futuro.
+  divisorSnapshot Decimal @db.Decimal(6, 2)
+
+  status PrimaSettlementStatus @default(CALCULADA)
+
+  calculatedBy String?
+  calculatedAt DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  employee EmployeeDetails @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+
+  @@unique([employeeId, year, half])
+  @@index([tenantId, year, half])
+  @@index([tenantId, employeeId])
+  @@index([tenantId, status])
+  @@map("prima_liquidations")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // NOVEDADES DE NÓMINA — ausencias, permisos y licencias (NOM-14)
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -2685,4 +2829,212 @@ model DataConsent {
   @@index([employeeId])
   @@index([tenantId, employeeId, consentType])
   @@map("data_consents")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// OS-591 (fase 2) — Liquidación definitiva de contrato.
+//
+// `FinalSettlement` es la entidad principal. Un contrato puede tener múltiples
+// liquidaciones si las anteriores fueron VOIDED (anuladas auditablemente), pero
+// NO puede haber más de una liquidación en estado DRAFT/CALCULATED/APPROVED/PAID
+// al mismo tiempo para el mismo contrato. Esta invariante se refuerza en DOS capas:
+// 1. Aplicación: FinalSettlementRepository.create() verifica antes de escribir.
+// 2. Base de datos: índice único parcial `final_settlements_active_per_contract_key`
+//    en la migración 20260714200000_os591_final_settlement (exluye filas VOIDED).
+//    Prisma no genera partial indexes en el schema — por eso el index está en SQL raw.
+//
+// `SettlementLine` congela cada concepto de devengo o deducción de forma
+// independiente, con metadata completa para auditoría futura.
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum FinalSettlementStatus {
+  DRAFT
+  CALCULATED
+  APPROVED
+  PAID
+  VOIDED
+}
+
+enum FinalSettlementMode {
+  AUTOMATIC
+  MANUAL
+}
+
+enum SettlementLineType {
+  DEVENGO
+  DEDUCCION
+}
+
+enum SettlementLineOrigin {
+  AUTOMATIC
+  MANUAL
+}
+
+model FinalSettlement {
+  id                String @id @default(cuid())
+  tenantId          String
+  employeeDetailsId String
+  contractId        String
+
+  effectiveTerminationDate DateTime                  @db.Date
+  terminationReason        ContractTerminationReason
+  status                   FinalSettlementStatus     @default(DRAFT)
+  mode                     FinalSettlementMode       @default(AUTOMATIC)
+
+  // ── Contract snapshot ──────────────────────────────────────────────────────
+  snapshotContractType      EmployeeContractType
+  snapshotContractStartDate DateTime             @db.Date
+  snapshotAgreedEndDate     DateTime?            @db.Date
+
+  // ── Salary snapshot ────────────────────────────────────────────────────────
+  snapshotSalaryType   SalaryType
+  snapshotSalaryAmount Decimal    @db.Decimal(14, 2)
+
+  // ── Legal parameters snapshot (vigentes a effectiveTerminationDate) ────────
+  snapshotSmlvAmount             Decimal @db.Decimal(14, 2)
+  snapshotTransportSubsidyAmount Decimal @db.Decimal(14, 2)
+  // Snapshot de INDEMNIZACION_FORMULA_VERSION vigente al calcular — mismo patrón
+  // que CesantiasLiquidation.interestRateSnapshot para trazabilidad futura.
+  snapshotFormulaVersion         Int
+  // Umbral de SMLMV (ej: 10.00) vigente al calcular — permite auditar qué tabla
+  // se aplicó (INDEFINIDO_BAJO vs INDEFINIDO_ALTO) incluso si el umbral cambia.
+  snapshotSmlvThreshold          Decimal @default(10) @db.Decimal(6, 2)
+
+  // ── Variable average snapshot (0 si no existe historial de pagos variables) ─
+  snapshotVariableAvgMonthsCovered Int     @default(0)
+  snapshotVariableAvgTotal         Decimal @default(0) @db.Decimal(14, 2)
+  snapshotVariableAvgMonthly       Decimal @default(0) @db.Decimal(14, 2)
+
+  // ── Financial totals ───────────────────────────────────────────────────────
+  grossDevengados           Decimal @default(0) @db.Decimal(14, 2)
+  totalDeducciones          Decimal @default(0) @db.Decimal(14, 2)
+  // netAmount = max(0, grossDevengados - totalDeducciones).
+  // Cuando el neto sería negativo, netAmount = 0 y snapshotNetNegativeAmount
+  // guarda el déficit — el aggregator emite un BLOQUEO "net_negative" que impide
+  // persistir sin intervención explícita del actor humano (Fase 3 deberá resolverlo).
+  netAmount                 Decimal @default(0) @db.Decimal(14, 2)
+  // Saldo a cargo del empleado (≥ 0). 0.00 si grossDevengados ≥ totalDeducciones.
+  snapshotNetNegativeAmount Decimal @default(0) @db.Decimal(14, 2)
+
+  // ── Manual liquidation fields (obligatorios cuando mode=MANUAL) ────────────
+  manualJustification String?
+  manualReference     String?
+  manualResponsible   String?
+
+  // ── Audit & warnings ──────────────────────────────────────────────────────
+  // warnings aceptadas explícitamente por el actor humano al persistir/calcular.
+  acceptedWarnings Json @default("[]")
+  // auditTrail: array de { event, actor, timestamp, detail } — ver AuditEvent type.
+  auditTrail       Json @default("[]")
+
+  // ── Timestamps y actores ──────────────────────────────────────────────────
+  createdBy        String?
+  calculatedBy     String?
+  calculatedAt     DateTime?
+  approvedBy       String?
+  approvedAt       DateTime?
+  paidBy           String?
+  paidAt           DateTime?
+  // OS-591 (fase 3, cierre) — referencia y fecha REAL del pago (pueden diferir de `paidAt`,
+  // que es cuándo se registró en el sistema, no necesariamente cuándo se ejecutó el pago).
+  paymentReference String?
+  paymentDate      DateTime? @db.Date
+  voidedBy         String?
+  voidedAt         DateTime?
+  voidReason       String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  employee                    EmployeeDetails              @relation(fields: [employeeDetailsId], references: [id], onDelete: Restrict)
+  contract                    EmploymentContract           @relation(fields: [contractId], references: [id], onDelete: Restrict)
+  lines                       SettlementLine[]
+  pendingSalaryReconciliation PendingSalaryReconciliation?
+
+  @@index([tenantId])
+  @@index([tenantId, employeeDetailsId])
+  @@index([tenantId, status])
+  @@index([contractId])
+  @@map("final_settlements")
+}
+
+// OS-591 (fase 3) — Constancia legal de que una versión de `INDEMNIZACION_FORMULA_VERSION`
+// fue revisada/validada por el equipo legal. Independiente del estado operativo de
+// cualquier `FinalSettlement` (ver tasks/OS-591.md §8 y §15.1) — NUNCA se reutiliza el
+// campo `status` de una liquidación puntual para representar esto.
+// Revalidar una versión no sobre-escribe: se desactiva la vigente y se crea una nueva fila.
+model IndemnificationFormulaValidation {
+  id             String   @id @default(cuid())
+  tenantId       String
+  formulaVersion Int
+  isActive       Boolean  @default(true)
+  legalReference String
+  observations   String?
+  validatedBy    String
+  validatedAt    DateTime
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, formulaVersion])
+  @@map("indemnification_formula_validations")
+}
+
+// OS-591 (fase 3) — Constancia auditable de que un actor humano revisó pagos previos
+// antes de aprobar una liquidación con tramo de salario pendiente (`SAL_PENDIENTE`).
+// Nunca se edita ni se borra la advertencia `pending_salary_double_payment_risk` que
+// emite `PendingSalaryService` — este registro es una evidencia adicional, no un parche.
+model PendingSalaryReconciliation {
+  id                   String    @id @default(cuid())
+  tenantId             String
+  settlementId         String    @unique
+  previouslyPaidAmount Decimal   @default(0) @db.Decimal(14, 2)
+  paymentReference     String?
+  paymentDate          DateTime?
+  responsible          String
+  observation          String
+  recognizedBalance    Decimal   @db.Decimal(14, 2)
+  createdBy            String?
+  createdAt            DateTime  @default(now())
+
+  settlement FinalSettlement @relation(fields: [settlementId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@map("pending_salary_reconciliations")
+}
+
+// Cada línea congela un concepto de devengo o deducción al momento del cálculo.
+// `sourceReference` apunta al registro fuente, p.ej.:
+//   "CesantiasLiquidation:<id>" | "PrimaLiquidation:<id>" | "OvertimeRequest:<id>"
+//   (null si el concepto es calculado en vivo sin un registro persistido de origen).
+model SettlementLine {
+  id           String @id @default(cuid())
+  tenantId     String
+  settlementId String
+
+  code   String
+  name   String
+  type   SettlementLineType
+  // AUTOMATIC = calculado por el motor; MANUAL = ingresado manualmente por un actor.
+  origin SettlementLineOrigin @default(AUTOMATIC)
+
+  sourceReference String?
+
+  baseAmount Decimal? @db.Decimal(14, 2)
+  quantity   Decimal? @db.Decimal(10, 4)
+  rate       Decimal? @db.Decimal(10, 6)
+  amount     Decimal  @db.Decimal(14, 2)
+
+  metadata            Json    @default("{}")
+  // Solo obligatorio cuando origin=MANUAL — reforzado en la capa de servicio.
+  manualJustification String?
+
+  sortOrder Int @default(0)
+
+  createdAt DateTime @default(now())
+
+  settlement FinalSettlement @relation(fields: [settlementId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, settlementId])
+  @@map("settlement_lines")
 }

@@ -289,12 +289,12 @@ export class EmployeesResolver {
   @Mutation(() => EmployeeDetailsType)
   @Roles(...PAYROLL_WRITE_ROLES)
   async deactivateEmployee(
-    @CurrentUser() user: any,
+    @CurrentUser() user: JwtPayload,
     @Context() context: any,
     @Args('userId', { type: () => ID }) userId: string,
   ): Promise<EmployeeDetailsType> {
     const tenantId = this.resolveTenantId(user, context);
-    const employee = await this.employeesService.remove(tenantId, userId);
+    const employee = await this.employeesService.remove(tenantId, userId, user?.sub);
     return toEmployeeResponse(employee) as any;
   }
 

@@ -15688,6 +15688,1167 @@
       ]
     },
     {
+      "name": "OS-591 Liquidación Definitiva de Contrato",
+      "description": "OS-591 (fase 3) — Workflow de liquidacion definitiva: validacion legal de la formula de indemnizacion, calculo automatico/manual, reconciliacion de salario pendiente, aprobacion/pago/anulacion y bloqueo de desactivacion. Corre '00 Setup' primero (resuelve ids desde los fixtures sembrados por prisma/seeds/os591-final-settlement.seed.ts). Requiere Bearer {{accessToken}} y x-tenant-id: {{tenantId}}.",
+      "item": [
+        {
+          "name": "00 Setup",
+          "item": [
+            {
+              "name": "Login Owner",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  },
+                  {
+                    "key": "x-tenant-id",
+                    "value": "{{tenantId}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/auth/login",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "auth", "login"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}"
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('login: status 200', () => pm.response.to.have.status(200));",
+                      "const body = pm.response.json();",
+                      "pm.environment.set('accessToken', body.accessToken);",
+                      "pm.environment.set('refreshToken', body.refreshToken);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Find Demo Employees — resuelve ids desde /api/employees",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  },
+                  {
+                    "key": "x-tenant-id",
+                    "value": "{{tenantId}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/employees?includeInactive=true",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "employees?includeInactive=true"]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('list: status 200', () => pm.response.to.have.status(200));",
+                      "const body = pm.response.json();",
+                      "function byEmail(email) { return body.find((e) => e.user && e.user.email === email); }",
+                      "const bloqueada = byEmail('liq.deducciones@palos-de-lena.dev');",
+                      "const aprobada = byEmail('liq.aprobada@palos-de-lena.dev');",
+                      "const pagada = byEmail('liq.pagada@palos-de-lena.dev');",
+                      "const manual = byEmail('liq.manual@palos-de-lena.dev');",
+                      "const sinLiquidacion = byEmail('mes-operator@palos-de-lena.dev');",
+                      "if (bloqueada) pm.environment.set('os591EmployeeBloqueadaId', bloqueada.id);",
+                      "if (aprobada) pm.environment.set('os591EmployeeAprobadaId', aprobada.id);",
+                      "if (pagada) pm.environment.set('os591EmployeePagadaId', pagada.id);",
+                      "if (manual) pm.environment.set('os591EmployeeManualId', manual.id);",
+                      "if (sinLiquidacion) pm.environment.set('os591EmployeeSinLiquidacionId', sinLiquidacion.id);",
+                      "pm.test('empleados demo OS-591 encontrados', () => {",
+                      "    pm.expect(bloqueada, 'liq.deducciones').to.exist;",
+                      "    pm.expect(aprobada, 'liq.aprobada').to.exist;",
+                      "    pm.expect(pagada, 'liq.pagada').to.exist;",
+                      "});"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Find blocked-calculated settlementId (liq.deducciones)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  },
+                  {
+                    "key": "x-tenant-id",
+                    "value": "{{tenantId}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/final-settlements/employee/{{os591EmployeeBloqueadaId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "final-settlements", "employee", "{{os591EmployeeBloqueadaId}}"]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('list: status 200', () => pm.response.to.have.status(200));",
+                      "const body = pm.response.json();",
+                      "const active = body.find((s) => s.status !== 'VOIDED');",
+                      "if (active) pm.environment.set('os591SettlementBloqueadaId', active.id);",
+                      "pm.test('liquidación CALCULATED encontrada', () => pm.expect(active).to.exist);"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "01 Validación Legal de Indemnización",
+          "item": [
+            {
+              "name": "POST Validar fórmula de indemnización (formulaVersion=1)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  },
+                  {
+                    "key": "x-tenant-id",
+                    "value": "{{tenantId}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/legal-formula-validations",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "legal-formula-validations"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"formulaVersion\": 1,\n  \"legalReference\": \"Concepto Jurídico Interno 002-2026 — CST art. 64\",\n  \"observations\": \"Revalidación manual vía Postman — revoca la anterior de la misma versión.\"\n}"
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('validate: status 201', () => pm.response.to.have.status(201));",
+                      "const body = pm.response.json();",
+                      "pm.test(\"isActive=true\", () => pm.expect(body.isActive).to.eql(true));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "GET Historial de validaciones legales",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  },
+                  {
+                    "key": "x-tenant-id",
+                    "value": "{{tenantId}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/legal-formula-validations",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "legal-formula-validations"]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": ["pm.test('list: status 200', () => pm.response.to.have.status(200));"]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "GET Validación ACTIVA para formulaVersion=1",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  },
+                  {
+                    "key": "x-tenant-id",
+                    "value": "{{tenantId}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/legal-formula-validations/active/1",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "legal-formula-validations", "active", "1"]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('active: status 200', () => pm.response.to.have.status(200));",
+                      "const body = pm.response.json();",
+                      "pm.test('devuelve una validación activa', () => pm.expect(body).to.not.be.null);"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "02 Cálculo Automático (preview/calculate/recalculate)",
+          "item": [
+            {
+              "name": "POST Preview (sin persistir)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  },
+                  {
+                    "key": "x-tenant-id",
+                    "value": "{{tenantId}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/final-settlements/preview",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "final-settlements", "preview"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"employeeDetailsId\": \"{{os591EmployeeSinLiquidacionId}}\",\n  \"effectiveTerminationDate\": \"2026-07-14\",\n  \"terminationReason\": \"SIN_JUSTA_CAUSA\"\n}"
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('preview: status 200', () => pm.response.to.have.status(200));",
+                      "const body = pm.response.json();",
+                      "pm.test('respuesta trae lines/blocks/warnings', () => {",
+                      "    pm.expect(body).to.have.property('lines');",
+                      "    pm.expect(body).to.have.property('blocks');",
+                      "    pm.expect(body).to.have.property('warnings');",
+                      "});"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "GET Detalle de liquidación (bloqueada)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  },
+                  {
+                    "key": "x-tenant-id",
+                    "value": "{{tenantId}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/final-settlements/{{os591SettlementBloqueadaId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "final-settlements", "{{os591SettlementBloqueadaId}}"]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('detail: status 200', () => pm.response.to.have.status(200));",
+                      "const body = pm.response.json();",
+                      "pm.test(\"status=CALCULATED (aún no aprobada)\", () => pm.expect(body.status).to.eql('CALCULATED'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "GET Descargar comprobante PDF de liquidación (bloqueada)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  },
+                  {
+                    "key": "x-tenant-id",
+                    "value": "{{tenantId}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/final-settlements/{{os591SettlementBloqueadaId}}/receipt",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "final-settlements", "{{os591SettlementBloqueadaId}}", "receipt"]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('receipt: status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('receipt: Content-Type application/pdf', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/pdf'));",
+                      "pm.test('receipt: Content-Disposition attachment', () => pm.expect(pm.response.headers.get('Content-Disposition')).to.include('attachment'));",
+                      "pm.test('receipt: cuerpo es un PDF valido (%PDF-)', () => pm.expect(pm.response.text().slice(0, 5)).to.eql('%PDF-'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "GET Liquidaciones por empleado",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  },
+                  {
+                    "key": "x-tenant-id",
+                    "value": "{{tenantId}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/final-settlements/employee/{{os591EmployeeBloqueadaId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "final-settlements", "employee", "{{os591EmployeeBloqueadaId}}"]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": ["pm.test('list: status 200', () => pm.response.to.have.status(200));"]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "POST Recalcular liquidación CALCULATED",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  },
+                  {
+                    "key": "x-tenant-id",
+                    "value": "{{tenantId}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/final-settlements/{{os591SettlementBloqueadaId}}/recalculate",
+                  "host": ["{{baseUrl}}"],
+                  "path": [
+                    "api",
+                    "final-settlements",
+                    "{{os591SettlementBloqueadaId}}",
+                    "recalculate"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('recalculate: status 200 (o 409 si el aggregator ahora bloquea)', () => {",
+                      "    pm.expect([200, 409]).to.include(pm.response.code);",
+                      "});"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "03 Liquidación Manual",
+          "item": [
+            {
+              "name": "[DOC] Liquidación manual — ejemplo de body",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  },
+                  {
+                    "key": "x-tenant-id",
+                    "value": "{{tenantId}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/final-settlements/manual",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "final-settlements", "manual"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"employeeDetailsId\": \"REEMPLAZAR — EmployeeDetails.id (el contrato ACTIVO se resuelve server-side)\",\n  \"effectiveTerminationDate\": \"2026-07-14\",\n  \"terminationReason\": \"MUTUO_ACUERDO\",\n  \"lines\": [\n    {\n      \"code\": \"AJUSTE_MANUAL\",\n      \"name\": \"Ajuste manual acordado\",\n      \"type\": \"DEVENGO\",\n      \"amount\": \"1000000.00\",\n      \"manualJustification\": \"Acuerdo documentado en acta firmada por las partes\"\n    }\n  ],\n  \"manualJustification\": \"Liquidación por mutuo acuerdo documentado en acta firmada por las partes\",\n  \"manualReference\": \"ACTA-2026-DEMO\",\n  \"manualResponsible\": \"Gerencia de Recursos Humanos\"\n}"
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('manual: status 201 (con ids reales) o 400/404 (con placeholders)', () => {",
+                      "    pm.expect([201, 400, 404]).to.include(pm.response.code);",
+                      "});"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "GET Detalle liquidación MANUAL ya aprobada (fixture seed)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  },
+                  {
+                    "key": "x-tenant-id",
+                    "value": "{{tenantId}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/final-settlements/employee/{{os591EmployeeManualId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "final-settlements", "employee", "{{os591EmployeeManualId}}"]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('list: status 200', () => pm.response.to.have.status(200));",
+                      "const body = pm.response.json();",
+                      "const approved = body.find((s) => s.status === 'APPROVED' && s.mode === 'MANUAL');",
+                      "pm.test('existe una liquidación MANUAL APPROVED (fixture fase 3)', () => pm.expect(approved).to.exist);"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "04 Reconciliación de Salario Pendiente",
+          "item": [
+            {
+              "name": "POST Reconciliar salario pendiente (liq.deducciones)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  },
+                  {
+                    "key": "x-tenant-id",
+                    "value": "{{tenantId}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/final-settlements/{{os591SettlementBloqueadaId}}/pending-salary-reconciliation",
+                  "host": ["{{baseUrl}}"],
+                  "path": [
+                    "api",
+                    "final-settlements",
+                    "{{os591SettlementBloqueadaId}}",
+                    "pending-salary-reconciliation"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"previouslyPaidAmount\": \"0.00\",\n  \"paymentReference\": \"NOM-2026-07-DEMO\",\n  \"paymentDate\": \"2026-07-14\",\n  \"responsible\": \"Gerencia de Recursos Humanos\",\n  \"observation\": \"Verificado contra nómina de julio 2026 vía Postman — tramo no liquidado previamente.\",\n  \"recognizedBalance\": \"2500000.00\"\n}"
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('reconcile: status 201 (o 409 si ya existe)', () => {",
+                      "    pm.expect([201, 409]).to.include(pm.response.code);",
+                      "});"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "POST Reconciliar — valores inconsistentes (400, negative)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  },
+                  {
+                    "key": "x-tenant-id",
+                    "value": "{{tenantId}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/final-settlements/{{os591SettlementBloqueadaId}}/pending-salary-reconciliation",
+                  "host": ["{{baseUrl}}"],
+                  "path": [
+                    "api",
+                    "final-settlements",
+                    "{{os591SettlementBloqueadaId}}",
+                    "pending-salary-reconciliation"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"previouslyPaidAmount\": \"99999999.00\",\n  \"responsible\": \"Gerencia de Recursos Humanos\",\n  \"observation\": \"Ejemplo — previouslyPaidAmount supera el salario causado (línea SAL_PENDIENTE)\",\n  \"recognizedBalance\": \"0.00\"\n}"
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "// Documenta los 3 gates de consistencia numérica (tasks/OS-591.md §15.2):",
+                      "// negativos, previouslyPaidAmount/recognizedBalance > salario causado, y la",
+                      "// suma de ambos > salario causado (\"saldo reconocido inconsistente\").",
+                      "pm.test('reconcile con valores inconsistentes: 400 (o 409 si ya se reconcilió antes)', () => {",
+                      "    pm.expect([400, 409]).to.include(pm.response.code);",
+                      "});"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "GET Reconciliación registrada",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  },
+                  {
+                    "key": "x-tenant-id",
+                    "value": "{{tenantId}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/final-settlements/{{os591SettlementBloqueadaId}}/pending-salary-reconciliation",
+                  "host": ["{{baseUrl}}"],
+                  "path": [
+                    "api",
+                    "final-settlements",
+                    "{{os591SettlementBloqueadaId}}",
+                    "pending-salary-reconciliation"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": ["pm.test('get: status 200', () => pm.response.to.have.status(200));"]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "05 Aprobación / Pago / Anulación (incluye bloqueos)",
+          "item": [
+            {
+              "name": "POST Aprobar (liq.deducciones — ya reconciliada, sin indemnización)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  },
+                  {
+                    "key": "x-tenant-id",
+                    "value": "{{tenantId}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/final-settlements/{{os591SettlementBloqueadaId}}/approve",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "final-settlements", "{{os591SettlementBloqueadaId}}", "approve"]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('approve: status 200 (o 409 si aún falta algo)', () => {",
+                      "    pm.expect([200, 409]).to.include(pm.response.code);",
+                      "});"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "POST Aprobar — BLOQUEADO por falta de validación legal (negative, doc)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  },
+                  {
+                    "key": "x-tenant-id",
+                    "value": "{{tenantId}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/final-settlements/preview",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "final-settlements", "preview"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"employeeDetailsId\": \"{{os591EmployeeSinLiquidacionId}}\",\n  \"effectiveTerminationDate\": \"2026-07-14\",\n  \"terminationReason\": \"SIN_JUSTA_CAUSA\"\n}"
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "// Documenta el gate: calcular con SIN_JUSTA_CAUSA genera INDEMNIZACION; si la",
+                      "// versión de fórmula usada NO tiene validación legal activa, approve() responde",
+                      "// 409 con 'legal_formula_not_validated'. Ver tasks/OS-591.md §15.1.",
+                      "pm.test('preview: status 200', () => pm.response.to.have.status(200));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "POST Aprobar — BLOQUEADO por salario pendiente sin reconciliar (negative, doc)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  },
+                  {
+                    "key": "x-tenant-id",
+                    "value": "{{tenantId}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/final-settlements/{{os591SettlementBajoId}}/approve",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "final-settlements", "{{os591SettlementBajoId}}", "approve"]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "// emp_liq_bajo (escenario 3, fase 2) tiene línea SAL_PENDIENTE y nunca se le",
+                      "// registró una PendingSalaryReconciliation — approve() responde 409 con",
+                      "// 'pending_salary_not_reconciled'. Completa os591SettlementBajoId manualmente",
+                      "// (GET /api/final-settlements/employee/:id con el empleado liq.bajo).",
+                      "pm.test('approve: 409 esperado (o 404 si no se configuró el id)', () => {",
+                      "    pm.expect([404, 409]).to.include(pm.response.code);",
+                      "});"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "POST Aprobar — DOBLE APROBACIÓN (negative)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  },
+                  {
+                    "key": "x-tenant-id",
+                    "value": "{{tenantId}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/final-settlements/{{os591SettlementBloqueadaId}}/approve",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "final-settlements", "{{os591SettlementBloqueadaId}}", "approve"]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('doble approve: 409 (ya no está CALCULATED)', () => {",
+                      "    pm.response.to.have.status(409);",
+                      "});"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "POST Marcar como pagada (liq.deducciones, ya aprobada arriba)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  },
+                  {
+                    "key": "x-tenant-id",
+                    "value": "{{tenantId}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"paymentReference\": \"TRF-2026-0001\",\n  \"paymentDate\": \"2026-07-14\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/final-settlements/{{os591SettlementBloqueadaId}}/pay",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "final-settlements", "{{os591SettlementBloqueadaId}}", "pay"]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('pay: status 200 (o 409 si el paso anterior no aprobó)', () => {",
+                      "    pm.expect([200, 409]).to.include(pm.response.code);",
+                      "});",
+                      "pm.test('pay: valida referencia/fecha/actor/importe en la respuesta', () => {",
+                      "    if (pm.response.code !== 200) return;",
+                      "    const body = pm.response.json();",
+                      "    pm.expect(body.paymentReference).to.eql('TRF-2026-0001');",
+                      "    pm.expect(body.paidBy).to.be.a('string');",
+                      "    pm.expect(body.netAmount).to.be.a('string');",
+                      "});"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "POST Marcar como pagada — DOBLE PAGO (negative)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  },
+                  {
+                    "key": "x-tenant-id",
+                    "value": "{{tenantId}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"paymentReference\": \"TRF-2026-0002-DUPLICADO\",\n  \"paymentDate\": \"2026-07-14\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/final-settlements/{{os591SettlementBloqueadaId}}/pay",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "final-settlements", "{{os591SettlementBloqueadaId}}", "pay"]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "// Reintentar markPaid sobre una liquidación ya PAID es SIEMPRE un conflicto",
+                      "// explícito (409) — no existe una clave de idempotencia que permita distinguir",
+                      "// un reintento legítimo de un segundo pago real. Ver tasks/OS-591.md §15.3.",
+                      "pm.test('doble pay: 409 (ya no está APPROVED)', () => {",
+                      "    pm.response.to.have.status(409);",
+                      "});"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "POST Marcar como pagada — sin paymentReference (400, negative)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  },
+                  {
+                    "key": "x-tenant-id",
+                    "value": "{{tenantId}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"paymentDate\": \"2026-07-14\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/final-settlements/{{os591SettlementBloqueadaId}}/pay",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "final-settlements", "{{os591SettlementBloqueadaId}}", "pay"]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('pay sin paymentReference: 400', () => pm.response.to.have.status(400));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "POST Anular — BLOQUEADO sobre liquidación APPROVED/PAID (negative)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  },
+                  {
+                    "key": "x-tenant-id",
+                    "value": "{{tenantId}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/final-settlements/{{os591SettlementBloqueadaId}}/void",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "final-settlements", "{{os591SettlementBloqueadaId}}", "void"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"voidReason\": \"Intento de anulación tras aprobación — debe fallar\"\n}"
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('void sobre APPROVED/PAID: 409', () => {",
+                      "    pm.response.to.have.status(409);",
+                      "});"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "06 Bloqueo de Desactivación (parr. 15.5)",
+          "item": [
+            {
+              "name": "DELETE Desactivar empleado SIN liquidación — BLOQUEADO (negative)",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  },
+                  {
+                    "key": "x-tenant-id",
+                    "value": "{{tenantId}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/employees/{{os591EmployeeSinLiquidacionId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "employees", "{{os591EmployeeSinLiquidacionId}}"]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('remove sin settlement: 409', () => pm.response.to.have.status(409));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "PATCH Desactivar vía isActive:false (ruta alterna) — BLOQUEADO (negative)",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  },
+                  {
+                    "key": "x-tenant-id",
+                    "value": "{{tenantId}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/employees/{{os591EmployeeSinLiquidacionId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "employees", "{{os591EmployeeSinLiquidacionId}}"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"isActive\": false\n}"
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('update isActive:false sin settlement: 409', () => pm.response.to.have.status(409));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "DELETE Desactivar empleado con liquidación APPROVED — permitido/idempotente",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  },
+                  {
+                    "key": "x-tenant-id",
+                    "value": "{{tenantId}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/employees/{{os591EmployeeAprobadaId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "employees", "{{os591EmployeeAprobadaId}}"]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "// empAprobada ya quedó isActive=false al aprobar su liquidación (§15.4) — esta",
+                      "// llamada es idempotente (el contrato ya no está ACTIVO, el gate no bloquea).",
+                      "pm.test('remove con settlement aprobada: 200 (idempotente)', () => {",
+                      "    pm.response.to.have.status(200);",
+                      "});"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "NOM-14 Payroll Novedades",
       "description": "Novedades de nómina NOM-14 — ausencias, permisos y licencias con flujo supervisor → RRHH.\n\nPrerrequisitos:\n1. Login **NOMINA** (`nomina@palos-de-lena.dev`) → `{{accessTokenNomina}}`\n2. Login **Supervisor** (`mes-supervisor@palos-de-lena.dev`) → `{{accessTokenSupervisor}}`\n3. Login **Operador** (`mes-operator@palos-de-lena.dev`) → `{{accessTokenOperator}}` (solicitud empleado)\n4. Headers: `Authorization: Bearer <token>`, `x-tenant-id: {{tenantId}}`\n5. Ejecutar migración `payroll_novedades` y seed (`pnpm db:seed`)\n\nOrden feliz (permiso remunerado): GET employees → POST submit (OPERATOR) → Approve supervisor → Approve RRHH.\n\nOrden feliz (licencia maternidad): POST submit directo a bandeja RRHH sin paso supervisor.\n\nNota upload: adjunta manualmente PDF/JPG/PNG en POST Support.",
       "item": [
