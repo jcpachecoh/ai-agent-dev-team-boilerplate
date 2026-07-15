@@ -252,7 +252,34 @@ export class PayrollNovedadesService implements IPayrollNovedadesService {
       throw new BadRequestException('No se pudo registrar la auditoría de la edición');
     }
 
+    await this.dispatchEditNotifications(tenantId, updated);
+
     return { novedad: updated, auditLog };
+  }
+
+  /**
+   * Períodos abiertos: la liquidación se recalcula en la próxima corrida del reporte OS-380
+   * (lee novedades APROBADA en vivo). Períodos PAID siguen bloqueados en edit() — D13.
+   */
+  private async dispatchEditNotifications(
+    tenantId: string,
+    novedad: PayrollNovedadRecord,
+  ): Promise<void> {
+    try {
+      const employee = await this.repository.findEmployeeApprovalContext(
+        tenantId,
+        novedad.employeeId,
+      );
+      if (employee?.userId) {
+        await this.notificationService.notifyEmployeeNovedadEdited(
+          tenantId,
+          employee.userId,
+          novedad,
+        );
+      }
+    } catch {
+      // notifications must not block main flow
+    }
   }
 
   async listAuditLogs(

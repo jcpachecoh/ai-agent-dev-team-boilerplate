@@ -55,4 +55,10 @@ describe('PayrollNovedadesNotificationService', () => {
   it('notifyRrhhInbox resolves without error', async () => {
     await expect(service.notifyRrhhInbox('tenant-1', mockNovedad)).resolves.toBeUndefined();
   });
+
+  it('notifyEmployeeNovedadEdited resolves without error', async () => {
+    await expect(
+      service.notifyEmployeeNovedadEdited('tenant-1', 'emp-user', mockNovedad),
+    ).resolves.toBeUndefined();
+  });
 });
