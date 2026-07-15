@@ -1,8 +1,10 @@
 @use '../../../styles/abstracts/variables' as *;
+@use '../../../styles/abstracts/mixins' as *;
 @use '../shared/empleado-theme' as emp;
 
 .row {
   @include emp.empleado-theme-classes;
+  @include module-table-header-theme-colors;
 
   display: grid;
   grid-template-columns: var(--empleado-columns);
@@ -10,7 +12,7 @@
   align-items: center;
   min-height: 58px;
   padding: 0 12px;
-  border-bottom: 1px solid var(--empleado-border-subtle);
+  @include module-table-row-shell;
 }
 
 .employeeCell {

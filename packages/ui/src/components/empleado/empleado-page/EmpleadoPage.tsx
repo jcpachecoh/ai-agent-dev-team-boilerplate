@@ -7,6 +7,8 @@ export interface EmpleadoPageProps {
   children?: ReactNode;
   theme?: EmpleadoTheme;
   size?: EmpleadoSize;
+  /** Permite scroll vertical de página (calendario + listado). No usar en tablas fill-viewport. */
+  scrollable?: boolean;
   className?: string;
 }
 
@@ -14,11 +16,18 @@ export function EmpleadoPage({
   children,
   theme = 'dark',
   size = 'md',
+  scrollable = false,
   className,
 }: EmpleadoPageProps): JSX.Element {
   return (
     <div
-      className={[styles.page, styles[`theme--${theme}`], styles[`size--${size}`], className]
+      className={[
+        styles.page,
+        scrollable && styles.pageScrollable,
+        styles[`theme--${theme}`],
+        styles[`size--${size}`],
+        className,
+      ]
         .filter(Boolean)
         .join(' ')}
     >

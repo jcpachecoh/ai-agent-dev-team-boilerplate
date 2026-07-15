@@ -1,8 +1,11 @@
+@use '@/styles/table-page-layout' as tablePage;
+
 .screen {
   /* RolPage handles layout; keep hook for tests/overrides */
 }
 
 .tableWrap {
+  @include tablePage.app-table-wrap-fill;
   margin: 1.25rem;
 }
 

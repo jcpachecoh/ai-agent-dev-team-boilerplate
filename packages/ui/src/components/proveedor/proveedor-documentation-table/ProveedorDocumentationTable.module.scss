@@ -1,5 +1,6 @@
 @use '../../../styles/abstracts/variables' as *;
 @use '../shared/proveedor-theme' as proveedor;
+@use '../../../styles/abstracts/mixins' as mixins;
 
 .wrapper {
   @include proveedor.proveedor-theme-classes;
@@ -14,6 +15,8 @@
 .tableShell {
   @include proveedor.proveedor-theme-classes;
   @include proveedor.proveedor-size-vars;
+  @include mixins.module-table-header-theme-colors;
+  @include mixins.domain-data-table-fill;
 
   display: flex;
   flex-direction: column;
@@ -21,15 +24,14 @@
   min-width: 0;
   border: 1px solid var(--proveedor-border);
   border-radius: var(--control-radius);
-  overflow: visible;
-  background: var(--proveedor-surface);
+  overflow: hidden;
+  background: var(--module-table-row-bg);
 }
 
 .tableBody {
   display: flex;
   flex-direction: column;
   overflow-x: auto;
-  overflow-y: visible;
 }
 
 .empty {

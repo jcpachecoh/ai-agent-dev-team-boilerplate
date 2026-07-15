@@ -1,6 +1,9 @@
 $mobile-breakpoint: 768px;
 
 .desktop {
+  width: 100%;
+  min-width: 0;
+
   @media (max-width: $mobile-breakpoint) {
     display: none;
   }

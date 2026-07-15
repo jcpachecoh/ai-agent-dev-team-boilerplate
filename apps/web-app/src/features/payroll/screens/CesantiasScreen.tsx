@@ -16,6 +16,7 @@ import { getRoleCodeFromToken } from '@/lib/auth-token';
 import { useTheme } from '@/providers/ThemeProvider';
 
 import styles from './CesantiasScreen.module.scss';
+import { PayrollFilterBar } from '../components/PayrollFilterBar';
 import { PayrollApiError } from '../api/payroll.client';
 import { CesantiasAlertBanner } from '../components/CesantiasAlertBanner';
 import { CesantiasTable } from '../components/CesantiasTable';
@@ -151,10 +152,9 @@ export function CesantiasScreen(): React.JSX.Element {
         />
       </EmpleadoPageSection>
 
-      <EmpleadoPageSection theme={empleadoTheme}>
+      <EmpleadoPageSection theme={empleadoTheme} variant="toolbar" divider>
         <CesantiasAlertBanner className={styles.banner} />
-
-        <div className={styles.filtersBar}>
+        <PayrollFilterBar>
           <div className={styles.filterField}>
             <span className={styles.filterLabel}>Año</span>
             <RecetaFilterSelect
@@ -207,8 +207,10 @@ export function CesantiasScreen(): React.JSX.Element {
               size="md"
             />
           </div>
-        </div>
+        </PayrollFilterBar>
+      </EmpleadoPageSection>
 
+      <EmpleadoPageSection theme={empleadoTheme}>
         <div className={styles.toolbar}>
           <span className={styles.count}>
             {total} {total === 1 ? 'liquidación' : 'liquidaciones'}
@@ -260,7 +262,7 @@ export function CesantiasScreen(): React.JSX.Element {
             <p>No hay liquidaciones de cesantías para los filtros seleccionados.</p>
           </div>
         ) : (
-          <CesantiasTable items={items} totals={totals} />
+          <CesantiasTable items={items} totals={totals} theme={empleadoTheme} />
         )}
       </EmpleadoPageSection>
     </EmpleadoPage>

@@ -11,8 +11,7 @@
   align-items: center;
   min-height: 32px;
   padding: 0 12px;
-  border-bottom: 1px solid var(--usuario-border);
-  background: var(--usuario-input);
+  @include module-table-header-shell;
 }
 
 .cell {

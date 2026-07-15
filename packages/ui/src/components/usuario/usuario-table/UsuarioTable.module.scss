@@ -1,16 +1,19 @@
 @use '../shared/usuario-theme' as usr;
+@use '../../../styles/abstracts/mixins' as mixins;
 
 $mobile-breakpoint: 768px;
 
 .table {
   @include usr.usuario-theme-classes;
+  @include mixins.module-table-header-theme-colors;
+  @include mixins.domain-data-table-fill;
 
   display: flex;
   flex-direction: column;
   width: 100%;
   border: 1px solid var(--usuario-border);
   border-radius: 4px;
-  background: var(--usuario-surface);
+  background: var(--module-table-row-bg);
   overflow: hidden;
 }
 

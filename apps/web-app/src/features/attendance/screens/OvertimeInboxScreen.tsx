@@ -119,7 +119,7 @@ export function OvertimeInboxScreen(): React.JSX.Element {
         </EmpleadoPageSection>
       ) : null}
 
-      <EmpleadoPageSection theme={empleadoTheme}>
+      <EmpleadoPageSection theme={empleadoTheme} className={styles.tableSection}>
         <div className={styles.filtersBar}>
           <div className={styles.filterField}>
             <span className={styles.filterLabel}>Período de nómina</span>

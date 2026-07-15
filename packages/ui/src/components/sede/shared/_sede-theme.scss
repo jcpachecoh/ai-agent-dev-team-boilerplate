@@ -43,8 +43,8 @@ $sede-dark-muted: #888888;
 
 @mixin sede-theme-light {
   --sede-page: #f6f4ef;
-  --sede-surface: #fbfaf6;
-  --sede-surface-raised: #ffffff;
+  --sede-surface: #f6f4ef;
+  --sede-surface-raised: #fbfaf6;
   --sede-input: #fbfaf6;
   --sede-border: #{rgba($color-black, 0.12)};
   --sede-border-subtle: #{rgba($color-black, 0.08)};

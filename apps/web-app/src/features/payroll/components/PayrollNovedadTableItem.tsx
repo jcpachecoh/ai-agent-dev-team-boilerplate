@@ -8,16 +8,17 @@ import styles from './PayrollNovedadTableItem.module.scss';
 interface Props {
   novedad: PayrollNovedadSummary;
   theme: EmpleadoTheme;
+  gridTemplate: string;
   showActions: boolean;
   onApprove: () => void;
   onReject: () => void;
 }
 
-export function PayrollNovedadTableItem(props: Props): React.JSX.Element {
+export function PayrollNovedadTableItem({ gridTemplate, ...props }: Props): React.JSX.Element {
   return (
     <>
       <div className={styles.desktop}>
-        <PayrollNovedadTableRow {...props} />
+        <PayrollNovedadTableRow {...props} gridTemplate={gridTemplate} />
       </div>
       <PayrollNovedadTableCard {...props} />
     </>

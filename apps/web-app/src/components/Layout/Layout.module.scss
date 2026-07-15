@@ -38,8 +38,10 @@
 .content {
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
   overflow-x: hidden;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
   background: var(--color-bg-primary);
 }
 

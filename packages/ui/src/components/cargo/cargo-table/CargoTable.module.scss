@@ -1,9 +1,12 @@
 @use '../shared/cargo-theme' as emp;
+@use '../../../styles/abstracts/mixins' as mixins;
 
 $mobile-breakpoint: 768px;
 
 .table {
   @include emp.cargo-theme-classes;
+  @include mixins.module-table-header-theme-colors;
+  @include mixins.domain-data-table-fill;
 
   display: flex;
   flex-direction: column;
@@ -11,20 +14,26 @@ $mobile-breakpoint: 768px;
   min-width: 0;
   border: 1px solid var(--cargo-border);
   border-radius: 4px;
-  background: var(--cargo-surface);
+  background: var(--module-table-row-bg);
   overflow: hidden;
 }
 
 .scrollRegion {
   overflow-x: auto;
-  overflow-y: hidden;
   min-width: 0;
-  -webkit-overflow-scrolling: touch;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .scrollContent {
   width: 100%;
   min-width: var(--cargo-table-min-width, 1046px);
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
 }
 
 .body {

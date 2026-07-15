@@ -16,6 +16,7 @@ import { useLocations } from '@/features/sedes/hooks/useLocations';
 import { getRoleCodeFromToken } from '@/lib/auth-token';
 import { useTheme } from '@/providers/ThemeProvider';
 
+import { PayrollFilterBar } from '../components/PayrollFilterBar';
 import { fetchMedicalLeaveSupportDocumentUrl } from '../api/medical-leaves.client';
 import { MedicalLeaveDetailModal } from '../components/MedicalLeaveDetailModal';
 import { MedicalLeaveFormModal } from '../components/MedicalLeaveFormModal';
@@ -155,8 +156,8 @@ export function MedicalLeavesScreen(): React.JSX.Element {
         />
       </EmpleadoPageSection>
 
-      <EmpleadoPageSection theme={empleadoTheme}>
-        <div className={styles.filtersBar}>
+      <EmpleadoPageSection theme={empleadoTheme} variant="toolbar" divider>
+        <PayrollFilterBar>
           <div className={styles.filterField}>
             <span className={styles.filterLabel}>Mes</span>
             <RecetaFilterSelect
@@ -207,8 +208,10 @@ export function MedicalLeavesScreen(): React.JSX.Element {
               size="md"
             />
           </div>
-        </div>
+        </PayrollFilterBar>
+      </EmpleadoPageSection>
 
+      <EmpleadoPageSection theme={empleadoTheme}>
         <div className={styles.toolbar}>
           <span className={styles.count}>
             {leaves.length} incapacidad{leaves.length === 1 ? '' : 'es'}

@@ -1,13 +1,15 @@
+@use '../../../styles/abstracts/mixins' as *;
 @use '../shared/rol-theme' as rol;
 
 .row {
   @include rol.rol-theme-classes;
+  @include module-table-header-theme-colors;
 
   display: grid;
   grid-template-columns: var(--rol-columns);
   align-items: center;
   padding: 0.75rem 1rem;
-  border-bottom: 1px solid var(--rol-border);
+  @include module-table-row-shell;
   cursor: pointer;
   transition: background 120ms ease;
 

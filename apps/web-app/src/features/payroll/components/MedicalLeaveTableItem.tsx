@@ -7,6 +7,7 @@ import styles from './MedicalLeaveTableItem.module.scss';
 interface Props {
   leave: MedicalLeaveSummary;
   theme: EmpleadoTheme;
+  gridTemplate: string;
   canWrite: boolean;
   downloading: boolean;
   statusBusy: boolean;
@@ -17,11 +18,11 @@ interface Props {
   onReject: () => void;
 }
 
-export function MedicalLeaveTableItem(props: Props): React.JSX.Element {
+export function MedicalLeaveTableItem({ gridTemplate, ...props }: Props): React.JSX.Element {
   return (
     <>
       <div className={styles.desktop}>
-        <MedicalLeaveTableRow {...props} />
+        <MedicalLeaveTableRow {...props} gridTemplate={gridTemplate} />
       </div>
       <MedicalLeaveTableCard {...props} />
     </>

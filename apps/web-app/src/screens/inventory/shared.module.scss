@@ -1,4 +1,5 @@
 @use '@/styles/tokens' as t;
+@use '@/styles/table-page-layout' as tablePage;
 
 $inv-divider: var(--color-border);
 $inv-radius: t.$border-radius-base;
@@ -8,10 +9,8 @@ $inv-surface-hover: var(--color-bg-surface-hover);
 
 /* Full-width column layout (expands when sidebar is collapsed) */
 .screen {
-  display: flex;
-  flex-direction: column;
+  @include tablePage.app-list-screen-fill;
   width: 100%;
-  min-height: 100%;
   background: var(--color-bg-primary);
   color: var(--color-text-primary);
 }
@@ -202,15 +201,12 @@ $inv-surface-hover: var(--color-bg-surface-hover);
   gap: 10px;
 }
 
-/* Table block — same pattern as RecipesManagementScreen */
+/* Table block — fills remaining viewport below headers/toolbars */
 .tableWrap {
-  display: flex;
-  flex: 0 0 auto;
-  flex-direction: column;
+  @include tablePage.app-table-wrap-fill;
   margin: 1.25rem;
   border: 1px solid $inv-divider;
   border-radius: $inv-radius;
-  overflow: hidden;
   background: $inv-surface;
 }
 
@@ -236,14 +232,17 @@ $inv-surface-hover: var(--color-bg-surface-hover);
 }
 
 .tableBody {
+  @include tablePage.app-table-body-fill;
   width: 100%;
-  overflow-x: auto;
-  overflow-y: auto;
-  max-height: min(70vh, calc(54px * 14));
 }
 
 .responsiveTable {
   min-width: 0;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 
   :global([class*='tableMode']) {
     .tableHead {

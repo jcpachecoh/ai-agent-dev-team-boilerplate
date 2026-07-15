@@ -23,6 +23,7 @@ import { useTheme } from '@/providers/ThemeProvider';
 import { usePayrollNovedadMutations } from '../hooks/usePayrollNovedadMutations';
 import { usePayrollNovedadesQuery } from '../hooks/usePayrollNovedadesQuery';
 import { useActivePayrollEmployeesQuery } from '../hooks/useActivePayrollEmployeesQuery';
+import { PayrollFilterBar } from '../components/PayrollFilterBar';
 import { PayrollNovedadFormModal } from '../components/PayrollNovedadFormModal';
 import { PayrollNovedadesTable } from '../components/PayrollNovedadesTable';
 import type {
@@ -234,10 +235,7 @@ export function PayrollNovedadesScreen(): React.JSX.Element {
             Listado histórico
           </button>
         </div>
-      </EmpleadoPageSection>
-
-      <EmpleadoPageSection theme={empleadoTheme}>
-        <div className={styles.filtersBar}>
+        <PayrollFilterBar>
           <div className={styles.filterField}>
             <span className={styles.filterLabel}>Sede</span>
             <RecetaFilterSelect
@@ -292,8 +290,10 @@ export function PayrollNovedadesScreen(): React.JSX.Element {
               className={styles.datePicker}
             />
           </div>
-        </div>
+        </PayrollFilterBar>
+      </EmpleadoPageSection>
 
+      <EmpleadoPageSection theme={empleadoTheme}>
         {novedades.length === 0 ? (
           <div className={styles.state}>No hay novedades para mostrar.</div>
         ) : (

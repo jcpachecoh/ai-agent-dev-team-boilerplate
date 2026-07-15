@@ -7,8 +7,7 @@
   @include produccion.produccion-size-vars;
   overflow-x: auto;
   width: min(100%, var(--control-width));
-  background: var(--produccion-row);
-  border-bottom: $border-width solid var(--produccion-border-muted);
+  @include module-table-header-shell;
 }
 .row {
   min-height: 32px;

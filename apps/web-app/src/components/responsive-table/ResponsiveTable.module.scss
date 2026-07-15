@@ -1,21 +1,32 @@
 @use '../../styles/breakpoints' as bp;
 @use '../../styles/tokens' as t;
+@use '../../styles/table-page-layout' as tablePage;
 
 .wrap {
   width: 100%;
   min-width: 0;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .tableMode {
   display: flex;
   flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
   gap: 0;
 }
 
 .tableBody {
   display: flex;
   flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
   min-width: 0;
+  overflow: auto;
 }
 
 .cardList {

@@ -1,16 +1,19 @@
 @use '../shared/rol-theme' as rol;
+@use '../../../styles/abstracts/mixins' as mixins;
 
 $table-mobile-breakpoint: 640px;
 
 .table {
   @include rol.rol-theme-classes;
+  @include mixins.module-table-header-theme-colors;
+  @include mixins.domain-data-table-fill;
 
   display: flex;
   flex-direction: column;
   width: 100%;
   border: 1px solid var(--rol-border);
   border-radius: 4px;
-  background: var(--rol-surface);
+  background: var(--module-table-row-bg);
   overflow: hidden;
 }
 

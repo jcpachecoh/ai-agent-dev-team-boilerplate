@@ -1,15 +1,17 @@
 @use '../../../styles/abstracts/variables' as *;
+@use '../../../styles/abstracts/mixins' as *;
 @use '../shared/usuario-theme' as usr;
 
 .row {
   @include usr.usuario-theme-classes;
+  @include module-table-header-theme-colors;
 
   display: grid;
   grid-template-columns: var(--usuario-columns);
   align-items: center;
   min-height: 52px;
   padding: 0 12px;
-  border-bottom: 1px solid var(--usuario-border-subtle);
+  @include module-table-row-shell;
   transition: background-color 120ms ease;
 
   &:hover {

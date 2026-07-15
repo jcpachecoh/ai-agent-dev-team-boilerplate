@@ -5,7 +5,8 @@
   align-items: center;
   min-height: 58px;
   padding: 0 12px;
-  border-bottom: 1px solid var(--empleado-border-subtle);
+  border-bottom: 1px solid var(--module-table-border, var(--empleado-border-subtle));
+  background: var(--module-table-row-bg, var(--empleado-surface));
 }
 
 .employeeCell {

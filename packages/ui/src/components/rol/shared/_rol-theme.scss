@@ -41,7 +41,7 @@ $rol-dark-muted: #888888;
 
 @mixin rol-theme-light {
   --rol-page: #f6f4ef;
-  --rol-surface: #ffffff;
+  --rol-surface: #f6f4ef;
   --rol-surface-raised: #fbfaf6;
   --rol-border: #{rgba($color-black, 0.12)};
   --rol-border-subtle: #{rgba($color-black, 0.08)};

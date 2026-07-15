@@ -12,17 +12,8 @@
   width: 100%;
   min-height: 34px;
   padding: 0 14px;
-  border-bottom: $border-width solid var(--receta-border);
-  background: #0d0d0d;
+  @include module-table-header-shell;
   overflow-x: auto;
-}
-
-.themeLight {
-  background: var(--receta-surface-raised);
-}
-
-.themeDark {
-  background: #0d0d0d;
 }
 
 .sizeSm {

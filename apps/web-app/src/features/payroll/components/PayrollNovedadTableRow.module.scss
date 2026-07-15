@@ -3,6 +3,8 @@
   grid-template-columns: var(--empleado-columns);
   column-gap: 20px;
   align-items: center;
+  width: 100%;
+  min-width: 0;
   min-height: 58px;
   padding: 0 12px;
   border-bottom: 1px solid var(--empleado-border-subtle);

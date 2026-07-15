@@ -5,6 +5,15 @@
   overflow-x: auto;
 }
 
+.vacationApprovalsScreen {
+  min-width: 0;
+}
+
+.calendarSection,
+.requestsSection {
+  flex: 0 0 auto;
+}
+
 .metrics > * {
   flex: 1 1 0;
   min-width: 120px;

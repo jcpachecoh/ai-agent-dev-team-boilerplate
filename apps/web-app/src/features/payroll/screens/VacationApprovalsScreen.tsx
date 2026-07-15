@@ -106,7 +106,7 @@ export function VacationApprovalsScreen(): React.JSX.Element {
   }
 
   return (
-    <EmpleadoPage theme={empleadoTheme}>
+    <EmpleadoPage theme={empleadoTheme} scrollable className={styles.vacationApprovalsScreen}>
       <EmpleadoPageSection theme={empleadoTheme} variant="header" divider>
         <EmpleadoPageHeader
           title="Vacaciones"
@@ -202,7 +202,7 @@ export function VacationApprovalsScreen(): React.JSX.Element {
         </PayrollFilterBar>
       </EmpleadoPageSection>
 
-      <EmpleadoPageSection theme={empleadoTheme} divider>
+      <EmpleadoPageSection theme={empleadoTheme} divider className={styles.calendarSection}>
         {filters.month ? (
           <VacationLocationCalendar
             month={filters.month}
@@ -212,7 +212,7 @@ export function VacationApprovalsScreen(): React.JSX.Element {
         ) : null}
       </EmpleadoPageSection>
 
-      <EmpleadoPageSection theme={empleadoTheme}>
+      <EmpleadoPageSection theme={empleadoTheme} className={styles.requestsSection}>
         {filteredRequests.length === 0 ? (
           <div className={styles.state}>
             {requests.length === 0

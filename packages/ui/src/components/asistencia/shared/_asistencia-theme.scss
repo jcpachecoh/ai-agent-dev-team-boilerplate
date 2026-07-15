@@ -56,7 +56,7 @@ $asistencia-dark-muted: #888888;
 
 @mixin asistencia-theme-light {
   --asistencia-page: #f6f4ef;
-  --asistencia-surface: #ffffff;
+  --asistencia-surface: #f6f4ef;
   --asistencia-surface-raised: #fbfaf6;
   --asistencia-input: #fbfaf6;
   --asistencia-border: #{rgba($color-black, 0.12)};

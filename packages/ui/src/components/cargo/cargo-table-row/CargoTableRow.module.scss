@@ -1,8 +1,10 @@
 @use '../../../styles/abstracts/variables' as *;
+@use '../../../styles/abstracts/mixins' as *;
 @use '../shared/cargo-theme' as cargo;
 
 .row {
   @include cargo.cargo-theme-classes;
+  @include module-table-header-theme-colors;
 
   display: grid;
   grid-template-columns: var(--cargo-columns);
@@ -10,7 +12,7 @@
   align-items: center;
   min-height: 52px;
   padding: 0 12px;
-  border-bottom: 1px solid var(--cargo-border-subtle);
+  @include module-table-row-shell;
 }
 
 .titleCell {

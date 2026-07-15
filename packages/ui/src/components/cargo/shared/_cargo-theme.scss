@@ -50,7 +50,7 @@ $cargo-dark-muted: #888888;
 
 @mixin cargo-theme-light {
   --cargo-page: #f6f4ef;
-  --cargo-surface: #ffffff;
+  --cargo-surface: #f6f4ef;
   --cargo-surface-raised: #fbfaf6;
   --cargo-input: #fbfaf6;
   --cargo-border: #{rgba($color-black, 0.12)};

@@ -3,6 +3,7 @@ import type { CSSProperties } from 'react';
 
 import type { MedicalLeaveSummary } from '../types/medical-leaves.types';
 import {
+  getMedicalLeaveGridTemplate,
   getMedicalLeaveTableColumns,
   getMedicalLeaveTableMinWidthPx,
 } from '../utils/medical-leaves-table.columns';
@@ -35,6 +36,7 @@ export function MedicalLeavesTable({
   onReject,
 }: Props): React.JSX.Element {
   const columns = getMedicalLeaveTableColumns(canWrite);
+  const gridTemplate = getMedicalLeaveGridTemplate(canWrite);
 
   return (
     <section className={styles.table} role="table" aria-label="Listado de incapacidades médicas">
@@ -43,6 +45,7 @@ export function MedicalLeavesTable({
           className={styles.scrollContent}
           style={
             {
+              '--empleado-columns': gridTemplate,
               '--empleado-table-min-width': `${getMedicalLeaveTableMinWidthPx(canWrite)}px`,
             } as CSSProperties
           }
@@ -54,6 +57,7 @@ export function MedicalLeavesTable({
                 key={leave.id}
                 leave={leave}
                 theme={theme}
+                gridTemplate={gridTemplate}
                 canWrite={canWrite}
                 downloading={downloadingId === leave.id}
                 statusBusy={statusBusy}

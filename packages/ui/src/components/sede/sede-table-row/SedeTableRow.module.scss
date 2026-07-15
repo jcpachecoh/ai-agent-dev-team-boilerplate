@@ -1,15 +1,17 @@
 @use '../../../styles/abstracts/variables' as *;
+@use '../../../styles/abstracts/mixins' as *;
 @use '../shared/sede-theme' as sede;
 
 .row {
   @include sede.sede-theme-classes;
+  @include module-table-header-theme-colors;
 
   display: grid;
   grid-template-columns: var(--sede-columns);
   align-items: center;
   min-height: 64px;
   padding: 0 14px;
-  border-bottom: $border-width solid var(--sede-border-subtle);
+  @include module-table-row-shell;
 }
 
 .nameCell {

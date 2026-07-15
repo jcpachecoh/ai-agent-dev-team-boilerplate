@@ -1,12 +1,13 @@
 @use '../shared/usuario-theme' as usr;
+@use '../../../styles/abstracts/mixins' as mixins;
 
 .page {
   @include usr.usuario-theme-classes;
+  @include mixins.domain-list-page-fill;
 
   display: flex;
   flex-direction: column;
   width: 100%;
-  min-height: 100%;
   background: var(--usuario-page);
   color: var(--usuario-text);
 }

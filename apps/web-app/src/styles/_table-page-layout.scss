@@ -1,0 +1,36 @@
+@mixin app-list-screen-fill {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+@mixin app-table-wrap-fill {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+@mixin app-table-body-fill {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@mixin app-empleado-table-shell-fill {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+
+  .scrollRegion {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}

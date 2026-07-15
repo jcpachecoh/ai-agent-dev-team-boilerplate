@@ -49,7 +49,7 @@ $usuario-dark-muted: #888888;
 
 @mixin usuario-theme-light {
   --usuario-page: #f6f4ef;
-  --usuario-surface: #ffffff;
+  --usuario-surface: #f6f4ef;
   --usuario-surface-raised: #fbfaf6;
   --usuario-input: #fbfaf6;
   --usuario-border: #{rgba($color-black, 0.12)};

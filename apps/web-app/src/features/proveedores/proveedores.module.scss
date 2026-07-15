@@ -1,21 +1,17 @@
 @use '@/styles/tokens' as *;
 @use '@/styles/breakpoints' as bp;
+@use '@/styles/table-page-layout' as tablePage;
 
 .page {
-  display: flex;
-  flex-direction: column;
-  min-height: 100%;
+  @include tablePage.app-list-screen-fill;
   background: var(--color-bg-primary);
   color: var(--color-text-primary);
 }
 
 .content {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
+  @include tablePage.app-list-screen-fill;
   gap: 1rem;
   padding: 1rem 1.25rem 1.5rem;
-  overflow: auto;
   background: var(--color-bg-primary);
   container-type: inline-size;
   container-name: proveedores;
@@ -193,9 +189,9 @@
 }
 
 .tableSection {
+  @include tablePage.app-table-wrap-fill;
   flex: 1;
   min-width: 0;
-  min-height: 0;
   padding: 0.75rem 1.25rem 1.25rem;
 }
 

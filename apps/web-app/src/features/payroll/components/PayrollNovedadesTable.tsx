@@ -4,6 +4,7 @@ import type { CSSProperties } from 'react';
 import type { PayrollNovedadSummary } from '../types/payroll-novedades.types';
 import {
   PAYROLL_NOVEDADES_TABLE_COLUMNS,
+  getPayrollNovedadesGridTemplate,
   getPayrollNovedadesTableMinWidthPx,
 } from '../utils/payroll-novedades-table.columns';
 import { PayrollNovedadTableItem } from './PayrollNovedadTableItem';
@@ -40,6 +41,8 @@ export function PayrollNovedadesTable({
   onApprove,
   onReject,
 }: Props): React.JSX.Element {
+  const gridTemplate = getPayrollNovedadesGridTemplate();
+
   return (
     <section className={styles.table} role="table" aria-label="Listado de novedades de nómina">
       <div className={styles.scrollRegion}>
@@ -47,6 +50,7 @@ export function PayrollNovedadesTable({
           className={styles.scrollContent}
           style={
             {
+              '--empleado-columns': gridTemplate,
               '--empleado-table-min-width': `${getPayrollNovedadesTableMinWidthPx()}px`,
             } as CSSProperties
           }
@@ -62,6 +66,7 @@ export function PayrollNovedadesTable({
                 key={novedad.id}
                 novedad={novedad}
                 theme={theme}
+                gridTemplate={gridTemplate}
                 showActions={canActOnNovedad(novedad, showInboxActions, supervisor, rrhh)}
                 onApprove={() => onApprove(novedad)}
                 onReject={() => onReject(novedad)}

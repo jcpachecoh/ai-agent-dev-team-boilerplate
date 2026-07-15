@@ -1,60 +1,69 @@
-@use '@/styles/tokens' as t;
+@use '@/styles/table-page-layout' as tablePage;
 
-.tableWrap {
-  overflow-x: auto;
-  border: 1px solid var(--color-border);
-  border-radius: t.$border-radius-base;
-  background: var(--color-bg-surface);
-}
+$mobile-breakpoint: 768px;
 
 .table {
+  @include tablePage.app-empleado-table-shell-fill;
+  display: flex;
+  flex-direction: column;
   width: 100%;
-  border-collapse: collapse;
-  font-size: 0.85rem;
-
-  th,
-  td {
-    padding: 0.55rem 0.75rem;
-    text-align: left;
-    border-bottom: 1px solid var(--color-border);
-    white-space: nowrap;
-  }
-
-  td {
-    color: var(--color-text-primary);
-  }
-
-  th {
-    font-size: 0.7rem;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--color-text-muted);
-    background: var(--color-bg-surface-raised, var(--color-bg-surface));
-  }
-
-  tbody tr:last-child td {
-    border-bottom: none;
-  }
-
-  tbody tr:hover {
-    background: color-mix(
-      in srgb,
-      var(--color-bg-surface-raised, var(--color-bg-primary)) 60%,
-      transparent
-    );
-  }
+  max-width: 100%;
+  min-width: 0;
+  border: 1px solid var(--empleado-border);
+  border-radius: 4px;
+  background: var(--module-table-row-bg, var(--empleado-surface));
+  overflow: hidden;
 }
 
-.numeric {
-  text-align: right;
-  font-family: 'IBM Plex Mono', t.$font-family-mono, monospace;
+.scrollRegion {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
-.totalsRow {
-  font-weight: 700;
+.scrollContent {
+  width: 100%;
+  min-width: var(--empleado-table-min-width, 1046px);
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
 
-  td {
-    border-top: 2px solid var(--color-border);
+.body {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .table {
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    gap: 10px;
+  }
+
+  .scrollRegion {
+    overflow-x: visible;
+  }
+
+  .scrollContent {
+    min-width: 0;
+  }
+
+  .body {
+    gap: 10px;
+  }
+
+  .desktopHeader {
+    display: none;
   }
 }

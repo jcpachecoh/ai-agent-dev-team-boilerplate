@@ -1,5 +1,7 @@
+@use '@/styles/table-page-layout' as tablePage;
+
 .screen {
-  min-height: 100%;
+  @include tablePage.app-list-screen-fill;
   min-width: 0;
 }
 
@@ -83,8 +85,7 @@
 }
 
 .tableWrapper {
-  max-height: 70vh;
-  overflow: auto;
+  @include tablePage.app-table-wrap-fill;
   border: 1px solid var(--cargo-border);
   border-radius: 0.5rem;
   background: var(--cargo-surface);

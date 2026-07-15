@@ -46,7 +46,7 @@ $empleado-dark-muted: #888888;
 
 @mixin empleado-theme-light {
   --empleado-page: #f6f4ef;
-  --empleado-surface: #ffffff;
+  --empleado-surface: #f6f4ef;
   --empleado-surface-raised: #fbfaf6;
   --empleado-input: #fbfaf6;
   --empleado-border: #{rgba($color-black, 0.12)};

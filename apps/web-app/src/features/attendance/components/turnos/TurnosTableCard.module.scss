@@ -19,12 +19,12 @@
 }
 
 .theme--light {
-  --cargo-border: #e2e8f0;
-  --cargo-surface: #fff;
-  --cargo-text: #0f172a;
-  --cargo-text-secondary: #64748b;
-  --cargo-faint: #94a3b8;
-  --cargo-dim: #64748b;
+  --cargo-border: rgba(0, 0, 0, 0.12);
+  --cargo-surface: #f6f4ef;
+  --cargo-text: #212529;
+  --cargo-text-secondary: #495057;
+  --cargo-faint: #6c757d;
+  --cargo-dim: #adb5bd;
   --cargo-secondary: #a67808;
 }
 

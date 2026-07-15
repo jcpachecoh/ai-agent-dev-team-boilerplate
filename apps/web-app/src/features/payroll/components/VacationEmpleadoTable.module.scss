@@ -1,6 +1,9 @@
+@use '@/styles/table-page-layout' as tablePage;
+
 $mobile-breakpoint: 768px;
 
 .table {
+  @include tablePage.app-empleado-table-shell-fill;
   display: flex;
   flex-direction: column;
   width: 100%;
@@ -8,8 +11,20 @@ $mobile-breakpoint: 768px;
   min-width: 0;
   border: 1px solid var(--empleado-border);
   border-radius: 4px;
-  background: var(--empleado-surface);
+  background: var(--module-table-row-bg, var(--empleado-surface));
   overflow: hidden;
+}
+
+.tableNatural {
+  flex: none;
+  height: auto;
+  min-height: 0;
+
+  .scrollRegion {
+    flex: none;
+    min-height: auto;
+    overflow-x: auto;
+  }
 }
 
 .scrollRegion {
@@ -17,8 +32,6 @@ $mobile-breakpoint: 768px;
   max-width: 100%;
   min-width: 0;
   overflow-x: auto;
-  overflow-y: hidden;
-  -webkit-overflow-scrolling: touch;
 }
 
 .scrollContent {
@@ -38,7 +51,8 @@ $mobile-breakpoint: 768px;
   align-items: center;
   min-height: 58px;
   padding: 0 12px;
-  border-bottom: 1px solid var(--empleado-border-subtle);
+  border-bottom: 1px solid var(--module-table-border, var(--empleado-border-subtle));
+  background: var(--module-table-row-bg, var(--empleado-surface));
 }
 
 .employeeCell {

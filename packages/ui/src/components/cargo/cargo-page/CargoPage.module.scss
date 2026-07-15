@@ -1,13 +1,14 @@
 @use '../shared/cargo-theme' as emp;
+@use '../../../styles/abstracts/mixins' as mixins;
 
 .page {
   @include emp.cargo-theme-classes;
+  @include mixins.domain-list-page-fill;
 
   display: flex;
   flex-direction: column;
   width: 100%;
   min-width: 0;
-  min-height: 100%;
   background: var(--cargo-page);
   color: var(--cargo-text);
 }

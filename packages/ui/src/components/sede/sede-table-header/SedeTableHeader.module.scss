@@ -11,15 +11,14 @@
   align-items: center;
   min-height: 40px;
   padding: 0 16px;
-  border-bottom: $border-width solid var(--sede-border);
-  background: var(--sede-input);
+  @include module-table-header-shell;
 }
 
 .cell {
   font-family: $font-family-mono;
   font-size: 0.6875rem;
   font-weight: $font-weight-bold;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   @include module-table-header-text-color;
 

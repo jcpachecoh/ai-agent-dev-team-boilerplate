@@ -40,7 +40,7 @@ export function TurnosTableRow({
 
   return (
     <div
-      className={[styles.row, styles[`theme--${theme}`], className].filter(Boolean).join(' ')}
+      className={[styles.row, className].filter(Boolean).join(' ')}
       role="row"
       data-cargo-id={turno.id}
       style={{ '--cargo-columns': gridTemplate } as CSSProperties}

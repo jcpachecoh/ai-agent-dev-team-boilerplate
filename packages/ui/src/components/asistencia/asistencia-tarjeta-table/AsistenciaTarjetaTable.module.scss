@@ -1,8 +1,10 @@
 @use '../../../styles/abstracts/variables' as *;
+@use '../../../styles/abstracts/mixins' as *;
 @use '../shared/asistencia-theme' as asis;
 
 .wrap {
   @include asis.asistencia-theme-classes;
+  @include module-table-header-theme-colors;
 
   display: flex;
   flex-direction: column;
@@ -52,7 +54,7 @@
   position: sticky;
   top: 0;
   z-index: 1;
-  background: var(--asistencia-surface-raised);
+  background: var(--module-table-header-bg);
   font-family: $font-family-mono;
   font-size: 0.5625rem;
   font-weight: $font-weight-bold;
@@ -83,7 +85,7 @@
 }
 
 .row {
-  background: var(--asistencia-surface);
+  background: var(--module-table-row-bg);
   color: var(--asistencia-text);
 
   &:last-child td {

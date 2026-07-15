@@ -67,10 +67,10 @@ const JORNADA_LABELS: Record<TurnoJornada, string> = {
 
 const TURNOS_TABLE_COLUMNS: CargoColumnDef[] = [
   { key: 'title', label: 'Nombre del turno', width: 'minmax(160px, 1.2fr)', align: 'left' },
-  { key: 'area', label: 'Sigla', width: 'minmax(100px, 0.8fr)', align: 'left' },
+  { key: 'area', label: 'Sigla', width: 'minmax(88px, 0.7fr)', align: 'left' },
   { key: 'location', label: 'Sede', width: 'minmax(120px, 1fr)', align: 'left' },
-  { key: 'days', label: 'Días', width: 'minmax(140px, 1fr)', align: 'left' },
-  { key: 'salary', label: 'Horario', width: 'minmax(200px, 1.2fr)', align: 'center' },
+  { key: 'days', label: 'Días', width: 'minmax(160px, 1.1fr)', align: 'left' },
+  { key: 'schedule', label: 'Horario', width: 'minmax(180px, 1.2fr)', align: 'left' },
   { key: 'status', label: 'Estado', width: 'minmax(108px, max-content)', align: 'center' },
   { key: 'actions', label: 'Acciones', width: '72px', align: 'right' },
 ];
@@ -344,7 +344,7 @@ export function TurnosListScreen(): React.JSX.Element {
         </div>
       </CargoPageSection>
 
-      <CargoPageSection theme={cargoTheme}>
+      <CargoPageSection theme={cargoTheme} className={styles.tableSection}>
         {turnosQuery.isLoading ? (
           <LoadingState
             message="Cargando turnos…"

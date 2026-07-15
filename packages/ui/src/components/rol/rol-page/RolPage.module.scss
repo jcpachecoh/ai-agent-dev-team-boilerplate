@@ -1,7 +1,9 @@
 @use '../shared/rol-theme' as rol;
+@use '../../../styles/abstracts/mixins' as mixins;
 
 .page {
   @include rol.rol-theme-classes;
+  @include mixins.domain-list-page-fill;
 
   display: flex;
   flex-direction: column;

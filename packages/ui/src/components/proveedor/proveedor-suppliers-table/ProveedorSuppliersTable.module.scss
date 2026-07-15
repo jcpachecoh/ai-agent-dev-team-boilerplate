@@ -1,8 +1,11 @@
 @use '../shared/proveedor-theme' as proveedor;
+@use '../../../styles/abstracts/mixins' as mixins;
 
 .table {
   @include proveedor.proveedor-theme-classes;
   @include proveedor.proveedor-size-vars;
+  @include mixins.module-table-header-theme-colors;
+  @include mixins.domain-data-table-fill;
 
   display: flex;
   flex-direction: column;
@@ -11,7 +14,7 @@
   border: 1px solid var(--proveedor-border);
   border-radius: var(--control-radius);
   overflow: hidden;
-  background: var(--proveedor-surface);
+  background: var(--module-table-row-bg);
 }
 
 .body {

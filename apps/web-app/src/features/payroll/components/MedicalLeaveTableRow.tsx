@@ -17,13 +17,13 @@ import {
   formatMedicalLeaveCurrency,
   formatMedicalLeaveDate,
 } from '../utils/medical-leaves-display';
-import { getMedicalLeaveGridTemplate } from '../utils/medical-leaves-table.columns';
 import { MedicalLeaveStatusBadge } from './MedicalLeaveStatusBadge';
 import styles from './MedicalLeaveTableRow.module.scss';
 
 interface Props {
   leave: MedicalLeaveSummary;
   theme: EmpleadoTheme;
+  gridTemplate: string;
   canWrite: boolean;
   downloading: boolean;
   statusBusy: boolean;
@@ -37,6 +37,7 @@ interface Props {
 export function MedicalLeaveTableRow({
   leave,
   theme,
+  gridTemplate,
   canWrite,
   downloading,
   statusBusy,
@@ -54,7 +55,7 @@ export function MedicalLeaveTableRow({
       role="row"
       style={
         {
-          '--empleado-columns': getMedicalLeaveGridTemplate(showActions),
+          '--empleado-columns': gridTemplate,
         } as CSSProperties
       }
     >

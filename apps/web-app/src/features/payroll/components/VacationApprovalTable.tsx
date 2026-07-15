@@ -38,6 +38,7 @@ interface Props {
   requests: VacationRequestSummary[];
   roleCode: string | null | undefined;
   theme?: EmpleadoTheme;
+  className?: string;
   onReject: (requestId: string) => void;
 }
 
@@ -45,6 +46,7 @@ export function VacationApprovalTable({
   requests,
   roleCode,
   theme = 'dark',
+  className,
   onReject,
 }: Props): React.JSX.Element {
   const { approveL1, approveL2, letterUrl } = useVacationApprovalMutations();
@@ -79,7 +81,11 @@ export function VacationApprovalTable({
   };
 
   return (
-    <section className={styles.table} role="table" aria-label="Solicitudes de vacaciones">
+    <section
+      className={[styles.table, styles.tableNatural, className].filter(Boolean).join(' ')}
+      role="table"
+      aria-label="Solicitudes de vacaciones"
+    >
       <div className={styles.scrollRegion}>
         <div
           className={styles.scrollContent}

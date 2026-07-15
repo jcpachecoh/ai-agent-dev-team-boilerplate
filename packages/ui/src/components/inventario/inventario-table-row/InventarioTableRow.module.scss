@@ -1,8 +1,10 @@
 @use '../../../styles/abstracts/variables' as *;
+@use '../../../styles/abstracts/mixins' as *;
 @use '../shared/inventario-theme' as inventario;
 
 .row {
   @include inventario.inventario-theme-classes;
+  @include module-table-header-theme-colors;
 
   display: grid;
   grid-template-columns: var(--inventario-columns);
@@ -10,8 +12,7 @@
   width: min(100%, var(--row-width));
   min-height: var(--row-height);
   padding: 0 var(--row-padding-x);
-  border-bottom: $border-width solid var(--inventario-border);
-  background: var(--inventario-surface);
+  @include module-table-row-shell;
   color: var(--inventario-text);
   box-sizing: border-box;
 }

@@ -1,12 +1,20 @@
-import { CesantiasFundChannelBadge } from './CesantiasFundChannelBadge';
-import { CesantiasStatusBadge } from './CesantiasStatusBadge';
-import styles from './CesantiasTable.module.scss';
+import { EmpleadoTableHeader, type EmpleadoTheme } from '@restopsiq/ui';
+import type { CSSProperties } from 'react';
+
 import type { CesantiasLiquidation } from '../types/cesantias.types';
-import { CESANTIAS_INTEREST_STATUS_LABELS, formatCurrencyCop } from '../utils/cesantias-display';
+import {
+  CESANTIAS_TABLE_COLUMNS,
+  getCesantiasGridTemplate,
+  getCesantiasTableMinWidthPx,
+} from '../utils/cesantias-table.columns';
+import { CesantiasTableRow } from './CesantiasTableRow';
+import { CesantiasTableTotalsRow } from './CesantiasTableTotalsRow';
+import styles from './CesantiasTable.module.scss';
 
 interface Props {
   items: CesantiasLiquidation[];
   totals: { cesantias: number; interest: number };
+  theme: EmpleadoTheme;
 }
 
 /**
@@ -15,51 +23,34 @@ interface Props {
  * de las cesantías (requisito funcional explícito). Nunca muestra `employeeId` — solo
  * `employeeName`, ya resuelto por el backend (ver CesantiasService.listByYear).
  */
-export function CesantiasTable({ items, totals }: Props): React.JSX.Element {
+export function CesantiasTable({ items, totals, theme }: Props): React.JSX.Element {
+  const gridTemplate = getCesantiasGridTemplate();
+
   return (
-    <div className={styles.tableWrap}>
-      <table className={styles.table}>
-        <thead>
-          <tr>
-            <th>Empleado</th>
-            <th>Fondo</th>
-            <th>Canal</th>
-            <th className={styles.numeric}>Base</th>
-            <th className={styles.numeric}>Días</th>
-            <th className={styles.numeric}>Cesantías</th>
-            <th className={styles.numeric}>Intereses</th>
-            <th>Estado cesantías</th>
-            <th>Estado intereses</th>
-          </tr>
-        </thead>
-        <tbody>
-          {items.map((item) => (
-            <tr key={item.id}>
-              <td>{item.employeeName}</td>
-              <td>{item.fundNameSnapshot}</td>
-              <td>
-                <CesantiasFundChannelBadge channel={item.fundChannelSnapshot} />
-              </td>
-              <td className={styles.numeric}>{formatCurrencyCop(item.calculationBase)}</td>
-              <td className={styles.numeric}>{item.accrualDays}</td>
-              <td className={styles.numeric}>{formatCurrencyCop(item.cesantiasAmount)}</td>
-              <td className={styles.numeric}>{formatCurrencyCop(item.interestAmount)}</td>
-              <td>
-                <CesantiasStatusBadge status={item.cesantiasStatus} />
-              </td>
-              <td>{CESANTIAS_INTEREST_STATUS_LABELS[item.interestStatus]}</td>
-            </tr>
-          ))}
-        </tbody>
-        <tfoot>
-          <tr className={styles.totalsRow}>
-            <td colSpan={5}>Totales</td>
-            <td className={styles.numeric}>{formatCurrencyCop(String(totals.cesantias))}</td>
-            <td className={styles.numeric}>{formatCurrencyCop(String(totals.interest))}</td>
-            <td colSpan={2} />
-          </tr>
-        </tfoot>
-      </table>
-    </div>
+    <section className={styles.table} role="table" aria-label="Liquidaciones de cesantías">
+      <div className={styles.scrollRegion}>
+        <div
+          className={styles.scrollContent}
+          style={
+            {
+              '--empleado-columns': gridTemplate,
+              '--empleado-table-min-width': `${getCesantiasTableMinWidthPx()}px`,
+            } as CSSProperties
+          }
+        >
+          <EmpleadoTableHeader
+            columns={CESANTIAS_TABLE_COLUMNS}
+            theme={theme}
+            className={styles.desktopHeader}
+          />
+          <div className={styles.body} role="rowgroup">
+            {items.map((item) => (
+              <CesantiasTableRow key={item.id} item={item} gridTemplate={gridTemplate} />
+            ))}
+            <CesantiasTableTotalsRow totals={totals} gridTemplate={gridTemplate} />
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }

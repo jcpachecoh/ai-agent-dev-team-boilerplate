@@ -1,8 +1,10 @@
 @use '../../../styles/abstracts/variables' as *;
+@use '../../../styles/abstracts/mixins' as *;
 @use '../shared/receta-theme' as receta;
 
 .row {
   @include receta.receta-theme-classes;
+  @include module-table-header-theme-colors;
 
   display: grid;
   grid-template-columns: var(
@@ -13,9 +15,8 @@
   width: 100%;
   min-height: 64px;
   padding: 0 14px;
-  border-bottom: $border-width solid var(--receta-border);
+  @include module-table-row-shell;
   border-left: 3px solid transparent;
-  background: var(--receta-surface);
   color: var(--receta-text);
   box-sizing: border-box;
   transition:

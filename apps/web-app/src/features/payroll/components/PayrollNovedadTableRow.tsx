@@ -10,7 +10,6 @@ import type { CSSProperties } from 'react';
 
 import type { PayrollNovedadSummary } from '../types/payroll-novedades.types';
 import { NOVEDAD_TYPE_LABELS } from '../types/payroll-novedades.types';
-import { getPayrollNovedadesGridTemplate } from '../utils/payroll-novedades-table.columns';
 import { PayrollNovedadStatusBadge } from './PayrollNovedadStatusBadge';
 import styles from './PayrollNovedadTableRow.module.scss';
 
@@ -21,6 +20,7 @@ function formatNovedadDate(value: string): string {
 interface Props {
   novedad: PayrollNovedadSummary;
   theme: EmpleadoTheme;
+  gridTemplate: string;
   showActions: boolean;
   onApprove: () => void;
   onReject: () => void;
@@ -29,6 +29,7 @@ interface Props {
 export function PayrollNovedadTableRow({
   novedad,
   theme,
+  gridTemplate,
   showActions,
   onApprove,
   onReject,
@@ -39,7 +40,7 @@ export function PayrollNovedadTableRow({
       role="row"
       style={
         {
-          '--empleado-columns': getPayrollNovedadesGridTemplate(),
+          '--empleado-columns': gridTemplate,
         } as CSSProperties
       }
     >

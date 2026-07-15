@@ -1,20 +1,17 @@
 @use '@/styles/tokens' as *;
+@use '@/styles/table-page-layout' as tablePage;
 
 .page {
-  display: flex;
-  flex-direction: column;
-  min-height: 100%;
+  @include tablePage.app-list-screen-fill;
   background: var(--color-bg-primary);
   color: var(--color-text-primary);
 }
 
 .content {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
+  @include tablePage.app-list-screen-fill;
   gap: 1rem;
   padding: 2rem 1.25rem 1.5rem;
-  overflow: auto;
+  background: var(--color-bg-primary);
 }
 
 .filtersRow {
@@ -51,9 +48,9 @@
 }
 
 .tableWrap {
+  @include tablePage.app-table-wrap-fill;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md, 8px);
-  overflow: hidden;
   background: var(--color-bg-secondary, var(--color-bg-primary));
 }
 
@@ -72,6 +69,7 @@
 }
 
 .tableBody {
+  @include tablePage.app-table-body-fill;
   display: flex;
   flex-direction: column;
 }

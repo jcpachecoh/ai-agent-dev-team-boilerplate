@@ -13,8 +13,7 @@
   min-width: 0;
   min-height: var(--header-height);
   padding: 0 var(--header-padding-x);
-  border-bottom: $border-width solid var(--proveedor-border);
-  background: var(--proveedor-surface-raised);
+  @include module-table-header-shell;
   box-sizing: border-box;
 }
 
@@ -47,7 +46,7 @@
   font-family: $font-family-mono;
   font-size: var(--header-font-size);
   font-weight: $font-weight-bold;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   @include module-table-header-text-color;
 }

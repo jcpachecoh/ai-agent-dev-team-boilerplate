@@ -4,7 +4,7 @@ export const PAYROLL_NOVEDADES_TABLE_COLUMNS: EmpleadoColumnDef[] = [
   { key: 'employee', label: 'Empleado', width: 'minmax(200px, 1.4fr)' },
   { key: 'type', label: 'Tipo', width: 'minmax(160px, 1fr)' },
   { key: 'dates', label: 'Fechas', width: 'minmax(180px, 1.1fr)' },
-  { key: 'status', label: 'Estado', width: 'minmax(140px, max-content)', align: 'center' },
+  { key: 'status', label: 'Estado', width: 'minmax(180px, 0.9fr)', align: 'center' },
   { key: 'location', label: 'Sede', width: 'minmax(140px, 0.9fr)' },
   { key: 'actions', label: 'Acciones', width: 'minmax(120px, 0.8fr)', align: 'center' },
 ];

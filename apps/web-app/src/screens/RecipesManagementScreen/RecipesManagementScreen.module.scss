@@ -1,9 +1,10 @@
 @use '@/styles/tokens' as *;
 @use '@/styles/page-header-title' as ph;
+@use '@/styles/table-page-layout' as tablePage;
 @use '../../styles/breakpoints' as bp;
 
 .screen {
-  min-height: 100%;
+  @include tablePage.app-list-screen-fill;
   background: var(--color-bg-primary);
   color: var(--color-text-primary);
 }
@@ -16,11 +17,8 @@
 }
 
 .content {
-  display: flex;
-  flex-direction: column;
-  min-height: 100%;
+  @include tablePage.app-list-screen-fill;
   padding: 0;
-  overflow: auto;
   background: var(--color-bg-primary);
 }
 
@@ -126,21 +124,15 @@
   --control-width: 100%;
 }
 .tableWrap {
-  display: flex;
-  flex-direction: column;
-  flex: 1 1 auto;
-  min-height: 0;
+  @include tablePage.app-table-wrap-fill;
   margin: 1.25rem;
   border: 1px solid var(--color-border);
   border-radius: 0.5rem;
-  overflow: hidden;
   background: var(--color-bg-surface);
 }
 
 .tableBody {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow: auto;
+  @include tablePage.app-table-body-fill;
 }
 
 .historyWrap {

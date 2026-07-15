@@ -1,16 +1,17 @@
 @use '../shared/sede-theme' as sede;
+@use '../../../styles/abstracts/mixins' as mixins;
 
 $mobile-breakpoint: 768px;
 
 .page {
   @include sede.sede-theme-classes;
+  @include mixins.domain-list-page-fill;
 
   display: flex;
   flex-direction: column;
   gap: 0;
   width: 100%;
   min-width: 0;
-  min-height: 100%;
   box-sizing: border-box;
   background: var(--sede-page);
   color: var(--sede-text);

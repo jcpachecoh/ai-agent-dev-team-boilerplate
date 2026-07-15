@@ -1,3 +1,5 @@
+@use '@/styles/table-page-layout' as tablePage;
+
 .toolbarFilters {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
@@ -57,6 +59,12 @@
   margin-left: auto;
 }
 
+.tableSection {
+  @include tablePage.app-table-wrap-fill;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
 .historyList {
   display: flex;
   flex-direction: column;
@@ -64,7 +72,8 @@
   margin: 0;
   padding: 0;
   list-style: none;
-  max-height: 24rem;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
 }
 
