@@ -28,6 +28,7 @@ const mockNovedadRow = {
   rrhhDecisionAt: null,
   rejectionReason: null,
   overlapWarningAck: false,
+  isEditable: true,
   createdAt: new Date('2026-07-01T10:00:00Z'),
   updatedAt: new Date('2026-07-01T10:00:00Z'),
   deletedAt: null,
@@ -41,6 +42,9 @@ describe('PayrollNovedadesRepository', () => {
     employeeDetails: jest.Mocked<Record<string, jest.Mock>>;
     user: jest.Mocked<Record<string, jest.Mock>>;
     userLocation: jest.Mocked<Record<string, jest.Mock>>;
+    novedadAuditLog: jest.Mocked<Record<string, jest.Mock>>;
+    employeePaymentHistory: jest.Mocked<Record<string, jest.Mock>>;
+    $transaction: jest.Mock;
   };
 
   beforeEach(async () => {
@@ -60,10 +64,19 @@ describe('PayrollNovedadesRepository', () => {
       },
       user: {
         findFirst: jest.fn(),
+        findMany: jest.fn(),
       },
       userLocation: {
         findMany: jest.fn(),
       },
+      novedadAuditLog: {
+        findMany: jest.fn(),
+        create: jest.fn(),
+      },
+      employeePaymentHistory: {
+        count: jest.fn(),
+      },
+      $transaction: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -456,6 +469,197 @@ describe('PayrollNovedadesRepository', () => {
           }),
         }),
       );
+    });
+  });
+
+  describe('updateEditableFields', () => {
+    it('updates novedad and creates audit log in a transaction', async () => {
+      const updatedRow = {
+        ...mockNovedadRow,
+        endDate: new Date('2026-07-05T00:00:00.000Z'),
+      };
+      const txPayrollUpdate = jest.fn().mockResolvedValue(updatedRow);
+      const txAuditCreate = jest.fn().mockResolvedValue({ id: 'audit-1' });
+      prisma.$transaction.mockImplementation(async (callback) =>
+        callback({
+          payrollNovedad: { update: txPayrollUpdate },
+          novedadAuditLog: { create: txAuditCreate },
+        }),
+      );
+
+      const result = await repository.updateEditableFields(
+        TENANT,
+        NOVEDAD_ID,
+        { endDate: new Date('2026-07-05T00:00:00.000Z') },
+        {
+          changedBy: 'user-rrhh',
+          previousValue: {
+            startDate: '2026-07-01',
+            endDate: '2026-07-03',
+            isPaid: true,
+            notes: null,
+          },
+          newValue: {
+            startDate: '2026-07-01',
+            endDate: '2026-07-05',
+            isPaid: true,
+            notes: null,
+          },
+        },
+      );
+
+      expect(txPayrollUpdate).toHaveBeenCalled();
+      expect(txAuditCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            tenantId: TENANT,
+            novedadId: NOVEDAD_ID,
+            changedBy: 'user-rrhh',
+          }),
+        }),
+      );
+      expect(result.endDate.toISOString().slice(0, 10)).toBe('2026-07-05');
+    });
+
+    it('throws when updated row belongs to another tenant', async () => {
+      prisma.$transaction.mockImplementation(async (callback) =>
+        callback({
+          payrollNovedad: {
+            update: jest.fn().mockResolvedValue({ ...mockNovedadRow, tenantId: 'other-tenant' }),
+          },
+          novedadAuditLog: { create: jest.fn() },
+        }),
+      );
+
+      await expect(
+        repository.updateEditableFields(
+          TENANT,
+          NOVEDAD_ID,
+          { notes: 'Ajuste' },
+          {
+            changedBy: 'user-rrhh',
+            previousValue: {
+              startDate: '2026-07-01',
+              endDate: '2026-07-03',
+              isPaid: true,
+              notes: null,
+            },
+            newValue: {
+              startDate: '2026-07-01',
+              endDate: '2026-07-03',
+              isPaid: true,
+              notes: 'Ajuste',
+            },
+          },
+        ),
+      ).rejects.toThrow('does not belong to tenant');
+    });
+  });
+
+  describe('listAuditLogsByNovedadId', () => {
+    it('returns audit logs with changedByName from employee name', async () => {
+      prisma.novedadAuditLog.findMany.mockResolvedValue([
+        {
+          id: 'audit-1',
+          tenantId: TENANT,
+          novedadId: NOVEDAD_ID,
+          changedBy: 'user-rrhh',
+          changedAt: new Date('2026-07-02T10:00:00.000Z'),
+          previousValue: {
+            startDate: '2026-07-01',
+            endDate: '2026-07-03',
+            isPaid: true,
+            notes: null,
+          },
+          newValue: { startDate: '2026-07-01', endDate: '2026-07-02', isPaid: true, notes: null },
+        },
+      ]);
+      prisma.user.findMany.mockResolvedValue([
+        {
+          id: 'user-rrhh',
+          email: 'nomina@test.com',
+          employeeDetails: { name: 'RRHH User' },
+        },
+      ]);
+
+      const result = await repository.listAuditLogsByNovedadId(TENANT, NOVEDAD_ID);
+
+      expect(result).toHaveLength(1);
+      expect(result[0]?.changedByName).toBe('RRHH User');
+    });
+
+    it('falls back to email when employee name is missing', async () => {
+      prisma.novedadAuditLog.findMany.mockResolvedValue([
+        {
+          id: 'audit-1',
+          tenantId: TENANT,
+          novedadId: NOVEDAD_ID,
+          changedBy: 'user-rrhh',
+          changedAt: new Date('2026-07-02T10:00:00.000Z'),
+          previousValue: {
+            startDate: '2026-07-01',
+            endDate: '2026-07-03',
+            isPaid: true,
+            notes: null,
+          },
+          newValue: { startDate: '2026-07-01', endDate: '2026-07-02', isPaid: true, notes: null },
+        },
+      ]);
+      prisma.user.findMany.mockResolvedValue([
+        {
+          id: 'user-rrhh',
+          email: 'nomina@test.com',
+          employeeDetails: null,
+        },
+      ]);
+
+      const result = await repository.listAuditLogsByNovedadId(TENANT, NOVEDAD_ID);
+
+      expect(result[0]?.changedByName).toBe('nomina@test.com');
+    });
+  });
+
+  describe('isConsumedByProcessedPayroll', () => {
+    it('returns false when novedad is not approved', async () => {
+      const result = await repository.isConsumedByProcessedPayroll(TENANT, {
+        employeeId: EMPLOYEE_ID,
+        status: NovedadStatus.PENDIENTE_RRHH,
+        startDate: new Date('2026-07-01T00:00:00.000Z'),
+        endDate: new Date('2026-07-03T00:00:00.000Z'),
+      });
+
+      expect(result).toBe(false);
+      expect(prisma.employeePaymentHistory.count).not.toHaveBeenCalled();
+    });
+
+    it('returns false when employee has no financial profile', async () => {
+      prisma.employeeDetails.findFirst.mockResolvedValue({ financialProfile: null });
+
+      const result = await repository.isConsumedByProcessedPayroll(TENANT, {
+        employeeId: EMPLOYEE_ID,
+        status: NovedadStatus.APROBADA,
+        startDate: new Date('2026-07-01T00:00:00.000Z'),
+        endDate: new Date('2026-07-03T00:00:00.000Z'),
+      });
+
+      expect(result).toBe(false);
+    });
+
+    it('returns true when a paid period intersects the novedad range', async () => {
+      prisma.employeeDetails.findFirst.mockResolvedValue({
+        financialProfile: { id: 'fp-1' },
+      });
+      prisma.employeePaymentHistory.count.mockResolvedValue(1);
+
+      const result = await repository.isConsumedByProcessedPayroll(TENANT, {
+        employeeId: EMPLOYEE_ID,
+        status: NovedadStatus.APROBADA,
+        startDate: new Date('2026-07-01T00:00:00.000Z'),
+        endDate: new Date('2026-07-03T00:00:00.000Z'),
+      });
+
+      expect(result).toBe(true);
+      expect(prisma.employeePaymentHistory.count).toHaveBeenCalled();
     });
   });
 });
