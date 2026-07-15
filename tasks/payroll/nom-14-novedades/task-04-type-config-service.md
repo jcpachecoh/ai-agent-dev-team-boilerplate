@@ -33,23 +33,23 @@ Implementar servicio de configuración por tenant para tipos de novedad: lectura
 #### `updateConfig(tenantId, type, input)`
 
 - Solo rol `NOMINA` (validar en controller task 09; service puede asumir caller autorizado).
-- Campos editables: `requiresSupervisorApproval`, `requiresSupportDocument`, `isPaidDefault`.
+- Campos editables: `requiresSupervisorApproval`, `requiresSupportDocument`, `isPaidDefault`, `autoSolicitable` (task 12).
 - **No** permitir crear tipos fuera del enum.
 
 #### `ensureDefaults(tenantId)` (privado o público para seed)
 
 Idempotente — defaults MVP:
 
-| Tipo                   | requiresSupervisorApproval | requiresSupportDocument |
-| ---------------------- | -------------------------- | ----------------------- |
-| PERMISO_REMUNERADO     | true                       | false                   |
-| LICENCIA_NO_REMUNERADA | true                       | false                   |
-| LICENCIA_LUTO          | false                      | true                    |
-| LICENCIA_PATERNIDAD    | false                      | true                    |
-| LICENCIA_MATERNIDAD    | false                      | true                    |
-| CALAMIDAD_DOMESTICA    | false                      | true                    |
-| DIA_FAMILIA            | false                      | true                    |
-| AUSENCIA_INJUSTIFICADA | false                      | false                   |
+| Tipo                   | requiresSupervisorApproval | requiresSupportDocument | autoSolicitable | isPaidDefault                  |
+| ---------------------- | -------------------------- | ----------------------- | --------------- | ------------------------------ |
+| PERMISO_REMUNERADO     | true                       | false                   | true            | true                           |
+| LICENCIA_NO_REMUNERADA | true                       | false                   | true            | false                          |
+| LICENCIA_LUTO          | false                      | true                    | true            | **true** (remunerada Ley 1280) |
+| LICENCIA_PATERNIDAD    | false                      | true                    | true            | true                           |
+| LICENCIA_MATERNIDAD    | false                      | true                    | true            | true                           |
+| CALAMIDAD_DOMESTICA    | false                      | true                    | **false**       | true                           |
+| DIA_FAMILIA            | false                      | true                    | true            | true                           |
+| AUSENCIA_INJUSTIFICADA | false                      | false                   | false           | false                          |
 
 ---
 

@@ -36,6 +36,8 @@ export interface PayrollNovedadRecord {
   rrhhDecisionAt?: string | null;
   rejectionReason?: string | null;
   overlapWarningAck: boolean;
+  isEditable: boolean;
+  editBlockedReason?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -95,7 +97,34 @@ export interface NovedadTypeConfig {
   requiresSupervisorApproval: boolean;
   requiresSupportDocument: boolean;
   isPaidDefault: boolean;
+  autoSolicitable?: boolean;
 }
+
+export interface EditPayrollNovedadInput {
+  startDate?: string;
+  endDate?: string;
+  isPaid?: boolean;
+  notes?: string;
+  overlapWarningAck?: boolean;
+}
+
+export interface NovedadAuditLogRecord {
+  id: string;
+  novedadId: string;
+  changedBy: string;
+  changedByName?: string | null;
+  changedAt: string;
+  previousValue: Record<string, unknown>;
+  newValue: Record<string, unknown>;
+}
+
+export interface EditPayrollNovedadResult {
+  novedad: PayrollNovedadRecord;
+  auditLog: NovedadAuditLogRecord;
+}
+
+export const NOVEDAD_EDIT_BLOCKED_PROCESSED_PAYROLL_MESSAGE =
+  'Esta novedad ya fue incluida en una liquidación procesada. Debe gestionarse como ajuste manual.';
 
 export const NOVEDAD_TYPE_LABELS: Record<NovedadType, string> = {
   AUSENCIA_INJUSTIFICADA: 'Ausencia injustificada',

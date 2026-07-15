@@ -1,4 +1,4 @@
-import { Button, Modal, RecetaFilterSelect, toast } from '@restopsiq/ui';
+import { Button, Combobox, Modal, RecetaFilterSelect, toast } from '@restopsiq/ui';
 import { useEffect, useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -21,6 +21,16 @@ import { MedicalLeave180DayBanner } from './MedicalLeave180DayBanner';
 import { MedicalLeaveSplitPreview } from './MedicalLeaveSplitPreview';
 import { MedicalLeaveSupportFileUpload } from './MedicalLeaveSupportFileUpload';
 import styles from './MedicalLeaveFormModal.module.scss';
+
+function filterEmployeeOptions(
+  options: { value: string; label: string }[],
+  query: string,
+): { value: string; label: string }[] {
+  const normalized = query.trim().toLowerCase();
+  if (!normalized) return options;
+
+  return options.filter((option) => option.label.toLowerCase().includes(normalized));
+}
 
 type FormValues = MedicalLeaveFormSchema;
 
@@ -52,6 +62,7 @@ export function MedicalLeaveFormModal({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
   const [uploadResetKey, setUploadResetKey] = useState(0);
+  const [employeeSearch, setEmployeeSearch] = useState('');
 
   const employeesQuery = useActivePayrollEmployeesQuery();
   const { registerMutation, uploadSupportMutation } = useMedicalLeaveMutations(listFilters);
@@ -65,6 +76,11 @@ export function MedicalLeaveFormModal({
           label: employee.name,
         })),
     [employeesQuery.data],
+  );
+
+  const employeeSelectOptions = useMemo(
+    () => filterEmployeeOptions(employeeOptions, employeeSearch),
+    [employeeOptions, employeeSearch],
   );
 
   const employeePlaceholder = employeesQuery.isLoading
@@ -98,6 +114,7 @@ export function MedicalLeaveFormModal({
     setSelectedFile(null);
     setFileError(null);
     setUploadResetKey((current) => current + 1);
+    setEmployeeSearch('');
     reset({
       employeeId: '',
       origin: 'COMUN',
@@ -190,15 +207,17 @@ export function MedicalLeaveFormModal({
               name="employeeId"
               control={control}
               render={({ field }) => (
-                <RecetaFilterSelect
+                <Combobox
                   value={field.value}
-                  options={employeeOptions}
-                  onChange={field.onChange}
+                  options={employeeSelectOptions}
+                  onChange={(value) => field.onChange(typeof value === 'string' ? value : '')}
+                  onSearch={setEmployeeSearch}
+                  placeholder={employeePlaceholder}
+                  searchPlaceholder="Buscar empleado…"
                   theme={modalTheme}
                   size="md"
-                  id="medical-leave-employee"
-                  placeholder={employeePlaceholder}
-                  disabled={busy || employeesQuery.isLoading || employeeOptions.length === 0}
+                  className={styles.control}
+                  loading={employeesQuery.isLoading}
                 />
               )}
             />

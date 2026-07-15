@@ -14,10 +14,12 @@ interface Props {
   novedades: PayrollNovedadSummary[];
   theme: EmpleadoTheme;
   showInboxActions: boolean;
+  canWrite: boolean;
   supervisor: boolean;
   rrhh: boolean;
   onApprove: (novedad: PayrollNovedadSummary) => void;
   onReject: (novedad: PayrollNovedadSummary) => void;
+  onEdit: (novedad: PayrollNovedadSummary) => void;
 }
 
 function canActOnNovedad(
@@ -36,10 +38,12 @@ export function PayrollNovedadesTable({
   novedades,
   theme,
   showInboxActions,
+  canWrite,
   supervisor,
   rrhh,
   onApprove,
   onReject,
+  onEdit,
 }: Props): React.JSX.Element {
   const gridTemplate = getPayrollNovedadesGridTemplate();
 
@@ -61,17 +65,22 @@ export function PayrollNovedadesTable({
             className={styles.desktopHeader}
           />
           <div className={styles.body} role="rowgroup">
-            {novedades.map((novedad) => (
-              <PayrollNovedadTableItem
-                key={novedad.id}
-                novedad={novedad}
-                theme={theme}
-                gridTemplate={gridTemplate}
-                showActions={canActOnNovedad(novedad, showInboxActions, supervisor, rrhh)}
-                onApprove={() => onApprove(novedad)}
-                onReject={() => onReject(novedad)}
-              />
-            ))}
+            {novedades.map((novedad) => {
+              const showActions = canActOnNovedad(novedad, showInboxActions, supervisor, rrhh);
+              return (
+                <PayrollNovedadTableItem
+                  key={novedad.id}
+                  novedad={novedad}
+                  theme={theme}
+                  gridTemplate={gridTemplate}
+                  showActions={showActions}
+                  showEdit={canWrite && !showActions}
+                  onApprove={() => onApprove(novedad)}
+                  onReject={() => onReject(novedad)}
+                  onEdit={() => onEdit(novedad)}
+                />
+              );
+            })}
           </div>
         </div>
       </div>

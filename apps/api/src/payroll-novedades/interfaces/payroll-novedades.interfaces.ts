@@ -22,6 +22,7 @@ export interface PayrollNovedadRecord {
   rrhhDecisionAt: Date | null;
   rejectionReason: string | null;
   overlapWarningAck: boolean;
+  isEditable: boolean;
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;
@@ -31,6 +32,7 @@ export interface PayrollNovedadSummary extends PayrollNovedadRecord {
   employeeName: string;
   locationId: string | null;
   locationName: string | null;
+  editBlockedReason?: string | null;
 }
 
 export interface SubmitNovedadInput {
@@ -50,6 +52,37 @@ export interface RejectNovedadInput {
   novedadId: string;
   rejectionReason: string;
   comment?: string;
+}
+
+export interface EditNovedadInput {
+  startDate?: Date;
+  endDate?: Date;
+  isPaid?: boolean;
+  notes?: string;
+  overlapWarningAck?: boolean;
+}
+
+export interface EditableNovedadSnapshot {
+  startDate: string;
+  endDate: string;
+  isPaid: boolean;
+  notes: string | null;
+}
+
+export interface NovedadAuditLogRecord {
+  id: string;
+  tenantId: string;
+  novedadId: string;
+  changedBy: string;
+  changedAt: Date;
+  previousValue: EditableNovedadSnapshot;
+  newValue: EditableNovedadSnapshot;
+  changedByName?: string | null;
+}
+
+export interface EditNovedadResult {
+  novedad: PayrollNovedadRecord;
+  auditLog: NovedadAuditLogRecord;
 }
 
 export interface NovedadListFilters {
@@ -101,6 +134,10 @@ export interface UpdatePayrollNovedadData {
   rrhhDecisionAt?: Date | null;
   rejectionReason?: string | null;
   supportStorageObjectId?: string | null;
+  startDate?: Date;
+  endDate?: Date;
+  isPaid?: boolean;
+  notes?: string | null;
 }
 
 export interface EmployeeApprovalContext {
@@ -166,6 +203,21 @@ export interface IPayrollNovedadesRepository {
     locationIds: string[],
     subordinatePositionIds: string[],
   ): Promise<string[]>;
+  updateEditableFields(
+    tenantId: string,
+    id: string,
+    data: Pick<UpdatePayrollNovedadData, 'startDate' | 'endDate' | 'isPaid' | 'notes'>,
+    auditLog: {
+      changedBy: string;
+      previousValue: EditableNovedadSnapshot;
+      newValue: EditableNovedadSnapshot;
+    },
+  ): Promise<PayrollNovedadRecord>;
+  listAuditLogsByNovedadId(tenantId: string, novedadId: string): Promise<NovedadAuditLogRecord[]>;
+  isConsumedByProcessedPayroll(
+    tenantId: string,
+    novedad: Pick<PayrollNovedadRecord, 'employeeId' | 'status' | 'startDate' | 'endDate'>,
+  ): Promise<boolean>;
 }
 
 export interface IPayrollNovedadesService {
@@ -224,4 +276,15 @@ export interface IPayrollNovedadesService {
     file: PayrollNovedadSupportDocumentFile,
   ): Promise<PayrollNovedadRecord>;
   getSupportDocumentUrl(tenantId: string, actorUserId: string, id: string): Promise<string>;
+  edit(
+    tenantId: string,
+    actorUserId: string,
+    novedadId: string,
+    input: EditNovedadInput,
+  ): Promise<EditNovedadResult>;
+  listAuditLogs(
+    tenantId: string,
+    actorUserId: string,
+    novedadId: string,
+  ): Promise<NovedadAuditLogRecord[]>;
 }

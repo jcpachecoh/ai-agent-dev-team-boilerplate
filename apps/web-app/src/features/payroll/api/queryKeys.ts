@@ -55,6 +55,7 @@ export const payrollKeys = {
   payrollNovedadList: (filters: ListPayrollNovedadesFilters = {}) =>
     [...payrollKeys.payrollNovedades(), filters] as const,
   payrollNovedadDetail: (id: string) => [...payrollKeys.payrollNovedades(), 'detail', id] as const,
+  payrollNovedadAudit: (id: string) => [...payrollKeys.payrollNovedades(), 'audit', id] as const,
   novedadTypeConfig: () => [...payrollKeys.payrollNovedades(), 'type-config'] as const,
   myPayrollNovedades: (filters: ListMyPayrollNovedadesFilters = {}) =>
     [...payrollKeys.payrollNovedades(), 'me', filters] as const,

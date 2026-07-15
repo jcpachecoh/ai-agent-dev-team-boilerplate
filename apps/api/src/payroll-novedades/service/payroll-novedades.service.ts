@@ -11,7 +11,11 @@ import { UserLocationsService } from '../../locations/service/user-locations.ser
 import { StorageDomain, StorageVisibility } from '../../storage/enums/storage.enums';
 import { StorageService } from '../../storage/service/storage.service';
 import type {
+  EditNovedadInput,
+  EditNovedadResult,
+  EditableNovedadSnapshot,
   IPayrollNovedadesService,
+  NovedadAuditLogRecord,
   NovedadListFilters,
   PayrollNovedadRecord,
   PayrollNovedadSummary,
@@ -26,6 +30,11 @@ import {
   NO_SUPERVISOR_ASSIGNED_WARNING,
   PayrollNovedadesNotificationService,
 } from './payroll-novedades-notification.service';
+import {
+  NOVEDAD_CONSUMED_BY_PROCESSED_PAYROLL_CODE,
+  NOVEDAD_EDIT_BLOCKED_PROCESSED_PAYROLL_MESSAGE,
+} from '../constants/payroll-novedades.constants';
+import { calculateLutoEndDate } from '../utils/luto-end-date.util';
 
 const SUPERVISOR_ROLES = new Set(['SUPERVISOR', 'MANAGER']);
 const RRHH_ROLES = new Set(['NOMINA', 'OWNER', 'SUPER_ADMIN']);
@@ -53,13 +62,20 @@ export class PayrollNovedadesService implements IPayrollNovedadesService {
   ): Promise<SubmitNovedadResult> {
     await this.assertCanSubmit(tenantId, actorUserId, input);
 
-    if (input.startDate > input.endDate) {
+    const typeConfig = await this.typeConfigService.getConfigForTenant(tenantId, input.type);
+
+    let startDate = input.startDate;
+    let endDate = input.endDate;
+
+    if (input.type === NovedadType.LICENCIA_LUTO) {
+      endDate = calculateLutoEndDate(startDate);
+    }
+
+    if (startDate > endDate) {
       throw new BadRequestException(
         'La fecha de inicio debe ser anterior o igual a la fecha de fin',
       );
     }
-
-    const typeConfig = await this.typeConfigService.getConfigForTenant(tenantId, input.type);
 
     if (typeConfig.requiresSupportDocument && !input.supportStorageObjectId) {
       throw new BadRequestException('Este tipo de novedad requiere adjuntar un soporte');
@@ -72,11 +88,27 @@ export class PayrollNovedadesService implements IPayrollNovedadesService {
       throw new ForbiddenException('La ausencia injustificada solo puede registrarla RRHH');
     }
 
+    if (
+      input.type === NovedadType.CALAMIDAD_DOMESTICA &&
+      input.requestedBy === NovedadRequestSource.EMPLEADO
+    ) {
+      throw new ForbiddenException(
+        'La calamidad doméstica solo puede registrarse por RRHH o el líder inmediato',
+      );
+    }
+
+    if (
+      input.requestedBy === NovedadRequestSource.EMPLEADO &&
+      typeConfig.autoSolicitable === false
+    ) {
+      throw new ForbiddenException('Este tipo de novedad no está disponible para autosolicitud');
+    }
+
     const overlap = await this.repository.findOverlapping(
       tenantId,
       input.employeeId,
-      input.startDate,
-      input.endDate,
+      startDate,
+      endDate,
     );
     if (overlap.hasOverlap && !input.overlapWarningAck) {
       throw new ConflictException({
@@ -85,7 +117,8 @@ export class PayrollNovedadesService implements IPayrollNovedadesService {
       });
     }
 
-    const isPaid = input.isPaid ?? typeConfig.isPaidDefault;
+    const isPaid =
+      input.type === NovedadType.LICENCIA_LUTO ? true : (input.isPaid ?? typeConfig.isPaidDefault);
     const warnings: string[] = [];
     let status: NovedadStatus;
 
@@ -111,8 +144,8 @@ export class PayrollNovedadesService implements IPayrollNovedadesService {
     const novedad = await this.repository.create(tenantId, {
       employeeId: input.employeeId,
       type: input.type,
-      startDate: input.startDate,
-      endDate: input.endDate,
+      startDate,
+      endDate,
       isPaid,
       supportStorageObjectId: input.supportStorageObjectId ?? null,
       notes: input.notes ?? null,
@@ -127,6 +160,110 @@ export class PayrollNovedadesService implements IPayrollNovedadesService {
     await this.dispatchNotifications(tenantId, novedad, warnings);
 
     return { novedad, warnings: warnings.length > 0 ? warnings : undefined };
+  }
+
+  async edit(
+    tenantId: string,
+    actorUserId: string,
+    novedadId: string,
+    input: EditNovedadInput,
+  ): Promise<EditNovedadResult> {
+    await this.assertCanEdit(tenantId, actorUserId);
+
+    const current = await this.requireNovedad(tenantId, novedadId);
+
+    if (!current.isEditable) {
+      throw new ForbiddenException('Esta novedad no puede editarse');
+    }
+
+    if (current.status === NovedadStatus.RECHAZADA) {
+      throw new BadRequestException('No se puede editar una novedad rechazada');
+    }
+
+    if (await this.repository.isConsumedByProcessedPayroll(tenantId, current)) {
+      throw new ConflictException({
+        statusCode: 409,
+        code: NOVEDAD_CONSUMED_BY_PROCESSED_PAYROLL_CODE,
+        message: NOVEDAD_EDIT_BLOCKED_PROCESSED_PAYROLL_MESSAGE,
+      });
+    }
+
+    const previousValue = this.toEditableSnapshot(current);
+    const nextStartDate = input.startDate ?? current.startDate;
+    let nextEndDate = input.endDate ?? current.endDate;
+    const nextIsPaid =
+      current.type === NovedadType.LICENCIA_LUTO ? true : (input.isPaid ?? current.isPaid);
+    const nextNotes = input.notes !== undefined ? input.notes.trim() || null : current.notes;
+
+    if (current.type === NovedadType.LICENCIA_LUTO) {
+      nextEndDate = calculateLutoEndDate(nextStartDate);
+    }
+
+    if (nextStartDate > nextEndDate) {
+      throw new BadRequestException(
+        'La fecha de inicio debe ser anterior o igual a la fecha de fin',
+      );
+    }
+
+    const overlap = await this.repository.findOverlapping(
+      tenantId,
+      current.employeeId,
+      nextStartDate,
+      nextEndDate,
+      current.id,
+    );
+    if (overlap.hasOverlap && !input.overlapWarningAck) {
+      throw new ConflictException({
+        message: 'Existen novedades con fechas solapadas para este empleado',
+        conflictingNovedadIds: overlap.conflictingNovedadIds,
+      });
+    }
+
+    const newValue: EditableNovedadSnapshot = {
+      startDate: this.formatDateOnly(nextStartDate),
+      endDate: this.formatDateOnly(nextEndDate),
+      isPaid: nextIsPaid,
+      notes: nextNotes,
+    };
+
+    if (JSON.stringify(previousValue) === JSON.stringify(newValue)) {
+      throw new BadRequestException('No hay cambios para guardar');
+    }
+
+    const updated = await this.repository.updateEditableFields(
+      tenantId,
+      novedadId,
+      {
+        startDate: nextStartDate,
+        endDate: nextEndDate,
+        isPaid: nextIsPaid,
+        notes: nextNotes,
+      },
+      {
+        changedBy: actorUserId,
+        previousValue,
+        newValue,
+      },
+    );
+
+    const auditLogs = await this.repository.listAuditLogsByNovedadId(tenantId, novedadId);
+    const auditLog = auditLogs[0];
+    if (!auditLog) {
+      throw new BadRequestException('No se pudo registrar la auditoría de la edición');
+    }
+
+    return { novedad: updated, auditLog };
+  }
+
+  async listAuditLogs(
+    tenantId: string,
+    actorUserId: string,
+    novedadId: string,
+  ): Promise<NovedadAuditLogRecord[]> {
+    const novedad = await this.requireNovedad(tenantId, novedadId);
+    await this.assertCanEdit(tenantId, actorUserId);
+    await this.assertCanViewNovedad(tenantId, actorUserId, novedad);
+    return this.repository.listAuditLogsByNovedadId(tenantId, novedadId);
   }
 
   async approveBySupervisor(
@@ -257,7 +394,8 @@ export class PayrollNovedadesService implements IPayrollNovedadesService {
       }
     }
 
-    return this.repository.listSummaries(tenantId, scopedFilters);
+    const rows = await this.repository.listSummaries(tenantId, scopedFilters);
+    return this.enrichSummaries(tenantId, rows);
   }
 
   async listMyNovedades(
@@ -273,7 +411,8 @@ export class PayrollNovedadesService implements IPayrollNovedadesService {
       throw new ForbiddenException('No se encontró un empleado vinculado a su usuario');
     }
 
-    return this.repository.listSummaries(tenantId, { ...filters, employeeId });
+    const rows = await this.repository.listSummaries(tenantId, { ...filters, employeeId });
+    return this.enrichSummaries(tenantId, rows);
   }
 
   async listEmployeeTypeConfigs(tenantId: string): Promise<
@@ -283,17 +422,21 @@ export class PayrollNovedadesService implements IPayrollNovedadesService {
       requiresSupervisorApproval: boolean;
       requiresSupportDocument: boolean;
       isPaidDefault: boolean;
+      autoSolicitable: boolean;
     }>
   > {
     const rows = await this.typeConfigService.listConfigs(tenantId);
     return rows
-      .filter((row) => row.type !== NovedadType.AUSENCIA_INJUSTIFICADA)
+      .filter(
+        (row) => row.type !== NovedadType.AUSENCIA_INJUSTIFICADA && row.autoSolicitable === true,
+      )
       .map((row) => ({
         id: row.id,
         type: row.type,
         requiresSupervisorApproval: row.requiresSupervisorApproval,
         requiresSupportDocument: row.requiresSupportDocument,
         isPaidDefault: row.isPaidDefault,
+        autoSolicitable: row.autoSolicitable,
       }));
   }
 
@@ -402,8 +545,10 @@ export class PayrollNovedadesService implements IPayrollNovedadesService {
     }
 
     if (input.requestedBy === NovedadRequestSource.RRHH) {
-      if (!RRHH_WRITE_ROLES.has(actor.roleCode)) {
-        throw new ForbiddenException('Solo RRHH puede registrar novedades en nombre del empleado');
+      if (!RRHH_WRITE_ROLES.has(actor.roleCode) && !SUPERVISOR_ROLES.has(actor.roleCode)) {
+        throw new ForbiddenException(
+          'Solo RRHH o el líder inmediato puede registrar novedades en nombre del empleado',
+        );
       }
       return;
     }
@@ -528,6 +673,45 @@ export class PayrollNovedadesService implements IPayrollNovedadesService {
       throw new NotFoundException(`Novedad ${id} no encontrada`);
     }
     return novedad;
+  }
+
+  private async assertCanEdit(tenantId: string, actorUserId: string): Promise<void> {
+    const actor = await this.repository.findActorUser(tenantId, actorUserId);
+    if (!actor || !RRHH_WRITE_ROLES.has(actor.roleCode)) {
+      throw new ForbiddenException('No tiene permiso para editar novedades');
+    }
+  }
+
+  private async enrichSummaries(
+    tenantId: string,
+    rows: PayrollNovedadSummary[],
+  ): Promise<PayrollNovedadSummary[]> {
+    return Promise.all(
+      rows.map(async (row) => {
+        if (!row.isEditable) {
+          return { ...row, editBlockedReason: 'Esta novedad no puede editarse' };
+        }
+
+        const consumed = await this.repository.isConsumedByProcessedPayroll(tenantId, row);
+        return {
+          ...row,
+          editBlockedReason: consumed ? NOVEDAD_EDIT_BLOCKED_PROCESSED_PAYROLL_MESSAGE : null,
+        };
+      }),
+    );
+  }
+
+  private toEditableSnapshot(novedad: PayrollNovedadRecord): EditableNovedadSnapshot {
+    return {
+      startDate: this.formatDateOnly(novedad.startDate),
+      endDate: this.formatDateOnly(novedad.endDate),
+      isPaid: novedad.isPaid,
+      notes: novedad.notes,
+    };
+  }
+
+  private formatDateOnly(value: Date): string {
+    return value.toISOString().slice(0, 10);
   }
 
   private async dispatchNotifications(

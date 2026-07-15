@@ -5,7 +5,7 @@ import {
   resolveEmpleadoInitials,
   type EmpleadoTheme,
 } from '@restopsiq/ui';
-import { Check, X } from 'lucide-react';
+import { Check, Pencil, X } from 'lucide-react';
 import type { CSSProperties } from 'react';
 
 import type { PayrollNovedadSummary } from '../types/payroll-novedades.types';
@@ -22,8 +22,10 @@ interface Props {
   theme: EmpleadoTheme;
   gridTemplate: string;
   showActions: boolean;
+  showEdit: boolean;
   onApprove: () => void;
   onReject: () => void;
+  onEdit: () => void;
 }
 
 export function PayrollNovedadTableRow({
@@ -31,8 +33,10 @@ export function PayrollNovedadTableRow({
   theme,
   gridTemplate,
   showActions,
+  showEdit,
   onApprove,
   onReject,
+  onEdit,
 }: Props): React.JSX.Element {
   return (
     <div
@@ -90,6 +94,16 @@ export function PayrollNovedadTableRow({
               className={styles.rejectAction}
             />
           </>
+        ) : showEdit ? (
+          <EmpleadoRowActionButton
+            variant="view"
+            theme={theme}
+            icon={<Pencil aria-hidden />}
+            onClick={onEdit}
+            aria-label={novedad.editBlockedReason ? novedad.editBlockedReason : 'Editar novedad'}
+            disabled={Boolean(novedad.editBlockedReason) || !novedad.isEditable}
+            title={novedad.editBlockedReason ?? undefined}
+          />
         ) : novedad.rejectionReason ? (
           <span className={styles.rejectionHint} title={novedad.rejectionReason}>
             Motivo registrado

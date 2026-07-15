@@ -17,17 +17,23 @@ Cerrar criterios de aceptación del epic con tests de integración, casos legale
 
 ### Tests backend (obligatorios)
 
-| Caso                                                              | Esperado                             |
-| ----------------------------------------------------------------- | ------------------------------------ |
-| `PERMISO_REMUNERADO` empleado → supervisor aprueba → RRHH aprueba | Estados intermedios correctos        |
-| `LICENCIA_MATERNIDAD` empleado                                    | Directo `PENDIENTE_RRHH`             |
-| Supervisor requerido, sin supervisor resoluble                    | `PENDIENTE_RRHH` + warning, no error |
-| Rechazo supervisor / RRHH                                         | `RECHAZADA` + motivo + notificación  |
-| Soporte obligatorio sin adjunto                                   | 400                                  |
-| Solapamiento sin ack                                              | 409; con ack → 201                   |
-| Novedad cruza julio-agosto                                        | Liquidación prorratea ambos meses    |
-| `AUSENCIA_INJUSTIFICADA` por empleado                             | 403                                  |
-| Multi-tenant                                                      | Tenant A no ve novedades de tenant B |
+| Caso                                                              | Esperado                                  |
+| ----------------------------------------------------------------- | ----------------------------------------- |
+| `PERMISO_REMUNERADO` empleado → supervisor aprueba → RRHH aprueba | Estados intermedios correctos             |
+| `LICENCIA_MATERNIDAD` empleado                                    | Directo `PENDIENTE_RRHH`                  |
+| Supervisor requerido, sin supervisor resoluble                    | `PENDIENTE_RRHH` + warning, no error      |
+| Rechazo supervisor / RRHH                                         | `RECHAZADA` + motivo + notificación       |
+| Soporte obligatorio sin adjunto                                   | 400                                       |
+| Solapamiento sin ack                                              | 409; con ack → 201                        |
+| Novedad cruza julio-agosto                                        | Liquidación prorratea ambos meses         |
+| `AUSENCIA_INJUSTIFICADA` por empleado                             | 403                                       |
+| Multi-tenant                                                      | Tenant A no ve novedades de tenant B      |
+| Edición calamidad reintegro anticipado                            | Audit log + fechas actualizadas           |
+| Edición con liquidación procesada                                 | 409 + mensaje ajuste manual               |
+| `LICENCIA_LUTO` con festivo en rango                              | 5 hábiles remunerados; licencia extendida |
+| `CALAMIDAD_DOMESTICA` empleado autosolicita                       | 403                                       |
+| `LICENCIA_LUTO` 5 días hábiles                                    | endDate calculado, no manual              |
+| Incapacidad NOM-13 post-registro                                  | Sin endpoint edit (regresión)             |
 
 ### Tests frontend (mínimo)
 
@@ -46,6 +52,8 @@ Cerrar criterios de aceptación del epic con tests de integración, casos legale
 ### Checklist epic
 
 Marcar criterios de aceptación del [epic](./00-epic-and-decisions.md) en PR description.
+
+Incluir casos de [task 12](./task-12-edit-audit-legal-types-amendment.md) si el amendment se implementa en el mismo PR o en PR posterior encadenado.
 
 ---
 

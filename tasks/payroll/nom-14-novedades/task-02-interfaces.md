@@ -69,17 +69,40 @@ interface SubmitNovedadResult {
   novedad: PayrollNovedadRecord;
   warnings?: string[]; // ej. NO_SUPERVISOR_ASSIGNED
 }
+
+interface EditNovedadInput {
+  startDate?: Date;
+  endDate?: Date;
+  isPaid?: boolean;
+  notes?: string;
+  overlapWarningAck?: boolean;
+}
+
+interface NovedadAuditLogRecord {
+  id: string;
+  tenantId: string;
+  novedadId: string;
+  changedBy: string;
+  changedAt: Date;
+  previousValue: Record<string, unknown>;
+  newValue: Record<string, unknown>;
+}
+
+/** Poblado cuando la novedad intersecta liquidación OS-380 procesada (D13). */
+type NovedadEditBlockedReason = 'NOVEDAD_CONSUMED_BY_PROCESSED_PAYROLL';
 ```
 
 ### Interfaces repository
 
-- `IPayrollNovedadesRepository` — CRUD, listados filtrados, overlap query, aprobadas por período.
+- `IPayrollNovedadesRepository` — CRUD, listados filtrados, overlap query, aprobadas por período, audit logs.
 - `INovedadTypeConfigRepository` — findByTenant, upsert, listAll.
 
 ### Interfaces service
 
-- `IPayrollNovedadesService` — submit, approve/reject supervisor, approve/reject RRHH, list, findOne.
+- `IPayrollNovedadesService` — submit, **edit**, approve/reject supervisor, approve/reject RRHH, list, findOne, listAuditLog.
 - `INovedadTypeConfigService` — getConfigForTenant, updateTypeConfig.
+
+> Campos amendment (`isEditable`, `autoSolicitable`, audit): ver [task 12](./task-12-edit-audit-legal-types-amendment.md).
 
 ---
 

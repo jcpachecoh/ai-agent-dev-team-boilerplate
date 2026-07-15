@@ -13,54 +13,63 @@ const DEFAULT_CONFIGS: ReadonlyArray<{
   requiresSupervisorApproval: boolean;
   requiresSupportDocument: boolean;
   isPaidDefault: boolean;
+  autoSolicitable: boolean;
 }> = [
   {
     type: NovedadType.PERMISO_REMUNERADO,
     requiresSupervisorApproval: true,
     requiresSupportDocument: false,
     isPaidDefault: true,
+    autoSolicitable: true,
   },
   {
     type: NovedadType.LICENCIA_NO_REMUNERADA,
     requiresSupervisorApproval: true,
     requiresSupportDocument: false,
     isPaidDefault: false,
+    autoSolicitable: true,
   },
   {
     type: NovedadType.LICENCIA_LUTO,
     requiresSupervisorApproval: false,
     requiresSupportDocument: true,
     isPaidDefault: true,
+    autoSolicitable: true,
   },
   {
     type: NovedadType.LICENCIA_PATERNIDAD,
     requiresSupervisorApproval: false,
     requiresSupportDocument: true,
     isPaidDefault: true,
+    autoSolicitable: true,
   },
   {
     type: NovedadType.LICENCIA_MATERNIDAD,
     requiresSupervisorApproval: false,
     requiresSupportDocument: true,
     isPaidDefault: true,
+    autoSolicitable: true,
   },
   {
     type: NovedadType.CALAMIDAD_DOMESTICA,
     requiresSupervisorApproval: false,
     requiresSupportDocument: true,
     isPaidDefault: true,
+    autoSolicitable: false,
   },
   {
     type: NovedadType.DIA_FAMILIA,
     requiresSupervisorApproval: false,
     requiresSupportDocument: true,
     isPaidDefault: true,
+    autoSolicitable: true,
   },
   {
     type: NovedadType.AUSENCIA_INJUSTIFICADA,
     requiresSupervisorApproval: false,
     requiresSupportDocument: false,
     isPaidDefault: false,
+    autoSolicitable: false,
   },
 ];
 
@@ -101,6 +110,7 @@ export class NovedadTypeConfigRepository implements INovedadTypeConfigRepository
           ? { requiresSupportDocument: data.requiresSupportDocument }
           : {}),
         ...(data.isPaidDefault !== undefined ? { isPaidDefault: data.isPaidDefault } : {}),
+        ...(data.autoSolicitable !== undefined ? { autoSolicitable: data.autoSolicitable } : {}),
       },
       create: {
         tenantId,
@@ -108,6 +118,7 @@ export class NovedadTypeConfigRepository implements INovedadTypeConfigRepository
         requiresSupervisorApproval: data.requiresSupervisorApproval ?? false,
         requiresSupportDocument: data.requiresSupportDocument ?? false,
         isPaidDefault: data.isPaidDefault ?? true,
+        autoSolicitable: data.autoSolicitable ?? true,
       },
     });
     return this.mapRecord(row);
@@ -130,6 +141,7 @@ export class NovedadTypeConfigRepository implements INovedadTypeConfigRepository
     requiresSupervisorApproval: boolean;
     requiresSupportDocument: boolean;
     isPaidDefault: boolean;
+    autoSolicitable: boolean;
     createdAt: Date;
     updatedAt: Date;
   }): NovedadTypeConfigRecord {
@@ -140,6 +152,7 @@ export class NovedadTypeConfigRepository implements INovedadTypeConfigRepository
       requiresSupervisorApproval: row.requiresSupervisorApproval,
       requiresSupportDocument: row.requiresSupportDocument,
       isPaidDefault: row.isPaidDefault,
+      autoSolicitable: row.autoSolicitable,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     };

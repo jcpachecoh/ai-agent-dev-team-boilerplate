@@ -66,6 +66,7 @@ Implementar según epic **D3** (`supportStorageObjectId`, no `supportDocUrl` str
 | `rrhhDecisionAt`         | DateTime?                                     |
 | `rejectionReason`        | String?                                       |
 | `overlapWarningAck`      | Boolean `@default(false)`                     |
+| `isEditable`             | Boolean `@default(true)`                      |
 | `deletedAt`              | DateTime? (soft delete)                       |
 
 ### Modelo `NovedadTypeConfig`
@@ -75,6 +76,11 @@ Implementar según epic **D3** (`supportStorageObjectId`, no `supportDocUrl` str
 | `requiresSupervisorApproval` | ver tabla defaults en epic                                       |
 | `requiresSupportDocument`    | `true` para licencias legales                                    |
 | `isPaidDefault`              | `false` para `AUSENCIA_INJUSTIFICADA` y `LICENCIA_NO_REMUNERADA` |
+| `autoSolicitable`            | `false` para `CALAMIDAD_DOMESTICA`; `true` resto                 |
+
+### Modelo `NovedadAuditLog`
+
+Ver epic PC-6 / task 12 (amendment). Si task 01 se implementa antes del amendment, puede omitirse aquí e incluirse solo en task 12.
 
 `@@unique([tenantId, type])`
 

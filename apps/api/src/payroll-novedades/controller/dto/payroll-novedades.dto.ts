@@ -135,6 +135,38 @@ export class UpdateNovedadTypeConfigDto {
   @IsOptional()
   @IsBoolean()
   isPaidDefault?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  autoSolicitable?: boolean;
+}
+
+export class EditNovedadDto {
+  @ApiPropertyOptional({ example: '2026-07-01' })
+  @IsOptional()
+  @IsDateString()
+  startDate?: string;
+
+  @ApiPropertyOptional({ example: '2026-07-05' })
+  @IsOptional()
+  @IsDateString()
+  endDate?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  isPaid?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  notes?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  overlapWarningAck?: boolean;
 }
 
 export class PayrollNovedadResponseDto {
@@ -156,6 +188,8 @@ export class PayrollNovedadResponseDto {
   @ApiPropertyOptional() rrhhDecisionAt?: Date | null;
   @ApiPropertyOptional() rejectionReason?: string | null;
   @ApiProperty() overlapWarningAck!: boolean;
+  @ApiProperty() isEditable!: boolean;
+  @ApiPropertyOptional() editBlockedReason?: string | null;
   @ApiProperty() createdAt!: Date;
   @ApiProperty() updatedAt!: Date;
 }
@@ -177,6 +211,22 @@ export class NovedadTypeConfigResponseDto {
   @ApiProperty() requiresSupervisorApproval!: boolean;
   @ApiProperty() requiresSupportDocument!: boolean;
   @ApiProperty() isPaidDefault!: boolean;
+  @ApiProperty() autoSolicitable!: boolean;
+}
+
+export class NovedadAuditLogResponseDto {
+  @ApiProperty() id!: string;
+  @ApiProperty() novedadId!: string;
+  @ApiProperty() changedBy!: string;
+  @ApiPropertyOptional() changedByName?: string | null;
+  @ApiProperty() changedAt!: Date;
+  @ApiProperty() previousValue!: Record<string, unknown>;
+  @ApiProperty() newValue!: Record<string, unknown>;
+}
+
+export class EditNovedadResponseDto {
+  @ApiProperty({ type: PayrollNovedadResponseDto }) novedad!: PayrollNovedadResponseDto;
+  @ApiProperty({ type: NovedadAuditLogResponseDto }) auditLog!: NovedadAuditLogResponseDto;
 }
 
 export class SupportDocumentUrlResponseDto {

@@ -41,6 +41,7 @@ function buildNovedad(overrides: Partial<Record<string, unknown>> = {}) {
     rrhhDecisionAt: null,
     rejectionReason: null,
     overlapWarningAck: false,
+    isEditable: true,
     createdAt: new Date(),
     updatedAt: new Date(),
     deletedAt: null,
@@ -56,6 +57,7 @@ function buildTypeConfig(type: NovedadType, overrides: Partial<Record<string, un
     requiresSupervisorApproval: true,
     requiresSupportDocument: false,
     isPaidDefault: true,
+    autoSolicitable: true,
     createdAt: new Date(),
     updatedAt: new Date(),
     ...overrides,
@@ -89,6 +91,9 @@ describe('PayrollNovedadesService', () => {
       findEmployeeIdByUserId: jest.fn(),
       findSupervisorCandidatesInLocation: jest.fn(),
       findEmployeeIdsInScope: jest.fn(),
+      updateEditableFields: jest.fn(),
+      listAuditLogsByNovedadId: jest.fn(),
+      isConsumedByProcessedPayroll: jest.fn(),
     } as unknown as jest.Mocked<PayrollNovedadesRepository>;
 
     typeConfigService = {
@@ -859,6 +864,142 @@ describe('PayrollNovedadesService', () => {
       await expect(
         service.assertSupervisorCanActOnEmployee(TENANT, SUPERVISOR_USER, EMPLOYEE_ID),
       ).rejects.toThrow(ForbiddenException);
+    });
+  });
+
+  describe('submit — task 12', () => {
+    beforeEach(() => {
+      repository.findActorUser.mockResolvedValue({ roleCode: 'NOMINA', positionId: null });
+      repository.findOverlapping.mockResolvedValue({
+        hasOverlap: false,
+        conflictingNovedadIds: [],
+      });
+      repository.create.mockImplementation(async (_tenant, data) =>
+        buildNovedad({
+          type: data.type,
+          startDate: data.startDate,
+          endDate: data.endDate,
+          isPaid: data.isPaid,
+          requestedBy: data.requestedBy,
+          status: data.status,
+        }),
+      );
+    });
+
+    it('rechaza CALAMIDAD_DOMESTICA solicitada por empleado', async () => {
+      repository.findEmployeeIdByUserId.mockResolvedValue(EMPLOYEE_ID);
+      typeConfigService.getConfigForTenant.mockResolvedValue(
+        buildTypeConfig(NovedadType.CALAMIDAD_DOMESTICA, { autoSolicitable: false }),
+      );
+
+      await expect(
+        service.submit(TENANT, 'emp-user', {
+          employeeId: EMPLOYEE_ID,
+          type: NovedadType.CALAMIDAD_DOMESTICA,
+          startDate: new Date('2026-07-01T00:00:00.000Z'),
+          endDate: new Date('2026-07-03T00:00:00.000Z'),
+          requestedBy: NovedadRequestSource.EMPLEADO,
+        }),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('calcula LICENCIA_LUTO con 5 días hábiles remunerados', async () => {
+      typeConfigService.getConfigForTenant.mockResolvedValue(
+        buildTypeConfig(NovedadType.LICENCIA_LUTO, {
+          requiresSupervisorApproval: false,
+          requiresSupportDocument: true,
+          isPaidDefault: true,
+        }),
+      );
+
+      const result = await service.submit(TENANT, RRHH_USER, {
+        employeeId: EMPLOYEE_ID,
+        type: NovedadType.LICENCIA_LUTO,
+        startDate: new Date('2025-04-16T00:00:00.000Z'),
+        endDate: new Date('2026-01-01T00:00:00.000Z'),
+        requestedBy: NovedadRequestSource.RRHH,
+        supportStorageObjectId: 'storage-1',
+      });
+
+      expect(result.novedad.isPaid).toBe(true);
+      expect(result.novedad.endDate.toISOString().slice(0, 10)).toBe('2025-04-24');
+    });
+  });
+
+  describe('edit', () => {
+    it('acorta una calamidad y registra auditoría', async () => {
+      const current = buildNovedad({
+        type: NovedadType.CALAMIDAD_DOMESTICA,
+        status: NovedadStatus.APROBADA,
+        startDate: new Date('2026-07-01T00:00:00.000Z'),
+        endDate: new Date('2026-07-10T00:00:00.000Z'),
+      });
+      repository.findById.mockResolvedValue(current);
+      repository.findActorUser.mockResolvedValue({ roleCode: 'NOMINA', positionId: null });
+      repository.isConsumedByProcessedPayroll.mockResolvedValue(false);
+      repository.findOverlapping.mockResolvedValue({
+        hasOverlap: false,
+        conflictingNovedadIds: [],
+      });
+      repository.updateEditableFields.mockResolvedValue(
+        buildNovedad({ ...current, endDate: new Date('2026-07-05T00:00:00.000Z') }),
+      );
+      repository.listAuditLogsByNovedadId.mockResolvedValue([
+        {
+          id: 'audit-1',
+          tenantId: TENANT,
+          novedadId: 'nov-1',
+          changedBy: RRHH_USER,
+          changedAt: new Date(),
+          previousValue: {
+            startDate: '2026-07-01',
+            endDate: '2026-07-10',
+            isPaid: true,
+            notes: null,
+          },
+          newValue: {
+            startDate: '2026-07-01',
+            endDate: '2026-07-05',
+            isPaid: true,
+            notes: null,
+          },
+          changedByName: 'RRHH User',
+        },
+      ]);
+
+      const result = await service.edit(TENANT, RRHH_USER, 'nov-1', {
+        endDate: new Date('2026-07-05T00:00:00.000Z'),
+      });
+
+      expect(repository.updateEditableFields).toHaveBeenCalled();
+      expect(result.auditLog.id).toBe('audit-1');
+    });
+
+    it('bloquea edición si la liquidación ya fue procesada', async () => {
+      repository.findById.mockResolvedValue(
+        buildNovedad({ status: NovedadStatus.APROBADA, isEditable: true }),
+      );
+      repository.findActorUser.mockResolvedValue({ roleCode: 'NOMINA', positionId: null });
+      repository.isConsumedByProcessedPayroll.mockResolvedValue(true);
+
+      await expect(
+        service.edit(TENANT, RRHH_USER, 'nov-1', {
+          endDate: new Date('2026-07-05T00:00:00.000Z'),
+        }),
+      ).rejects.toThrow(ConflictException);
+    });
+  });
+
+  describe('listEmployeeTypeConfigs', () => {
+    it('excluye tipos no autosolicitables como calamidad', async () => {
+      typeConfigService.listConfigs.mockResolvedValue([
+        buildTypeConfig(NovedadType.PERMISO_REMUNERADO),
+        buildTypeConfig(NovedadType.CALAMIDAD_DOMESTICA, { autoSolicitable: false }),
+      ] as never);
+
+      const result = await service.listEmployeeTypeConfigs(TENANT);
+
+      expect(result.map((row) => row.type)).toEqual([NovedadType.PERMISO_REMUNERADO]);
     });
   });
 });

@@ -30,17 +30,19 @@ apps/api/src/payroll-novedades/
 
 ### Endpoints `PayrollNovedadesController`
 
-| Método | Ruta                                        | Rol / permiso                           |
-| ------ | ------------------------------------------- | --------------------------------------- |
-| `POST` | `/payroll-novedades`                        | Empleado (CONN-07) / `NOMINA`           |
-| `GET`  | `/payroll-novedades`                        | Listado con filtros (bandeja/histórico) |
-| `GET`  | `/payroll-novedades/:id`                    | Detalle                                 |
-| `POST` | `/payroll-novedades/:id/approve/supervisor` | `SUPERVISOR`/`MANAGER`                  |
-| `POST` | `/payroll-novedades/:id/reject/supervisor`  | `SUPERVISOR`/`MANAGER`                  |
-| `POST` | `/payroll-novedades/:id/approve/rrhh`       | `NOMINA`                                |
-| `POST` | `/payroll-novedades/:id/reject/rrhh`        | `NOMINA`                                |
-| `POST` | `/payroll-novedades/:id/support`            | Upload soporte                          |
-| `GET`  | `/payroll-novedades/:id/support/download`   | Presigned URL                           |
+| Método  | Ruta                                        | Rol / permiso                           |
+| ------- | ------------------------------------------- | --------------------------------------- |
+| `POST`  | `/payroll-novedades`                        | Empleado (CONN-07) / `NOMINA`           |
+| `GET`   | `/payroll-novedades`                        | Listado con filtros (bandeja/histórico) |
+| `GET`   | `/payroll-novedades/:id`                    | Detalle                                 |
+| `POST`  | `/payroll-novedades/:id/approve/supervisor` | `SUPERVISOR`/`MANAGER`                  |
+| `POST`  | `/payroll-novedades/:id/reject/supervisor`  | `SUPERVISOR`/`MANAGER`                  |
+| `POST`  | `/payroll-novedades/:id/approve/rrhh`       | `NOMINA`                                |
+| `POST`  | `/payroll-novedades/:id/reject/rrhh`        | `NOMINA`                                |
+| `POST`  | `/payroll-novedades/:id/support`            | Upload soporte                          |
+| `GET`   | `/payroll-novedades/:id/support/download`   | Presigned URL                           |
+| `PATCH` | `/payroll-novedades/:id`                    | Editar novedad (`NOMINA`) — task 12     |
+| `GET`   | `/payroll-novedades/:id/audit`              | Historial auditoría — task 12           |
 
 ### Endpoints `NovedadTypeConfigController` (o sub-ruta)
 

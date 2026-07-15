@@ -19,6 +19,7 @@ import { useActivePayrollEmployeesQuery } from '../hooks/useActivePayrollEmploye
 import { uploadPayrollNovedadSupportDraft } from '../api/payroll-novedades.client';
 import type { ListPayrollNovedadesFilters, NovedadType } from '../types/payroll-novedades.types';
 import { NOVEDAD_TYPE_LABELS } from '../types/payroll-novedades.types';
+import { calculateLutoEndDateFromIso } from '../utils/luto-end-date.util';
 import { PayrollNovedadSupportFileUpload } from './PayrollNovedadSupportFileUpload';
 import styles from './PayrollNovedadFormModal.module.scss';
 
@@ -97,6 +98,12 @@ export function PayrollNovedadFormModal({
     return config?.requiresSupportDocument ?? false;
   }, [typeConfigQuery.data, type]);
 
+  const isLuto = type === 'LICENCIA_LUTO';
+  const calculatedLutoEndDate = useMemo(
+    () => (isLuto && startDate ? calculateLutoEndDateFromIso(startDate) : null),
+    [isLuto, startDate],
+  );
+
   useEffect(() => {
     if (!open) return;
     setEmployeeId('');
@@ -120,7 +127,7 @@ export function PayrollNovedadFormModal({
   const busy = submitMutation.isPending;
 
   const handleSubmit = async () => {
-    if (!employeeId || !startDate || !endDate) {
+    if (!employeeId || !startDate || (!isLuto && !endDate)) {
       toast.error('Complete empleado y fechas');
       return;
     }
@@ -142,7 +149,7 @@ export function PayrollNovedadFormModal({
         employeeId,
         type,
         startDate,
-        endDate,
+        endDate: isLuto ? (calculatedLutoEndDate ?? startDate) : endDate,
         notes: notes || undefined,
         supportStorageObjectId,
         requestedBy: 'RRHH',
@@ -244,16 +251,28 @@ export function PayrollNovedadFormModal({
               className={styles.control}
             />
           </div>
-          <div className={styles.field}>
-            <span className={styles.label}>Fin</span>
-            <DatePicker
-              value={parseIsoDateValue(endDate)}
-              onChange={(date) => setEndDate(date ? toIsoDate(date) : '')}
-              theme={modalTheme}
-              size="md"
-              className={styles.control}
-            />
-          </div>
+          {isLuto ? (
+            <div className={styles.field}>
+              <span className={styles.label}>Fin calculado (5 días hábiles)</span>
+              <RecetaTextInput
+                theme={uiTheme}
+                className={styles.control}
+                value={calculatedLutoEndDate ?? '—'}
+                readOnly
+              />
+            </div>
+          ) : (
+            <div className={styles.field}>
+              <span className={styles.label}>Fin</span>
+              <DatePicker
+                value={parseIsoDateValue(endDate)}
+                onChange={(date) => setEndDate(date ? toIsoDate(date) : '')}
+                theme={modalTheme}
+                size="md"
+                className={styles.control}
+              />
+            </div>
+          )}
         </div>
 
         <div className={styles.field}>

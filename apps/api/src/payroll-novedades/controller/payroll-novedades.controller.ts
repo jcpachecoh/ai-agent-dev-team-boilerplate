@@ -24,6 +24,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import type {
+  NovedadAuditLogRecord,
   PayrollNovedadRecord,
   PayrollNovedadSummary,
 } from '../interfaces/payroll-novedades.interfaces';
@@ -39,6 +40,9 @@ import {
   SubmitNovedadResponseDto,
   SupportDocumentUrlResponseDto,
   UpdateNovedadTypeConfigDto,
+  EditNovedadDto,
+  EditNovedadResponseDto,
+  NovedadAuditLogResponseDto,
 } from './dto/payroll-novedades.dto';
 
 const NOVEDAD_WRITE_ROLES = ['NOMINA', ...SYSTEM_ADMIN_ROLES] as const;
@@ -55,6 +59,18 @@ function mapRecord(record: PayrollNovedadRecord): PayrollNovedadResponseDto {
 
 function mapSummary(record: PayrollNovedadSummary): PayrollNovedadSummaryResponseDto {
   return { ...record };
+}
+
+function mapAuditLog(record: NovedadAuditLogRecord): NovedadAuditLogResponseDto {
+  return {
+    id: record.id,
+    novedadId: record.novedadId,
+    changedBy: record.changedBy,
+    changedByName: record.changedByName,
+    changedAt: record.changedAt,
+    previousValue: record.previousValue as unknown as Record<string, unknown>,
+    newValue: record.newValue as unknown as Record<string, unknown>,
+  };
 }
 
 @ApiTags('Payroll Novedades')
@@ -78,6 +94,7 @@ export class PayrollNovedadesController {
       requiresSupervisorApproval: row.requiresSupervisorApproval,
       requiresSupportDocument: row.requiresSupportDocument,
       isPaidDefault: row.isPaidDefault,
+      autoSolicitable: row.autoSolicitable,
     }));
   }
 
@@ -96,6 +113,7 @@ export class PayrollNovedadesController {
       requiresSupervisorApproval: row.requiresSupervisorApproval,
       requiresSupportDocument: row.requiresSupportDocument,
       isPaidDefault: row.isPaidDefault,
+      autoSolicitable: row.autoSolicitable,
     };
   }
 
@@ -256,6 +274,40 @@ export class PayrollNovedadesController {
       size: file.size,
     });
     return mapRecord(record);
+  }
+
+  @Get(':id/audit')
+  @Roles(...NOVEDAD_WRITE_ROLES)
+  @ApiOperation({ summary: 'Historial de auditoría de ediciones' })
+  @ApiResponse({ status: 200, type: [NovedadAuditLogResponseDto] })
+  async listAuditLogs(
+    @CurrentUser() user: JwtPayload,
+    @Param('id') id: string,
+  ): Promise<NovedadAuditLogResponseDto[]> {
+    const rows = await this.service.listAuditLogs(user.tenantId, user.sub, id);
+    return rows.map(mapAuditLog);
+  }
+
+  @Patch(':id')
+  @Roles(...NOVEDAD_WRITE_ROLES)
+  @ApiOperation({ summary: 'Editar novedad (RRHH)' })
+  @ApiResponse({ status: 200, type: EditNovedadResponseDto })
+  async edit(
+    @CurrentUser() user: JwtPayload,
+    @Param('id') id: string,
+    @Body() dto: EditNovedadDto,
+  ): Promise<EditNovedadResponseDto> {
+    const result = await this.service.edit(user.tenantId, user.sub, id, {
+      startDate: dto.startDate ? parseCalendarDate(dto.startDate) : undefined,
+      endDate: dto.endDate ? parseCalendarDate(dto.endDate) : undefined,
+      isPaid: dto.isPaid,
+      notes: dto.notes,
+      overlapWarningAck: dto.overlapWarningAck,
+    });
+    return {
+      novedad: mapRecord(result.novedad),
+      auditLog: mapAuditLog(result.auditLog),
+    };
   }
 
   @Get(':id/support/download')
