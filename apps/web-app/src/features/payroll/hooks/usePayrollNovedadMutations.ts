@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   approvePayrollNovedadRrhh,
   approvePayrollNovedadSupervisor,
+  editPayrollNovedad,
   rejectPayrollNovedadRrhh,
   rejectPayrollNovedadSupervisor,
   submitPayrollNovedad,
@@ -10,6 +11,7 @@ import {
 } from '../api/payroll-novedades.client';
 import { payrollKeys } from '../api/queryKeys';
 import type {
+  EditPayrollNovedadInput,
   ListPayrollNovedadesFilters,
   RejectPayrollNovedadInput,
   SubmitPayrollNovedadInput,
@@ -22,6 +24,7 @@ export function usePayrollNovedadMutations(listFilters: ListPayrollNovedadesFilt
     await qc.invalidateQueries({ queryKey: payrollKeys.payrollNovedadList(listFilters) });
     if (id) {
       await qc.invalidateQueries({ queryKey: payrollKeys.payrollNovedadDetail(id) });
+      await qc.invalidateQueries({ queryKey: payrollKeys.payrollNovedadAudit(id) });
     }
   };
 
@@ -59,6 +62,12 @@ export function usePayrollNovedadMutations(listFilters: ListPayrollNovedadesFilt
     onSuccess: async (data) => invalidate(data.id),
   });
 
+  const editMutation = useMutation({
+    mutationFn: ({ id, input }: { id: string; input: EditPayrollNovedadInput }) =>
+      editPayrollNovedad(id, input),
+    onSuccess: async (data) => invalidate(data.novedad.id),
+  });
+
   return {
     submitMutation,
     approveSupervisorMutation,
@@ -66,5 +75,6 @@ export function usePayrollNovedadMutations(listFilters: ListPayrollNovedadesFilt
     approveRrhhMutation,
     rejectRrhhMutation,
     uploadSupportMutation,
+    editMutation,
   };
 }

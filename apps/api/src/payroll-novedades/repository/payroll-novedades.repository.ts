@@ -1,10 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import { NovedadStatus, NovedadType, Prisma } from '@prisma/client';
+import { FinancialPaymentStatus, NovedadStatus, NovedadType, Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../prisma/prisma.service';
 import type {
   CreatePayrollNovedadData,
+  EditableNovedadSnapshot,
   IPayrollNovedadesRepository,
+  NovedadAuditLogRecord,
   NovedadListFilters,
   OverlapCheckResult,
   PayrollNovedadPayrollPeriodRange,
@@ -78,6 +80,10 @@ export class PayrollNovedadesRepository implements IPayrollNovedadesRepository {
         ...(data.supportStorageObjectId !== undefined
           ? { supportStorageObjectId: data.supportStorageObjectId }
           : {}),
+        ...(data.startDate !== undefined ? { startDate: data.startDate } : {}),
+        ...(data.endDate !== undefined ? { endDate: data.endDate } : {}),
+        ...(data.isPaid !== undefined ? { isPaid: data.isPaid } : {}),
+        ...(data.notes !== undefined ? { notes: data.notes } : {}),
       },
     });
 
@@ -329,6 +335,145 @@ export class PayrollNovedadesRepository implements IPayrollNovedadesRepository {
     return employees.map((employee) => employee.id);
   }
 
+  async updateEditableFields(
+    tenantId: string,
+    id: string,
+    data: Pick<UpdatePayrollNovedadData, 'startDate' | 'endDate' | 'isPaid' | 'notes'>,
+    auditLog: {
+      changedBy: string;
+      previousValue: EditableNovedadSnapshot;
+      newValue: EditableNovedadSnapshot;
+    },
+  ): Promise<PayrollNovedadRecord> {
+    const row = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.payrollNovedad.update({
+        where: { id },
+        data: {
+          ...(data.startDate !== undefined ? { startDate: data.startDate } : {}),
+          ...(data.endDate !== undefined ? { endDate: data.endDate } : {}),
+          ...(data.isPaid !== undefined ? { isPaid: data.isPaid } : {}),
+          ...(data.notes !== undefined ? { notes: data.notes } : {}),
+        },
+      });
+
+      if (updated.tenantId !== tenantId) {
+        throw new Error(`PayrollNovedad ${id} does not belong to tenant ${tenantId}`);
+      }
+
+      await tx.novedadAuditLog.create({
+        data: {
+          tenantId,
+          novedadId: id,
+          changedBy: auditLog.changedBy,
+          previousValue: auditLog.previousValue as unknown as Prisma.InputJsonValue,
+          newValue: auditLog.newValue as unknown as Prisma.InputJsonValue,
+        },
+      });
+
+      return updated;
+    });
+
+    return this.mapRecord(row);
+  }
+
+  async listAuditLogsByNovedadId(
+    tenantId: string,
+    novedadId: string,
+  ): Promise<NovedadAuditLogRecord[]> {
+    const rows = await this.prisma.novedadAuditLog.findMany({
+      where: { tenantId, novedadId },
+      orderBy: { changedAt: 'desc' },
+      include: {
+        novedad: {
+          select: { id: true },
+        },
+      },
+    });
+
+    const userIds = [...new Set(rows.map((row) => row.changedBy))];
+    const users =
+      userIds.length > 0
+        ? await this.prisma.user.findMany({
+            where: { tenantId, id: { in: userIds } },
+            select: {
+              id: true,
+              email: true,
+              employeeDetails: { select: { name: true } },
+            },
+          })
+        : [];
+    const userNameById = new Map(
+      users.map((user) => [user.id, user.employeeDetails?.name ?? user.email]),
+    );
+
+    return rows.map((row) => ({
+      id: row.id,
+      tenantId: row.tenantId,
+      novedadId: row.novedadId,
+      changedBy: row.changedBy,
+      changedAt: row.changedAt,
+      previousValue: row.previousValue as unknown as EditableNovedadSnapshot,
+      newValue: row.newValue as unknown as EditableNovedadSnapshot,
+      changedByName: userNameById.get(row.changedBy) ?? null,
+    }));
+  }
+
+  async isConsumedByProcessedPayroll(
+    tenantId: string,
+    novedad: Pick<PayrollNovedadRecord, 'employeeId' | 'status' | 'startDate' | 'endDate'>,
+  ): Promise<boolean> {
+    if (novedad.status !== NovedadStatus.APROBADA) {
+      return false;
+    }
+
+    const employee = await this.prisma.employeeDetails.findFirst({
+      where: { tenantId, id: novedad.employeeId, deletedAt: null },
+      select: {
+        financialProfile: { select: { id: true } },
+      },
+    });
+
+    const financialProfileId = employee?.financialProfile?.id;
+    if (!financialProfileId) {
+      return false;
+    }
+
+    const periods = this.enumerateMonthPeriods(novedad.startDate, novedad.endDate);
+    if (periods.length === 0) {
+      return false;
+    }
+
+    const paidCount = await this.prisma.employeePaymentHistory.count({
+      where: {
+        tenantId,
+        financialProfileId,
+        status: FinancialPaymentStatus.PAID,
+        OR: periods.map(({ year, month }) => ({ periodYear: year, periodMonth: month })),
+      },
+    });
+
+    return paidCount > 0;
+  }
+
+  private enumerateMonthPeriods(
+    startDate: Date,
+    endDate: Date,
+  ): Array<{ year: number; month: number }> {
+    const periods: Array<{ year: number; month: number }> = [];
+    const cursor = new Date(Date.UTC(startDate.getUTCFullYear(), startDate.getUTCMonth(), 1));
+    const end = new Date(Date.UTC(endDate.getUTCFullYear(), endDate.getUTCMonth(), 1));
+
+    while (cursor.getTime() <= end.getTime()) {
+      periods.push({
+        year: cursor.getUTCFullYear(),
+        month: cursor.getUTCMonth() + 1,
+      });
+      cursor.setUTCMonth(cursor.getUTCMonth() + 1);
+    }
+
+    return periods;
+  }
+
   private buildListWhere(
     tenantId: string,
     filters: NovedadListFilters,
@@ -393,6 +538,7 @@ export class PayrollNovedadesRepository implements IPayrollNovedadesRepository {
     rrhhDecisionAt: Date | null;
     rejectionReason: string | null;
     overlapWarningAck: boolean;
+    isEditable: boolean;
     createdAt: Date;
     updatedAt: Date;
     deletedAt: Date | null;
@@ -417,6 +563,7 @@ export class PayrollNovedadesRepository implements IPayrollNovedadesRepository {
       rrhhDecisionAt: row.rrhhDecisionAt,
       rejectionReason: row.rejectionReason,
       overlapWarningAck: row.overlapWarningAck,
+      isEditable: row.isEditable,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
       deletedAt: row.deletedAt,

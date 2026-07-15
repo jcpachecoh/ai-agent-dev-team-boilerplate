@@ -23,14 +23,17 @@ Implementar acceso Prisma para `PayrollNovedad` y `NovedadTypeConfig` con filtro
 
 ### `PayrollNovedadesRepository`
 
-| Método                  | Descripción                                                                               |
-| ----------------------- | ----------------------------------------------------------------------------------------- |
-| `create`                | Insert con `tenantId`                                                                     |
-| `findById`              | `tenantId` + `id` + `deletedAt: null`                                                     |
-| `updateStatus`          | Transición atómica con campos de aprobación                                               |
-| `list`                  | Cursor-based pagination; filtros de `NovedadListFilters`                                  |
-| `findOverlapping`       | Mismo `employeeId`, rangos que intersectan, estados no terminales rechazados o `APROBADA` |
-| `findApprovedForPeriod` | `status: APROBADA`, intersecta `YYYY-MM` (liquidación task 07)                            |
+| Método                     | Descripción                                                                               |
+| -------------------------- | ----------------------------------------------------------------------------------------- |
+| `create`                   | Insert con `tenantId`                                                                     |
+| `findById`                 | `tenantId` + `id` + `deletedAt: null`                                                     |
+| `updateStatus`             | Transición atómica con campos de aprobación                                               |
+| `list`                     | Cursor-based pagination; filtros de `NovedadListFilters`                                  |
+| `findOverlapping`          | Mismo `employeeId`, rangos que intersectan, estados no terminales rechazados o `APROBADA` |
+| `findApprovedForPeriod`    | `status: APROBADA`, intersecta `YYYY-MM` (liquidación task 07)                            |
+| `updateFields`             | Update parcial campos editables (task 12)                                                 |
+| `createAuditLog`           | Insert `NovedadAuditLog` (task 12)                                                        |
+| `listAuditLogsByNovedadId` | Historial de ediciones (task 12)                                                          |
 
 ### `NovedadTypeConfigRepository`
 

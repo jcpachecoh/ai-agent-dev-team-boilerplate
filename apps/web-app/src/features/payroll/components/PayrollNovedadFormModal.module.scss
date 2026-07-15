@@ -33,6 +33,12 @@
   --control-width: 100%;
 }
 
+.helperText {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+}
+
 .actions {
   display: flex;
   justify-content: flex-end;

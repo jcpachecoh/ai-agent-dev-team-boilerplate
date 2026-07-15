@@ -232,6 +232,14 @@ export function canWritePayrollNovedades(roleCode: string | null | undefined): b
   return (PAYROLL_NOVEDADES_WRITE_ROLES as readonly string[]).includes(roleCode);
 }
 
+/** RRHH, admin o líder inmediato — registro en nombre del empleado (NOM-14 task 12). */
+export function canRegisterPayrollNovedadOnBehalf(roleCode: string | null | undefined): boolean {
+  if (!roleCode) {
+    return false;
+  }
+  return canWritePayrollNovedades(roleCode) || roleCode === 'SUPERVISOR' || roleCode === 'MANAGER';
+}
+
 /** OS-588 (fase 4) — calcular liquidación anual y exportar archivos de consignación.
  * Mismos roles que ya usa el backend en CesantiasController (@Roles(...PAYROLL_WRITE_ROLES)). */
 export function canWriteCesantias(roleCode: string | null | undefined): boolean {

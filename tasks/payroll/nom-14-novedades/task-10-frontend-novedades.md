@@ -51,7 +51,8 @@ Actualizar `breadcrumbLabels` correspondiente.
 - `NovedadRejectModal` — motivo obligatorio.
 - `NovedadOverlapWarningDialog` — confirmar si API retorna solapamiento.
 - `NovedadTypeConfigPanel` — lectura/edición flags por tipo (modal o drawer).
-- `NovedadDetailDrawer` — fechas, soporte descargable, trazabilidad aprobaciones.
+- `NovedadDetailDrawer` — fechas, soporte descargable, trazabilidad aprobaciones, **historial audit log** (task 12).
+- `PayrollNovedadEditModal` — edición RRHH; ocultar fin manual en luto; calamidad acortable (task 12).
 
 Reutilizar: `EmpleadoPage`, `EmpleadoTable`, filtros de sede, CSS Modules, estados loading/error/empty.
 
@@ -71,6 +72,9 @@ Reutilizar: `EmpleadoPage`, `EmpleadoTable`, filtros de sede, CSS Modules, estad
 - Mostrar alerta `NO_SUPERVISOR_ASSIGNED` cuando API retorna warning.
 - Tipos con soporte obligatorio: deshabilitar guardar sin adjunto.
 - Rechazos: motivo visible en detalle para trazabilidad RRHH.
+- Botón **Editar** solo si `isEditable` y rol write (task 12).
+- `CALAMIDAD_DOMESTICA` no visible en solicitud empleado (Mi Perfil / CONN-07).
+- `LICENCIA_LUTO`: solo captura inicio; fin calculado automáticamente (task 12).
 
 ---
 
@@ -106,6 +110,8 @@ Reutilizar: `EmpleadoPage`, `EmpleadoTable`, filtros de sede, CSS Modules, estad
 - [ ] RRHH puede crear novedad en nombre del empleado con adjunto.
 - [ ] Rechazo exige motivo; se muestra en detalle.
 - [ ] Supervisor solo ve bandeja de sus empleados.
+- [ ] Edición con auditoría operativa para RRHH (task 12).
+- [ ] Calamidad no autosolicitable; luto auto-calculado (task 12).
 - [ ] `pnpm --filter=web-app typecheck` pasa.
 
 ---

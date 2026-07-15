@@ -9,6 +9,7 @@ export interface NovedadTypeConfigRecord {
   requiresSupervisorApproval: boolean;
   requiresSupportDocument: boolean;
   isPaidDefault: boolean;
+  autoSolicitable: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -17,6 +18,7 @@ export interface UpdateNovedadTypeConfigInput {
   requiresSupervisorApproval?: boolean;
   requiresSupportDocument?: boolean;
   isPaidDefault?: boolean;
+  autoSolicitable?: boolean;
 }
 
 export interface INovedadTypeConfigRepository {

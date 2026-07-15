@@ -13,7 +13,7 @@ import {
 import { format, isValid, parseISO } from 'date-fns';
 import { useMemo, useState } from 'react';
 
-import { canWritePayrollNovedades } from '@/config/rbac.config';
+import { canRegisterPayrollNovedadOnBehalf, canWritePayrollNovedades } from '@/config/rbac.config';
 import { useMe } from '@/features/auth/hooks/useMe';
 import { useLocations } from '@/features/sedes/hooks/useLocations';
 import { getRoleCodeFromToken } from '@/lib/auth-token';
@@ -24,6 +24,7 @@ import { usePayrollNovedadMutations } from '../hooks/usePayrollNovedadMutations'
 import { usePayrollNovedadesQuery } from '../hooks/usePayrollNovedadesQuery';
 import { useActivePayrollEmployeesQuery } from '../hooks/useActivePayrollEmployeesQuery';
 import { PayrollFilterBar } from '../components/PayrollFilterBar';
+import { PayrollNovedadEditModal } from '../components/PayrollNovedadEditModal';
 import { PayrollNovedadFormModal } from '../components/PayrollNovedadFormModal';
 import { PayrollNovedadesTable } from '../components/PayrollNovedadesTable';
 import type {
@@ -80,6 +81,7 @@ export function PayrollNovedadesScreen(): React.JSX.Element {
   const { data: me } = useMe();
   const roleCode = me?.roleCode ?? getRoleCodeFromToken();
   const canWrite = canWritePayrollNovedades(roleCode);
+  const canRegister = canRegisterPayrollNovedadOnBehalf(roleCode);
   const supervisor = isSupervisorRole(roleCode);
   const rrhh = isRrhhRole(roleCode);
 
@@ -92,6 +94,7 @@ export function PayrollNovedadesScreen(): React.JSX.Element {
   const [rejectTarget, setRejectTarget] = useState<PayrollNovedadSummary | null>(null);
   const [rejectReason, setRejectReason] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<PayrollNovedadSummary | null>(null);
   const [filterEmployeeSearch, setFilterEmployeeSearch] = useState('');
 
   const listFilters = useMemo<ListPayrollNovedadesFilters>(
@@ -206,7 +209,7 @@ export function PayrollNovedadesScreen(): React.JSX.Element {
           theme={empleadoTheme}
           size="md"
           primaryAction={
-            canWrite ? (
+            canRegister ? (
               <EmpleadoActionButton
                 theme={empleadoTheme}
                 size="md"
@@ -301,6 +304,7 @@ export function PayrollNovedadesScreen(): React.JSX.Element {
             novedades={novedades}
             theme={empleadoTheme}
             showInboxActions={tab === 'inbox'}
+            canWrite={canWrite}
             supervisor={supervisor}
             rrhh={rrhh}
             onApprove={handleApprove}
@@ -308,6 +312,7 @@ export function PayrollNovedadesScreen(): React.JSX.Element {
               setRejectTarget(row);
               setRejectReason('');
             }}
+            onEdit={(row) => setEditTarget(row)}
           />
         )}
 
@@ -340,6 +345,13 @@ export function PayrollNovedadesScreen(): React.JSX.Element {
         open={createOpen}
         listFilters={listFilters}
         onClose={() => setCreateOpen(false)}
+      />
+
+      <PayrollNovedadEditModal
+        open={Boolean(editTarget)}
+        novedad={editTarget}
+        listFilters={listFilters}
+        onClose={() => setEditTarget(null)}
       />
     </EmpleadoPage>
   );

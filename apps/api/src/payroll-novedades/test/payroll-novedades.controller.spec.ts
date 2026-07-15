@@ -26,6 +26,7 @@ const mockNovedad = {
   startDate: new Date('2026-07-01T00:00:00.000Z'),
   endDate: new Date('2026-07-03T00:00:00.000Z'),
   isPaid: true,
+  isEditable: true,
   linkedLeaveId: null,
   supportStorageObjectId: null,
   notes: null,
@@ -45,7 +46,9 @@ const mockNovedad = {
 
 describe('PayrollNovedadesController', () => {
   let controller: PayrollNovedadesController;
-  let service: jest.Mocked<Pick<PayrollNovedadesService, 'submit' | 'list' | 'findOne'>>;
+  let service: jest.Mocked<
+    Pick<PayrollNovedadesService, 'submit' | 'list' | 'findOne' | 'edit' | 'listAuditLogs'>
+  >;
   let typeConfigService: jest.Mocked<Pick<NovedadTypeConfigService, 'listConfigs'>>;
 
   beforeEach(async () => {
@@ -53,6 +56,8 @@ describe('PayrollNovedadesController', () => {
       submit: jest.fn(),
       list: jest.fn(),
       findOne: jest.fn(),
+      edit: jest.fn(),
+      listAuditLogs: jest.fn(),
     };
     typeConfigService = {
       listConfigs: jest.fn(),
@@ -105,5 +110,52 @@ describe('PayrollNovedadesController', () => {
       USER_ID,
       expect.objectContaining({ rrhhInbox: true }),
     );
+  });
+
+  it('edit delega al service', async () => {
+    const auditLog = {
+      id: 'audit-1',
+      tenantId: TENANT_ID,
+      novedadId: 'nov-1',
+      changedBy: USER_ID,
+      changedAt: new Date(),
+      previousValue: { endDate: '2026-07-03' },
+      newValue: { endDate: '2026-07-02' },
+    };
+    service.edit.mockResolvedValue({ novedad: mockNovedad, auditLog });
+
+    const result = await controller.edit(mockUser, 'nov-1', {
+      endDate: '2026-07-02',
+    });
+
+    expect(result.novedad.id).toBe('nov-1');
+    expect(result.auditLog.id).toBe('audit-1');
+    expect(service.edit).toHaveBeenCalledWith(
+      TENANT_ID,
+      USER_ID,
+      'nov-1',
+      expect.objectContaining({
+        endDate: expect.any(Date),
+      }),
+    );
+  });
+
+  it('listAuditLogs delega al service', async () => {
+    service.listAuditLogs.mockResolvedValue([
+      {
+        id: 'audit-1',
+        tenantId: TENANT_ID,
+        novedadId: 'nov-1',
+        changedBy: USER_ID,
+        changedAt: new Date(),
+        previousValue: {},
+        newValue: { notes: 'Actualizado' },
+      },
+    ]);
+
+    const result = await controller.listAuditLogs(mockUser, 'nov-1');
+
+    expect(result).toHaveLength(1);
+    expect(service.listAuditLogs).toHaveBeenCalledWith(TENANT_ID, USER_ID, 'nov-1');
   });
 });

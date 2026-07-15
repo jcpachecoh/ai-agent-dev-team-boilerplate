@@ -2,8 +2,11 @@ import { getGraphqlAuthToken } from '@/lib/auth-token';
 import { getTenantId } from '@/lib/tenant';
 
 import type {
+  EditPayrollNovedadInput,
+  EditPayrollNovedadResult,
   ListMyPayrollNovedadesFilters,
   ListPayrollNovedadesFilters,
+  NovedadAuditLogRecord,
   NovedadTypeConfig,
   PayrollNovedadRecord,
   PayrollNovedadSummary,
@@ -49,7 +52,12 @@ function toQueryString(params: Record<string, string | number | boolean | undefi
 
 async function parseErrorMessage(response: Response, fallback: string): Promise<string> {
   try {
-    const payload = (await response.json()) as { message?: string | string[] };
+    const payload = (await response.json()) as {
+      message?: string | string[] | { message?: string };
+    };
+    if (typeof payload.message === 'object' && payload.message && 'message' in payload.message) {
+      return payload.message.message ?? fallback;
+    }
     if (Array.isArray(payload.message)) return payload.message.join('. ');
     if (typeof payload.message === 'string') return payload.message;
   } catch {
@@ -128,6 +136,37 @@ export async function getPayrollNovedad(id: string): Promise<PayrollNovedadRecor
     );
   }
   return (await response.json()) as PayrollNovedadRecord;
+}
+
+export async function editPayrollNovedad(
+  id: string,
+  input: EditPayrollNovedadInput,
+): Promise<EditPayrollNovedadResult> {
+  const response = await fetch(buildPayrollUrl(`/payroll-novedades/${id}`), {
+    method: 'PATCH',
+    headers: authHeaders('application/json'),
+    body: JSON.stringify(input),
+  });
+  if (!response.ok) {
+    throw new PayrollNovedadesApiError(
+      await parseErrorMessage(response, 'No se pudo editar la novedad'),
+      response.status,
+    );
+  }
+  return (await response.json()) as EditPayrollNovedadResult;
+}
+
+export async function fetchPayrollNovedadAuditLog(id: string): Promise<NovedadAuditLogRecord[]> {
+  const response = await fetch(buildPayrollUrl(`/payroll-novedades/${id}/audit`), {
+    headers: authHeaders(),
+  });
+  if (!response.ok) {
+    throw new PayrollNovedadesApiError(
+      await parseErrorMessage(response, 'No se pudo cargar el historial'),
+      response.status,
+    );
+  }
+  return (await response.json()) as NovedadAuditLogRecord[];
 }
 
 export async function submitPayrollNovedad(

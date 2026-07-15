@@ -34,6 +34,28 @@ vi.mock('@restopsiq/ui', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@restopsiq/ui')>();
   return {
     ...actual,
+    Combobox: ({
+      value,
+      onChange,
+      options,
+    }: {
+      value?: string;
+      onChange?: (value: string | string[]) => void;
+      options: Array<{ value: string; label: string }>;
+    }) => (
+      <select
+        aria-label="medical-leave-employee"
+        value={value ?? ''}
+        onChange={(event) => onChange?.(event.target.value)}
+      >
+        <option value="">Seleccionar</option>
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    ),
     RecetaFilterSelect: ({
       value,
       onChange,

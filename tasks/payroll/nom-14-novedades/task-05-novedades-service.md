@@ -29,17 +29,23 @@ Implementar `PayrollNovedadesService` con `submit()`, flujo de aprobación super
 2. Validar `startDate <= endDate`.
 3. Si `requiresSupportDocument` y sin `supportStorageObjectId` → `BadRequestException`.
 4. Si `type === AUSENCIA_INJUSTIFICADA` y `requestedBy !== RRHH` → `ForbiddenException`.
-5. Resolver `isPaid` desde input o `isPaidDefault` de config.
-6. `findOverlapping` — si hay conflicto y `!overlapWarningAck` → `ConflictException` con lista de IDs.
-7. Resolver ruta de aprobación:
+5. Si `type === CALAMIDAD_DOMESTICA` y `requestedBy === EMPLEADO` → `ForbiddenException` (PC-7 / task 12).
+6. Si `type === LICENCIA_LUTO` → `endDate = calculateLutoEndDate(startDate)` — ignorar input (PC-8 / task 12).
+7. Resolver `isPaid` desde input o `isPaidDefault` de config.
+8. `findOverlapping` — si hay conflicto y `!overlapWarningAck` → `ConflictException` con lista de IDs.
+9. Resolver ruta de aprobación:
    - `requestedBy === RRHH` → ver D4 epic (`PENDIENTE_RRHH` o `APROBADA` si `autoApprove`).
    - `requestedBy === EMPLEADO`:
      - Si `requiresSupervisorApproval` → intentar resolver supervisor (D1).
      - Con supervisor resoluble → `PENDIENTE_SUPERVISOR`.
      - Sin supervisor → `PENDIENTE_RRHH` + warning `NO_SUPERVISOR_ASSIGNED`.
      - Sin supervisor requerido → `PENDIENTE_RRHH`.
-8. Persistir y retornar `SubmitNovedadResult`.
-9. Disparar notificación (stub/delegar task 08).
+10. Persistir y retornar `SubmitNovedadResult`.
+11. Disparar notificación (stub/delegar task 08).
+
+#### `edit(tenantId, actorUserId, novedadId, input: EditNovedadInput)` (task 12)
+
+Ver epic D10 / [task 12](./task-12-edit-audit-legal-types-amendment.md): solo si `isEditable`, rol RRHH, **no consumida por liquidación procesada** (D13), audit log transaccional, recalcular luto si aplica.
 
 #### `approveBySupervisor(tenantId, actorUserId, novedadId)`
 
@@ -88,6 +94,9 @@ Testeable en aislamiento — copiar/adaptar de `VacationsService` sin duplicar l
 - Rechazo supervisor y RRHH con motivo.
 - RRHH crea con `autoApprove`.
 - Solapamiento sin `overlapWarningAck` falla; con ack persiste.
+- `CALAMIDAD_DOMESTICA` por empleado → 403 (task 12).
+- `LICENCIA_LUTO` → endDate auto 5 días hábiles (task 12).
+- `edit()` acorta calamidad → audit log (task 12).
 
 ---
 

@@ -2503,14 +2503,16 @@ model PayrollNovedad {
   rrhhDecisionAt         DateTime?
   rejectionReason        String?
   overlapWarningAck      Boolean              @default(false)
+  isEditable             Boolean              @default(true)
   sourceAttendanceLogId  String?              @unique
   createdAt              DateTime             @default(now())
   updatedAt              DateTime             @updatedAt
   deletedAt              DateTime?
 
-  employee            EmployeeDetails @relation(fields: [employeeId], references: [id], onDelete: Restrict)
-  supportDocument     StorageObject?  @relation(fields: [supportStorageObjectId], references: [id], onDelete: SetNull)
-  sourceAttendanceLog AttendanceLog?  @relation("PayrollNovedadSourceAttendanceLog", fields: [sourceAttendanceLogId], references: [id], onDelete: SetNull)
+  employee            EmployeeDetails   @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  supportDocument     StorageObject?    @relation(fields: [supportStorageObjectId], references: [id], onDelete: SetNull)
+  sourceAttendanceLog AttendanceLog?    @relation("PayrollNovedadSourceAttendanceLog", fields: [sourceAttendanceLogId], references: [id], onDelete: SetNull)
+  auditLogs           NovedadAuditLog[]
 
   @@index([tenantId])
   @@index([tenantId, employeeId])
@@ -2529,12 +2531,30 @@ model NovedadTypeConfig {
   requiresSupervisorApproval Boolean     @default(false)
   requiresSupportDocument    Boolean     @default(false)
   isPaidDefault              Boolean     @default(true)
+  autoSolicitable            Boolean     @default(true)
   createdAt                  DateTime    @default(now())
   updatedAt                  DateTime    @updatedAt
 
   @@unique([tenantId, type])
   @@index([tenantId])
   @@map("novedad_type_configs")
+}
+
+model NovedadAuditLog {
+  id            String   @id @default(cuid())
+  tenantId      String
+  novedadId     String
+  changedBy     String
+  changedAt     DateTime @default(now())
+  previousValue Json
+  newValue      Json
+
+  novedad PayrollNovedad @relation(fields: [novedadId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([novedadId])
+  @@index([changedAt])
+  @@map("novedad_audit_logs")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

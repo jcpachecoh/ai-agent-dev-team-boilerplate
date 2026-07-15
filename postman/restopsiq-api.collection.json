@@ -15882,6 +15882,74 @@
           ]
         },
         {
+          "name": "PATCH Edit — acortar endDate (RRHH)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenNomina}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"endDate\": \"{{payrollNovedadEndDate}}\",\n  \"notes\": \"Ajuste post reintegro (task 12)\"\n}"
+            },
+            "url": "{{baseUrl}}/api/payroll-novedades/{{payrollNovedadId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('edit novedad: status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.novedad).to.be.an('object');",
+                  "pm.expect(body.auditLog).to.be.an('object');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Audit — historial de ediciones",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenNomina}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/payroll-novedades/{{payrollNovedadId}}/audit"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('audit log: status 200', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json()).to.be.an('array');"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "POST Approve — supervisor",
           "request": {
             "method": "POST",
