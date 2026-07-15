@@ -625,6 +625,40 @@ describe('PayrollNovedadesService', () => {
         expect.objectContaining({ employeeIds: [EMPLOYEE_ID] }),
       );
     });
+
+    it('marca editBlockedReason cuando la novedad no es editable', async () => {
+      repository.findActorUser.mockResolvedValue({ roleCode: 'NOMINA', positionId: null });
+      repository.listSummaries.mockResolvedValue([
+        {
+          ...buildNovedad({ isEditable: false, status: NovedadStatus.APROBADA }),
+          employeeName: 'Ana',
+          locationId: 'loc-1',
+          locationName: 'Sede',
+        },
+      ]);
+
+      const result = await service.list(TENANT, RRHH_USER, {});
+
+      expect(result[0]?.editBlockedReason).toBe('Esta novedad no puede editarse');
+      expect(repository.isConsumedByProcessedPayroll).not.toHaveBeenCalled();
+    });
+
+    it('marca editBlockedReason cuando la liquidación ya fue procesada', async () => {
+      repository.findActorUser.mockResolvedValue({ roleCode: 'NOMINA', positionId: null });
+      repository.listSummaries.mockResolvedValue([
+        {
+          ...buildNovedad({ status: NovedadStatus.APROBADA }),
+          employeeName: 'Ana',
+          locationId: 'loc-1',
+          locationName: 'Sede',
+        },
+      ]);
+      repository.isConsumedByProcessedPayroll.mockResolvedValue(true);
+
+      const result = await service.list(TENANT, RRHH_USER, {});
+
+      expect(result[0]?.editBlockedReason).toContain('liquidación procesada');
+    });
   });
 
   describe('listMyNovedades', () => {
@@ -924,6 +958,23 @@ describe('PayrollNovedadesService', () => {
       expect(result.novedad.isPaid).toBe(true);
       expect(result.novedad.endDate.toISOString().slice(0, 10)).toBe('2025-04-24');
     });
+
+    it('rechaza tipos no autosolicitables distintos de calamidad', async () => {
+      repository.findEmployeeIdByUserId.mockResolvedValue(EMPLOYEE_ID);
+      typeConfigService.getConfigForTenant.mockResolvedValue(
+        buildTypeConfig(NovedadType.DIA_FAMILIA, { autoSolicitable: false }),
+      );
+
+      await expect(
+        service.submit(TENANT, 'emp-user', {
+          employeeId: EMPLOYEE_ID,
+          type: NovedadType.DIA_FAMILIA,
+          startDate: new Date('2026-07-01T00:00:00.000Z'),
+          endDate: new Date('2026-07-03T00:00:00.000Z'),
+          requestedBy: NovedadRequestSource.EMPLEADO,
+        }),
+      ).rejects.toThrow(ForbiddenException);
+    });
   });
 
   describe('edit', () => {
@@ -987,6 +1038,143 @@ describe('PayrollNovedadesService', () => {
           endDate: new Date('2026-07-05T00:00:00.000Z'),
         }),
       ).rejects.toThrow(ConflictException);
+    });
+
+    it('rechaza edición cuando isEditable es false', async () => {
+      repository.findById.mockResolvedValue(buildNovedad({ isEditable: false }));
+      repository.findActorUser.mockResolvedValue({ roleCode: 'NOMINA', positionId: null });
+
+      await expect(
+        service.edit(TENANT, RRHH_USER, 'nov-1', {
+          endDate: new Date('2026-07-05T00:00:00.000Z'),
+        }),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('rechaza edición de novedad rechazada', async () => {
+      repository.findById.mockResolvedValue(
+        buildNovedad({ status: NovedadStatus.RECHAZADA, isEditable: true }),
+      );
+      repository.findActorUser.mockResolvedValue({ roleCode: 'NOMINA', positionId: null });
+
+      await expect(
+        service.edit(TENANT, RRHH_USER, 'nov-1', {
+          endDate: new Date('2026-07-05T00:00:00.000Z'),
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('recalcula fin de luto al cambiar la fecha de inicio', async () => {
+      const current = buildNovedad({
+        type: NovedadType.LICENCIA_LUTO,
+        status: NovedadStatus.APROBADA,
+        startDate: new Date('2025-04-16T00:00:00.000Z'),
+        endDate: new Date('2025-04-24T00:00:00.000Z'),
+      });
+      repository.findById.mockResolvedValue(current);
+      repository.findActorUser.mockResolvedValue({ roleCode: 'NOMINA', positionId: null });
+      repository.isConsumedByProcessedPayroll.mockResolvedValue(false);
+      repository.findOverlapping.mockResolvedValue({
+        hasOverlap: false,
+        conflictingNovedadIds: [],
+      });
+      repository.updateEditableFields.mockResolvedValue(
+        buildNovedad({
+          ...current,
+          startDate: new Date('2025-04-17T00:00:00.000Z'),
+          endDate: new Date('2025-04-25T00:00:00.000Z'),
+        }),
+      );
+      repository.listAuditLogsByNovedadId.mockResolvedValue([
+        {
+          id: 'audit-1',
+          tenantId: TENANT,
+          novedadId: 'nov-1',
+          changedBy: RRHH_USER,
+          changedAt: new Date(),
+          previousValue: {
+            startDate: '2025-04-16',
+            endDate: '2025-04-24',
+            isPaid: true,
+            notes: null,
+          },
+          newValue: {
+            startDate: '2025-04-17',
+            endDate: '2025-04-25',
+            isPaid: true,
+            notes: null,
+          },
+        },
+      ]);
+
+      await service.edit(TENANT, RRHH_USER, 'nov-1', {
+        startDate: new Date('2025-04-17T00:00:00.000Z'),
+      });
+
+      expect(repository.updateEditableFields).toHaveBeenCalledWith(
+        TENANT,
+        'nov-1',
+        expect.objectContaining({
+          endDate: expect.any(Date),
+        }),
+        expect.any(Object),
+      );
+    });
+
+    it('rechaza edición sin cambios', async () => {
+      const current = buildNovedad({
+        status: NovedadStatus.APROBADA,
+        startDate: new Date('2026-07-01T00:00:00.000Z'),
+        endDate: new Date('2026-07-03T00:00:00.000Z'),
+      });
+      repository.findById.mockResolvedValue(current);
+      repository.findActorUser.mockResolvedValue({ roleCode: 'NOMINA', positionId: null });
+      repository.isConsumedByProcessedPayroll.mockResolvedValue(false);
+      repository.findOverlapping.mockResolvedValue({
+        hasOverlap: false,
+        conflictingNovedadIds: [],
+      });
+
+      await expect(
+        service.edit(TENANT, RRHH_USER, 'nov-1', {
+          startDate: new Date('2026-07-01T00:00:00.000Z'),
+          endDate: new Date('2026-07-03T00:00:00.000Z'),
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('listAuditLogs', () => {
+    it('retorna historial de auditoría para RRHH', async () => {
+      repository.findById.mockResolvedValue(buildNovedad({ status: NovedadStatus.APROBADA }));
+      repository.findActorUser.mockResolvedValue({ roleCode: 'NOMINA', positionId: null });
+      repository.listAuditLogsByNovedadId.mockResolvedValue([
+        {
+          id: 'audit-1',
+          tenantId: TENANT,
+          novedadId: 'nov-1',
+          changedBy: RRHH_USER,
+          changedAt: new Date(),
+          previousValue: {
+            startDate: '2026-07-01',
+            endDate: '2026-07-03',
+            isPaid: true,
+            notes: null,
+          },
+          newValue: {
+            startDate: '2026-07-01',
+            endDate: '2026-07-02',
+            isPaid: true,
+            notes: null,
+          },
+          changedByName: 'RRHH User',
+        },
+      ]);
+
+      const result = await service.listAuditLogs(TENANT, RRHH_USER, 'nov-1');
+
+      expect(result).toHaveLength(1);
+      expect(repository.listAuditLogsByNovedadId).toHaveBeenCalledWith(TENANT, 'nov-1');
     });
   });
 
