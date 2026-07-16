@@ -44,6 +44,7 @@
   background-color: transparent;
   border: $border-width solid rgba($color-black, 0.16);
   transition: all $transition-fast;
+  cursor: text;
 }
 
 .input {

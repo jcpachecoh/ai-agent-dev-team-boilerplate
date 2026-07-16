@@ -15,13 +15,28 @@ $mobile-breakpoint: 768px;
 .tabButtonActive {
   padding: 0.5rem 1rem;
   border-radius: 0.5rem;
-  border: 1px solid var(--border-subtle, #e2e8f0);
+  border: 1px solid var(--empleado-border, rgba(255, 255, 255, 0.14));
   cursor: pointer;
   background: transparent;
+  color: var(--empleado-text, #f5f5f5);
+  font-size: 0.875rem;
+  line-height: 1.25;
+}
+
+.tabButton {
+  color: var(--empleado-text-secondary, var(--empleado-subtle, #c4c4c4));
+
+  &:hover {
+    color: var(--empleado-text, #f5f5f5);
+    background: color-mix(in srgb, var(--empleado-text, #fff) 6%, transparent);
+  }
 }
 
 .tabButtonActive {
-  background: var(--surface-elevated, #f8fafc);
+  // Light pill in both themes so the selected tab stays readable (esp. dark mode)
+  background: #f8fafc;
+  color: #0f172a;
+  border-color: #f8fafc;
   font-weight: 600;
 }
 

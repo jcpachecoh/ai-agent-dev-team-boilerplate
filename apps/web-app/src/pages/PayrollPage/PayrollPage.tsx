@@ -13,7 +13,6 @@ import {
   VacationApprovalsScreen,
 } from '@/features/payroll';
 import { RedirectLegacyPayrollAttendance } from '@/pages/AttendancePage/AttendancePage';
-import ModulePlaceholderPage from '@/pages/ModulePlaceholderPage';
 
 export default function PayrollPage(): React.JSX.Element {
   return (
@@ -24,7 +23,6 @@ export default function PayrollPage(): React.JSX.Element {
       <Route path="employees/:userId/profile" element={<PayrollEmployeeProfileScreen />} />
       <Route path="positions" element={<EmployeePositionsListScreen />} />
       <Route path="attendance/*" element={<RedirectLegacyPayrollAttendance />} />
-      <Route path="salaries" element={<ModulePlaceholderPage title="Salarios" />} />
       <Route path="legal-parameters" element={<PayrollLegalParametersScreen />} />
       <Route path="novedades" element={<PayrollNovedadesScreen />} />
       <Route path="novedades/incapacidades" element={<MedicalLeavesScreen />} />

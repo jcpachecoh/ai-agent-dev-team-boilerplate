@@ -14,7 +14,7 @@ export interface NominaLegalAlertsPanelProps {
 }
 
 export function NominaLegalAlertsPanel({
-  title = 'Alertas legales',
+  title = 'Alertas horas extra',
   items = [],
   emptyTitle,
   emptyDescription,

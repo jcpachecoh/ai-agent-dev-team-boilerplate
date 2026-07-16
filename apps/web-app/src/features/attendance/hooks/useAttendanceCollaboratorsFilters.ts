@@ -7,7 +7,7 @@ import type { LaborClassificationFilterValue } from '../utils/labor-classificati
 
 export type AttendanceCollaboratorsStatusFilter = 'all' | 'active' | 'inactive';
 
-export const ATTENDANCE_COLLABORATORS_PAGE_SIZE_OPTIONS = [20, 50, 100] as const;
+export const ATTENDANCE_COLLABORATORS_PAGE_SIZE_OPTIONS = [8, 20, 50, 100] as const;
 export type AttendanceCollaboratorsPageSize =
   (typeof ATTENDANCE_COLLABORATORS_PAGE_SIZE_OPTIONS)[number];
 

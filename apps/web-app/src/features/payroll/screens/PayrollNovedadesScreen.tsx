@@ -240,16 +240,6 @@ export function PayrollNovedadesScreen(): React.JSX.Element {
         </div>
         <PayrollFilterBar>
           <div className={styles.filterField}>
-            <span className={styles.filterLabel}>Sede</span>
-            <RecetaFilterSelect
-              value={selectedLocationId}
-              options={locationOptions}
-              onChange={setSelectedLocationId}
-              theme={empleadoTheme}
-              size="md"
-            />
-          </div>
-          <div className={styles.filterField}>
             <span className={styles.filterLabel}>Empleado</span>
             <Combobox
               value={selectedEmployeeId}
@@ -291,6 +281,16 @@ export function PayrollNovedadesScreen(): React.JSX.Element {
               theme={empleadoTheme}
               size="md"
               className={styles.datePicker}
+            />
+          </div>
+          <div className={styles.filterField}>
+            <span className={styles.filterLabel}>Sede</span>
+            <RecetaFilterSelect
+              value={selectedLocationId}
+              options={locationOptions}
+              onChange={setSelectedLocationId}
+              theme={empleadoTheme}
+              size="md"
             />
           </div>
         </PayrollFilterBar>

@@ -14,6 +14,7 @@ import {
 const payrollReport: PayrollReportResponse = {
   tenantId: 'tenant-1',
   period: { year: 2025, month: 6 },
+  employees: [],
   tenantTotals: {
     employeeCount: 2,
     totalGrossPay: 5000000,
@@ -101,6 +102,7 @@ describe('mapLegalAlertItems', () => {
     expect(items).toHaveLength(1);
     expect(items[0]?.title).toBe('Ana López');
     expect(items[0]?.subtitle).toContain('Chapinero');
-    expect(items[0]?.subtitle).toContain('3h extras');
+    expect(items[0]?.subtitle).toContain('3h');
+    expect(items[0]?.subtitle).not.toContain('extras');
   });
 });

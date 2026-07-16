@@ -81,7 +81,7 @@ export const NAV_ID_TO_MODULE: Record<string, AppModule> = {
 };
 
 /** Nómina sub-routes hidden for read-only NOMINA role (phase 1). */
-export const NOMINA_HIDDEN_NAV_CHILD_IDS = new Set(['payroll-salaries']);
+export const NOMINA_HIDDEN_NAV_CHILD_IDS = new Set<string>();
 
 export const ROUTE_PREFIX_TO_MODULE: ReadonlyArray<{ prefix: string; module: AppModule }> = [
   { prefix: '/asistencia', module: AppModule.ASISTENCIA },

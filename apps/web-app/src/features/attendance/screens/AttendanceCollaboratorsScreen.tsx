@@ -205,7 +205,7 @@ export function AttendanceCollaboratorsScreen(): React.JSX.Element {
     setPage,
     setPageSize,
     resetFilters,
-  } = useAttendanceCollaboratorsFilters(20);
+  } = useAttendanceCollaboratorsFilters(8);
 
   const [sortColumn, setSortColumn] = useState<EmpleadoSortColumnKey | null>(null);
   const [sortDirection, setSortDirection] = useState<EmpleadoSortDirection>('asc');

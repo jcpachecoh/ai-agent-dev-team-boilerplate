@@ -1,5 +1,5 @@
 import { EmptyState, LoadingState, toast } from '@restopsiq/ui';
-import { Plus, Trash2 } from 'lucide-react';
+import { Pencil, Plus, Trash2 } from 'lucide-react';
 import { useMemo, useState, type JSX } from 'react';
 
 import { SYSTEM_ADMIN_ROLES } from '@/config/rbac.config';
@@ -223,8 +223,10 @@ export function PayrollLegalParametersScreen(): JSX.Element {
                           type="button"
                           className={styles.actionBtn}
                           onClick={() => setEditing(row)}
+                          aria-label={`Editar vigencia de ${row.key}`}
+                          title="Editar"
                         >
-                          Editar
+                          <Pencil size={13} aria-hidden />
                         </button>
                         <button
                           type="button"
