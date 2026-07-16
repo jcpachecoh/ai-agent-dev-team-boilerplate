@@ -232,39 +232,52 @@ describe('PilaExportService', () => {
     expect(storageService.uploadFile).not.toHaveBeenCalled();
   });
 
-  it('XLSX >20 empleados → ERR_PILA_XLSX_EMPLOYEE_LIMIT; TXT no afectado en el mismo draft', async () => {
+  it('XLSX >20 empleados → ZIP multi-lote; TXT sigue disponible después', async () => {
     const bigDraft = buildCleanPilaDraft({ employeeCount: 21 });
     preparationService.preparePeriod.mockResolvedValue({
       ok: true,
       data: bigDraft,
       errors: [],
     });
-
-    try {
-      await service.generate(tenantId, period, actorUserId, PilaExportFormat.XLSX);
-      fail('expected BadRequestException');
-    } catch (err) {
-      expect(err).toBeInstanceOf(BadRequestException);
-      expect((err as BadRequestException).getResponse()).toMatchObject({
-        code: 'ERR_PILA_XLSX_EMPLOYEE_LIMIT',
-        actualCount: 21,
-        maxAllowed: 20,
-      });
-    }
-    expect(storageService.uploadFile).not.toHaveBeenCalled();
-
-    preparationService.preparePeriod.mockResolvedValue({
-      ok: true,
-      data: bigDraft,
-      errors: [],
+    exportRepository.findActiveByPeriod.mockImplementation(
+      async (_t: string, _p: string, format: PilaExportFormat) =>
+        format === PilaExportFormat.TXT ? baseRecord : null,
+    );
+    exportRepository.voidActiveAndCreate.mockResolvedValue({
+      ...baseRecord,
+      id: 'exp-xlsx-zip',
+      format: PilaExportFormat.XLSX,
+      fileName: 'pila-E-900000000-2026-07-v1-lotes-02.zip',
+      employeeCount: 21,
+      technicalVersion: 'anexo2-v29+ael-v1+zip',
     });
+
+    const result = await service.generate(tenantId, period, actorUserId, PilaExportFormat.XLSX);
+
+    expect(result.format).toBe(PilaExportFormat.XLSX);
+    expect(result.fileName).toMatch(/lotes-02\.zip$/);
+    expect(exportRepository.voidActiveAndCreate).toHaveBeenCalledWith(
+      null,
+      null,
+      expect.objectContaining({
+        technicalVersion: 'anexo2-v29+ael-v1+zip',
+      }),
+    );
+    expect(storageService.uploadFile).toHaveBeenCalledWith(
+      expect.objectContaining({
+        file: expect.objectContaining({
+          mimetype: 'application/zip',
+          originalname: expect.stringMatching(/\.zip$/),
+        }),
+      }),
+    );
+
     exportRepository.voidActiveAndCreate.mockResolvedValue({
       ...baseRecord,
       employeeCount: 21,
     });
     const txt = await service.generate(tenantId, period, actorUserId, PilaExportFormat.TXT);
     expect(txt.format).toBe(PilaExportFormat.TXT);
-    expect(storageService.uploadFile).toHaveBeenCalled();
   });
 
   it('genera versión 2 y anula GENERATED previa con REGENERATED', async () => {
@@ -414,6 +427,29 @@ describe('PilaExportService', () => {
     expect(storageService.getObjectBuffer).toHaveBeenCalledWith('sto-1', tenantId);
   });
 
+  it('downloadAnexo2ReviewXlsx genera Excel desde snapshot del TXT', async () => {
+    exportRepository.findById.mockResolvedValue(baseRecord);
+
+    const file = await service.downloadAnexo2ReviewXlsx(tenantId, 'exp-1');
+
+    expect(file.mimeType).toContain('spreadsheetml');
+    expect(file.fileName).toMatch(/anexo2-revision\.xlsx$/);
+    expect(file.bytes.byteLength).toBeGreaterThan(1000);
+    expect(storageService.getObjectBuffer).not.toHaveBeenCalled();
+  });
+
+  it('downloadAnexo2ReviewXlsx rechaza formato XLSX (Aportes en Línea)', async () => {
+    exportRepository.findById.mockResolvedValue({
+      ...baseRecord,
+      format: PilaExportFormat.XLSX,
+      fileName: 'pila.xlsx',
+    });
+
+    await expect(service.downloadAnexo2ReviewXlsx(tenantId, 'exp-1')).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
+  });
+
   it('list no expone snapshotJson', async () => {
     exportRepository.list.mockResolvedValue([baseRecord]);
     const rows = await service.list(tenantId, {});
@@ -490,6 +526,7 @@ describe('PilaExportService', () => {
         period,
         xlsxMaxEmployees: 20,
         xlsxSupported: true,
+        xlsxBatchCount: 1,
       }),
     );
     expect(storageService.uploadFile).not.toHaveBeenCalled();

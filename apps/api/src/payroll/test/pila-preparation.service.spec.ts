@@ -23,6 +23,7 @@ describe('PilaPreparationService', () => {
   let prisma: {
     tenant: { findFirst: jest.Mock };
     employeeDetails: { findMany: jest.Mock };
+    location: { findMany: jest.Mock };
   };
   let tenantPilaConfigService: { findByTenantId: jest.Mock };
   let employeeCatalogService: { findAll: jest.Mock };
@@ -143,6 +144,7 @@ describe('PilaPreparationService', () => {
           },
         ]),
       },
+      location: { findMany: jest.fn().mockResolvedValue([]) },
     };
     tenantPilaConfigService = { findByTenantId: jest.fn().mockResolvedValue(pilaConfig) };
     employeeCatalogService = {
@@ -424,6 +426,104 @@ describe('PilaPreparationService', () => {
     expect(prisma.employeeDetails.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({ tenantId: 'tenant-A' }),
+      }),
+    );
+  });
+
+  it('ROTANTE: colapsa filas OS-380 y toma DIVIPOLA de la sede con más días', async () => {
+    reportsService.getPayrollReport.mockResolvedValue({
+      tenantId,
+      period: { year: 2026, month: 7 },
+      employees: [
+        {
+          ...payrollRow,
+          employeeId: 'emp-rotante',
+          employeeName: 'Laura Rotante',
+          locationId: 'loc-a',
+          locationName: 'Sede A',
+          workedDays: 10,
+          healthDeduction: 20_000,
+          pensionDeduction: 20_000,
+          employerHealthContribution: 40_000,
+          employerPensionContribution: 60_000,
+          employerArlContribution: 2_500,
+          employerSenaContribution: 10_000,
+          employerIcbfContribution: 15_000,
+          employerCajaContribution: 20_000,
+          totalEmployerContributions: 147_500,
+          totalPayrollCost: 650_000,
+        },
+        {
+          ...payrollRow,
+          employeeId: 'emp-rotante',
+          employeeName: 'Laura Rotante',
+          locationId: 'loc-b',
+          locationName: 'Sede B',
+          workedDays: 20,
+          healthDeduction: 40_000,
+          pensionDeduction: 40_000,
+          employerHealthContribution: 80_000,
+          employerPensionContribution: 120_000,
+          employerArlContribution: 5_000,
+          employerSenaContribution: 20_000,
+          employerIcbfContribution: 30_000,
+          employerCajaContribution: 40_000,
+          totalEmployerContributions: 295_000,
+          totalPayrollCost: 1_300_000,
+        },
+      ],
+      tenantTotals: {
+        employeeCount: 1,
+        totalGrossPay: 1_500_000,
+        totalDeductions: 120_000,
+        totalNetPay: 1_380_000,
+        totalEmployerContributions: 442_500,
+        totalPayrollCost: 1_950_000,
+      },
+      locationTotals: [],
+    });
+    prisma.employeeDetails.findMany.mockResolvedValue([
+      {
+        id: 'emp-rotante',
+        name: 'Laura Rotante',
+        hireDate: new Date('2025-01-15T00:00:00.000Z'),
+        contractStart: new Date('2025-01-15T00:00:00.000Z'),
+        contractEnd: null,
+        epsName: 'EPS Sura',
+        pensionFundName: 'Porvenir',
+        arlName: 'ARL Sura',
+        cajaCompensacion: 'Compensar',
+        arlRiskLevel: ArlRiskLevel.RIESGO_I,
+        user: { cedula: '1099887766', documentType: 'CC' },
+        personalData: { nombres: 'Laura', primerApellido: 'Rotante', segundoApellido: null },
+        location: null,
+      },
+    ]);
+    prisma.location.findMany.mockResolvedValue([
+      {
+        id: 'loc-b',
+        code: 'PL-02',
+        departmentCode: '11',
+        municipalityCode: '001',
+        city: 'Bogotá',
+        name: 'Sede B',
+      },
+    ]);
+
+    const result = await service.preparePeriod(tenantId, '2026-07', actor);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.cotizantes).toHaveLength(1);
+    expect(result.data.cotizantes[0].departmentCode).toBe('11');
+    expect(result.data.cotizantes[0].municipalityCode).toBe('001');
+    expect(result.data.cotizantes[0].workedDays).toBe(30);
+    expect(result.data.cotizantes[0].contributions.employeeHealth).toBe(60_000);
+    expect(prisma.location.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          tenantId,
+          id: { in: ['loc-b'] },
+        }),
       }),
     );
   });

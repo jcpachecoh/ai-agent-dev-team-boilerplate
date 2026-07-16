@@ -21,7 +21,12 @@ export function PilaValidationErrors({ errors }: Props): React.JSX.Element {
       <ul className={styles.groups}>
         {groups.map((group) => (
           <li key={group.key} className={styles.group}>
-            <h4 className={styles.employee}>{group.employeeName}</h4>
+            <h4 className={styles.employee}>
+              {group.employeeName}
+              {!group.key.startsWith('field:') ? (
+                <span className={styles.employeeMeta}> · …{group.key.slice(-6)}</span>
+              ) : null}
+            </h4>
             <ul className={styles.errors}>
               {group.errors.map((error, index) => (
                 <li key={`${error.field}-${index}`} className={styles.errorItem}>

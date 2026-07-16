@@ -69,7 +69,7 @@ describe('PilaXlsxSerializer', () => {
       expect(e.details.code).toBe('ERR_PILA_XLSX_EMPLOYEE_LIMIT');
       expect(e.details.actualCount).toBe(21);
       expect(e.details.maxAllowed).toBe(PILA_XLSX_MAX_EMPLOYEES);
-      expect(e.message).toMatch(/TXT/i);
+      expect(e.message).toMatch(/lotes|máximo 20/i);
     }
   });
 

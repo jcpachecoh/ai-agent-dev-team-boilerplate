@@ -1,19 +1,31 @@
+@use '../styles/payroll-report-panel' as prp;
+
 .panel {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  margin-top: 20px;
-  padding: 16px;
-  border-radius: 12px;
-  border: 1px solid rgb(148 163 184 / 20%);
+  @include prp.payroll-report-panel;
 }
 
-.theme--light {
-  color: #0f172a;
-  background: #f8fafc;
+.body {
+  @include prp.payroll-report-body;
 }
 
-.theme--dark {
-  color: #e2e8f0;
-  background: rgb(15 23 42 / 55%);
+.errorText {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--prp-text);
+}
+
+.retryButton {
+  align-self: flex-start;
+  margin-top: 4px;
+  padding: 6px 12px;
+  border-radius: 4px;
+  border: 1px solid var(--prp-border);
+  background: var(--prp-header);
+  color: var(--prp-text);
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.retryButton:hover {
+  background: var(--prp-hover);
 }

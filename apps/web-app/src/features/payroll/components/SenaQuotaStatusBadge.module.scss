@@ -1,30 +1,23 @@
+@use '../styles/payroll-report-panel' as prp;
+
 .badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 8px;
-  border-radius: 999px;
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 0.625rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  border: 1px solid transparent;
+  @include prp.payroll-report-badge;
 }
 
 .exempt {
-  color: #cbd5e1;
-  background: rgb(148 163 184 / 12%);
-  border-color: rgb(148 163 184 / 35%);
+  color: var(--prp-badge-neutral-fg);
+  background: var(--prp-badge-neutral-bg);
+  border-color: var(--prp-badge-neutral-border);
 }
 
 .compliant {
-  color: #86efac;
-  background: rgb(34 197 94 / 12%);
-  border-color: rgb(34 197 94 / 35%);
+  color: var(--prp-teal);
+  background: var(--prp-teal-soft);
+  border-color: var(--prp-teal-border);
 }
 
 .pending {
-  color: #fde68a;
-  background: rgb(234 179 8 / 14%);
-  border-color: rgb(234 179 8 / 40%);
+  color: var(--prp-amber);
+  background: var(--prp-amber-soft);
+  border-color: var(--prp-amber-border);
 }

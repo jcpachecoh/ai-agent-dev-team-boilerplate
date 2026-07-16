@@ -14,7 +14,9 @@ interface Props {
   exports: PilaPeriodExport[];
   canWrite: boolean;
   downloadingId?: string | null;
+  downloadingReviewId?: string | null;
   onDownload: (row: PilaPeriodExport) => void;
+  onDownloadAnexo2Review: (row: PilaPeriodExport) => void;
   onMarkPaid: (row: PilaPeriodExport) => void;
   onVoid: (row: PilaPeriodExport) => void;
 }
@@ -23,7 +25,9 @@ export function PilaExportHistory({
   exports,
   canWrite,
   downloadingId = null,
+  downloadingReviewId = null,
   onDownload,
+  onDownloadAnexo2Review,
   onMarkPaid,
   onVoid,
 }: Props): React.JSX.Element {
@@ -68,11 +72,23 @@ export function PilaExportHistory({
                       type="button"
                       variant="secondary"
                       size="small"
-                      disabled={downloadingId === row.id}
+                      disabled={downloadingId === row.id || downloadingReviewId === row.id}
                       onClick={() => onDownload(row)}
                     >
                       Descargar
                     </Button>
+                    {row.format === 'TXT' ? (
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="small"
+                        disabled={downloadingId === row.id || downloadingReviewId === row.id}
+                        onClick={() => onDownloadAnexo2Review(row)}
+                        title="Excel legible del Anexo Técnico 2 (revisión)"
+                      >
+                        {downloadingReviewId === row.id ? 'Excel…' : 'Excel revisión'}
+                      </Button>
+                    ) : null}
                     {canMarkPilaPaid(canWrite, row) ? (
                       <Button
                         type="button"

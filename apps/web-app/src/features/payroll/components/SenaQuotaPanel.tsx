@@ -19,32 +19,31 @@ export function SenaQuotaPanel({ period }: Props): React.JSX.Element {
   const { theme } = useTheme();
   const panelTheme = theme === 'light' ? 'light' : 'dark';
   const query = useSenaQuotaQuery(period);
+  const panelClass = [styles.panel, styles[`theme--${panelTheme}`]].join(' ');
 
   if (query.isLoading) {
     return (
-      <section
-        className={[styles.panel, styles[`theme--${panelTheme}`]].join(' ')}
-        aria-label="Cumplimiento cuota SENA"
-      >
-        <LoadingState
-          message="Cargando estimación de cuota SENA…"
-          theme={panelTheme}
-          layout="compact"
-        />
+      <section className={panelClass} aria-label="Cumplimiento cuota SENA">
+        <div className={styles.body}>
+          <LoadingState
+            message="Cargando estimación de cuota SENA…"
+            theme={panelTheme}
+            layout="compact"
+          />
+        </div>
       </section>
     );
   }
 
   if (query.isError || !query.data) {
     return (
-      <section
-        className={[styles.panel, styles[`theme--${panelTheme}`]].join(' ')}
-        aria-label="Cumplimiento cuota SENA"
-      >
-        <p className={styles.errorText}>No se pudo cargar la estimación de cuota SENA.</p>
-        <button type="button" className={styles.retryButton} onClick={() => void query.refetch()}>
-          Reintentar
-        </button>
+      <section className={panelClass} aria-label="Cumplimiento cuota SENA">
+        <div className={styles.body}>
+          <p className={styles.errorText}>No se pudo cargar la estimación de cuota SENA.</p>
+          <button type="button" className={styles.retryButton} onClick={() => void query.refetch()}>
+            Reintentar
+          </button>
+        </div>
       </section>
     );
   }
@@ -53,10 +52,7 @@ export function SenaQuotaPanel({ period }: Props): React.JSX.Element {
   const showMonetization = data.estimatedMonetizationAmount > 0;
 
   return (
-    <section
-      className={[styles.panel, styles[`theme--${panelTheme}`]].join(' ')}
-      aria-label="Cumplimiento cuota SENA"
-    >
+    <section className={panelClass} aria-label="Cumplimiento cuota SENA">
       <header className={styles.header}>
         <div>
           <p className={styles.eyebrow}>Estimación informativa</p>
@@ -65,36 +61,38 @@ export function SenaQuotaPanel({ period }: Props): React.JSX.Element {
         <SenaQuotaStatusBadge status={data.status} />
       </header>
 
-      <dl className={styles.meta}>
-        <div>
-          <dt>Trabajadores computables</dt>
-          <dd>{data.eligibleWorkers}</dd>
-        </div>
-        <div>
-          <dt>Aprendices requeridos</dt>
-          <dd>{data.requiredApprentices}</dd>
-        </div>
-        <div>
-          <dt>Aprendices activos</dt>
-          <dd>{data.activeApprentices}</dd>
-        </div>
-        <div>
-          <dt>Aprendices faltantes</dt>
-          <dd>{data.missingApprentices}</dd>
-        </div>
-      </dl>
+      <div className={styles.body}>
+        <dl className={styles.meta}>
+          <div>
+            <dt>Trabajadores computables</dt>
+            <dd>{data.eligibleWorkers}</dd>
+          </div>
+          <div>
+            <dt>Aprendices requeridos</dt>
+            <dd>{data.requiredApprentices}</dd>
+          </div>
+          <div>
+            <dt>Aprendices activos</dt>
+            <dd>{data.activeApprentices}</dd>
+          </div>
+          <div>
+            <dt>Aprendices faltantes</dt>
+            <dd>{data.missingApprentices}</dd>
+          </div>
+        </dl>
 
-      {showMonetization ? (
-        <div className={styles.monetization}>
-          <p className={styles.monetizationLabel}>Valor estimado a monetizar</p>
-          <p className={styles.monetizationValue}>
-            {formatSenaQuotaMoney(data.estimatedMonetizationAmount)}
-          </p>
-          <p className={styles.regime}>{SENA_QUOTA_REGIME_LABELS[data.monetizationRegime]}</p>
-        </div>
-      ) : null}
+        {showMonetization ? (
+          <div className={styles.monetization}>
+            <p className={styles.monetizationLabel}>Valor estimado a monetizar</p>
+            <p className={styles.monetizationValue}>
+              {formatSenaQuotaMoney(data.estimatedMonetizationAmount)}
+            </p>
+            <p className={styles.regime}>{SENA_QUOTA_REGIME_LABELS[data.monetizationRegime]}</p>
+          </div>
+        ) : null}
 
-      <p className={styles.disclaimer}>{SENA_QUOTA_DISCLAIMER}</p>
+        <p className={styles.disclaimer}>{SENA_QUOTA_DISCLAIMER}</p>
+      </div>
     </section>
   );
 }

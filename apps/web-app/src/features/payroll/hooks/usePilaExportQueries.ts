@@ -7,6 +7,7 @@ import {
 } from '@tanstack/react-query';
 
 import {
+  downloadPilaAnexo2ReviewXlsx,
   downloadPilaExport,
   generatePilaExport,
   getPilaDeadline,
@@ -113,5 +114,15 @@ export function useVoidPilaMutation(
 export function useDownloadPilaMutation(): UseMutationResult<PilaDownloadResult, Error, string> {
   return useMutation({
     mutationFn: (exportId: string) => downloadPilaExport(exportId),
+  });
+}
+
+export function useDownloadPilaAnexo2ReviewMutation(): UseMutationResult<
+  PilaDownloadResult,
+  Error,
+  string
+> {
+  return useMutation({
+    mutationFn: (exportId: string) => downloadPilaAnexo2ReviewXlsx(exportId),
   });
 }

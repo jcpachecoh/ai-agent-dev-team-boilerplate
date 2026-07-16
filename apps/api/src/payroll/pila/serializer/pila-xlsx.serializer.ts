@@ -61,19 +61,19 @@ type CatalogLabelSets = {
 export class PilaXlsxSerializer {
   async serializeAsync(
     draft: PilaPeriodDraft,
-    options?: { version?: number },
+    options?: { version?: number; batchIndex?: number; batchTotal?: number },
   ): Promise<PilaXlsxSerializeResult> {
     const actualCount = draft.cotizantes.length;
     if (actualCount > PILA_XLSX_MAX_EMPLOYEES) {
       throw new PilaXlsxSerializationError(
         'cotizantes',
-        `La plantilla XLSX Aportes en Línea admite máximo ${PILA_XLSX_MAX_EMPLOYEES} empleados; el período tiene ${actualCount}. No se truncan filas ni se dividen archivos. Usa el archivo plano TXT (Anexo Técnico 2).`,
+        `La plantilla XLSX Aportes en Línea admite máximo ${PILA_XLSX_MAX_EMPLOYEES} empleados por archivo; este lote tiene ${actualCount}. Divide en lotes de ${PILA_XLSX_MAX_EMPLOYEES} antes de serializar.`,
         {
           code: 'ERR_PILA_XLSX_EMPLOYEE_LIMIT',
           actualCount,
           maxAllowed: PILA_XLSX_MAX_EMPLOYEES,
           recommendedAction:
-            'Genera Archivo plano TXT — Anexo Técnico 2 para este período. XLSX solo si ≤20 empleados.',
+            'El export service debe partir el draft en lotes de 20 (ZIP multi-archivo).',
         },
       );
     }
@@ -100,13 +100,19 @@ export class PilaXlsxSerializer {
 
     const buffer = Buffer.from(await workbook.xlsx.writeBuffer());
     const version = options?.version ?? 1;
+    const batchIndex = options?.batchIndex;
+    const batchTotal = options?.batchTotal;
+    const batchSuffix =
+      batchIndex && batchTotal && batchTotal > 1
+        ? `-lote-${String(batchIndex).padStart(2, '0')}-de-${String(batchTotal).padStart(2, '0')}`
+        : '';
     return {
       bytes: buffer,
       mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       encoding: 'binary',
       lineCount: draft.cotizantes.length + 1,
       byteLength: buffer.byteLength,
-      suggestedFileName: `pila-E-${draft.aportante.nit}-${draft.aportante.periodHealth}-v${version}.xlsx`,
+      suggestedFileName: `pila-E-${draft.aportante.nit}-${draft.aportante.periodHealth}-v${version}${batchSuffix}.xlsx`,
       templateVersion: PILA_XLSX_TEMPLATE_VERSION,
     };
   }

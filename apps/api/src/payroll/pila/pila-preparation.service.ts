@@ -12,7 +12,9 @@ import { ReportsService } from '../../reports/service/reports.service';
 import { VacationsService } from '../../vacations/service/vacations.service';
 import { EmployeeCatalogService } from '../service/employee-catalog.service';
 import { TenantPilaConfigService } from '../service/tenant-pila-config.service';
+import { catalogNameKey, resolveCatalogPilaCode } from '../utils/pila-catalog-name.util';
 import { normalizeNitDigits } from '../utils/pila-master-data.util';
+import { collapseOs380RowsForPila, PILA_ROTANTE_PENDING_LOCATION_ID } from './pila-os380-collapse';
 import { adaptOs380EmployeeToCotizanteDraft, isDateInPeriod } from './pila-os380.adapter';
 import { PilaErrorCode } from './pila-error-codes';
 import type {
@@ -35,10 +37,6 @@ function firstDayOfMonth(year: number, month: number): Date {
 
 function lastDayOfMonth(year: number, month: number): Date {
   return new Date(Date.UTC(year, month, 0, 23, 59, 59, 999));
-}
-
-function catalogNameKey(name: string): string {
-  return name.trim().toLowerCase();
 }
 
 /**
@@ -103,7 +101,10 @@ export class PilaPreparationService {
       return { ok: false, data: null, errors };
     }
 
-    if (!payrollReport.employees.length) {
+    // CONN-06: OS-380 expande ROTANTE a N filas (1 por sede). PILA = 1 cotizante.
+    const payrollEmployees = collapseOs380RowsForPila(payrollReport.employees);
+
+    if (!payrollEmployees.length) {
       errors.push({
         code: PilaErrorCode.PERIOD_NO_OS380_DATA,
         field: 'period',
@@ -127,10 +128,12 @@ export class PilaPreparationService {
       }),
     );
 
-    const employeeIds = payrollReport.employees.map((e) => e.employeeId);
+    const employeeIds = payrollEmployees.map((e) => e.employeeId);
 
     // 2–3) Enriquecimiento + eventos (leaves/novedades batch; vacaciones por API existente)
     const enrichmentById = await this.loadEnrichment(tenantId, employeeIds, catalogOptions);
+    // ROTANTE: ficha sin locationId — DIVIPOLA desde sede de prorrateo (más días).
+    await this.applyDivipolaFromPayrollLocations(tenantId, payrollEmployees, enrichmentById);
     const eventFlags = await this.buildEventFlags(
       tenantId,
       employeeIds,
@@ -144,7 +147,7 @@ export class PilaPreparationService {
     const smlvNumber = Number(smlvRaw);
     const cotizanteDrafts = [];
 
-    for (const row of payrollReport.employees) {
+    for (const row of payrollEmployees) {
       const enrichment = enrichmentById.get(row.employeeId);
       if (!enrichment) {
         errors.push({
@@ -348,14 +351,68 @@ export class PilaPreparationService {
         municipalityCode: row.location?.municipalityCode ?? null,
         locationCode: row.location?.code ?? null,
         locationCityName: row.location?.city ?? row.location?.name ?? null,
-        epsPilaCode: epsCodes.get(catalogNameKey(row.epsName)) ?? null,
-        afpPilaCode: afpCodes.get(catalogNameKey(row.pensionFundName)) ?? null,
-        arlPilaCode: arlCodes.get(catalogNameKey(row.arlName)) ?? null,
-        ccfPilaCode: ccfCodes.get(catalogNameKey(row.cajaCompensacion)) ?? null,
+        epsPilaCode: resolveCatalogPilaCode(epsCodes, EmployeeCatalogType.EPS, row.epsName),
+        afpPilaCode: resolveCatalogPilaCode(
+          afpCodes,
+          EmployeeCatalogType.PENSION_FUND,
+          row.pensionFundName,
+        ),
+        arlPilaCode: resolveCatalogPilaCode(arlCodes, EmployeeCatalogType.ARL, row.arlName),
+        ccfPilaCode: resolveCatalogPilaCode(
+          ccfCodes,
+          EmployeeCatalogType.CAJA_COMPENSACION,
+          row.cajaCompensacion,
+        ),
       });
     }
 
     return map;
+  }
+
+  /**
+   * Completa DIVIPOLA cuando EmployeeDetails.locationId es null (ROTANTE / CONN-06)
+   * usando la sede del prorrateo OS-380 (ya colapsada a la de más días).
+   */
+  private async applyDivipolaFromPayrollLocations(
+    tenantId: string,
+    payrollRows: PayrollEmployeeRowDto[],
+    enrichmentById: Map<string, PilaEmployeeEnrichment>,
+  ): Promise<void> {
+    const locationIds = new Set<string>();
+    for (const row of payrollRows) {
+      const enrichment = enrichmentById.get(row.employeeId);
+      if (!enrichment) continue;
+      if (enrichment.departmentCode && enrichment.municipalityCode) continue;
+      if (!row.locationId || row.locationId === PILA_ROTANTE_PENDING_LOCATION_ID) continue;
+      locationIds.add(row.locationId);
+    }
+
+    if (locationIds.size === 0) return;
+
+    const locations = await this.prisma.location.findMany({
+      where: { tenantId, id: { in: [...locationIds] }, deletedAt: null },
+      select: {
+        id: true,
+        code: true,
+        departmentCode: true,
+        municipalityCode: true,
+        city: true,
+        name: true,
+      },
+    });
+    const byId = new Map(locations.map((loc) => [loc.id, loc]));
+
+    for (const row of payrollRows) {
+      const enrichment = enrichmentById.get(row.employeeId);
+      if (!enrichment) continue;
+      if (enrichment.departmentCode && enrichment.municipalityCode) continue;
+      const loc = byId.get(row.locationId);
+      if (!loc) continue;
+      enrichment.departmentCode = loc.departmentCode;
+      enrichment.municipalityCode = loc.municipalityCode;
+      enrichment.locationCode = loc.code;
+      enrichment.locationCityName = loc.city ?? loc.name;
+    }
   }
 
   private async buildEventFlags(

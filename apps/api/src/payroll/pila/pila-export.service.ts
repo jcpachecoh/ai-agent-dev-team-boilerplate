@@ -14,10 +14,13 @@ import { StorageService } from '../../storage/service/storage.service';
 import { getPilaDeadlineStatus, type PilaDeadlineResult } from '../utils/pila-deadline.util';
 import { PILA_TECHNICAL_VERSION } from './serializer/pila-fixed-width.constants';
 import { PilaFixedWidthSerializer } from './serializer/pila-fixed-width.serializer';
+import { zipStoreFiles } from '../utils/zip-store.util';
+import { splitDraftIntoXlsxBatches } from './serializer/pila-xlsx-batches';
 import {
   PILA_XLSX_MAX_EMPLOYEES,
   PILA_XLSX_TEMPLATE_VERSION,
 } from './serializer/pila-xlsx-catalog.maps';
+import { PilaAnexo2ReviewXlsxSerializer } from './serializer/pila-anexo2-review-xlsx.serializer';
 import { PilaXlsxSerializationError, PilaXlsxSerializer } from './serializer/pila-xlsx.serializer';
 import type { PilaPeriodDraft, PilaPreparationResult } from './pila-preparation.interfaces';
 import { PilaPreparationService } from './pila-preparation.service';
@@ -27,6 +30,7 @@ import { PilaPeriodExportRepository } from './pila-period-export.repository';
 const VOID_REASON_REGENERATED = 'REGENERATED';
 const PILA_MIME_TXT = 'text/plain';
 const PILA_MIME_XLSX = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+const PILA_MIME_ZIP = 'application/zip';
 
 /** Alias explícito del serializador TXT (Anexo 2). */
 export { PilaFixedWidthSerializer as PilaTxtSerializer };
@@ -46,6 +50,7 @@ export type PilaGenerateFormat = PilaExportFormat;
 export class PilaExportService {
   private readonly txtSerializer = new PilaFixedWidthSerializer();
   private readonly xlsxSerializer = new PilaXlsxSerializer();
+  private readonly anexo2ReviewXlsxSerializer = new PilaAnexo2ReviewXlsxSerializer();
 
   constructor(
     private readonly preparationService: PilaPreparationService,
@@ -130,6 +135,7 @@ export class PilaExportService {
     let bytes: Buffer;
     let mimeType: string;
     let technicalVersion: string;
+    let xlsxBatchMeta: { batchCount: number; maxPerBatch: number } | null = null;
 
     try {
       if (format === PilaExportFormat.TXT) {
@@ -139,11 +145,12 @@ export class PilaExportService {
         mimeType = PILA_MIME_TXT;
         technicalVersion = PILA_TECHNICAL_VERSION;
       } else {
-        const xlsx = await this.xlsxSerializer.serializeAsync(draft, { version: nextVersion });
-        fileName = xlsx.suggestedFileName;
-        bytes = xlsx.bytes;
-        mimeType = PILA_MIME_XLSX;
-        technicalVersion = `${PILA_TECHNICAL_VERSION}+${PILA_XLSX_TEMPLATE_VERSION}`;
+        const packaged = await this.serializeXlsxPossiblyBatched(draft, nextVersion);
+        fileName = packaged.fileName;
+        bytes = packaged.bytes;
+        mimeType = packaged.mimeType;
+        technicalVersion = packaged.technicalVersion;
+        xlsxBatchMeta = packaged.batchMeta;
       }
     } catch (err) {
       if (err instanceof PilaXlsxSerializationError) {
@@ -203,7 +210,12 @@ export class PilaExportService {
         totalContribution: Math.round(
           draft.totals.totalEmployeeContributions + draft.totals.totalEmployerContributions,
         ),
-        snapshotJson: this.buildSnapshot(draft, preparation, format) as Prisma.InputJsonValue,
+        snapshotJson: this.buildSnapshot(
+          draft,
+          preparation,
+          format,
+          xlsxBatchMeta,
+        ) as Prisma.InputJsonValue,
         storageObjectId: stored.id,
         generatedAt: now,
         generatedBy: actorUserId,
@@ -316,9 +328,40 @@ export class PilaExportService {
     }
     return {
       fileName: record.fileName,
-      mimeType: record.format === PilaExportFormat.XLSX ? PILA_MIME_XLSX : PILA_MIME_TXT,
+      mimeType: this.resolveDownloadMimeType(record),
       checksum,
       bytes,
+    };
+  }
+
+  /**
+   * Excel de revisión del Anexo Técnico 2 a partir del snapshot del export TXT.
+   * No persiste un nuevo artefacto; no es la plantilla Aportes en Línea.
+   */
+  async downloadAnexo2ReviewXlsx(
+    tenantId: string,
+    exportId: string,
+  ): Promise<PilaExportDownloadResult> {
+    const record = await this.requireExport(tenantId, exportId);
+    if (record.format !== PilaExportFormat.TXT) {
+      throw new BadRequestException({
+        message:
+          'La revisión Excel del Anexo 2 solo aplica a exportaciones TXT. Usa la fila TXT del período.',
+        code: 'ERR_PILA_ANEXO2_REVIEW_FORMAT',
+        format: record.format,
+      });
+    }
+
+    const draft = this.extractDraftFromSnapshot(record.snapshotJson);
+    const xlsx = await this.anexo2ReviewXlsxSerializer.serializeAsync(draft, {
+      version: record.version,
+    });
+    const checksum = createHash('sha256').update(xlsx.bytes).digest('hex');
+    return {
+      fileName: xlsx.suggestedFileName,
+      mimeType: xlsx.mimeType,
+      checksum,
+      bytes: xlsx.bytes,
     };
   }
 
@@ -470,6 +513,7 @@ export class PilaExportService {
 
   private buildSummary(draft: PilaPeriodDraft): Record<string, unknown> {
     const employeeCount = draft.totals.employeeCount;
+    const xlsxBatchCount = Math.max(1, Math.ceil(employeeCount / PILA_XLSX_MAX_EMPLOYEES));
     return {
       period: draft.period,
       periodHealth: draft.aportante.periodHealth,
@@ -480,12 +524,15 @@ export class PilaExportService {
       totalEmployerContributions: draft.totals.totalEmployerContributions,
       nit: draft.aportante.nit,
       xlsxMaxEmployees: PILA_XLSX_MAX_EMPLOYEES,
-      xlsxSupported: employeeCount <= PILA_XLSX_MAX_EMPLOYEES,
+      xlsxSupported: true,
+      xlsxBatchCount,
       formats: {
         TXT: { available: true },
         XLSX: {
-          available: employeeCount <= PILA_XLSX_MAX_EMPLOYEES,
-          maxEmployees: PILA_XLSX_MAX_EMPLOYEES,
+          available: true,
+          maxEmployeesPerFile: PILA_XLSX_MAX_EMPLOYEES,
+          batchCount: xlsxBatchCount,
+          delivery: xlsxBatchCount > 1 ? 'ZIP_MULTI_XLSX' : 'SINGLE_XLSX',
         },
       },
     };
@@ -495,16 +542,104 @@ export class PilaExportService {
     draft: PilaPeriodDraft,
     preparation: Extract<PilaPreparationResult, { ok: true }>,
     format: PilaExportFormat,
+    xlsxBatchMeta: { batchCount: number; maxPerBatch: number } | null,
   ): Record<string, unknown> {
     return {
       technicalVersion: PILA_TECHNICAL_VERSION,
       format,
       xlsxTemplateVersion: format === PilaExportFormat.XLSX ? PILA_XLSX_TEMPLATE_VERSION : null,
+      xlsxBatches: xlsxBatchMeta,
       preparedAt: new Date().toISOString(),
       validationOk: preparation.ok,
       encodingNote:
         'snapshot keeps original legal names; ASCII sanitization applies only to TXT flat file bytes',
       draft,
     };
+  }
+
+  private async serializeXlsxPossiblyBatched(
+    draft: PilaPeriodDraft,
+    version: number,
+  ): Promise<{
+    fileName: string;
+    bytes: Buffer;
+    mimeType: string;
+    technicalVersion: string;
+    batchMeta: { batchCount: number; maxPerBatch: number };
+  }> {
+    const batches = splitDraftIntoXlsxBatches(draft);
+    // technicalVersion es VARCHAR(32): no concatenar sufijos largos.
+    const technicalVersionSingle = `${PILA_TECHNICAL_VERSION}+${PILA_XLSX_TEMPLATE_VERSION}`;
+    const technicalVersionBatched = `${PILA_TECHNICAL_VERSION}+ael-v1+zip`;
+    const batchMeta = {
+      batchCount: batches.length,
+      maxPerBatch: PILA_XLSX_MAX_EMPLOYEES,
+    };
+
+    if (batches.length === 1) {
+      const only = batches[0]!;
+      const xlsx = await this.xlsxSerializer.serializeAsync(only.draft, {
+        version,
+        batchIndex: only.batchIndex,
+        batchTotal: only.batchTotal,
+      });
+      return {
+        fileName: xlsx.suggestedFileName,
+        bytes: xlsx.bytes,
+        mimeType: PILA_MIME_XLSX,
+        technicalVersion: technicalVersionSingle,
+        batchMeta,
+      };
+    }
+
+    const zipEntries: Array<{ name: string; data: Buffer }> = [];
+    for (const batch of batches) {
+      const xlsx = await this.xlsxSerializer.serializeAsync(batch.draft, {
+        version,
+        batchIndex: batch.batchIndex,
+        batchTotal: batch.batchTotal,
+      });
+      zipEntries.push({ name: xlsx.suggestedFileName, data: xlsx.bytes });
+    }
+
+    const bytes = zipStoreFiles(zipEntries);
+    const fileName = `pila-E-${draft.aportante.nit}-${draft.aportante.periodHealth}-v${version}-lotes-${String(batches.length).padStart(2, '0')}.zip`;
+    return {
+      fileName,
+      bytes,
+      mimeType: PILA_MIME_ZIP,
+      technicalVersion: technicalVersionBatched,
+      batchMeta,
+    };
+  }
+
+  private resolveDownloadMimeType(record: PilaPeriodExportRecord): string {
+    if (record.format === PilaExportFormat.TXT) return PILA_MIME_TXT;
+    if (record.fileName.toLowerCase().endsWith('.zip')) return PILA_MIME_ZIP;
+    return PILA_MIME_XLSX;
+  }
+
+  private extractDraftFromSnapshot(snapshotJson: unknown): PilaPeriodDraft {
+    if (!snapshotJson || typeof snapshotJson !== 'object') {
+      throw new ConflictException({
+        message: 'PILA export snapshot is missing or invalid',
+        code: 'ERR_PILA_SNAPSHOT_INVALID',
+      });
+    }
+    const draft = (snapshotJson as { draft?: unknown }).draft;
+    if (!draft || typeof draft !== 'object') {
+      throw new ConflictException({
+        message: 'PILA export snapshot does not contain a draft',
+        code: 'ERR_PILA_SNAPSHOT_INVALID',
+      });
+    }
+    const typed = draft as PilaPeriodDraft;
+    if (!typed.aportante || !Array.isArray(typed.cotizantes) || !typed.totals) {
+      throw new ConflictException({
+        message: 'PILA export snapshot draft is incomplete',
+        code: 'ERR_PILA_SNAPSHOT_INVALID',
+      });
+    }
+    return typed;
   }
 }

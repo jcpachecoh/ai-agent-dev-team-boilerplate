@@ -44,7 +44,7 @@ const REPORT_ITEMS: NominaReportDefinition[] = [
     id: 'nom-01-xlsx',
     code: 'NOM-01',
     title: 'Empleados (Excel)',
-    description: 'Listado completo en hoja de cálculo',
+    description: 'Listado completo en hoja de c?lculo',
     tone: 'accent',
   },
   {
@@ -58,7 +58,7 @@ const REPORT_ITEMS: NominaReportDefinition[] = [
     id: 'nom-02-xlsx',
     code: 'NOM-02',
     title: 'Contratos (Excel)',
-    description: 'Vigencia y condiciones en hoja de cálculo',
+    description: 'Vigencia y condiciones en hoja de c?lculo',
     tone: 'purple',
   },
   {
@@ -72,21 +72,21 @@ const REPORT_ITEMS: NominaReportDefinition[] = [
     id: 'nom-03-xlsx',
     code: 'NOM-03',
     title: 'Asistencia (Excel)',
-    description: 'Marcaciones del periodo en hoja de cálculo',
+    description: 'Marcaciones del periodo en hoja de c?lculo',
     tone: 'teal',
   },
   {
     id: 'nom-04-pdf',
     code: 'NOM-04',
-    title: 'Nómina (PDF)',
-    description: 'Liquidación del periodo en formato PDF',
+    title: 'N?mina (PDF)',
+    description: 'Liquidaci?n del periodo en formato PDF',
     tone: 'amber',
   },
   {
     id: 'nom-04-xlsx',
     code: 'NOM-04',
-    title: 'Nómina (Excel)',
-    description: 'Liquidación del periodo en hoja de cálculo',
+    title: 'N?mina (Excel)',
+    description: 'Liquidaci?n del periodo en hoja de c?lculo',
     tone: 'amber',
   },
 ];
@@ -225,14 +225,14 @@ export function PayrollReportsScreen(): React.JSX.Element {
       if (item.id === 'nom-04-pdf') {
         const blob = await exportPayrollReport(reportQuery, 'PDF');
         downloadExportBlob(blob, `payroll-report-${dateFrom}-${dateTo}.pdf`);
-        toast.success('Reporte de nómina PDF descargado');
+        toast.success('Reporte de n?mina PDF descargado');
         return;
       }
 
       if (item.id === 'nom-04-xlsx') {
         const blob = await exportPayrollReport(reportQuery, 'XLSX');
         downloadExportBlob(blob, `payroll-report-${dateFrom}-${dateTo}.xlsx`);
-        toast.success('Reporte de nómina Excel descargado');
+        toast.success('Reporte de n?mina Excel descargado');
       }
     } catch (error) {
       const message =
@@ -310,7 +310,7 @@ export function PayrollReportsScreen(): React.JSX.Element {
           legalAlertsEmptyDescription={
             legalAlertCount === 0
               ? 'Todos los contratos y marcaciones cumplen con la normativa vigente.'
-              : 'Hay empleados que superan los límites legales de horas extras en el periodo.'
+              : 'Hay empleados que superan los l?mites legales de horas extras en el periodo.'
           }
           legalAlertsItems={legalAlertItems}
           reports={REPORT_ITEMS}
@@ -323,13 +323,13 @@ export function PayrollReportsScreen(): React.JSX.Element {
           <div className={[styles.state, styles[`theme--${nominaTheme}`]].join(' ')}>
             {isLoading ? (
               <LoadingState
-                message="Cargando reportes de nómina…"
+                message={'Cargando reportes de n\u00f3mina\u2026'}
                 theme={nominaTheme}
                 layout="compact"
               />
             ) : (
               <>
-                <p>No se pudieron cargar los reportes de nómina.</p>
+                <p>{'No se pudieron cargar los reportes de n\u00f3mina.'}</p>
                 <button type="button" onClick={() => void payrollQuery.refetch()}>
                   Reintentar
                 </button>
@@ -338,9 +338,11 @@ export function PayrollReportsScreen(): React.JSX.Element {
           </div>
         </>
       )}
-      {/* PILA y SENA: consulta propia; no dependen del ?xito del reporte payroll. */}
-      <PilaPeriodPanel period={payrollPeriod} />
-      <SenaQuotaPanel period={payrollPeriod} />
+      {/* PILA y SENA: consulta propia; no dependen del exito del reporte payroll. */}
+      <div className={[styles.secondaryPanels, styles[`theme--${nominaTheme}`]].join(' ')}>
+        <PilaPeriodPanel period={payrollPeriod} />
+        <SenaQuotaPanel period={payrollPeriod} />
+      </div>
     </div>
   );
 }

@@ -9,6 +9,7 @@ const validatePilaPeriodMock = vi.fn();
 const getPilaDeadlineMock = vi.fn();
 const generatePilaExportMock = vi.fn();
 const downloadPilaExportMock = vi.fn();
+const downloadPilaAnexo2ReviewXlsxMock = vi.fn();
 const markPilaExportPaidMock = vi.fn();
 const voidPilaExportMock = vi.fn();
 
@@ -18,6 +19,7 @@ vi.mock('../api/pila.client', () => ({
   getPilaDeadline: (...args: unknown[]) => getPilaDeadlineMock(...args),
   generatePilaExport: (...args: unknown[]) => generatePilaExportMock(...args),
   downloadPilaExport: (...args: unknown[]) => downloadPilaExportMock(...args),
+  downloadPilaAnexo2ReviewXlsx: (...args: unknown[]) => downloadPilaAnexo2ReviewXlsxMock(...args),
   markPilaExportPaid: (...args: unknown[]) => markPilaExportPaidMock(...args),
   voidPilaExport: (...args: unknown[]) => voidPilaExportMock(...args),
 }));
@@ -136,6 +138,10 @@ describe('PilaPeriodPanel', () => {
       blob: new Blob(['PILA']),
       filename: 'pila.txt',
     });
+    downloadPilaAnexo2ReviewXlsxMock.mockResolvedValue({
+      blob: new Blob(['xlsx']),
+      filename: 'pila-anexo2-revision.xlsx',
+    });
     markPilaExportPaidMock.mockResolvedValue(buildExport({ status: 'PAID' }));
     voidPilaExportMock.mockResolvedValue(buildExport({ status: 'VOIDED' }));
   });
@@ -194,20 +200,28 @@ describe('PilaPeriodPanel', () => {
     await waitFor(() => expect(generatePilaExportMock).toHaveBeenCalledWith('2026-07', 'XLSX'));
   });
 
-  it('explica límite XLSX de 20 empleados', async () => {
+  it('explica lotes XLSX cuando hay más de 20 empleados', async () => {
     validatePilaPeriodMock.mockResolvedValue({
       ...okValidation,
-      summary: { employeeCount: 21, xlsxSupported: false },
+      summary: { employeeCount: 21, xlsxSupported: true, xlsxBatchCount: 2 },
     });
     renderPanel();
-    await waitFor(() => expect(screen.getByText(/máximo 20 empleados/i)).toBeInTheDocument());
-    expect(screen.getByText(/21 empleados/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Generar Plantilla XLSX/i })).toBeDisabled();
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent(/2 archivos de hasta 20/i),
+    );
+    const xlsxBtn = screen.getByRole('button', { name: /Generar XLSX \(2 lotes ZIP\)/i });
+    expect(xlsxBtn).toBeEnabled();
+    expect(xlsxBtn).toHaveAttribute('aria-describedby', 'pila-xlsx-batch-info');
     expect(screen.getByRole('button', { name: /Generar Archivo plano TXT/i })).toBeEnabled();
   });
 
-  it('descarga TXT activo con nombre del backend', async () => {
-    listPilaExportsMock.mockResolvedValue([buildExport()]);
+  it('descarga TXT activo con fileName del listado', async () => {
+    const row = buildExport();
+    listPilaExportsMock.mockResolvedValue([row]);
+    downloadPilaExportMock.mockResolvedValue({
+      blob: new Blob(['txt'], { type: 'text/plain' }),
+      filename: 'fallback-from-headers.txt',
+    });
     renderPanel();
 
     await waitFor(() =>
@@ -218,7 +232,28 @@ describe('PilaPeriodPanel', () => {
     fireEvent.click(screen.getByRole('button', { name: /Descargar Archivo plano TXT/i }));
 
     await waitFor(() => expect(downloadPilaExportMock).toHaveBeenCalledWith('exp-1'));
-    expect(downloadExportBlobMock).toHaveBeenCalledWith(expect.any(Blob), 'pila.txt');
+    expect(downloadExportBlobMock).toHaveBeenCalledWith(
+      expect.any(Blob),
+      'pila-E-900000000-2026-07-v1.txt',
+    );
+  });
+
+  it('descarga Excel de revisión Anexo 2 desde export TXT', async () => {
+    listPilaExportsMock.mockResolvedValue([buildExport()]);
+    renderPanel();
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: /Descargar Anexo 2 \(Excel\)/i }),
+      ).toBeInTheDocument(),
+    );
+    fireEvent.click(screen.getByRole('button', { name: /Descargar Anexo 2 \(Excel\)/i }));
+
+    await waitFor(() => expect(downloadPilaAnexo2ReviewXlsxMock).toHaveBeenCalledWith('exp-1'));
+    expect(downloadExportBlobMock).toHaveBeenCalledWith(
+      expect.any(Blob),
+      'pila-anexo2-revision.xlsx',
+    );
   });
 
   it('muestra ambos formatos en historial', async () => {

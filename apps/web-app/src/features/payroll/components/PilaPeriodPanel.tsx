@@ -15,6 +15,7 @@ import { PilaValidationErrors } from './PilaValidationErrors';
 import { PilaVoidModal } from './PilaVoidModal';
 import { PayrollApiError } from '../api/payroll.client';
 import {
+  useDownloadPilaAnexo2ReviewMutation,
   useDownloadPilaMutation,
   useGeneratePilaMutation,
   useMarkPilaPaidMutation,
@@ -54,6 +55,7 @@ export function PilaPeriodPanel({ period }: Props): React.JSX.Element {
   const markPaidMutation = useMarkPilaPaidMutation(period);
   const voidMutation = useVoidPilaMutation(period);
   const downloadMutation = useDownloadPilaMutation();
+  const downloadAnexo2ReviewMutation = useDownloadPilaAnexo2ReviewMutation();
 
   const exports = exportsQuery.data ?? [];
   const activeTxt = useMemo(() => getActivePilaExport(exports, 'TXT'), [exports]);
@@ -65,7 +67,12 @@ export function PilaPeriodPanel({ period }: Props): React.JSX.Element {
     typeof validationQuery.data?.summary?.employeeCount === 'number'
       ? validationQuery.data.summary.employeeCount
       : (activeAny?.employeeCount ?? null);
-  const exceedsXlsxLimit = employeeCount !== null && employeeCount > PILA_XLSX_MAX_EMPLOYEES;
+  const xlsxBatchCount =
+    typeof validationQuery.data?.summary?.xlsxBatchCount === 'number'
+      ? validationQuery.data.summary.xlsxBatchCount
+      : employeeCount !== null
+        ? Math.max(1, Math.ceil(employeeCount / PILA_XLSX_MAX_EMPLOYEES))
+        : null;
   const uiStatus = derivePilaUiStatus({ active: activeAny, validationOk });
   const canGenerateTxt = canGeneratePila({
     canWrite,
@@ -73,13 +80,12 @@ export function PilaPeriodPanel({ period }: Props): React.JSX.Element {
     validationOk,
     hasPaidHistory: paidHistory,
   });
-  const canGenerateXlsx =
-    canGeneratePila({
-      canWrite,
-      activeForFormat: activeXlsx,
-      validationOk,
-      hasPaidHistory: paidHistory,
-    }) && !exceedsXlsxLimit;
+  const canGenerateXlsx = canGeneratePila({
+    canWrite,
+    activeForFormat: activeXlsx,
+    validationOk,
+    hasPaidHistory: paidHistory,
+  });
 
   const handleValidate = (): void => {
     setShowErrors(true);
@@ -112,7 +118,8 @@ export function PilaPeriodPanel({ period }: Props): React.JSX.Element {
   const handleDownload = async (row: PilaPeriodExport): Promise<void> => {
     try {
       const file = await downloadMutation.mutateAsync(row.id);
-      downloadExportBlob(file.blob, file.filename);
+      // Preferir fileName del listado: Content-Disposition no siempre es legible (CORS).
+      downloadExportBlob(file.blob, row.fileName || file.filename);
       toast.success(`${PILA_FORMAT_LABELS[row.format]} descargado`);
     } catch (error) {
       const message =
@@ -121,56 +128,96 @@ export function PilaPeriodPanel({ period }: Props): React.JSX.Element {
     }
   };
 
+  const handleDownloadAnexo2Review = async (row: PilaPeriodExport): Promise<void> => {
+    try {
+      const file = await downloadAnexo2ReviewMutation.mutateAsync(row.id);
+      downloadExportBlob(file.blob, file.filename);
+      toast.success('Excel de revisión Anexo 2 descargado');
+    } catch (error) {
+      const message =
+        error instanceof PayrollApiError
+          ? error.message
+          : 'No se pudo descargar el Excel de revisión';
+      toast.error(message);
+    }
+  };
+
+  const panelClass = [styles.panel, styles[`theme--${panelTheme}`]].join(' ');
+
   if (exportsQuery.isLoading || validationQuery.isLoading) {
     return (
-      <div className={[styles.panel, styles[`theme--${panelTheme}`]].join(' ')}>
-        <LoadingState message="Cargando PILA…" theme={panelTheme} layout="compact" />
+      <div className={panelClass}>
+        <div className={styles.body}>
+          <LoadingState message="Cargando PILA…" theme={panelTheme} layout="compact" />
+        </div>
       </div>
     );
   }
 
   if (exportsQuery.isError) {
     return (
-      <div className={[styles.panel, styles[`theme--${panelTheme}`]].join(' ')}>
-        <p>No se pudo cargar el historial PILA.</p>
-        <button type="button" onClick={() => void exportsQuery.refetch()}>
-          Reintentar
-        </button>
+      <div className={panelClass}>
+        <div className={styles.body}>
+          <p className={styles.errorText}>No se pudo cargar el historial PILA.</p>
+          <button
+            type="button"
+            className={styles.retryButton}
+            onClick={() => void exportsQuery.refetch()}
+          >
+            Reintentar
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className={[styles.panel, styles[`theme--${panelTheme}`]].join(' ')}>
-      <PilaDeadlineAlertBanner period={period} mode="inline" />
+    <div className={panelClass}>
       <PilaPeriodStatusCard
         period={period}
         uiStatus={uiStatus}
         activeTxt={activeTxt}
         activeXlsx={activeXlsx}
         employeeCount={employeeCount}
+        xlsxBatchCount={xlsxBatchCount}
         canWrite={canWrite}
         canGenerateTxt={canGenerateTxt}
         canGenerateXlsx={canGenerateXlsx}
         generatingFormat={generateMutation.isPending ? (generateMutation.variables ?? 'TXT') : null}
         downloadingId={downloadMutation.isPending ? (downloadMutation.variables ?? null) : null}
+        downloadingReviewId={
+          downloadAnexo2ReviewMutation.isPending
+            ? (downloadAnexo2ReviewMutation.variables ?? null)
+            : null
+        }
         onValidate={handleValidate}
         onGenerate={(format) => void handleGenerate(format)}
         onDownload={(row) => void handleDownload(row)}
+        onDownloadAnexo2Review={(row) => void handleDownloadAnexo2Review(row)}
       />
 
-      {showErrors && validationQuery.data && !validationQuery.data.ok ? (
-        <PilaValidationErrors errors={validationQuery.data.errors} />
-      ) : null}
+      <div className={styles.body}>
+        <PilaDeadlineAlertBanner period={period} mode="inline" />
 
-      <PilaExportHistory
-        exports={exports}
-        canWrite={canWrite}
-        downloadingId={downloadMutation.isPending ? (downloadMutation.variables ?? null) : null}
-        onDownload={(row) => void handleDownload(row)}
-        onMarkPaid={setPaidTarget}
-        onVoid={setVoidTarget}
-      />
+        {showErrors && validationQuery.data && !validationQuery.data.ok ? (
+          <PilaValidationErrors errors={validationQuery.data.errors} />
+        ) : null}
+
+        <PilaExportHistory
+          exports={exports}
+          canWrite={canWrite}
+          downloadingId={downloadMutation.isPending ? (downloadMutation.variables ?? null) : null}
+          downloadingReviewId={
+            downloadAnexo2ReviewMutation.isPending
+              ? (downloadAnexo2ReviewMutation.variables ?? null)
+              : null
+          }
+          onDownload={(row) => void handleDownload(row)}
+          onDownloadAnexo2Review={(row) => void handleDownloadAnexo2Review(row)}
+          onMarkPaid={setPaidTarget}
+          onVoid={setVoidTarget}
+        />
+      </div>
 
       <PilaMarkPaidModal
         open={paidTarget !== null}

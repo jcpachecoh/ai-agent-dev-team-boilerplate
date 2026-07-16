@@ -9,6 +9,28 @@
   min-height: 100%;
 }
 
+.secondaryPanels {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 0 24px 24px;
+  background: var(--report-secondary-bg);
+}
+
+.theme--dark.secondaryPanels {
+  --report-secondary-bg: #0a0a0a;
+}
+
+.theme--light.secondaryPanels {
+  --report-secondary-bg: #f6f4ef;
+}
+
+@media (max-width: 560px) {
+  .secondaryPanels {
+    padding: 0 16px 16px;
+  }
+}
+
 .filtersBar {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(160px, 100%), 1fr));

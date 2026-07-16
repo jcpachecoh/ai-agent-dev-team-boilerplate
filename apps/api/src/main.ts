@@ -55,6 +55,13 @@ async function bootstrap() {
       callback(new Error(`CORS: origin '${origin}' not allowed`));
     },
     credentials: true,
+    // Content-Disposition no es safelist CORS; sin esto el FE no puede leer el nombre del archivo.
+    exposedHeaders: [
+      'Content-Disposition',
+      'Content-Type',
+      'X-Content-Checksum-SHA256',
+      'X-Cesantias-Export-Skipped-Count',
+    ],
   });
 
   const config = new DocumentBuilder()

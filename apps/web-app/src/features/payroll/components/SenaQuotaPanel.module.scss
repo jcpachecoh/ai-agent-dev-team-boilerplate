@@ -1,119 +1,106 @@
+@use '../styles/payroll-report-panel' as prp;
+
 .panel {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-top: 20px;
-  padding: 16px;
-  border-radius: 12px;
-  border: 1px solid rgb(148 163 184 / 20%);
-}
-
-.theme--light {
-  color: #0f172a;
-  background: #f8fafc;
-}
-
-.theme--dark {
-  color: #e2e8f0;
-  background: rgb(15 23 42 / 55%);
+  @include prp.payroll-report-panel;
 }
 
 .header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
+  @include prp.payroll-report-panel-header;
 }
 
 .eyebrow {
-  margin: 0;
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 0.625rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  opacity: 0.7;
+  @include prp.payroll-report-eyebrow;
 }
 
 .title {
-  margin: 4px 0 0;
-  font-size: 1.05rem;
-  font-weight: 700;
+  @include prp.payroll-report-title;
+}
+
+.body {
+  @include prp.payroll-report-body;
 }
 
 .meta {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 8px 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
   margin: 0;
 }
 
 .meta dt {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 0.625rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  opacity: 0.65;
+  @include prp.payroll-report-meta-label;
 }
 
 .meta dd {
-  margin: 2px 0 0;
-  font-size: 0.875rem;
+  margin: 4px 0 0;
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  font-size: 1rem;
   font-weight: 600;
+  color: var(--prp-text);
+  font-variant-numeric: tabular-nums;
 }
 
 .monetization {
   margin: 0;
   padding: 10px 12px;
-  border-radius: 8px;
-  border: 1px solid rgb(148 163 184 / 30%);
-  background: rgb(148 163 184 / 8%);
+  border-radius: 4px;
+  border: 1px solid var(--prp-border);
+  background: var(--prp-header);
 }
 
 .monetizationLabel {
+  @include prp.payroll-report-meta-label;
+
   margin: 0;
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 0.625rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  opacity: 0.7;
 }
 
 .monetizationValue {
   margin: 4px 0 0;
   font-size: 1.125rem;
   font-weight: 700;
+  color: var(--prp-text);
+  font-variant-numeric: tabular-nums;
 }
 
 .regime {
   margin: 6px 0 0;
   font-size: 0.75rem;
-  opacity: 0.75;
+  color: var(--prp-muted);
 }
 
 .disclaimer {
   margin: 0;
-  font-size: 0.75rem;
-  line-height: 1.45;
-  opacity: 0.72;
+  padding-top: 4px;
+  border-top: 1px solid var(--prp-border-subtle);
+  font-size: 0.6875rem;
+  line-height: 1.5;
+  color: var(--prp-muted);
 }
 
 .errorText {
   margin: 0;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
+  color: var(--prp-text);
 }
 
 .retryButton {
   align-self: flex-start;
   margin-top: 4px;
   padding: 6px 12px;
-  border-radius: 8px;
-  border: 1px solid rgb(148 163 184 / 40%);
-  background: transparent;
-  color: inherit;
+  border-radius: 4px;
+  border: 1px solid var(--prp-border);
+  background: var(--prp-header);
+  color: var(--prp-text);
   font-size: 0.8125rem;
   cursor: pointer;
 }
 
 .retryButton:hover {
-  border-color: rgb(148 163 184 / 70%);
+  background: var(--prp-hover);
+}
+
+@media (max-width: 720px) {
+  .meta {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }

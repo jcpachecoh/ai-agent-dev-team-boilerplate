@@ -1532,6 +1532,8 @@ async function seedEmployeeDetails(
       laborClassification: LaborClassification.ADMINISTRATIVO,
       barrio: 'El Poblado',
       localidad: 'Medellín',
+      epsName: 'EPS Sura',
+      arlName: 'ARL Sura',
     },
     create: {
       userId: ownerUserId,
@@ -1548,10 +1550,10 @@ async function seedEmployeeDetails(
       salaryAmount: 15000000.0,
       hasTransportSubsidy: false,
       isExemptFromTax: false,
-      epsName: 'Sura',
+      epsName: 'EPS Sura',
       pensionFundName: 'Protección',
       cesantiasFundName: 'Protección',
-      arlName: 'Sura',
+      arlName: 'ARL Sura',
       arlRiskLevel: ArlRiskLevel.RIESGO_I,
       cajaCompensacion: 'Comfama',
       barrio: 'El Poblado',
@@ -1564,6 +1566,16 @@ async function seedEmployeeDetails(
     },
   });
   await syncEmployeeCompensationHistory(prisma, ownerEmployee);
+  await prisma.employeePersonalData.upsert({
+    where: { employeeDetailsId: ownerEmployee.id },
+    update: { nombres: 'Propietario', primerApellido: 'Principal' },
+    create: {
+      tenantId: OPERATIONAL_TENANT_ID,
+      employeeDetailsId: ownerEmployee.id,
+      nombres: 'Propietario',
+      primerApellido: 'Principal',
+    },
+  });
 
   // Seed for operator
   // NOM-03: pinHash = bcrypt('4321') — mismo PIN que OperationalUser del seed, para e2e de kiosko
@@ -1580,6 +1592,8 @@ async function seedEmployeeDetails(
       laborClassification: LaborClassification.COCINA,
       barrio: 'Laureles',
       localidad: 'Medellín',
+      epsName: 'EPS Sanitas',
+      arlName: 'ARL Sura',
     },
     create: {
       userId: operatorUserId,
@@ -1598,10 +1612,10 @@ async function seedEmployeeDetails(
       salaryAmount: 1800000.0,
       hasTransportSubsidy: true,
       isExemptFromTax: false,
-      epsName: 'Sanitas',
+      epsName: 'EPS Sanitas',
       pensionFundName: 'Porvenir',
       cesantiasFundName: 'Porvenir',
-      arlName: 'Sura',
+      arlName: 'ARL Sura',
       arlRiskLevel: ArlRiskLevel.RIESGO_II,
       cajaCompensacion: 'Compensar',
       barrio: 'Laureles',
@@ -1613,6 +1627,16 @@ async function seedEmployeeDetails(
     },
   });
   await syncEmployeeCompensationHistory(prisma, operatorEmployee);
+  await prisma.employeePersonalData.upsert({
+    where: { employeeDetailsId: operatorEmployee.id },
+    update: { nombres: 'Operario', primerApellido: 'Planta' },
+    create: {
+      tenantId: OPERATIONAL_TENANT_ID,
+      employeeDetailsId: operatorEmployee.id,
+      nombres: 'Operario',
+      primerApellido: 'Planta',
+    },
+  });
 
   console.log('EmployeeDetails: Seeded for owner and operator');
 }
@@ -1711,10 +1735,10 @@ async function seedSupervisorManagerDemoUsers(
       contractStart: new Date('2024-03-01'),
       salaryType: SalaryType.ORDINARIO,
       salaryAmount: supervisorPosition.baseSalaryRange,
-      epsName: 'Sura',
+      epsName: 'EPS Sura',
       pensionFundName: 'Protección',
       cesantiasFundName: 'Protección',
-      arlName: 'Sura',
+      arlName: 'ARL Sura',
       arlRiskLevel: ArlRiskLevel.RIESGO_I,
       cajaCompensacion: 'Comfama',
       costCenter: CostCenter.OPERACIONES,
@@ -1747,10 +1771,10 @@ async function seedSupervisorManagerDemoUsers(
       contractStart: new Date('2024-03-01'),
       salaryType: SalaryType.ORDINARIO,
       salaryAmount: managerPosition.baseSalaryRange,
-      epsName: 'Sanitas',
+      epsName: 'EPS Sanitas',
       pensionFundName: 'Porvenir',
       cesantiasFundName: 'Porvenir',
-      arlName: 'Sura',
+      arlName: 'ARL Sura',
       arlRiskLevel: ArlRiskLevel.RIESGO_I,
       cajaCompensacion: 'Compensar',
       costCenter: CostCenter.ADMINISTRATIVO,
@@ -1827,10 +1851,10 @@ async function seedRotanteDemoEmployee(roleId: string, locationAId: string, loca
       contractStart: new Date('2025-01-15'),
       salaryType: SalaryType.ORDINARIO,
       salaryAmount: position?.baseSalaryRange ?? 1_500_000,
-      epsName: 'Sura',
+      epsName: 'EPS Sura',
       pensionFundName: 'Porvenir',
       cesantiasFundName: 'Porvenir',
-      arlName: 'Sura',
+      arlName: 'ARL Sura',
       arlRiskLevel: ArlRiskLevel.RIESGO_I,
       cajaCompensacion: 'Compensar',
       costCenter: CostCenter.ROTANTE,
@@ -1846,6 +1870,17 @@ async function seedRotanteDemoEmployee(roleId: string, locationAId: string, loca
     { date: '2026-07-03', locationId: locationBId, source: AssignmentSource.MARCACION_ASISTENCIA },
     { date: '2026-07-04', locationId: locationBId, source: AssignmentSource.MANUAL },
   ];
+
+  await prisma.employeePersonalData.upsert({
+    where: { employeeDetailsId: rotanteEmployee.id },
+    update: { nombres: 'Laura', primerApellido: 'Rotante' },
+    create: {
+      tenantId: OPERATIONAL_TENANT_ID,
+      employeeDetailsId: rotanteEmployee.id,
+      nombres: 'Laura',
+      primerApellido: 'Rotante',
+    },
+  });
 
   for (const day of sampleDays) {
     await prisma.dailyCostCenterAssignment.upsert({

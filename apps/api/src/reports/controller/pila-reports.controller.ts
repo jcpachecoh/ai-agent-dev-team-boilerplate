@@ -65,7 +65,11 @@ export class PilaReportsController {
   }
 
   @ApiOperation({ summary: 'Download exact stored PILA file bytes (TXT or XLSX from Storage)' })
-  @ApiProduces('text/plain', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+  @ApiProduces(
+    'text/plain',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'application/zip',
+  )
   @Get('exports/:id/download')
   async download(
     @CurrentUser() user: JwtPayload,
@@ -75,6 +79,26 @@ export class PilaReportsController {
   ): Promise<void> {
     const tenantId = this.resolveTenantId(user, headerTenantId);
     const file = await this.pilaExportService.download(tenantId, id);
+    res.setHeader('Content-Type', file.mimeType);
+    res.setHeader('Content-Disposition', `attachment; filename="${file.fileName}"`);
+    res.setHeader('X-Content-Checksum-SHA256', file.checksum);
+    res.send(file.bytes);
+  }
+
+  @ApiOperation({
+    summary:
+      'Download Anexo Técnico 2 as readable review Excel (from TXT snapshot; not Aportes en Línea)',
+  })
+  @ApiProduces('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+  @Get('exports/:id/download-anexo2-review')
+  async downloadAnexo2Review(
+    @CurrentUser() user: JwtPayload,
+    @Headers('x-tenant-id') headerTenantId: string,
+    @Param('id') id: string,
+    @Res() res: Response,
+  ): Promise<void> {
+    const tenantId = this.resolveTenantId(user, headerTenantId);
+    const file = await this.pilaExportService.downloadAnexo2ReviewXlsx(tenantId, id);
     res.setHeader('Content-Type', file.mimeType);
     res.setHeader('Content-Disposition', `attachment; filename="${file.fileName}"`);
     res.setHeader('X-Content-Checksum-SHA256', file.checksum);

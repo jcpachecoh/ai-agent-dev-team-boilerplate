@@ -67,15 +67,17 @@ const LAST_NAMES = [
   'Cárdenas',
 ] as const;
 
-const EPS_OPTIONS = ['Sura', 'Sanitas', 'Compensar', 'Nueva EPS', 'Famisanar'] as const;
+// Nombres oficiales del catálogo UGPP (employee-catalog.seed / pilaCode) — no usar cortos.
+const EPS_OPTIONS = ['EPS Sura', 'EPS Sanitas', 'Compensar EPS', 'Nueva EPS', 'Famisanar'] as const;
 const PENSION_OPTIONS = ['Porvenir', 'Protección', 'Colfondos', 'Colpensiones'] as const;
 const CAJA_OPTIONS = ['Comfama', 'Compensar', 'Cafam'] as const;
+const ARL_NAME = 'ARL Sura';
+// Solo contratos admitidos por planilla E v1 (OS-595). PRESTACION/APRENDIZAJE
+// bloquean Validar/Exportar PILA; los demos de esos tipos viven en seeds dedicados.
 const CONTRACT_TYPES = [
   EmployeeContractType.INDEFINIDO,
   EmployeeContractType.FIJO,
   EmployeeContractType.OBRA,
-  EmployeeContractType.PRESTACION,
-  EmployeeContractType.APRENDIZAJE,
 ] as const;
 
 function laborClassificationForArea(area: string): LaborClassification {
@@ -197,7 +199,7 @@ export async function seedBulkAttendanceCollaborators(prisma: PrismaClient): Pro
         epsName: EPS_OPTIONS[i % EPS_OPTIONS.length]!,
         pensionFundName: PENSION_OPTIONS[i % PENSION_OPTIONS.length]!,
         cesantiasFundName: PENSION_OPTIONS[i % PENSION_OPTIONS.length]!,
-        arlName: 'Sura',
+        arlName: ARL_NAME,
         arlRiskLevel,
         cajaCompensacion: CAJA_OPTIONS[i % CAJA_OPTIONS.length]!,
         costCenter,
@@ -223,7 +225,7 @@ export async function seedBulkAttendanceCollaborators(prisma: PrismaClient): Pro
         epsName: EPS_OPTIONS[i % EPS_OPTIONS.length]!,
         pensionFundName: PENSION_OPTIONS[i % PENSION_OPTIONS.length]!,
         cesantiasFundName: PENSION_OPTIONS[i % PENSION_OPTIONS.length]!,
-        arlName: 'Sura',
+        arlName: ARL_NAME,
         arlRiskLevel,
         cajaCompensacion: CAJA_OPTIONS[i % CAJA_OPTIONS.length]!,
         costCenter,

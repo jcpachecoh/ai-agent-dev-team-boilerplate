@@ -38,6 +38,21 @@ function parseFilenameFromContentDisposition(header: string | null): string | nu
   return match?.[1] ?? null;
 }
 
+/** Fallback when CORS oculta Content-Disposition (VITE_API_URL cross-origin). */
+function fallbackFilenameFromBlob(exportId: string, blob: Blob): string {
+  const type = blob.type.toLowerCase();
+  if (type.includes('zip')) {
+    return `pila-export-${exportId}.zip`;
+  }
+  if (type.includes('spreadsheet') || type.includes('excel')) {
+    return `pila-export-${exportId}.xlsx`;
+  }
+  if (type.startsWith('text/')) {
+    return `pila-export-${exportId}.txt`;
+  }
+  return `pila-export-${exportId}.bin`;
+}
+
 export function validatePilaPeriod(period: string): Promise<PilaValidationResponse> {
   return payrollFetch<PilaValidationResponse>(`/reports/pila/${period}/validation`);
 }
@@ -78,7 +93,18 @@ export async function downloadPilaExport(exportId: string): Promise<PilaDownload
   );
   const filename =
     parseFilenameFromContentDisposition(headers.get('Content-Disposition')) ??
-    `pila-export-${exportId}.txt`;
+    fallbackFilenameFromBlob(exportId, blob);
+  return { blob, filename };
+}
+
+/** Excel legible del Anexo 2 (revisión). Solo aplica a exports TXT. */
+export async function downloadPilaAnexo2ReviewXlsx(exportId: string): Promise<PilaDownloadResult> {
+  const { blob, headers } = await payrollFetchBlobWithHeaders(
+    `/reports/pila/exports/${exportId}/download-anexo2-review`,
+  );
+  const filename =
+    parseFilenameFromContentDisposition(headers.get('Content-Disposition')) ??
+    `pila-export-${exportId}-anexo2-revision.xlsx`;
   return { blob, filename };
 }
 
