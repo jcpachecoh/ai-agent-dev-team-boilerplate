@@ -37,6 +37,13 @@ export const LABOR_LEGAL_PARAMETER_KEYS = [
    * tasks/OS-591.md "Separación entre versión legal de fórmula y estado operativo".
    */
   'INDEMNIZACION_FORMULA_VERSION',
+  /**
+   * OS-599 — factor post-reforma de monetización (SMLMV por aprendiz faltante).
+   * Solo aplica desde 2025-06-25 (Ley 2466/2025 art. 23 → 1.5). El régimen histórico
+   * art. 34 Ley 789 (5% × trabajadores × SMLMV, parcial proporcional) NO se modela con
+   * este parámetro — ver `estimateMonetizationAmount` / tasks/OS-599.md.
+   */
+  'SENA_CUOTA_MONETIZACION_FACTOR',
 ] as const;
 
 export type LaborLegalParameterKey = (typeof LABOR_LEGAL_PARAMETER_KEYS)[number];

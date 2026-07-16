@@ -40,6 +40,7 @@ export const payrollKeys = {
   reports: () => [...payrollKeys.all, 'reports'] as const,
   payrollReport: (query: PayrollReportQuery) =>
     [...payrollKeys.reports(), 'payroll', query] as const,
+  senaQuota: (period: string) => [...payrollKeys.reports(), 'sena-quota', period] as const,
   attendanceReport: (query: AttendanceReportQuery) =>
     [...payrollKeys.reports(), 'attendance', query] as const,
   medicalLeaves: () => [...payrollKeys.all, 'medical-leaves'] as const,

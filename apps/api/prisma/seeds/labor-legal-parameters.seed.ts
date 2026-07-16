@@ -243,6 +243,17 @@ const LEGAL_PARAMETER_SEEDS: LegalParameterSeed[] = [
     validTo: null,
     source: 'OS-591 — fórmula provisional pendiente de validación legal, ver tasks/OS-591.md',
   },
+
+  // ── SENA_CUOTA_MONETIZACION_FACTOR — OS-599 (solo régimen post Ley 2466) ─────
+  // Histórico art. 34 Ley 789 (5% × trabajadores × SMLMV) se calcula en código
+  // (sena-quota.calculation.ts); no cabe en un multiplicador fijo por aprendiz.
+  {
+    key: 'SENA_CUOTA_MONETIZACION_FACTOR',
+    value: 1.5,
+    validFrom: '2025-06-25',
+    validTo: null,
+    source: 'Ley 2466 de 2025 art. 23 — 1.5 SMLMV por aprendiz no contratado',
+  },
 ];
 
 export async function seedLaborLegalParameters(prisma: PrismaClient): Promise<void> {
@@ -259,6 +270,7 @@ export async function seedLaborLegalParameters(prisma: PrismaClient): Promise<vo
         value: seed.value,
         validTo: seed.validTo ? new Date(`${seed.validTo}T23:59:59.999Z`) : null,
         source: seed.source,
+        deletedAt: null,
       },
       create: {
         tenantId: null,
@@ -271,5 +283,23 @@ export async function seedLaborLegalParameters(prisma: PrismaClient): Promise<vo
       },
     });
   }
+
+  // OS-599 cleanup: soft-delete únicamente la vigencia GLOBAL incorrecta value=1.0
+  // (validFrom 2020-01-01) creada por la aproximación pre-reforma. Idempotente:
+  // - where deletedAt:null → re-ejecutar no toca filas ya eliminadas
+  // - no incluye tenantScope distinto de GLOBAL → no toca overrides de tenant
+  // - no incluye validFrom 2025-06-25 → no toca la vigencia canónica 1.5
+  // getValueAt/findActiveAt filtran deletedAt:null, así que la fila queda ignorada.
+  await prisma.laborLegalParameter.updateMany({
+    where: {
+      tenantScope: GLOBAL_TENANT_SCOPE,
+      key: 'SENA_CUOTA_MONETIZACION_FACTOR',
+      validFrom: new Date('2020-01-01T00:00:00.000Z'),
+      value: 1,
+      deletedAt: null,
+    },
+    data: { deletedAt: new Date() },
+  });
+
   console.log(`Labor legal parameters seeded: ${LEGAL_PARAMETER_SEEDS.length} vigencias (global)`);
 }

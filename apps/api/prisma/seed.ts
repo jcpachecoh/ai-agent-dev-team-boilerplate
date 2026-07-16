@@ -630,7 +630,9 @@ const PERMISSION_SEEDS = [
   },
   // OS-591 (fase 3) — Liquidación definitiva de contrato: permisos granulares por acción
   // (separación de funciones — quien calcula no necesariamente aprueba/paga/anula).
-  // IDs 072–079: after configuracion.legal (064–065) and daily-cost-center (066–067).
+  // IDs 072–079: greenfield after configuracion.legal (064–065) and daily-cost-center (066–067).
+  // Legacy DBs may still have settlement at 064–071; seedPermissions matches by code and
+  // skips preferred ids that another code already owns (see seedPermissions).
   {
     id: 'cccccccc-0000-0000-0000-000000000072',
     code: 'nomina.settlement.read',
@@ -911,21 +913,43 @@ async function seedPermissions() {
   const permissions: Record<string, { id: string; code: string }> = {};
 
   for (const permissionSeed of PERMISSION_SEEDS) {
-    // Upsert by `code` (@@unique), not by id: some envs already have the same codes with
-    // older deterministic ids (e.g. nomina.roles.* at 027–036). Upserting by id would
-    // try to CREATE a duplicate code and fail with P2002.
-    const permission = await prisma.permission.upsert({
+    // Match by `code` (@@unique), never by id.
+    // Some envs already have the same codes with older deterministic ids
+    // (e.g. configuracion.legal.* at 027/028, or nomina.settlement.* still at 064–071
+    // after the seed remapped settlement → 072–079). Upserting by id would CREATE a
+    // duplicate code. Forcing create with a preferred id that another code already owns
+    // (e.g. daily-cost-center wanting 066 while settlement.manual occupies 066) → P2002.
+    const existingByCode = await prisma.permission.findUnique({
       where: { code: permissionSeed.code },
-      update: {
-        name: permissionSeed.name,
-        description: permissionSeed.description,
-        module: permissionSeed.module,
-        resource: permissionSeed.resource,
-        action: permissionSeed.action,
-        isActive: true,
-      },
-      create: {
-        id: permissionSeed.id,
+    });
+
+    if (existingByCode) {
+      const permission = await prisma.permission.update({
+        where: { code: permissionSeed.code },
+        data: {
+          name: permissionSeed.name,
+          description: permissionSeed.description,
+          module: permissionSeed.module,
+          resource: permissionSeed.resource,
+          action: permissionSeed.action,
+          isActive: true,
+        },
+      });
+      permissions[permissionSeed.code] = permission;
+      console.log('Permission:', permission.code, '—', permission.id);
+      continue;
+    }
+
+    const preferredIdOwner = await prisma.permission.findUnique({
+      where: { id: permissionSeed.id },
+      select: { id: true, code: true },
+    });
+
+    const permission = await prisma.permission.create({
+      data: {
+        // Prefer deterministic id on greenfield; if occupied by another code, let Prisma
+        // generate a cuid so re-seeds remain idempotent on legacy DBs / prod.
+        ...(preferredIdOwner ? {} : { id: permissionSeed.id }),
         code: permissionSeed.code,
         name: permissionSeed.name,
         description: permissionSeed.description,
@@ -936,7 +960,13 @@ async function seedPermissions() {
       },
     });
     permissions[permissionSeed.code] = permission;
-    console.log('Permission:', permission.code, '—', permission.id);
+    if (preferredIdOwner) {
+      console.log(
+        `Permission: ${permission.code} — ${permission.id} (preferred id ${permissionSeed.id} already used by ${preferredIdOwner.code})`,
+      );
+    } else {
+      console.log('Permission:', permission.code, '—', permission.id);
+    }
   }
 
   return permissions;

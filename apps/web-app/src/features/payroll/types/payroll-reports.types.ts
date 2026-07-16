@@ -137,3 +137,21 @@ export interface EmployeeListExportQuery {
 }
 
 export interface AttendanceExportQuery extends AttendanceReportQuery {}
+
+/** OS-599 — estimación de cuota de aprendizaje SENA (GET /api/reports/sena-quota). */
+export type SenaQuotaStatus = 'EXEMPT' | 'COMPLIANT' | 'PENDING';
+
+export type SenaMonetizationRegime = 'LEY_789_2002' | 'LEY_2466_2025';
+
+export interface SenaQuotaResponse {
+  period: string;
+  eligibleWorkers: number;
+  requiredApprentices: number;
+  activeApprentices: number;
+  missingApprentices: number;
+  smlv: number;
+  monetizationRegime: SenaMonetizationRegime;
+  estimatedMonetizationAmount: number;
+  status: SenaQuotaStatus;
+  estimated: true;
+}

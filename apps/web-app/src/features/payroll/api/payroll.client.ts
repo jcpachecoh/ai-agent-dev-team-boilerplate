@@ -11,6 +11,7 @@ import type {
   PayrollReportExportFormat,
   PayrollReportQuery,
   PayrollReportResponse,
+  SenaQuotaResponse,
 } from '../types/payroll-reports.types';
 import type {
   CreatePayrollEmployeeInput,
@@ -171,6 +172,12 @@ export function getPayrollReport(query: PayrollReportQuery): Promise<PayrollRepo
     contractType: query.contractType,
   });
   return payrollFetch<PayrollReportResponse>(`/reports/payroll${params}`);
+}
+
+/** OS-599 — estimación de cuota SENA (no oficial). tenantId solo vía auth headers. */
+export function getSenaQuota(period: string): Promise<SenaQuotaResponse> {
+  const params = toQueryString({ period });
+  return payrollFetch<SenaQuotaResponse>(`/reports/sena-quota${params}`);
 }
 
 export function getAttendanceReport(

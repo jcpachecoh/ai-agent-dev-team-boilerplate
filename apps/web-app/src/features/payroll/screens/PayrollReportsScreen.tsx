@@ -1,4 +1,3 @@
-import { Calendar } from 'lucide-react';
 import {
   LoadingState,
   NominaDashboardPreview,
@@ -6,17 +5,23 @@ import {
   type NominaReportDefinition,
   toast,
 } from '@restopsiq/ui';
+import { Calendar } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
-import { useTheme } from '@/providers/ThemeProvider';
 import { useLocations } from '@/features/sedes/hooks/useLocations';
+import { useTheme } from '@/providers/ThemeProvider';
+
+import styles from './PayrollReportsScreen.module.scss';
 import {
   exportAttendanceReport,
   exportEmployeeList,
   exportPayrollReport,
   PayrollApiError,
 } from '../api/payroll.client';
+import { PilaPeriodPanel } from '../components/PilaPeriodPanel';
+import { SenaQuotaPanel } from '../components/SenaQuotaPanel';
 import { useAttendanceReportQuery, usePayrollReportQuery } from '../hooks/usePayrollReportQueries';
+import { downloadExportBlob } from '../utils/download-export-blob';
 import {
   formatDateRangeBadgeLabel,
   getCurrentPayrollPeriod,
@@ -26,9 +31,6 @@ import {
   mapPayrollChartData,
   mapPayrollKpiMetrics,
 } from '../utils/mapPayrollReportToNomina';
-import { downloadExportBlob } from '../utils/download-export-blob';
-import { PilaPeriodPanel } from '../components/PilaPeriodPanel';
-import styles from './PayrollReportsScreen.module.scss';
 
 const REPORT_ITEMS: NominaReportDefinition[] = [
   {
@@ -132,12 +134,16 @@ export function PayrollReportsScreen(): React.JSX.Element {
   );
 
   const metrics = useMemo(() => {
-    if (!payrollQuery.data) return undefined;
+    if (!payrollQuery.data) {
+      return undefined;
+    }
     return mapPayrollKpiMetrics(payrollQuery.data, attendanceQuery.data, dateRange);
   }, [payrollQuery.data, attendanceQuery.data, dateRange]);
 
   const chart = useMemo(() => {
-    if (!payrollQuery.data) return undefined;
+    if (!payrollQuery.data) {
+      return undefined;
+    }
     return mapPayrollChartData(payrollQuery.data, dateRange, attendanceQuery.data);
   }, [payrollQuery.data, dateRange, attendanceQuery.data]);
 
@@ -159,14 +165,14 @@ export function PayrollReportsScreen(): React.JSX.Element {
 
   const isError = payrollQuery.isError || attendanceQuery.isError;
 
-  const handleDateFromChange = (value: string) => {
+  const handleDateFromChange = (value: string): void => {
     setDateFrom(value);
     if (value > dateTo) {
       setDateTo(value);
     }
   };
 
-  const handleDateToChange = (value: string) => {
+  const handleDateToChange = (value: string): void => {
     setDateTo(value);
     if (value < dateFrom) {
       setDateFrom(value);
@@ -235,91 +241,106 @@ export function PayrollReportsScreen(): React.JSX.Element {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className={[styles.state, styles[`theme--${nominaTheme}`]].join(' ')}>
-        <LoadingState message="Cargando reportes de nómina…" theme={nominaTheme} layout="compact" />
+  const filtersBar = (
+    <div className={[styles.filtersBar, styles[`theme--${nominaTheme}`]].join(' ')}>
+      <div className={styles.filterField}>
+        <span className={styles.filterLabel}>Desde</span>
+        <div className={styles.dateInputWrap}>
+          <input
+            className={styles.filterInput}
+            type="date"
+            value={dateFrom}
+            onChange={(event) => handleDateFromChange(event.target.value)}
+          />
+          <Calendar className={styles.calendarIcon} aria-hidden strokeWidth={1.75} />
+        </div>
       </div>
-    );
-  }
+      <div className={styles.filterField}>
+        <span className={styles.filterLabel}>Hasta</span>
+        <div className={styles.dateInputWrap}>
+          <input
+            className={styles.filterInput}
+            type="date"
+            value={dateTo}
+            onChange={(event) => handleDateToChange(event.target.value)}
+          />
+          <Calendar className={styles.calendarIcon} aria-hidden strokeWidth={1.75} />
+        </div>
+      </div>
+      <div className={styles.filterField}>
+        <span className={styles.filterLabel}>Sede</span>
+        <RecetaFilterSelect
+          theme={nominaTheme}
+          size="md"
+          value={locationId}
+          options={[{ value: '', label: 'Todas las sedes' }, ...locationOptions]}
+          onChange={setLocationId}
+        />
+      </div>
+    </div>
+  );
 
-  if (isError || !payrollQuery.data || !metrics || !chart || !locationRows) {
-    return (
-      <div className={[styles.state, styles[`theme--${nominaTheme}`]].join(' ')}>
-        <p>No se pudieron cargar los reportes de nómina.</p>
-        <button type="button" onClick={() => void payrollQuery.refetch()}>
-          Reintentar
-        </button>
-      </div>
-    );
-  }
+  const hasPayrollDashboard =
+    !isLoading &&
+    !isError &&
+    Boolean(payrollQuery.data) &&
+    Boolean(metrics) &&
+    Boolean(chart) &&
+    Boolean(locationRows);
 
   return (
     <div className={styles.reportsLayout}>
-      <NominaDashboardPreview
-        theme={nominaTheme}
-        className={styles.dashboard}
-        showPeriodToggle={false}
-        metrics={metrics}
-        closingBadgeLabel={closingBadgeLabel}
-        chartTitle={chart.title}
-        chartData={chart.data}
-        chartXDataKey={chart.xDataKey}
-        chartSeries={chart.series}
-        chartLegend={chart.legend}
-        chartValueType={chart.valueType}
-        locationRows={locationRows}
-        legalAlertsEmptyTitle={
-          legalAlertCount === 0 ? 'Sin alertas activas' : `${legalAlertCount} alertas detectadas`
-        }
-        legalAlertsEmptyDescription={
-          legalAlertCount === 0
-            ? 'Todos los contratos y marcaciones cumplen con la normativa vigente.'
-            : 'Hay empleados que superan los límites legales de horas extras en el periodo.'
-        }
-        legalAlertsItems={legalAlertItems}
-        reports={REPORT_ITEMS}
-        onReportDownload={(item) => void handleReportDownload(item)}
-        filtersBar={
-          <div className={[styles.filtersBar, styles[`theme--${nominaTheme}`]].join(' ')}>
-            <div className={styles.filterField}>
-              <span className={styles.filterLabel}>Desde</span>
-              <div className={styles.dateInputWrap}>
-                <input
-                  className={styles.filterInput}
-                  type="date"
-                  value={dateFrom}
-                  onChange={(event) => handleDateFromChange(event.target.value)}
-                />
-                <Calendar className={styles.calendarIcon} aria-hidden strokeWidth={1.75} />
-              </div>
-            </div>
-            <div className={styles.filterField}>
-              <span className={styles.filterLabel}>Hasta</span>
-              <div className={styles.dateInputWrap}>
-                <input
-                  className={styles.filterInput}
-                  type="date"
-                  value={dateTo}
-                  onChange={(event) => handleDateToChange(event.target.value)}
-                />
-                <Calendar className={styles.calendarIcon} aria-hidden strokeWidth={1.75} />
-              </div>
-            </div>
-            <div className={styles.filterField}>
-              <span className={styles.filterLabel}>Sede</span>
-              <RecetaFilterSelect
+      {hasPayrollDashboard && metrics && chart && locationRows ? (
+        <NominaDashboardPreview
+          theme={nominaTheme}
+          className={styles.dashboard}
+          showPeriodToggle={false}
+          metrics={metrics}
+          closingBadgeLabel={closingBadgeLabel}
+          chartTitle={chart.title}
+          chartData={chart.data}
+          chartXDataKey={chart.xDataKey}
+          chartSeries={chart.series}
+          chartLegend={chart.legend}
+          chartValueType={chart.valueType}
+          locationRows={locationRows}
+          legalAlertsEmptyTitle={
+            legalAlertCount === 0 ? 'Sin alertas activas' : `${legalAlertCount} alertas detectadas`
+          }
+          legalAlertsEmptyDescription={
+            legalAlertCount === 0
+              ? 'Todos los contratos y marcaciones cumplen con la normativa vigente.'
+              : 'Hay empleados que superan los límites legales de horas extras en el periodo.'
+          }
+          legalAlertsItems={legalAlertItems}
+          reports={REPORT_ITEMS}
+          onReportDownload={(item) => void handleReportDownload(item)}
+          filtersBar={filtersBar}
+        />
+      ) : (
+        <>
+          {filtersBar}
+          <div className={[styles.state, styles[`theme--${nominaTheme}`]].join(' ')}>
+            {isLoading ? (
+              <LoadingState
+                message="Cargando reportes de nómina…"
                 theme={nominaTheme}
-                size="md"
-                value={locationId}
-                options={[{ value: '', label: 'Todas las sedes' }, ...locationOptions]}
-                onChange={setLocationId}
+                layout="compact"
               />
-            </div>
+            ) : (
+              <>
+                <p>No se pudieron cargar los reportes de nómina.</p>
+                <button type="button" onClick={() => void payrollQuery.refetch()}>
+                  Reintentar
+                </button>
+              </>
+            )}
           </div>
-        }
-      />
+        </>
+      )}
+      {/* PILA y SENA: consulta propia; no dependen del ?xito del reporte payroll. */}
       <PilaPeriodPanel period={payrollPeriod} />
+      <SenaQuotaPanel period={payrollPeriod} />
     </div>
   );
 }

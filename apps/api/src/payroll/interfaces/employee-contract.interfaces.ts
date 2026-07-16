@@ -87,6 +87,11 @@ export interface IEmployeeContractRepository {
     employeeDetailsId: string,
     asOfDate: Date,
   ): Promise<EmploymentContractRecord | null>;
+  /**
+   * OS-599 — contratos vigentes en `asOfDate` para todo el tenant (1 query).
+   * Un registro por `employeeDetailsId` (el de `startDate` más reciente que cubre la fecha).
+   */
+  findContractsAsOfForTenant(tenantId: string, asOfDate: Date): Promise<EmploymentContractRecord[]>;
   createInitialContractTx(
     tx: Prisma.TransactionClient,
     data: CreateInitialContractData,

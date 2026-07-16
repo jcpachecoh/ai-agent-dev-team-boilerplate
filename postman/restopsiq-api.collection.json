@@ -9888,6 +9888,60 @@
           ]
         },
         {
+          "name": "GET /api/reports/sena-quota (OS-599)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/sena-quota?period=2026-07",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "sena-quota"],
+              "query": [
+                {
+                  "key": "period",
+                  "value": "2026-07",
+                  "description": "YYYY-MM (cierre de mes UTC)"
+                }
+              ]
+            },
+            "description": "OS-599 — Estimación de cuota de aprendizaje SENA para el tenant autenticado.\n\n**Carácter estimativo:** `estimated` siempre es `true`. Este endpoint **no sustituye** la cuota oficial fijada por la regional SENA ni el acto administrativo de monetización.\n\nContrato: `period`, `eligibleWorkers`, `requiredApprentices`, `activeApprentices`, `missingApprentices`, `smlv`, `monetizationRegime` (`LEY_789_2002` | `LEY_2466_2025`), `estimatedMonetizationAmount`, `status` (`EXEMPT` | `COMPLIANT` | `PENDING`), `estimated`.\n\nNo expone `monetizationFactor`. Roles: mismos de lectura de reportes de nómina (`PAYROLL_MODULE_ROLES`).\n\nEjemplo de respuesta:\n```json\n{\n  \"period\": \"2026-07\",\n  \"eligibleWorkers\": 15,\n  \"requiredApprentices\": 1,\n  \"activeApprentices\": 0,\n  \"missingApprentices\": 1,\n  \"smlv\": 1750905,\n  \"monetizationRegime\": \"LEY_2466_2025\",\n  \"estimatedMonetizationAmount\": 2626358,\n  \"status\": \"PENDING\",\n  \"estimated\": true\n}\n```"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('sena-quota: status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('sena-quota: contrato estimativo (OS-599)', () => {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.period).to.be.a('string');",
+                  "    pm.expect(body.eligibleWorkers).to.be.a('number');",
+                  "    pm.expect(body.requiredApprentices).to.be.a('number');",
+                  "    pm.expect(body.activeApprentices).to.be.a('number');",
+                  "    pm.expect(body.missingApprentices).to.be.a('number');",
+                  "    pm.expect(body.smlv).to.be.a('number');",
+                  "    pm.expect(body.monetizationRegime).to.be.oneOf(['LEY_789_2002', 'LEY_2466_2025']);",
+                  "    pm.expect(body.estimatedMonetizationAmount).to.be.a('number');",
+                  "    pm.expect(body.status).to.be.oneOf(['EXEMPT', 'COMPLIANT', 'PENDING']);",
+                  "    pm.expect(body.estimated).to.eql(true);",
+                  "    pm.expect(body).to.not.have.property('monetizationFactor');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "GET /api/reports/payroll (filtros opcionales)",
           "request": {
             "method": "GET",
