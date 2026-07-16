@@ -321,6 +321,8 @@ export class AttendanceRepository implements IAttendanceRepository {
         facialMatchScore: data.facialMatchScore ?? null,
         facialMatchResult: data.facialMatchResult ?? null,
         rejectionReason: data.rejectionReason ?? null,
+        verificationMethod: data.verificationMethod ?? null,
+        kioskSessionId: data.kioskSessionId ?? null,
       },
     });
   }

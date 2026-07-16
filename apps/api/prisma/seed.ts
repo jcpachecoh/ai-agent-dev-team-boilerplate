@@ -705,6 +705,26 @@ const PERMISSION_SEEDS = [
     resource: 'settlement',
     action: 'validate_legal_formula',
   },
+  // Shared tablet kiosk marking mode
+  {
+    id: 'cccccccc-0000-0000-0000-000000000080',
+    code: 'attendance.kiosk.activate',
+    name: 'Activar modo marcación kiosko',
+    description:
+      'Activar el modo marcación en tablet compartida de sede (emite token scoped KIOSK_MARKING).',
+    module: 'attendance',
+    resource: 'kiosk',
+    action: 'activate',
+  },
+  {
+    id: 'cccccccc-0000-0000-0000-000000000081',
+    code: 'attendance.kiosk.mark',
+    name: 'Registrar marcación kiosko',
+    description: 'Permiso efectivo solo en token scoped KIOSK_MARKING (no asignar a roles admin).',
+    module: 'attendance',
+    resource: 'kiosk',
+    action: 'mark',
+  },
 ] as const;
 
 const MANAGER_SUPERVISOR_PERMISSION_CODES = [
@@ -777,6 +797,9 @@ const TURNOS_CATALOG_READ_CODES = ['attendance.turnos.read'] as const;
 // el service; NOMINA gestiona la corrección de sede para prorrateo de costo (tenant-wide).
 const DAILY_COST_CENTER_READ_CODES = ['attendance.daily-cost-center.read'] as const;
 const DAILY_COST_CENTER_WRITE_CODES = ['attendance.daily-cost-center.write'] as const;
+
+// Shared tablet — activar modo marcación (mark solo vive en JWT scoped, no en roles)
+const KIOSK_ACTIVATE_CODES = ['attendance.kiosk.activate'] as const;
 const SUPPLIER_DOCUMENT_READ_CODES = ['suppliers.documents.read'] as const;
 const SUPPLIER_DOCUMENT_WRITE_CODES = ['suppliers.documents.write'] as const;
 
@@ -809,6 +832,7 @@ const ROLE_PERMISSION_MATRIX: Record<string, readonly string[]> = {
     ...DAILY_COST_CENTER_READ_CODES,
     ...DAILY_COST_CENTER_WRITE_CODES,
     ...SETTLEMENT_READ_CODES,
+    ...KIOSK_ACTIVATE_CODES,
   ],
   MANAGER: [
     ...MANAGER_PERMISSION_CODES,
@@ -827,6 +851,7 @@ const ROLE_PERMISSION_MATRIX: Record<string, readonly string[]> = {
     ...DAILY_COST_CENTER_READ_CODES,
     ...DAILY_COST_CENTER_WRITE_CODES,
     ...SETTLEMENT_READ_CODES,
+    ...KIOSK_ACTIVATE_CODES,
     ...SETTLEMENT_CALCULATE_CODES,
     ...SETTLEMENT_MANUAL_CODES,
     ...SETTLEMENT_RECONCILE_PENDING_SALARY_CODES,

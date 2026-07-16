@@ -1,11 +1,12 @@
 import {
+  AttendanceEventType,
   AttendanceLog,
   AttendanceLogSource,
   AttendanceMarkingScope,
   AttendanceObservation,
   AttendanceShift,
-  AttendanceEventType,
   AttendanceValidationStatus,
+  AttendanceVerificationMethod,
   EmployeeDetails,
   LaborClassification,
   Location,
@@ -286,6 +287,9 @@ export interface RegisterEventInput {
   facialMatchScore?: number | null;
   facialMatchResult?: string | null;
   markingScope?: AttendanceMarkingScope;
+  verificationMethod?: AttendanceVerificationMethod | null;
+  kioskSessionId?: string | null;
+  validationStatus?: AttendanceValidationStatus | null;
 }
 
 export interface RegisterEventLogData extends RegisterEventInput {

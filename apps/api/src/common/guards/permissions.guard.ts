@@ -48,6 +48,11 @@ export class PermissionsGuard implements CanActivate {
     if (!user?.sub || !user?.tenantId) {
       this.throwUnauthenticated(context);
     }
+
+    if (user.tokenType === 'KIOSK_MARKING') {
+      this.throwPermissionDenied(context);
+    }
+
     //TODO Update permission guard to check tenantId in header against tenantId in token, if header is present
     const headerTenantId = this.getOptionalHeaderTenantId(context);
     if (headerTenantId && headerTenantId !== user.tenantId) {

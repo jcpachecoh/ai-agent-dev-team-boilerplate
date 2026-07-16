@@ -31,6 +31,12 @@ import { ManualMarkingProvisionService } from './service/manual-marking-provisio
 import { JornadaCutoffRepository } from './repository/jornada-cutoff.repository';
 import { JornadaCutoffService } from './service/jornada-cutoff.service';
 import { JornadaCutoffScheduler } from './jobs/jornada-cutoff.scheduler';
+import { KioskMarkingGuard } from './kiosk/guard/kiosk-marking.guard';
+import { KioskMarkingResolver } from './kiosk/resolver/kiosk-marking.resolver';
+import { KioskMarkingRepository } from './kiosk/repository/kiosk-marking.repository';
+import { KioskMarkingSessionRepository } from './kiosk/repository/kiosk-marking-session.repository';
+import { KioskMarkingService } from './kiosk/service/kiosk-marking.service';
+import { KioskMarkingSessionService } from './kiosk/service/kiosk-marking-session.service';
 
 @Module({
   imports: [
@@ -68,6 +74,12 @@ import { JornadaCutoffScheduler } from './jobs/jornada-cutoff.scheduler';
     MobileAttendanceRepository,
     MobileAttendanceService,
     MobileAttendanceResolver,
+    KioskMarkingSessionRepository,
+    KioskMarkingRepository,
+    KioskMarkingSessionService,
+    KioskMarkingService,
+    KioskMarkingGuard,
+    KioskMarkingResolver,
   ],
   exports: [
     AttendanceService,

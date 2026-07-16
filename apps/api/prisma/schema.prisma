@@ -736,6 +736,7 @@ model User {
   weeklyShiftPlansSubmitted             WeeklyShiftPlan[]           @relation("WeeklyShiftPlanSubmittedBy")
   weeklyShiftPlansApproved              WeeklyShiftPlan[]           @relation("WeeklyShiftPlanApprovedBy")
   weeklyShiftPlansRejected              WeeklyShiftPlan[]           @relation("WeeklyShiftPlanRejectedBy")
+  kioskMarkingSessionsActivated         KioskMarkingSession[]       @relation("KioskMarkingSessionActivatedBy")
 
   @@unique([tenantId, email])
   @@unique([tenantId, cedula])
@@ -834,6 +835,7 @@ model Location {
   dailyCostCenterAssignments DailyCostCenterAssignment[]
   jornadaCutoffs             JornadaCutoff[]
   weeklyShiftPlans           WeeklyShiftPlan[]
+  kioskMarkingSessions       KioskMarkingSession[]
 
   @@unique([tenantId, name])
   @@unique([tenantId, code])
@@ -2177,6 +2179,14 @@ enum AttendanceLogSource {
   APP_MOVIL
   MANUAL
   SYSTEM // CONN-11 — EXIT de corte automático de jornada
+  KIOSK // tablet compartida modo marcación (token scoped KIOSK_MARKING)
+}
+
+// Método de verificación de identidad en marcación kiosko (tablet compartida).
+enum AttendanceVerificationMethod {
+  FACIAL_MATCH
+  PIN
+  NONE // match facial deshabilitado / sin consentimiento → solo PIN u omitido
 }
 
 // CONN-11 — alcance de la marcación dentro de la jornada.
@@ -2232,12 +2242,17 @@ model AttendanceLog {
   facialMatchResult String?
   rejectionReason   String?
 
+  // Tablet compartida — trazabilidad de verificación y sesión kiosko
+  verificationMethod AttendanceVerificationMethod?
+  kioskSessionId     String?
+
   employee EmployeeDetails @relation(fields: [employeeId], references: [id])
   location Location        @relation(fields: [locationId], references: [id])
 
   createdBy       User?           @relation("AttendanceLogCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
   manualParentLog AttendanceLog?  @relation("AttendanceLogManualParent", fields: [manualParentLogId], references: [id], onDelete: SetNull)
   manualChildLogs AttendanceLog[] @relation("AttendanceLogManualParent")
+  kioskSession    KioskMarkingSession? @relation(fields: [kioskSessionId], references: [id], onDelete: SetNull)
 
   payrollNovedadFromSource PayrollNovedad? @relation("PayrollNovedadSourceAttendanceLog")
   medicalLeaveFromSource   MedicalLeave?   @relation("MedicalLeaveSourceAttendanceLog")
@@ -2248,7 +2263,27 @@ model AttendanceLog {
   @@index([tenantId, workDate])
   @@index([tenantId, validationStatus])
   @@index([manualParentLogId])
+  @@index([kioskSessionId])
   @@map("attendance_logs")
+}
+
+// Sesión de modo marcación en tablet compartida (token scoped + revocación).
+model KioskMarkingSession {
+  id                String    @id @default(cuid())
+  tenantId          String
+  locationId        String
+  activatedByUserId String
+  expiresAt         DateTime
+  revokedAt         DateTime?
+  createdAt         DateTime  @default(now())
+
+  location     Location        @relation(fields: [locationId], references: [id])
+  activatedBy  User            @relation("KioskMarkingSessionActivatedBy", fields: [activatedByUserId], references: [id], onDelete: Cascade)
+  attendanceLogs AttendanceLog[]
+
+  @@index([tenantId, locationId])
+  @@index([tenantId, activatedByUserId])
+  @@map("kiosk_marking_sessions")
 }
 
 // CONN-11 — corte automático de jornada ordinaria al shiftEndTime.

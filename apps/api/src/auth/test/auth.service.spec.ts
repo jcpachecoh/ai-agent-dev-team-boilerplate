@@ -936,4 +936,71 @@ describe('AuthService', () => {
       ]);
     });
   });
+
+  describe('issueKioskMarkingToken / verifyUserPassword', () => {
+    beforeEach(() => {
+      repoMock.findJwtClaimsByUserId.mockResolvedValue({ ...expectedJwtPayload });
+      jwtMock.signAsync.mockResolvedValue('kiosk-marking-jwt');
+    });
+
+    it('issues scoped KIOSK_MARKING access token without refresh', async () => {
+      const result = await service.issueKioskMarkingToken(
+        'user-1',
+        TENANT_ID,
+        'loc-1',
+        'session-1',
+      );
+
+      expect(result.accessToken).toBe('kiosk-marking-jwt');
+      expect(result.expiresAt).toBeInstanceOf(Date);
+      expect(jwtMock.signAsync).toHaveBeenCalledWith(
+        expect.objectContaining({
+          tokenType: 'KIOSK_MARKING',
+          sessionId: 'session-1',
+          locationId: 'loc-1',
+        }),
+        expect.objectContaining({ expiresIn: 20 * 60 }),
+      );
+      expect(repoMock.saveRefreshToken).not.toHaveBeenCalled();
+    });
+
+    it('rejects empty locationId', async () => {
+      await expect(
+        service.issueKioskMarkingToken('user-1', TENANT_ID, '  ', 'session-1'),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('rejects empty sessionId', async () => {
+      await expect(
+        service.issueKioskMarkingToken('user-1', TENANT_ID, 'loc-1', ' '),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('rejects tenant mismatch', async () => {
+      repoMock.findJwtClaimsByUserId.mockResolvedValue({
+        ...expectedJwtPayload,
+        tenantId: 'other-tenant',
+      });
+      await expect(
+        service.issueKioskMarkingToken('user-1', TENANT_ID, 'loc-1', 'session-1'),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('verifyUserPassword returns true on match', async () => {
+      repoMock.findByIdForAuth.mockResolvedValue(mockUserWithPassword);
+      bcryptMock.compare.mockResolvedValue(true as never);
+      await expect(service.verifyUserPassword('user-1', 'secret')).resolves.toBe(true);
+    });
+
+    it('verifyUserPassword returns false when user inactive', async () => {
+      repoMock.findByIdForAuth.mockResolvedValue({ ...mockUserWithPassword, isActive: false });
+      await expect(service.verifyUserPassword('user-1', 'secret')).resolves.toBe(false);
+      expect(bcryptMock.compare).not.toHaveBeenCalled();
+    });
+
+    it('verifyUserPassword returns false when user missing', async () => {
+      repoMock.findByIdForAuth.mockResolvedValue(null);
+      await expect(service.verifyUserPassword('user-1', 'secret')).resolves.toBe(false);
+    });
+  });
 });

@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  ForbiddenException,
   Get,
   HttpCode,
   HttpStatus,
@@ -30,6 +31,14 @@ import {
   OvertimeRequestDetailResponseDto,
   OvertimeRequestResponseDto,
 } from './dto/overtime.dto';
+
+function assertNotKioskMarkingToken(user: JwtPayload): void {
+  if (user.tokenType === 'KIOSK_MARKING') {
+    throw new ForbiddenException(
+      'Token de modo marcación kiosko no tiene permisos de aprobación ni gestión',
+    );
+  }
+}
 
 function mapSummary(row: OvertimeRequestSummary): OvertimeRequestResponseDto {
   return {
@@ -122,6 +131,7 @@ export class OvertimeController {
     @Param('id') id: string,
     @Body() dto: ApproveOvertimeRequestDto,
   ): Promise<OvertimeRequestDetailResponseDto> {
+    assertNotKioskMarkingToken(user);
     const row = await this.overtimeService.approve(user.tenantId, user.sub, {
       overtimeRequestId: id,
       comment: dto.comment,
@@ -137,6 +147,7 @@ export class OvertimeController {
     @Param('id') id: string,
     @Body() dto: ObjectOvertimeRequestDto,
   ): Promise<OvertimeRequestDetailResponseDto> {
+    assertNotKioskMarkingToken(user);
     const row = await this.overtimeService.object(user.tenantId, user.sub, {
       overtimeRequestId: id,
       comment: dto.comment,
