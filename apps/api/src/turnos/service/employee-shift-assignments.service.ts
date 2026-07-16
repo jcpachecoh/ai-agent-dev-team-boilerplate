@@ -203,7 +203,9 @@ export class EmployeeShiftAssignmentsService implements IEmployeeShiftAssignment
       actor.userId,
     );
     const allowed = allowedLocationIds.map((location) => location.id);
-    if (!allowed.includes(employee.locationId)) {
+    // Rotante (sin sede fija): un actor acotado por sede no tiene forma de validar
+    // pertenencia contra una sede estática — se niega por defecto (fail-closed).
+    if (!employee.locationId || !allowed.includes(employee.locationId)) {
       throw new ForbiddenException(SCOPE_FORBIDDEN_MESSAGE);
     }
   }

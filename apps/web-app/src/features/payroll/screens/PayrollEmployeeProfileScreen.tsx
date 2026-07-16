@@ -21,6 +21,7 @@ import { PayrollEmployeeBankAccountsTab } from '../components/PayrollEmployeeBan
 import { PayrollEmployeePaymentsTab } from '../components/PayrollEmployeePaymentsTab';
 import { PayrollEmployeePersonalDataTab } from '../components/PayrollEmployeePersonalDataTab';
 import { PayrollEmployeeProfilePlaceholderTab } from '../components/PayrollEmployeeProfilePlaceholderTab';
+import { PayrollEmployeeRotanteCalendarTab } from '../components/PayrollEmployeeRotanteCalendarTab';
 import { PayrollEmployeeSocialSecurityTab } from '../components/PayrollEmployeeSocialSecurityTab';
 import { PayrollEmployeeTaxTab } from '../components/PayrollEmployeeTaxTab';
 import {
@@ -44,14 +45,18 @@ export function PayrollEmployeeProfileScreen(): React.JSX.Element {
   const activeTab = parsePayrollEmployeeProfileTab(searchParams.get('tab'));
   const activeTabDefinition = getPayrollEmployeeProfileTabDefinition(activeTab);
 
+  const isRotante = employeeQuery.data?.costCenter === 'ROTANTE';
+
   const tabItems = useMemo(
     () =>
-      PAYROLL_EMPLOYEE_PROFILE_TABS.map((tab) => ({
-        id: tab.id,
-        label: tab.label,
-        icon: tab.icon,
-      })),
-    [],
+      PAYROLL_EMPLOYEE_PROFILE_TABS.filter((tab) => tab.id !== 'rotante-calendar' || isRotante).map(
+        (tab) => ({
+          id: tab.id,
+          label: tab.label,
+          icon: tab.icon,
+        }),
+      ),
+    [isRotante],
   );
 
   const handleTabChange = (tabId: string) => {
@@ -101,6 +106,7 @@ export function PayrollEmployeeProfileScreen(): React.JSX.Element {
             activeTabId={activeTab}
             onTabChange={handleTabChange}
             theme={empleadoTheme}
+            className={styles.tabBar}
           />
 
           <div className={styles.profileBody}>
@@ -151,6 +157,10 @@ function ProfileTabPanel({
 
   if (tabId === 'attendance') {
     return <PayrollEmployeeAttendanceTab userId={userId} theme={theme} />;
+  }
+
+  if (tabId === 'rotante-calendar') {
+    return <PayrollEmployeeRotanteCalendarTab userId={userId} theme={theme} />;
   }
 
   if (tabId === 'bank-accounts') {

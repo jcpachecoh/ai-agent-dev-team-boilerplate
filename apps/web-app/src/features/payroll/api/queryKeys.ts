@@ -67,6 +67,11 @@ export const payrollKeys = {
   cesantiasAlertSummary: () => [...payrollKeys.cesantias(), 'alert-summary'] as const,
   cesantiasExportAvailability: (year: number) =>
     [...payrollKeys.cesantias(), 'export-availability', year] as const,
+  dailyCostCenter: () => [...payrollKeys.all, 'daily-cost-center'] as const,
+  dailyCostCenterCalendar: (employeeId: string, from: string, to: string) =>
+    [...payrollKeys.dailyCostCenter(), 'calendar', employeeId, from, to] as const,
+  dailyCostCenterPending: (from: string, to: string) =>
+    [...payrollKeys.dailyCostCenter(), 'pending', from, to] as const,
   finalSettlements: () => [...payrollKeys.all, 'final-settlements'] as const,
   finalSettlementsByEmployee: (employeeDetailsId: string) =>
     [...payrollKeys.finalSettlements(), 'employee', employeeDetailsId] as const,

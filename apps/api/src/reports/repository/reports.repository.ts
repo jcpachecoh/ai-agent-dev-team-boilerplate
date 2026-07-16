@@ -1,17 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import { type IReportsRepository } from '../interfaces/reports.interfaces';
-import {
-  AttendanceLog,
-  EmployeeContractType,
-  EmployeeDetails,
-  Location,
-  User,
-} from '@prisma/client';
+import { AttendanceLog, CostCenter, EmployeeDetails, Location, Prisma, User } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import type { ActiveEmployeeFilters, IReportsRepository } from '../interfaces/reports.interfaces';
 
 export type EmployeeWithUserAndLocation = EmployeeDetails & {
   user: User;
-  location: Pick<Location, 'id' | 'name'>;
+  /** null para empleados con costCenter = ROTANTE (CONN-06) — sin sede fija en ficha. */
+  location: Pick<Location, 'id' | 'name'> | null;
 };
 
 @Injectable()
@@ -21,25 +16,20 @@ export class ReportsRepository implements IReportsRepository {
   /** Returns active employees for the tenant, optionally filtered. */
   async findActiveEmployees(
     tenantId: string,
-    options: {
-      locationId?: string;
-      allowedLocationIds?: string[] | null;
-      contractType?: EmployeeContractType;
-      employeeId?: string;
-    } = {},
+    options: ActiveEmployeeFilters = {},
   ): Promise<EmployeeWithUserAndLocation[]> {
-    const where: Record<string, unknown> = {
+    const base: Prisma.EmployeeDetailsWhereInput = {
       tenantId,
       isActive: true,
       deletedAt: null,
     };
-    if (options.locationId) {
-      where.locationId = options.locationId;
-    } else if (options.allowedLocationIds) {
-      where.locationId = { in: options.allowedLocationIds };
-    }
-    if (options.contractType) where.contractType = options.contractType;
-    if (options.employeeId) where.id = options.employeeId;
+    if (options.contractType) base.contractType = options.contractType;
+    if (options.employeeId) base.id = options.employeeId;
+
+    const locationClause = this.buildLocationClause(tenantId, options);
+    const where: Prisma.EmployeeDetailsWhereInput = locationClause
+      ? { AND: [base, locationClause] }
+      : base;
 
     return this.prisma.employeeDetails.findMany({
       where,
@@ -49,6 +39,44 @@ export class ReportsRepository implements IReportsRepository {
       },
       orderBy: { name: 'asc' },
     });
+  }
+
+  /**
+   * CONN-06: empleados ROTANTE no tienen locationId fijo.
+   * - Filtro por sede puntual: incluir rotantes con asignación diaria en esa sede (si hay período).
+   * - Scope por sedes permitidas: incluir siempre rotantes (luego el service filtra slices).
+   */
+  private buildLocationClause(
+    tenantId: string,
+    options: ActiveEmployeeFilters,
+  ): Prisma.EmployeeDetailsWhereInput | null {
+    if (options.locationId) {
+      const or: Prisma.EmployeeDetailsWhereInput[] = [{ locationId: options.locationId }];
+      if (options.periodFrom && options.periodTo) {
+        or.push({
+          costCenter: CostCenter.ROTANTE,
+          dailyCostCenterAssignments: {
+            some: {
+              tenantId,
+              locationId: options.locationId,
+              date: { gte: options.periodFrom, lte: options.periodTo },
+            },
+          },
+        });
+      }
+      return { OR: or };
+    }
+
+    if (options.allowedLocationIds) {
+      return {
+        OR: [
+          { locationId: { in: options.allowedLocationIds } },
+          { costCenter: CostCenter.ROTANTE },
+        ],
+      };
+    }
+
+    return null;
   }
 
   /**

@@ -33,7 +33,8 @@ export interface EmployeeProvisioningContext {
   cedula: string;
   createdBy: string | null;
   employeeDetailsId: string;
-  employeeLocationId: string;
+  /** null para empleados con costCenter = ROTANTE (CONN-06) — sin sede fija en ficha. */
+  employeeLocationId: string | null;
   hasOperationalProfile: boolean;
 }
 

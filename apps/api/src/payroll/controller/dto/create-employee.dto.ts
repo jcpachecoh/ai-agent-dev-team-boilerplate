@@ -47,10 +47,12 @@ export class CreateEmployeeDto {
   @IsOptional()
   roleId?: string;
 
-  @ApiProperty()
+  @ApiPropertyOptional({
+    description: 'Obligatorio salvo cuando costCenter = ROTANTE (OS-531/CONN-06)',
+  })
   @IsString()
-  @IsNotEmpty()
-  locationId!: string;
+  @IsOptional()
+  locationId?: string;
 
   @ApiProperty()
   @IsString()

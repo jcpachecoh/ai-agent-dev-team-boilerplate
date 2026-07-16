@@ -1,4 +1,9 @@
-import { AttendanceEventType, AttendanceLog, AttendanceShift } from '@prisma/client';
+import {
+  AttendanceEventType,
+  AttendanceLog,
+  AttendanceMarkingScope,
+  AttendanceShift,
+} from '@prisma/client';
 import {
   ATTENDANCE_CARD_MAX_RANGE_MONTHS,
   COLOMBIA_TZ,
@@ -8,6 +13,7 @@ import {
   SHIFT_MORNING_START,
 } from '../attendance.constants';
 import type { WorkPair } from '../interfaces/attendance.interfaces';
+import { computeDayMinutesByScope } from './shift-window.util';
 
 export function getBogotaHour(ts: Date): number {
   const str = new Intl.DateTimeFormat('en', {
@@ -50,6 +56,13 @@ export function isLateEntry(log: AttendanceLog): boolean {
   return entryMinutes > shiftStartMinutes;
 }
 
+/**
+ * Resumen operativo crudo ENTRY→EXIT (sin ventana planificada ni markingScope).
+ *
+ * @deprecated Para tiempo pagable (tarjeta, nómina, API overtime) usar
+ * {@link calculatePayableDayMinutes} con turno resuelto (CONN-11).
+ * Mantener este helper para monitor operativo, pares abiertos e indicador nocturno.
+ */
 export function calculateDaySummary(
   logs: AttendanceLog[],
   now: Date,
@@ -91,6 +104,36 @@ export function calculateDaySummary(
   const overtimeMinutes = Math.max(0, totalMinutes - REGULAR_DAY_MINUTES);
 
   return { totalMinutes, overtimeMinutes, isNocturno, pairs };
+}
+
+/** Minutos de pares con markingScope OVERTIME (brutos del par; aprobación es CONN-04a). */
+export function sumOvertimeScopeMinutes(logs: AttendanceLog[]): number {
+  if (logs.length === 0) return 0;
+  const anchor = logs[0].timestamp;
+  return computeDayMinutesByScope({
+    logs,
+    shiftStartTime: anchor,
+    shiftEndTime: anchor,
+  }).overtimeScopeMinutes;
+}
+
+export interface PayableDayMinutesInput {
+  logs: AttendanceLog[];
+  shiftStartTime: Date;
+  shiftEndTime: Date;
+  cutoffTime?: Date | null;
+}
+
+/** Minutos ordinarios (ventana planificada) y overtime explícito (CONN-11). */
+export function calculatePayableDayMinutes(input: PayableDayMinutesInput): {
+  ordinaryMinutes: number;
+  overtimeMinutes: number;
+} {
+  const scoped = computeDayMinutesByScope(input);
+  return {
+    ordinaryMinutes: scoped.ordinaryMinutes,
+    overtimeMinutes: scoped.overtimeScopeMinutes,
+  };
 }
 
 /**

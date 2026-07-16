@@ -1,0 +1,39 @@
+name: Deploy → Railway Staging
+
+on:
+  push:
+    branches: [develop]
+    paths:
+      - "apps/api/**"
+      - "prisma/**"
+      - "packages/**"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-railway-staging
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy API a Railway (staging)
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli@4.10.0
+
+      # RAILWAY_TOKEN must be a Project Token (Project Settings → Tokens),
+      # scoped to the "staging" environment. An account/workspace API token
+      # authenticates but lacks access to the service, which railway up
+      # reports as "Invalid RAILWAY_TOKEN" instead of a scope error.
+      - name: Verify Railway token scope
+        run: railway status --json
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+      - name: Deploy a Railway
+        run: railway up --service api --detach
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}

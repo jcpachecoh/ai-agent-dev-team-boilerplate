@@ -725,16 +725,18 @@ model Location {
   updatedAt           DateTime  @updatedAt
   deletedAt           DateTime?
 
-  tenant                    Tenant                      @relation(fields: [tenantId], references: [id])
-  users                     UserLocation[]
-  employeeDetails           EmployeeDetails[]
-  attendanceLogs            AttendanceLog[]
-  productionIncidents       ProductionIncident[]
-  supplyItems               SupplyItem[]
-  productionRecipes         ProductionRecipeLocation[]
-  supplierLogisticsCoverage SupplierLogisticsCoverage[]
-  turnos                    Turno[]
-  overtimeRequests          OvertimeRequest[]
+  tenant                     Tenant                      @relation(fields: [tenantId], references: [id])
+  users                      UserLocation[]
+  employeeDetails            EmployeeDetails[]
+  attendanceLogs             AttendanceLog[]
+  productionIncidents        ProductionIncident[]
+  supplyItems                SupplyItem[]
+  productionRecipes          ProductionRecipeLocation[]
+  supplierLogisticsCoverage  SupplierLogisticsCoverage[]
+  turnos                     Turno[]
+  overtimeRequests           OvertimeRequest[]
+  dailyCostCenterAssignments DailyCostCenterAssignment[]
+  jornadaCutoffs             JornadaCutoff[]
 
   @@unique([tenantId, name])
   @@unique([tenantId, code])
@@ -764,7 +766,7 @@ model EmployeeDetails {
   userId               String               @unique
   tenantId             String
   name                 String
-  locationId           String
+  locationId           String?
   positionId           String?
   position             String
   area                 String
@@ -796,32 +798,34 @@ model EmployeeDetails {
   updatedAt            DateTime             @updatedAt
   deletedAt            DateTime?
 
-  user                     User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  location                 Location                  @relation(fields: [locationId], references: [id])
-  positionRef              EmployeePosition?         @relation(fields: [positionId], references: [id], onDelete: SetNull)
-  photoStorageObject       StorageObject?            @relation(fields: [photoStorageObjectId], references: [id], onDelete: SetNull)
-  positionHistory          EmployeePositionHistory[]
-  salaryHistory            EmployeeSalaryHistory[]
-  fundHistory              EmployeeFundHistory[]
-  assets                   EmployeeAsset[]
-  documents                EmployeeDocument[]
-  attendanceLogs           AttendanceLog[]
-  attendanceObservations   AttendanceObservation[]
-  socialProfiles           EmployeeSocialProfile[]
-  financialProfile         EmployeeFinancialProfile?
-  personalData             EmployeePersonalData?
-  turnoAssignments         TurnoAssignment[]
-  employeeShiftAssignments EmployeeShiftAssignment[]
-  vacationBalance          VacationBalance?
-  vacationRequests         VacationRequest[]
-  medicalLeaves            MedicalLeave[]
-  cesantiasLiquidations    CesantiasLiquidation[]
-  payrollNovedades         PayrollNovedad[]
-  overtimeRequests         OvertimeRequest[]
-  dataConsents             DataConsent[]
-  employmentContracts      EmploymentContract[]
-  primaLiquidations        PrimaLiquidation[]
-  finalSettlements         FinalSettlement[]
+  user                       User                        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  location                   Location?                   @relation(fields: [locationId], references: [id])
+  positionRef                EmployeePosition?           @relation(fields: [positionId], references: [id], onDelete: SetNull)
+  photoStorageObject         StorageObject?              @relation(fields: [photoStorageObjectId], references: [id], onDelete: SetNull)
+  positionHistory            EmployeePositionHistory[]
+  salaryHistory              EmployeeSalaryHistory[]
+  fundHistory                EmployeeFundHistory[]
+  assets                     EmployeeAsset[]
+  documents                  EmployeeDocument[]
+  attendanceLogs             AttendanceLog[]
+  attendanceObservations     AttendanceObservation[]
+  socialProfiles             EmployeeSocialProfile[]
+  financialProfile           EmployeeFinancialProfile?
+  personalData               EmployeePersonalData?
+  turnoAssignments           TurnoAssignment[]
+  employeeShiftAssignments   EmployeeShiftAssignment[]
+  vacationBalance            VacationBalance?
+  vacationRequests           VacationRequest[]
+  medicalLeaves              MedicalLeave[]
+  cesantiasLiquidations      CesantiasLiquidation[]
+  payrollNovedades           PayrollNovedad[]
+  overtimeRequests           OvertimeRequest[]
+  jornadaCutoffs             JornadaCutoff[]
+  dataConsents               DataConsent[]
+  dailyCostCenterAssignments DailyCostCenterAssignment[]
+  employmentContracts        EmploymentContract[]
+  primaLiquidations          PrimaLiquidation[]
+  finalSettlements           FinalSettlement[]
 
   @@index([tenantId])
   @@index([locationId])
@@ -1149,6 +1153,7 @@ enum CostCenter {
   PLANTA
   GERENCIA
   INCAPACIDADES
+  ROTANTE
 }
 
 enum LaborClassification {
@@ -2069,6 +2074,18 @@ enum AttendanceLogSource {
   DEVICE // @deprecated legacy — usar APP_MOVIL
   APP_MOVIL
   MANUAL
+  SYSTEM // CONN-11 — EXIT de corte automático de jornada
+}
+
+// CONN-11 — alcance de la marcación dentro de la jornada.
+enum AttendanceMarkingScope {
+  ORDINARY // jornada planificada (default)
+  OVERTIME // tiempo adicional post-corte — requiere aprobación CONN-04a/04b
+}
+
+enum JornadaCutoffType {
+  AUTOMATIC // job al shiftEndTime
+  MANUAL // corrección supervisor (fuera de alcance MVP)
 }
 
 // Estado de validación geo/facial (principalmente source=APP_MOVIL).
@@ -2095,7 +2112,8 @@ model AttendanceLog {
   createdAt  DateTime            @default(now())
   updatedAt  DateTime            @updatedAt
 
-  source            AttendanceLogSource @default(DEVICE)
+  source            AttendanceLogSource    @default(DEVICE)
+  markingScope      AttendanceMarkingScope @default(ORDINARY)
   createdByUserId   String?
   manualReason      String?
   manualParentLogId String?
@@ -2123,11 +2141,35 @@ model AttendanceLog {
   medicalLeaveFromSource   MedicalLeave?   @relation("MedicalLeaveSourceAttendanceLog")
 
   @@index([tenantId, employeeId, workDate])
+  @@index([tenantId, employeeId, workDate, markingScope])
   @@index([tenantId, locationId, workDate])
   @@index([tenantId, workDate])
   @@index([tenantId, validationStatus])
   @@index([manualParentLogId])
   @@map("attendance_logs")
+}
+
+// CONN-11 — corte automático de jornada ordinaria al shiftEndTime.
+model JornadaCutoff {
+  id           String            @id @default(cuid())
+  tenantId     String
+  employeeId   String
+  locationId   String
+  workDate     DateTime          @db.Date
+  shiftEndTime DateTime
+  cutoffAt     DateTime
+  cutoffType   JornadaCutoffType @default(AUTOMATIC)
+  entryLogId   String?
+  exitLogId    String?
+  createdAt    DateTime          @default(now())
+
+  employee EmployeeDetails @relation(fields: [employeeId], references: [id])
+  location Location        @relation(fields: [locationId], references: [id])
+
+  @@unique([tenantId, employeeId, workDate])
+  @@index([tenantId, workDate])
+  @@index([tenantId, locationId, workDate])
+  @@map("jornada_cutoffs")
 }
 
 // OS-551 — una observación por empleado + fecha de jornada, persistida y auditada
@@ -2829,6 +2871,34 @@ model DataConsent {
   @@index([employeeId])
   @@index([tenantId, employeeId, consentType])
   @@map("data_consents")
+}
+
+// CONN-06: sede real diaria para empleados con costCenter = ROTANTE.
+// Prioridad de fuente: TURNO_ASIGNADO > MARCACION_ASISTENCIA > MANUAL (D2, D7).
+enum AssignmentSource {
+  TURNO_ASIGNADO
+  MARCACION_ASISTENCIA
+  MANUAL
+}
+
+model DailyCostCenterAssignment {
+  id         String           @id @default(cuid())
+  tenantId   String
+  employeeId String
+  date       DateTime         @db.Date
+  locationId String
+  shiftId    String?
+  source     AssignmentSource
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  employee EmployeeDetails @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  location Location        @relation(fields: [locationId], references: [id], onDelete: Restrict)
+
+  @@unique([tenantId, employeeId, date])
+  @@index([tenantId, employeeId, date])
+  @@index([tenantId, locationId, date])
+  @@map("daily_cost_center_assignments")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

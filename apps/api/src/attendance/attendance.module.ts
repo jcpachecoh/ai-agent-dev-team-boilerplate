@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AuditModule } from '../audit/audit.module';
 import { AuthModule } from '../auth/auth.module';
+import { DailyCostCenterModule } from '../daily-cost-center/daily-cost-center.module';
 import { EmailModule } from '../email/email.module';
 import { LocationsModule } from '../locations/locations.module';
 import { PrismaModule } from '../prisma/prisma.module';
@@ -27,6 +28,9 @@ import { AttendanceCollaboratorsPdfService } from './service/attendance-collabor
 import { AttendanceRepository } from './repository/attendance.repository';
 import { AttendanceCollaboratorsRepository } from './repository/attendance-collaborators.repository';
 import { ManualMarkingProvisionService } from './service/manual-marking-provision.service';
+import { JornadaCutoffRepository } from './repository/jornada-cutoff.repository';
+import { JornadaCutoffService } from './service/jornada-cutoff.service';
+import { JornadaCutoffScheduler } from './jobs/jornada-cutoff.scheduler';
 
 @Module({
   imports: [
@@ -42,6 +46,7 @@ import { ManualMarkingProvisionService } from './service/manual-marking-provisio
     PayrollNovedadesModule,
     MedicalLeavesModule,
     DataConsentModule,
+    DailyCostCenterModule,
   ],
   controllers: [AttendanceController],
   providers: [
@@ -56,6 +61,9 @@ import { ManualMarkingProvisionService } from './service/manual-marking-provisio
     AttendanceCollaboratorsPdfService,
     AttendanceRepository,
     AttendanceCollaboratorsRepository,
+    JornadaCutoffRepository,
+    JornadaCutoffService,
+    JornadaCutoffScheduler,
     AttendanceResolver,
     MobileAttendanceRepository,
     MobileAttendanceService,
@@ -68,6 +76,7 @@ import { ManualMarkingProvisionService } from './service/manual-marking-provisio
     AttendanceControlPanelService,
     AttendanceComparisonService,
     AttendanceCollaboratorsService,
+    JornadaCutoffService,
   ],
 })
 export class AttendanceModule {}

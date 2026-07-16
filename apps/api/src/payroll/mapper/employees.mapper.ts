@@ -17,7 +17,11 @@ export class EmployeeResponseDto {
   @ApiProperty() userId!: string;
   @ApiProperty() tenantId!: string;
   @ApiProperty() name!: string;
-  @ApiProperty() locationId!: string;
+  @ApiPropertyOptional({
+    nullable: true,
+    description: 'null cuando costCenter = ROTANTE (CONN-06) — sin sede fija',
+  })
+  locationId!: string | null;
   @ApiPropertyOptional() positionId?: string | null;
   @ApiPropertyOptional() position?: string | null;
   @ApiPropertyOptional() area?: string | null;

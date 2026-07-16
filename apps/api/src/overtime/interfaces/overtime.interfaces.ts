@@ -1,4 +1,5 @@
 import {
+  AttendanceEventType,
   OvertimeApprovalDecision,
   OvertimeApprovalLevel,
   OvertimeRequestType,
@@ -159,13 +160,15 @@ export interface IOvertimeRepository {
     level: OvertimeApprovalLevel,
     data: UpsertOvertimeApprovalData,
   ): Promise<OvertimeApprovalRecord>;
-  findExitLogsForPeriod(
+  findOvertimeScopeLogsForPeriod(
     tenantId: string,
     employeeId: string,
     locationId: string,
     workDateFrom: Date,
     workDateTo: Date,
-  ): Promise<Array<{ id: string; workDate: Date; timestamp: Date }>>;
+  ): Promise<
+    Array<{ id: string; workDate: Date; eventType: AttendanceEventType; timestamp: Date }>
+  >;
   findActorContext(tenantId: string, userId: string): Promise<OvertimeActorContext | null>;
   findApproverUserIdsByPosition(
     tenantId: string,

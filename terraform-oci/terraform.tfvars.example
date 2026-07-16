@@ -1,0 +1,45 @@
+# Copia este archivo como terraform.tfvars y completa con tus valores.
+# NUNCA subas terraform.tfvars a git (ya debe estar en .gitignore).
+# Los valores "sensitive" (ocir_auth_token, private_key_path) van como
+# secrets en GitHub Actions, no en este archivo, cuando corra en CI.
+
+tenancy_ocid      = "ocid1.tenancy.oc1..xxxxxxx"
+user_ocid         = "ocid1.user.oc1..xxxxxxx"
+fingerprint       = "xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx"
+private_key_path  = "~/.oci/oci_api_key.pem"
+region            = "sa-bogota-1"
+
+compartment_id    = "ocid1.compartment.oc1..aaaaaaaa6fec2yyj2jtmogrvfhxsgym5m7j7wxsc5ygzxj6ls52hgqm6tqna"
+subnet_id         = "ocid1.subnet.oc1.sa-bogota-1.aaaaaaaagjrem2cdent2hjpe4mmler6fol7dwpf52ti6f2wydhaigkuynwqa"
+nsg_id            = "ocid1.networksecuritygroup.oc1.sa-bogota-1.aaaaaaaaq65e6vsapeiymvsg2cjikwjygvsbwcesje2zgnej4egt4insrtea"
+
+instance_display_name = "opssynk-prod"
+instance_ocpus         = 2
+instance_memory_gbs    = 12
+assign_public_ip       = false   # true solo si aún no tienes el Load Balancer de OS-642
+
+ssh_public_key_path = "~/.ssh/id_rsa_opssynk.pub"
+
+ocir_image        = "sa-bogota-1.ocir.io/axzcymnpgi1t/opssynk/api:latest"
+ocir_username     = "axzcymnpgi1t/oracleidentitycloudservice/tu-usuario@opssynk.com"
+# ocir_auth_token  -> pásalo por variable de entorno TF_VAR_ocir_auth_token, no aquí
+# nomina_env_content y postgres_admin_password_plain -> NUNCA en este archivo.
+# Pásalos así antes de correr terraform apply:
+#   export TF_VAR_nomina_env_content="$(cat ../apps/api/.env.production)"
+#   export TF_VAR_postgres_admin_password_plain="$(openssl rand -base64 24)"
+
+# === Base de datos PostgreSQL self-hosted en Compute ARM (OS-638) ===
+# Nota: instance_ocpus (backend) + db_instance_ocpus (DB) no debe superar
+# 4 OCPU / 24GB combinados para mantenerte dentro del Always Free tier.
+db_instance_display_name = "opssynk-db-prod"
+db_instance_ocpus          = 2
+db_instance_memory_gbs     = 12
+db_boot_volume_size_gbs    = 100
+
+postgres_version    = "16"
+postgres_db_name    = "opssynk_db"
+postgres_admin_user = "opssynk_admin"
+# postgres_admin_password_plain -> ver nota arriba, se pasa por TF_VAR
+
+db_backup_bucket_name    = "opssynk-db-backups"
+db_backup_retention_days = 30

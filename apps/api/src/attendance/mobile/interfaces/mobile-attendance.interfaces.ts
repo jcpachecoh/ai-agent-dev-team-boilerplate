@@ -1,6 +1,7 @@
 import type {
   AttendanceEventType,
   AttendanceLog,
+  AttendanceMarkingScope,
   AttendanceShift,
   AttendanceValidationStatus,
   EmployeeDetails,
@@ -40,6 +41,7 @@ export interface RegistrarMarcacionInput {
   facialMatchResult?: string | null;
   timestamp?: Date | null;
   notes?: string | null;
+  markingScope?: AttendanceMarkingScope;
 }
 
 export interface MisMarcacionesInput {
@@ -130,6 +132,7 @@ export interface CreateMobileAttendanceLogData {
   facialMatchScore?: number | null;
   facialMatchResult?: string | null;
   rejectionReason?: string | null;
+  markingScope?: AttendanceMarkingScope;
 }
 
 export interface MobileAttendanceFindManyFilters {

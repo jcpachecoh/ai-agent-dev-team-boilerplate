@@ -3,10 +3,13 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import { TurnoAssignmentType } from '@prisma/client';
 
+import { DailyCostCenterService } from '../../daily-cost-center/service/daily-cost-center.service';
 import { UserLocationsService } from '../../locations/service/user-locations.service';
 import type {
   ActorContext,
@@ -37,9 +40,12 @@ const MAX_LIMIT = 200;
 
 @Injectable()
 export class TurnoAssignmentsService implements ITurnoAssignmentsService {
+  private readonly logger = new Logger(TurnoAssignmentsService.name);
+
   constructor(
     private readonly repository: TurnoAssignmentsRepository,
     private readonly userLocationsService: UserLocationsService,
+    @Optional() private readonly dailyCostCenterService?: DailyCostCenterService,
   ) {}
 
   async getWeekly(
@@ -116,9 +122,8 @@ export class TurnoAssignmentsService implements ITurnoAssignmentsService {
       throw new ConflictException('No se puede asignar un turno a un colaborador inactivo');
     }
 
-    await this.assertLocationAllowed(tenantId, actor, employee.locationId);
-
     let turnoId: string | null = null;
+    let turnoLocationId: string | null = null;
     if (type === TurnoAssignmentType.ASSIGNED) {
       const turno = await this.repository.findTurnoScope(tenantId, input.turnoId as string);
       if (!turno) {
@@ -128,7 +133,11 @@ export class TurnoAssignmentsService implements ITurnoAssignmentsService {
         throw new ConflictException('El turno seleccionado está inactivo');
       }
       turnoId = turno.id;
+      turnoLocationId = turno.locationId;
     }
+
+    // CONN-06: empleado ROTANTE sin sede fija — valida contra la sede del turno asignado.
+    await this.assertLocationAllowed(tenantId, actor, employee.locationId ?? turnoLocationId);
 
     const existing = await this.repository.findByEmployeeAndDate(
       tenantId,
@@ -140,12 +149,39 @@ export class TurnoAssignmentsService implements ITurnoAssignmentsService {
       turnoId,
     });
 
-    return this.repository.upsertWithAudit(
+    const result = await this.repository.upsertWithAudit(
       tenantId,
       { employeeId: input.employeeId, workDate, type, turnoId },
       actor.userId,
       auditChanges,
     );
+
+    if (turnoId && turnoLocationId) {
+      await this.triggerDailyCostCenterResolution({
+        tenantId,
+        employeeId: input.employeeId,
+        workDate,
+        locationId: turnoLocationId,
+        shiftId: turnoId,
+      });
+    }
+
+    return result;
+  }
+
+  /** CONN-06 — resuelve sede diaria para empleados ROTANTE; no debe romper la asignación de turno si falla. */
+  private async triggerDailyCostCenterResolution(payload: {
+    tenantId: string;
+    employeeId: string;
+    workDate: Date;
+    locationId: string;
+    shiftId: string;
+  }): Promise<void> {
+    if (!this.dailyCostCenterService) return;
+
+    await this.dailyCostCenterService.resolveFromShift(payload).catch((err: unknown) => {
+      this.logger.warn(`Daily cost center resolution (shift) failed: ${String(err)}`);
+    });
   }
 
   async remove(tenantId: string, actor: ActorContext, id: string): Promise<void> {
@@ -193,10 +229,13 @@ export class TurnoAssignmentsService implements ITurnoAssignmentsService {
   private async assertLocationAllowed(
     tenantId: string,
     actor: ActorContext,
-    employeeLocationId: string,
+    employeeLocationId: string | null,
   ): Promise<void> {
     const allowedLocationIds = await this.resolveScope(tenantId, actor);
-    if (allowedLocationIds && !allowedLocationIds.includes(employeeLocationId)) {
+    if (!allowedLocationIds) return;
+    // Rotante (sin sede fija): un actor acotado por sede no tiene forma de validar
+    // pertenencia contra una sede estática — se niega por defecto (fail-closed).
+    if (!employeeLocationId || !allowedLocationIds.includes(employeeLocationId)) {
       throw new ForbiddenException(SCOPE_FORBIDDEN_MESSAGE);
     }
   }

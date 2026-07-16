@@ -3,6 +3,7 @@ import type { AttendanceLog, EmployeeDetails, Location } from '@prisma/client';
 import {
   AttendanceEventType,
   AttendanceLogSource,
+  AttendanceMarkingScope,
   AttendanceValidationStatus,
 } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
@@ -83,6 +84,7 @@ export class MobileAttendanceRepository implements IMobileAttendanceRepository {
         timestamp: data.timestamp,
         notes: data.notes ?? null,
         source: AttendanceLogSource.APP_MOVIL,
+        markingScope: data.markingScope ?? AttendanceMarkingScope.ORDINARY,
         validationStatus: data.validationStatus ?? null,
         clientLatitude: data.clientLatitude ?? null,
         clientLongitude: data.clientLongitude ?? null,

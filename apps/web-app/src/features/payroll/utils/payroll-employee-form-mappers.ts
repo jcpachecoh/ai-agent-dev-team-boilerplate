@@ -12,7 +12,8 @@ export function payrollEmployeeFormValuesToCreateInput(
     cedula: values.cedula.trim(),
     documentType: values.documentType,
     email: values.email.trim(),
-    locationId: values.locationId.trim(),
+    // Rotante no tiene sede fija — se omite para que el backend la limpie (CONN-06).
+    locationId: values.locationId.trim() || undefined,
     name: buildEmployeeFullName(values),
     positionId: values.positionId.trim() || undefined,
     area: values.area.trim(),

@@ -211,7 +211,12 @@ export class TurnoAssignmentsImportService {
       return;
     }
 
-    if (allowedLocationIds && !allowedLocationIds.includes(employee.locationId)) {
+    // Rotante (sin sede fija): un actor acotado por sede no tiene forma de validar
+    // pertenencia contra una sede estática — se excluye por defecto (fail-closed).
+    if (
+      allowedLocationIds &&
+      (!employee.locationId || !allowedLocationIds.includes(employee.locationId))
+    ) {
       result.excluded += 1;
       result.errors.push({ row: rowNumber, employee: rowLabel, reason: SCOPE_FORBIDDEN_MESSAGE });
       return;

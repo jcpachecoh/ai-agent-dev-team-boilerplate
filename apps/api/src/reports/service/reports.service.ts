@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException, Optional } from '@nestjs/common';
-import { AttendanceEventType, AttendanceLog, OvertimeStatus } from '@prisma/client';
+import { AttendanceEventType, AttendanceLog, CostCenter, OvertimeStatus } from '@prisma/client';
 import { COLOMBIA_TZ, REGULAR_DAY_MINUTES } from '../../attendance/attendance.constants';
 import { AttendanceOvertimeType } from '../../payroll/payroll.constants';
 import { isColombianHoliday } from './colombia-holidays.util';
@@ -30,10 +30,13 @@ import { MAX_EXPORT_ROWS } from '../reports.constants';
 import { buildAttendanceFiltersSummary } from './export-filters-summary.util';
 import { OvertimeRepository } from '../../overtime/repository/overtime.repository';
 import { buildEmployeeListFiltersSummary } from './export-filters-summary.util';
+import { RotanteProrationService } from '../../daily-cost-center/service/rotante-proration.service';
+import type { RotanteProrationResult } from '../../daily-cost-center/interfaces/rotante-proration.interfaces';
 import {
   LocationPayrollTotalsDto,
   PayrollEmployeeRowDto,
   PayrollReportResponseDto,
+  RotanteProrationMetaDto,
   TenantPayrollTotalsDto,
 } from '../controller/dto/payroll-report-response.dto';
 import {
@@ -57,6 +60,32 @@ import { calculatePayrollNovedadMonthAdjustment } from '../../payroll/utils/payr
 // versioned via LaborLegalParametersService.getValueAt('JORNADA_MAX_SEMANAL', date) — OS-585.
 const DAILY_OVERTIME_LIMIT_MINUTES = 120;
 const WEEKLY_OVERTIME_LIMIT_MINUTES = 720;
+
+/** CONN-06 / NOM-24 — bucket D5 cuando un rotante no tiene sedes asignadas en el período. */
+export const ROTANTE_PENDING_LOCATION_ID = '__PENDING_ASSIGNMENT__';
+export const ROTANTE_PENDING_LOCATION_NAME = 'Pendiente asignación';
+
+const PAYROLL_MONEY_FIELDS = [
+  'salaryBase',
+  'transportSubsidy',
+  'overtimePay',
+  'grossPay',
+  'healthDeduction',
+  'pensionDeduction',
+  'incomeTaxWithholding',
+  'totalDeductions',
+  'netPay',
+  'employerHealthContribution',
+  'employerPensionContribution',
+  'employerArlContribution',
+  'employerSenaContribution',
+  'employerIcbfContribution',
+  'employerCajaContribution',
+  'totalEmployerContributions',
+  'totalPayrollCost',
+  'medicalLeaveEmployerPay',
+  'medicalLeaveEpsArlPay',
+] as const satisfies ReadonlyArray<keyof PayrollEmployeeRowDto>;
 
 // ── Pure helpers ─────────────────────────────────────────────────────────────
 
@@ -307,8 +336,8 @@ function mapToPayrollEmployeeRow(
     employeeId: emp.id,
     employeeName: emp.name,
     cedula: emp.user.cedula,
-    locationId: emp.locationId,
-    locationName: emp.location.name,
+    locationId: emp.locationId ?? '',
+    locationName: emp.location?.name ?? 'Rotante',
     contractType: emp.contractType,
     salaryType: emp.salaryType,
     salaryAmount: decimalToNumber(emp.salaryAmount),
@@ -337,6 +366,96 @@ function mapToPayrollEmployeeRow(
     medicalLeaveEpsArlDays: calc.medicalLeaveEpsArlDays,
     medicalLeaveEpsArlPay: calc.medicalLeaveEpsArlPay,
     medicalLeaveOrdinaryDaysExcluded: calc.medicalLeaveOrdinaryDaysExcluded,
+  };
+}
+
+function roundMoney(value: number): number {
+  return Math.round(value * 100) / 100;
+}
+
+/**
+ * CONN-06 — reparte la fila de nómina de un rotante entre sedes reales (o bucket pendiente).
+ * La última sede absorbe el remanente de centavos; `totalPayrollCost` usa el valor del prorrateo.
+ */
+function expandRotantePayrollRows(
+  base: PayrollEmployeeRowDto,
+  proration: RotanteProrationResult,
+): PayrollEmployeeRowDto[] {
+  if (proration.allocations.length === 0) {
+    return [
+      {
+        ...base,
+        locationId: ROTANTE_PENDING_LOCATION_ID,
+        locationName: ROTANTE_PENDING_LOCATION_NAME,
+      },
+    ];
+  }
+
+  const remainders: Record<(typeof PAYROLL_MONEY_FIELDS)[number], number> = {
+    salaryBase: base.salaryBase,
+    transportSubsidy: base.transportSubsidy,
+    overtimePay: base.overtimePay,
+    grossPay: base.grossPay,
+    healthDeduction: base.healthDeduction,
+    pensionDeduction: base.pensionDeduction,
+    incomeTaxWithholding: base.incomeTaxWithholding,
+    totalDeductions: base.totalDeductions,
+    netPay: base.netPay,
+    employerHealthContribution: base.employerHealthContribution,
+    employerPensionContribution: base.employerPensionContribution,
+    employerArlContribution: base.employerArlContribution,
+    employerSenaContribution: base.employerSenaContribution,
+    employerIcbfContribution: base.employerIcbfContribution,
+    employerCajaContribution: base.employerCajaContribution,
+    totalEmployerContributions: base.totalEmployerContributions,
+    totalPayrollCost: base.totalPayrollCost,
+    medicalLeaveEmployerPay: base.medicalLeaveEmployerPay,
+    medicalLeaveEpsArlPay: base.medicalLeaveEpsArlPay,
+  };
+
+  return proration.allocations.map((alloc, index) => {
+    const isLast = index === proration.allocations.length - 1;
+    const row: PayrollEmployeeRowDto = {
+      ...base,
+      locationId: alloc.locationId,
+      locationName: alloc.locationName,
+      workedDays: alloc.days,
+      overtimeBreakdown: isLast
+        ? base.overtimeBreakdown
+        : base.overtimeBreakdown.map((item) => ({
+            ...item,
+            minutes: Math.round(item.minutes * alloc.proportion),
+            amount: roundMoney(item.amount * alloc.proportion),
+          })),
+    };
+
+    for (const key of PAYROLL_MONEY_FIELDS) {
+      if (isLast) {
+        row[key] = roundMoney(remainders[key]);
+      } else {
+        const part = roundMoney(base[key] * alloc.proportion);
+        row[key] = part;
+        remainders[key] = roundMoney(remainders[key] - part);
+      }
+    }
+
+    row.totalPayrollCost = alloc.proratedCost;
+    return row;
+  });
+}
+
+function toProrationMeta(proration: RotanteProrationResult): RotanteProrationMetaDto {
+  return {
+    employeeId: proration.employeeId,
+    totalDaysAssigned: proration.totalDaysAssigned,
+    pendingDaysCount: proration.pendingDaysCount,
+    allocations: proration.allocations.map((a) => ({
+      locationId: a.locationId,
+      locationName: a.locationName,
+      days: a.days,
+      proportion: a.proportion,
+      proratedCost: a.proratedCost,
+    })),
   };
 }
 
@@ -371,6 +490,7 @@ export class ReportsService implements IReportsService {
     private readonly payrollCalculationService: PayrollCalculationService,
     private readonly userLocationsService: UserLocationsService,
     private readonly legalParametersService: LaborLegalParametersService,
+    @Optional() private readonly rotanteProrationService?: RotanteProrationService,
     @Optional() private readonly vacationsService?: VacationsService,
     @Optional() private readonly medicalLeavesRepository?: MedicalLeavesRepository,
     @Optional() private readonly payrollNovedadesRepository?: PayrollNovedadesRepository,
@@ -525,6 +645,8 @@ export class ReportsService implements IReportsService {
       allowedLocationIds,
       contractType: query.contractType,
       employeeId: query.employeeId,
+      periodFrom: from,
+      periodTo: to,
     });
 
     const employeeIds = employees.map((e) => e.id);
@@ -595,6 +717,7 @@ export class ReportsService implements IReportsService {
     };
 
     const rows: PayrollEmployeeRowDto[] = [];
+    const prorationMeta: RotanteProrationMetaDto[] = [];
 
     const salaryByEmployeeId = new Map(
       employees.map((emp) => [emp.id, decimalToNumber(emp.salaryAmount)]),
@@ -658,13 +781,36 @@ export class ReportsService implements IReportsService {
         gatedAttendance,
         legalRates,
       );
-      rows.push(mapToPayrollEmployeeRow(emp, input as EmployeePayrollInput, calc));
+      const baseRow = mapToPayrollEmployeeRow(emp, input as EmployeePayrollInput, calc);
+
+      if (emp.costCenter === CostCenter.ROTANTE && this.rotanteProrationService) {
+        const proration = await this.rotanteProrationService.prorate({
+          tenantId,
+          employeeId: emp.id,
+          periodStart: from,
+          periodEnd: to,
+          totalLaborCost: baseRow.totalPayrollCost,
+        });
+        prorationMeta.push(toProrationMeta(proration));
+        rows.push(...expandRotantePayrollRows(baseRow, proration));
+      } else {
+        rows.push(baseRow);
+      }
     }
 
-    const tenantTotals = computeTenantTotals(rows);
-    const locationTotals = computeLocationTotals(rows);
+    const scopedRows = filterPayrollRowsByLocationScope(rows, query.locationId, allowedLocationIds);
 
-    return { tenantId, period, employees: rows, tenantTotals, locationTotals };
+    const tenantTotals = computeTenantTotals(scopedRows);
+    const locationTotals = computeLocationTotals(scopedRows);
+
+    return {
+      tenantId,
+      period,
+      employees: scopedRows,
+      tenantTotals,
+      locationTotals,
+      ...(prorationMeta.length > 0 ? { prorationMeta } : {}),
+    };
   }
 
   // ── Attendance report ──────────────────────────────────────────────────────
@@ -732,8 +878,8 @@ export class ReportsService implements IReportsService {
           employeeId: emp.id,
           employeeName: emp.name,
           cedula: emp.user.cedula,
-          locationId: emp.locationId,
-          locationName: emp.location.name,
+          locationId: emp.locationId ?? '',
+          locationName: emp.location?.name ?? 'Rotante',
           totalWorkedMinutes,
           regularMinutes,
           overtimeMinutes,
@@ -814,8 +960,8 @@ export class ReportsService implements IReportsService {
       area: employee.area,
       department: employee.department,
       contractType: employee.contractType,
-      locationId: employee.locationId,
-      locationName: employee.location?.name ?? employee.locationId,
+      locationId: employee.locationId ?? '',
+      locationName: employee.location?.name ?? employee.locationId ?? 'Rotante',
       hireDate: employee.hireDate.toISOString().slice(0, 10),
       contractStart: employee.contractStart
         ? employee.contractStart.toISOString().slice(0, 10)
@@ -892,9 +1038,25 @@ function groupLogsByEmployee(logs: AttendanceLog[]): Map<string, AttendanceLog[]
   return map;
 }
 
+function filterPayrollRowsByLocationScope(
+  rows: PayrollEmployeeRowDto[],
+  requestedLocationId: string | undefined,
+  allowedLocationIds: string[] | null,
+): PayrollEmployeeRowDto[] {
+  if (requestedLocationId) {
+    return rows.filter((row) => row.locationId === requestedLocationId);
+  }
+  if (allowedLocationIds) {
+    const allowed = new Set(allowedLocationIds);
+    return rows.filter((row) => allowed.has(row.locationId));
+  }
+  return rows;
+}
+
 function computeTenantTotals(rows: PayrollEmployeeRowDto[]): TenantPayrollTotalsDto {
+  const uniqueEmployees = new Set(rows.map((r) => r.employeeId));
   return {
-    employeeCount: rows.length,
+    employeeCount: uniqueEmployees.size,
     totalGrossPay: rows.reduce((s, r) => s + r.grossPay, 0),
     totalDeductions: rows.reduce((s, r) => s + r.totalDeductions, 0),
     totalNetPay: rows.reduce((s, r) => s + r.netPay, 0),

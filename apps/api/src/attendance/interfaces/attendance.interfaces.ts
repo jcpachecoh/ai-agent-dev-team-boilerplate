@@ -1,6 +1,7 @@
 import {
   AttendanceLog,
   AttendanceLogSource,
+  AttendanceMarkingScope,
   AttendanceObservation,
   AttendanceShift,
   AttendanceEventType,
@@ -275,6 +276,7 @@ export interface RegisterEventInput {
   photoUrl?: string | null;
   facialMatchScore?: number | null;
   facialMatchResult?: string | null;
+  markingScope?: AttendanceMarkingScope;
 }
 
 export interface RegisterEventLogData extends RegisterEventInput {
@@ -294,6 +296,10 @@ export interface IAttendanceRepository {
     tenantId: string,
   ): Promise<EmployeeWithUser | null>;
   findOpenEntry(employeeId: string): Promise<AttendanceLog | null>;
+  findOpenEntryByScope(
+    employeeId: string,
+    markingScope: AttendanceMarkingScope,
+  ): Promise<AttendanceLog | null>;
   findAllForDay(employeeId: string, workDate: Date): Promise<AttendanceLog[]>;
   create(data: CreateAttendanceLogData): Promise<AttendanceLog>;
   listHistory(filters: AttendanceHistoryFilters): Promise<AttendanceLogFull[]>;

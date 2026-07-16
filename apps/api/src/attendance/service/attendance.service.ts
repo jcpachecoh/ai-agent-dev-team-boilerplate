@@ -13,6 +13,7 @@ import {
   AttendanceEventType,
   AttendanceLog,
   AttendanceLogSource,
+  AttendanceMarkingScope,
   AttendanceShift,
 } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
@@ -44,17 +45,22 @@ import { AttendanceRepository, normalizeWorkDate } from '../repository/attendanc
 import { MobileAttendanceRepository } from '../mobile/repository/mobile-attendance.repository';
 import {
   calculateDaySummary,
+  calculatePayableDayMinutes,
   getBogotaHour,
   isTimestampWithinShiftWindow,
+  sumOvertimeScopeMinutes,
 } from '../utils/attendance-calculation.util';
+import { resolveShiftWindow } from '../utils/shift-window.util';
 import { validateGeofence } from '../utils/attendance-geofence.util';
 import { AuthService } from '../../auth/service/auth.service';
+import { DailyCostCenterService } from '../../daily-cost-center/service/daily-cost-center.service';
 import { UserLocationsService } from '../../locations/service/user-locations.service';
 import { ShiftResolutionService } from '../../turnos/service/shift-resolution.service';
 import { VacationsService } from '../../vacations/service/vacations.service';
 import { assertNotOnApprovedVacation } from './vacation-attendance.guard';
 import { LaborLegalParametersService } from '../../labor-legal-parameters/service/labor-legal-parameters.service';
 import { OvertimeDetectionService } from '../../overtime/service/overtime-detection.service';
+import { JornadaCutoffService } from './jornada-cutoff.service';
 
 // Kiosk-auth security model:
 //   • Tenant scope: tenantId required on every call
@@ -80,6 +86,8 @@ export class AttendanceService implements IAttendanceService {
     private readonly legalParametersService: LaborLegalParametersService,
     @Optional() private readonly vacationsService?: VacationsService,
     @Optional() private readonly overtimeDetectionService?: OvertimeDetectionService,
+    @Optional() private readonly dailyCostCenterService?: DailyCostCenterService,
+    @Optional() private readonly jornadaCutoffService?: JornadaCutoffService,
   ) {}
 
   async kioskAuth(dto: KioskAuthInput, tenantId: string): Promise<KioskAuthResult> {
@@ -95,6 +103,12 @@ export class AttendanceService implements IAttendanceService {
 
     if (!employee.pinHash) {
       throw new UnprocessableEntityException('PIN no configurado para este empleado');
+    }
+
+    if (!employee.locationId) {
+      throw new UnprocessableEntityException(
+        'Kiosco no disponible para colaboradores con Centro de Costos Rotante',
+      );
     }
 
     const lockKey = employee.id;
@@ -216,19 +230,18 @@ export class AttendanceService implements IAttendanceService {
       now,
       tenantId,
     );
-    const summary = calculateDaySummary(allLogsForDay, now, nocturnoStartHour);
-
-    this.logger.log(
-      `EXIT: employeeId=${employee.id} workDate=${openEntry.workDate.toISOString()} totalMin=${summary.totalMinutes}`,
-    );
-
-    this.triggerOvertimeDetection({
+    const payable = await this.resolvePayableDayMinutes({
       tenantId,
       employeeId: employee.id,
       locationId: dto.locationId,
-      workDate: log.workDate,
-      actualEndTime: log.timestamp,
+      workDate: openEntry.workDate,
+      logs: allLogsForDay,
     });
+    const summary = calculateDaySummary(allLogsForDay, now, nocturnoStartHour);
+
+    this.logger.log(
+      `EXIT: employeeId=${employee.id} workDate=${openEntry.workDate.toISOString()} ordinaryMin=${payable.ordinaryMinutes}`,
+    );
 
     return {
       logId: log.id,
@@ -236,8 +249,8 @@ export class AttendanceService implements IAttendanceService {
       userId: dto.userId,
       workDate: log.workDate,
       timestamp: log.timestamp,
-      totalMinutes: summary.totalMinutes,
-      overtimeMinutes: summary.overtimeMinutes,
+      totalMinutes: payable.ordinaryMinutes,
+      overtimeMinutes: payable.overtimeMinutes,
       isNocturno: summary.isNocturno,
     };
   }
@@ -256,21 +269,39 @@ export class AttendanceService implements IAttendanceService {
 
     let workDate = input.workDate ?? normalizeWorkDate(input.timestamp);
     let shift = input.shift ?? null;
+    const markingScope = input.markingScope ?? AttendanceMarkingScope.ORDINARY;
 
     if (input.source === AttendanceLogSource.APP_MOVIL) {
       if (input.eventType === AttendanceEventType.ENTRY) {
-        const openEntry = await this.attendanceRepository.findOpenEntry(input.employeeId);
-        if (openEntry) {
-          throw new ConflictException('Ya existe una entrada activa sin salida registrada');
-        }
+        await this.assertMarkingScopeRules({
+          tenantId: input.tenantId,
+          employeeId: input.employeeId,
+          workDate,
+          eventType: input.eventType,
+          markingScope,
+        });
         shift = shift ?? detectShift(input.timestamp);
       } else {
-        const openEntry = await this.attendanceRepository.findOpenEntry(input.employeeId);
+        const openEntry = await this.attendanceRepository.findOpenEntryByScope(
+          input.employeeId,
+          markingScope,
+        );
         if (!openEntry) {
-          throw new BadRequestException('No hay entrada activa para registrar la salida');
+          const message =
+            markingScope === AttendanceMarkingScope.OVERTIME
+              ? 'No hay entrada de tiempo adicional activa para registrar la salida'
+              : 'No hay entrada activa para registrar la salida';
+          throw new BadRequestException(message);
         }
         workDate = openEntry.workDate;
         shift = openEntry.shift;
+        await this.assertMarkingScopeRules({
+          tenantId: input.tenantId,
+          employeeId: input.employeeId,
+          workDate,
+          eventType: input.eventType,
+          markingScope,
+        });
       }
     } else if (input.source === AttendanceLogSource.MANUAL) {
       shift = shift ?? detectShift(input.timestamp);
@@ -319,6 +350,7 @@ export class AttendanceService implements IAttendanceService {
       ...input,
       workDate,
       shift,
+      markingScope,
       validationStatus,
       distanceMeters,
       radiusMeters,
@@ -334,7 +366,17 @@ export class AttendanceService implements IAttendanceService {
       `EVENT ${input.eventType} source=${input.source}: employeeId=${input.employeeId} workDate=${workDate.toISOString()}`,
     );
 
-    if (input.eventType === AttendanceEventType.EXIT) {
+    this.triggerDailyCostCenterResolution({
+      tenantId: input.tenantId,
+      employeeId: input.employeeId,
+      eventDate: log.workDate,
+      locationId: input.locationId,
+    });
+
+    if (
+      input.eventType === AttendanceEventType.EXIT &&
+      markingScope === AttendanceMarkingScope.OVERTIME
+    ) {
       this.triggerOvertimeDetection({
         tenantId: input.tenantId,
         employeeId: input.employeeId,
@@ -345,6 +387,61 @@ export class AttendanceService implements IAttendanceService {
     }
 
     return log;
+  }
+
+  private async assertMarkingScopeRules(params: {
+    tenantId: string;
+    employeeId: string;
+    workDate: Date;
+    eventType: AttendanceEventType;
+    markingScope: AttendanceMarkingScope;
+  }): Promise<void> {
+    if (!this.jornadaCutoffService) return;
+
+    const beforeCutoff = await this.jornadaCutoffService.isBeforeCutoff(
+      params.tenantId,
+      params.employeeId,
+      params.workDate,
+    );
+
+    if (params.markingScope === AttendanceMarkingScope.ORDINARY) {
+      if (!beforeCutoff) {
+        throw new ConflictException(
+          'La jornada ya fue cerrada. Registre tiempo adicional (OVERTIME).',
+        );
+      }
+
+      if (params.eventType === AttendanceEventType.ENTRY) {
+        const openOrdinary = await this.attendanceRepository.findOpenEntryByScope(
+          params.employeeId,
+          AttendanceMarkingScope.ORDINARY,
+        );
+        if (openOrdinary) {
+          throw new ConflictException(
+            'Ya existe una entrada ordinaria activa sin salida registrada',
+          );
+        }
+      }
+      return;
+    }
+
+    if (beforeCutoff) {
+      throw new ConflictException(
+        'El tiempo adicional no está disponible hasta después del corte de jornada',
+      );
+    }
+
+    if (params.eventType === AttendanceEventType.ENTRY) {
+      const openOvertime = await this.attendanceRepository.findOpenEntryByScope(
+        params.employeeId,
+        AttendanceMarkingScope.OVERTIME,
+      );
+      if (openOvertime) {
+        throw new ConflictException(
+          'Ya existe una entrada de tiempo adicional activa sin salida registrada',
+        );
+      }
+    }
   }
 
   private triggerOvertimeDetection(payload: {
@@ -358,6 +455,20 @@ export class AttendanceService implements IAttendanceService {
 
     void this.overtimeDetectionService.onExitRegistered(payload).catch((err: unknown) => {
       this.logger.warn(`Overtime detection failed: ${String(err)}`);
+    });
+  }
+
+  /** CONN-06 — resuelve sede diaria (fuente MARCACION_ASISTENCIA) para empleados ROTANTE. */
+  private triggerDailyCostCenterResolution(payload: {
+    tenantId: string;
+    employeeId: string;
+    eventDate: Date;
+    locationId: string;
+  }): void {
+    if (!this.dailyCostCenterService) return;
+
+    void this.dailyCostCenterService.resolveFromAttendance(payload).catch((err: unknown) => {
+      this.logger.warn(`Daily cost center resolution (attendance) failed: ${String(err)}`);
     });
   }
 
@@ -436,7 +547,13 @@ export class AttendanceService implements IAttendanceService {
       userId: actor.sub,
       roleCode: actor.roleCode,
     });
-    this.userLocationsService.assertLocationAllowed(allowedLocationIds, employee.locationId);
+    // Rotante (sin sede fija): un actor acotado por sede no tiene forma de validar
+    // pertenencia contra una sede estática — se niega por defecto (fail-closed).
+    if (employee.locationId) {
+      this.userLocationsService.assertLocationAllowed(allowedLocationIds, employee.locationId);
+    } else if (allowedLocationIds) {
+      throw new ForbiddenException('No tiene acceso a esta sede');
+    }
 
     const workDate = date ? normalizeWorkDate(date) : normalizeWorkDate(new Date());
     const logs = await this.attendanceRepository.findAllForDay(employee.id, workDate);
@@ -445,16 +562,76 @@ export class AttendanceService implements IAttendanceService {
       workDate,
       tenantId,
     );
+    const payable = await this.resolvePayableDayMinutes({
+      tenantId,
+      employeeId: employee.id,
+      locationId: employee.locationId,
+      workDate,
+      logs,
+    });
     const summary = calculateDaySummary(logs, new Date(), nocturnoStartHour);
 
     return {
       employeeId: employee.id,
       userId,
       workDate: workDate.toISOString().slice(0, 10),
-      totalMinutes: summary.totalMinutes,
-      overtimeMinutes: summary.overtimeMinutes,
+      totalMinutes: payable.ordinaryMinutes,
+      overtimeMinutes: payable.overtimeMinutes,
       isNocturno: summary.isNocturno,
       pairs: summary.pairs,
+    };
+  }
+
+  private async resolvePayableDayMinutes(params: {
+    tenantId: string;
+    employeeId: string;
+    /** Sede fija del empleado; null en ROTANTE — se toma la sede de los logs del día. */
+    locationId: string | null;
+    workDate: Date;
+    logs: AttendanceLog[];
+  }): Promise<{ ordinaryMinutes: number; overtimeMinutes: number }> {
+    const { tenantId, employeeId, workDate, logs } = params;
+    const effectiveLocationId =
+      params.locationId ?? logs.find((log) => log.locationId)?.locationId ?? null;
+
+    if (effectiveLocationId) {
+      const resolved = await this.shiftResolutionService.resolveForDay({
+        tenantId,
+        employeeId,
+        locationId: effectiveLocationId,
+        workDate,
+      });
+
+      if (resolved.kind === 'ASSIGNED') {
+        const { shiftStartTime, shiftEndTime } = resolveShiftWindow(
+          workDate,
+          resolved.turno.horaInicio,
+          resolved.turno.horaFin,
+        );
+        let cutoffTime: Date | null = null;
+        if (this.jornadaCutoffService) {
+          const cutoff = await this.jornadaCutoffService.getCutoff(tenantId, employeeId, workDate);
+          cutoffTime = cutoff?.shiftEndTime ?? null;
+        }
+        return calculatePayableDayMinutes({
+          logs,
+          shiftStartTime,
+          shiftEndTime,
+          cutoffTime,
+        });
+      }
+    }
+
+    const legacy = calculateDaySummary(
+      logs,
+      new Date(),
+      await this.legalParametersService.getValueAt('HORARIO_NOCTURNO_INICIO', workDate, tenantId),
+    );
+    const scopeOvertime = sumOvertimeScopeMinutes(logs);
+
+    return {
+      ordinaryMinutes: legacy.totalMinutes,
+      overtimeMinutes: scopeOvertime > 0 ? scopeOvertime : legacy.overtimeMinutes,
     };
   }
 

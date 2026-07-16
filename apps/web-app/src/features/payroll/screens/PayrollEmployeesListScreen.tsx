@@ -347,7 +347,7 @@ export function PayrollEmployeesListScreen(): React.JSX.Element {
                 position={employee.position}
                 area={employee.area}
                 contractType={employee.contractType}
-                locationName={employee.location?.name ?? employee.locationId}
+                locationName={employee.location?.name ?? employee.locationId ?? 'Rotante'}
                 hireDate={employee.hireDate}
                 isActive={employee.isActive}
                 theme={empleadoTheme}

@@ -154,10 +154,10 @@ describe('OvertimeRepository', () => {
     );
   });
 
-  it('findExitLogsForPeriod filtra EXIT activos por rango workDate', async () => {
+  it('findOvertimeScopeLogsForPeriod filtra logs OVERTIME activos por rango workDate', async () => {
     prisma.attendanceLog.findMany.mockResolvedValue([]);
 
-    await repository.findExitLogsForPeriod(
+    await repository.findOvertimeScopeLogsForPeriod(
       TENANT,
       'emp-1',
       'loc-1',
@@ -169,7 +169,7 @@ describe('OvertimeRepository', () => {
       expect.objectContaining({
         where: expect.objectContaining({
           tenantId: TENANT,
-          eventType: AttendanceEventType.EXIT,
+          markingScope: 'OVERTIME',
           isActive: true,
         }),
       }),

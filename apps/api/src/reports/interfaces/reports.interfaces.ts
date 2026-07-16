@@ -17,7 +17,8 @@ import type { EmployeeListReportResponseDto } from '../controller/dto/employee-l
 
 export type ReportEmployeeWithLocation = EmployeeDetails & {
   user: User;
-  location: Pick<Location, 'id' | 'name'>;
+  /** null para empleados con costCenter = ROTANTE (CONN-06) — sin sede fija en ficha. */
+  location: Pick<Location, 'id' | 'name'> | null;
 };
 
 export interface ActiveEmployeeFilters {
@@ -26,6 +27,12 @@ export interface ActiveEmployeeFilters {
   allowedLocationIds?: string[] | null;
   contractType?: EmployeeContractType;
   employeeId?: string;
+  /**
+   * CONN-06 — rango del informe para incluir ROTANTE (locationId null) cuando
+   * tienen DailyCostCenterAssignment en la sede filtrada, o siempre en scope por sedes.
+   */
+  periodFrom?: Date;
+  periodTo?: Date;
 }
 
 /** Subconjunto del JwtPayload necesario para scoping de sede en reportes. */

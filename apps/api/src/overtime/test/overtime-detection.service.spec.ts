@@ -1,5 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { OvertimeRequestType, OvertimeStatus, TurnoJornada } from '@prisma/client';
+import {
+  AttendanceEventType,
+  OvertimeRequestType,
+  OvertimeStatus,
+  TurnoJornada,
+} from '@prisma/client';
 
 import { ShiftResolutionService } from '../../turnos/service/shift-resolution.service';
 import { OVERTIME_ACCUMULATION_THRESHOLD_MINUTES } from '../interfaces/overtime.interfaces';
@@ -18,20 +23,55 @@ describe('OvertimeDetectionService', () => {
     employeeId: 'emp-1',
     locationId: 'loc-1',
     workDate: new Date('2026-07-10T00:00:00.000Z'),
-    actualEndTime: new Date('2026-07-10T23:35:00.000Z'),
+    actualEndTime: new Date('2026-07-10T18:00:00.000Z'),
   };
+
+  const assignedShift = {
+    kind: 'ASSIGNED' as const,
+    source: 'CALENDAR' as const,
+    turno: {
+      id: 'turno-1',
+      nombre: 'Admin',
+      sigla: 'A',
+      horaInicio: '08:00',
+      horaFin: '17:00',
+      jornada: TurnoJornada.DIURNO,
+      locationId: 'loc-1',
+      daysOfWeek: [4],
+    },
+    targetMinutes: 540,
+  };
+
+  function overtimePair(minutes: number) {
+    const entry = new Date('2026-07-10T17:05:00.000Z');
+    const exit = new Date(entry.getTime() + minutes * 60_000);
+    return [
+      {
+        id: 'ot-entry',
+        workDate: payload.workDate,
+        eventType: AttendanceEventType.ENTRY,
+        timestamp: entry,
+      },
+      {
+        id: 'ot-exit',
+        workDate: payload.workDate,
+        eventType: AttendanceEventType.EXIT,
+        timestamp: exit,
+      },
+    ];
+  }
 
   beforeEach(async () => {
     repository = {
       findActiveAutomaticByPeriod: jest.fn().mockResolvedValue(null),
-      findExitLogsForPeriod: jest.fn(),
+      findOvertimeScopeLogsForPeriod: jest.fn(),
       createRequest: jest.fn(),
       updateRequest: jest.fn(),
       upsertApproval: jest.fn(),
     } as unknown as jest.Mocked<OvertimeRepository>;
 
     shiftResolution = {
-      resolveForDay: jest.fn(),
+      resolveForDay: jest.fn().mockResolvedValue(assignedShift),
     } as unknown as jest.Mocked<ShiftResolutionService>;
 
     notificationService = {
@@ -50,65 +90,57 @@ describe('OvertimeDetectionService', () => {
     service = module.get(OvertimeDetectionService);
   });
 
-  it('no crea solicitud con 30 min acumulados exactos', async () => {
-    repository.findExitLogsForPeriod.mockResolvedValue([
-      {
-        id: 'log-1',
-        workDate: payload.workDate,
-        timestamp: new Date('2026-07-10T23:30:00.000Z'),
-      },
-    ]);
-    shiftResolution.resolveForDay.mockResolvedValue({
-      kind: 'ASSIGNED',
-      source: 'CALENDAR',
-      turno: {
-        id: 'turno-1',
-        nombre: 'Tarde',
-        sigla: 'T',
-        horaInicio: '14:00',
-        horaFin: '23:00',
-        jornada: TurnoJornada.DIURNO,
-        locationId: 'loc-1',
-        daysOfWeek: [4],
-      },
-      targetMinutes: 540,
-    });
+  it('EXIT ordinario tardío sin par OVERTIME → 0 min acumulados → no solicitud', async () => {
+    repository.findOvertimeScopeLogsForPeriod.mockResolvedValue([]);
 
     await service.onExitRegistered(payload);
 
     expect(repository.createRequest).not.toHaveBeenCalled();
   });
 
-  it('crea solicitud PENDIENTE_ADMIN con 31 min acumulados', async () => {
-    repository.findExitLogsForPeriod.mockResolvedValue([
-      {
-        id: 'log-1',
-        workDate: payload.workDate,
-        timestamp: new Date('2026-07-10T23:31:00.000Z'),
-      },
-    ]);
-    shiftResolution.resolveForDay.mockResolvedValue({
-      kind: 'ASSIGNED',
-      source: 'CALENDAR',
-      turno: {
-        id: 'turno-1',
-        nombre: 'Tarde',
-        sigla: 'T',
-        horaInicio: '14:00',
-        horaFin: '23:00',
-        jornada: TurnoJornada.DIURNO,
-        locationId: 'loc-1',
-        daysOfWeek: [4],
-      },
-      targetMinutes: 540,
+  it('no crea solicitud con 30 min OVERTIME acumulados exactos', async () => {
+    repository.findOvertimeScopeLogsForPeriod.mockResolvedValue(overtimePair(30));
+
+    await service.onExitRegistered(payload);
+
+    expect(repository.createRequest).not.toHaveBeenCalled();
+  });
+
+  it('par OVERTIME 55 min → acumula 55 y crea solicitud', async () => {
+    repository.findOvertimeScopeLogsForPeriod.mockResolvedValue(overtimePair(55));
+    repository.createRequest.mockResolvedValue({
+      id: 'req-55',
+      tenantId: payload.tenantId,
+      employeeId: payload.employeeId,
+      locationId: payload.locationId,
+      type: OvertimeRequestType.DETECCION_AUTOMATICA,
+      shiftEndTime: new Date('2026-07-10T17:00:00.000Z'),
+      actualEndTime: payload.actualEndTime,
+      accumulatedMinutes: 55,
+      status: OvertimeStatus.PENDIENTE_ADMIN,
+      payrollPeriod: '2026-07',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      deletedAt: null,
     });
+
+    await service.onExitRegistered(payload);
+
+    expect(repository.createRequest).toHaveBeenCalledWith(
+      payload.tenantId,
+      expect.objectContaining({ accumulatedMinutes: 55 }),
+    );
+  });
+
+  it('crea solicitud PENDIENTE_ADMIN con 31 min OVERTIME acumulados', async () => {
+    repository.findOvertimeScopeLogsForPeriod.mockResolvedValue(overtimePair(31));
     repository.createRequest.mockResolvedValue({
       id: 'req-1',
       tenantId: payload.tenantId,
       employeeId: payload.employeeId,
       locationId: payload.locationId,
       type: OvertimeRequestType.DETECCION_AUTOMATICA,
-      shiftEndTime: new Date('2026-07-10T23:00:00.000Z'),
+      shiftEndTime: new Date('2026-07-10T17:00:00.000Z'),
       actualEndTime: payload.actualEndTime,
       accumulatedMinutes: 31,
       status: OvertimeStatus.PENDIENTE_ADMIN,
@@ -149,7 +181,7 @@ describe('OvertimeDetectionService', () => {
 
     await service.onExitRegistered(payload);
 
-    expect(repository.findExitLogsForPeriod).not.toHaveBeenCalled();
+    expect(repository.findOvertimeScopeLogsForPeriod).not.toHaveBeenCalled();
   });
 
   it('skip cuando ya existe solicitud OBJETADA en el período', async () => {
@@ -171,7 +203,7 @@ describe('OvertimeDetectionService', () => {
 
     await service.onExitRegistered(payload);
 
-    expect(repository.findExitLogsForPeriod).not.toHaveBeenCalled();
+    expect(repository.findOvertimeScopeLogsForPeriod).not.toHaveBeenCalled();
     expect(repository.createRequest).not.toHaveBeenCalled();
   });
 
@@ -179,7 +211,7 @@ describe('OvertimeDetectionService', () => {
     expect(OVERTIME_ACCUMULATION_THRESHOLD_MINUTES).toBe(30);
   });
 
-  it('actualiza solicitud pendiente existente cuando acumulado supera umbral', async () => {
+  it('actualiza solicitud pendiente existente cuando acumulado OVERTIME supera umbral', async () => {
     repository.findActiveAutomaticByPeriod.mockResolvedValue({
       id: 'req-existing',
       tenantId: payload.tenantId,
@@ -195,28 +227,7 @@ describe('OvertimeDetectionService', () => {
       updatedAt: new Date(),
       deletedAt: null,
     });
-    repository.findExitLogsForPeriod.mockResolvedValue([
-      {
-        id: 'log-1',
-        workDate: payload.workDate,
-        timestamp: new Date('2026-07-10T23:45:00.000Z'),
-      },
-    ]);
-    shiftResolution.resolveForDay.mockResolvedValue({
-      kind: 'ASSIGNED',
-      source: 'CALENDAR',
-      turno: {
-        id: 'turno-1',
-        nombre: 'Tarde',
-        sigla: 'T',
-        horaInicio: '14:00',
-        horaFin: '23:00',
-        jornada: TurnoJornada.DIURNO,
-        locationId: 'loc-1',
-        daysOfWeek: [4],
-      },
-      targetMinutes: 540,
-    });
+    repository.findOvertimeScopeLogsForPeriod.mockResolvedValue(overtimePair(45));
     repository.updateRequest.mockResolvedValue({
       id: 'req-existing',
       tenantId: payload.tenantId,
@@ -235,40 +246,23 @@ describe('OvertimeDetectionService', () => {
 
     await service.onExitRegistered(payload);
 
-    expect(repository.updateRequest).toHaveBeenCalled();
+    expect(repository.updateRequest).toHaveBeenCalledWith(
+      payload.tenantId,
+      'req-existing',
+      expect.objectContaining({ accumulatedMinutes: 45 }),
+    );
     expect(repository.createRequest).not.toHaveBeenCalled();
   });
 
   it('continúa si la notificación inicial falla', async () => {
-    repository.findExitLogsForPeriod.mockResolvedValue([
-      {
-        id: 'log-1',
-        workDate: payload.workDate,
-        timestamp: new Date('2026-07-10T23:31:00.000Z'),
-      },
-    ]);
-    shiftResolution.resolveForDay.mockResolvedValue({
-      kind: 'ASSIGNED',
-      source: 'CALENDAR',
-      turno: {
-        id: 'turno-1',
-        nombre: 'Tarde',
-        sigla: 'T',
-        horaInicio: '14:00',
-        horaFin: '23:00',
-        jornada: TurnoJornada.DIURNO,
-        locationId: 'loc-1',
-        daysOfWeek: [4],
-      },
-      targetMinutes: 540,
-    });
+    repository.findOvertimeScopeLogsForPeriod.mockResolvedValue(overtimePair(31));
     repository.createRequest.mockResolvedValue({
       id: 'req-1',
       tenantId: payload.tenantId,
       employeeId: payload.employeeId,
       locationId: payload.locationId,
       type: OvertimeRequestType.DETECCION_AUTOMATICA,
-      shiftEndTime: new Date('2026-07-10T23:00:00.000Z'),
+      shiftEndTime: new Date('2026-07-10T17:00:00.000Z'),
       actualEndTime: payload.actualEndTime,
       accumulatedMinutes: 31,
       status: OvertimeStatus.PENDIENTE_ADMIN,

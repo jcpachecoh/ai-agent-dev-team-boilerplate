@@ -71,40 +71,42 @@ export function VacationLocationCalendar({
         ))}
       </div>
 
-      <div className={styles.grid}>
-        {days.map((day) => {
-          const inMonth = day.getUTCMonth() + 1 === monthNumber;
-          const dayRequests = filtered.filter((request) => requestCoversDate(request, day));
-          return (
-            <div key={dateKey(day)} className={`${styles.cell} ${inMonth ? '' : styles.outside}`}>
-              <span className={styles.dayNumber}>{day.getUTCDate()}</span>
-              <div className={styles.events}>
-                {dayRequests.slice(0, 2).map((request) => {
-                  const label = formatCalendarEmployeeLabel(request.employeeName);
-                  const tooltip = [
-                    request.employeeName || 'Empleado sin nombre',
-                    VACATION_TYPE_LABELS[request.type],
-                    VACATION_STATUS_LABELS[request.status],
-                    `${formatVacationDate(request.startDate)} – ${formatVacationDate(request.endDate)}`,
-                  ].join(' · ');
+      <div className={styles.gridScroll}>
+        <div className={styles.grid}>
+          {days.map((day) => {
+            const inMonth = day.getUTCMonth() + 1 === monthNumber;
+            const dayRequests = filtered.filter((request) => requestCoversDate(request, day));
+            return (
+              <div key={dateKey(day)} className={`${styles.cell} ${inMonth ? '' : styles.outside}`}>
+                <span className={styles.dayNumber}>{day.getUTCDate()}</span>
+                <div className={styles.events}>
+                  {dayRequests.slice(0, 2).map((request) => {
+                    const label = formatCalendarEmployeeLabel(request.employeeName);
+                    const tooltip = [
+                      request.employeeName || 'Empleado sin nombre',
+                      VACATION_TYPE_LABELS[request.type],
+                      VACATION_STATUS_LABELS[request.status],
+                      `${formatVacationDate(request.startDate)} – ${formatVacationDate(request.endDate)}`,
+                    ].join(' · ');
 
-                  return (
-                    <span
-                      key={`${request.id}-${dateKey(day)}`}
-                      className={`${styles.event} ${styles[`status_${request.status}`]}`}
-                      title={tooltip}
-                    >
-                      {label}
-                    </span>
-                  );
-                })}
-                {dayRequests.length > 2 ? (
-                  <span className={styles.more}>+{dayRequests.length - 2} más</span>
-                ) : null}
+                    return (
+                      <span
+                        key={`${request.id}-${dateKey(day)}`}
+                        className={`${styles.event} ${styles[`status_${request.status}`]}`}
+                        title={tooltip}
+                      >
+                        {label}
+                      </span>
+                    );
+                  })}
+                  {dayRequests.length > 2 ? (
+                    <span className={styles.more}>+{dayRequests.length - 2} más</span>
+                  ) : null}
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
     </section>
   );

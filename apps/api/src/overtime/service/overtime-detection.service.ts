@@ -1,5 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { OvertimeApprovalLevel, OvertimeRequestType, OvertimeStatus } from '@prisma/client';
+import {
+  AttendanceEventType,
+  OvertimeApprovalLevel,
+  OvertimeRequestType,
+  OvertimeStatus,
+} from '@prisma/client';
 
 import { ShiftResolutionService } from '../../turnos/service/shift-resolution.service';
 import {
@@ -9,8 +14,14 @@ import {
 } from '../interfaces/overtime.interfaces';
 import { OvertimeRepository } from '../repository/overtime.repository';
 import { formatPayrollPeriod, payrollPeriodToWorkDateRange } from '../utils/overtime-period.util';
-import { computeExcessMinutes, computeShiftEndDateTime } from '../utils/shift-end.util';
+import { computeShiftEndDateTime } from '../utils/shift-end.util';
 import { OvertimeNotificationService } from './overtime-notification.service';
+
+interface OvertimeScopePair {
+  workDate: Date;
+  entryTimestamp: Date;
+  exitTimestamp: Date;
+}
 
 @Injectable()
 export class OvertimeDetectionService implements IOvertimeDetectionService {
@@ -45,7 +56,7 @@ export class OvertimeDetectionService implements IOvertimeDetectionService {
       return;
     }
 
-    const accumulated = await this.recalculatePeriodExcess(payload, payrollPeriod);
+    const accumulated = await this.recalculatePeriodOvertimeMinutes(payload, payrollPeriod);
     if (accumulated.totalMinutes <= OVERTIME_ACCUMULATION_THRESHOLD_MINUTES) {
       return;
     }
@@ -83,7 +94,7 @@ export class OvertimeDetectionService implements IOvertimeDetectionService {
     }
   }
 
-  private async recalculatePeriodExcess(
+  private async recalculatePeriodOvertimeMinutes(
     payload: ExitRegisteredPayload,
     payrollPeriod: string,
   ): Promise<{
@@ -92,7 +103,7 @@ export class OvertimeDetectionService implements IOvertimeDetectionService {
     latestActualEnd: Date | null;
   }> {
     const { workDateFrom, workDateTo } = payrollPeriodToWorkDateRange(payrollPeriod);
-    const exitLogs = await this.repository.findExitLogsForPeriod(
+    const logs = await this.repository.findOvertimeScopeLogsForPeriod(
       payload.tenantId,
       payload.employeeId,
       payload.locationId,
@@ -100,34 +111,42 @@ export class OvertimeDetectionService implements IOvertimeDetectionService {
       workDateTo,
     );
 
+    const pairs = pairOvertimeScopeLogs(logs);
     let totalMinutes = 0;
     let latestShiftEnd: Date | null = null;
     let latestActualEnd: Date | null = null;
 
-    for (const log of exitLogs) {
-      const resolved = await this.shiftResolutionService.resolveForDay({
-        tenantId: payload.tenantId,
-        employeeId: payload.employeeId,
-        locationId: payload.locationId,
-        workDate: log.workDate,
-      });
+    for (const pair of pairs) {
+      const durationMinutes = floorMinutesBetween(pair.entryTimestamp, pair.exitTimestamp);
+      if (durationMinutes <= 0) continue;
 
-      if (resolved.kind !== 'ASSIGNED') continue;
+      totalMinutes += durationMinutes;
 
-      const shiftEnd = computeShiftEndDateTime(
-        log.workDate,
-        resolved.turno.horaInicio,
-        resolved.turno.horaFin,
-      );
-      const excess = computeExcessMinutes(log.timestamp, shiftEnd);
-      if (excess <= 0) continue;
-
-      totalMinutes += excess;
-      latestShiftEnd = shiftEnd;
-      latestActualEnd = log.timestamp;
+      if (!latestActualEnd || pair.exitTimestamp > latestActualEnd) {
+        latestActualEnd = pair.exitTimestamp;
+        latestShiftEnd = await this.resolveShiftEndForWorkDate(payload, pair.workDate);
+      }
     }
 
     return { totalMinutes, latestShiftEnd, latestActualEnd };
+  }
+
+  private async resolveShiftEndForWorkDate(
+    payload: ExitRegisteredPayload,
+    workDate: Date,
+  ): Promise<Date> {
+    const resolved = await this.shiftResolutionService.resolveForDay({
+      tenantId: payload.tenantId,
+      employeeId: payload.employeeId,
+      locationId: payload.locationId,
+      workDate,
+    });
+
+    if (resolved.kind === 'ASSIGNED') {
+      return computeShiftEndDateTime(workDate, resolved.turno.horaInicio, resolved.turno.horaFin);
+    }
+
+    return workDate;
   }
 
   private async ensurePendingApprovalRows(
@@ -149,6 +168,46 @@ export class OvertimeDetectionService implements IOvertimeDetectionService {
       });
     }
   }
+}
+
+function pairOvertimeScopeLogs(
+  logs: Array<{ workDate: Date; eventType: AttendanceEventType; timestamp: Date }>,
+): OvertimeScopePair[] {
+  const byWorkDate = new Map<string, typeof logs>();
+
+  for (const log of logs) {
+    const key = log.workDate.toISOString();
+    const bucket = byWorkDate.get(key) ?? [];
+    bucket.push(log);
+    byWorkDate.set(key, bucket);
+  }
+
+  const pairs: OvertimeScopePair[] = [];
+
+  for (const dayLogs of byWorkDate.values()) {
+    const sorted = [...dayLogs].sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+    const entries = sorted.filter((log) => log.eventType === AttendanceEventType.ENTRY);
+    const exits = sorted.filter((log) => log.eventType === AttendanceEventType.EXIT);
+
+    for (let index = 0; index < entries.length; index += 1) {
+      const entry = entries[index];
+      const exit = exits[index];
+      if (!entry || !exit) continue;
+      pairs.push({
+        workDate: entry.workDate,
+        entryTimestamp: entry.timestamp,
+        exitTimestamp: exit.timestamp,
+      });
+    }
+  }
+
+  return pairs;
+}
+
+function floorMinutesBetween(start: Date, end: Date): number {
+  const diffMs = end.getTime() - start.getTime();
+  if (diffMs <= 0) return 0;
+  return Math.floor(diffMs / 60_000);
 }
 
 const OVERTIME_PENDING_STATUSES: readonly OvertimeStatus[] = [

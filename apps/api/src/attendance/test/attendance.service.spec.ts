@@ -10,6 +10,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import {
   AttendanceEventType,
   AttendanceLogSource,
+  AttendanceMarkingScope,
   AttendanceShift,
   AttendanceValidationStatus,
 } from '@prisma/client';
@@ -24,6 +25,8 @@ import { VacationsService } from '../../vacations/service/vacations.service';
 import { VACATION_MARKING_BLOCKED_MESSAGE } from '../service/vacation-attendance.guard';
 import { LaborLegalParametersService } from '../../labor-legal-parameters/service/labor-legal-parameters.service';
 import { OvertimeDetectionService } from '../../overtime/service/overtime-detection.service';
+import { DailyCostCenterService } from '../../daily-cost-center/service/daily-cost-center.service';
+import { JornadaCutoffService } from '../service/jornada-cutoff.service';
 
 const shiftResolutionMock = {
   resolveForDay: jest.fn().mockResolvedValue({ kind: 'NONE', targetMinutes: 0 }),
@@ -71,6 +74,7 @@ function makeAttendanceLog(
   eventType: AttendanceEventType,
   timestamp: Date,
   workDate = WORK_DATE,
+  markingScope: AttendanceMarkingScope = AttendanceMarkingScope.ORDINARY,
 ) {
   return {
     id,
@@ -79,6 +83,7 @@ function makeAttendanceLog(
     locationId: LOCATION_ID,
     eventType,
     shift: AttendanceShift.MORNING,
+    markingScope,
     timestamp,
     workDate,
     notes: null,
@@ -110,6 +115,7 @@ const repoMock = {
   findEmployeeByUserAndLocation: jest.fn(),
   findEmployeeByUserId: jest.fn(),
   findOpenEntry: jest.fn(),
+  findOpenEntryByScope: jest.fn(),
   findAllForDay: jest.fn(),
   create: jest.fn(),
   listHistory: jest.fn(),
@@ -144,6 +150,19 @@ const legalParametersServiceMock = {
   getValueAt: jest.fn().mockResolvedValue(21),
 };
 
+const dailyCostCenterServiceMock = {
+  resolveFromAttendance: jest.fn().mockResolvedValue(null),
+};
+
+const overtimeDetectionServiceMock = {
+  onExitRegistered: jest.fn().mockResolvedValue(undefined),
+};
+
+const jornadaCutoffServiceMock = {
+  isBeforeCutoff: jest.fn().mockResolvedValue(true),
+  getCutoff: jest.fn().mockResolvedValue(null),
+};
+
 const ACTOR = { sub: 'user-001', roleCode: 'OWNER' };
 
 describe('AttendanceService', () => {
@@ -160,10 +179,9 @@ describe('AttendanceService', () => {
         { provide: UserLocationsService, useValue: userLocationsServiceMock },
         { provide: VacationsService, useValue: vacationsServiceMock },
         { provide: LaborLegalParametersService, useValue: legalParametersServiceMock },
-        {
-          provide: OvertimeDetectionService,
-          useValue: { onExitRegistered: jest.fn().mockResolvedValue(undefined) },
-        },
+        { provide: OvertimeDetectionService, useValue: overtimeDetectionServiceMock },
+        { provide: DailyCostCenterService, useValue: dailyCostCenterServiceMock },
+        { provide: JornadaCutoffService, useValue: jornadaCutoffServiceMock },
       ],
     }).compile();
 
@@ -377,6 +395,24 @@ describe('AttendanceService', () => {
       expect(result.overtimeMinutes).toBe(0); // 480 - 480 = 0
     });
 
+    it('registerExit kiosk no dispara detección HE (solo EXIT OVERTIME)', async () => {
+      const emp = makeEmployee('emp-exit-no-detect');
+      const entryTs = new Date('2026-06-10T13:00:00.000Z');
+      const exitTs = new Date('2026-06-10T23:30:00.000Z');
+      const openEntry = makeAttendanceLog('log-entry', AttendanceEventType.ENTRY, entryTs);
+      const exitLog = makeAttendanceLog('log-exit', AttendanceEventType.EXIT, exitTs);
+
+      repoMock.findEmployeeByUserAndLocation.mockResolvedValue(emp);
+      repoMock.findOpenEntry.mockResolvedValue(openEntry);
+      repoMock.create.mockResolvedValue(exitLog);
+      repoMock.findAllForDay.mockResolvedValue([openEntry, exitLog]);
+      overtimeDetectionServiceMock.onExitRegistered.mockClear();
+
+      await service.registerExit({ userId: 'user-001', locationId: LOCATION_ID }, TENANT);
+
+      expect(overtimeDetectionServiceMock.onExitRegistered).not.toHaveBeenCalled();
+    });
+
     it('detecta overtime cuando la jornada supera las 8 horas (10.5h → 150 overtime)', async () => {
       const emp = makeEmployee('emp-exit-overtime');
       const entryTs = new Date('2026-06-10T13:00:00.000Z'); // 08:00 Bogotá
@@ -464,6 +500,7 @@ describe('AttendanceService', () => {
     beforeEach(() => {
       repoMock.findDuplicateEvent.mockResolvedValue(null);
       repoMock.findOpenEntry.mockResolvedValue(null);
+      repoMock.findOpenEntryByScope.mockResolvedValue(null);
       repoMock.findLocationById.mockResolvedValue({
         id: LOCATION_ID,
         geoLatitude: 4.6097,
@@ -471,6 +508,8 @@ describe('AttendanceService', () => {
         checkInRadiusMeters: 100,
       });
       mobileRepoMock.create.mockReset();
+      jornadaCutoffServiceMock.isBeforeCutoff.mockResolvedValue(true);
+      overtimeDetectionServiceMock.onExitRegistered.mockClear();
     });
 
     it('lanza ConflictException si hay marcación duplicada en la misma ventana y source', async () => {
@@ -528,6 +567,28 @@ describe('AttendanceService', () => {
         expect.objectContaining({ source: AttendanceLogSource.MANUAL }),
       );
       expect(repoMock.createEventLog).toHaveBeenCalled();
+    });
+
+    it('CONN-06: dispara resolveFromAttendance con tenantId/employeeId/locationId/workDate', async () => {
+      const createdLog = makeAttendanceLog('log-manual-2', AttendanceEventType.ENTRY, new Date());
+      repoMock.createEventLog.mockResolvedValue(createdLog);
+
+      await service.registerEvent({
+        ...baseInput,
+        source: AttendanceLogSource.MANUAL,
+        workDate: WORK_DATE,
+        createdByUserId: 'actor-1',
+        manualReason: 'FORGOT',
+      });
+
+      expect(dailyCostCenterServiceMock.resolveFromAttendance).toHaveBeenCalledWith(
+        expect.objectContaining({
+          tenantId: TENANT,
+          employeeId: 'emp-001',
+          locationId: LOCATION_ID,
+          eventDate: createdLog.workDate,
+        }),
+      );
     });
 
     it('aplica geocerca solo para source=APP_MOVIL', async () => {
@@ -615,7 +676,7 @@ describe('AttendanceService', () => {
         AttendanceEventType.ENTRY,
         new Date('2026-06-10T13:00:00.000Z'),
       );
-      repoMock.findOpenEntry.mockResolvedValue(openEntry);
+      repoMock.findOpenEntryByScope.mockResolvedValue(openEntry);
       mobileRepoMock.create.mockResolvedValue(
         makeAttendanceLog(
           'log-exit',
@@ -637,7 +698,82 @@ describe('AttendanceService', () => {
       expect(mobileRepoMock.create).toHaveBeenCalledWith(
         expect.objectContaining({ workDate: openEntry.workDate, shift: openEntry.shift }),
       );
+      expect(overtimeDetectionServiceMock.onExitRegistered).not.toHaveBeenCalled();
       expect(repoMock.createEventLog).not.toHaveBeenCalled();
+    });
+
+    it('rechaza ENTRY ordinaria post-corte', async () => {
+      jornadaCutoffServiceMock.isBeforeCutoff.mockResolvedValue(false);
+
+      await expect(
+        service.registerEvent({
+          ...baseInput,
+          source: AttendanceLogSource.APP_MOVIL,
+          clientLatitude: 4.6097,
+          clientLongitude: -74.0817,
+        }),
+      ).rejects.toThrow(ConflictException);
+
+      expect(mobileRepoMock.create).not.toHaveBeenCalled();
+    });
+
+    it('rechaza ENTRY OVERTIME pre-corte', async () => {
+      jornadaCutoffServiceMock.isBeforeCutoff.mockResolvedValue(true);
+
+      await expect(
+        service.registerEvent({
+          ...baseInput,
+          source: AttendanceLogSource.APP_MOVIL,
+          markingScope: AttendanceMarkingScope.OVERTIME,
+          clientLatitude: 4.6097,
+          clientLongitude: -74.0817,
+        }),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('persiste par OVERTIME ENTRY→EXIT post-corte y dispara detección HE', async () => {
+      jornadaCutoffServiceMock.isBeforeCutoff.mockResolvedValue(false);
+      const openOvertimeEntry = {
+        ...makeAttendanceLog('log-ot-entry', AttendanceEventType.ENTRY, new Date()),
+        markingScope: AttendanceMarkingScope.OVERTIME,
+      };
+      repoMock.findOpenEntryByScope
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(openOvertimeEntry);
+      mobileRepoMock.create
+        .mockResolvedValueOnce({
+          ...openOvertimeEntry,
+          id: 'log-ot-entry',
+        })
+        .mockResolvedValueOnce({
+          ...makeAttendanceLog(
+            'log-ot-exit',
+            AttendanceEventType.EXIT,
+            new Date('2026-06-10T18:00:00.000Z'),
+          ),
+          markingScope: AttendanceMarkingScope.OVERTIME,
+        });
+
+      await service.registerEvent({
+        ...baseInput,
+        source: AttendanceLogSource.APP_MOVIL,
+        markingScope: AttendanceMarkingScope.OVERTIME,
+        clientLatitude: 4.6097,
+        clientLongitude: -74.0817,
+      });
+
+      await service.registerEvent({
+        ...baseInput,
+        eventType: AttendanceEventType.EXIT,
+        timestamp: new Date('2026-06-10T18:00:00.000Z'),
+        source: AttendanceLogSource.APP_MOVIL,
+        markingScope: AttendanceMarkingScope.OVERTIME,
+        clientLatitude: 4.6097,
+        clientLongitude: -74.0817,
+      });
+
+      expect(mobileRepoMock.create).toHaveBeenCalledTimes(2);
+      expect(overtimeDetectionServiceMock.onExitRegistered).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -726,10 +862,24 @@ describe('AttendanceService', () => {
 
     it('devuelve resumen con pares y overtimeMinutes para jornada completada', async () => {
       const emp = makeEmployee('emp-ot-summary');
-      const entryTs = new Date('2026-06-10T13:00:00.000Z'); // 08:00 Bogotá
-      const exitTs = new Date('2026-06-10T21:00:00.000Z'); // 16:00 Bogotá — 8h exactas
+      const entryTs = new Date('2026-06-10T08:00:00.000Z');
+      const exitTs = new Date('2026-06-10T16:00:00.000Z');
       const entryLog = makeAttendanceLog('log-s-e', AttendanceEventType.ENTRY, entryTs);
       const exitLog = makeAttendanceLog('log-s-x', AttendanceEventType.EXIT, exitTs);
+
+      shiftResolutionMock.resolveForDay.mockResolvedValue({
+        kind: 'ASSIGNED',
+        source: 'EMPLOYEE_ASSIGNMENT',
+        targetMinutes: 480,
+        turno: {
+          id: 'turno-1',
+          nombre: 'Mañana',
+          horaInicio: '08:00',
+          horaFin: '16:00',
+          locationId: LOCATION_ID,
+          daysOfWeek: [1, 2, 3, 4, 5],
+        },
+      });
 
       repoMock.findEmployeeByUserId.mockResolvedValue(emp);
       repoMock.findAllForDay.mockResolvedValue([entryLog, exitLog]);
@@ -747,6 +897,41 @@ describe('AttendanceService', () => {
       expect(result.totalMinutes).toBe(480);
       expect(result.overtimeMinutes).toBe(0);
       expect(result.pairs).toHaveLength(1);
+    });
+
+    it('CONN-11: salida tardía ordinaria no genera overtime sin remarcación OVERTIME', async () => {
+      const emp = makeEmployee('emp-ot-late');
+      const entryTs = new Date('2026-06-10T08:00:00.000Z');
+      const exitTs = new Date('2026-06-10T17:45:00.000Z');
+      const entryLog = makeAttendanceLog('log-late-e', AttendanceEventType.ENTRY, entryTs);
+      const exitLog = makeAttendanceLog('log-late-x', AttendanceEventType.EXIT, exitTs);
+
+      shiftResolutionMock.resolveForDay.mockResolvedValue({
+        kind: 'ASSIGNED',
+        source: 'EMPLOYEE_ASSIGNMENT',
+        targetMinutes: 540,
+        turno: {
+          id: 'turno-1',
+          nombre: 'Admin',
+          horaInicio: '08:00',
+          horaFin: '17:00',
+          locationId: LOCATION_ID,
+          daysOfWeek: [1, 2, 3, 4, 5],
+        },
+      });
+
+      repoMock.findEmployeeByUserId.mockResolvedValue(emp);
+      repoMock.findAllForDay.mockResolvedValue([entryLog, exitLog]);
+
+      const result = await service.getOvertimeSummary(
+        USER_ID,
+        TENANT,
+        ACTOR,
+        new Date('2026-06-10T20:00:00.000Z'),
+      );
+
+      expect(result.totalMinutes).toBe(540);
+      expect(result.overtimeMinutes).toBe(0);
     });
 
     it('open shift: par sin exitTimestamp cuando no hay EXIT registrado', async () => {

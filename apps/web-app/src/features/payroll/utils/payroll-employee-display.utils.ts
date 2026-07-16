@@ -26,6 +26,7 @@ const COST_CENTER_LABELS: Record<CostCenter, string> = {
   PLANTA: 'Planta',
   GERENCIA: 'Gerencia',
   INCAPACIDADES: 'Incapacidades',
+  ROTANTE: 'Rotante',
 };
 
 const LABOR_CLASSIFICATION_LABELS: Record<LaborClassification, string> = {

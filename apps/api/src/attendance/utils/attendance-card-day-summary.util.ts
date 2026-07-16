@@ -1,4 +1,4 @@
-import { AttendanceEventType } from '@prisma/client';
+import { AttendanceEventType, AttendanceMarkingScope } from '@prisma/client';
 
 import type { ResolvedShift } from '../../turnos/interfaces/employee-shift-assignment.interfaces';
 import type {
@@ -6,21 +6,13 @@ import type {
   AttendanceLogFull,
 } from '../interfaces/attendance.interfaces';
 import {
+  calculatePayableDayMinutes,
   formatCalendarDate,
   formatMinutesAsHours,
   listDatesInRange,
-  splitWorkedMinutesAgainstTarget,
+  sumOvertimeScopeMinutes,
 } from './attendance-calculation.util';
-
-function computeWorkedMinutes(
-  entry: AttendanceLogFull | undefined,
-  exit: AttendanceLogFull | undefined,
-): number {
-  if (!entry) return 0;
-  const exitTime = exit?.timestamp ?? entry.timestamp;
-  const diffMs = exitTime.getTime() - entry.timestamp.getTime();
-  return diffMs > 0 ? Math.floor(diffMs / 60_000) : 0;
-}
+import { resolveShiftWindow } from './shift-window.util';
 
 function mapResolvedShiftLabels(resolved: ResolvedShift): {
   shiftName: string | null;
@@ -40,6 +32,53 @@ function mapResolvedShiftLabels(resolved: ResolvedShift): {
   };
 }
 
+function computeLegacyWorkedMinutes(
+  entry: AttendanceLogFull | undefined,
+  exit: AttendanceLogFull | undefined,
+): number {
+  if (!entry) return 0;
+  const exitTime = exit?.timestamp ?? entry.timestamp;
+  const diffMs = exitTime.getTime() - entry.timestamp.getTime();
+  return diffMs > 0 ? Math.floor(diffMs / 60_000) : 0;
+}
+
+function resolveDayPayableMinutes(params: {
+  dayLogs: AttendanceLogFull[];
+  resolved: ResolvedShift;
+  cutoffTime?: Date | null;
+}): { ordinaryMinutes: number; overtimeMinutes: number } {
+  const { dayLogs, resolved, cutoffTime } = params;
+
+  if (resolved.kind === 'ASSIGNED') {
+    const { shiftStartTime, shiftEndTime } = resolveShiftWindow(
+      dayLogs[0]?.workDate ?? new Date(),
+      resolved.turno.horaInicio,
+      resolved.turno.horaFin,
+    );
+    return calculatePayableDayMinutes({
+      logs: dayLogs,
+      shiftStartTime,
+      shiftEndTime,
+      cutoffTime,
+    });
+  }
+
+  const ordinaryLogs = dayLogs.filter(
+    (log) =>
+      (log.markingScope ?? AttendanceMarkingScope.ORDINARY) === AttendanceMarkingScope.ORDINARY,
+  );
+  const firstEntry = ordinaryLogs.find((log) => log.eventType === AttendanceEventType.ENTRY);
+  const firstExit = [...ordinaryLogs]
+    .reverse()
+    .find((log) => log.eventType === AttendanceEventType.EXIT);
+  const workedMinutes = computeLegacyWorkedMinutes(firstEntry, firstExit);
+
+  return {
+    ordinaryMinutes: Math.min(workedMinutes, resolved.targetMinutes),
+    overtimeMinutes: sumOvertimeScopeMinutes(dayLogs),
+  };
+}
+
 export function buildAttendanceCardDaySummaries(params: {
   dateFrom: Date;
   dateTo: Date;
@@ -47,22 +86,25 @@ export function buildAttendanceCardDaySummaries(params: {
   vacationDateKeys?: Set<string>;
   absenceLabelsByDate?: Map<string, string>;
   resolveForDay: (workDate: Date) => Promise<ResolvedShift>;
+  getCutoffTime?: (workDate: Date) => Promise<Date | null>;
 }): Promise<AttendanceCardDaySummary[]> {
-  const { dateFrom, dateTo, logs, vacationDateKeys, absenceLabelsByDate, resolveForDay } = params;
+  const {
+    dateFrom,
+    dateTo,
+    logs,
+    vacationDateKeys,
+    absenceLabelsByDate,
+    resolveForDay,
+    getCutoffTime,
+  } = params;
   const dates = listDatesInRange(dateFrom, dateTo);
 
-  const logsByDate = new Map<string, { entry?: AttendanceLogFull; exit?: AttendanceLogFull }>();
+  const logsByDate = new Map<string, AttendanceLogFull[]>();
   for (const log of logs) {
     const key = formatCalendarDate(log.workDate);
-    if (!logsByDate.has(key)) {
-      logsByDate.set(key, {});
-    }
-    const group = logsByDate.get(key)!;
-    if (log.eventType === AttendanceEventType.ENTRY && !group.entry) {
-      group.entry = log;
-    } else if (log.eventType === AttendanceEventType.EXIT && !group.exit) {
-      group.exit = log;
-    }
+    const bucket = logsByDate.get(key) ?? [];
+    bucket.push(log);
+    logsByDate.set(key, bucket);
   }
 
   return Promise.all(
@@ -87,13 +129,16 @@ export function buildAttendanceCardDaySummaries(params: {
 
       const resolved = await resolveForDay(workDate);
       const targetMinutes = resolved.targetMinutes;
-      const dayLogs = logsByDate.get(workDateKey);
-      const workedMinutes = computeWorkedMinutes(dayLogs?.entry, dayLogs?.exit);
-      const hasAttendance = Boolean(dayLogs?.entry || dayLogs?.exit);
-      const { ordinaryMinutes, overtimeMinutes, unworkedMinutes } = splitWorkedMinutesAgainstTarget(
-        workedMinutes,
-        targetMinutes,
-      );
+      const dayLogs = logsByDate.get(workDateKey) ?? [];
+      const hasAttendance = dayLogs.length > 0;
+      const cutoffTime = getCutoffTime ? await getCutoffTime(workDate) : null;
+      const { ordinaryMinutes, overtimeMinutes } = hasAttendance
+        ? resolveDayPayableMinutes({ dayLogs, resolved, cutoffTime })
+        : { ordinaryMinutes: 0, overtimeMinutes: 0 };
+      const unworkedMinutes =
+        targetMinutes > 0 && hasAttendance
+          ? Math.max(0, targetMinutes - ordinaryMinutes)
+          : targetMinutes;
       const labels = mapResolvedShiftLabels(resolved);
       const absenceLabel = payrollAbsenceLabel ?? null;
 
@@ -107,9 +152,7 @@ export function buildAttendanceCardDaySummaries(params: {
             ? 0
             : targetMinutes > 0 && !hasAttendance
               ? targetMinutes
-              : targetMinutes > 0
-                ? unworkedMinutes
-                : 0,
+              : unworkedMinutes,
         overtimeMinutes: hasAttendance ? overtimeMinutes : 0,
         resolvedKind: resolved.kind,
         shiftName: absenceLabel && !hasAttendance ? absenceLabel : labels.shiftName,

@@ -3,6 +3,7 @@ import {
   AttendanceEventType,
   AttendanceLog,
   AttendanceLogSource,
+  AttendanceMarkingScope,
   AttendanceObservation,
   EmployeeDetails,
   LaborClassification,
@@ -53,8 +54,20 @@ export class AttendanceRepository implements IAttendanceRepository {
   }
 
   async findOpenEntry(employeeId: string): Promise<AttendanceLog | null> {
+    return this.findOpenEntryByScope(employeeId, AttendanceMarkingScope.ORDINARY);
+  }
+
+  async findOpenEntryByScope(
+    employeeId: string,
+    markingScope: AttendanceMarkingScope,
+  ): Promise<AttendanceLog | null> {
     const lastEntry = await this.prisma.attendanceLog.findFirst({
-      where: { employeeId, eventType: AttendanceEventType.ENTRY, isActive: true },
+      where: {
+        employeeId,
+        eventType: AttendanceEventType.ENTRY,
+        markingScope,
+        isActive: true,
+      },
       orderBy: { timestamp: 'desc' },
     });
     if (!lastEntry) return null;
@@ -63,6 +76,7 @@ export class AttendanceRepository implements IAttendanceRepository {
       where: {
         employeeId,
         eventType: AttendanceEventType.EXIT,
+        markingScope,
         isActive: true,
         timestamp: { gt: lastEntry.timestamp },
       },
@@ -293,6 +307,7 @@ export class AttendanceRepository implements IAttendanceRepository {
         timestamp: data.timestamp,
         notes: data.notes ?? null,
         source: data.source,
+        markingScope: data.markingScope ?? AttendanceMarkingScope.ORDINARY,
         createdByUserId: data.createdByUserId ?? null,
         manualReason: data.manualReason ?? null,
         manualParentLogId: data.manualParentLogId ?? null,

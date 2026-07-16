@@ -101,7 +101,8 @@ export interface UpdateVacationRequestData {
 /** Contexto mínimo del solicitante para validación de aprobación L1 (D9). */
 export interface EmployeeApprovalContext {
   userId: string;
-  locationId: string;
+  /** null para empleados con costCenter = ROTANTE (CONN-06) — sin sede fija en ficha. */
+  locationId: string | null;
   positionId: string | null;
 }
 

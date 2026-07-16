@@ -40,6 +40,7 @@
 
 import {
   ArlRiskLevel,
+  AssignmentSource,
   CondicionPago,
   CostCenter,
   DocumentType,
@@ -52,6 +53,9 @@ import {
   SalaryType,
   StockUnit,
   SupplierTipo,
+  TurnoAssignmentType,
+  TurnoJornada,
+  TurnoTipo,
 } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
@@ -604,6 +608,25 @@ const PERMISSION_SEEDS = [
     resource: 'legal',
     action: 'write',
   },
+  // CONN-06 — asignación diaria de sede real para empleados con Centro de Costos Rotante.
+  {
+    id: 'cccccccc-0000-0000-0000-000000000066',
+    code: 'attendance.daily-cost-center.read',
+    name: 'Consultar asignación diaria de sede (Rotante)',
+    description: 'Ver calendario de sede diaria y bandeja de pendientes de empleados Rotante.',
+    module: 'attendance',
+    resource: 'daily-cost-center',
+    action: 'read',
+  },
+  {
+    id: 'cccccccc-0000-0000-0000-000000000067',
+    code: 'attendance.daily-cost-center.write',
+    name: 'Corregir asignación diaria de sede (Rotante)',
+    description: 'Asignar manualmente la sede diaria de empleados Rotante.',
+    module: 'attendance',
+    resource: 'daily-cost-center',
+    action: 'write',
+  },
   // OS-591 (fase 3) — Liquidación definitiva de contrato: permisos granulares por acción
   // (separación de funciones — quien calcula no necesariamente aprueba/paga/anula).
   {
@@ -747,6 +770,11 @@ const TURNO_ASSIGNMENT_WRITE_CODES = ['attendance.turnos.assignment.write'] as c
 
 // OS-582 follow-up — catálogo de Turnos (NOM-08): SUPERVISOR/MANAGER/NOMINA solo lectura.
 const TURNOS_CATALOG_READ_CODES = ['attendance.turnos.read'] as const;
+
+// CONN-06 — asignación diaria de sede (Rotante): SUPERVISOR/MANAGER acotados a sus sedes en
+// el service; NOMINA gestiona la corrección de sede para prorrateo de costo (tenant-wide).
+const DAILY_COST_CENTER_READ_CODES = ['attendance.daily-cost-center.read'] as const;
+const DAILY_COST_CENTER_WRITE_CODES = ['attendance.daily-cost-center.write'] as const;
 const SUPPLIER_DOCUMENT_READ_CODES = ['suppliers.documents.read'] as const;
 const SUPPLIER_DOCUMENT_WRITE_CODES = ['suppliers.documents.write'] as const;
 
@@ -776,6 +804,8 @@ const ROLE_PERMISSION_MATRIX: Record<string, readonly string[]> = {
     ...TURNO_ASSIGNMENT_WRITE_CODES,
     ...TURNOS_CATALOG_READ_CODES,
     ...SUPPLIER_DOCUMENT_READ_CODES,
+    ...DAILY_COST_CENTER_READ_CODES,
+    ...DAILY_COST_CENTER_WRITE_CODES,
     ...SETTLEMENT_READ_CODES,
   ],
   MANAGER: [
@@ -792,6 +822,8 @@ const ROLE_PERMISSION_MATRIX: Record<string, readonly string[]> = {
     ...SUPPLIER_DOCUMENT_READ_CODES,
     ...SUPPLIER_DOCUMENT_WRITE_CODES,
     ...OVERTIME_READ_CODES,
+    ...DAILY_COST_CENTER_READ_CODES,
+    ...DAILY_COST_CENTER_WRITE_CODES,
     ...SETTLEMENT_READ_CODES,
     ...SETTLEMENT_CALCULATE_CODES,
     ...SETTLEMENT_MANUAL_CODES,
@@ -808,6 +840,8 @@ const ROLE_PERMISSION_MATRIX: Record<string, readonly string[]> = {
     ...TURNOS_CATALOG_READ_CODES,
     ...SUPPLIER_DOCUMENT_READ_CODES,
     ...OVERTIME_READ_CODES,
+    ...DAILY_COST_CENTER_READ_CODES,
+    ...DAILY_COST_CENTER_WRITE_CODES,
     ...SETTLEMENT_READ_CODES,
     ...SETTLEMENT_CALCULATE_CODES,
   ],
@@ -1667,6 +1701,179 @@ async function seedSupervisorManagerDemoUsers(
   console.log('EmployeeDetails: Seeded for supervisor and manager demo users');
 }
 
+/**
+ * CONN-06 — empleado demo con Centro de Costos ROTANTE (sin sede fija) + asignaciones diarias
+ * en dos sedes para probar calendario, corrección manual y prorrateo NOM-24.
+ */
+async function seedRotanteDemoEmployee(roleId: string, locationAId: string, locationBId: string) {
+  const passwordHash = await bcrypt.hash('TestPass123!', SALT_ROUNDS);
+  const pinHash = await bcrypt.hash('5678', SALT_ROUNDS);
+  const position = await prisma.employeePosition.findFirst({
+    where: { tenantId: OPERATIONAL_TENANT_ID, isActive: true },
+    orderBy: { title: 'asc' },
+  });
+
+  const rotanteUser = await prisma.user.upsert({
+    where: {
+      tenantId_cedula: { tenantId: OPERATIONAL_TENANT_ID, cedula: '1099887766' },
+    },
+    update: {
+      email: 'rotante.demo@palos-de-lena.dev',
+      passwordHash,
+      roleId,
+      isActive: true,
+      emailVerified: true,
+    },
+    create: {
+      id: 'seed-user-rotante-conn06',
+      tenantId: OPERATIONAL_TENANT_ID,
+      cedula: '1099887766',
+      documentType: DocumentType.CC,
+      email: 'rotante.demo@palos-de-lena.dev',
+      passwordHash,
+      roleId,
+      isActive: true,
+      emailVerified: true,
+    },
+  });
+
+  const rotanteEmployee = await prisma.employeeDetails.upsert({
+    where: { userId: rotanteUser.id },
+    update: {
+      isActive: true,
+      name: 'Laura Rotante',
+      locationId: null,
+      costCenter: CostCenter.ROTANTE,
+      laborClassification: LaborClassification.SERVICIO,
+      pinHash,
+      ...(position
+        ? { positionId: position.id, position: position.title, area: position.area }
+        : {}),
+    },
+    create: {
+      id: 'seed-emp-rotante-conn06',
+      userId: rotanteUser.id,
+      tenantId: OPERATIONAL_TENANT_ID,
+      name: 'Laura Rotante',
+      locationId: null,
+      positionId: position?.id ?? null,
+      position: position?.title ?? 'Mesero',
+      area: position?.area ?? 'Servicio',
+      department: position?.area ?? 'Servicio',
+      contractType: EmployeeContractType.INDEFINIDO,
+      hireDate: new Date('2025-01-15'),
+      contractStart: new Date('2025-01-15'),
+      salaryType: SalaryType.ORDINARIO,
+      salaryAmount: position?.baseSalaryRange ?? 1_500_000,
+      epsName: 'Sura',
+      pensionFundName: 'Porvenir',
+      cesantiasFundName: 'Porvenir',
+      arlName: 'Sura',
+      arlRiskLevel: ArlRiskLevel.RIESGO_I,
+      cajaCompensacion: 'Compensar',
+      costCenter: CostCenter.ROTANTE,
+      laborClassification: LaborClassification.SERVICIO,
+      pinHash,
+      isActive: true,
+    },
+  });
+
+  const sampleDays: Array<{ date: string; locationId: string; source: AssignmentSource }> = [
+    { date: '2026-07-01', locationId: locationAId, source: AssignmentSource.TURNO_ASIGNADO },
+    { date: '2026-07-02', locationId: locationAId, source: AssignmentSource.TURNO_ASIGNADO },
+    { date: '2026-07-03', locationId: locationBId, source: AssignmentSource.MARCACION_ASISTENCIA },
+    { date: '2026-07-04', locationId: locationBId, source: AssignmentSource.MANUAL },
+  ];
+
+  for (const day of sampleDays) {
+    await prisma.dailyCostCenterAssignment.upsert({
+      where: {
+        tenantId_employeeId_date: {
+          tenantId: OPERATIONAL_TENANT_ID,
+          employeeId: rotanteEmployee.id,
+          date: new Date(`${day.date}T00:00:00.000Z`),
+        },
+      },
+      update: {
+        locationId: day.locationId,
+        source: day.source,
+      },
+      create: {
+        tenantId: OPERATIONAL_TENANT_ID,
+        employeeId: rotanteEmployee.id,
+        date: new Date(`${day.date}T00:00:00.000Z`),
+        locationId: day.locationId,
+        source: day.source,
+      },
+    });
+  }
+
+  // Día pendiente para la bandeja "Rotantes por sede": turno ASSIGNED sin DailyCostCenterAssignment.
+  const pendingWorkDate = new Date('2026-07-15T00:00:00.000Z');
+  const rotanteTurno = await prisma.turno.upsert({
+    where: {
+      tenantId_sigla: { tenantId: OPERATIONAL_TENANT_ID, sigla: 'ROT-DEMO' },
+    },
+    update: {
+      locationId: locationAId,
+      nombre: 'Turno Rotante Demo',
+      estado: true,
+    },
+    create: {
+      id: 'seed-turno-rotante-conn06',
+      tenantId: OPERATIONAL_TENANT_ID,
+      locationId: locationAId,
+      nombre: 'Turno Rotante Demo',
+      sigla: 'ROT-DEMO',
+      tipo: TurnoTipo.VARIABLE,
+      jornada: TurnoJornada.DIURNO,
+      horaInicio: '08:00',
+      horaFin: '16:00',
+      daysOfWeek: [1, 2, 3, 4, 5],
+      estado: true,
+    },
+  });
+
+  await prisma.turnoAssignment.upsert({
+    where: {
+      tenantId_employeeId_workDate: {
+        tenantId: OPERATIONAL_TENANT_ID,
+        employeeId: rotanteEmployee.id,
+        workDate: pendingWorkDate,
+      },
+    },
+    update: {
+      turnoId: rotanteTurno.id,
+      type: TurnoAssignmentType.ASSIGNED,
+    },
+    create: {
+      id: 'seed-turno-assignment-rotante-pending',
+      tenantId: OPERATIONAL_TENANT_ID,
+      turnoId: rotanteTurno.id,
+      employeeId: rotanteEmployee.id,
+      workDate: pendingWorkDate,
+      type: TurnoAssignmentType.ASSIGNED,
+    },
+  });
+
+  // Asegura que ese día siga pendiente (sin sede diaria).
+  await prisma.dailyCostCenterAssignment.deleteMany({
+    where: {
+      tenantId: OPERATIONAL_TENANT_ID,
+      employeeId: rotanteEmployee.id,
+      date: pendingWorkDate,
+    },
+  });
+
+  console.log(
+    'CONN-06 Rotante demo:',
+    rotanteEmployee.name,
+    '—',
+    rotanteEmployee.id,
+    `(${sampleDays.length} daily assignments + 1 pending turno 2026-07-15)`,
+  );
+}
+
 async function seedEmployeeSocialProfiles(ownerUserId: string, operatorUserId: string) {
   const ownerEmployee = await prisma.employeeDetails.findUnique({
     where: { userId: ownerUserId },
@@ -1995,6 +2202,18 @@ async function main() {
   }
 
   // ── Dotación supply items (for the "Registrar entrega de dotación" modal) ─
+  // Resolve by nombre: DBs seeded before fixed UUIDs keep cuid IDs (e.g. cmqqsf…).
+  // Using SEED_CATEGORY_DOTACION_ID blindly breaks FK when the row id differs.
+  const dotacionCategory = await prisma.supplyCategory.findUnique({
+    where: {
+      tenantId_nombre: { tenantId: OPERATIONAL_TENANT_ID, nombre: 'Dotación' },
+    },
+  });
+  if (!dotacionCategory) {
+    throw new Error('SupplyCategory "Dotación" missing — cannot seed dotación items');
+  }
+  const dotacionCategoryId = dotacionCategory.id;
+
   const dotacionItems = [
     {
       id: SEED_SUPPLY_ITEM_CAMISA_ID,
@@ -2027,7 +2246,7 @@ async function main() {
       where: { id: item.id },
       update: {
         tenantId: OPERATIONAL_TENANT_ID,
-        categoriaId: SEED_CATEGORY_DOTACION_ID,
+        categoriaId: dotacionCategoryId,
         nombre: item.nombre,
         subcategoria: item.subcategoria,
         genero: item.genero,
@@ -2041,7 +2260,7 @@ async function main() {
         tenantId: OPERATIONAL_TENANT_ID,
         nombre: item.nombre,
         codigoInterno: item.codigoInterno,
-        categoriaId: SEED_CATEGORY_DOTACION_ID,
+        categoriaId: dotacionCategoryId,
         unidadBase: StockUnit.UNIT,
         factorConversion: 1,
         costoPromedioPonderado: 0,
@@ -2565,6 +2784,7 @@ async function main() {
     locations[0]!.id,
     locations[2]!.id,
   );
+  await seedRotanteDemoEmployee(roles.OPERATOR.id, locations[0]!.id, locations[1]!.id);
   await seedEmployeeSocialProfiles(ownerGlobalUser.id, operatorGlobalUser.id);
   const { seedBulkAttendanceCollaborators } =
     await import('./seeds/attendance-collaborators-bulk.seed');

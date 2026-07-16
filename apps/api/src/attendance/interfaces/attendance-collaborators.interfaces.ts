@@ -45,7 +45,8 @@ export interface ListCollaboratorsFilters {
 export interface CollaboratorRecord {
   id: string;
   userId: string;
-  locationId: string;
+  /** null para empleados con costCenter = ROTANTE (CONN-06) — sin sede fija en ficha. */
+  locationId: string | null;
   locationName: string | null;
   name: string;
   primerApellido: string | null;

@@ -115,6 +115,7 @@ export class MobileAttendanceService implements IMobileAttendanceService {
       photoUrl,
       facialMatchScore: input.facialMatchScore ?? null,
       facialMatchResult: input.facialMatchResult ?? null,
+      markingScope: input.markingScope,
     });
 
     const status = log.validationStatus ?? AttendanceValidationStatus.PENDING;
@@ -227,6 +228,12 @@ export class MobileAttendanceService implements IMobileAttendanceService {
     const employee = await this.repo.findEmployeeByUserId(userId, tenantId);
     if (!employee) {
       throw new NotFoundException('Empleado no encontrado');
+    }
+
+    if (!employee.locationId) {
+      throw new NotFoundException(
+        'Este colaborador no tiene sede fija asignada (Centro de Costos Rotante)',
+      );
     }
 
     const location = await this.repo.findLocationById(employee.locationId, tenantId);

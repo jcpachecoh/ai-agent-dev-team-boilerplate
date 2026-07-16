@@ -3,6 +3,7 @@ import * as crypto from 'crypto';
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   Logger,
   NotFoundException,
@@ -15,6 +16,7 @@ import {
   User,
   Prisma,
   AuditAction,
+  CostCenter,
 } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
@@ -76,6 +78,28 @@ export class PayrollService implements IPayrollService {
     return allowedLocationIds;
   }
 
+  /**
+   * CONN-06/OS-531 — Rotante no tiene sede fija: la sede diaria se resuelve por
+   * turno/marcación (DailyCostCenterAssignment). Todo otro Centro de Costos
+   * (incluido Incapacidades) sigue requiriendo locationId, sin cambios (D3).
+   */
+  private assertCostCenterLocationConsistency(
+    costCenter: CostCenter,
+    locationId?: string | null,
+  ): void {
+    if (costCenter === CostCenter.ROTANTE) {
+      if (locationId) {
+        throw new BadRequestException(
+          'Un empleado con Centro de Costos Rotante no puede tener una sede fija asignada',
+        );
+      }
+      return;
+    }
+    if (!locationId) {
+      throw new BadRequestException('locationId es obligatorio para este Centro de Costos');
+    }
+  }
+
   async create(
     tenantId: string,
     data: any,
@@ -87,9 +111,13 @@ export class PayrollService implements IPayrollService {
     await this.resolvePositionForEmployee(tenantId, data);
     const positionId = data.positionId as string | undefined;
 
-    const location = await this.payrollRepository.findLocationById(data.locationId);
-    if (!location || location.tenantId !== tenantId) {
-      throw new BadRequestException('Invalid location for this tenant');
+    this.assertCostCenterLocationConsistency(data.costCenter, data.locationId);
+
+    if (data.locationId) {
+      const location = await this.payrollRepository.findLocationById(data.locationId);
+      if (!location || location.tenantId !== tenantId) {
+        throw new BadRequestException('Invalid location for this tenant');
+      }
     }
 
     const roleId = await this.resolveRoleIdForCreate(tenantId, data.roleId, linkedUserId);
@@ -109,7 +137,7 @@ export class PayrollService implements IPayrollService {
         cedula: data.cedula,
         documentType: data.documentType,
         passwordHash,
-        locationId: data.locationId,
+        locationId: data.locationId ?? null,
         name: data.name,
         position: data.position,
         area: data.area,
@@ -256,7 +284,16 @@ export class PayrollService implements IPayrollService {
     actor: PayrollActor,
   ): Promise<EmployeeDetails & { user: User }> {
     const employee = await this.findEmployeeOrThrow(tenantId, userId);
-    await this.resolveLocationScope(tenantId, actor, employee.locationId);
+    const allowedLocationIds = await this.resolveLocationScope(
+      tenantId,
+      actor,
+      employee.locationId ?? undefined,
+    );
+    // Rotante (sin sede fija): un actor acotado por sede no tiene forma de validar
+    // pertenencia contra una sede estática — se niega por defecto (fail-closed).
+    if (!employee.locationId && allowedLocationIds) {
+      throw new ForbiddenException('No tiene acceso a este colaborador');
+    }
     return employee;
   }
 
@@ -312,6 +349,25 @@ export class PayrollService implements IPayrollService {
 
     if (data.contractType !== undefined || data.contractEnd !== undefined) {
       this.validateContractDates(tenantId, { ...employee, ...data }, userId);
+    }
+
+    const effectiveCostCenter: CostCenter = data.costCenter ?? employee.costCenter;
+    if (effectiveCostCenter === CostCenter.ROTANTE) {
+      if (data.locationId) {
+        throw new BadRequestException(
+          'Un empleado con Centro de Costos Rotante no puede tener una sede fija asignada',
+        );
+      }
+      if (data.locationId === undefined && employee.locationId) {
+        // Limpia la sede fija al cambiar a Rotante (D3) — la sede diaria la resuelve CONN-06.
+        data.locationId = null;
+      }
+    } else {
+      const effectiveLocationId =
+        data.locationId !== undefined ? data.locationId : employee.locationId;
+      if (!effectiveLocationId) {
+        throw new BadRequestException('locationId es obligatorio para este Centro de Costos');
+      }
     }
 
     if (data.locationId) {

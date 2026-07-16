@@ -404,7 +404,7 @@ export class DotacionesRepository {
         return {
           employeeId: d.employeeId,
           employeeName: emp.name,
-          locationName: emp.location.name,
+          locationName: emp.location?.name ?? 'Rotante',
           period: d.period,
           supplyItemName: d.supplyItem?.nombre ?? null,
           talla: d.supplyItem?.talla ?? null,

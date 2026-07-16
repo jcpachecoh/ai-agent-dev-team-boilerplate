@@ -1,0 +1,137 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px 24px 24px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.title {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--empleado-muted, #888);
+}
+
+.monthNav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  button {
+    border: 1px solid var(--empleado-border, #2e2e2e);
+    background: transparent;
+    color: inherit;
+    border-radius: 4px;
+    padding: 2px 8px;
+    cursor: pointer;
+  }
+}
+
+.monthLabel {
+  font-size: 0.8rem;
+  text-transform: capitalize;
+  min-width: 120px;
+  text-align: center;
+}
+
+.legend {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 0.7rem;
+}
+
+.legendItem {
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.emptyState {
+  padding: 16px;
+  text-align: center;
+  color: var(--empleado-muted, #888);
+  font-size: 0.85rem;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 140px 1fr auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--empleado-border, #2e2e2e);
+  background: var(--empleado-surface, #111);
+}
+
+.date {
+  font-size: 0.8rem;
+  text-transform: capitalize;
+}
+
+.locationName {
+  font-size: 0.85rem;
+}
+
+.sourceBadge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.editButton {
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  background: rgba(245, 158, 11, 0.08);
+  color: #f59e0b;
+  border-radius: 4px;
+  padding: 2px 10px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+
+  &:hover {
+    background: rgba(245, 158, 11, 0.15);
+  }
+}
+
+.turno .sourceBadge,
+.legendItem.turno {
+  background: rgba(59, 130, 246, 0.15);
+  color: #3b82f6;
+}
+
+.marcacion .sourceBadge,
+.legendItem.marcacion {
+  background: rgba(148, 163, 184, 0.15);
+  color: #94a3b8;
+}
+
+.manual .sourceBadge,
+.legendItem.manual {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+}
+
+.pending .sourceBadge,
+.legendItem.pending {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}

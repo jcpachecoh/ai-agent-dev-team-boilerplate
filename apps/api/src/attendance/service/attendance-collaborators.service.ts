@@ -75,7 +75,13 @@ export class AttendanceCollaboratorsService {
       allowedPositionIds,
     });
     const employeeIds = page.items.map((item) => item.id);
-    const locationIds = [...new Set(page.items.map((item) => item.locationId))];
+    const locationIds = [
+      ...new Set(
+        page.items
+          .map((item) => item.locationId)
+          .filter((locationId): locationId is string => locationId !== null),
+      ),
+    ];
     const positionIds = [
       ...new Set(page.items.flatMap((item) => (item.positionId ? [item.positionId] : []))),
     ];
@@ -91,13 +97,15 @@ export class AttendanceCollaboratorsService {
     const items: AttendanceCollaboratorItem[] = await Promise.all(
       page.items.map(async (item) => ({
         ...item,
-        supervisors: supervisorsByLocation.get(item.locationId) ?? [],
+        supervisors: item.locationId ? (supervisorsByLocation.get(item.locationId) ?? []) : [],
         supervisorPositionName: item.positionId
           ? (supervisorPositionNamesByPosition.get(item.positionId) ?? null)
           : null,
         todayShift:
           shiftsByEmployee.get(item.id) ??
-          (await this.resolveTodayShiftFromAssignment(tenantId, item.id, item.locationId, today)),
+          (item.locationId
+            ? await this.resolveTodayShiftFromAssignment(tenantId, item.id, item.locationId, today)
+            : { type: 'BASE' as const, turno: null }),
       })),
     );
 

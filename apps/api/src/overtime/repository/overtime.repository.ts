@@ -5,6 +5,7 @@ import {
   OvertimeRequestType,
   OvertimeStatus,
   Prisma,
+  AttendanceMarkingScope,
 } from '@prisma/client';
 
 import { PrismaService } from '../../prisma/prisma.service';
@@ -282,23 +283,25 @@ export class OvertimeRepository implements IOvertimeRepository {
     return mapApproval(row);
   }
 
-  async findExitLogsForPeriod(
+  async findOvertimeScopeLogsForPeriod(
     tenantId: string,
     employeeId: string,
     locationId: string,
     workDateFrom: Date,
     workDateTo: Date,
-  ): Promise<Array<{ id: string; workDate: Date; timestamp: Date }>> {
+  ): Promise<
+    Array<{ id: string; workDate: Date; eventType: AttendanceEventType; timestamp: Date }>
+  > {
     const rows = await this.prisma.attendanceLog.findMany({
       where: {
         tenantId,
         employeeId,
         locationId,
-        eventType: AttendanceEventType.EXIT,
+        markingScope: AttendanceMarkingScope.OVERTIME,
         isActive: true,
         workDate: { gte: workDateFrom, lte: workDateTo },
       },
-      select: { id: true, workDate: true, timestamp: true },
+      select: { id: true, workDate: true, eventType: true, timestamp: true },
       orderBy: { timestamp: 'asc' },
     });
     return rows;

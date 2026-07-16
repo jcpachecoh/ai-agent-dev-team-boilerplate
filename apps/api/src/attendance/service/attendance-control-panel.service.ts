@@ -11,7 +11,7 @@ import type {
 import { AttendanceRepository } from '../repository/attendance.repository';
 import { UserLocationsService } from '../../locations/service/user-locations.service';
 import { LaborLegalParametersService } from '../../labor-legal-parameters/service/labor-legal-parameters.service';
-import { calculateDaySummary } from '../utils/attendance-calculation.util';
+import { sumOvertimeScopeMinutes } from '../utils/attendance-calculation.util';
 import { resolveClasificacionFilter } from '../utils/clasificacion.util';
 import {
   getTodayAnchorDate,
@@ -127,16 +127,10 @@ export class AttendanceControlPanelService {
       logsByEmployeeDay.set(key, bucket);
     }
 
-    // Resolved once for the whole aggregation (not per day/employee) — avoids N+1 queries.
-    const nocturnoStartHour = await this.legalParametersService.getValueAt(
-      'HORARIO_NOCTURNO_INICIO',
-      new Date(),
-      tenantId,
-    );
+    // Month HE metric: only explicit OVERTIME markingScope pairs (CONN-11 payable time).
     let overtimeMinutesMonth = 0;
     for (const bucket of logsByEmployeeDay.values()) {
-      const summary = calculateDaySummary(bucket, new Date(), nocturnoStartHour);
-      overtimeMinutesMonth += summary.overtimeMinutes;
+      overtimeMinutesMonth += sumOvertimeScopeMinutes(bucket);
     }
 
     const workingNow = Array.from(dayLastLogByEmployee.values()).filter(
