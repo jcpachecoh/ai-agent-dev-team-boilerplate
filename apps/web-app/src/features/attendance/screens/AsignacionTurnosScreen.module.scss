@@ -1,29 +1,42 @@
-// CargoPage applies domain-list-page-fill (height:100% + overflow:hidden +
-// last section min-height:0). That crushes the grid under the plan panel.
-// Override only on this screen so the table can show ≥5 rows.
+// Scroll lives on .tableWrapper. Page scrolls when plan panel + table exceed viewport.
+// Do NOT set overflow:hidden on the section's direct child — it clips without bars.
+
+$grid-visible-height: 26rem; // header + ~5 body rows
+$table-bottom-gap: 1.5rem;
+
 .screen {
-  display: flex;
-  flex-direction: column;
-  flex: 1 1 auto;
   min-width: 0;
-  min-height: 100%;
-  height: auto !important;
+  // Beat CargoPage domain-list-page-fill overflow:hidden so tall content can scroll
   overflow-x: hidden !important;
   overflow-y: auto !important;
 
   > section:last-of-type {
-    flex: 1 1 auto !important;
-    min-height: 26rem !important;
-    overflow: hidden !important;
-    display: flex !important;
-    flex-direction: column !important;
+    flex: 0 0 auto !important;
+    min-width: 0;
+    // Reserve room for 5 rows; don't let the plan panel crush this section
+    min-height: calc(#{$grid-visible-height} + #{$table-bottom-gap}) !important;
+    overflow: visible !important;
+    padding-bottom: $table-bottom-gap;
 
-    > * {
-      flex: 1 1 auto !important;
-      min-height: 0 !important;
-      display: flex !important;
-      flex-direction: column !important;
-      overflow: hidden !important;
+    > .tableWrapper {
+      // block (not flex): a <table> inside a flex container shrinks and never overflows
+      display: block !important;
+      flex: none !important;
+      box-sizing: border-box;
+      min-width: 0;
+      width: 100%;
+      max-width: 100%;
+      min-height: $grid-visible-height !important;
+      height: $grid-visible-height;
+      max-height: $grid-visible-height;
+      overflow-x: auto !important;
+      overflow-y: auto !important;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+      border: 1px solid var(--cargo-border);
+      border-radius: 0.5rem;
+      background: var(--cargo-surface);
+      scrollbar-gutter: stable;
     }
   }
 }
@@ -45,6 +58,7 @@
   align-items: flex-end;
   gap: 0.75rem 1rem;
   width: 100%;
+  min-width: 0;
 }
 
 .field {
@@ -108,27 +122,14 @@
 }
 
 .tableSection {
-  // Kept for className targeting; size is enforced via .screen > section:last-of-type.
   min-width: 0;
-}
-
-.tableWrapper {
-  flex: 1 1 auto;
-  // Header + 5 body rows (~3.75rem each) with a little breathing room.
-  min-height: 26rem !important;
-  height: 26rem;
-  overflow: auto !important;
-  -webkit-overflow-scrolling: touch;
-  border: 1px solid var(--cargo-border);
-  border-radius: 0.5rem;
-  background: var(--cargo-surface);
 }
 
 .table {
   border-collapse: separate;
   border-spacing: 0;
-  width: 100%;
-  min-width: 60rem;
+  width: max-content;
+  min-width: 68rem;
   color: var(--cargo-text);
 }
 
@@ -153,10 +154,12 @@
   left: 0;
   z-index: 3;
   min-width: 14rem;
+  width: 14rem;
 }
 
 .dayHeaderCell {
-  min-width: 7rem;
+  min-width: 7.5rem;
+  width: 7.5rem;
   text-align: center;
 }
 
@@ -173,7 +176,6 @@
 }
 
 .todayHeaderCell {
-  // Opaque tint: --cargo-secondary-soft is rgba and lets row text bleed through sticky headers.
   background-color: color-mix(in srgb, var(--cargo-secondary) 12%, var(--cargo-surface-raised));
   border-bottom: 2px solid var(--cargo-secondary);
   box-shadow: 0 1px 0 var(--cargo-secondary);
@@ -192,6 +194,9 @@
   padding: 0.6rem 0.85rem;
   border-bottom: 1px solid var(--cargo-border-subtle);
   min-width: 14rem;
+  width: 14rem;
+  height: 3.5rem;
+  vertical-align: middle;
 }
 
 .colaboradorRow,
@@ -222,10 +227,13 @@
 }
 
 .cell {
-  min-width: 7rem;
+  min-width: 7.5rem;
+  width: 7.5rem;
+  height: 3.5rem;
   padding: 0.55rem 0.65rem;
   border-bottom: 1px solid var(--cargo-border-subtle);
   text-align: center;
+  vertical-align: middle;
   cursor: pointer;
   color: var(--cargo-text);
   background-color: var(--cargo-surface);
