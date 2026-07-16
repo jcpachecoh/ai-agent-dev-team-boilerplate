@@ -57,7 +57,6 @@ jobs:
     name: SSH redeploy en OCI
     needs: build-and-push
     runs-on: ubuntu-latest
-    environment: production
     steps:
       - name: Redeploy contenedor con nueva imagen
         env:
