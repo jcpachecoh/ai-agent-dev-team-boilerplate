@@ -1,13 +1,16 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { ReportExcelService } from '../service/report-excel.service';
-import {
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
+import { SalaryType, EmployeeContractType } from '@prisma/client';
+import * as ExcelJS from 'exceljs';
+
+import type { AttendanceReportResponseDto } from '../controller/dto/attendance-report-response.dto';
+import { EmployeeListReportType } from '../controller/dto/employee-list-export-query.dto';
+import type { EmployeeListReportResponseDto } from '../controller/dto/employee-list-report-response.dto';
+import type {
   PayrollReportResponseDto,
   PayrollEmployeeRowDto,
 } from '../controller/dto/payroll-report-response.dto';
-import { EmployeeListReportType } from '../controller/dto/employee-list-export-query.dto';
-import { EmployeeListReportResponseDto } from '../controller/dto/employee-list-report-response.dto';
-import { AttendanceReportResponseDto } from '../controller/dto/attendance-report-response.dto';
-import { SalaryType, EmployeeContractType } from '@prisma/client';
+import { ReportExcelService } from '../service/report-excel.service';
 
 // Minimal valid report — no employees
 const EMPTY_REPORT: PayrollReportResponseDto = {
@@ -45,6 +48,17 @@ function makeEmployee(overrides: Partial<PayrollEmployeeRowDto> = {}): PayrollEm
     healthDeduction: 60_000,
     pensionDeduction: 0,
     incomeTaxWithholding: 0,
+    taxWithholdingBreakdown: {
+      taxWithholdingBase: 1_380_000,
+      uvtValue: 49_799,
+      taxWithholdingBaseUvt: 27.71,
+      bracketLowerUvtExclusive: 0,
+      bracketUpperUvtInclusive: 95,
+      marginalRate: 0,
+      fixedTaxUvt: 0,
+      incomeTaxWithholding: 0,
+      isExemptFromTax: false,
+    },
     totalDeductions: 60_000,
     netPay: 1_677_000,
     employerHealthContribution: 127_500,
@@ -177,6 +191,53 @@ describe('ReportExcelService', () => {
 
     // Act & Assert — should not throw
     await expect(service.generatePayrollXlsx(report)).resolves.toBeInstanceOf(Buffer);
+  });
+
+  it('reflects incomeTaxWithholding in totalDeductions column (OS-594)', async () => {
+    const incomeTaxWithholding = 499_529;
+    const healthDeduction = 320_000;
+    const pensionDeduction = 320_000;
+    const totalDeductions = healthDeduction + pensionDeduction + incomeTaxWithholding;
+
+    const report: PayrollReportResponseDto = {
+      ...EMPTY_REPORT,
+      employees: [
+        makeEmployee({
+          salaryAmount: 8_000_000,
+          salaryBase: 8_000_000,
+          grossPay: 8_000_000,
+          healthDeduction,
+          pensionDeduction,
+          incomeTaxWithholding,
+          totalDeductions,
+          netPay: 8_000_000 - totalDeductions,
+        }),
+      ],
+      tenantTotals: {
+        employeeCount: 1,
+        totalGrossPay: 8_000_000,
+        totalDeductions,
+        totalNetPay: 8_000_000 - totalDeductions,
+        totalEmployerContributions: 427_500,
+        totalPayrollCost: 8_427_500,
+      },
+    };
+
+    const buffer = await service.generatePayrollXlsx(report);
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(buffer as unknown as ExcelJS.Buffer);
+
+    const sheet = workbook.getWorksheet('Nómina');
+    expect(sheet).toBeDefined();
+
+    const headerRowNumber = 5;
+    const dataRow = sheet!.getRow(headerRowNumber + 1);
+    expect(dataRow.getCell(1).value).toBe('Ana Gómez');
+    expect(Number(dataRow.getCell(7).value)).toBe(totalDeductions);
+
+    const totalsRow = sheet!.getRow(headerRowNumber + 2);
+    expect(String(totalsRow.getCell(1).value ?? '')).toMatch(/^Total \(/);
+    expect(Number(totalsRow.getCell(7).value)).toBe(totalDeductions);
   });
 
   it('handles January (month 1) and December (month 12) month names correctly', async () => {

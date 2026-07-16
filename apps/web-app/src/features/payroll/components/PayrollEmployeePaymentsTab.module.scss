@@ -82,6 +82,27 @@
   color: var(--empleado-subtle);
 }
 
+.actionsCell {
+  width: 48px;
+  text-align: center;
+}
+
+.detailContent {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.detailState {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 0;
+  color: var(--empleado-subtle);
+  font-size: 0.875rem;
+}
+
 .loadMore {
   display: flex;
   justify-content: center;

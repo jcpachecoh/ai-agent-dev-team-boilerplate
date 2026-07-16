@@ -9846,6 +9846,17 @@
                   "    pm.expect(body.period.month).to.be.a('number');",
                   "    pm.expect(body.employees).to.be.an('array');",
                   "    pm.expect(body.tenantTotals).to.be.an('object');",
+                  "});",
+                  "pm.test('payroll: employee row incluye taxWithholdingBreakdown (OS-594)', () => {",
+                  "    const body = pm.response.json();",
+                  "    if (!body.employees.length) return;",
+                  "    const row = body.employees[0];",
+                  "    pm.expect(row.taxWithholdingBreakdown).to.be.an('object');",
+                  "    pm.expect(row.taxWithholdingBreakdown.taxWithholdingBase).to.be.a('number');",
+                  "    pm.expect(row.taxWithholdingBreakdown.uvtValue).to.be.a('number');",
+                  "    pm.expect(row.taxWithholdingBreakdown.taxWithholdingBaseUvt).to.be.a('number');",
+                  "    pm.expect(row.taxWithholdingBreakdown.incomeTaxWithholding).to.eql(row.incomeTaxWithholding);",
+                  "    pm.expect(row.taxWithholdingBreakdown.isExemptFromTax).to.be.a('boolean');",
                   "});"
                 ]
               }

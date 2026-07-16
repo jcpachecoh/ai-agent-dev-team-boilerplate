@@ -629,8 +629,9 @@ const PERMISSION_SEEDS = [
   },
   // OS-591 (fase 3) — Liquidación definitiva de contrato: permisos granulares por acción
   // (separación de funciones — quien calcula no necesariamente aprueba/paga/anula).
+  // IDs 072–079: after configuracion.legal (064–065) and daily-cost-center (066–067).
   {
-    id: 'cccccccc-0000-0000-0000-000000000064',
+    id: 'cccccccc-0000-0000-0000-000000000072',
     code: 'nomina.settlement.read',
     name: 'Leer liquidaciones definitivas',
     description: 'Consultar liquidaciones definitivas de contrato de un empleado.',
@@ -639,7 +640,7 @@ const PERMISSION_SEEDS = [
     action: 'read',
   },
   {
-    id: 'cccccccc-0000-0000-0000-000000000065',
+    id: 'cccccccc-0000-0000-0000-000000000073',
     code: 'nomina.settlement.calculate',
     name: 'Calcular liquidaciones definitivas',
     description: 'Previsualizar, calcular y recalcular liquidaciones definitivas (automáticas).',
@@ -648,7 +649,7 @@ const PERMISSION_SEEDS = [
     action: 'calculate',
   },
   {
-    id: 'cccccccc-0000-0000-0000-000000000066',
+    id: 'cccccccc-0000-0000-0000-000000000074',
     code: 'nomina.settlement.manual',
     name: 'Registrar liquidaciones manuales',
     description: 'Crear liquidaciones definitivas manuales con líneas y soporte documental.',
@@ -657,7 +658,7 @@ const PERMISSION_SEEDS = [
     action: 'manual',
   },
   {
-    id: 'cccccccc-0000-0000-0000-000000000067',
+    id: 'cccccccc-0000-0000-0000-000000000075',
     code: 'nomina.settlement.reconcile_pending_salary',
     name: 'Reconciliar salario pendiente',
     description:
@@ -667,7 +668,7 @@ const PERMISSION_SEEDS = [
     action: 'reconcile_pending_salary',
   },
   {
-    id: 'cccccccc-0000-0000-0000-000000000068',
+    id: 'cccccccc-0000-0000-0000-000000000076',
     code: 'nomina.settlement.approve',
     name: 'Aprobar liquidaciones definitivas',
     description:
@@ -677,7 +678,7 @@ const PERMISSION_SEEDS = [
     action: 'approve',
   },
   {
-    id: 'cccccccc-0000-0000-0000-000000000069',
+    id: 'cccccccc-0000-0000-0000-000000000077',
     code: 'nomina.settlement.pay',
     name: 'Marcar liquidaciones como pagadas',
     description: 'Registrar el pago efectivo de una liquidación definitiva aprobada.',
@@ -686,7 +687,7 @@ const PERMISSION_SEEDS = [
     action: 'pay',
   },
   {
-    id: 'cccccccc-0000-0000-0000-000000000070',
+    id: 'cccccccc-0000-0000-0000-000000000078',
     code: 'nomina.settlement.void',
     name: 'Anular liquidaciones definitivas',
     description: 'Anular una liquidación definitiva en DRAFT/CALCULATED.',
@@ -695,7 +696,7 @@ const PERMISSION_SEEDS = [
     action: 'void',
   },
   {
-    id: 'cccccccc-0000-0000-0000-000000000071',
+    id: 'cccccccc-0000-0000-0000-000000000079',
     code: 'nomina.settlement.validate_legal_formula',
     name: 'Validar fórmula legal de indemnización',
     description: 'Registrar la validación legal de una versión de la fórmula de indemnización.',
@@ -2834,11 +2835,18 @@ async function main() {
   const { seedLaborLegalParameters } = await import('./seeds/labor-legal-parameters.seed');
   await seedLaborLegalParameters(prisma);
 
+  const { seedTaxWithholdingBrackets } = await import('./seeds/tax-withholding-brackets.seed');
+  await seedTaxWithholdingBrackets(prisma);
+
   const { seedNovedadTypeConfigs } = await import('./seeds/novedad-type-config.seed');
   await seedNovedadTypeConfigs(prisma, OPERATIONAL_TENANT_ID);
 
   const { seedDataProcessingPolicy } = await import('./seeds/data-processing-policy.seed');
   await seedDataProcessingPolicy(prisma, OPERATIONAL_TENANT_ID);
+
+  const { seedOs594TaxWithholdingUiFixtures } =
+    await import('./seeds/os594-tax-withholding-ui.seed');
+  await seedOs594TaxWithholdingUiFixtures(prisma);
 }
 
 main()

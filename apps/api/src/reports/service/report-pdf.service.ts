@@ -21,7 +21,6 @@ const DARK_BLUE = '#1a3a5c';
 const ALT_ROW = '#f5f6f8';
 const TOTALS_ROW = '#dce3ec';
 const BORDER = '#c8d0da';
-const GAP_COLOR = '#888888';
 
 const MONTH_NAMES_ES = [
   'Enero',
@@ -320,19 +319,6 @@ export class ReportPdfService {
       day: 'numeric',
     });
     doc.text(`Generado: ${genDate}`);
-
-    // GAP notice — festivos implemented in Task04A; retención en fuente pending Task04-F
-    doc
-      .moveDown(0.4)
-      .font('Helvetica-Oblique')
-      .fontSize(7.5)
-      .fillColor(GAP_COLOR)
-      .text(
-        'GAP pendiente (Task04-F): retención en la fuente siempre 0 (Ley 2277/2022 / rangos UVT no implementados).',
-        MARGIN,
-        doc.y,
-      )
-      .fillColor('#000000');
 
     doc.moveDown(0.7);
 

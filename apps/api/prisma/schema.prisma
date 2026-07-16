@@ -2439,6 +2439,30 @@ model LaborLegalParameter {
   @@map("labor_legal_parameters")
 }
 
+// ── Retención en la fuente — tabla progresiva UVT (OS-594 / Ley 2277/2022) ───
+
+model TaxWithholdingBracket {
+  id            String    @id @default(cuid())
+  tenantId      String? // null = global
+  tenantScope   String    @default("GLOBAL")
+  sortOrder     Int // orden del tramo (1..7) dentro de una vigencia
+  lowerUvtBound Decimal   @db.Decimal(14, 4) // límite inferior exclusivo (UVT)
+  upperUvtBound Decimal?  @db.Decimal(14, 4) // límite superior inclusivo; null = abierto
+  marginalRate  Decimal   @db.Decimal(8, 6)
+  fixedTaxUvt   Decimal   @db.Decimal(14, 4) // impuesto fijo en UVT (deducción)
+  validFrom     DateTime
+  validTo       DateTime?
+  source        String?
+  deletedAt     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([tenantScope, validFrom, sortOrder])
+  @@index([tenantScope, validFrom, validTo])
+  @@index([deletedAt])
+  @@map("tax_withholding_brackets")
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // INCAPACIDADES MÉDICAS — comunes y laborales (NOM-13)
 // ─────────────────────────────────────────────────────────────────────────────

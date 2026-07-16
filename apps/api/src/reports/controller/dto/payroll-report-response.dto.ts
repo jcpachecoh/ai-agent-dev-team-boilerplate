@@ -9,6 +9,18 @@ export class OvertimeBreakdownItemDto {
   @ApiProperty() amount!: number;
 }
 
+export class TaxWithholdingBreakdownDto {
+  @ApiProperty() taxWithholdingBase!: number;
+  @ApiProperty() uvtValue!: number;
+  @ApiProperty() taxWithholdingBaseUvt!: number;
+  @ApiProperty({ nullable: true, type: Number }) bracketLowerUvtExclusive!: number | null;
+  @ApiProperty({ nullable: true, type: Number }) bracketUpperUvtInclusive!: number | null;
+  @ApiProperty({ nullable: true, type: Number }) marginalRate!: number | null;
+  @ApiProperty({ nullable: true, type: Number }) fixedTaxUvt!: number | null;
+  @ApiProperty() incomeTaxWithholding!: number;
+  @ApiProperty() isExemptFromTax!: boolean;
+}
+
 export class PayrollEmployeeRowDto {
   @ApiProperty() employeeId!: string;
   @ApiProperty() employeeName!: string;
@@ -28,6 +40,8 @@ export class PayrollEmployeeRowDto {
   @ApiProperty() healthDeduction!: number;
   @ApiProperty() pensionDeduction!: number;
   @ApiProperty() incomeTaxWithholding!: number;
+  @ApiProperty({ type: TaxWithholdingBreakdownDto })
+  taxWithholdingBreakdown!: TaxWithholdingBreakdownDto;
   @ApiProperty() totalDeductions!: number;
   @ApiProperty() netPay!: number;
   @ApiProperty() employerHealthContribution!: number;

@@ -1,32 +1,38 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
-import { Test, TestingModule } from '@nestjs/testing';
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import {
   ArlRiskLevel,
   AttendanceEventType,
   CostCenter,
   DocumentType,
   EmployeeContractType,
+  LeaveOrigin,
   OvertimeStatus,
   SalaryType,
   VacationType,
-  LeaveOrigin,
 } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
-import { SMLV_2025, TRANSPORT_SUBSIDY_2025 } from '../../payroll/payroll.constants';
-import { UserLocationsService } from '../../locations/service/user-locations.service';
+
+import { RotanteProrationService } from '../../daily-cost-center/service/rotante-proration.service';
 import { LaborLegalParametersService } from '../../labor-legal-parameters/service/labor-legal-parameters.service';
 import type { LegalParameterSnapshot } from '../../labor-legal-parameters/service/legal-parameter-snapshot';
-import { PayrollCalculationService } from '../../payroll/service/payroll-calculation.service';
-import { EmployeeWithUserAndLocation, ReportsRepository } from '../repository/reports.repository';
-import { PayrollRepository } from '../../payroll/repository/payroll.repository';
-import { ReportsService, ROTANTE_PENDING_LOCATION_ID } from '../service/reports.service';
-import { AttendanceQueryDto, PeriodQueryDto } from '../controller/dto/report-query.dto';
-import { AttendanceReportStatusFilter } from '../controller/dto/attendance-export-query.dto';
-import { MAX_EXPORT_ROWS } from '../reports.constants';
-import { VacationsService } from '../../vacations/service/vacations.service';
+import { UserLocationsService } from '../../locations/service/user-locations.service';
 import { MedicalLeavesRepository } from '../../medical-leaves/repository/medical-leaves.repository';
 import { OvertimeRepository } from '../../overtime/repository/overtime.repository';
-import { RotanteProrationService } from '../../daily-cost-center/service/rotante-proration.service';
+import { SMLV_2025, TRANSPORT_SUBSIDY_2025 } from '../../payroll/payroll.constants';
+import { PayrollRepository } from '../../payroll/repository/payroll.repository';
+import { PayrollCalculationService } from '../../payroll/service/payroll-calculation.service';
+import type { TaxWithholdingBracketSnapshot } from '../../tax-withholding-brackets/service/tax-withholding-bracket-snapshot';
+import { TaxWithholdingBracketsService } from '../../tax-withholding-brackets/service/tax-withholding-brackets.service';
+import { makeOfficialResolvedTaxWithholdingBrackets } from '../../tax-withholding-brackets/test/tax-withholding-brackets.test-fixtures';
+import { VacationsService } from '../../vacations/service/vacations.service';
+import { AttendanceReportStatusFilter } from '../controller/dto/attendance-export-query.dto';
+import type { AttendanceQueryDto, PeriodQueryDto } from '../controller/dto/report-query.dto';
+import { MAX_EXPORT_ROWS } from '../reports.constants';
+import type { EmployeeWithUserAndLocation } from '../repository/reports.repository';
+import { ReportsRepository } from '../repository/reports.repository';
+import { ReportsService, ROTANTE_PENDING_LOCATION_ID } from '../service/reports.service';
 
 // ── Fixtures ─────────────────────────────────────────────────────────────────
 
@@ -41,6 +47,7 @@ const OWNER_ACTOR = { userId: 'user-owner', roleCode: 'OWNER' };
 const LEGAL_PARAM_VALUES: Record<string, number> = {
   SMLV: SMLV_2025,
   AUXILIO_TRANSPORTE: TRANSPORT_SUBSIDY_2025,
+  UVT: 49799,
   RECARGO_DOMINICAL_FESTIVO: 0.75,
   HORARIO_NOCTURNO_INICIO: 21,
   RECARGO_HORA_EXTRA_DIURNA: 0.25,
@@ -52,6 +59,12 @@ function makeLegalSnapshot() {
   return {
     numberAt: jest.fn((key: string) => LEGAL_PARAM_VALUES[key]),
   };
+}
+
+function makeTaxBracketSnapshot() {
+  return {
+    bracketsAt: jest.fn(() => makeOfficialResolvedTaxWithholdingBrackets()),
+  } as unknown as TaxWithholdingBracketSnapshot;
 }
 
 /**
@@ -247,6 +260,7 @@ describe('ReportsService', () => {
   let repository: jest.Mocked<ReportsRepository>;
   let payrollRepository: jest.Mocked<PayrollRepository>;
   let legalParametersService: jest.Mocked<LaborLegalParametersService>;
+  let taxWithholdingBracketsService: jest.Mocked<TaxWithholdingBracketsService>;
   let vacationsService: jest.Mocked<VacationsService>;
   let medicalLeavesRepository: jest.Mocked<
     Pick<MedicalLeavesRepository, 'findOverlappingForPayrollPeriodByEmployeeIds'>
@@ -302,6 +316,12 @@ describe('ReportsService', () => {
           },
         },
         {
+          provide: TaxWithholdingBracketsService,
+          useValue: {
+            preload: jest.fn().mockResolvedValue(makeTaxBracketSnapshot()),
+          },
+        },
+        {
           provide: OvertimeRepository,
           useValue: {
             findApprovalStatusByEmployeeIdsForPeriod: jest.fn(),
@@ -320,6 +340,7 @@ describe('ReportsService', () => {
     repository = module.get(ReportsRepository);
     payrollRepository = module.get(PayrollRepository);
     legalParametersService = module.get(LaborLegalParametersService);
+    taxWithholdingBracketsService = module.get(TaxWithholdingBracketsService);
     vacationsService = module.get(VacationsService);
     medicalLeavesRepository = module.get(MedicalLeavesRepository);
     overtimeRepository = module.get(OvertimeRepository);
@@ -389,6 +410,31 @@ describe('ReportsService', () => {
       expect(row.workedDays).toBe(30);
       expect(row.salaryBase).toBe(SMLV_2025);
       expect(row.transportSubsidy).toBe(TRANSPORT_SUBSIDY_2025);
+    });
+
+    it('maps taxWithholdingBreakdown on each employee row (OS-594)', async (): Promise<void> => {
+      const logs = Array.from({ length: 30 }, (_, i) => {
+        const day = String(i + 1).padStart(2, '0');
+        return fullDayLogs('emp-1', `2025-06-${day}`);
+      }).flat();
+
+      repository.findActiveEmployees.mockResolvedValue([mockEmployee]);
+      repository.findAttendanceLogsByDateRange.mockResolvedValue(logs);
+
+      const result = await service.getPayrollReport(TENANT_ID, query, OWNER_ACTOR);
+      const row = result.employees[0];
+
+      expect(row.taxWithholdingBreakdown).toEqual(
+        expect.objectContaining({
+          taxWithholdingBase: expect.any(Number) as number,
+          uvtValue: expect.any(Number) as number,
+          taxWithholdingBaseUvt: expect.any(Number) as number,
+          incomeTaxWithholding: row.incomeTaxWithholding,
+          isExemptFromTax: false,
+        }),
+      );
+      expect(row.taxWithholdingBreakdown.marginalRate).toBe(0);
+      expect(row.incomeTaxWithholding).toBe(0);
     });
 
     it('overtime diurno on non-holiday is classified DIURNO', async () => {

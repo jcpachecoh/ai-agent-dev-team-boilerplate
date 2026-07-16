@@ -1,4 +1,5 @@
 import { ArlRiskLevel, EmployeeContractType, SalaryType } from '@prisma/client';
+import type { ResolvedTaxWithholdingBracket } from '../../tax-withholding-brackets/interfaces/tax-withholding-brackets.interfaces';
 import { AttendanceOvertimeType } from '../payroll.constants';
 
 // ── Input types (already hydrated — no DB access in PayrollCalculationService) ─
@@ -24,6 +25,8 @@ export interface EmployeePayrollInput {
   payrollNovedadUnpaidDays?: number;
   payrollNovedadUnpaidDeduction?: number;
   payrollNovedadPaidDays?: number;
+  /** EmployeeDetails.isExemptFromTax — omite retención en la fuente cuando es true (OS-594). */
+  isExemptFromTax?: boolean;
 }
 
 /**
@@ -71,6 +74,10 @@ export interface PayrollLegalRates {
   smlv: number;
   transportSubsidyThreshold: number;
   transportSubsidy: number;
+  /** UVT en COP — LaborLegalParameter key 'UVT', vigencia del período (OS-594). */
+  uvt: number;
+  /** Tramos de retención resueltos para la vigencia del período (TaxWithholdingBracket, OS-594). */
+  taxWithholdingBrackets: ResolvedTaxWithholdingBracket[];
 }
 
 // ── Output types ─────────────────────────────────────────────────────────────
@@ -84,6 +91,19 @@ export interface OvertimeBreakdownItem {
   surchargeRate: number;
   /** COP amount for this overtime type in the period */
   amount: number;
+}
+
+/** Desglose de retención en la fuente — OS-594. */
+export interface TaxWithholdingBreakdown {
+  taxWithholdingBase: number;
+  uvtValue: number;
+  taxWithholdingBaseUvt: number;
+  bracketLowerUvtExclusive: number | null;
+  bracketUpperUvtInclusive: number | null;
+  marginalRate: number | null;
+  fixedTaxUvt: number | null;
+  incomeTaxWithholding: number;
+  isExemptFromTax: boolean;
 }
 
 export interface EmployeePayrollPeriod {
@@ -124,11 +144,10 @@ export interface EmployeePayrollPeriod {
   healthDeduction: number;
   /** 4% of contributionBase (COP) */
   pensionDeduction: number;
-  /**
-   * Income tax withholding.
-   * GAP(Task04): always 0 — Ley 2277/2022 progressive UVT ranges not yet implemented.
-   */
+  /** Retención en la fuente (RENTA) — Ley 2277/2022, tabla progresiva UVT (OS-594). */
   incomeTaxWithholding: number;
+  /** Desglose tributario de retención calculado en el mismo paso (OS-594). */
+  taxWithholdingBreakdown: TaxWithholdingBreakdown;
   /** healthDeduction + pensionDeduction + incomeTaxWithholding (COP) */
   totalDeductions: number;
 

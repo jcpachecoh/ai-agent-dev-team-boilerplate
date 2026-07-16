@@ -193,10 +193,23 @@ const LEGAL_PARAMETER_SEEDS: LegalParameterSeed[] = [
     source: 'Decreto 1176 de 1932',
   },
 
-  // UVT (Unidad de Valor Tributario) — NO seeded. Value changes yearly via resolución DIAN
-  // and nothing in this PR consumes it yet (GAP(Task04) — retención en la fuente still pending).
-  // getValueAt('UVT', ...) will throw NotFoundException until a real vigencia is added; that is
-  // intentional — a wrong guessed UVT is worse than a loud failure. TODO(Task04): seed once wired up.
+  // ── UVT — Unidad de Valor Tributario (OS-594) ────────────────────────────────
+  {
+    key: 'UVT',
+    value: 49799,
+    validFrom: '2025-01-01',
+    validTo: '2025-12-31',
+    source: 'DIAN — Resolución 000187 de 2024',
+  },
+  {
+    key: 'UVT',
+    value: 52374,
+    validFrom: '2026-01-01',
+    validTo: null,
+    source: 'DIAN — Resolución 000238 de 2025',
+  },
+
+  // UVT seed wired up in OS-594 — consumed by PayrollCalculationService via getValueAt('UVT', ...).
 
   // ── PRIMA_DIVISOR_DIAS — semestre comercial de 180 días (30 días/mes), OS-591 fase 1 ──
   {

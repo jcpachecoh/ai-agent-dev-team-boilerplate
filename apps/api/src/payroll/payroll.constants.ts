@@ -36,7 +36,6 @@ export const EMPLOYEE_PENSION_PCT = 0.04;
 /** Rol bootstrap al crear usuario desde nómina; el rol definitivo se asigna en Usuarios. */
 export const DEFAULT_EMPLOYEE_BOOTSTRAP_ROLE_CODE = 'OPERATOR';
 // GAP(Task04): fondo de solidaridad pensional (+1% sobre base > 4 SMLV — Ley 100 art. 27)
-// GAP(Task04): retención en la fuente (Ley 2277/2022 rangos UVT) — siempre 0 hasta Task04
 
 // ── Aportes patronales (% sobre base de aportes) ─────────────────────────────
 // Fuente: Ley 100/1993 art. 204 (salud 8.5%), Ley 100/1993 art. 20 (pensión 12%),
