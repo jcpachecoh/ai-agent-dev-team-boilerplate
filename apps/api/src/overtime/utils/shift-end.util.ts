@@ -1,19 +1,32 @@
 import { parseHhMmToMinutes } from '../../turnos/shift-resolution.utils';
 
-/** Combina workDate (UTC midnight) con horaFin del turno; soporta cruce de medianoche. */
-export function computeShiftEndDateTime(workDate: Date, horaInicio: string, horaFin: string): Date {
-  const [endHour, endMinute] = horaFin.split(':').map(Number);
-  const result = new Date(
+function buildShiftBoundaryDateTime(workDate: Date, hourMinute: string): Date {
+  const [hour, minute] = hourMinute.split(':').map(Number);
+  return new Date(
     Date.UTC(
       workDate.getUTCFullYear(),
       workDate.getUTCMonth(),
       workDate.getUTCDate(),
-      endHour,
-      endMinute,
+      hour,
+      minute,
       0,
       0,
     ),
   );
+}
+
+/** Combina workDate (UTC midnight) con horaInicio del turno; soporta cruce de medianoche. */
+export function computeShiftStartDateTime(
+  workDate: Date,
+  horaInicio: string,
+  _horaFin: string,
+): Date {
+  return buildShiftBoundaryDateTime(workDate, horaInicio);
+}
+
+/** Combina workDate (UTC midnight) con horaFin del turno; soporta cruce de medianoche. */
+export function computeShiftEndDateTime(workDate: Date, horaInicio: string, horaFin: string): Date {
+  const result = buildShiftBoundaryDateTime(workDate, horaFin);
 
   const startMinutes = parseHhMmToMinutes(horaInicio);
   const endMinutes = parseHhMmToMinutes(horaFin);

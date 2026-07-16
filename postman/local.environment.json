@@ -561,6 +561,20 @@
       "description": "NOM-03 Attendance — Captured from POST kiosk-auth response (locationId of the kiosk)"
     },
     {
+      "key": "conn11WorkDate",
+      "value": "2026-07-10",
+      "type": "default",
+      "enabled": true,
+      "description": "CONN-11 — Día de prueba (YYYY-MM-DD) con turno asignado para escenarios de corte"
+    },
+    {
+      "key": "conn11CutoffAsOf",
+      "value": "2026-07-10T17:01:00.000Z",
+      "type": "default",
+      "enabled": true,
+      "description": "CONN-11 — Instante simulado del cron de corte automático (post shiftEnd)"
+    },
+    {
       "key": "attendanceEmployeeId",
       "value": "",
       "type": "default",

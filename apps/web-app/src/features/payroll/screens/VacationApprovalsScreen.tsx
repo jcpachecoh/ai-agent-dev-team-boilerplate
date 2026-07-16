@@ -106,7 +106,7 @@ export function VacationApprovalsScreen(): React.JSX.Element {
   }
 
   return (
-    <EmpleadoPage theme={empleadoTheme} scrollable className={styles.vacationApprovalsScreen}>
+    <EmpleadoPage theme={empleadoTheme} className={styles.page}>
       <EmpleadoPageSection theme={empleadoTheme} variant="header" divider>
         <EmpleadoPageHeader
           title="Vacaciones"
@@ -212,7 +212,7 @@ export function VacationApprovalsScreen(): React.JSX.Element {
         ) : null}
       </EmpleadoPageSection>
 
-      <EmpleadoPageSection theme={empleadoTheme} className={styles.requestsSection}>
+      <EmpleadoPageSection theme={empleadoTheme} className={styles.tableSection}>
         {filteredRequests.length === 0 ? (
           <div className={styles.state}>
             {requests.length === 0

@@ -41,6 +41,13 @@ interface EmployeeAggregate {
   isOnShiftToday: boolean;
 }
 
+/**
+ * Monitor de asistencia — métricas operativas en tiempo real.
+ *
+ * CONN-11 nota: `overtimeMinutes` aquí usa {@link calculateDaySummary} (crudo total − 8h)
+ * como señal operativa (salida tardía sin remarcación OVERTIME). No es tiempo pagable.
+ * Tarjeta, panel HE mensual y GET overtime usan ventana planificada + markingScope OVERTIME.
+ */
 @Injectable()
 export class AttendanceMonitorSummaryService {
   constructor(

@@ -1,9 +1,11 @@
 # CONN-04a Task 04 — OvertimeDetectionService
 
 **Domain:** `[BACKEND]` `[ATTENDANCE]`  
-**Status:** `completed`  
+**Status:** `completed` — **superseded by amendment** ([CONN-11 task-06](../conn-11-automatic-shift-cutoff/task-06-overtime-detection-amendment.md))  
 **Depends on:** [Task 03](./task-03-repository.md), CONN-03 (`ShiftResolutionService`)  
 **Epic:** [CONN-04a](./00-epic-and-decisions.md)
+
+> ⚠️ **Amendment 2026-07-15:** Esta task implementó detección por EXIT tardío vs `shiftEndTime`. Tras CONN-11, la detección debe usar solo pares `markingScope=OVERTIME` post-corte. Ver [CONN-11 task-06](../conn-11-automatic-shift-cutoff/task-06-overtime-detection-amendment.md). La cascada de aprobación y el modelo `OvertimeRequest` **no cambian**.
 
 ---
 

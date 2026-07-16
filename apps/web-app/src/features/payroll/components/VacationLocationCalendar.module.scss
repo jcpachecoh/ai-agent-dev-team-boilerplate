@@ -30,8 +30,16 @@
   color: var(--empleado-muted, #667085);
 }
 
-.grid {
+.gridScroll {
+  max-height: min(28rem, 55vh);
   margin-top: 0.35rem;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.grid {
+  margin-top: 0;
 }
 
 .cell {

@@ -551,3 +551,31 @@ OTP TTL: 15 minutes.
    - Expected: `200 { "message": "Password updated successfully." }`
 
 Reset token TTL: 60 minutes.
+
+---
+
+## CONN-11 Jornada Cutoff
+
+Folder **`CONN-11 Jornada Cutoff`** valida corte automático, minutos pagables con ventana planificada e integración CONN-04a.
+
+**Prerrequisitos:** API local (`NODE_ENV` ≠ `production`), seed + migración CONN-11, login owner (`{{accessToken}}`).
+
+**Orden sugerido:**
+
+1. **Setup — kiosk-auth** — captura `attendanceUserId`, `accessTokenOperator`
+2. **E1** — marcaciones manuales 07:45→17:00 + GET card/overtime (minutos recortados)
+3. **E2** — ENTRY 08:00 abierta → `POST /api/dev/jornada-cutoff/run` → history con `source=SYSTEM`
+4. **E3** — EXIT ordinaria tardía → `overtimeMinutes = 0`
+5. **E4** — GraphQL `registrarMarcacion` con `markingScope: OVERTIME` (Bearer `{{accessTokenOperator}}`)
+6. **E5/E6** — GET overtime-requests inbox → cascada en **CONN-04a Overtime Detection**
+
+**Variables:** `conn11WorkDate`, `conn11CutoffAsOf` (pre-filled en `local.environment.json`).
+
+**Dev only:** `POST /api/dev/jornada-cutoff/run` con header `x-tenant-id` y body `{ "asOf": "..." }`.
+
+```bash
+newman run postman/restopsiq-api.collection.json \
+  --environment postman/local.environment.json \
+  --folder "CONN-11 Jornada Cutoff" \
+  --bail
+```

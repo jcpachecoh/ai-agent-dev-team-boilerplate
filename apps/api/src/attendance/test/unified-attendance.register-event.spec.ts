@@ -1,6 +1,7 @@
 import {
   AttendanceEventType,
   AttendanceLogSource,
+  AttendanceMarkingScope,
   AttendanceValidationStatus,
 } from '@prisma/client';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -18,6 +19,7 @@ describe('ASIS-UNI — convivencia APP_MOVIL + MANUAL', () => {
   const repoMock = {
     findDuplicateEvent: jest.fn(),
     findOpenEntry: jest.fn(),
+    findOpenEntryByScope: jest.fn(),
     findLocationById: jest.fn(),
     createEventLog: jest.fn(),
   };
@@ -57,6 +59,7 @@ describe('ASIS-UNI — convivencia APP_MOVIL + MANUAL', () => {
     jest.clearAllMocks();
     repoMock.findDuplicateEvent.mockResolvedValue(null);
     repoMock.findOpenEntry.mockResolvedValue(null);
+    repoMock.findOpenEntryByScope.mockResolvedValue(null);
     repoMock.findLocationById.mockResolvedValue({
       id: 'loc-1',
       geoLatitude: 4.6097,

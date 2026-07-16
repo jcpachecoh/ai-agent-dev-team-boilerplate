@@ -13,7 +13,11 @@ import {
   Resolver,
   registerEnumType,
 } from '@nestjs/graphql';
-import { AttendanceEventType, AttendanceValidationStatus } from '@prisma/client';
+import {
+  AttendanceEventType,
+  AttendanceMarkingScope,
+  AttendanceValidationStatus,
+} from '@prisma/client';
 import { IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
 import type { JwtPayload } from '../../../auth/interfaces/auth.interfaces';
 import { PAYROLL_MODULE_ROLES } from '../../../common/config/rbac.config';
@@ -44,6 +48,11 @@ registerEnumType(AttendanceEventType, {
 registerEnumType(AttendanceValidationStatus, {
   name: 'MobileAttendanceStatus',
   description: 'Estado de validación de la marcación',
+});
+
+registerEnumType(AttendanceMarkingScope, {
+  name: 'AttendanceMarkingScope',
+  description: 'Alcance de la marcación (jornada ordinaria o tiempo adicional post-corte)',
 });
 
 // ── Input types ─────────────────────────────────────────────────────────────
@@ -96,6 +105,11 @@ export class RegistrarMarcacionInputType {
   @IsString()
   @IsOptional()
   notes?: string;
+
+  @Field(() => AttendanceMarkingScope, { nullable: true })
+  @IsEnum(AttendanceMarkingScope)
+  @IsOptional()
+  markingScope?: AttendanceMarkingScope;
 }
 
 @InputType('MarcacionesPorSedeInput')

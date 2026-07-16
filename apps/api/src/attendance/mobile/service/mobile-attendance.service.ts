@@ -115,6 +115,7 @@ export class MobileAttendanceService implements IMobileAttendanceService {
       photoUrl,
       facialMatchScore: input.facialMatchScore ?? null,
       facialMatchResult: input.facialMatchResult ?? null,
+      markingScope: input.markingScope,
     });
 
     const status = log.validationStatus ?? AttendanceValidationStatus.PENDING;

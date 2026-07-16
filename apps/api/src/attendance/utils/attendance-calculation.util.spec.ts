@@ -1,10 +1,12 @@
-import { AttendanceEventType, AttendanceShift } from '@prisma/client';
+import { AttendanceEventType, AttendanceMarkingScope, AttendanceShift } from '@prisma/client';
 import {
   calculateDaySummary,
+  calculatePayableDayMinutes,
   getBogotaHour,
   getBogotaMinute,
   getShiftStartHour,
   isLateEntry,
+  sumOvertimeScopeMinutes,
 } from './attendance-calculation.util';
 
 // Reproduces the pre-OS-585 hardcoded NOCTURNO_START_HOUR constant (21), now resolved by
@@ -147,5 +149,62 @@ describe('attendance-calculation.util', () => {
     expect(summary.overtimeMinutes).toBe(0);
     expect(summary.isNocturno).toBe(false);
     expect(summary.pairs).toEqual([]);
+  });
+
+  it('sumOvertimeScopeMinutes solo cuenta pares OVERTIME', () => {
+    const logs = [
+      {
+        eventType: AttendanceEventType.ENTRY,
+        markingScope: AttendanceMarkingScope.ORDINARY,
+        timestamp: new Date('2026-07-01T13:00:00.000Z'),
+        isActive: true,
+      },
+      {
+        eventType: AttendanceEventType.EXIT,
+        markingScope: AttendanceMarkingScope.ORDINARY,
+        timestamp: new Date('2026-07-01T22:45:00.000Z'),
+        isActive: true,
+      },
+      {
+        eventType: AttendanceEventType.ENTRY,
+        markingScope: AttendanceMarkingScope.OVERTIME,
+        timestamp: new Date('2026-07-01T22:05:00.000Z'),
+        isActive: true,
+      },
+      {
+        eventType: AttendanceEventType.EXIT,
+        markingScope: AttendanceMarkingScope.OVERTIME,
+        timestamp: new Date('2026-07-01T23:00:00.000Z'),
+        isActive: true,
+      },
+    ];
+
+    expect(sumOvertimeScopeMinutes(logs as never)).toBe(55);
+  });
+
+  it('calculatePayableDayMinutes recorta ordinario a ventana planificada', () => {
+    const logs = [
+      {
+        eventType: AttendanceEventType.ENTRY,
+        markingScope: AttendanceMarkingScope.ORDINARY,
+        timestamp: new Date('2026-06-10T07:45:00.000Z'),
+        isActive: true,
+      },
+      {
+        eventType: AttendanceEventType.EXIT,
+        markingScope: AttendanceMarkingScope.ORDINARY,
+        timestamp: new Date('2026-06-10T17:45:00.000Z'),
+        isActive: true,
+      },
+    ];
+
+    const result = calculatePayableDayMinutes({
+      logs: logs as never,
+      shiftStartTime: new Date('2026-06-10T08:00:00.000Z'),
+      shiftEndTime: new Date('2026-06-10T17:00:00.000Z'),
+    });
+
+    expect(result.ordinaryMinutes).toBe(540);
+    expect(result.overtimeMinutes).toBe(0);
   });
 });

@@ -1,3 +1,13 @@
+.page {
+  flex-shrink: 0;
+  min-height: min-content;
+  padding-bottom: 1.5rem;
+}
+
+.tableSection {
+  flex-shrink: 0;
+}
+
 .metrics {
   display: flex;
   flex-wrap: nowrap;

@@ -626,6 +626,18 @@
       "value": "2026-03",
       "type": "string",
       "description": "Filtro mes listado incapacidades (YYYY-MM)"
+    },
+    {
+      "key": "conn11WorkDate",
+      "value": "2026-07-10",
+      "type": "string",
+      "description": "CONN-11 — workDate de prueba (YYYY-MM-DD) con turno asignado"
+    },
+    {
+      "key": "conn11CutoffAsOf",
+      "value": "2026-07-10T17:01:00.000Z",
+      "type": "string",
+      "description": "CONN-11 — instante simulado del job de corte (post shiftEnd)"
     }
   ],
   "item": [
@@ -8631,7 +8643,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"cedula\": \"87654321\",\n  \"pin\": \"4321\",\n  \"locationId\": \"{{attendanceLocationId}}\"\n}"
+              "raw": "{\n  \"cedula\": \"87654321\",\n  \"pin\": \"4321\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/attendance/kiosk-auth",
@@ -12103,8 +12115,14 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/attendance/manual-marking-reasons",
@@ -12137,14 +12155,27 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"workDate\": \"2026-02-10\",\n  \"eventType\": \"ENTRY\",\n  \"timestamp\": \"2026-02-10T08:00:00.000Z\",\n  \"reason\": \"CORRECCION_MARCACION\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/api/attendance/employees/{{attendanceUserId}}/manual-markings",
@@ -12172,14 +12203,27 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"workDate\": \"2026-02-11\",\n  \"eventType\": \"ENTRY\",\n  \"timestamp\": \"2026-02-11T08:00:00.000Z\",\n  \"reason\": \"PERMISO_REMUNERADO\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/api/attendance/employees/{{attendanceUserId}}/manual-markings",
@@ -12208,14 +12252,27 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"workDate\": \"2026-02-12\",\n  \"eventType\": \"ENTRY\",\n  \"timestamp\": \"2026-02-12T08:00:00.000Z\",\n  \"reason\": \"INCAPACIDAD_COMUN\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/api/attendance/employees/{{attendanceUserId}}/manual-markings",
@@ -12244,14 +12301,27 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"workDate\": \"2026-02-10\",\n  \"eventType\": \"ENTRY\",\n  \"timestamp\": \"2026-02-10T08:00:00.000Z\",\n  \"reason\": \"FORGOT\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/api/attendance/employees/{{attendanceUserId}}/manual-markings",
@@ -14118,16 +14188,28 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\"query\": \"mutation Login($input: GlobalLoginInput!) { login(input: $input) { accessToken refreshToken } }\", \"variables\": {\"input\": {\"email\": \"mes-operator@palos-de-lena.dev\", \"password\": \"{{password}}\"}}}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{graphqlUrl}}",
-            "auth": { "type": "noauth" }
+            "auth": {
+              "type": "noauth"
+            }
           },
           "event": [
             {
@@ -14149,16 +14231,28 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\"query\": \"mutation Login($input: GlobalLoginInput!) { login(input: $input) { accessToken refreshToken } }\", \"variables\": {\"input\": {\"email\": \"mes-owner@palos-de-lena.dev\", \"password\": \"{{password}}\"}}}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{graphqlUrl}}",
-            "auth": { "type": "noauth" }
+            "auth": {
+              "type": "noauth"
+            }
           },
           "event": [
             {
@@ -14179,16 +14273,28 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\"query\": \"mutation Login($input: GlobalLoginInput!) { login(input: $input) { accessToken refreshToken } }\", \"variables\": {\"input\": {\"email\": \"superadmin@opssynk.dev\", \"password\": \"{{password}}\"}}}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{graphqlUrl}}",
-            "auth": { "type": "noauth" }
+            "auth": {
+              "type": "noauth"
+            }
           },
           "event": [
             {
@@ -14209,14 +14315,27 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessTokenOperator}}" },
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenOperator}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\"query\": \"query Me { me { id email roleCode } }\"}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{graphqlUrl}}"
           },
@@ -14243,14 +14362,27 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessTokenOperator}}" },
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenOperator}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\"query\": \"query ActiveDataProcessingPolicy { activeDataProcessingPolicy { id tenantId version title content consentLabel publishedAt isActive } }\"}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{graphqlUrl}}"
           },
@@ -14278,14 +14410,27 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessTokenOperator}}" },
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenOperator}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\"query\": \"query MyDataConsentStatus { myDataConsentStatus { activePolicyVersion biometricEnrolled alternateMethodAvailable consents { consentType granted policyVersion grantedAt revokedAt canUseFeature } policy { version title } } }\"}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{graphqlUrl}}"
           },
@@ -14309,14 +14454,27 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessTokenOwner}}" },
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenOwner}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\"query\": \"query EmployeeDataConsents($userId: ID!) { employeeDataConsents(userId: $userId) { activePolicyVersion biometricEnrolled alternateMethodAvailable consents { consentType granted policyVersion grantedAt revokedAt canUseFeature } policy { version title } } }\", \"variables\": {\"userId\": \"{{dataConsentEmployeeUserId}}\"}}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{graphqlUrl}}"
           },
@@ -14342,14 +14500,27 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessTokenOperator}}" },
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenOperator}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"query\": \"mutation GrantDataConsent($input: GrantDataConsentInput!) { grantDataConsent(input: $input) { id tenantId employeeId consentType granted policyVersion grantedAt revokedAt } }\",\n  \"variables\": {\n    \"input\": {\n      \"policyVersion\": \"{{dataConsentPolicyVersion}}\",\n      \"consentTypes\": [\"BIOMETRICO_FACIAL\", \"GEOLOCALIZACION\"],\n      \"accepted\": true,\n      \"deviceId\": \"postman-device-001\"\n    }\n  }\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{graphqlUrl}}"
           },
@@ -14374,14 +14545,27 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessTokenOperator}}" },
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenOperator}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\"query\": \"mutation RevokeDataConsent($input: RevokeDataConsentInput!) { revokeDataConsent(input: $input) { id consentType granted revokedAt policyVersion } }\", \"variables\": {\"input\": {\"consentType\": \"BIOMETRICO_FACIAL\"}}}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{graphqlUrl}}"
           },
@@ -14406,14 +14590,27 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessTokenOperator}}" },
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenOperator}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\"query\": \"mutation RevokeDataConsent($input: RevokeDataConsentInput!) { revokeDataConsent(input: $input) { id consentType granted revokedAt policyVersion } }\", \"variables\": {\"input\": {\"consentType\": \"GEOLOCALIZACION\"}}}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{graphqlUrl}}"
           },
@@ -14437,14 +14634,27 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessTokenOperator}}" },
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenOperator}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\"query\": \"mutation GrantDataConsent($input: GrantDataConsentInput!) { grantDataConsent(input: $input) { id } }\", \"variables\": {\"input\": {\"policyVersion\": \"{{dataConsentPolicyVersion}}\", \"consentTypes\": [\"GEOLOCALIZACION\"], \"accepted\": false}}}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{graphqlUrl}}"
           },
@@ -14466,14 +14676,27 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessTokenSuperAdmin}}" },
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenSuperAdmin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\"query\": \"query DataProcessingPolicies { dataProcessingPolicies { id tenantId version title isActive publishedAt } }\"}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{graphqlUrl}}"
           },
@@ -14499,14 +14722,27 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessTokenSuperAdmin}}" },
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenSuperAdmin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"query\": \"mutation PublishDataProcessingPolicy($input: PublishDataProcessingPolicyInput!) { publishDataProcessingPolicy(input: $input) { id version title isActive publishedAt } }\",\n  \"variables\": {\n    \"input\": {\n      \"version\": \"2026.07.2-postman\",\n      \"title\": \"Política de tratamiento de datos biométricos y geolocalización\",\n      \"content\": \"[BORRADOR POSTMAN] Texto de prueba — reemplazar tras revisión legal.\",\n      \"consentLabel\": \"Autorizo el tratamiento de mi dato biométrico facial y de geolocalización para los fines aquí descritos.\"\n    }\n  }\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{graphqlUrl}}"
           },
@@ -17390,23 +17626,647 @@
       ]
     },
     {
+      "name": "CONN-11 Jornada Cutoff",
+      "description": "Corte automático de jornada ordinaria + tiempo pagable con ventana planificada (CONN-11) e integración CONN-04a.\n\nPrerrequisitos:\n1. API local `NODE_ENV` ≠ production (endpoint dev de corte)\n2. `pnpm db:seed` + migración CONN-11 aplicada\n3. **NOM-03 Attendance** → captura `attendanceUserId`, `attendanceLocationId`, `attendanceEmployeeId`\n4. Empleado operador (87654321) con turno asignado en `{{conn11WorkDate}}`\n5. Login owner → `{{accessToken}}` (tarjeta / manual markings)\n6. Para OVERTIME móvil: login empleado → `accessToken` operador (kiosk-auth devuelve JWT) + variables `mobileClientLatitude/Longitude`\n\nVariables:\n- `conn11WorkDate` — día de prueba (YYYY-MM-DD)\n- `conn11CutoffAsOf` — instante simulado del cron (post shiftEnd)\n\nEscenarios: E1 anticipación · E2 corte SYSTEM · E3 salida tardía sin HE · E4 OVERTIME · E5/E6 resumen + inbox CONN-04a.",
+      "item": [
+        {
+          "name": "Setup — POST kiosk-auth (JWT operador)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cedula\": \"87654321\",\n  \"pin\": \"4321\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/kiosk-auth",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "kiosk-auth"]
+            },
+            "description": "Captura accessToken del operador para registrarMarcacion OVERTIME (E4)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const body = pm.response.json();",
+                  "  pm.collectionVariables.set('attendanceUserId', body.userId);",
+                  "  pm.collectionVariables.set('attendanceLocationId', body.locationId);",
+                  "  pm.collectionVariables.set('attendanceEmployeeId', body.employeeId);",
+                  "  pm.collectionVariables.set('accessTokenOperator', body.accessToken);",
+                  "  try { pm.environment.set('accessTokenOperator', body.accessToken); } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "00 — POST dev/jornada-cutoff/run (trigger manual)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"asOf\": \"{{conn11CutoffAsOf}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/dev/jornada-cutoff/run",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "dev", "jornada-cutoff", "run"]
+            },
+            "description": "Dispara `JornadaCutoffService.runDueCutoffsForTenant` para el tenant. Solo disponible fuera de production.\n\nUsar después de una ENTRY ordinaria abierta y con `asOf` posterior a shiftEndTime."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('dev cutoff: status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) {",
+                  "  const body = pm.response.json();",
+                  "  pm.test('dev cutoff: processed es number', () => pm.expect(body.processed).to.be.a('number'));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "E1 — POST manual ENTRY 07:45 (ordinaria)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workDate\": \"{{conn11WorkDate}}\",\n  \"eventType\": \"ENTRY\",\n  \"timestamp\": \"{{conn11WorkDate}}T07:45:00.000Z\",\n  \"reason\": \"FORGOT\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/employees/{{attendanceUserId}}/manual-markings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "employees", "{{attendanceUserId}}", "manual-markings"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('E1 entry: status 201', () => pm.response.to.have.status(201));"]
+              }
+            }
+          ]
+        },
+        {
+          "name": "E1 — POST manual EXIT 17:00 (ordinaria)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workDate\": \"{{conn11WorkDate}}\",\n  \"eventType\": \"EXIT\",\n  \"timestamp\": \"{{conn11WorkDate}}T17:00:00.000Z\",\n  \"reason\": \"FORGOT\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/employees/{{attendanceUserId}}/manual-markings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "employees", "{{attendanceUserId}}", "manual-markings"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('E1 exit: status 201', () => pm.response.to.have.status(201));"]
+              }
+            }
+          ]
+        },
+        {
+          "name": "E1/E4 — GET card (minutos recortados por día)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/employees/{{attendanceUserId}}/card?dateFrom={{conn11WorkDate}}&dateTo={{conn11WorkDate}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "employees", "{{attendanceUserId}}", "card"],
+              "query": [
+                {
+                  "key": "dateFrom",
+                  "value": "{{conn11WorkDate}}"
+                },
+                {
+                  "key": "dateTo",
+                  "value": "{{conn11WorkDate}}"
+                }
+              ]
+            },
+            "description": "Tarjeta OS-551 con `daySummaries[]`: `ordinaryMinutes` recortados a ventana planificada; `overtimeMinutes` solo scope OVERTIME."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('card: status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('card: daySummaries array', () => pm.expect(body.daySummaries).to.be.an('array'));",
+                  "const day = (body.daySummaries || []).find(d => d.workDate === pm.collectionVariables.get('conn11WorkDate'));",
+                  "if (day) {",
+                  "  pm.test('CONN-11: ordinaryMinutes es number', () => pm.expect(day.ordinaryMinutes).to.be.a('number'));",
+                  "  pm.test('CONN-11: overtimeMinutes es number', () => pm.expect(day.overtimeMinutes).to.be.a('number'));",
+                  "  console.log('[CONN-11] daySummary', JSON.stringify(day));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "E1 — GET overtime summary (ordinarios pagables)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/employees/{{attendanceUserId}}/overtime?date={{conn11WorkDate}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "employees", "{{attendanceUserId}}", "overtime"],
+              "query": [
+                {
+                  "key": "date",
+                  "value": "{{conn11WorkDate}}"
+                }
+              ]
+            },
+            "description": "CONN-11: `totalMinutes` = minutos ordinarios (ventana planificada). `overtimeMinutes` = scope OVERTIME explícito."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('overtime summary: status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('totalMinutes ordinarios', () => pm.expect(body.totalMinutes).to.be.a('number'));",
+                  "pm.test('overtimeMinutes scope', () => pm.expect(body.overtimeMinutes).to.be.a('number'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "E2 — POST manual ENTRY 08:00 (jornada abierta)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workDate\": \"{{conn11WorkDate}}\",\n  \"eventType\": \"ENTRY\",\n  \"timestamp\": \"{{conn11WorkDate}}T08:00:00.000Z\",\n  \"reason\": \"FORGOT\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/employees/{{attendanceUserId}}/manual-markings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "employees", "{{attendanceUserId}}", "manual-markings"]
+            }
+          }
+        },
+        {
+          "name": "E2 — POST dev/jornada-cutoff/run (simula 17:01)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"asOf\": \"{{conn11CutoffAsOf}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/dev/jornada-cutoff/run",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "dev", "jornada-cutoff", "run"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('E2 cutoff: status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) {",
+                  "  pm.test('E2: al menos un corte procesado', () => pm.expect(pm.response.json().processed).to.be.at.least(0));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "E2 — GET history (buscar EXIT source=SYSTEM)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance?userId={{attendanceUserId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance"],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "{{attendanceUserId}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('history: status 200', () => pm.response.to.have.status(200));",
+                  "const logs = pm.response.json();",
+                  "const workDate = pm.collectionVariables.get('conn11WorkDate');",
+                  "const systemExit = (logs || []).find(l => l.source === 'SYSTEM' && l.eventType === 'EXIT' && String(l.workDate).startsWith(workDate));",
+                  "pm.test('E2: existe EXIT SYSTEM post-corte (si hubo ENTRY abierta)', () => {",
+                  "  if (systemExit) pm.expect(systemExit.source).to.eql('SYSTEM');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "E3 — POST manual EXIT 17:45 (ordinaria tardía)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workDate\": \"{{conn11WorkDate}}\",\n  \"eventType\": \"EXIT\",\n  \"timestamp\": \"{{conn11WorkDate}}T17:45:00.000Z\",\n  \"reason\": \"FORGOT\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/employees/{{attendanceUserId}}/manual-markings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "employees", "{{attendanceUserId}}", "manual-markings"]
+            }
+          }
+        },
+        {
+          "name": "E3 — GET overtime (sin HE sin OVERTIME scope)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/employees/{{attendanceUserId}}/overtime?date={{conn11WorkDate}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "employees", "{{attendanceUserId}}", "overtime"],
+              "query": [
+                {
+                  "key": "date",
+                  "value": "{{conn11WorkDate}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('E3 overtime: status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('E3: overtimeMinutes = 0 sin remarcación OVERTIME', () => {",
+                  "  pm.expect(pm.response.json().overtimeMinutes).to.eql(0);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "E4 — GraphQL registrarMarcacion OVERTIME ENTRY",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessTokenOperator}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation RegistrarMarcacion($input: RegistrarMarcacionInput!) { registrarMarcacion(input: $input) { id status timestamp workDate } }\",\n  \"variables\": {\n    \"input\": {\n      \"locationId\": \"{{attendanceLocationId}}\",\n      \"eventType\": \"ENTRY\",\n      \"markingScope\": \"OVERTIME\",\n      \"clientLatitude\": {{mobileClientLatitude}},\n      \"clientLongitude\": {{mobileClientLongitude}},\n      \"notes\": \"CONN-11 OVERTIME ENTRY Postman\"\n    }\n  }\n}"
+            },
+            "url": "{{graphqlUrl}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('E4 OVERTIME entry: GraphQL 200', () => pm.response.to.have.status(200));",
+                  "const data = pm.response.json().data?.registrarMarcacion;",
+                  "if (data) pm.test('E4: marcación registrada', () => pm.expect(data.id).to.be.a('string'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "E4 — GraphQL registrarMarcacion OVERTIME EXIT",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessTokenOperator}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation RegistrarMarcacion($input: RegistrarMarcacionInput!) { registrarMarcacion(input: $input) { id status timestamp workDate } }\",\n  \"variables\": {\n    \"input\": {\n      \"locationId\": \"{{attendanceLocationId}}\",\n      \"eventType\": \"EXIT\",\n      \"markingScope\": \"OVERTIME\",\n      \"clientLatitude\": {{mobileClientLatitude}},\n      \"clientLongitude\": {{mobileClientLongitude}},\n      \"notes\": \"CONN-11 OVERTIME EXIT Postman\"\n    }\n  }\n}"
+            },
+            "url": "{{graphqlUrl}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('E4 OVERTIME exit: GraphQL 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "E4 — GET card (overtimeMinutes > 0)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/employees/{{attendanceUserId}}/card?dateFrom={{conn11WorkDate}}&dateTo={{conn11WorkDate}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "employees", "{{attendanceUserId}}", "card"],
+              "query": [
+                {
+                  "key": "dateFrom",
+                  "value": "{{conn11WorkDate}}"
+                },
+                {
+                  "key": "dateTo",
+                  "value": "{{conn11WorkDate}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const day = (pm.response.json().daySummaries || [])[0];",
+                  "if (day) pm.test('E4: overtimeMinutes > 0 tras par OVERTIME', () => pm.expect(day.overtimeMinutes).to.be.above(0));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "E5/E6 — GET overtime-requests inbox (CONN-04a)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenNomina}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/overtime-requests?payrollPeriod={{overtimePayrollPeriod}}&take=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "overtime-requests"],
+              "query": [
+                {
+                  "key": "payrollPeriod",
+                  "value": "{{overtimePayrollPeriod}}"
+                },
+                {
+                  "key": "take",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Si acumulado OVERTIME del período > 30 min → solicitud PENDIENTE_ADMIN. Aprobación cascada en carpeta CONN-04a."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('inbox: status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "if (body.items?.length) pm.collectionVariables.set('overtimeRequestId', body.items[0].id);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "CONN-04a Overtime Detection",
-      "description": "Detección automática de tiempo extra — bandeja, cascada de aprobación (3 niveles) y resumen por período.\n\nPrerrequisitos:\n1. Migración `overtime_requests` aplicada y `pnpm db:seed` (permiso `attendance.overtime.read`)\n2. Login **NOMINA** (`nomina@palos-de-lena.dev`) → `{{accessTokenNomina}}` (lectura histórica)\n3. Tokens de aprobadores con rol **MANAGER** y `EmployeeDetails.positionId`:\n   - Nivel 1 ADMINISTRADOR → `pos-pdl-001` + sede en `UserLocation` → `{{accessTokenManager}}`\n   - Nivel 2 GERENCIA OPERACIONES → `pos-pdl-003` → `{{accessTokenOvertimeOps}}`\n   - Nivel 3 GERENCIA GENERAL → `pos-pdl-007` → `{{accessTokenOvertimeGG}}`\n4. Headers: `Authorization: Bearer <token>`, `x-tenant-id: {{tenantId}}`\n5. Solicitud de prueba: registrar EXIT tardío (>30 min acumulados en `{{overtimePayrollPeriod}}`) vía asistencia, o fijar `{{overtimeRequestId}}` manualmente\n\nOrden feliz: Summary → Inbox (captura id) → Detail → Approve L1 → Approve L2 → Approve L3.\n\nFlujo objeción: usar POST Object en el nivel activo (comentario obligatorio). Tras OBJETADA no se crea nueva solicitud automática en el mismo período (D1b).",
+      "description": "Detección automática de tiempo extra — bandeja, cascada de aprobación (3 niveles) y resumen por período.\n\nPrerrequisitos:\n1. Migración `overtime_requests` aplicada y `pnpm db:seed` (permiso `attendance.overtime.read`)\n2. Login **NOMINA** (`nomina@palos-de-lena.dev`) → `{{accessTokenNomina}}` (lectura histórica)\n3. Tokens de aprobadores con rol **MANAGER** y `EmployeeDetails.positionId`:\n   - Nivel 1 ADMINISTRADOR → `pos-pdl-001` + sede en `UserLocation` → `{{accessTokenManager}}`\n   - Nivel 2 GERENCIA OPERACIONES → `pos-pdl-003` → `{{accessTokenOvertimeOps}}`\n   - Nivel 3 GERENCIA GENERAL → `pos-pdl-007` → `{{accessTokenOvertimeGG}}`\n4. Headers: `Authorization: Bearer <token>`, `x-tenant-id: {{tenantId}}`\n5. Solicitud de prueba: registrar par **OVERTIME** post-corte (>30 min acumulados en `{{overtimePayrollPeriod}}`) vía carpeta **CONN-11**, o fijar `{{overtimeRequestId}}` manualmente\n\nOrden feliz: Summary → Inbox (captura id) → Detail → Approve L1 → Approve L2 → Approve L3.\n\nFlujo objeción: usar POST Object en el nivel activo (comentario obligatorio). Tras OBJETADA no se crea nueva solicitud automática en el mismo período (D1b).",
       "item": [
         {
           "name": "Login mes-manager (plantilla L1)",
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\"query\": \"mutation Login($input: GlobalLoginInput!) { login(input: $input) { accessToken refreshToken } }\", \"variables\": {\"input\": {\"email\": \"mes-manager@palos-de-lena.dev\", \"password\": \"{{password}}\"}}}"
             },
             "url": "{{graphqlUrl}}",
-            "auth": { "type": "noauth" }
+            "auth": {
+              "type": "noauth"
+            }
           },
           "event": [
             {
@@ -17427,8 +18287,14 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessTokenNomina}}" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenNomina}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "url": "{{baseUrl}}/api/attendance/overtime-requests/summary?payrollPeriod={{overtimePayrollPeriod}}"
           },
@@ -17450,8 +18316,14 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessTokenNomina}}" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenNomina}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "url": "{{baseUrl}}/api/attendance/overtime-requests?payrollPeriod={{overtimePayrollPeriod}}&take=20"
           },
@@ -17474,8 +18346,14 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessTokenNomina}}" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenNomina}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "url": "{{baseUrl}}/api/attendance/overtime-requests/{{overtimeRequestId}}"
           },
@@ -17497,9 +18375,18 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessTokenManager}}" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenManager}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -17525,9 +18412,18 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessTokenOvertimeOps}}" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenOvertimeOps}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -17553,9 +18449,18 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessTokenOvertimeGG}}" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenOvertimeGG}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -17581,9 +18486,18 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessTokenManager}}" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenManager}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -17609,9 +18523,18 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessTokenOvertimeOps}}" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenOvertimeOps}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -17637,9 +18560,18 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessTokenOvertimeGG}}" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenOvertimeGG}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",

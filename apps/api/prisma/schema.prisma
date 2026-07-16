@@ -735,6 +735,7 @@ model Location {
   supplierLogisticsCoverage SupplierLogisticsCoverage[]
   turnos                    Turno[]
   overtimeRequests          OvertimeRequest[]
+  jornadaCutoffs            JornadaCutoff[]
 
   @@unique([tenantId, name])
   @@unique([tenantId, code])
@@ -818,6 +819,7 @@ model EmployeeDetails {
   cesantiasLiquidations    CesantiasLiquidation[]
   payrollNovedades         PayrollNovedad[]
   overtimeRequests         OvertimeRequest[]
+  jornadaCutoffs           JornadaCutoff[]
   dataConsents             DataConsent[]
   employmentContracts      EmploymentContract[]
   primaLiquidations        PrimaLiquidation[]
@@ -2069,6 +2071,18 @@ enum AttendanceLogSource {
   DEVICE // @deprecated legacy — usar APP_MOVIL
   APP_MOVIL
   MANUAL
+  SYSTEM // CONN-11 — EXIT de corte automático de jornada
+}
+
+// CONN-11 — alcance de la marcación dentro de la jornada.
+enum AttendanceMarkingScope {
+  ORDINARY // jornada planificada (default)
+  OVERTIME // tiempo adicional post-corte — requiere aprobación CONN-04a/04b
+}
+
+enum JornadaCutoffType {
+  AUTOMATIC // job al shiftEndTime
+  MANUAL // corrección supervisor (fuera de alcance MVP)
 }
 
 // Estado de validación geo/facial (principalmente source=APP_MOVIL).
@@ -2095,7 +2109,8 @@ model AttendanceLog {
   createdAt  DateTime            @default(now())
   updatedAt  DateTime            @updatedAt
 
-  source            AttendanceLogSource @default(DEVICE)
+  source            AttendanceLogSource    @default(DEVICE)
+  markingScope      AttendanceMarkingScope @default(ORDINARY)
   createdByUserId   String?
   manualReason      String?
   manualParentLogId String?
@@ -2123,11 +2138,35 @@ model AttendanceLog {
   medicalLeaveFromSource   MedicalLeave?   @relation("MedicalLeaveSourceAttendanceLog")
 
   @@index([tenantId, employeeId, workDate])
+  @@index([tenantId, employeeId, workDate, markingScope])
   @@index([tenantId, locationId, workDate])
   @@index([tenantId, workDate])
   @@index([tenantId, validationStatus])
   @@index([manualParentLogId])
   @@map("attendance_logs")
+}
+
+// CONN-11 — corte automático de jornada ordinaria al shiftEndTime.
+model JornadaCutoff {
+  id           String            @id @default(cuid())
+  tenantId     String
+  employeeId   String
+  locationId   String
+  workDate     DateTime          @db.Date
+  shiftEndTime DateTime
+  cutoffAt     DateTime
+  cutoffType   JornadaCutoffType @default(AUTOMATIC)
+  entryLogId   String?
+  exitLogId    String?
+  createdAt    DateTime          @default(now())
+
+  employee EmployeeDetails @relation(fields: [employeeId], references: [id])
+  location Location        @relation(fields: [locationId], references: [id])
+
+  @@unique([tenantId, employeeId, workDate])
+  @@index([tenantId, workDate])
+  @@index([tenantId, locationId, workDate])
+  @@map("jornada_cutoffs")
 }
 
 // OS-551 — una observación por empleado + fecha de jornada, persistida y auditada
