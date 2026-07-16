@@ -192,7 +192,8 @@ export interface PayrollEmployeeFormValues {
   documentType: DocumentType;
   email: string;
   locationId: string;
-  nombres: string;
+  primerNombre: string;
+  segundoNombre: string;
   primerApellido: string;
   segundoApellido: string;
   positionId: string;
@@ -210,6 +211,8 @@ export interface PayrollEmployeeFormValues {
   arlName: string;
   arlRiskLevel: ArlRiskLevel;
   cajaCompensacion: string;
+  departamento: string;
+  ciudad: string;
   barrio: string;
   localidad: string;
   costCenter: CostCenter;

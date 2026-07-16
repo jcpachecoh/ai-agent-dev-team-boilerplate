@@ -208,6 +208,13 @@
   gap: 0.3rem;
 }
 
+// El Combobox limita su ancho a 320px por defecto; en formularios debe ocupar
+// la columna completa como el resto de los controles.
+.combobox {
+  width: 100%;
+  --control-width: 100%;
+}
+
 .fieldLabel {
   font-size: t.$font-size-xs;
   color: var(--color-text-secondary);

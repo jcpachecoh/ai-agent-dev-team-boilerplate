@@ -4,7 +4,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 import {
   PAYROLL_EMPLOYEE_CREATE_WIZARD_STEPS,
-  payrollEmployeeCreateWizardStepIndex,
   type PayrollEmployeeCreateWizardStepId,
 } from '../constants/payroll-employee-create-wizard';
 import { useEmployeeBankAccountsQuery } from '../hooks/useEmployeeBankAccountsQuery';
@@ -15,7 +14,6 @@ import type {
   PayrollEmployeeCreateBankDraft,
   PayrollEmployeeCreateWizardPayload,
 } from '../types/payroll-employee-create-wizard.types';
-import type { EmployeeAssetDraft } from '../types/employee-asset.types';
 import {
   resolveBankDraftPayload,
   validatePayrollEmployeeBankStep,
@@ -30,7 +28,6 @@ import {
 import { EmployeePhotoUploader } from './EmployeePhotoUploader';
 import { PAYROLL_EMPLOYEE_FORM_EMPTY_VALUES, PayrollEmployeeForm } from './PayrollEmployeeForm';
 import { PayrollEmployeeDocumentsTab } from './PayrollEmployeeDocumentsTab';
-import { PayrollEmployeeWizardAssetsStep } from './PayrollEmployeeWizardAssetsStep';
 import { PayrollEmployeeWizardBankStep } from './PayrollEmployeeWizardBankStep';
 import styles from './PayrollEmployeeCreateWizard.module.scss';
 
@@ -84,7 +81,6 @@ export function PayrollEmployeeWizard({
     PAYROLL_EMPLOYEE_FORM_EMPTY_VALUES,
   );
   const [bankDraft, setBankDraft] = useState(EMPTY_BANK_DRAFT);
-  const [assetDrafts, setAssetDrafts] = useState<EmployeeAssetDraft[]>([]);
   const [bankErrors, setBankErrors] = useState<Partial<Record<string, string>>>({});
   const [error, setError] = useState<string | null>(null);
   const [localPhotoUrl, setLocalPhotoUrl] = useState<string | null>(null);
@@ -102,7 +98,6 @@ export function PayrollEmployeeWizard({
     setCurrentStep('personal');
     setMaxReachedStep(isEditMode ? 'documents' : 'personal');
     setBankDraft(EMPTY_BANK_DRAFT);
-    setAssetDrafts([]);
     setBankErrors({});
     setError(null);
     setLocalPhotoUrl(null);
@@ -211,7 +206,6 @@ export function PayrollEmployeeWizard({
       return null;
     }
 
-    // assets step is optional — no validation
     return null;
   };
 
@@ -290,11 +284,6 @@ export function PayrollEmployeeWizard({
       payload.bankAccount = bankAccountPayload;
     }
 
-    const validDrafts = assetDrafts.filter((d) => d.assetName.trim() && d.type && d.value.trim());
-    if (validDrafts.length > 0) {
-      payload.assetDrafts = validDrafts;
-    }
-
     onSubmit(payload);
   };
 
@@ -305,7 +294,9 @@ export function PayrollEmployeeWizard({
   const employeeWithPhoto: PayrollEmployee =
     localPhotoUrl && employee ? { ...employee, photoUrl: localPhotoUrl } : employee!;
 
-  const isLastStep = currentStep === 'documents';
+  // Basado en los pasos visibles: en modo creación "Documentos" se oculta,
+  // por lo que el último paso visible es el que muestra "Crear empleado".
+  const isLastStep = currentIndex === visibleSteps.length - 1;
   const isFirstStep = currentStep === 'personal';
   const saveLabel = isEditMode ? 'Guardar' : 'Crear empleado';
 
@@ -424,14 +415,6 @@ export function PayrollEmployeeWizard({
                   setBankErrors({});
                   setError(null);
                 }}
-              />
-            ) : null}
-
-            {currentStep === 'assets' ? (
-              <PayrollEmployeeWizardAssetsStep
-                theme={theme}
-                drafts={assetDrafts}
-                onChange={setAssetDrafts}
               />
             ) : null}
 

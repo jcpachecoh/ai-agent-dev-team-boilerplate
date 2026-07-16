@@ -23,8 +23,11 @@
   min-height: 32px;
   font-size: $font-size-xs;
 }
+// Alineado con los controles md de inventario/receta (44px) para que un Combobox
+// junto a un RecetaFilterSelect del mismo tamaño se vea idéntico.
 .size--md .trigger {
-  min-height: 40px;
+  min-height: 44px;
+  padding: $spacing-sm $spacing-md;
   font-size: $font-size-sm;
 }
 .size--xl .trigger {

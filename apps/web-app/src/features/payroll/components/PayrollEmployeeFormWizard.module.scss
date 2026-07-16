@@ -29,7 +29,8 @@
 }
 
 .input {
-  min-height: 40px;
+  // Misma altura que los selects md (RecetaFilterSelect/Combobox) para una grilla uniforme.
+  min-height: 44px;
   width: 100%;
   padding: 0.5rem 0.75rem;
   border: 1px solid var(--receta-border);
@@ -43,6 +44,13 @@
     outline: 2px solid rgba(46, 196, 160, 0.65);
     outline-offset: 2px;
   }
+}
+
+// El Combobox limita su ancho a 320px por defecto; dentro del formulario debe
+// ocupar la columna completa como el resto de los controles.
+.combobox {
+  width: 100%;
+  --control-width: 100%;
 }
 
 .fieldHint,
