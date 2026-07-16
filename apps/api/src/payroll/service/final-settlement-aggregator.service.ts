@@ -294,7 +294,7 @@ export class FinalSettlementAggregatorService {
 
     // ── 8. Vacaciones (días pendientes → valor monetario) ──────────────────
     let vacationsBalance: {
-      pendingDays: import('decimal.js').Decimal;
+      pendingDays: Prisma.Decimal;
     } | null = null;
     try {
       vacationsBalance = await this.vacationsService.calculateBalanceAsOf(
