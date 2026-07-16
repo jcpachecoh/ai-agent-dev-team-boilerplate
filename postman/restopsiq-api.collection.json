@@ -10190,6 +10190,342 @@
               }
             }
           ]
+        },
+        {
+          "name": "GET /api/reports/pila/:period/validation",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/pila/{{reportPeriod}}/validation",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "pila", "{{reportPeriod}}", "validation"]
+            },
+            "description": "OS-595: valida preparación PILA sin generar ni persistir archivo."
+          }
+        },
+        {
+          "name": "GET /api/reports/pila/:period/deadline",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/pila/{{reportPeriod}}/deadline",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "pila", "{{reportPeriod}}", "deadline"]
+            },
+            "description": "OS-595: fecha límite / alerta bajo demanda (NIT últimos 2 dígitos sin DV, días hábiles). No persiste."
+          }
+        },
+        {
+          "name": "POST /api/reports/pila/:period/generate (TXT)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201 || pm.response.code === 200) {",
+                  "  const j = pm.response.json();",
+                  "  if (j && j.id) { pm.collectionVariables.set('pilaExportId', j.id); }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/pila/{{reportPeriod}}/generate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "pila", "{{reportPeriod}}", "generate"]
+            },
+            "description": "OS-595: genera archivo plano TXT (Anexo 2 v29). Body format=TXT|XLSX. Default TXT.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"format\": \"TXT\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /api/reports/pila/:period/generate (XLSX)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201 || pm.response.code === 200) {",
+                  "  const j = pm.response.json();",
+                  "  if (j && j.id) { pm.collectionVariables.set('pilaExportId', j.id); }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/pila/{{reportPeriod}}/generate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "pila", "{{reportPeriod}}", "generate"]
+            },
+            "description": "OS-595: genera plantilla XLSX Aportes en Línea (aportes-en-linea-v1). No anula TXT activo.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"format\": \"XLSX\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /api/reports/pila/:period/generate — validation error",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/pila/2099-01/generate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "pila", "2099-01", "generate"]
+            },
+            "description": "OS-595: ejemplo de fallo de preparación (sin nómina / errores estructurados) → 400."
+          }
+        },
+        {
+          "name": "GET /api/reports/pila",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/pila?period={{reportPeriod}}&format=TXT",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "pila"],
+              "query": [
+                {
+                  "key": "period",
+                  "value": "{{reportPeriod}}"
+                },
+                {
+                  "key": "format",
+                  "value": "TXT",
+                  "description": "Opcional: TXT | XLSX"
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "OS-595: lista metadatos/versiones por período; filtro opcional format=TXT|XLSX (sin snapshotJson ni bytes)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('list: sin snapshotJson', () => {",
+                  "  const body = pm.response.json();",
+                  "  const rows = Array.isArray(body) ? body : [];",
+                  "  rows.forEach((row) => pm.expect(row).to.not.have.property('snapshotJson'));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/reports/pila?format=XLSX",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/pila?period={{reportPeriod}}&format=XLSX",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "pila"],
+              "query": [
+                {
+                  "key": "period",
+                  "value": "{{reportPeriod}}"
+                },
+                {
+                  "key": "format",
+                  "value": "XLSX"
+                }
+              ]
+            },
+            "description": "OS-595: listado filtrado solo XLSX del período."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('list: sin snapshotJson', () => {",
+                  "  const body = pm.response.json();",
+                  "  const rows = Array.isArray(body) ? body : [];",
+                  "  rows.forEach((row) => pm.expect(row).to.not.have.property('snapshotJson'));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/reports/pila/exports/:id/download",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/pila/exports/{{pilaExportId}}/download",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "pila", "exports", "{{pilaExportId}}", "download"]
+            },
+            "description": "OS-595: descarga binaria desde Storage (text/plain o XLSX según format del artefacto). Bytes exactos; no regenera."
+          }
+        },
+        {
+          "name": "PATCH /api/reports/pila/exports/:id/paid",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"planNumber\": \"PL-DEMO-001\",\n  \"paymentReference\": \"REF-001\",\n  \"paidAt\": \"2026-07-15T18:00:00.000Z\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/pila/exports/{{pilaExportId}}/paid",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "pila", "exports", "{{pilaExportId}}", "paid"]
+            },
+            "description": "OS-595: confirmación manual de pago (solo desde GENERATED)."
+          }
+        },
+        {
+          "name": "PATCH /api/reports/pila/exports/:id/void",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Corrección de datos del aportante\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/pila/exports/{{pilaExportId}}/void",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "pila", "exports", "{{pilaExportId}}", "void"]
+            },
+            "description": "OS-595: anula GENERATED o PAID con razón obligatoria."
+          }
         }
       ]
     },

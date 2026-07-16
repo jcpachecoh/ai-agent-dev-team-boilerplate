@@ -78,6 +78,8 @@ const baseItem = {
     businessHours: null,
     openingTime: null,
     closingTime: null,
+    departmentCode: null,
+    municipalityCode: null,
     isActive: true,
     createdAt: new Date(),
     updatedAt: new Date(),

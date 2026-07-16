@@ -27,6 +27,7 @@ import {
   mapPayrollKpiMetrics,
 } from '../utils/mapPayrollReportToNomina';
 import { downloadExportBlob } from '../utils/download-export-blob';
+import { PilaPeriodPanel } from '../components/PilaPeriodPanel';
 import styles from './PayrollReportsScreen.module.scss';
 
 const REPORT_ITEMS: NominaReportDefinition[] = [
@@ -254,68 +255,71 @@ export function PayrollReportsScreen(): React.JSX.Element {
   }
 
   return (
-    <NominaDashboardPreview
-      theme={nominaTheme}
-      className={styles.dashboard}
-      showPeriodToggle={false}
-      metrics={metrics}
-      closingBadgeLabel={closingBadgeLabel}
-      chartTitle={chart.title}
-      chartData={chart.data}
-      chartXDataKey={chart.xDataKey}
-      chartSeries={chart.series}
-      chartLegend={chart.legend}
-      chartValueType={chart.valueType}
-      locationRows={locationRows}
-      legalAlertsEmptyTitle={
-        legalAlertCount === 0 ? 'Sin alertas activas' : `${legalAlertCount} alertas detectadas`
-      }
-      legalAlertsEmptyDescription={
-        legalAlertCount === 0
-          ? 'Todos los contratos y marcaciones cumplen con la normativa vigente.'
-          : 'Hay empleados que superan los límites legales de horas extras en el periodo.'
-      }
-      legalAlertsItems={legalAlertItems}
-      reports={REPORT_ITEMS}
-      onReportDownload={(item) => void handleReportDownload(item)}
-      filtersBar={
-        <div className={[styles.filtersBar, styles[`theme--${nominaTheme}`]].join(' ')}>
-          <div className={styles.filterField}>
-            <span className={styles.filterLabel}>Desde</span>
-            <div className={styles.dateInputWrap}>
-              <input
-                className={styles.filterInput}
-                type="date"
-                value={dateFrom}
-                onChange={(event) => handleDateFromChange(event.target.value)}
+    <div className={styles.reportsLayout}>
+      <NominaDashboardPreview
+        theme={nominaTheme}
+        className={styles.dashboard}
+        showPeriodToggle={false}
+        metrics={metrics}
+        closingBadgeLabel={closingBadgeLabel}
+        chartTitle={chart.title}
+        chartData={chart.data}
+        chartXDataKey={chart.xDataKey}
+        chartSeries={chart.series}
+        chartLegend={chart.legend}
+        chartValueType={chart.valueType}
+        locationRows={locationRows}
+        legalAlertsEmptyTitle={
+          legalAlertCount === 0 ? 'Sin alertas activas' : `${legalAlertCount} alertas detectadas`
+        }
+        legalAlertsEmptyDescription={
+          legalAlertCount === 0
+            ? 'Todos los contratos y marcaciones cumplen con la normativa vigente.'
+            : 'Hay empleados que superan los límites legales de horas extras en el periodo.'
+        }
+        legalAlertsItems={legalAlertItems}
+        reports={REPORT_ITEMS}
+        onReportDownload={(item) => void handleReportDownload(item)}
+        filtersBar={
+          <div className={[styles.filtersBar, styles[`theme--${nominaTheme}`]].join(' ')}>
+            <div className={styles.filterField}>
+              <span className={styles.filterLabel}>Desde</span>
+              <div className={styles.dateInputWrap}>
+                <input
+                  className={styles.filterInput}
+                  type="date"
+                  value={dateFrom}
+                  onChange={(event) => handleDateFromChange(event.target.value)}
+                />
+                <Calendar className={styles.calendarIcon} aria-hidden strokeWidth={1.75} />
+              </div>
+            </div>
+            <div className={styles.filterField}>
+              <span className={styles.filterLabel}>Hasta</span>
+              <div className={styles.dateInputWrap}>
+                <input
+                  className={styles.filterInput}
+                  type="date"
+                  value={dateTo}
+                  onChange={(event) => handleDateToChange(event.target.value)}
+                />
+                <Calendar className={styles.calendarIcon} aria-hidden strokeWidth={1.75} />
+              </div>
+            </div>
+            <div className={styles.filterField}>
+              <span className={styles.filterLabel}>Sede</span>
+              <RecetaFilterSelect
+                theme={nominaTheme}
+                size="md"
+                value={locationId}
+                options={[{ value: '', label: 'Todas las sedes' }, ...locationOptions]}
+                onChange={setLocationId}
               />
-              <Calendar className={styles.calendarIcon} aria-hidden strokeWidth={1.75} />
             </div>
           </div>
-          <div className={styles.filterField}>
-            <span className={styles.filterLabel}>Hasta</span>
-            <div className={styles.dateInputWrap}>
-              <input
-                className={styles.filterInput}
-                type="date"
-                value={dateTo}
-                onChange={(event) => handleDateToChange(event.target.value)}
-              />
-              <Calendar className={styles.calendarIcon} aria-hidden strokeWidth={1.75} />
-            </div>
-          </div>
-          <div className={styles.filterField}>
-            <span className={styles.filterLabel}>Sede</span>
-            <RecetaFilterSelect
-              theme={nominaTheme}
-              size="md"
-              value={locationId}
-              options={[{ value: '', label: 'Todas las sedes' }, ...locationOptions]}
-              onChange={setLocationId}
-            />
-          </div>
-        </div>
-      }
-    />
+        }
+      />
+      <PilaPeriodPanel period={payrollPeriod} />
+    </div>
   );
 }

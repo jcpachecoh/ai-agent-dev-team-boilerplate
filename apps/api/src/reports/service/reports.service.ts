@@ -358,6 +358,7 @@ function mapToPayrollEmployeeRow(
     workedDays: calc.workedDays,
     calendarDays: calc.calendarDays,
     salaryBase: calc.salaryBase,
+    contributionBase: calc.contributionBase,
     transportSubsidy: calc.transportSubsidy,
     overtimePay: calc.overtimePay,
     overtimeBreakdown: calc.overtimeBreakdown,

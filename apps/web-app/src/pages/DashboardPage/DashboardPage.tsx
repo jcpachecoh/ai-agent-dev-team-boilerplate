@@ -1,10 +1,14 @@
 import { Activity } from 'lucide-react';
 
 import { CesantiasAlertBanner } from '@/features/payroll/components/CesantiasAlertBanner';
+import { PilaDeadlineAlertBanner } from '@/features/payroll/components/PilaDeadlineAlertBanner';
+import { getCurrentPayrollPeriod } from '@/features/payroll/utils/mapPayrollReportToNomina';
 
 import styles from './DashboardPage.module.scss';
 
 export default function DashboardPage(): React.JSX.Element {
+  const currentPilaPeriod = getCurrentPayrollPeriod();
+
   return (
     <section className={styles.page}>
       {/* OS-588 (fase 4) — se oculta sola cuando no hay liquidaciones de cesantías
@@ -12,6 +16,8 @@ export default function DashboardPage(): React.JSX.Element {
           módulo (DASHBOARD), por eso el mismo banner también se muestra en
           /payroll/cesantias. */}
       <CesantiasAlertBanner className={styles.alertBanner} />
+      {/* OS-595 — alerta vencimiento PILA del período corriente; oculta si PAID / NOT_DUE. */}
+      <PilaDeadlineAlertBanner period={currentPilaPeriod} className={styles.alertBanner} />
 
       <div className={styles.heroIcon} aria-hidden>
         <Activity size={48} />

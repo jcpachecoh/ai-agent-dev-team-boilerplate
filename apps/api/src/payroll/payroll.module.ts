@@ -57,6 +57,8 @@ import { PendingSalaryReconciliationService } from './service/pending-salary-rec
 import { PendingSalaryService } from './service/pending-salary.service';
 import { PrimaCalculationService } from './service/prima-calculation.service';
 import { PrimaService } from './service/prima.service';
+import { TenantPilaConfigRepository } from './repository/tenant-pila-config.repository';
+import { TenantPilaConfigService } from './service/tenant-pila-config.service';
 import { VariableAverageService } from './service/variable-average.service';
 
 @Module({
@@ -87,6 +89,8 @@ import { VariableAverageService } from './service/variable-average.service';
     PayrollRepository,
     EmployeeCatalogService,
     EmployeeCatalogRepository,
+    TenantPilaConfigService,
+    TenantPilaConfigRepository,
     EmployeePositionsService,
     EmployeePositionsRepository,
     EmployeeAssetsService,
@@ -129,6 +133,7 @@ import { VariableAverageService } from './service/variable-average.service';
     PayrollRepository,
     PayrollCalculationService,
     EmployeeCatalogService,
+    TenantPilaConfigService,
     EmployeePositionsService,
     EmployeeAssetsService,
     EmployeeDocumentsService,

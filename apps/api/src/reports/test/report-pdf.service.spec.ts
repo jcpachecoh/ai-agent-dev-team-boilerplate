@@ -23,6 +23,7 @@ function makeEmployee(
     workedDays: 30,
     calendarDays: 30,
     salaryBase: 1800000,
+    contributionBase: 1800000,
     transportSubsidy: 162000,
     overtimePay: 0,
     overtimeBreakdown: [],

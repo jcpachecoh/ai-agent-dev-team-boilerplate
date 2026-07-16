@@ -1,22 +1,28 @@
-import { EmployeeCatalogType, PrismaClient } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 
 /** Delegate shape for EmployeeCatalogOption — stable for seed scripts. */
 interface EmployeeCatalogOptionDelegate {
   upsert(args: {
     where: { id: string };
-    update: { name: string; isActive: boolean; type: EmployeeCatalogType };
+    update: {
+      name: string;
+      isActive: boolean;
+      type: import('@prisma/client').EmployeeCatalogType;
+      pilaCode?: string | null;
+    };
     create: {
       id: string;
       tenantId: string;
-      type: EmployeeCatalogType;
+      type: import('@prisma/client').EmployeeCatalogType;
       name: string;
+      pilaCode: string | null;
       isActive: boolean;
     };
   }): Promise<unknown>;
   updateMany(args: {
     where: {
       tenantId: string;
-      type: { in: EmployeeCatalogType[] };
+      type: { in: import('@prisma/client').EmployeeCatalogType[] };
       id: { notIn: string[] };
       isActive: boolean;
     };

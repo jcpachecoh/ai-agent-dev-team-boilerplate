@@ -1,0 +1,42 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border: 1px solid transparent;
+}
+
+.pending {
+  color: #d1d5db;
+  background: rgb(148 163 184 / 12%);
+  border-color: rgb(148 163 184 / 35%);
+}
+
+.failed {
+  color: #fdba74;
+  background: rgb(249 115 22 / 12%);
+  border-color: rgb(249 115 22 / 35%);
+}
+
+.generated {
+  color: #93c5fd;
+  background: rgb(59 130 246 / 12%);
+  border-color: rgb(59 130 246 / 35%);
+}
+
+.paid {
+  color: #86efac;
+  background: rgb(34 197 94 / 12%);
+  border-color: rgb(34 197 94 / 35%);
+}
+
+.voided {
+  color: #fca5a5;
+  background: rgb(239 68 68 / 12%);
+  border-color: rgb(239 68 68 / 35%);
+}

@@ -38,6 +38,7 @@ export class EmployeeCatalogController {
       id: option.id,
       type: option.type,
       name: option.name,
+      pilaCode: option.pilaCode,
     }));
   }
 }

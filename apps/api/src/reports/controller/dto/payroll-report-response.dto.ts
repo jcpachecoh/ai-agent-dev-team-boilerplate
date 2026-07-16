@@ -33,6 +33,8 @@ export class PayrollEmployeeRowDto {
   @ApiProperty() workedDays!: number;
   @ApiProperty() calendarDays!: number;
   @ApiProperty() salaryBase!: number;
+  /** IBC COP calculado por OS-380 — no recalcular en consumidores (PILA). */
+  @ApiProperty() contributionBase!: number;
   @ApiProperty() transportSubsidy!: number;
   @ApiProperty() overtimePay!: number;
   @ApiProperty({ type: [OvertimeBreakdownItemDto] }) overtimeBreakdown!: OvertimeBreakdownItemDto[];

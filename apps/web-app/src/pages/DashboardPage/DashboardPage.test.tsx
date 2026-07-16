@@ -20,6 +20,25 @@ vi.mock('@/features/payroll/api/cesantias.client', async (importOriginal) => {
   };
 });
 
+vi.mock('@/features/payroll/api/pila.client', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/features/payroll/api/pila.client')>();
+  return {
+    ...actual,
+    getPilaDeadline: () =>
+      Promise.resolve({
+        period: '2026-07',
+        paymentMonth: '2026-08',
+        dueDate: '2026-08-04',
+        businessDayNumber: 2,
+        lastTwoNitDigits: '00',
+        daysRemaining: 30,
+        status: 'NOT_DUE' as const,
+        shouldAlert: false,
+        timezone: 'America/Bogota',
+      }),
+  };
+});
+
 describe('DashboardPage', () => {
   it('renders dashboard hero and KPI cards', () => {
     render(

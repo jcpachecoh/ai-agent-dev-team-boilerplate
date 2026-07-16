@@ -208,6 +208,7 @@ export class PayrollCalculationService {
       workedDays,
       calendarDays,
       salaryBase,
+      contributionBase,
       transportSubsidy,
       overtimePay,
       overtimeBreakdown,

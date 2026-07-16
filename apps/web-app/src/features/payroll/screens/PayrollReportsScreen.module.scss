@@ -2,6 +2,13 @@
   min-height: 100%;
 }
 
+.reportsLayout {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-height: 100%;
+}
+
 .filtersBar {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(160px, 100%), 1fr));

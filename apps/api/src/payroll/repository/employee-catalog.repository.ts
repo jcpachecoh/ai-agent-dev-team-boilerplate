@@ -26,6 +26,30 @@ export class EmployeeCatalogRepository implements IEmployeeCatalogRepository {
         tenantId: true,
         type: true,
         name: true,
+        pilaCode: true,
+        isActive: true,
+      },
+    });
+  }
+
+  async findActiveByTypeAndPilaCode(
+    tenantId: string,
+    type: EmployeeCatalogType,
+    pilaCode: string,
+  ): Promise<EmployeeCatalogOptionRecord | null> {
+    return this.prisma.employeeCatalogOption.findFirst({
+      where: {
+        tenantId,
+        type,
+        pilaCode,
+        isActive: true,
+      },
+      select: {
+        id: true,
+        tenantId: true,
+        type: true,
+        name: true,
+        pilaCode: true,
         isActive: true,
       },
     });

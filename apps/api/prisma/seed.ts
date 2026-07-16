@@ -1029,6 +1029,9 @@ async function seedLocations() {
         address,
         city,
         phone,
+        // DIVIPOLA Bogotá D.C. — sede laboral (OS-595). No usar residencia del empleado.
+        departmentCode: '11',
+        municipalityCode: '001',
         isActive: true,
         businessHours: DEFAULT_BUSINESS_HOURS,
         openingTime: '08:00',
@@ -1042,6 +1045,8 @@ async function seedLocations() {
         address,
         city,
         phone,
+        departmentCode: '11',
+        municipalityCode: '001',
         isActive: true,
         businessHours: DEFAULT_BUSINESS_HOURS,
         openingTime: '08:00',
@@ -2030,7 +2035,9 @@ async function main() {
       name: 'Palos de Leña',
       legalName: 'Palos de Leña S.A.S.',
       tradeName: 'Palos de Leña',
-      nit: '900000000-1',
+      nit: '900000000',
+      // DV DIAN coherente con NIT 900000000 (módulo 11) — ver computeDianVerificationDigit.
+      verificationDigit: '5',
       legalRepresentativeName: 'Representante Legal Palos de Leña',
       legalRepresentativeDocumentType: DocumentType.CC,
       legalRepresentativeDocumentNumber: '1000000000',
@@ -2048,7 +2055,8 @@ async function main() {
       name: 'Palos de Leña',
       legalName: 'Palos de Leña S.A.S.',
       tradeName: 'Palos de Leña',
-      nit: '900000000-1',
+      nit: '900000000',
+      verificationDigit: '5',
       legalRepresentativeName: 'Representante Legal Palos de Leña',
       legalRepresentativeDocumentType: DocumentType.CC,
       legalRepresentativeDocumentNumber: '1000000000',
@@ -2751,6 +2759,8 @@ async function main() {
   // ── NOM-01: Seed EmployeeDetails ─────────────────────────────────────────
   const { seedEmployeeCatalogOptions } = await import('./seeds/employee-catalog.seed');
   await seedEmployeeCatalogOptions(prisma, OPERATIONAL_TENANT_ID);
+  const { seedTenantPilaConfig } = await import('./seeds/tenant-pila-config.seed');
+  await seedTenantPilaConfig(prisma, OPERATIONAL_TENANT_ID);
   await seedEmployeePositions(OPERATIONAL_TENANT_ID);
   const { seedEmployeeOrgChart } = await import('./seeds/employee-org-chart.seed');
   await seedEmployeeOrgChart(prisma);

@@ -81,4 +81,8 @@ export const payrollKeys = {
   legalFormulaValidations: () => [...payrollKeys.all, 'legal-formula-validations'] as const,
   legalFormulaValidationActive: (formulaVersion: number) =>
     [...payrollKeys.legalFormulaValidations(), 'active', formulaVersion] as const,
+  pila: () => [...payrollKeys.all, 'pila'] as const,
+  pilaList: (period: string) => [...payrollKeys.pila(), 'list', period] as const,
+  pilaValidation: (period: string) => [...payrollKeys.pila(), 'validation', period] as const,
+  pilaDeadline: (period: string) => [...payrollKeys.pila(), 'deadline', period] as const,
 };

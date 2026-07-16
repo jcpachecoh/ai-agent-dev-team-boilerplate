@@ -123,6 +123,12 @@ export interface EmployeePayrollPeriod {
   // ── Devengos ───────────────────────────────────────────────────────────────
   /** Salary prorated to workedDays/calendarDays (COP) */
   salaryBase: number;
+  /**
+   * Ingreso base de cotización (COP) ya calculado por el motor OS-380.
+   * ORDINARIO = salaryBase; INTEGRAL = 70% de salaryBase (CST art. 132).
+   * Consumidores externos (p. ej. PILA) deben usar este valor; no recalcular.
+   */
+  contributionBase: number;
   /** Transport subsidy prorated to workedDays/calendarDays; 0 if not applicable (COP) */
   transportSubsidy: number;
   /** Sum of all overtime surcharge amounts (COP) */

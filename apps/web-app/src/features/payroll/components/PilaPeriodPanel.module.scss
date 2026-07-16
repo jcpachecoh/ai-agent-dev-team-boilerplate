@@ -1,0 +1,19 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 20px;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid rgb(148 163 184 / 20%);
+}
+
+.theme--light {
+  color: #0f172a;
+  background: #f8fafc;
+}
+
+.theme--dark {
+  color: #e2e8f0;
+  background: rgb(15 23 42 / 55%);
+}

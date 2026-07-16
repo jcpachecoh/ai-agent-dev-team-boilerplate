@@ -41,6 +41,7 @@ function makeEmployee(overrides: Partial<PayrollEmployeeRowDto> = {}): PayrollEm
     workedDays: 30,
     calendarDays: 30,
     salaryBase: 1_500_000,
+    contributionBase: 1_500_000,
     transportSubsidy: 162_000,
     overtimePay: 75_000,
     overtimeBreakdown: [],
