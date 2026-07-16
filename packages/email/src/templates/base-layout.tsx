@@ -45,7 +45,9 @@ export function BaseLayout({
           </Section>
 
           {/* Content — provided by each template */}
-          <Section style={contentStyle}>{children}</Section>
+          <Section style={contentStyle}>
+            <>{children}</>
+          </Section>
 
           <Hr style={hrStyle} />
 
