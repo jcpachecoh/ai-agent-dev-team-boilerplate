@@ -175,7 +175,7 @@ export class PayrollRepository implements IPayrollRepository {
 
   async findAll(
     filters: ListEmployeesFilters,
-  ): Promise<(EmployeeDetails & { user: User; location?: { id: string; name: string } })[]> {
+  ): Promise<(EmployeeDetails & { user: User; location?: { id: string; name: string } | null })[]> {
     return this.prisma.employeeDetails.findMany({
       where: this.buildListWhere(filters),
       include: {
@@ -205,7 +205,9 @@ export class PayrollRepository implements IPayrollRepository {
 
   async findById(
     id: string,
-  ): Promise<(EmployeeDetails & { user: User; location?: { id: string; name: string } }) | null> {
+  ): Promise<
+    (EmployeeDetails & { user: User; location?: { id: string; name: string } | null }) | null
+  > {
     return this.prisma.employeeDetails.findUnique({
       where: { id },
       include: {
@@ -232,7 +234,7 @@ export class PayrollRepository implements IPayrollRepository {
   async update(
     userId: string,
     payload: UpdateEmployeePayload,
-  ): Promise<EmployeeDetails & { user: User; location?: { id: string; name: string } }> {
+  ): Promise<EmployeeDetails & { user: User; location?: { id: string; name: string } | null }> {
     const employeeData = this.normalizeEmployeeUpdate(payload.employee);
 
     return this.prisma.$transaction(async (tx) => {

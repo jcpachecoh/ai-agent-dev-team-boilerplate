@@ -59,7 +59,8 @@ export interface EligibleEmployee {
   name: string;
   salaryAmount: Decimal;
   hireDate: Date;
-  locationId: string;
+  /** null para empleados con costCenter = ROTANTE (CONN-06) — sin sede fija en ficha. */
+  locationId: string | null;
 }
 
 export interface CreateDotacionForEmployeeData {

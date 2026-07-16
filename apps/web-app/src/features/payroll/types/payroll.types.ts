@@ -6,7 +6,13 @@ export type ArlRiskLevel = 'RIESGO_I' | 'RIESGO_II' | 'RIESGO_III' | 'RIESGO_IV'
 
 export type DocumentType = 'CC' | 'CE' | 'NIT' | 'PASSPORT';
 
-export type CostCenter = 'ADMINISTRATIVO' | 'OPERACIONES' | 'PLANTA' | 'GERENCIA' | 'INCAPACIDADES';
+export type CostCenter =
+  | 'ADMINISTRATIVO'
+  | 'OPERACIONES'
+  | 'PLANTA'
+  | 'GERENCIA'
+  | 'INCAPACIDADES'
+  | 'ROTANTE';
 
 export type LaborClassification = 'COCINA' | 'SERVICIO' | 'ADMINISTRATIVO';
 
@@ -55,7 +61,8 @@ export interface PayrollEmployee {
   userId: string;
   tenantId: string;
   name: string;
-  locationId: string;
+  /** null cuando costCenter = ROTANTE (CONN-06) — sede diaria resuelta por turno/marcación. */
+  locationId: string | null;
   positionId?: string | null;
   position: string;
   area: string;
@@ -124,7 +131,8 @@ export interface CreatePayrollEmployeeInput {
   documentType: DocumentType;
   email: string;
   roleId?: string;
-  locationId: string;
+  /** Omitido/null cuando costCenter = ROTANTE (OS-531/CONN-06). */
+  locationId?: string;
   name: string;
   positionId?: string;
   position?: string;
@@ -160,9 +168,11 @@ export interface CreatePayrollEmployeeInput {
   }>;
 }
 
-export type UpdatePayrollEmployeeInput = Partial<CreatePayrollEmployeeInput> & {
+export type UpdatePayrollEmployeeInput = Partial<Omit<CreatePayrollEmployeeInput, 'locationId'>> & {
   isActive?: boolean;
   photoStorageObjectId?: string | null;
+  /** null explícito limpia la sede fija — requerido al cambiar costCenter a ROTANTE. */
+  locationId?: string | null;
 };
 
 export interface PayrollEmployeeFormValues {

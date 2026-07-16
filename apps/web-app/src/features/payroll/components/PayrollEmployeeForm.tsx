@@ -118,7 +118,7 @@ function employeeToFormValues(employee: PayrollEmployee): PayrollEmployeeFormVal
     cedula: employee.user?.cedula ?? '',
     documentType: (employee.user?.documentType as DocumentType) ?? 'CC',
     email: employee.user?.email ?? '',
-    locationId: employee.locationId,
+    locationId: employee.locationId ?? '',
     nombres: nameParts.nombres,
     primerApellido: nameParts.primerApellido,
     segundoApellido: nameParts.segundoApellido,
@@ -194,6 +194,7 @@ const COST_CENTER_OPTIONS: Array<{ value: CostCenter; label: string }> = [
   { value: 'PLANTA', label: 'Planta' },
   { value: 'GERENCIA', label: 'Gerencia' },
   { value: 'INCAPACIDADES', label: 'Incapacidades' },
+  { value: 'ROTANTE', label: 'Rotante' },
 ];
 
 const LABOR_CLASSIFICATION_OPTIONS: Array<{ value: LaborClassification; label: string }> = [
@@ -409,13 +410,14 @@ export function PayrollEmployeeForm({
       return;
     }
 
-    if (!values.locationId.trim()) {
-      setError('El área (sede) es obligatoria.');
+    if (!values.costCenter) {
+      setError('Centro de Costos es obligatorio.');
       return;
     }
 
-    if (!values.costCenter) {
-      setError('Centro de Costos es obligatorio.');
+    // Rotante no tiene sede fija — la sede diaria se resuelve por turno/marcación (CONN-06).
+    if (values.costCenter !== 'ROTANTE' && !values.locationId.trim()) {
+      setError('El área (sede) es obligatoria.');
       return;
     }
 
@@ -473,6 +475,8 @@ export function PayrollEmployeeForm({
     onSubmit({
       ...values,
       area: areaFromPosition,
+      // Rotante nunca envía sede fija, incluso si quedó un valor residual (CONN-06).
+      locationId: values.costCenter === 'ROTANTE' ? '' : values.locationId,
     });
   };
   const catalogsLoading = catalogsQuery.isLoading;
@@ -589,27 +593,44 @@ export function PayrollEmployeeForm({
                   aria-label="Centro de Costos"
                   options={COST_CENTER_OPTIONS}
                   value={values.costCenter}
-                  onChange={(value) => update({ costCenter: value as CostCenter })}
+                  onChange={(value) =>
+                    update({
+                      costCenter: value as CostCenter,
+                      // OS-531/CONN-06: Rotante no tiene sede fija — se limpia al seleccionarlo.
+                      locationId: value === 'ROTANTE' ? '' : values.locationId,
+                    })
+                  }
                   theme={theme}
                   size="md"
                 />
               </div>
               <div className={formStyles.field}>
-                <span className={formStyles.fieldLabel}>Áreas *</span>
+                <span className={formStyles.fieldLabel}>
+                  Áreas {values.costCenter === 'ROTANTE' ? '' : '*'}
+                </span>
                 <RecetaFilterSelect
                   aria-label="Áreas"
                   options={locationSelectOptions}
                   value={values.locationId}
-                  disabled={locationsQuery.isLoading && !locations}
+                  disabled={
+                    values.costCenter === 'ROTANTE' || (locationsQuery.isLoading && !locations)
+                  }
                   placeholder={
-                    locationsQuery.isLoading && !locations
-                      ? 'Cargando áreas...'
-                      : 'Seleccionar área'
+                    values.costCenter === 'ROTANTE'
+                      ? 'No aplica para Rotante'
+                      : locationsQuery.isLoading && !locations
+                        ? 'Cargando áreas...'
+                        : 'Seleccionar área'
                   }
                   onChange={(value) => update({ locationId: value })}
                   theme={theme}
                   size="md"
                 />
+                {values.costCenter === 'ROTANTE' ? (
+                  <small className={formStyles.fieldHint}>
+                    La sede se determina automáticamente por turno o marcación diaria.
+                  </small>
+                ) : null}
               </div>
               <div className={formStyles.field}>
                 <span className={formStyles.fieldLabel}>Clasificación mano de obra *</span>

@@ -87,7 +87,8 @@ export class TurnoAssignmentsTemplateService {
     const allowedLocationIds = await this.assignmentsService.resolveScope(tenantId, actor);
     if (allowedLocationIds) {
       const outOfScope = employees.filter(
-        (employee): boolean => !allowedLocationIds.includes(employee.locationId),
+        (employee): boolean =>
+          !employee.locationId || !allowedLocationIds.includes(employee.locationId),
       );
       if (outOfScope.length > 0) {
         throw new ForbiddenException(

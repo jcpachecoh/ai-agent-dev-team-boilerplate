@@ -7,6 +7,7 @@ import {
 import { Test, type TestingModule } from '@nestjs/testing';
 import { TurnoAssignmentType, TurnoJornada, TurnoTipo } from '@prisma/client';
 
+import { DailyCostCenterService } from '../../daily-cost-center/service/daily-cost-center.service';
 import { UserLocationsService } from '../../locations/service/user-locations.service';
 import type { TurnoAssignmentRecord } from '../interfaces/turno-assignments.interfaces';
 import { TurnoAssignmentsRepository } from '../repository/turno-assignments.repository';
@@ -16,6 +17,7 @@ describe('TurnoAssignmentsService', () => {
   let service: TurnoAssignmentsService;
   let repository: jest.Mocked<TurnoAssignmentsRepository>;
   let userLocationsService: jest.Mocked<UserLocationsService>;
+  let dailyCostCenterService: jest.Mocked<DailyCostCenterService>;
 
   const tenantId = 'tenant-1';
   const ownerActor = { userId: 'owner-1', roleCode: 'OWNER' };
@@ -85,12 +87,19 @@ describe('TurnoAssignmentsService', () => {
             getActiveUserLocations: jest.fn(),
           },
         },
+        {
+          provide: DailyCostCenterService,
+          useValue: {
+            resolveFromShift: jest.fn().mockResolvedValue(null),
+          },
+        },
       ],
     }).compile();
 
     service = module.get(TurnoAssignmentsService);
     repository = module.get(TurnoAssignmentsRepository);
     userLocationsService = module.get(UserLocationsService);
+    dailyCostCenterService = module.get(DailyCostCenterService);
 
     repository.findActiveEmployeesPage.mockResolvedValue({
       employees: [
@@ -243,6 +252,33 @@ describe('TurnoAssignmentsService', () => {
         }),
       );
       expect(result.id).toBe('assignment-1');
+    });
+
+    it('CONN-06: dispara resolveFromShift con la sede del turno tras asignar', async () => {
+      await service.assign(tenantId, ownerActor, {
+        employeeId: 'emp-1',
+        workDate: futureDate,
+        turnoId: 'turno-1',
+      });
+
+      expect(dailyCostCenterService.resolveFromShift).toHaveBeenCalledWith(
+        expect.objectContaining({
+          tenantId,
+          employeeId: 'emp-1',
+          locationId: 'loc-1',
+          shiftId: 'turno-1',
+        }),
+      );
+    });
+
+    it('CONN-06: no dispara resolveFromShift para descanso explícito (sin turnoId)', async () => {
+      await service.assign(tenantId, ownerActor, {
+        employeeId: 'emp-1',
+        workDate: futureDate,
+        type: TurnoAssignmentType.REST,
+      });
+
+      expect(dailyCostCenterService.resolveFromShift).not.toHaveBeenCalled();
     });
 
     it('rechaza turno inactivo', async () => {

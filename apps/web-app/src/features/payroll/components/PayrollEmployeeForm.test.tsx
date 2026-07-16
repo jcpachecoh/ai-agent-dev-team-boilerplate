@@ -125,4 +125,63 @@ describe('PayrollEmployeeForm', () => {
     expect(onSubmit.mock.calls[0][0].positionId).toBe('pos-1');
     expect(onSubmit.mock.calls[0][0].area).toBe('Administración');
   });
+
+  it('CONN-06: al seleccionar Rotante bloquea y limpia Áreas; al volver a otro centro, Áreas vuelve a ser editable', async () => {
+    const user = userEvent.setup();
+
+    renderForm({ mode: 'create', locations: TEST_LOCATIONS });
+
+    await user.click(screen.getByRole('button', { name: 'Áreas' }));
+    await user.click(screen.getByRole('option', { name: 'Sede Palos de Leña 1' }));
+    expect(screen.getByRole('button', { name: 'Áreas' })).toHaveTextContent('Sede Palos de Leña 1');
+
+    await user.click(screen.getByRole('button', { name: 'Centro de Costos' }));
+    await user.click(screen.getByRole('option', { name: 'Rotante' }));
+
+    const areasButton = screen.getByRole('button', { name: 'Áreas' });
+    expect(areasButton).toBeDisabled();
+    expect(areasButton).toHaveTextContent('No aplica para Rotante');
+    expect(
+      screen.getByText('La sede se determina automáticamente por turno o marcación diaria.'),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Centro de Costos' }));
+    await user.click(screen.getByRole('option', { name: 'Operaciones' }));
+
+    expect(screen.getByRole('button', { name: 'Áreas' })).not.toBeDisabled();
+  });
+
+  it('CONN-06: no exige Áreas cuando el Centro de Costos es Rotante', async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi.fn<(values: PayrollEmployeeFormValues) => void>();
+
+    renderForm({ mode: 'create', locations: TEST_LOCATIONS, onSubmit });
+
+    await user.type(screen.getByLabelText('Nombres'), 'Ana');
+    await user.type(screen.getByLabelText('Primer apellido'), 'Rotante');
+    await user.type(screen.getByLabelText('Cédula'), '87654321');
+    await user.type(screen.getByLabelText('Correo'), 'ana@test.com');
+    await user.click(screen.getByRole('button', { name: 'Centro de Costos' }));
+    await user.click(screen.getByRole('option', { name: 'Rotante' }));
+    await user.click(screen.getByRole('button', { name: 'Cargo' }));
+    await user.click(screen.getByRole('option', { name: 'Programador' }));
+    await user.type(screen.getByLabelText('Salario'), '3000000');
+    await user.click(screen.getByRole('button', { name: 'Departamento' }));
+    await user.click(screen.getByRole('option', { name: 'Gerencia' }));
+    await user.click(screen.getByRole('button', { name: 'EPS' }));
+    await user.click(screen.getByRole('option', { name: 'Sura' }));
+    await user.click(screen.getByRole('button', { name: 'Fondo de pensión' }));
+    await user.click(screen.getByRole('option', { name: 'Protección' }));
+    await user.click(screen.getByRole('button', { name: 'Fondo de cesantías' }));
+    await user.click(screen.getByRole('option', { name: 'Protección' }));
+    await user.click(screen.getByRole('button', { name: 'ARL' }));
+    await user.click(screen.getByRole('option', { name: 'Sura' }));
+    await user.click(screen.getByRole('button', { name: 'Caja de compensación' }));
+    await user.click(screen.getByRole('option', { name: 'Comfama' }));
+    await user.click(screen.getByRole('button', { name: 'Crear empleado' }));
+
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+    expect(onSubmit.mock.calls[0][0].costCenter).toBe('ROTANTE');
+    expect(onSubmit.mock.calls[0][0].locationId).toBe('');
+  });
 });

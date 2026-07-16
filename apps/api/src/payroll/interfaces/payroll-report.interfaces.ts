@@ -7,7 +7,8 @@ export interface EmployeePayrollInput {
   employeeId: string;
   userId: string;
   tenantId: string;
-  locationId: string;
+  /** null para empleados con costCenter = ROTANTE (CONN-06) — sin sede fija en ficha. */
+  locationId: string | null;
   contractType: EmployeeContractType;
   salaryType: SalaryType;
   /** Monthly salary in COP (integer) */
@@ -89,7 +90,8 @@ export interface EmployeePayrollPeriod {
   employeeId: string;
   userId: string;
   tenantId: string;
-  locationId: string;
+  /** null para empleados con costCenter = ROTANTE (CONN-06) — sin sede fija en ficha. */
+  locationId: string | null;
   period: { year: number; month: number };
   contractType: EmployeeContractType;
   salaryType: SalaryType;

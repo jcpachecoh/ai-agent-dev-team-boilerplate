@@ -628,6 +628,26 @@
       "description": "Filtro mes listado incapacidades (YYYY-MM)"
     },
     {
+      "key": "rotanteEmployeeId",
+      "value": "seed-emp-rotante-conn06"
+    },
+    {
+      "key": "rotanteFrom",
+      "value": "2026-07-01"
+    },
+    {
+      "key": "rotanteTo",
+      "value": "2026-07-31"
+    },
+    {
+      "key": "rotanteManualDate",
+      "value": "2026-07-15"
+    },
+    {
+      "key": "rotanteAssignmentId",
+      "value": ""
+    },
+    {
       "key": "conn11WorkDate",
       "value": "2026-07-10",
       "type": "string",
@@ -18587,6 +18607,170 @@
                 "exec": [
                   "pm.test('object L3: status 200', () => pm.response.to.have.status(200));",
                   "pm.expect(pm.response.json().status).to.eql('OBJETADA');"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "CONN-06 Rotante Cost Proration",
+      "description": "CONN-06 — asignación diaria de sede para empleados con Centro de Costos ROTANTE y prorrateo en NOM-24.\n\nPrerrequisitos:\n1. Migración `conn06_rotante_cost_proration` aplicada + seed (empleado `seed-emp-rotante-conn06` / Laura Rotante)\n2. Login NOMINA u OWNER con permiso `attendance.daily-cost-center.read/write`\n3. Variables: `{{rotanteEmployeeId}}` (default seed-emp-rotante-conn06), `{{rotanteFrom}}`, `{{rotanteTo}}`, `{{locationId}}`, `{{reportPeriod}}`\n4. Headers: Authorization Bearer + x-tenant-id",
+      "item": [
+        {
+          "name": "GET Calendar — employee daily assignments",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenNomina}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/employees/{{rotanteEmployeeId}}/daily-cost-center-assignments?from={{rotanteFrom}}&to={{rotanteTo}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('calendar: status 200', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json()).to.be.an('array');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PUT Manual assignment",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenNomina}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"locationId\": \"{{locationId}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/employees/{{rotanteEmployeeId}}/daily-cost-center-assignments/{{rotanteManualDate}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('manual: status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.source).to.eql('MANUAL');",
+                  "if (body.id) pm.collectionVariables.set('rotanteAssignmentId', body.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Pending assignments",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenNomina}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/daily-cost-center-assignments/pending?from={{rotanteFrom}}&to={{rotanteTo}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('pending: status 200', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json()).to.be.an('array');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE Manual assignment",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenNomina}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/daily-cost-center-assignments/{{rotanteAssignmentId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('delete manual: status 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Payroll report — NOM-24 proration meta",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenNomina}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/reports/payroll?period={{reportPeriod}}&employeeId={{rotanteEmployeeId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('payroll rotante: status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.expect(body).to.have.property('employees');",
+                  "if (body.prorationMeta) {",
+                  "  pm.expect(body.prorationMeta).to.be.an('array');",
+                  "}"
                 ]
               }
             }

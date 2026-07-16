@@ -3,9 +3,13 @@ import { Test, TestingModule } from '@nestjs/testing';
 import {
   ArlRiskLevel,
   AttendanceEventType,
+  CostCenter,
   DocumentType,
   EmployeeContractType,
+  OvertimeStatus,
   SalaryType,
+  VacationType,
+  LeaveOrigin,
 } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 import { SMLV_2025, TRANSPORT_SUBSIDY_2025 } from '../../payroll/payroll.constants';
@@ -15,15 +19,14 @@ import type { LegalParameterSnapshot } from '../../labor-legal-parameters/servic
 import { PayrollCalculationService } from '../../payroll/service/payroll-calculation.service';
 import { EmployeeWithUserAndLocation, ReportsRepository } from '../repository/reports.repository';
 import { PayrollRepository } from '../../payroll/repository/payroll.repository';
-import { ReportsService } from '../service/reports.service';
+import { ReportsService, ROTANTE_PENDING_LOCATION_ID } from '../service/reports.service';
 import { AttendanceQueryDto, PeriodQueryDto } from '../controller/dto/report-query.dto';
 import { AttendanceReportStatusFilter } from '../controller/dto/attendance-export-query.dto';
 import { MAX_EXPORT_ROWS } from '../reports.constants';
 import { VacationsService } from '../../vacations/service/vacations.service';
-import { VacationType, LeaveOrigin } from '@prisma/client';
 import { MedicalLeavesRepository } from '../../medical-leaves/repository/medical-leaves.repository';
 import { OvertimeRepository } from '../../overtime/repository/overtime.repository';
-import { OvertimeStatus } from '@prisma/client';
+import { RotanteProrationService } from '../../daily-cost-center/service/rotante-proration.service';
 
 // ── Fixtures ─────────────────────────────────────────────────────────────────
 
@@ -251,6 +254,7 @@ describe('ReportsService', () => {
   let overtimeRepository: jest.Mocked<
     Pick<OvertimeRepository, 'findApprovalStatusByEmployeeIdsForPeriod'>
   >;
+  let rotanteProrationService: jest.Mocked<Pick<RotanteProrationService, 'prorate'>>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -303,6 +307,12 @@ describe('ReportsService', () => {
             findApprovalStatusByEmployeeIdsForPeriod: jest.fn(),
           },
         },
+        {
+          provide: RotanteProrationService,
+          useValue: {
+            prorate: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -313,6 +323,7 @@ describe('ReportsService', () => {
     vacationsService = module.get(VacationsService);
     medicalLeavesRepository = module.get(MedicalLeavesRepository);
     overtimeRepository = module.get(OvertimeRepository);
+    rotanteProrationService = module.get(RotanteProrationService);
     overtimeRepository.findApprovalStatusByEmployeeIdsForPeriod.mockImplementation(
       async (_tenantId, employeeIds) =>
         employeeIds.map((employeeId) => ({
@@ -565,6 +576,102 @@ describe('ReportsService', () => {
       expect(loc2).toBeDefined();
       expect(loc1!.employeeCount).toBe(1);
       expect(loc2!.employeeCount).toBe(1);
+    });
+
+    describe('CONN-06 rotante proration (NOM-24)', () => {
+      const rotanteEmployee: EmployeeWithUserAndLocation = {
+        ...mockEmployee,
+        id: 'emp-rotante',
+        userId: 'user-rotante',
+        locationId: null,
+        costCenter: CostCenter.ROTANTE,
+        name: 'Ana Rotante',
+        user: {
+          ...mockEmployee.user,
+          id: 'user-rotante',
+          cedula: '99887766',
+          email: 'ana.rotante@test.com',
+        },
+        location: null,
+      };
+
+      it('splits rotante cost across real sedes by day proportion', async () => {
+        repository.findActiveEmployees.mockResolvedValue([rotanteEmployee]);
+        repository.findAttendanceLogsByDateRange.mockResolvedValue([
+          ...fullDayLogs('emp-rotante', '2025-06-02'),
+          ...fullDayLogs('emp-rotante', '2025-06-03'),
+          ...fullDayLogs('emp-rotante', '2025-06-04'),
+        ]);
+        rotanteProrationService.prorate.mockImplementation(async (input) => ({
+          employeeId: input.employeeId,
+          totalDaysAssigned: 10,
+          pendingDaysCount: 0,
+          allocations: [
+            {
+              locationId: 'loc-a',
+              locationName: 'Sede A',
+              days: 6,
+              proportion: 0.6,
+              proratedCost: Math.round(input.totalLaborCost * 0.6 * 100) / 100,
+            },
+            {
+              locationId: 'loc-b',
+              locationName: 'Sede B',
+              days: 4,
+              proportion: 0.4,
+              proratedCost:
+                input.totalLaborCost - Math.round(input.totalLaborCost * 0.6 * 100) / 100,
+            },
+          ],
+        }));
+
+        const result = await service.getPayrollReport(TENANT_ID, query, OWNER_ACTOR);
+
+        expect(rotanteProrationService.prorate).toHaveBeenCalled();
+        expect(result.employees).toHaveLength(2);
+        expect(result.tenantTotals.employeeCount).toBe(1);
+        expect(result.prorationMeta).toHaveLength(1);
+
+        const locA = result.locationTotals.find((l) => l.locationId === 'loc-a');
+        const locB = result.locationTotals.find((l) => l.locationId === 'loc-b');
+        expect(locA).toBeDefined();
+        expect(locB).toBeDefined();
+        const totalCost = locA!.totalPayrollCost + locB!.totalPayrollCost;
+        expect(totalCost).toBeGreaterThan(0);
+        expect(totalCost).toBeCloseTo(result.tenantTotals.totalPayrollCost, 2);
+        expect(locA!.totalPayrollCost / totalCost).toBeCloseTo(0.6, 2);
+        expect(locB!.totalPayrollCost / totalCost).toBeCloseTo(0.4, 2);
+        expect(result.employees.map((e) => e.locationId).sort()).toEqual(['loc-a', 'loc-b']);
+      });
+
+      it('puts rotante without assignments in pending bucket', async () => {
+        repository.findActiveEmployees.mockResolvedValue([rotanteEmployee]);
+        repository.findAttendanceLogsByDateRange.mockResolvedValue([
+          ...fullDayLogs('emp-rotante', '2025-06-02'),
+        ]);
+        rotanteProrationService.prorate.mockResolvedValue({
+          employeeId: 'emp-rotante',
+          totalDaysAssigned: 0,
+          pendingDaysCount: 5,
+          allocations: [],
+        });
+
+        const result = await service.getPayrollReport(TENANT_ID, query, OWNER_ACTOR);
+
+        expect(result.employees).toHaveLength(1);
+        expect(result.employees[0]!.locationId).toBe(ROTANTE_PENDING_LOCATION_ID);
+        expect(result.employees[0]!.locationName).toBe('Pendiente asignación');
+        expect(result.prorationMeta?.[0]?.pendingDaysCount).toBe(5);
+      });
+
+      it('does not call proration for non-rotante employees', async () => {
+        repository.findActiveEmployees.mockResolvedValue([mockEmployee]);
+        repository.findAttendanceLogsByDateRange.mockResolvedValue([]);
+
+        await service.getPayrollReport(TENANT_ID, query, OWNER_ACTOR);
+
+        expect(rotanteProrationService.prorate).not.toHaveBeenCalled();
+      });
     });
 
     it('passes locationId filter to repository', async () => {

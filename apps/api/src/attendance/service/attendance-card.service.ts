@@ -305,6 +305,11 @@ export class AttendanceCardService {
     if (log.source !== AttendanceLogSource.MANUAL) {
       throw new ForbiddenException('Solo se pueden eliminar marcaciones manuales (source=MANUAL)');
     }
+    if (!log.employee.locationId) {
+      throw new BadRequestException(
+        'La tarjeta de asistencia no aplica para colaboradores con Centro de Costos Rotante',
+      );
+    }
 
     await this.assertEmployeeLocationAllowed(tenantId, actingUser, log.employee.locationId);
 
@@ -321,12 +326,21 @@ export class AttendanceCardService {
     });
   }
 
-  private async requireEmployee(userId: string, tenantId: string): Promise<EmployeeWithUser> {
+  /** La tarjeta de asistencia asume una sede fija por empleado — no aplica a ROTANTE (CONN-06). */
+  private async requireEmployee(
+    userId: string,
+    tenantId: string,
+  ): Promise<EmployeeWithUser & { locationId: string }> {
     const employee = await this.attendanceRepository.findEmployeeByUserId(userId, tenantId);
     if (!employee) {
       throw new NotFoundException(`Empleado con userId "${userId}" no encontrado`);
     }
-    return employee;
+    if (!employee.locationId) {
+      throw new BadRequestException(
+        'La tarjeta de asistencia no aplica para colaboradores con Centro de Costos Rotante',
+      );
+    }
+    return employee as EmployeeWithUser & { locationId: string };
   }
 
   private async assertEmployeeLocationAllowed(

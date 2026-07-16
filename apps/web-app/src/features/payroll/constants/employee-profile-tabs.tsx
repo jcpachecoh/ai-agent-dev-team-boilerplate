@@ -1,4 +1,5 @@
 import {
+  CalendarClock,
   Clock3,
   FileText,
   Landmark,
@@ -17,6 +18,7 @@ export type PayrollEmployeeProfileTabId =
   | 'payments'
   | 'social-security'
   | 'attendance'
+  | 'rotante-calendar'
   | 'bank-accounts'
   | 'taxes'
   | 'documents'
@@ -58,6 +60,14 @@ export const PAYROLL_EMPLOYEE_PROFILE_TABS: PayrollEmployeeProfileTabDefinition[
     placeholderTitle: 'Historial de asistencia',
     placeholderDescription:
       'Próximamente — registros de entrada/salida, ausencias, tardanzas y vacaciones.',
+  },
+  {
+    id: 'rotante-calendar',
+    label: 'Sede Rotante',
+    icon: <CalendarClock {...iconProps} />,
+    placeholderTitle: 'Sede diaria — Rotante',
+    placeholderDescription:
+      'Calendario de sede real resuelta por turno, marcación o corrección manual (CONN-06).',
   },
   {
     id: 'bank-accounts',

@@ -637,7 +637,7 @@ export class PayrollNovedadesService implements IPayrollNovedadesService {
 
   private async hasResolvableSupervisor(tenantId: string, employeeId: string): Promise<boolean> {
     const employee = await this.repository.findEmployeeApprovalContext(tenantId, employeeId);
-    if (!employee) {
+    if (!employee?.locationId) {
       return false;
     }
 
@@ -753,7 +753,7 @@ export class PayrollNovedadesService implements IPayrollNovedadesService {
       );
 
       if (novedad.status === NovedadStatus.PENDIENTE_SUPERVISOR) {
-        const supervisors = employee
+        const supervisors = employee?.locationId
           ? await this.repository.findSupervisorCandidatesInLocation(tenantId, employee.locationId)
           : [];
         const eligible = [];

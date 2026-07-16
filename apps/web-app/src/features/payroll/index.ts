@@ -8,4 +8,5 @@ export * from './screens/MedicalLeavesScreen';
 export * from './screens/PayrollNovedadesScreen';
 export * from './screens/VacationApprovalsScreen';
 export * from './screens/CesantiasScreen';
+export * from './screens/RotanteAssignmentsScreen';
 export * from './components/PayrollEmployeeDotacionesTab';

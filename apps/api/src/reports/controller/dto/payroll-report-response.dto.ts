@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { EmployeeContractType, SalaryType } from '@prisma/client';
 
 export class OvertimeBreakdownItemDto {
@@ -63,10 +63,30 @@ export class TenantPayrollTotalsDto {
   @ApiProperty() totalPayrollCost!: number;
 }
 
+/** CONN-06 / NOM-24 — desglose de prorrateo para empleados ROTANTE. */
+export class RotanteProrationAllocationDto {
+  @ApiProperty() locationId!: string;
+  @ApiProperty() locationName!: string;
+  @ApiProperty() days!: number;
+  @ApiProperty() proportion!: number;
+  @ApiProperty() proratedCost!: number;
+}
+
+export class RotanteProrationMetaDto {
+  @ApiProperty() employeeId!: string;
+  @ApiProperty() totalDaysAssigned!: number;
+  @ApiProperty() pendingDaysCount!: number;
+  @ApiProperty({ type: [RotanteProrationAllocationDto] })
+  allocations!: RotanteProrationAllocationDto[];
+}
+
 export class PayrollReportResponseDto {
   @ApiProperty() tenantId!: string;
   @ApiProperty() period!: { year: number; month: number };
   @ApiProperty({ type: [PayrollEmployeeRowDto] }) employees!: PayrollEmployeeRowDto[];
   @ApiProperty() tenantTotals!: TenantPayrollTotalsDto;
   @ApiProperty({ type: [LocationPayrollTotalsDto] }) locationTotals!: LocationPayrollTotalsDto[];
+  /** Presente cuando hay empleados ROTANTE en el período (CONN-06). */
+  @ApiPropertyOptional({ type: [RotanteProrationMetaDto] })
+  prorationMeta?: RotanteProrationMetaDto[];
 }

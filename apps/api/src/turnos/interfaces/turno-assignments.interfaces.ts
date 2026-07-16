@@ -27,7 +27,7 @@ export interface WeeklyColaborador {
   userId: string;
   nombre: string;
   documento: string;
-  locationId: string;
+  locationId: string | null;
   turnos: WeeklyAssignmentCell[];
 }
 
@@ -69,7 +69,8 @@ export interface TurnoAssignmentRecord {
 
 export interface EmployeeScopeInfo {
   id: string;
-  locationId: string;
+  /** null para empleados con costCenter = ROTANTE (CONN-06) — sin sede fija en ficha. */
+  locationId: string | null;
   isActive: boolean;
 }
 
@@ -78,7 +79,7 @@ export interface EmployeeDirectoryEntry {
   userId: string;
   nombre: string;
   documento: string;
-  locationId: string;
+  locationId: string | null;
 }
 
 export interface TurnoScopeInfo {

@@ -230,6 +230,12 @@ export class MobileAttendanceService implements IMobileAttendanceService {
       throw new NotFoundException('Empleado no encontrado');
     }
 
+    if (!employee.locationId) {
+      throw new NotFoundException(
+        'Este colaborador no tiene sede fija asignada (Centro de Costos Rotante)',
+      );
+    }
+
     const location = await this.repo.findLocationById(employee.locationId, tenantId);
     if (!location) {
       throw new NotFoundException(`Sede ${employee.locationId} no encontrada`);

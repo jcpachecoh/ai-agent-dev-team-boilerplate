@@ -25,6 +25,7 @@ import { VacationsService } from '../../vacations/service/vacations.service';
 import { VACATION_MARKING_BLOCKED_MESSAGE } from '../service/vacation-attendance.guard';
 import { LaborLegalParametersService } from '../../labor-legal-parameters/service/labor-legal-parameters.service';
 import { OvertimeDetectionService } from '../../overtime/service/overtime-detection.service';
+import { DailyCostCenterService } from '../../daily-cost-center/service/daily-cost-center.service';
 import { JornadaCutoffService } from '../service/jornada-cutoff.service';
 
 const shiftResolutionMock = {
@@ -149,6 +150,10 @@ const legalParametersServiceMock = {
   getValueAt: jest.fn().mockResolvedValue(21),
 };
 
+const dailyCostCenterServiceMock = {
+  resolveFromAttendance: jest.fn().mockResolvedValue(null),
+};
+
 const overtimeDetectionServiceMock = {
   onExitRegistered: jest.fn().mockResolvedValue(undefined),
 };
@@ -175,6 +180,7 @@ describe('AttendanceService', () => {
         { provide: VacationsService, useValue: vacationsServiceMock },
         { provide: LaborLegalParametersService, useValue: legalParametersServiceMock },
         { provide: OvertimeDetectionService, useValue: overtimeDetectionServiceMock },
+        { provide: DailyCostCenterService, useValue: dailyCostCenterServiceMock },
         { provide: JornadaCutoffService, useValue: jornadaCutoffServiceMock },
       ],
     }).compile();
@@ -561,6 +567,28 @@ describe('AttendanceService', () => {
         expect.objectContaining({ source: AttendanceLogSource.MANUAL }),
       );
       expect(repoMock.createEventLog).toHaveBeenCalled();
+    });
+
+    it('CONN-06: dispara resolveFromAttendance con tenantId/employeeId/locationId/workDate', async () => {
+      const createdLog = makeAttendanceLog('log-manual-2', AttendanceEventType.ENTRY, new Date());
+      repoMock.createEventLog.mockResolvedValue(createdLog);
+
+      await service.registerEvent({
+        ...baseInput,
+        source: AttendanceLogSource.MANUAL,
+        workDate: WORK_DATE,
+        createdByUserId: 'actor-1',
+        manualReason: 'FORGOT',
+      });
+
+      expect(dailyCostCenterServiceMock.resolveFromAttendance).toHaveBeenCalledWith(
+        expect.objectContaining({
+          tenantId: TENANT,
+          employeeId: 'emp-001',
+          locationId: LOCATION_ID,
+          eventDate: createdLog.workDate,
+        }),
+      );
     });
 
     it('aplica geocerca solo para source=APP_MOVIL', async () => {

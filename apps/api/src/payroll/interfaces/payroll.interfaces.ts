@@ -19,7 +19,8 @@ export interface CreateEmployeeData {
   cedula: string;
   documentType: DocumentType;
   passwordHash?: string;
-  locationId: string;
+  /** null solo cuando costCenter = ROTANTE (CONN-06/D3) — sin sede fija. */
+  locationId: string | null;
   name: string;
   positionId?: string;
   position: string;
@@ -47,7 +48,8 @@ export interface CreateEmployeeData {
 }
 
 export interface UpdateEmployeeData {
-  locationId?: string;
+  /** null explícito limpia la sede fija — requerido al cambiar costCenter a ROTANTE (CONN-06). */
+  locationId?: string | null;
   name?: string;
   positionId?: string;
   position?: string;
@@ -131,7 +133,7 @@ export interface IPayrollRepository {
   update(
     userId: string,
     payload: UpdateEmployeePayload,
-  ): Promise<EmployeeDetails & { user: User; location?: { id: string; name: string } }>;
+  ): Promise<EmployeeDetails & { user: User; location?: { id: string; name: string } | null }>;
   softDelete(userId: string): Promise<EmployeeDetails & { user: User }>;
   count(filters: ListEmployeesFilters): Promise<number>;
   findExistingUser(tenantId: string, email: string, cedula: string): Promise<{ id: string } | null>;
@@ -176,7 +178,7 @@ export interface IPayrollService {
     tenantId: string,
     userId: string,
     data: any,
-  ): Promise<EmployeeDetails & { user: User; location?: { id: string; name: string } }>;
+  ): Promise<EmployeeDetails & { user: User; location?: { id: string; name: string } | null }>;
   remove(
     tenantId: string,
     userId: string,

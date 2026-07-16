@@ -262,6 +262,12 @@ export const navigationItems: NavItem[] = [
         icon: Stethoscope,
       },
       {
+        id: 'payroll-rotante-assignments',
+        label: 'Rotantes por sede',
+        path: '/payroll/rotante-assignments',
+        icon: MapPin,
+      },
+      {
         id: 'payroll-vacations',
         label: 'Vacaciones',
         path: '/payroll/vacations',
@@ -369,6 +375,7 @@ const routeLabels: Record<string, string> = {
   '/payroll/legal-parameters': 'Parámetros legales',
   '/payroll/novedades': 'Novedades',
   '/payroll/novedades/incapacidades': 'Incapacidades médicas',
+  '/payroll/rotante-assignments': 'Rotantes por sede',
   '/payroll/vacations': 'Vacaciones',
   '/mi-perfil': 'Mi perfil',
   '/mi-perfil/informacion-personal': 'Información personal',

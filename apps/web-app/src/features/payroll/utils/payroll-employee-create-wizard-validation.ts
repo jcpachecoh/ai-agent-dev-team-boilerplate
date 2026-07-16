@@ -43,12 +43,13 @@ export function validatePayrollEmployeePersonalStep(
     return 'Nombres, primer apellido, correo y cédula son obligatorios.';
   }
 
-  if (!values.locationId.trim()) {
-    return 'El área (sede) es obligatoria.';
-  }
-
   if (!values.costCenter) {
     return 'Centro de Costos es obligatorio.';
+  }
+
+  // Rotante no tiene sede fija — la sede diaria se resuelve por turno/marcación (CONN-06).
+  if (values.costCenter !== 'ROTANTE' && !values.locationId.trim()) {
+    return 'El área (sede) es obligatoria.';
   }
 
   if (!values.laborClassification) {

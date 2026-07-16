@@ -113,7 +113,7 @@ export class VacationLetterService implements IVacationLetterService {
     }
 
     const logoBuffer = await this.tryLoadLogo(tenant.logoUrl);
-    const employeeCity = employee.localidad ?? employee.location.city ?? tenant.city ?? 'Ciudad';
+    const employeeCity = employee.localidad ?? employee.location?.city ?? tenant.city ?? 'Ciudad';
     const tenantCity = tenant.city ?? employeeCity;
 
     const hrEmail = tenant.email ?? VACATION_LETTER_HR_SIGNATORY.email;

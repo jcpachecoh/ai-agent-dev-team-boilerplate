@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AuditModule } from '../audit/audit.module';
 import { AuthModule } from '../auth/auth.module';
+import { DailyCostCenterModule } from '../daily-cost-center/daily-cost-center.module';
 import { EmailModule } from '../email/email.module';
 import { LocationsModule } from '../locations/locations.module';
 import { PrismaModule } from '../prisma/prisma.module';
@@ -45,6 +46,7 @@ import { JornadaCutoffScheduler } from './jobs/jornada-cutoff.scheduler';
     PayrollNovedadesModule,
     MedicalLeavesModule,
     DataConsentModule,
+    DailyCostCenterModule,
   ],
   controllers: [AttendanceController],
   providers: [

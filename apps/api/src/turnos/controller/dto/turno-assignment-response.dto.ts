@@ -25,7 +25,7 @@ export class WeeklyColaboradorDto {
   @ApiProperty() userId!: string;
   @ApiProperty() nombre!: string;
   @ApiProperty() documento!: string;
-  @ApiProperty() locationId!: string;
+  @ApiProperty({ nullable: true }) locationId!: string | null;
   @ApiProperty({ type: [WeeklyAssignmentCellDto] }) turnos!: WeeklyAssignmentCellDto[];
 }
 

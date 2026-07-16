@@ -417,10 +417,138 @@ describe('PayrollService', () => {
     });
   });
 
+  describe('CONN-06 — costCenter ROTANTE / locationId consistency (OS-531)', () => {
+    describe('create', () => {
+      it('rechaza costCenter=ROTANTE con locationId (400)', async () => {
+        setupSuccessfulCreate(null);
+
+        await expect(
+          service.create(mockTenantId, {
+            ...mockEmployeeData,
+            costCenter: CostCenter.ROTANTE,
+            locationId: mockLocationId,
+          }),
+        ).rejects.toThrow(BadRequestException);
+        expect(repository.create).not.toHaveBeenCalled();
+      });
+
+      it('rechaza costCenter distinto de ROTANTE sin locationId (400)', async () => {
+        setupSuccessfulCreate(null);
+        const { locationId: _omitted, ...dataWithoutLocation } = mockEmployeeData;
+
+        await expect(
+          service.create(mockTenantId, {
+            ...dataWithoutLocation,
+            costCenter: CostCenter.OPERACIONES,
+          }),
+        ).rejects.toThrow(BadRequestException);
+        expect(repository.create).not.toHaveBeenCalled();
+      });
+
+      it('permite costCenter=ROTANTE sin locationId', async () => {
+        setupSuccessfulCreate(null);
+        (repository.create as jest.Mock).mockResolvedValue({ id: 'emp-1', tenantId: mockTenantId });
+        const { locationId: _omitted, ...dataWithoutLocation } = mockEmployeeData;
+
+        await service.create(mockTenantId, {
+          ...dataWithoutLocation,
+          costCenter: CostCenter.ROTANTE,
+        });
+
+        expect(repository.create).toHaveBeenCalledWith(
+          expect.objectContaining({ costCenter: CostCenter.ROTANTE, locationId: null }),
+        );
+      });
+    });
+
+    describe('update', () => {
+      it('rechaza PATCH costCenter=ROTANTE + locationId (400)', async () => {
+        (repository.findByUserId as jest.Mock).mockResolvedValue({
+          tenantId: mockTenantId,
+          locationId: mockLocationId,
+          costCenter: CostCenter.OPERACIONES,
+          user: { id: 'user-1', email: 'test@example.com', cedula: '123456' },
+        });
+
+        await expect(
+          service.update(mockTenantId, 'user-1', {
+            costCenter: CostCenter.ROTANTE,
+            locationId: mockLocationId,
+          }),
+        ).rejects.toThrow(BadRequestException);
+        expect(repository.update).not.toHaveBeenCalled();
+      });
+
+      it('limpia locationId automáticamente al cambiar a ROTANTE sin enviar locationId', async () => {
+        (repository.findByUserId as jest.Mock).mockResolvedValue({
+          tenantId: mockTenantId,
+          locationId: mockLocationId,
+          costCenter: CostCenter.OPERACIONES,
+          user: { id: 'user-1', email: 'test@example.com', cedula: '123456' },
+        });
+        (repository.update as jest.Mock).mockResolvedValue({ id: 'emp-1' });
+
+        await service.update(mockTenantId, 'user-1', { costCenter: CostCenter.ROTANTE });
+
+        expect(repository.update).toHaveBeenCalledWith(
+          'user-1',
+          expect.objectContaining({
+            employee: expect.objectContaining({ costCenter: CostCenter.ROTANTE, locationId: null }),
+          }),
+        );
+      });
+
+      it('rechaza PATCH que cambia a un centro distinto de ROTANTE sin locationId cuando el empleado no tiene sede (400)', async () => {
+        (repository.findByUserId as jest.Mock).mockResolvedValue({
+          tenantId: mockTenantId,
+          locationId: null,
+          costCenter: CostCenter.ROTANTE,
+          user: { id: 'user-1', email: 'test@example.com', cedula: '123456' },
+        });
+
+        await expect(
+          service.update(mockTenantId, 'user-1', { costCenter: CostCenter.OPERACIONES }),
+        ).rejects.toThrow(BadRequestException);
+        expect(repository.update).not.toHaveBeenCalled();
+      });
+
+      it('permite el cambio de ROTANTE a otro centro cuando se envía locationId', async () => {
+        (repository.findByUserId as jest.Mock).mockResolvedValue({
+          tenantId: mockTenantId,
+          locationId: null,
+          costCenter: CostCenter.ROTANTE,
+          user: { id: 'user-1', email: 'test@example.com', cedula: '123456' },
+        });
+        (repository.update as jest.Mock).mockResolvedValue({ id: 'emp-1' });
+        (repository.findLocationById as jest.Mock).mockResolvedValue({
+          id: mockLocationId,
+          tenantId: mockTenantId,
+        });
+
+        await service.update(mockTenantId, 'user-1', {
+          costCenter: CostCenter.OPERACIONES,
+          locationId: mockLocationId,
+        });
+
+        expect(repository.update).toHaveBeenCalledWith(
+          'user-1',
+          expect.objectContaining({
+            employee: expect.objectContaining({
+              costCenter: CostCenter.OPERACIONES,
+              locationId: mockLocationId,
+            }),
+          }),
+        );
+      });
+    });
+  });
+
   describe('update', () => {
     beforeEach(() => {
       (repository.findByUserId as jest.Mock).mockResolvedValue({
         tenantId: mockTenantId,
+        locationId: mockLocationId,
+        costCenter: CostCenter.OPERACIONES,
         contractType: EmployeeContractType.INDEFINIDO,
         salaryAmount: 2000000,
         salaryType: SalaryType.ORDINARIO,
@@ -608,6 +736,8 @@ describe('PayrollService', () => {
     it('updates employee and recalculates transport subsidy when salary changes', async () => {
       (repository.findByUserId as jest.Mock).mockResolvedValue({
         tenantId: mockTenantId,
+        locationId: mockLocationId,
+        costCenter: CostCenter.OPERACIONES,
         contractType: EmployeeContractType.INDEFINIDO,
         salaryType: SalaryType.ORDINARIO,
         salaryAmount: SMLV_2025,
@@ -644,6 +774,8 @@ describe('PayrollService', () => {
         (repository.findByUserId as jest.Mock).mockResolvedValue({
           id: 'emp-details-1',
           tenantId: mockTenantId,
+          locationId: mockLocationId,
+          costCenter: CostCenter.OPERACIONES,
           contractType: EmployeeContractType.INDEFINIDO,
           salaryAmount: 2000000,
           salaryType: SalaryType.ORDINARIO,
@@ -714,6 +846,8 @@ describe('PayrollService', () => {
         (repository.findByUserId as jest.Mock).mockResolvedValue({
           id: 'emp-details-1',
           tenantId: mockTenantId,
+          locationId: mockLocationId,
+          costCenter: CostCenter.OPERACIONES,
           contractType: EmployeeContractType.INDEFINIDO,
           salaryAmount: 2000000,
           salaryType: SalaryType.ORDINARIO,
@@ -735,6 +869,8 @@ describe('PayrollService', () => {
         (repository.findByUserId as jest.Mock).mockResolvedValue({
           id: 'emp-details-1',
           tenantId: mockTenantId,
+          locationId: mockLocationId,
+          costCenter: CostCenter.OPERACIONES,
           contractType: EmployeeContractType.INDEFINIDO,
           salaryAmount: 2000000,
           salaryType: SalaryType.ORDINARIO,
@@ -931,6 +1067,8 @@ describe('PayrollService', () => {
         id: 'emp-details-1',
         userId: 'user-1',
         tenantId: mockTenantId,
+        locationId: mockLocationId,
+        costCenter: CostCenter.OPERACIONES,
         positionId: 'pos-old',
         user: { email: 'test@example.com', cedula: '123456' },
       });
@@ -949,6 +1087,8 @@ describe('PayrollService', () => {
           id: 'emp-details-1',
           userId: 'user-1',
           tenantId: mockTenantId,
+          locationId: mockLocationId,
+          costCenter: CostCenter.OPERACIONES,
           positionId: 'pos-old',
           user: { email: 'test@example.com', cedula: '123456' },
         })
@@ -981,6 +1121,8 @@ describe('PayrollService', () => {
   describe('OS-563 — new employee fields', () => {
     const makeEmployee = (overrides: object = {}) => ({
       tenantId: mockTenantId,
+      locationId: mockLocationId,
+      costCenter: CostCenter.OPERACIONES,
       contractType: EmployeeContractType.INDEFINIDO,
       salaryAmount: 2000000,
       salaryType: SalaryType.ORDINARIO,
@@ -1053,6 +1195,8 @@ describe('PayrollService', () => {
       const makeEmployee2 = () => ({
         id: 'emp-details-1',
         tenantId: mockTenantId,
+        locationId: mockLocationId,
+        costCenter: CostCenter.OPERACIONES,
         contractType: EmployeeContractType.INDEFINIDO,
         salaryAmount: 2000000,
         salaryType: SalaryType.ORDINARIO,
