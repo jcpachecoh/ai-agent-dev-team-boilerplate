@@ -1,5 +1,6 @@
 {
   "name": "restopsiq-platform",
+  "version": "0.1.0",
   "private": true,
   "scripts": {
     "build": "turbo run build --filter=!@restopsiq/email",
