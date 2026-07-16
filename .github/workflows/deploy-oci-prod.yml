@@ -7,7 +7,6 @@ on:
       - "apps/api/**"
       - "prisma/**"
       - "packages/**"
-      - "terraform-oci/**"
   workflow_dispatch:
 
 concurrency:
@@ -46,7 +45,7 @@ jobs:
         with:
           context: .
           file: apps/api/Dockerfile
-          platforms: linux/amd64
+          platforms: linux/arm64
           push: true
           tags: |
             ${{ env.OCIR_REPO }}:${{ steps.tag.outputs.tag }}

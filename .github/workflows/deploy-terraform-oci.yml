@@ -1,0 +1,72 @@
+name: Terraform → OCI Producción
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "terraform-oci/**"
+  workflow_dispatch:
+
+concurrency:
+  group: terraform-oci-prod
+  cancel-in-progress: false
+
+env:
+  # OCI provider
+  TF_VAR_tenancy_ocid: ${{ secrets.OCI_TENANCY_OCID }}
+  TF_VAR_user_ocid: ${{ secrets.OCI_USER_OCID }}
+  TF_VAR_fingerprint: ${{ secrets.OCI_FINGERPRINT }}
+  TF_VAR_private_key_path: /home/runner/.oci/oci_api_key.pem
+  TF_VAR_region: sa-bogota-1
+  # Recursos OCI
+  TF_VAR_compartment_id: ${{ secrets.OCI_COMPARTMENT_ID }}
+  TF_VAR_subnet_id: ${{ secrets.OCI_SUBNET_ID }}
+  TF_VAR_nsg_id: ${{ secrets.OCI_NSG_ID }}
+  # Contenedor
+  TF_VAR_ocir_image: sa-bogota-1.ocir.io/${{ secrets.OCI_NAMESPACE }}/opssynk/api:latest
+  TF_VAR_ocir_username: ${{ secrets.OCI_NAMESPACE }}/${{ secrets.OCIR_USERNAME }}
+  TF_VAR_ocir_auth_token: ${{ secrets.OCIR_AUTH_TOKEN }}
+  TF_VAR_ssh_public_key_path: /home/runner/.ssh/id_rsa_opssynk.pub
+  # Secrets sensibles de la app
+  TF_VAR_nomina_env_content: ${{ secrets.NOMINA_ENV_CONTENT }}
+  TF_VAR_db_password: ${{ secrets.DB_PASSWORD }}
+  TF_VAR_redis_password: ${{ secrets.REDIS_PASSWORD }}
+  # Customer Secret Keys para el backend S3 de OCI Object Storage
+  AWS_ACCESS_KEY_ID: ${{ secrets.TF_STATE_ACCESS_KEY }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.TF_STATE_SECRET_KEY }}
+
+jobs:
+  terraform:
+    name: terraform plan & apply
+    runs-on: ubuntu-latest
+    environment: production
+    defaults:
+      run:
+        working-directory: terraform-oci
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Escribir credenciales OCI
+        run: |
+          mkdir -p /home/runner/.oci /home/runner/.ssh
+          printf '%s' "${{ secrets.OCI_API_KEY_PEM }}" > /home/runner/.oci/oci_api_key.pem
+          chmod 600 /home/runner/.oci/oci_api_key.pem
+          printf '%s' "${{ secrets.OCI_SSH_PUBLIC_KEY }}" > /home/runner/.ssh/id_rsa_opssynk.pub
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.x"
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Terraform Plan
+        run: terraform plan -out=tfplan
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve tfplan
