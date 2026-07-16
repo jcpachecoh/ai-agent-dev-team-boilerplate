@@ -21,6 +21,7 @@ import { isPayrollReadOnlyRole } from '@/config/rbac.config';
 import { useMe } from '@/features/auth/hooks/useMe';
 import { getRoleCodeFromToken } from '@/lib/auth-token';
 import { useTheme } from '@/providers/ThemeProvider';
+import { getTablePaginationRange } from '@/utils/table-pagination';
 
 import styles from './EmployeePositionsListScreen.module.scss';
 import { PayrollApiError } from '../api/payroll.client';
@@ -142,9 +143,11 @@ export function EmployeePositionsListScreen(): React.JSX.Element {
   const activeCount = positions.filter((position) => position.isActive).length;
   const inactiveCount = totalCount - activeCount;
   const filteredCount = filteredPositions.length;
-  const totalPages = Math.max(1, Math.ceil(filteredCount / state.pageSize));
-  const pageStart = filteredCount === 0 ? 0 : (state.page - 1) * state.pageSize + 1;
-  const pageEnd = Math.min(state.page * state.pageSize, filteredCount);
+  const { totalPages, summary, pageLabel } = getTablePaginationRange(
+    state.page,
+    state.pageSize,
+    filteredCount,
+  );
 
   const handleCreate = async (values: EmployeePositionFormValues) => {
     try {
@@ -309,7 +312,8 @@ export function EmployeePositionsListScreen(): React.JSX.Element {
             pagination={{
               page: state.page,
               totalPages,
-              summary: `${pageStart}-${pageEnd} de ${filteredCount}`,
+              summary,
+              pageLabel,
               onPrevious: () => setPage(Math.max(1, state.page - 1)),
               onNext: () => setPage(Math.min(totalPages, state.page + 1)),
             }}

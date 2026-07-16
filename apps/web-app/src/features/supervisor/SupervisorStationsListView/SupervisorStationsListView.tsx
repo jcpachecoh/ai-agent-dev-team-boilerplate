@@ -1,4 +1,5 @@
 import {
+  EmpleadoPagination,
   ProduccionFilterChipGroup,
   ProduccionModuleTabs,
   ProduccionPrimaryAction,
@@ -13,6 +14,7 @@ import { useNavigate } from 'react-router-dom';
 import { InventoryScreenState } from '@/components/inventory/InventoryScreenState';
 import { useUiTheme } from '@/hooks/useUiTheme';
 import { getErrorMessage } from '@/lib/graphql-client';
+import { useClientTablePagination } from '@/utils/useClientTablePagination';
 
 import { WorkstationDetailModal } from '../components/WorkstationDetailModal';
 import {
@@ -46,6 +48,7 @@ export default function SupervisorStationsListView(): React.JSX.Element {
     () => filterSupervisorStations(data?.stations ?? [], filter),
     [data?.stations, filter],
   );
+  const { page, pageItems, range, onPrevious, onNext } = useClientTablePagination(filteredRows);
 
   const openCreateModal = (): void => {
     setFormMode('create');
@@ -147,7 +150,7 @@ export default function SupervisorStationsListView(): React.JSX.Element {
               <div className={styles.tableScroll}>
                 <ProduccionStationTableHeader theme={theme} size="xl" />
                 <div className={styles.rows} role="rowgroup">
-                  {filteredRows.map((row) => (
+                  {pageItems.map((row) => (
                     <ProduccionStationTableRow
                       key={row.code}
                       {...row}
@@ -159,6 +162,15 @@ export default function SupervisorStationsListView(): React.JSX.Element {
                   ))}
                 </div>
               </div>
+              <EmpleadoPagination
+                page={page}
+                totalPages={range.totalPages}
+                summary={range.summary}
+                pageLabel={range.pageLabel}
+                onPrevious={onPrevious}
+                onNext={onNext}
+                theme={theme === 'light' ? 'light' : 'dark'}
+              />
             </div>
           </main>
         )}

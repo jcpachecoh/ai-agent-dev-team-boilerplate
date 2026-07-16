@@ -23,6 +23,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { isPayrollReadOnlyRole, SYSTEM_ADMIN_ROLES } from '@/config/rbac.config';
+import { getTablePaginationRange } from '@/utils/table-pagination';
 import { useMe } from '@/features/auth/hooks/useMe';
 import { PayrollApiError } from '@/features/payroll/api/payroll.client';
 import { FinalSettlementWizard } from '@/features/payroll/components/FinalSettlementWizard';
@@ -306,9 +307,11 @@ export function AttendanceCollaboratorsScreen(): React.JSX.Element {
   const inactiveCount = summary?.inactive ?? 0;
   const page = pagination?.page ?? state.page;
   const pageSize = pagination?.pageSize ?? state.pageSize;
-  const totalPages = pagination?.totalPages ?? 1;
-  const pageStart = totalCount === 0 ? 0 : (page - 1) * pageSize + 1;
-  const pageEnd = Math.min(page * pageSize, totalCount);
+  const {
+    totalPages,
+    summary: paginationSummary,
+    pageLabel,
+  } = getTablePaginationRange(page, pageSize, totalCount);
 
   const areaOptions = [
     { value: 'all', label: 'Todas las áreas' },
@@ -609,7 +612,8 @@ export function AttendanceCollaboratorsScreen(): React.JSX.Element {
             pagination={{
               page,
               totalPages,
-              summary: `${pageStart}-${pageEnd} de ${totalCount}`,
+              summary: paginationSummary,
+              pageLabel,
               onPrevious: () => setPage(Math.max(1, page - 1)),
               onNext: () => setPage(Math.min(totalPages, page + 1)),
             }}

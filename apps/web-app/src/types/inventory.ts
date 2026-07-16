@@ -141,7 +141,7 @@ export interface InventoryReportData {
   }[];
 }
 
-export const INVENTORY_PAGE_SIZE = 20;
+export const INVENTORY_PAGE_SIZE = 8;
 
 export const STOCK_UNIT_OPTIONS: { value: StockUnit; label: string }[] = [
   { value: 'UNIT', label: 'Unidad' },

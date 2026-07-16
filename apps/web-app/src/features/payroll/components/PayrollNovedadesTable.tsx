@@ -1,4 +1,9 @@
-import { EmpleadoTableHeader, type EmpleadoTheme } from '@restopsiq/ui';
+import {
+  EmpleadoPagination,
+  EmpleadoTableHeader,
+  type EmpleadoPaginationProps,
+  type EmpleadoTheme,
+} from '@restopsiq/ui';
 import type { CSSProperties } from 'react';
 
 import type { PayrollNovedadSummary } from '../types/payroll-novedades.types';
@@ -17,6 +22,7 @@ interface Props {
   canWrite: boolean;
   supervisor: boolean;
   rrhh: boolean;
+  pagination?: EmpleadoPaginationProps;
   onApprove: (novedad: PayrollNovedadSummary) => void;
   onReject: (novedad: PayrollNovedadSummary) => void;
   onEdit: (novedad: PayrollNovedadSummary) => void;
@@ -41,6 +47,7 @@ export function PayrollNovedadesTable({
   canWrite,
   supervisor,
   rrhh,
+  pagination,
   onApprove,
   onReject,
   onEdit,
@@ -84,6 +91,7 @@ export function PayrollNovedadesTable({
           </div>
         </div>
       </div>
+      {pagination ? <EmpleadoPagination theme={theme} {...pagination} /> : null}
     </section>
   );
 }

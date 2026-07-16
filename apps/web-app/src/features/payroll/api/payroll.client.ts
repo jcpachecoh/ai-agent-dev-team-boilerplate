@@ -17,6 +17,7 @@ import type {
   CreatePayrollEmployeeInput,
   PayrollEmployee,
   PayrollEmployeesFilters,
+  PayrollEmployeesListResponse,
   UpdatePayrollEmployeeInput,
 } from '../types/payroll.types';
 
@@ -226,7 +227,7 @@ export function exportAttendanceReport(
 
 export function listPayrollEmployees(
   filters: PayrollEmployeesFilters = {},
-): Promise<PayrollEmployee[]> {
+): Promise<PayrollEmployeesListResponse> {
   const query = toQueryString({
     locationId: filters.locationId,
     contractType: filters.contractType,
@@ -239,7 +240,7 @@ export function listPayrollEmployees(
     limit: filters.limit,
     offset: filters.offset,
   });
-  return payrollFetch<PayrollEmployee[]>(`/employees${query}`);
+  return payrollFetch<PayrollEmployeesListResponse>(`/employees${query}`);
 }
 
 const PAYROLL_EMPLOYEES_MAX_PAGE_SIZE = 100;
@@ -256,9 +257,9 @@ export async function listAllPayrollEmployees(
       limit: PAYROLL_EMPLOYEES_MAX_PAGE_SIZE,
       offset,
     });
-    employees.push(...page);
+    employees.push(...page.items);
 
-    if (page.length < PAYROLL_EMPLOYEES_MAX_PAGE_SIZE) {
+    if (page.items.length < PAYROLL_EMPLOYEES_MAX_PAGE_SIZE) {
       return employees;
     }
 

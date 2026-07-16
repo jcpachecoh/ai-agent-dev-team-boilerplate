@@ -31,6 +31,7 @@ import { useLocationSession } from '@/features/auth/context/LocationSessionConte
 import type { InventoryProduct, InventoryProductFormValues } from '@/types/inventory';
 import { INVENTORY_PAGE_SIZE } from '@/types/inventory';
 import { filterProducts, formatCurrency, stockToneForProduct } from '@/utils/inventory';
+import { getTablePaginationRange, paginateItems } from '@/utils/table-pagination';
 
 import shared from '../inventory/shared.module.scss';
 import { useUiTheme } from '@/hooks/useUiTheme';
@@ -98,8 +99,12 @@ export function InventoryProductsScreen(): React.JSX.Element {
     [products, search, categoryId, supplierId, lowStockOnly, status],
   );
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / INVENTORY_PAGE_SIZE));
-  const pageItems = filtered.slice((page - 1) * INVENTORY_PAGE_SIZE, page * INVENTORY_PAGE_SIZE);
+  const { totalPages, summary, pageLabel } = getTablePaginationRange(
+    page,
+    INVENTORY_PAGE_SIZE,
+    filtered.length,
+  );
+  const pageItems = paginateItems(filtered, page, INVENTORY_PAGE_SIZE);
 
   const openCreate = () => {
     setModalMode('create');
@@ -296,7 +301,8 @@ export function InventoryProductsScreen(): React.JSX.Element {
             <InventarioPagination
               page={page}
               totalPages={totalPages}
-              summary={`Página ${page} de ${totalPages}`}
+              summary={summary}
+              pageLabel={pageLabel}
               onPrevious={() => setPage((p) => Math.max(1, p - 1))}
               onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
               theme={theme}

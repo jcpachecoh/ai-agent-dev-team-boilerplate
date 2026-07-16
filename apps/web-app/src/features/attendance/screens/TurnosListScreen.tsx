@@ -28,6 +28,7 @@ import { TurnosEditModal } from '../components/turnos/TurnosEditModal';
 import { TurnosSubNav } from '../components/turnos/TurnosSubNav';
 import { TurnosTableItem } from '../components/turnos/TurnosTableItem';
 import { TURNOS_PAGE_SIZE_OPTIONS, useTurnosFilters } from '../hooks/useTurnosFilters';
+import { getTablePaginationRange } from '@/utils/table-pagination';
 import { useAttendanceScopeLocations } from '../hooks/useAttendanceScopeLocations';
 import {
   useCreateTurnoMutation,
@@ -137,7 +138,7 @@ export function TurnosListScreen(): React.JSX.Element {
     applyEstadoFilter,
     setPage,
     setPageSize,
-  } = useTurnosFilters(50);
+  } = useTurnosFilters(8);
 
   const turnosQuery = useTurnosQuery(queryFilters);
   const { locations } = useAttendanceScopeLocations();
@@ -159,11 +160,9 @@ export function TurnosListScreen(): React.JSX.Element {
   const turnos = turnosQuery.data?.data ?? [];
   const pagination = turnosQuery.data?.pagination;
   const total = pagination?.total ?? 0;
-  const totalPages = pagination?.totalPages ?? 1;
   const page = pagination?.page ?? state.page;
   const limit = pagination?.limit ?? state.pageSize;
-  const pageStart = total === 0 ? 0 : (page - 1) * limit + 1;
-  const pageEnd = Math.min(page * limit, total);
+  const { totalPages, summary, pageLabel } = getTablePaginationRange(page, limit, total);
 
   const handleCreate = async (values: TurnoFormValues) => {
     try {
@@ -385,7 +384,8 @@ export function TurnosListScreen(): React.JSX.Element {
             pagination={{
               page,
               totalPages,
-              summary: `${pageStart}-${pageEnd} de ${total}`,
+              summary,
+              pageLabel,
               onPrevious: () => setPage(Math.max(1, page - 1)),
               onNext: () => setPage(Math.min(totalPages, page + 1)),
             }}

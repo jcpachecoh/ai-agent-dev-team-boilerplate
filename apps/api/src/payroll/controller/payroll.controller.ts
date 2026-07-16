@@ -48,8 +48,8 @@ export class PayrollController {
     return toEmployeeResponse(employee);
   }
 
-  @ApiOperation({ summary: 'List employees' })
-  @ApiResponse({ status: 200, type: [EmployeeResponseDto] })
+  @ApiOperation({ summary: 'List employees (paginated)' })
+  @ApiResponse({ status: 200 })
   @Get()
   async findAll(
     @CurrentUser() user: JwtPayload,
@@ -57,11 +57,17 @@ export class PayrollController {
     @Query() query: ListEmployeesQueryDto,
   ) {
     const tenantId = this.resolveTenantId(user, headerTenantId);
-    const employees = await this.payrollService.findAll(tenantId, query, {
+    const result = await this.payrollService.listPaginated(tenantId, query, {
       userId: user?.sub ?? '',
       roleCode: user?.roleCode ?? '',
     });
-    return employees.map(toEmployeeResponse);
+    return {
+      items: result.items.map(toEmployeeResponse),
+      total: result.total,
+      limit: result.limit,
+      offset: result.offset,
+      summary: result.summary,
+    };
   }
 
   @ApiOperation({ summary: 'Get employee details' })

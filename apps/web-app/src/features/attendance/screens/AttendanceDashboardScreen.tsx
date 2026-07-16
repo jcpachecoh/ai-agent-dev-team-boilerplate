@@ -3,6 +3,7 @@ import {
   AsistenciaPageHeader,
   AsistenciaSyncButton,
   AreaChart,
+  EmpleadoPagination,
   RecetaFilterSelect,
   RecetaMetricCard,
   RecetaTextInput,
@@ -14,6 +15,7 @@ import { useMemo, useState } from 'react';
 import { useUiTheme } from '@/hooks/useUiTheme';
 import { useTheme } from '@/providers/ThemeProvider';
 import { getErrorMessage } from '@/lib/graphql-client';
+import { getTablePaginationRange } from '@/utils/table-pagination';
 
 import { TimelineTableCard } from '../components/control-panel/TimelineTableCard';
 import { TimelineTableRow } from '../components/control-panel/TimelineTableRow';
@@ -36,7 +38,7 @@ const TIMELINE_PERIOD_OPTIONS: Array<{ id: AttendanceControlPanelPeriod; label: 
   { id: 'month', label: 'Mes' },
 ];
 
-const PAGE_SIZE_OPTIONS = [20, 50, 100] as const;
+const PAGE_SIZE_OPTIONS = [8, 20, 50, 100] as const;
 
 const CLASIFICACION_OPTIONS: Array<{ value: AttendanceClasificacion; label: string }> = [
   { value: 'todos', label: 'Todas las clasificaciones' },
@@ -102,7 +104,7 @@ export function AttendanceDashboardScreen(): React.JSX.Element {
   const [contractType, setContractType] = useState('');
   const [clasificacion, setClasificacion] = useState<AttendanceClasificacion>('todos');
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState<(typeof PAGE_SIZE_OPTIONS)[number]>(20);
+  const [pageSize, setPageSize] = useState<(typeof PAGE_SIZE_OPTIONS)[number]>(8);
   const [timelinePeriod, setTimelinePeriod] = useState<AttendanceControlPanelPeriod>('day');
   const [sortBy, setSortBy] = useState<SortableColumn>('lastRecordAt');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
@@ -179,9 +181,13 @@ export function AttendanceDashboardScreen(): React.JSX.Element {
     [data?.alerts, dismissingAlertIds],
   );
 
-  const totalPages = data
-    ? Math.max(1, Math.ceil(data.timeline.total / data.timeline.pageSize))
-    : 1;
+  const timelineTotal = data?.timeline.total ?? 0;
+  const timelinePageSize = data?.timeline.pageSize ?? pageSize;
+  const { totalPages, summary, pageLabel } = getTablePaginationRange(
+    page,
+    timelinePageSize,
+    timelineTotal,
+  );
   const canFilterByLocation = isSystemAdmin || isGeneralScope;
 
   const handleSort = (column: SortableColumn) => {
@@ -548,25 +554,15 @@ export function AttendanceDashboardScreen(): React.JSX.Element {
           </div>
 
           <div className={styles.pagination}>
-            <button
-              type="button"
-              className={styles.pageButton}
-              disabled={page <= 1}
-              onClick={() => setPage((current) => Math.max(1, current - 1))}
-            >
-              Anterior
-            </button>
-            <span className={styles.pageInfo}>
-              Página {page} de {totalPages} · {data?.timeline.total ?? 0} registros
-            </span>
-            <button
-              type="button"
-              className={styles.pageButton}
-              disabled={page >= totalPages}
-              onClick={() => setPage((current) => current + 1)}
-            >
-              Siguiente
-            </button>
+            <EmpleadoPagination
+              page={page}
+              totalPages={totalPages}
+              summary={summary}
+              pageLabel={pageLabel}
+              onPrevious={() => setPage((current) => Math.max(1, current - 1))}
+              onNext={() => setPage((current) => Math.min(totalPages, current + 1))}
+              theme={uiTheme === 'light' ? 'light' : 'dark'}
+            />
             <div className={styles.pageSizeControl}>
               <span className={styles.pageSizeLabel}>Filas por página</span>
               <RecetaFilterSelect

@@ -1,4 +1,9 @@
-import { EmpleadoTableHeader, type EmpleadoTheme } from '@restopsiq/ui';
+import {
+  EmpleadoPagination,
+  EmpleadoTableHeader,
+  type EmpleadoPaginationProps,
+  type EmpleadoTheme,
+} from '@restopsiq/ui';
 import type { CSSProperties } from 'react';
 
 import type { MedicalLeaveSummary } from '../types/medical-leaves.types';
@@ -16,6 +21,7 @@ interface Props {
   canWrite: boolean;
   downloadingId: string | null;
   statusBusy: boolean;
+  pagination?: EmpleadoPaginationProps;
   onView: (leave: MedicalLeaveSummary) => void;
   onDownload: (leave: MedicalLeaveSummary) => void;
   onRadicate: (leave: MedicalLeaveSummary) => void;
@@ -29,6 +35,7 @@ export function MedicalLeavesTable({
   canWrite,
   downloadingId,
   statusBusy,
+  pagination,
   onView,
   onDownload,
   onRadicate,
@@ -71,6 +78,7 @@ export function MedicalLeavesTable({
           </div>
         </div>
       </div>
+      {pagination ? <EmpleadoPagination theme={theme} {...pagination} /> : null}
     </section>
   );
 }

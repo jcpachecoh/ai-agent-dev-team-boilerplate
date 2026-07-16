@@ -16,6 +16,7 @@ import { useCallback, useMemo, useState, type JSX } from 'react';
 import { useMe } from '@/features/auth/hooks/useMe';
 import { useTheme } from '@/providers/ThemeProvider';
 import { getErrorMessage } from '@/lib/graphql-client';
+import { useClientTablePagination } from '@/utils/useClientTablePagination';
 
 import styles from './UsersListView.module.scss';
 import { DeactivateUserDialog } from '../components/DeactivateUserDialog/DeactivateUserDialog';
@@ -96,6 +97,8 @@ export default function UsersListView(): JSX.Element {
     });
     return sorted;
   }, [filtered, userSort]);
+
+  const { page, pageItems, range, onPrevious, onNext } = useClientTablePagination(sortedFiltered);
 
   const openCreate = () => {
     setEditing(undefined);
@@ -190,8 +193,16 @@ export default function UsersListView(): JSX.Element {
             sortColumn={userSort.key}
             sortDirection={userSort.direction}
             onSortColumn={handleSortColumn}
+            pagination={{
+              page,
+              totalPages: range.totalPages,
+              summary: range.summary,
+              pageLabel: range.pageLabel,
+              onPrevious,
+              onNext,
+            }}
           >
-            {sortedFiltered.map((user) => (
+            {pageItems.map((user) => (
               <UsuarioTableItem
                 key={user.id}
                 id={user.id}

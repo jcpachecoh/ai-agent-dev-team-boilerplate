@@ -1,4 +1,9 @@
-import { EmpleadoTableHeader, type EmpleadoTheme } from '@restopsiq/ui';
+import {
+  EmpleadoPagination,
+  EmpleadoTableHeader,
+  type EmpleadoPaginationProps,
+  type EmpleadoTheme,
+} from '@restopsiq/ui';
 import type { CSSProperties } from 'react';
 
 import {
@@ -53,6 +58,7 @@ interface Props {
   roleCode: string | null | undefined;
   positionId: string | null | undefined;
   actionsDisabled?: boolean;
+  pagination?: EmpleadoPaginationProps;
   onApprove: (item: OvertimeRequestItem) => void;
   onObject: (item: OvertimeRequestItem) => void;
 }
@@ -63,6 +69,7 @@ export function OvertimeTable({
   roleCode,
   positionId,
   actionsDisabled = false,
+  pagination,
   onApprove,
   onObject,
 }: Props): React.JSX.Element {
@@ -97,6 +104,7 @@ export function OvertimeTable({
           </div>
         </div>
       </div>
+      {pagination ? <EmpleadoPagination theme={theme} {...pagination} /> : null}
     </section>
   );
 }

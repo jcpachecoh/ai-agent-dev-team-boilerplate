@@ -278,6 +278,52 @@ export class PayrollService implements IPayrollService {
     });
   }
 
+  async listPaginated(
+    tenantId: string,
+    filters: any,
+    actor: PayrollActor,
+  ): Promise<{
+    items: (EmployeeDetails & { user: User })[];
+    total: number;
+    limit: number;
+    offset: number;
+    summary: { total: number; active: number; inactive: number };
+  }> {
+    const allowedLocationIds = await this.resolveLocationScope(
+      tenantId,
+      actor,
+      filters?.locationId,
+    );
+    const resolved = {
+      ...filters,
+      tenantId,
+      allowedLocationIds,
+    };
+    const limit = filters?.limit ?? 50;
+    const offset = filters?.offset ?? 0;
+
+    const summaryFilters = {
+      ...resolved,
+      includeInactive: true,
+      isActive: undefined,
+    };
+
+    const [items, total, active, inactive] = await Promise.all([
+      this.payrollRepository.findAll(resolved),
+      this.payrollRepository.count(resolved),
+      this.payrollRepository.count({ ...summaryFilters, isActive: true }),
+      this.payrollRepository.count({ ...summaryFilters, isActive: false }),
+    ]);
+
+    return {
+      items,
+      total,
+      limit,
+      offset,
+      summary: { total: active + inactive, active, inactive },
+    };
+  }
+
   async findOne(
     tenantId: string,
     userId: string,

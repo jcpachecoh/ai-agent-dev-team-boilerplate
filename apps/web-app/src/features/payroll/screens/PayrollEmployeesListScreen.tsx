@@ -23,6 +23,7 @@ import { useMe } from '@/features/auth/hooks/useMe';
 import { useLocations } from '@/features/sedes/hooks/useLocations';
 import { getRoleCodeFromToken } from '@/lib/auth-token';
 import { useTheme } from '@/providers/ThemeProvider';
+import { getTablePaginationRange } from '@/utils/table-pagination';
 
 import styles from './PayrollEmployeesListScreen.module.scss';
 import { PayrollApiError, exportEmployeeList } from '../api/payroll.client';
@@ -111,7 +112,9 @@ export function PayrollEmployeesListScreen(): React.JSX.Element {
   const [sortColumn, setSortColumn] = useState<EmpleadoSortColumnKey | null>(null);
   const [sortDirection, setSortDirection] = useState<EmpleadoSortDirection>('asc');
 
-  const employees = employeesQuery.data ?? [];
+  const employees = employeesQuery.data?.items ?? [];
+  const summary = employeesQuery.data?.summary;
+  const filteredTotal = employeesQuery.data?.total ?? 0;
 
   const locationOptions = useMemo(
     () =>
@@ -140,15 +143,15 @@ export function PayrollEmployeesListScreen(): React.JSX.Element {
     setSortDirection(next.direction);
   };
 
-  const totalCount = employees.length;
-  const activeCount = employees.filter((employee) => employee.isActive).length;
-  const inactiveCount = totalCount - activeCount;
-  const filteredCount = totalCount;
-
-  const hasNextPage = employees.length >= state.pageSize;
-  const totalPages = Math.max(1, hasNextPage ? state.page + 1 : state.page);
-  const pageStart = filteredCount === 0 ? 0 : (state.page - 1) * state.pageSize + 1;
-  const pageEnd = Math.min(state.page * state.pageSize, filteredCount);
+  const totalCount = summary?.total ?? filteredTotal;
+  const activeCount = summary?.active ?? 0;
+  const inactiveCount = summary?.inactive ?? 0;
+  const filteredCount = filteredTotal;
+  const {
+    totalPages,
+    summary: paginationSummary,
+    pageLabel,
+  } = getTablePaginationRange(state.page, state.pageSize, filteredCount);
 
   const handleCreate = async (payload: PayrollEmployeeCreateWizardPayload) => {
     try {
@@ -332,9 +335,10 @@ export function PayrollEmployeesListScreen(): React.JSX.Element {
             pagination={{
               page: state.page,
               totalPages,
-              summary: `${pageStart}-${pageEnd} de ${filteredCount}`,
+              summary: paginationSummary,
+              pageLabel,
               onPrevious: () => setPage(Math.max(1, state.page - 1)),
-              onNext: () => setPage(state.page + 1),
+              onNext: () => setPage(Math.min(totalPages, state.page + 1)),
             }}
           >
             {sortedEmployees.map((employee) => (

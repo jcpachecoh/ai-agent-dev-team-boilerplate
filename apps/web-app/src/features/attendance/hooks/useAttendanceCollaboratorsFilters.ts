@@ -40,7 +40,7 @@ const INITIAL_STATE: Omit<AttendanceCollaboratorsFilterState, 'pageSize'> = {
  * no en este hook — se combina con `queryFilters` en el sitio de uso.
  */
 export function useAttendanceCollaboratorsFilters(
-  defaultPageSize: AttendanceCollaboratorsPageSize = 20,
+  defaultPageSize: AttendanceCollaboratorsPageSize = 8,
 ) {
   const [state, setState] = useState<AttendanceCollaboratorsFilterState>({
     ...INITIAL_STATE,

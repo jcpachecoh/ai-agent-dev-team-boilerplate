@@ -1,4 +1,5 @@
 import {
+  EmpleadoPagination,
   ProveedorActionButton,
   ProveedorMetricCard,
   ProveedorPageHeader,
@@ -13,6 +14,7 @@ import { useNavigate } from 'react-router-dom';
 import { ProveedorSuppliersResponsiveTable } from '@/components/proveedores/ProveedorSuppliersResponsiveTable';
 import { useUiTheme } from '@/hooks/useUiTheme';
 import { getErrorMessage, isGraphqlConfigured } from '@/lib/graphql-client';
+import { useClientTablePagination } from '@/utils/useClientTablePagination';
 
 import {
   CATEGORY_FILTER_OPTIONS,
@@ -76,6 +78,8 @@ export default function ProveedoresListView(): React.JSX.Element {
       })),
     [filteredSuppliers, theme],
   );
+
+  const { page, pageItems, range, onPrevious, onNext } = useClientTablePagination(tableRows);
 
   return (
     <div className={styles.content}>
@@ -202,12 +206,25 @@ export default function ProveedoresListView(): React.JSX.Element {
             theme={theme === 'dark' ? 'dark' : 'light'}
           />
         ) : (
-          <ProveedorSuppliersResponsiveTable
-            className={styles.suppliersTable}
-            rows={tableRows}
-            onRowClick={(supplierId) => navigate(`/proveedores/${supplierId}`)}
-            emptyState="No hay proveedores"
-          />
+          <div className={styles.suppliersCard}>
+            <ProveedorSuppliersResponsiveTable
+              className={styles.suppliersTable}
+              rows={pageItems}
+              onRowClick={(supplierId) => navigate(`/proveedores/${supplierId}`)}
+              emptyState="No hay proveedores"
+            />
+            {pageItems.length > 0 ? (
+              <EmpleadoPagination
+                page={page}
+                totalPages={range.totalPages}
+                summary={range.summary}
+                pageLabel={range.pageLabel}
+                onPrevious={onPrevious}
+                onNext={onNext}
+                theme={theme === 'light' ? 'light' : 'dark'}
+              />
+            ) : null}
+          </div>
         )}
       </section>
     </div>

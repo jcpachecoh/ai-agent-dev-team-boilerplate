@@ -50,10 +50,10 @@ export class ControlPanelQueryDto {
   @Transform(({ value }) => (value != null ? Number(value) : 1))
   page?: number;
 
-  @ApiPropertyOptional({ default: 20, enum: [20, 50, 100] })
+  @ApiPropertyOptional({ default: 8, enum: [8, 20, 50, 100] })
   @IsOptional()
-  @Transform(({ value }) => (value != null ? Number(value) : 20))
-  @IsIn([20, 50, 100])
+  @Transform(({ value }) => (value != null ? Number(value) : 8))
+  @IsIn([8, 20, 50, 100])
   pageSize?: number;
 
   @ApiPropertyOptional()

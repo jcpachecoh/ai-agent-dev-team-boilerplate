@@ -457,7 +457,7 @@ export class AttendanceController {
         sortBy: query.sortBy,
         sortDir: query.sortDir,
         page: query.page ?? 1,
-        pageSize: query.pageSize ?? 20,
+        pageSize: query.pageSize ?? 8,
       },
     ) as Promise<AttendanceCollaboratorsResponseDto>;
   }

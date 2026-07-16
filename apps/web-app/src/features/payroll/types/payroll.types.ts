@@ -126,6 +126,18 @@ export interface PayrollEmployeesFilters {
   offset?: number;
 }
 
+export interface PayrollEmployeesListResponse {
+  items: PayrollEmployee[];
+  total: number;
+  limit: number;
+  offset: number;
+  summary: {
+    total: number;
+    active: number;
+    inactive: number;
+  };
+}
+
 export interface CreatePayrollEmployeeInput {
   cedula: string;
   documentType: DocumentType;

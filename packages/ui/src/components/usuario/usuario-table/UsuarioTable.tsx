@@ -1,5 +1,9 @@
 import type { JSX, ReactNode } from 'react';
 
+import {
+  EmpleadoPagination,
+  type EmpleadoPaginationProps,
+} from '../../empleado/empleado-pagination';
 import { UsuarioTableHeader } from '../usuario-table-header';
 import {
   buildUsuarioHeaderColumns,
@@ -12,6 +16,7 @@ import styles from './UsuarioTable.module.scss';
 export interface UsuarioTableProps {
   children?: ReactNode;
   emptyState?: ReactNode;
+  pagination?: EmpleadoPaginationProps;
   showActions?: boolean;
   sortColumn?: UsuarioSortColumnKey | null;
   sortDirection?: UsuarioSortDirection;
@@ -24,6 +29,7 @@ export interface UsuarioTableProps {
 export function UsuarioTable({
   children,
   emptyState,
+  pagination,
   showActions = true,
   sortColumn = null,
   sortDirection = 'asc',
@@ -52,6 +58,7 @@ export function UsuarioTable({
       <div className={styles.body} role="rowgroup">
         {children ?? emptyState}
       </div>
+      {pagination ? <EmpleadoPagination theme={theme} {...pagination} /> : null}
     </section>
   );
 }

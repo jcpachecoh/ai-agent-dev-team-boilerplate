@@ -80,6 +80,11 @@
   background: var(--color-bg-surface);
 }
 
+/* Empuja el footer de paginación al borde inferior de la tarjeta. */
+.paginationFooter {
+  margin-top: auto;
+}
+
 .table {
   width: 100%;
   border-collapse: collapse;

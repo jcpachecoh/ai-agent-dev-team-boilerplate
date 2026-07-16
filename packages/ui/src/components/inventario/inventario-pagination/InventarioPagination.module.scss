@@ -8,18 +8,20 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  width: min(100%, var(--control-width));
+  width: 100%;
   gap: $spacing-md;
   color: var(--inventario-text);
 }
 
-.summary {
-  font-size: var(--control-font-size);
+.summary,
+.pageLabel {
+  font-size: 0.6875rem;
   color: var(--inventario-muted);
 }
 
 .controls {
   display: inline-flex;
+  align-items: center;
   gap: 8px;
 }
 
@@ -27,17 +29,17 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 28px;
+  height: 28px;
   border: $border-width solid var(--inventario-border);
-  border-radius: $border-radius-sm;
+  border-radius: 4px;
   background: var(--inventario-surface);
   color: var(--inventario-text);
   cursor: pointer;
 
   svg {
-    width: 18px;
-    height: 18px;
+    width: 14px;
+    height: 14px;
   }
 
   &:hover:not(:disabled) {

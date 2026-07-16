@@ -1,4 +1,4 @@
-import { EmptyState, LoadingState, toast } from '@restopsiq/ui';
+import { EmpleadoPagination, EmptyState, LoadingState, toast } from '@restopsiq/ui';
 import { Pencil, Plus, Trash2 } from 'lucide-react';
 import { useMemo, useState, type JSX } from 'react';
 
@@ -6,6 +6,7 @@ import { SYSTEM_ADMIN_ROLES } from '@/config/rbac.config';
 import { useMe } from '@/features/auth/hooks/useMe';
 import { getErrorMessage } from '@/lib/graphql-client';
 import { useTheme } from '@/providers/ThemeProvider';
+import { useClientTablePagination } from '@/utils/useClientTablePagination';
 
 import { LaborLegalParameterFormModal } from '@/features/labor-legal-parameters/components/LaborLegalParameterFormModal';
 import {
@@ -72,6 +73,13 @@ export function PayrollLegalParametersScreen(): JSX.Element {
     () => (filterKey === 'ALL' ? currentRows : currentRows.filter((r) => r.key === filterKey)),
     [currentRows, filterKey],
   );
+  const {
+    page,
+    pageItems: pagedRows,
+    range,
+    onPrevious,
+    onNext,
+  } = useClientTablePagination(filteredRows);
 
   if (!isSystemAdmin) {
     return (
@@ -182,7 +190,7 @@ export function PayrollLegalParametersScreen(): JSX.Element {
                 </tr>
               </thead>
               <tbody>
-                {filteredRows.map((row) => (
+                {pagedRows.map((row) => (
                   <tr key={row.id}>
                     <td>
                       <button
@@ -242,6 +250,16 @@ export function PayrollLegalParametersScreen(): JSX.Element {
                 ))}
               </tbody>
             </table>
+            <EmpleadoPagination
+              className={styles.paginationFooter}
+              page={page}
+              totalPages={range.totalPages}
+              summary={range.summary}
+              pageLabel={range.pageLabel}
+              onPrevious={onPrevious}
+              onNext={onNext}
+              theme={theme === 'light' ? 'light' : 'dark'}
+            />
           </div>
         )}
 
