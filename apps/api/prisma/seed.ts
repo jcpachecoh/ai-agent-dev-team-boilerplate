@@ -60,6 +60,7 @@ import {
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { syncEmployeeCompensationHistory } from './seeds/employee-compensation-history.seed-util';
+import { seedWeeklyShiftPlansDemo } from './seeds/conn12-weekly-shift-plans.seed';
 
 const prisma = new PrismaClient();
 
@@ -2796,6 +2797,7 @@ async function main() {
     locations[2]!.id,
   );
   await seedRotanteDemoEmployee(roles.OPERATOR.id, locations[0]!.id, locations[1]!.id);
+  await seedWeeklyShiftPlansDemo(prisma, locations[0]!.id, locations[0]!.id);
   await seedEmployeeSocialProfiles(ownerGlobalUser.id, operatorGlobalUser.id);
   const { seedBulkAttendanceCollaborators } =
     await import('./seeds/attendance-collaborators-bulk.seed');

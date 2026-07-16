@@ -62,9 +62,11 @@ export class AttendanceCardService {
     dateFrom: string,
     dateTo: string,
     actor: AttendanceActingUser,
+    preferredLocationId?: string,
   ): Promise<AttendanceCardResult> {
     const employee = await this.requireEmployee(userId, tenantId);
-    await this.assertEmployeeLocationAllowed(tenantId, actor, employee.locationId);
+    const cardLocationId = this.resolveCardLocationId(employee.locationId, preferredLocationId);
+    await this.assertEmployeeLocationAllowed(tenantId, actor, cardLocationId);
     const from = parseCalendarDate(dateFrom);
     const to = parseCalendarDate(dateTo);
     this.assertDateRange(from, to);
@@ -120,7 +122,7 @@ export class AttendanceCardService {
         this.shiftResolutionService.resolveForDay({
           tenantId,
           employeeId: employee.id,
-          locationId: employee.locationId,
+          locationId: cardLocationId,
           workDate,
         }),
     });
@@ -135,7 +137,8 @@ export class AttendanceCardService {
     input: UpsertObservationInput,
   ): Promise<AttendanceObservation> {
     const employee = await this.requireEmployee(userId, tenantId);
-    await this.assertEmployeeLocationAllowed(tenantId, actingUser, employee.locationId);
+    const scopeLocationId = this.resolveCardLocationId(employee.locationId, input.locationId);
+    await this.assertEmployeeLocationAllowed(tenantId, actingUser, scopeLocationId);
 
     const workDate = parseCalendarDate(input.workDate);
     const existing = await this.attendanceRepository.findObservation(
@@ -173,7 +176,8 @@ export class AttendanceCardService {
     input: CreateManualMarkingInput,
   ): Promise<AttendanceLog> {
     const employee = await this.requireEmployee(userId, tenantId);
-    await this.assertEmployeeLocationAllowed(tenantId, actingUser, employee.locationId);
+    const markingLocationId = this.resolveCardLocationId(employee.locationId, input.locationId);
+    await this.assertEmployeeLocationAllowed(tenantId, actingUser, markingLocationId);
 
     const workDate = parseCalendarDate(input.workDate);
     const resolved = resolveManualMarkingReason(input.reason);
@@ -258,7 +262,7 @@ export class AttendanceCardService {
     const created = await this.attendanceService.registerEvent({
       tenantId,
       employeeId: employee.id,
-      locationId: employee.locationId,
+      locationId: markingLocationId,
       eventType: input.eventType,
       source: AttendanceLogSource.MANUAL,
       workDate,
@@ -305,13 +309,8 @@ export class AttendanceCardService {
     if (log.source !== AttendanceLogSource.MANUAL) {
       throw new ForbiddenException('Solo se pueden eliminar marcaciones manuales (source=MANUAL)');
     }
-    if (!log.employee.locationId) {
-      throw new BadRequestException(
-        'La tarjeta de asistencia no aplica para colaboradores con Centro de Costos Rotante',
-      );
-    }
 
-    await this.assertEmployeeLocationAllowed(tenantId, actingUser, log.employee.locationId);
+    await this.assertEmployeeLocationAllowed(tenantId, actingUser, log.locationId);
 
     await this.attendanceRepository.deleteManualLog(logId, tenantId);
 
@@ -326,33 +325,41 @@ export class AttendanceCardService {
     });
   }
 
-  /** La tarjeta de asistencia asume una sede fija por empleado — no aplica a ROTANTE (CONN-06). */
-  private async requireEmployee(
-    userId: string,
-    tenantId: string,
-  ): Promise<EmployeeWithUser & { locationId: string }> {
+  private async requireEmployee(userId: string, tenantId: string): Promise<EmployeeWithUser> {
     const employee = await this.attendanceRepository.findEmployeeByUserId(userId, tenantId);
     if (!employee) {
       throw new NotFoundException(`Empleado con userId "${userId}" no encontrado`);
     }
-    if (!employee.locationId) {
+    return employee;
+  }
+
+  /**
+   * CONN-12: ROTANTE no tiene sede fija — usa la sede de contexto (ruta/filtro/body).
+   * Empleados con sede fija siguen usando `EmployeeDetails.locationId`.
+   */
+  private resolveCardLocationId(
+    employeeLocationId: string | null,
+    preferredLocationId?: string | null,
+  ): string {
+    const resolved = employeeLocationId ?? preferredLocationId?.trim() ?? null;
+    if (!resolved) {
       throw new BadRequestException(
-        'La tarjeta de asistencia no aplica para colaboradores con Centro de Costos Rotante',
+        'locationId es obligatorio para colaboradores sin sede fija (Centro de Costos Rotante)',
       );
     }
-    return employee as EmployeeWithUser & { locationId: string };
+    return resolved;
   }
 
   private async assertEmployeeLocationAllowed(
     tenantId: string,
     actor: AttendanceActingUser,
-    employeeLocationId: string,
+    locationId: string,
   ): Promise<void> {
     const allowedLocationIds = await this.userLocationsService.resolveAllowedLocationIds(tenantId, {
       userId: actor.sub,
       roleCode: actor.roleCode,
     });
-    this.userLocationsService.assertLocationAllowed(allowedLocationIds, employeeLocationId);
+    this.userLocationsService.assertLocationAllowed(allowedLocationIds, locationId);
   }
 
   private assertDateRange(from: Date, to: Date): void {

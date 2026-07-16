@@ -254,11 +254,13 @@ export function AttendanceCollaboratorsScreen(): React.JSX.Element {
   };
 
   const handleView = (collaborator: AttendanceCollaborator) => {
-    if (!collaborator.locationId) {
-      toast.error('Este colaborador no tiene una sede asignada.');
+    // ROTANTE: sin sede fija — abrir tarjeta con la sede del filtro de contexto.
+    const sedeId = collaborator.locationId ?? state.locationId.trim();
+    if (!sedeId) {
+      toast.error('Seleccione una sede en el filtro para ver la tarjeta de un rotante.');
       return;
     }
-    navigate(ATTENDANCE_ROUTES.employeeCard(collaborator.locationId, collaborator.userId));
+    navigate(ATTENDANCE_ROUTES.employeeCard(sedeId, collaborator.userId));
   };
 
   const handleTogglePortalWorker = async (employeeDetailsId: string, enabled: boolean) => {

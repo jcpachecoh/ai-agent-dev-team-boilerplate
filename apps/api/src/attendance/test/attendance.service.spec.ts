@@ -638,7 +638,7 @@ describe('AttendanceService', () => {
       );
     });
 
-    it('MANUAL rechaza marcación fuera de la ventana del turno asignado', async () => {
+    it('CONN-12: MANUAL permite corrección fuera de la ventana del turno asignado', async () => {
       shiftResolutionMock.resolveForDay.mockResolvedValueOnce({
         kind: 'ASSIGNED',
         source: 'EMPLOYEE_ASSIGNMENT',
@@ -663,11 +663,11 @@ describe('AttendanceService', () => {
           workDate: WORK_DATE,
           timestamp: new Date('2026-06-10T23:00:00.000Z'),
           createdByUserId: 'actor-1',
-          manualReason: 'FORGOT',
+          manualReason: 'CORRECCION_MARCACION',
         }),
-      ).rejects.toThrow(BadRequestException);
+      ).resolves.toBeDefined();
 
-      expect(repoMock.createEventLog).not.toHaveBeenCalled();
+      expect(repoMock.createEventLog).toHaveBeenCalled();
     });
 
     it('APP_MOVIL EXIT hereda workDate del ENTRY abierto (turno nocturno)', async () => {

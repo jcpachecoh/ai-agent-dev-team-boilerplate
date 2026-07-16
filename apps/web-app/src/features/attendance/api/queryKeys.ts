@@ -39,4 +39,6 @@ export const attendanceKeys = {
     weekly: (filters: WeeklyAssignmentsQuery) =>
       [...attendanceKeys.turnoAssignments.all(), 'weekly', filters] as const,
   },
+  weeklyShiftPlan: (locationId: string, weekStart: string) =>
+    [...attendanceKeys.all, 'weekly-shift-plan', locationId, weekStart] as const,
 };

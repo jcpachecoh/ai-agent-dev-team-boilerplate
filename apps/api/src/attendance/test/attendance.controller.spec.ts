@@ -359,6 +359,7 @@ describe('AttendanceController', () => {
         '2026-06-01',
         '2026-06-30',
         { sub: 'user-001', roleCode: 'OWNER', locationId: undefined },
+        undefined,
       );
       expect(result).toEqual({ logs: [], observations: [], daySummaries: [] });
     });

@@ -4,11 +4,13 @@ import { TurnoAssignmentType, TurnoJornada } from '@prisma/client';
 import { EmployeeShiftAssignmentsRepository } from '../repository/employee-shift-assignments.repository';
 import { TurnoAssignmentsRepository } from '../repository/turno-assignments.repository';
 import { ShiftResolutionService } from '../service/shift-resolution.service';
+import { WeeklyShiftPlanService } from '../service/weekly-shift-plan.service';
 
 describe('ShiftResolutionService', () => {
   let service: ShiftResolutionService;
   let turnoAssignmentsRepository: jest.Mocked<TurnoAssignmentsRepository>;
   let employeeShiftAssignmentsRepository: jest.Mocked<EmployeeShiftAssignmentsRepository>;
+  let weeklyShiftPlanService: jest.Mocked<WeeklyShiftPlanService>;
 
   const tenantId = 'tenant-1';
   const employeeId = 'emp-1';
@@ -43,12 +45,20 @@ describe('ShiftResolutionService', () => {
             findEffectiveOnDate: jest.fn(),
           },
         },
+        {
+          provide: WeeklyShiftPlanService,
+          useValue: {
+            // Default: malla operativa (APPROVED) — tests legacy asumen calendario válido.
+            assertPlanOperational: jest.fn().mockResolvedValue(true),
+          },
+        },
       ],
     }).compile();
 
     service = module.get(ShiftResolutionService);
     turnoAssignmentsRepository = module.get(TurnoAssignmentsRepository);
     employeeShiftAssignmentsRepository = module.get(EmployeeShiftAssignmentsRepository);
+    weeklyShiftPlanService = module.get(WeeklyShiftPlanService);
   });
 
   it('prioriza calendario ASSIGNED sobre asignación vigente', async () => {
@@ -230,5 +240,96 @@ describe('ShiftResolutionService', () => {
     await expect(
       service.getTargetMinutesForDay({ tenantId, employeeId, locationId, workDate }),
     ).resolves.toBe(0);
+  });
+
+  describe('CONN-12 — malla semanal solo si plan APPROVED', () => {
+    it('ignora calendario ASSIGNED si el plan no está aprobado y cae a turno base', async () => {
+      weeklyShiftPlanService.assertPlanOperational.mockResolvedValue(false);
+      turnoAssignmentsRepository.findByEmployeeAndDate.mockResolvedValue({
+        id: 'cal-1',
+        tenantId,
+        turnoId: baseTurno.id,
+        employeeId,
+        workDate,
+        type: TurnoAssignmentType.ASSIGNED,
+        createdByUserId: null,
+        updatedByUserId: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        turno: baseTurno,
+      });
+      employeeShiftAssignmentsRepository.findEffectiveOnDate.mockResolvedValue({
+        id: 'esa-1',
+        tenantId,
+        employeeId,
+        turnoId: baseTurno.id,
+        effectiveFrom: new Date('2026-01-01T00:00:00.000Z'),
+        effectiveTo: null,
+        createdByUserId: null,
+        updatedByUserId: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        turno: baseTurno,
+      });
+
+      const result = await service.resolveForDay({ tenantId, employeeId, locationId, workDate });
+
+      expect(weeklyShiftPlanService.assertPlanOperational).toHaveBeenCalledWith(
+        tenantId,
+        locationId,
+        workDate,
+      );
+      expect(result.kind).toBe('ASSIGNED');
+      if (result.kind === 'ASSIGNED') {
+        expect(result.source).toBe('EMPLOYEE_ASSIGNMENT');
+      }
+    });
+
+    it('sin plan aprobado ni turno base → NONE (no alimenta corte/liquidación)', async () => {
+      weeklyShiftPlanService.assertPlanOperational.mockResolvedValue(false);
+      turnoAssignmentsRepository.findByEmployeeAndDate.mockResolvedValue({
+        id: 'cal-1',
+        tenantId,
+        turnoId: baseTurno.id,
+        employeeId,
+        workDate,
+        type: TurnoAssignmentType.ASSIGNED,
+        createdByUserId: null,
+        updatedByUserId: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        turno: baseTurno,
+      });
+      employeeShiftAssignmentsRepository.findEffectiveOnDate.mockResolvedValue(null);
+
+      const result = await service.resolveForDay({ tenantId, employeeId, locationId, workDate });
+
+      expect(result).toEqual({ kind: 'NONE', targetMinutes: 0 });
+    });
+
+    it('con plan APPROVED mantiene prioridad del calendario', async () => {
+      weeklyShiftPlanService.assertPlanOperational.mockResolvedValue(true);
+      turnoAssignmentsRepository.findByEmployeeAndDate.mockResolvedValue({
+        id: 'cal-1',
+        tenantId,
+        turnoId: baseTurno.id,
+        employeeId,
+        workDate,
+        type: TurnoAssignmentType.ASSIGNED,
+        createdByUserId: null,
+        updatedByUserId: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        turno: baseTurno,
+      });
+
+      const result = await service.resolveForDay({ tenantId, employeeId, locationId, workDate });
+
+      expect(result.kind).toBe('ASSIGNED');
+      if (result.kind === 'ASSIGNED') {
+        expect(result.source).toBe('CALENDAR');
+      }
+      expect(employeeShiftAssignmentsRepository.findEffectiveOnDate).not.toHaveBeenCalled();
+    });
   });
 });

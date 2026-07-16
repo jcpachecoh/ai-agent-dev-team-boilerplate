@@ -1,5 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsISO8601, IsNotEmpty, IsString, MaxLength } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsISO8601, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
 import type { UpsertObservationInput } from '../../interfaces/attendance.interfaces';
 
 export class UpsertAttendanceObservationDto implements UpsertObservationInput {
@@ -12,4 +12,9 @@ export class UpsertAttendanceObservationDto implements UpsertObservationInput {
   @IsNotEmpty()
   @MaxLength(500)
   note!: string;
+
+  @ApiPropertyOptional({ description: 'Sede de contexto para ROTANTE (CONN-12)' })
+  @IsString()
+  @IsOptional()
+  locationId?: string;
 }

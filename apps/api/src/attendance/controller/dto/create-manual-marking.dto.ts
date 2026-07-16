@@ -43,4 +43,12 @@ export class CreateManualMarkingDto implements CreateManualMarkingInput {
   @IsString()
   @IsOptional()
   supportStorageObjectId?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Sede de la marcación (requerida para ROTANTE sin sede fija; si se omite usa la sede del empleado)',
+  })
+  @IsString()
+  @IsOptional()
+  locationId?: string;
 }

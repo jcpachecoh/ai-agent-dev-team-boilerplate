@@ -658,6 +658,30 @@
       "value": "2026-07-10T17:01:00.000Z",
       "type": "string",
       "description": "CONN-11 — instante simulado del job de corte (post shiftEnd)"
+    },
+    {
+      "key": "conn12WeekStart",
+      "value": "2026-07-20",
+      "type": "string",
+      "description": "CONN-12 — lunes de la semana del plan (YYYY-MM-DD)"
+    },
+    {
+      "key": "conn12LocationId",
+      "value": "",
+      "type": "string",
+      "description": "CONN-12 — Location.id (capturar de OS-582 o seed locations)"
+    },
+    {
+      "key": "conn12PlanId",
+      "value": "seed-weekly-plan-draft-conn12",
+      "type": "string",
+      "description": "CONN-12 — WeeklyShiftPlan.id (seed draft o capturado en GET)"
+    },
+    {
+      "key": "conn12RejectReason",
+      "value": "Falta cobertura el viernes",
+      "type": "string",
+      "description": "CONN-12 — motivo de rechazo"
     }
   ],
   "item": [
@@ -19118,6 +19142,161 @@
                   "if (body.prorationMeta) {",
                   "  pm.expect(body.prorationMeta).to.be.an('array');",
                   "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "CONN-12 Weekly Shift Plan Approval",
+      "description": "CONN-12 — ciclo de aprobación semanal de malla de turnos (WeeklyShiftPlan).\n\nPrerrequisitos:\n1. Migración `conn12_weekly_shift_plan_approval` + seed (planes `seed-weekly-plan-draft-conn12` / `seed-weekly-plan-approved-conn12`)\n2. Login OWNER/SUPERVISOR para submit; MANAGER/OWNER para approve/reject\n3. Variables: `{{conn12LocationId}}`, `{{conn12WeekStart}}`, `{{conn12PlanId}}`\n4. Orden: GET plan → POST submit → POST approve | POST reject\n\nNota: asignaciones OS-582/OS-583 quedan en DRAFT hasta approve; malla sin APPROVED no alimenta CONN-11.",
+      "item": [
+        {
+          "name": "GET Or create weekly plan",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/turnos/planes-semanales?locationId={{conn12LocationId}}&weekStart={{conn12WeekStart}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "turnos", "planes-semanales"],
+              "query": [
+                {
+                  "key": "locationId",
+                  "value": "{{conn12LocationId}}"
+                },
+                {
+                  "key": "weekStart",
+                  "value": "{{conn12WeekStart}}"
+                }
+              ]
+            },
+            "description": "Obtiene o crea (DRAFT) el plan semanal. Captura `conn12PlanId`. Si `conn12LocationId` está vacío, ejecutar antes OS-582 GET semanal."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('plan GET: status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.expect(body).to.have.property('id');",
+                  "pm.expect(body).to.have.property('status');",
+                  "pm.collectionVariables.set('conn12PlanId', body.id);",
+                  "if (body.locationId) pm.collectionVariables.set('conn12LocationId', body.locationId);",
+                  "if (body.weekStart) pm.collectionVariables.set('conn12WeekStart', String(body.weekStart).slice(0, 10));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Submit for approval",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/turnos/planes-semanales/{{conn12PlanId}}/submit",
+            "description": "DRAFT/REJECTED → PENDING_APPROVAL (SUPERVISOR/MANAGER/OWNER)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('submit: status 200', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().status).to.eql('PENDING_APPROVAL');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Approve plan",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenManager}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/turnos/planes-semanales/{{conn12PlanId}}/approve",
+            "description": "PENDING → APPROVED. Usa {{accessTokenManager}} (MANAGER) o OWNER. SUPERVISOR debe recibir 403."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('approve: status 200', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().status).to.eql('APPROVED');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Reject plan",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenManager}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"{{conn12RejectReason}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/turnos/planes-semanales/{{conn12PlanId}}/reject",
+            "description": "PENDING → REJECTED con motivo. Ejecutar sobre un plan PENDING (re-submit tras reject o plan fresco)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('reject: status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.status).to.eql('REJECTED');",
+                  "pm.expect(body.rejectionReason).to.be.a(\"string\").and.not.empty;"
                 ]
               }
             }

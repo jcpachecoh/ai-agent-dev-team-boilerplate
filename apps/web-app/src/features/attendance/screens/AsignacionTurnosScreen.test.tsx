@@ -42,6 +42,42 @@ vi.mock('../api/turnos.api', () => ({
   listTurnos: (...args: unknown[]) => listTurnosMock(...args),
 }));
 
+const getOrCreateWeeklyShiftPlanMock = vi.fn().mockResolvedValue({
+  id: 'plan-1',
+  locationId: 'loc-1',
+  weekStart: '2026-07-06',
+  status: 'DRAFT',
+  submittedByUserId: null,
+  submittedAt: null,
+  approvedByUserId: null,
+  approvedAt: null,
+  rejectedByUserId: null,
+  rejectedAt: null,
+  rejectionReason: null,
+  createdAt: '',
+  updatedAt: '',
+});
+const submitWeeklyShiftPlanMock = vi.fn();
+const approveWeeklyShiftPlanMock = vi.fn();
+const rejectWeeklyShiftPlanMock = vi.fn();
+
+vi.mock('../api/weekly-shift-plan.api', () => ({
+  getOrCreateWeeklyShiftPlan: (...args: unknown[]) => getOrCreateWeeklyShiftPlanMock(...args),
+  submitWeeklyShiftPlan: (...args: unknown[]) => submitWeeklyShiftPlanMock(...args),
+  approveWeeklyShiftPlan: (...args: unknown[]) => approveWeeklyShiftPlanMock(...args),
+  rejectWeeklyShiftPlan: (...args: unknown[]) => rejectWeeklyShiftPlanMock(...args),
+}));
+
+vi.mock('../hooks/useAttendanceScopeLocations', () => ({
+  useAttendanceScopeLocations: () => ({
+    locations: [{ id: 'loc-1', name: 'Sede Centro', isActive: true }],
+    isLoading: false,
+    error: null,
+    isSystemAdmin: true,
+    isGeneralScope: true,
+  }),
+}));
+
 const baseWeekly = {
   weekStart: '2026-07-06',
   dates: [
@@ -292,5 +328,94 @@ describe('AsignacionTurnosScreen', () => {
 
     fireEvent.click(selectAllCheckbox);
     expect(screen.getByText('Seleccionados (0)')).toBeInTheDocument();
+  });
+
+  it('CONN-12: muestra estado del plan y permite enviar a aprobación', async () => {
+    submitWeeklyShiftPlanMock.mockResolvedValue({
+      id: 'plan-1',
+      locationId: 'loc-1',
+      weekStart: '2026-07-06',
+      status: 'PENDING_APPROVAL',
+      rejectionReason: null,
+    });
+
+    renderScreen();
+    expect(await screen.findByText('Sede Centro')).toBeInTheDocument();
+    expect(screen.getByText('Borrador')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Enviar a aprobación' }));
+
+    await waitFor(() => {
+      expect(submitWeeklyShiftPlanMock).toHaveBeenCalledWith('plan-1');
+    });
+  });
+
+  it('CONN-12: gerente puede aprobar / rechazar plan pendiente', async () => {
+    getOrCreateWeeklyShiftPlanMock.mockResolvedValue({
+      id: 'plan-1',
+      locationId: 'loc-1',
+      weekStart: '2026-07-06',
+      status: 'PENDING_APPROVAL',
+      submittedByUserId: 'user-1',
+      submittedAt: '',
+      approvedByUserId: null,
+      approvedAt: null,
+      rejectedByUserId: null,
+      rejectedAt: null,
+      rejectionReason: null,
+      createdAt: '',
+      updatedAt: '',
+    });
+    approveWeeklyShiftPlanMock.mockResolvedValue({
+      id: 'plan-1',
+      status: 'APPROVED',
+    });
+
+    renderScreen();
+    expect(await screen.findByText('Pendiente de aprobación')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Aprobar' }));
+
+    await waitFor(() => {
+      expect(approveWeeklyShiftPlanMock).toHaveBeenCalledWith('plan-1');
+    });
+  });
+
+  it('CONN-12: rechazo exige motivo y deja estado REJECTED', async () => {
+    getOrCreateWeeklyShiftPlanMock.mockResolvedValue({
+      id: 'plan-1',
+      locationId: 'loc-1',
+      weekStart: '2026-07-06',
+      status: 'PENDING_APPROVAL',
+      submittedByUserId: 'user-1',
+      submittedAt: '',
+      approvedByUserId: null,
+      approvedAt: null,
+      rejectedByUserId: null,
+      rejectedAt: null,
+      rejectionReason: null,
+      createdAt: '',
+      updatedAt: '',
+    });
+    rejectWeeklyShiftPlanMock.mockResolvedValue({
+      id: 'plan-1',
+      status: 'REJECTED',
+      rejectionReason: 'Falta cobertura viernes',
+    });
+
+    renderScreen();
+    await screen.findByText('Pendiente de aprobación');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Rechazar' }));
+    expect(await screen.findByRole('heading', { name: 'Rechazar planeación' })).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('Motivo del rechazo'), {
+      target: { value: 'Falta cobertura viernes' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmar rechazo' }));
+
+    await waitFor(() => {
+      expect(rejectWeeklyShiftPlanMock).toHaveBeenCalledWith('plan-1', 'Falta cobertura viernes');
+    });
   });
 });

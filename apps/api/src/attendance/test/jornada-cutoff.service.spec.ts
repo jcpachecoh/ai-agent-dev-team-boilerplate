@@ -137,6 +137,36 @@ describe('JornadaCutoffService', () => {
       expect(candidates).toHaveLength(0);
     });
 
+    it('CONN-12: malla sin aprobar (resolve NONE) no alimenta corte automático', async () => {
+      repositoryMock.findOpenOrdinaryEntries.mockResolvedValue([
+        {
+          id: 'entry-1',
+          tenantId,
+          employeeId,
+          locationId,
+          workDate,
+          timestamp: new Date('2026-07-10T08:00:00.000Z'),
+          shift: 'MORNING',
+        },
+      ]);
+      repositoryMock.findByEmployeeAndWorkDate.mockResolvedValue(null);
+      // ShiftResolutionService ignora TurnoAssignment si WeeklyShiftPlan !== APPROVED.
+      shiftResolutionMock.resolveForDay.mockResolvedValue({ kind: 'NONE', targetMinutes: 0 });
+
+      const candidates = await service.findDueCutoffCandidates(
+        tenantId,
+        new Date('2026-07-10T18:00:00.000Z'),
+      );
+
+      expect(candidates).toHaveLength(0);
+      expect(shiftResolutionMock.resolveForDay).toHaveBeenCalledWith({
+        tenantId,
+        employeeId,
+        locationId,
+        workDate,
+      });
+    });
+
     it('incluye candidato cuando turno ASSIGNED y shiftEnd ya pasó', async () => {
       repositoryMock.findOpenOrdinaryEntries.mockResolvedValue([
         {

@@ -1,0 +1,217 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 0 0 14px;
+  padding: 0;
+  border: 1px solid var(--cargo-accent-border);
+  border-radius: 6px;
+  background: var(--cargo-surface, #fff);
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  padding: 0.7rem 0.9rem;
+  border-bottom: 1px solid var(--cargo-accent-border);
+  background: color-mix(in srgb, var(--cargo-accent-soft) 70%, transparent);
+}
+
+.panelTitle {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--cargo-text-secondary);
+}
+
+.summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.summaryItem {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--cargo-text-secondary);
+  padding: 0.12rem 0.45rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--cargo-text-secondary) 10%, transparent);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0.35rem 0;
+  list-style: none;
+  max-height: 11rem;
+  overflow-y: auto;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.65rem 1.25rem;
+  margin: 0;
+  padding: 0.7rem 0.9rem;
+  border-left: 3px solid transparent;
+}
+
+.row + .row {
+  border-top: 1px solid color-mix(in srgb, var(--cargo-accent-border) 70%, transparent);
+}
+
+.rowDraft {
+  border-left-color: color-mix(in srgb, var(--cargo-text-secondary) 55%, transparent);
+}
+
+.rowPending {
+  border-left-color: #d97706;
+  background: color-mix(in srgb, #d97706 6%, transparent);
+}
+
+.rowApproved {
+  border-left-color: #059669;
+}
+
+.rowRejected {
+  border-left-color: #dc2626;
+  background: color-mix(in srgb, #dc2626 5%, transparent);
+}
+
+.identity {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.identityTop {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem 0.65rem;
+}
+
+.locationName {
+  font-size: 0.9rem;
+  font-weight: 650;
+  color: var(--cargo-text);
+  letter-spacing: 0.01em;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.18rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+
+.badgeDraft {
+  background: color-mix(in srgb, var(--cargo-text-secondary) 14%, transparent);
+  color: var(--cargo-text);
+  border-color: color-mix(in srgb, var(--cargo-text-secondary) 28%, transparent);
+}
+
+.badgePending {
+  background: rgb(245 158 11 / 16%);
+  color: #b45309;
+  border-color: rgb(245 158 11 / 35%);
+}
+
+.badgeApproved {
+  background: rgb(16 185 129 / 16%);
+  color: #047857;
+  border-color: rgb(16 185 129 / 35%);
+}
+
+.badgeRejected {
+  background: rgb(239 68 68 / 14%);
+  color: #b91c1c;
+  border-color: rgb(239 68 68 / 30%);
+}
+
+.hint {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--cargo-text-secondary);
+  max-width: 40rem;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.45rem;
+  flex-shrink: 0;
+}
+
+@media (max-width: 720px) {
+  .row {
+    grid-template-columns: 1fr;
+  }
+
+  .actions {
+    justify-content: flex-start;
+  }
+}
+
+.rejectBody {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.rejectHelp {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--cargo-text-secondary);
+  line-height: 1.4;
+}
+
+.rejectTextarea {
+  width: 100%;
+  min-height: 6rem;
+  resize: vertical;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--cargo-accent-border);
+  border-radius: 4px;
+  background: var(--cargo-surface, transparent);
+  color: var(--cargo-text);
+  font: inherit;
+}
+
+.rejectTextarea:focus {
+  outline: 2px solid var(--cargo-accent, #3b82f6);
+  outline-offset: 1px;
+}
+
+.rejectError {
+  margin: 0;
+  font-size: 0.78rem;
+  color: #9b2c20;
+}
+
+.rejectActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}

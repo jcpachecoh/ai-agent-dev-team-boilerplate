@@ -5,19 +5,27 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
-import { TurnoAssignmentType, TurnoJornada, TurnoTipo } from '@prisma/client';
+import {
+  TurnoAssignmentType,
+  TurnoJornada,
+  TurnoTipo,
+  WeeklyShiftPlanStatus,
+} from '@prisma/client';
 
 import { DailyCostCenterService } from '../../daily-cost-center/service/daily-cost-center.service';
 import { UserLocationsService } from '../../locations/service/user-locations.service';
 import type { TurnoAssignmentRecord } from '../interfaces/turno-assignments.interfaces';
 import { TurnoAssignmentsRepository } from '../repository/turno-assignments.repository';
 import { TurnoAssignmentsService } from '../service/turno-assignments.service';
+import { WeeklyShiftPlanService } from '../service/weekly-shift-plan.service';
+import { WEEKLY_SHIFT_PLAN_LOCKED_MESSAGE } from '../turnos.constants';
 
 describe('TurnoAssignmentsService', () => {
   let service: TurnoAssignmentsService;
   let repository: jest.Mocked<TurnoAssignmentsRepository>;
   let userLocationsService: jest.Mocked<UserLocationsService>;
   let dailyCostCenterService: jest.Mocked<DailyCostCenterService>;
+  let weeklyShiftPlanService: jest.Mocked<WeeklyShiftPlanService>;
 
   const tenantId = 'tenant-1';
   const ownerActor = { userId: 'owner-1', roleCode: 'OWNER' };
@@ -93,6 +101,15 @@ describe('TurnoAssignmentsService', () => {
             resolveFromShift: jest.fn().mockResolvedValue(null),
           },
         },
+        {
+          provide: WeeklyShiftPlanService,
+          useValue: {
+            getOrCreatePlan: jest.fn().mockResolvedValue({
+              id: 'plan-1',
+              status: WeeklyShiftPlanStatus.DRAFT,
+            }),
+          },
+        },
       ],
     }).compile();
 
@@ -100,6 +117,7 @@ describe('TurnoAssignmentsService', () => {
     repository = module.get(TurnoAssignmentsRepository);
     userLocationsService = module.get(UserLocationsService);
     dailyCostCenterService = module.get(DailyCostCenterService);
+    weeklyShiftPlanService = module.get(WeeklyShiftPlanService);
 
     repository.findActiveEmployeesPage.mockResolvedValue({
       employees: [
@@ -279,6 +297,66 @@ describe('TurnoAssignmentsService', () => {
       });
 
       expect(dailyCostCenterService.resolveFromShift).not.toHaveBeenCalled();
+    });
+
+    it('CONN-12: asegura plan DRAFT al asignar (getOrCreatePlan)', async () => {
+      await service.assign(tenantId, ownerActor, {
+        employeeId: 'emp-1',
+        workDate: futureDate,
+        turnoId: 'turno-1',
+      });
+
+      expect(weeklyShiftPlanService.getOrCreatePlan).toHaveBeenCalledWith(
+        tenantId,
+        ownerActor,
+        'loc-1',
+        new Date('2026-12-01T00:00:00.000Z'),
+      );
+    });
+
+    it('CONN-12: bloquea asignación futura si el plan está APPROVED', async () => {
+      weeklyShiftPlanService.getOrCreatePlan.mockResolvedValue({
+        id: 'plan-1',
+        status: WeeklyShiftPlanStatus.APPROVED,
+      } as never);
+
+      await expect(
+        service.assign(tenantId, ownerActor, {
+          employeeId: 'emp-1',
+          workDate: futureDate,
+          turnoId: 'turno-1',
+        }),
+      ).rejects.toThrow(ConflictException);
+      await expect(
+        service.assign(tenantId, ownerActor, {
+          employeeId: 'emp-1',
+          workDate: futureDate,
+          turnoId: 'turno-1',
+        }),
+      ).rejects.toThrow(WEEKLY_SHIFT_PLAN_LOCKED_MESSAGE);
+      expect(repository.upsertWithAudit).not.toHaveBeenCalled();
+    });
+
+    it('CONN-12: permite same-day aunque el plan esté APPROVED', async () => {
+      weeklyShiftPlanService.getOrCreatePlan.mockResolvedValue({
+        id: 'plan-1',
+        status: WeeklyShiftPlanStatus.APPROVED,
+      } as never);
+      const today = new Date();
+      const todayStr = today.toISOString().slice(0, 10);
+
+      repository.upsertWithAudit.mockResolvedValue(
+        buildAssignmentRecord({ workDate: new Date(`${todayStr}T00:00:00.000Z`) }),
+      );
+
+      await expect(
+        service.assign(tenantId, ownerActor, {
+          employeeId: 'emp-1',
+          workDate: todayStr,
+          turnoId: 'turno-1',
+        }),
+      ).resolves.toBeDefined();
+      expect(repository.upsertWithAudit).toHaveBeenCalled();
     });
 
     it('rechaza turno inactivo', async () => {

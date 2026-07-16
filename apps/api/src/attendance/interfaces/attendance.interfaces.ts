@@ -206,6 +206,8 @@ export interface AttendanceActingUser {
 export interface AttendanceCardQuery {
   dateFrom: string;
   dateTo: string;
+  /** Sede de contexto para ROTANTE (CONN-12). */
+  locationId?: string;
 }
 
 export interface AttendanceCardResult {
@@ -232,6 +234,8 @@ export interface AttendanceCardDaySummary {
 export interface UpsertObservationInput {
   workDate: string;
   note: string;
+  /** Sede de contexto para ROTANTE (CONN-12). */
+  locationId?: string;
 }
 
 export interface CreateManualMarkingInput {
@@ -242,6 +246,11 @@ export interface CreateManualMarkingInput {
   parentLogId?: string;
   /** Requerido cuando el motivo provisiona una novedad NOM-14 con soporte obligatorio. */
   supportStorageObjectId?: string;
+  /**
+   * Sede de la marcación. Obligatoria para ROTANTE (sin sede fija en ficha);
+   * para el resto se usa `EmployeeDetails.locationId` si se omite.
+   */
+  locationId?: string;
 }
 
 export interface CreateManualLogData {

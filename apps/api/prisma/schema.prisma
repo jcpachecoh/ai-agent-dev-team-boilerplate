@@ -733,6 +733,9 @@ model User {
   attendanceObservationsCreated         AttendanceObservation[]     @relation("AttendanceObservationCreatedBy")
   attendanceObservationsUpdated         AttendanceObservation[]     @relation("AttendanceObservationUpdatedBy")
   overtimeApprovals                     OvertimeApproval[]          @relation("OvertimeApprovalApprover")
+  weeklyShiftPlansSubmitted             WeeklyShiftPlan[]           @relation("WeeklyShiftPlanSubmittedBy")
+  weeklyShiftPlansApproved              WeeklyShiftPlan[]           @relation("WeeklyShiftPlanApprovedBy")
+  weeklyShiftPlansRejected              WeeklyShiftPlan[]           @relation("WeeklyShiftPlanRejectedBy")
 
   @@unique([tenantId, email])
   @@unique([tenantId, cedula])
@@ -830,6 +833,7 @@ model Location {
   overtimeRequests           OvertimeRequest[]
   dailyCostCenterAssignments DailyCostCenterAssignment[]
   jornadaCutoffs             JornadaCutoff[]
+  weeklyShiftPlans           WeeklyShiftPlan[]
 
   @@unique([tenantId, name])
   @@unique([tenantId, code])
@@ -2388,6 +2392,45 @@ model TurnoAssignment {
   @@index([tenantId, turnoId, workDate])
   @@index([tenantId, employeeId, workDate])
   @@map("turno_assignments")
+}
+
+// CONN-12: ciclo de aprobación semanal de la malla de turnos por sede.
+// Las celdas `TurnoAssignment` se asocian implícitamente por
+// (locationId del plan, workDate ∈ [weekStart, weekStart+6]) — sin FK en turno_assignments.
+// Solo status=APPROVED es insumo operativo para CONN-11 y liquidación.
+enum WeeklyShiftPlanStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+}
+
+model WeeklyShiftPlan {
+  id                String                @id @default(cuid())
+  tenantId          String
+  locationId        String
+  /// Lunes de la semana (alineado a OS-582 `getMondayOfWeek`).
+  weekStart         DateTime              @db.Date
+  status            WeeklyShiftPlanStatus @default(DRAFT)
+  submittedByUserId String?
+  submittedAt       DateTime?
+  approvedByUserId  String?
+  approvedAt        DateTime?
+  rejectedByUserId  String?
+  rejectedAt        DateTime?
+  rejectionReason   String?
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+
+  location    Location @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  submittedBy User?    @relation("WeeklyShiftPlanSubmittedBy", fields: [submittedByUserId], references: [id], onDelete: SetNull)
+  approvedBy  User?    @relation("WeeklyShiftPlanApprovedBy", fields: [approvedByUserId], references: [id], onDelete: SetNull)
+  rejectedBy  User?    @relation("WeeklyShiftPlanRejectedBy", fields: [rejectedByUserId], references: [id], onDelete: SetNull)
+
+  @@unique([tenantId, locationId, weekStart])
+  @@index([tenantId, status, weekStart])
+  @@index([tenantId, locationId, weekStart])
+  @@map("weekly_shift_plans")
 }
 
 // OS-548: descarte persistido de alertas del panel de control de asistencia.

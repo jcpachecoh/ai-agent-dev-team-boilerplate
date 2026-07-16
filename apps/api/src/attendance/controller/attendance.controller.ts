@@ -316,11 +316,18 @@ export class AttendanceController {
     @Query() query: AttendanceCardQueryDto,
   ): Promise<AttendanceCardResponseDto> {
     const tenantId = this.resolveTenantId(user, headerTenantId);
-    return this.attendanceCardService.getCard(userId, tenantId, query.dateFrom, query.dateTo, {
-      sub: user.sub,
-      roleCode: user.roleCode,
-      locationId: user.locationId,
-    }) as unknown as Promise<AttendanceCardResponseDto>;
+    return this.attendanceCardService.getCard(
+      userId,
+      tenantId,
+      query.dateFrom,
+      query.dateTo,
+      {
+        sub: user.sub,
+        roleCode: user.roleCode,
+        locationId: user.locationId,
+      },
+      query.locationId,
+    ) as unknown as Promise<AttendanceCardResponseDto>;
   }
 
   @ApiBearerAuth()
@@ -342,6 +349,7 @@ export class AttendanceController {
       query.dateFrom,
       query.dateTo,
       { sub: user.sub, roleCode: user.roleCode, locationId: user.locationId },
+      query.locationId,
     );
     return card.observations as unknown as AttendanceObservationResponseDto[];
   }

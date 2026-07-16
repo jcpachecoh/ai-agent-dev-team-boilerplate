@@ -8,12 +8,14 @@ import type {
 import { EmployeeShiftAssignmentsRepository } from '../repository/employee-shift-assignments.repository';
 import { TurnoAssignmentsRepository } from '../repository/turno-assignments.repository';
 import { computeShiftTargetMinutes, getUtcDayOfWeek } from '../shift-resolution.utils';
+import { WeeklyShiftPlanService } from './weekly-shift-plan.service';
 
 @Injectable()
 export class ShiftResolutionService implements IShiftResolutionService {
   constructor(
     private readonly turnoAssignmentsRepository: TurnoAssignmentsRepository,
     private readonly employeeShiftAssignmentsRepository: EmployeeShiftAssignmentsRepository,
+    private readonly weeklyShiftPlanService: WeeklyShiftPlanService,
   ) {}
 
   async resolveForDay(params: {
@@ -30,7 +32,15 @@ export class ShiftResolutionService implements IShiftResolutionService {
       workDate,
     );
 
-    if (calendarAssignment) {
+    // CONN-12: la malla semanal (TurnoAssignment) solo es operativa si el plan de la sede está APPROVED.
+    // Sin plan / DRAFT / PENDING / REJECTED → se ignora el calendario y se cae al turno base (si aplica).
+    const calendarOperational = await this.weeklyShiftPlanService.assertPlanOperational(
+      tenantId,
+      locationId,
+      workDate,
+    );
+
+    if (calendarAssignment && calendarOperational) {
       if (calendarAssignment.type === TurnoAssignmentType.REST) {
         return { kind: 'REST', targetMinutes: 0 };
       }

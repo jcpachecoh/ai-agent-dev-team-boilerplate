@@ -94,12 +94,18 @@ export function AttendanceCardScreen(): React.JSX.Element {
   const roleCode = meQuery.data?.roleCode?.toUpperCase() ?? '';
   const canAccessAnyLocation = SUPER_ROLES.has(roleCode);
   const canEditMarking = canWritePayrollEmployee(roleCode);
-  const hasLocationAccess = canAccessAnyLocation || !employee || employee.locationId === locationId;
+  // ROTANTE (locationId null): acceso vía sede de la ruta (filtro/contexto).
+  const hasLocationAccess =
+    canAccessAnyLocation ||
+    !employee ||
+    employee.locationId == null ||
+    employee.locationId === locationId;
 
   const { cardQuery, rows, summary } = useAttendanceCardData({
     userId,
     fromIso: appliedFrom,
     toIso: appliedTo,
+    locationId,
     enabled: Boolean(userId && employeeId && locationId && hasLocationAccess),
   });
 
@@ -291,7 +297,11 @@ export function AttendanceCardScreen(): React.JSX.Element {
     try {
       await upsertObservationMutation.mutateAsync({
         userId,
-        input: { workDate: observationRow.id, note: observationText.trim() },
+        input: {
+          workDate: observationRow.id,
+          note: observationText.trim(),
+          locationId,
+        },
       });
       setObservationRow(null);
       toast.success('Observación guardada');
@@ -368,6 +378,7 @@ export function AttendanceCardScreen(): React.JSX.Element {
               eventType: draft.type,
               timestamp: new Date(draft.datetimeLocal).toISOString(),
               reason: 'CORRECCION_MARCACION',
+              locationId,
               supportStorageObjectId,
             },
           });
@@ -378,6 +389,7 @@ export function AttendanceCardScreen(): React.JSX.Element {
           input: {
             workDate: markingRow.id,
             reason: changeReason.trim(),
+            locationId,
             ...(supportStorageObjectId ? { supportStorageObjectId } : {}),
           },
         });

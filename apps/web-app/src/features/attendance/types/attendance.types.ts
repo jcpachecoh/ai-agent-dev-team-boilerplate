@@ -85,6 +85,7 @@ export interface AttendanceCardResult {
 export interface UpsertAttendanceObservationInput {
   workDate: string;
   note: string;
+  locationId?: string;
 }
 
 export interface CreateManualMarkingInput {
@@ -94,6 +95,8 @@ export interface CreateManualMarkingInput {
   reason: string;
   parentLogId?: string;
   supportStorageObjectId?: string;
+  /** Sede de contexto — requerida para ROTANTE (CONN-12). */
+  locationId?: string;
 }
 
 export interface ManualMarkingReasonOption {

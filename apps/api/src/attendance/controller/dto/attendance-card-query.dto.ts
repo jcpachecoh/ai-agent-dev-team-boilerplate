@@ -1,5 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsISO8601 } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsISO8601, IsOptional, IsString } from 'class-validator';
 import type { AttendanceCardQuery } from '../../interfaces/attendance.interfaces';
 
 export class AttendanceCardQueryDto implements AttendanceCardQuery {
@@ -10,4 +10,11 @@ export class AttendanceCardQueryDto implements AttendanceCardQuery {
   @ApiProperty({ example: '2026-07-31', description: 'Fecha fin (ISO 8601)' })
   @IsISO8601()
   dateTo!: string;
+
+  @ApiPropertyOptional({
+    description: 'Sede de contexto (requerida para ROTANTE sin sede fija en ficha)',
+  })
+  @IsString()
+  @IsOptional()
+  locationId?: string;
 }

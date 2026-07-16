@@ -18,12 +18,12 @@ const TENANT = 'tenant-1';
 const LOCATION_A = 'loc-A';
 const LOCATION_B = 'loc-B';
 
-function makeEmployee(overrides?: Partial<{ id: string; locationId: string }>) {
+function makeEmployee(overrides?: Partial<{ id: string; locationId: string | null }>) {
   return {
     id: overrides?.id ?? 'emp-1',
     userId: 'user-1',
     tenantId: TENANT,
-    locationId: overrides?.locationId ?? LOCATION_A,
+    locationId: overrides?.locationId === undefined ? LOCATION_A : overrides.locationId,
     isActive: true,
     deletedAt: null,
     user: { id: 'user-1', email: 'ana@restopsiq.dev' },
@@ -479,6 +479,38 @@ describe('AttendanceCardService', () => {
       ).rejects.toThrow(NotFoundException);
     });
 
+    it('CONN-12: ROTANTE con locationId null crea marcación usando sede de contexto', async () => {
+      const employee = makeEmployee({ locationId: null });
+      repo.findEmployeeByUserId.mockResolvedValue(employee as never);
+      attendanceService.registerEvent.mockResolvedValue({
+        id: 'log-rotante-1',
+        source: 'MANUAL',
+      } as never);
+
+      await service.createManualMarking('user-1', TENANT, makeActingUser(), {
+        ...baseInput,
+        locationId: LOCATION_B,
+      });
+
+      expect(attendanceService.registerEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          locationId: LOCATION_B,
+          source: 'MANUAL',
+          eventType: AttendanceEventType.ENTRY,
+        }),
+      );
+    });
+
+    it('CONN-12: ROTANTE sin sede de contexto falla con 400 claro', async () => {
+      repo.findEmployeeByUserId.mockResolvedValue(makeEmployee({ locationId: null }) as never);
+
+      await expect(
+        service.createManualMarking('user-1', TENANT, makeActingUser(), baseInput),
+      ).rejects.toThrow(BadRequestException);
+
+      expect(attendanceService.registerEvent).not.toHaveBeenCalled();
+    });
+
     it('motivo de nómina registra ausencia del día sin crear AttendanceLog', async () => {
       const employee = makeEmployee();
       repo.findEmployeeByUserId.mockResolvedValue(employee as never);
@@ -508,13 +540,15 @@ describe('AttendanceCardService', () => {
 
   describe('deleteManualMarking', () => {
     function makeManualLog(overrides?: Partial<{ locationId: string; source: string }>) {
+      const locationId = overrides?.locationId ?? LOCATION_A;
       return {
         id: 'log-manual-1',
         eventType: AttendanceEventType.ENTRY,
         timestamp: new Date('2026-06-10T08:00:00.000Z'),
         workDate: new Date('2026-06-10T00:00:00.000Z'),
         source: overrides?.source ?? 'MANUAL',
-        employee: { locationId: overrides?.locationId ?? LOCATION_A },
+        locationId,
+        employee: { locationId },
       };
     }
 

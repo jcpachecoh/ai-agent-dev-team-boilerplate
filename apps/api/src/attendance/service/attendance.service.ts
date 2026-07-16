@@ -305,7 +305,8 @@ export class AttendanceService implements IAttendanceService {
       }
     } else if (input.source === AttendanceLogSource.MANUAL) {
       shift = shift ?? detectShift(input.timestamp);
-      await this.assertManualMarkingWithinAssignedShift(input, workDate);
+      // CONN-12: correcciones desde la tarjeta web pueden quedar fuera de la ventana
+      // del turno (defaults FE / ajustes admin). El motivo queda auditado en manualReason.
     }
 
     await assertNotOnApprovedVacation(
