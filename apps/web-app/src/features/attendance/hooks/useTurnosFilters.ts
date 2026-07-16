@@ -7,7 +7,7 @@ import type {
   TurnosListQuery,
 } from '../types/turnos.types';
 
-export const TURNOS_PAGE_SIZE_OPTIONS = [10, 25, 50, 100] as const;
+export const TURNOS_PAGE_SIZE_OPTIONS = [8, 20, 50, 100] as const;
 
 export type TurnosPageSize = (typeof TURNOS_PAGE_SIZE_OPTIONS)[number];
 
@@ -29,7 +29,7 @@ function estadoToQuery(estado: TurnoEstadoFilter): boolean | undefined {
   return undefined;
 }
 
-export function useTurnosFilters(initialPageSize: TurnosPageSize = 25) {
+export function useTurnosFilters(initialPageSize: TurnosPageSize = 8) {
   const [state, setState] = useState<TurnosFiltersState>({
     estadoDraft: 'all',
     estadoApplied: 'all',

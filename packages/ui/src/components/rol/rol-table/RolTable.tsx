@@ -1,5 +1,9 @@
 import type { JSX, ReactNode } from 'react';
 
+import {
+  EmpleadoPagination,
+  type EmpleadoPaginationProps,
+} from '../../empleado/empleado-pagination';
 import { RolTableHeader } from '../rol-table-header';
 import type { RolSize, RolTheme } from '../shared/rol-types';
 import styles from './RolTable.module.scss';
@@ -7,6 +11,7 @@ import styles from './RolTable.module.scss';
 export interface RolTableProps {
   children?: ReactNode;
   emptyState?: ReactNode;
+  pagination?: EmpleadoPaginationProps;
   showActions?: boolean;
   theme?: RolTheme;
   size?: RolSize;
@@ -16,6 +21,7 @@ export interface RolTableProps {
 export function RolTable({
   children,
   emptyState,
+  pagination,
   showActions = true,
   theme = 'dark',
   size = 'md',
@@ -35,6 +41,7 @@ export function RolTable({
       <div className={styles.body} role="rowgroup">
         {hasChildren ? children : emptyState}
       </div>
+      {pagination ? <EmpleadoPagination theme={theme} {...pagination} /> : null}
     </section>
   );
 }

@@ -14,6 +14,7 @@ import { canWriteCesantias } from '@/config/rbac.config';
 import { useMe } from '@/features/auth/hooks/useMe';
 import { getRoleCodeFromToken } from '@/lib/auth-token';
 import { useTheme } from '@/providers/ThemeProvider';
+import { TABLE_PAGE_SIZE, getTablePaginationRange } from '@/utils/table-pagination';
 
 import styles from './CesantiasScreen.module.scss';
 import { PayrollFilterBar } from '../components/PayrollFilterBar';
@@ -34,7 +35,7 @@ import {
   buildCesantiasYearOptions,
 } from '../utils/cesantias-display';
 
-const PAGE_SIZE = 50;
+const PAGE_SIZE = TABLE_PAGE_SIZE;
 
 export function CesantiasScreen(): React.JSX.Element {
   const { theme } = useTheme();
@@ -48,7 +49,7 @@ export function CesantiasScreen(): React.JSX.Element {
   const [selectedFund, setSelectedFund] = useState('');
   const [selectedChannel, setSelectedChannel] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
-  const [page, setPage] = useState(0);
+  const [page, setPage] = useState(1);
 
   const year = Number(selectedYear);
 
@@ -59,7 +60,7 @@ export function CesantiasScreen(): React.JSX.Element {
       fundChannelSnapshot: (selectedChannel || undefined) as CesantiasFundChannel | undefined,
       cesantiasStatus: (selectedStatus || undefined) as CesantiasSettlementStatus | undefined,
       limit: PAGE_SIZE,
-      offset: page * PAGE_SIZE,
+      offset: (page - 1) * PAGE_SIZE,
     }),
     [year, selectedFund, selectedChannel, selectedStatus, page],
   );
@@ -88,6 +89,7 @@ export function CesantiasScreen(): React.JSX.Element {
 
   const items = listQuery.data?.items ?? [];
   const total = listQuery.data?.total ?? 0;
+  const { totalPages, summary, pageLabel } = getTablePaginationRange(page, PAGE_SIZE, total);
   const totals = useMemo(
     () =>
       items.reduce(
@@ -105,7 +107,7 @@ export function CesantiasScreen(): React.JSX.Element {
   const hasPrivateRecords = exportAvailabilityQuery.data?.privateOperator ?? false;
 
   function resetFiltersToFirstPage() {
-    setPage(0);
+    setPage(1);
   }
 
   async function handleCalculate() {
@@ -262,7 +264,19 @@ export function CesantiasScreen(): React.JSX.Element {
             <p>No hay liquidaciones de cesantías para los filtros seleccionados.</p>
           </div>
         ) : (
-          <CesantiasTable items={items} totals={totals} theme={empleadoTheme} />
+          <CesantiasTable
+            items={items}
+            totals={totals}
+            theme={empleadoTheme}
+            pagination={{
+              page,
+              totalPages,
+              summary,
+              pageLabel,
+              onPrevious: () => setPage(Math.max(1, page - 1)),
+              onNext: () => setPage(Math.min(totalPages, page + 1)),
+            }}
+          />
         )}
       </EmpleadoPageSection>
     </EmpleadoPage>

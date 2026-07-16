@@ -31,6 +31,7 @@ import { LegalFormulaValidationRepository } from './repository/legal-formula-val
 import { PayrollRepository } from './repository/payroll.repository';
 import { PendingSalaryReconciliationRepository } from './repository/pending-salary-reconciliation.repository';
 import { PrimaRepository } from './repository/prima.repository';
+import { TenantPilaConfigRepository } from './repository/tenant-pila-config.repository';
 import { DotacionesResolver } from './resolver/dotaciones.resolver';
 import { EmployeeAssetsResolver } from './resolver/employee-assets.resolver';
 import { EmployeePositionsResolver } from './resolver/employee-positions.resolver';
@@ -57,6 +58,8 @@ import { PendingSalaryReconciliationService } from './service/pending-salary-rec
 import { PendingSalaryService } from './service/pending-salary.service';
 import { PrimaCalculationService } from './service/prima-calculation.service';
 import { PrimaService } from './service/prima.service';
+import { SenaQuotaService } from './service/sena-quota.service';
+import { TenantPilaConfigService } from './service/tenant-pila-config.service';
 import { VariableAverageService } from './service/variable-average.service';
 
 @Module({
@@ -87,6 +90,8 @@ import { VariableAverageService } from './service/variable-average.service';
     PayrollRepository,
     EmployeeCatalogService,
     EmployeeCatalogRepository,
+    TenantPilaConfigService,
+    TenantPilaConfigRepository,
     EmployeePositionsService,
     EmployeePositionsRepository,
     EmployeeAssetsService,
@@ -123,12 +128,14 @@ import { VariableAverageService } from './service/variable-average.service';
     PendingSalaryReconciliationRepository,
     PendingSalaryReconciliationService,
     EmployeeDeactivationGuardService,
+    SenaQuotaService,
   ],
   exports: [
     PayrollService,
     PayrollRepository,
     PayrollCalculationService,
     EmployeeCatalogService,
+    TenantPilaConfigService,
     EmployeePositionsService,
     EmployeeAssetsService,
     EmployeeDocumentsService,
@@ -142,6 +149,7 @@ import { VariableAverageService } from './service/variable-average.service';
     FinalSettlementRepository,
     IndemnificationCalculationService,
     FinalSettlementService,
+    SenaQuotaService,
   ],
 })
 export class PayrollModule {}

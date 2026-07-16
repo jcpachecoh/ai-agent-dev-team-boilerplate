@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { EmployeeContractType, SalaryType } from '@prisma/client';
 import {
   ARL_RATES,
@@ -12,11 +12,16 @@ import {
   INTEGRAL_CONTRIBUTIONS_BASE_PCT,
 } from '../payroll.constants';
 import {
+  buildExemptTaxWithholdingBreakdown,
+  calcularRetencionFuente,
+} from '../utils/income-tax-withholding.utils';
+import {
   AttendanceMonthSummary,
   EmployeePayrollInput,
   EmployeePayrollPeriod,
   OvertimeBreakdownItem,
   PayrollLegalRates,
+  TaxWithholdingBreakdown,
 } from '../interfaces/payroll-report.interfaces';
 
 /** Returns days in a given month — used as calendarDays denominator */
@@ -127,8 +132,36 @@ export class PayrollCalculationService {
     // ── 6. Employee deductions ────────────────────────────────────────────────
     const healthDeduction = roundCOP(contributionBase * EMPLOYEE_HEALTH_PCT);
     const pensionDeduction = roundCOP(contributionBase * EMPLOYEE_PENSION_PCT);
-    // GAP(Task04): retención en la fuente (Ley 2277/2022) — always 0 until Task04
-    const incomeTaxWithholding = 0;
+    // Base retención: contributionBase − aportes obligatorios empleado (task-04 §4.2 / OS-594).
+    // INTEGRAL: contributionBase ya es 70% del salario (CST art. 132 par. 2).
+    const ingresoBaseRetencion = Math.max(0, contributionBase - healthDeduction - pensionDeduction);
+    let incomeTaxWithholding = 0;
+    let taxWithholdingBreakdown: TaxWithholdingBreakdown;
+
+    if (employee.isExemptFromTax) {
+      taxWithholdingBreakdown = buildExemptTaxWithholdingBreakdown(
+        ingresoBaseRetencion,
+        legalRates.uvt,
+      );
+    } else {
+      if (legalRates.uvt <= 0) {
+        throw new BadRequestException(
+          'UVT no configurada o inválida para calcular retención en la fuente',
+        );
+      }
+      if (legalRates.taxWithholdingBrackets.length === 0) {
+        throw new BadRequestException(
+          'Tabla de retención en la fuente no configurada para el período',
+        );
+      }
+      const withholdingResult = calcularRetencionFuente(
+        ingresoBaseRetencion,
+        legalRates.uvt,
+        legalRates.taxWithholdingBrackets,
+      );
+      incomeTaxWithholding = withholdingResult.incomeTaxWithholding;
+      taxWithholdingBreakdown = withholdingResult.breakdown;
+    }
     const totalDeductions = healthDeduction + pensionDeduction + incomeTaxWithholding;
 
     // ── 7. Net pay ────────────────────────────────────────────────────────────
@@ -175,6 +208,7 @@ export class PayrollCalculationService {
       workedDays,
       calendarDays,
       salaryBase,
+      contributionBase,
       transportSubsidy,
       overtimePay,
       overtimeBreakdown,
@@ -190,6 +224,7 @@ export class PayrollCalculationService {
       healthDeduction,
       pensionDeduction,
       incomeTaxWithholding,
+      taxWithholdingBreakdown,
       totalDeductions,
       netPay,
       employerHealthContribution,

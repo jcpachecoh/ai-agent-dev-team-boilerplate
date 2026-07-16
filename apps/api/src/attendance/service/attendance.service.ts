@@ -15,6 +15,7 @@ import {
   AttendanceLogSource,
   AttendanceMarkingScope,
   AttendanceShift,
+  AttendanceValidationStatus,
 } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import {
@@ -271,7 +272,10 @@ export class AttendanceService implements IAttendanceService {
     let shift = input.shift ?? null;
     const markingScope = input.markingScope ?? AttendanceMarkingScope.ORDINARY;
 
-    if (input.source === AttendanceLogSource.APP_MOVIL) {
+    if (
+      input.source === AttendanceLogSource.APP_MOVIL ||
+      input.source === AttendanceLogSource.KIOSK
+    ) {
       if (input.eventType === AttendanceEventType.ENTRY) {
         await this.assertMarkingScopeRules({
           tenantId: input.tenantId,
@@ -305,7 +309,8 @@ export class AttendanceService implements IAttendanceService {
       }
     } else if (input.source === AttendanceLogSource.MANUAL) {
       shift = shift ?? detectShift(input.timestamp);
-      await this.assertManualMarkingWithinAssignedShift(input, workDate);
+      // CONN-12: correcciones desde la tarjeta web pueden quedar fuera de la ventana
+      // del turno (defaults FE / ajustes admin). El motivo queda auditado en manualReason.
     }
 
     await assertNotOnApprovedVacation(
@@ -315,12 +320,14 @@ export class AttendanceService implements IAttendanceService {
       workDate,
     );
 
-    let validationStatus = null;
+    let validationStatus = input.validationStatus ?? null;
     let distanceMeters: number | null = null;
     let radiusMeters: number | null = null;
     let rejectionReason: string | null = null;
 
-    if (
+    if (input.source === AttendanceLogSource.KIOSK) {
+      validationStatus = validationStatus ?? AttendanceValidationStatus.VALID;
+    } else if (
       input.source === AttendanceLogSource.APP_MOVIL &&
       input.clientLatitude != null &&
       input.clientLongitude != null

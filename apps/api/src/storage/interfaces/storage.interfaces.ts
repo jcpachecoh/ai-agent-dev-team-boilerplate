@@ -27,6 +27,8 @@ export interface StorageProvider {
   delete(key: string, bucket: string): Promise<void>;
   getPresignedUrl(key: string, bucket: string, ttlSeconds: number): Promise<string>;
   exists(key: string, bucket: string): Promise<boolean>;
+  /** Bytes exactos del objeto (sin transformar). */
+  getObjectBuffer(key: string, bucket: string): Promise<Buffer>;
   readonly providerType: StorageProviderType;
   readonly bucketName: string;
 }
@@ -131,6 +133,8 @@ export interface UpdateStorageObjectData {
   status?: StorageObjectStatus;
   deletedAt?: Date;
   metadata?: Record<string, unknown>;
+  entityId?: string | null;
+  entityType?: string | null;
 }
 
 export interface IStorageRepository {
@@ -146,5 +150,7 @@ export interface IStorageService {
   deleteFile(id: string, tenantId: string): Promise<void>;
   getPresignedUrl(id: string, tenantId: string, ttlSeconds: number): Promise<string>;
   findById(id: string, tenantId: string): Promise<StorageObjectResult>;
+  /** Descarga bytes exactos almacenados (tenant-scoped). */
+  getObjectBuffer(id: string, tenantId: string): Promise<Buffer>;
   buildPublicUrl(key: string): string;
 }

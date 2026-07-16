@@ -257,6 +257,7 @@ export async function seedHistoricalAttendance(prisma: PrismaClient): Promise<vo
       tenantId: TENANT_ID,
       userId: {
         in: [
+          GLOBAL_MES_OWNER_USER_ID,
           GLOBAL_MES_OPERATOR_USER_ID,
           GLOBAL_MES_OPERATOR2_USER_ID,
           GLOBAL_MES_OPERATIONS_ADMIN_USER_ID,
@@ -269,6 +270,7 @@ export async function seedHistoricalAttendance(prisma: PrismaClient): Promise<vo
   });
 
   const byUserId = new Map(employees.map((e) => [e.userId, e]));
+  const owner = byUserId.get(GLOBAL_MES_OWNER_USER_ID);
   const operator = byUserId.get(GLOBAL_MES_OPERATOR_USER_ID);
   const operator2 = byUserId.get(GLOBAL_MES_OPERATOR2_USER_ID);
   const operationsAdmin = byUserId.get(GLOBAL_MES_OPERATIONS_ADMIN_USER_ID);
@@ -380,7 +382,46 @@ export async function seedHistoricalAttendance(prisma: PrismaClient): Promise<vo
     },
   ] as const;
 
-  for (const log of logs) {
+  const ownerJuneWorkDays = [2, 3, 4, 5, 6, 9, 10, 11, 12, 13, 16, 17, 18, 19, 20, 23];
+  const ownerJuneLogs: Array<{
+    id: string;
+    employeeId: string;
+    locationId: string;
+    eventType: AttendanceEventType;
+    shift: AttendanceShift;
+    timestamp: Date;
+    workDate: Date;
+  }> = [];
+
+  if (owner) {
+    ownerJuneWorkDays.forEach((day, index) => {
+      const dayLabel = String(day).padStart(2, '0');
+      const workDate = new Date(`2026-06-${dayLabel}T00:00:00.000Z`);
+      const baseId = 200 + index * 2;
+      ownerJuneLogs.push(
+        {
+          id: `nnnnnnnn-0000-0000-0000-000000000${baseId}`,
+          employeeId: owner.id,
+          locationId: loc,
+          eventType: AttendanceEventType.ENTRY,
+          shift: AttendanceShift.MORNING,
+          timestamp: bogotaToUtc(`2026-06-${dayLabel}`, 8, 0),
+          workDate,
+        },
+        {
+          id: `nnnnnnnn-0000-0000-0000-000000000${baseId + 1}`,
+          employeeId: owner.id,
+          locationId: loc,
+          eventType: AttendanceEventType.EXIT,
+          shift: AttendanceShift.AFTERNOON,
+          timestamp: bogotaToUtc(`2026-06-${dayLabel}`, 17, 0),
+          workDate,
+        },
+      );
+    });
+  }
+
+  for (const log of [...logs, ...ownerJuneLogs]) {
     await prisma.attendanceLog.upsert({
       where: { id: log.id },
       update: {
@@ -415,6 +456,11 @@ export async function seedHistoricalAttendance(prisma: PrismaClient): Promise<vo
   console.log('  C) operator     2026-06-15  07:00–19:00  → 12h, supera cap 2h/día');
   console.log('  D) ops_admin    2026-06-16  09:00–(open) → entrada abierta, excluida de reportes');
   console.log('  E) operator2    2026-06-20  08:00–16:00  → 8h normal');
+  if (owner) {
+    console.log(
+      `  F) owner        2026-06 (${ownerJuneWorkDays.length} días) → retención OS-594 en tab Pagos`,
+    );
+  }
   console.log('  Queries de prueba:');
   console.log('    GET /api/reports/attendance?from=2026-06-01&to=2026-06-30');
   console.log('    GET /api/reports/payroll?period=2026-06');

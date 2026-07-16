@@ -77,6 +77,8 @@ export interface AuthTokens {
 }
 
 /** Global access/refresh JWT claims (no secrets, no permissions array). */
+export type JwtTokenType = 'SESSION' | 'KIOSK_MARKING';
+
 export interface JwtPayload {
   sub: string;
   email: string;
@@ -84,6 +86,10 @@ export interface JwtPayload {
   roleId: string;
   roleCode: string;
   locationId?: string | null;
+  /** Discriminator for scoped tokens. Omitted / SESSION = login normal. */
+  tokenType?: JwtTokenType;
+  /** Present when tokenType === KIOSK_MARKING — for revocation checks. */
+  sessionId?: string;
 }
 
 export interface IAuthService {
@@ -105,6 +111,18 @@ export interface IAuthService {
     tenantId: string,
     locationId: string,
   ): Promise<Pick<AuthTokens, 'accessToken' | 'refreshToken'>>;
+  /**
+   * Token de alcance reducido para modo marcación en tablet compartida.
+   * No emite refresh ni reemplaza el refresh del administrador.
+   */
+  issueKioskMarkingToken(
+    adminUserId: string,
+    tenantId: string,
+    locationId: string,
+    sessionId: string,
+  ): Promise<{ accessToken: string; expiresAt: Date }>;
+  /** Verifica password del usuario (salida de modo kiosko / reauth). */
+  verifyUserPassword(userId: string, password: string): Promise<boolean>;
   changePassword(
     userId: string,
     currentPassword: string,

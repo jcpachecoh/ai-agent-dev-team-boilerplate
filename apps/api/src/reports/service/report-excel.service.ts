@@ -26,7 +26,6 @@ const DARK_BLUE = { argb: 'FF1A3A5C' };
 const WHITE = { argb: 'FFFFFFFF' };
 const ALT_ROW = { argb: 'FFF5F6F8' };
 const TOTALS_ROW = { argb: 'FFDCE3EC' };
-const GAP_GRAY = { argb: 'FF888888' };
 
 const SOLID = (fgColor: { argb: string }): ExcelJS.Fill => ({
   type: 'pattern',
@@ -91,16 +90,9 @@ export class ReportExcelService {
     });
     sheet.addRow([`Generado: ${genDate}`]);
 
-    // GAP notice
-    const gapRow = sheet.addRow([
-      'GAP pendiente (Task04-F): retención en la fuente siempre 0 (Ley 2277/2022 / rangos UVT no implementados).',
-    ]);
-    gapRow.font = { italic: true, size: 8, color: GAP_GRAY };
-    sheet.mergeCells(`A4:J4`);
+    sheet.addRow([]); // separator before header
 
-    sheet.addRow([]); // row 5 — separator
-
-    // ── Header row (row 6) ───────────────────────────────────────────────────
+    // ── Header row ───────────────────────────────────────────────────────────
     const headerRow = sheet.addRow(COLUMNS.map(([label]) => label));
     headerRow.font = { bold: true, color: WHITE };
     headerRow.fill = SOLID(DARK_BLUE);

@@ -1,4 +1,4 @@
-import { ArlRiskLevel } from '@prisma/client';
+import { ArlRiskLevel, EmployeeContractType } from '@prisma/client';
 
 /**
  * Mirrors schema.prisma enum AttendanceOvertimeType.
@@ -36,7 +36,6 @@ export const EMPLOYEE_PENSION_PCT = 0.04;
 /** Rol bootstrap al crear usuario desde nómina; el rol definitivo se asigna en Usuarios. */
 export const DEFAULT_EMPLOYEE_BOOTSTRAP_ROLE_CODE = 'OPERATOR';
 // GAP(Task04): fondo de solidaridad pensional (+1% sobre base > 4 SMLV — Ley 100 art. 27)
-// GAP(Task04): retención en la fuente (Ley 2277/2022 rangos UVT) — siempre 0 hasta Task04
 
 // ── Aportes patronales (% sobre base de aportes) ─────────────────────────────
 // Fuente: Ley 100/1993 art. 204 (salud 8.5%), Ley 100/1993 art. 20 (pensión 12%),
@@ -56,3 +55,43 @@ export const ARL_RATES: Record<ArlRiskLevel, number> = {
   [ArlRiskLevel.RIESGO_IV]: 0.0435,
   [ArlRiskLevel.RIESGO_V]: 0.0696,
 };
+
+// ── OS-599 — Cuota de aprendizaje SENA (estimación) ───────────────────────────
+/**
+ * Única fuente de verdad de contratos que entran en la base estimada de trabajadores
+ * (denominador art. 33/34 Ley 789/2002). En el schema el tipo de prestación de servicios
+ * es `PRESTACION` (no existe `PRESTACION_SERVICIOS`).
+ */
+export const SENA_QUOTA_ELIGIBLE_CONTRACT_TYPES: ReadonlySet<EmployeeContractType> = new Set([
+  EmployeeContractType.FIJO,
+  EmployeeContractType.INDEFINIDO,
+  EmployeeContractType.OBRA,
+]);
+
+/** Exclusiones explícitas del denominador (independientes + aprendices). */
+export const SENA_QUOTA_EXCLUDED_FROM_ELIGIBLE_BASE: ReadonlySet<EmployeeContractType> = new Set([
+  EmployeeContractType.PRESTACION,
+  EmployeeContractType.APRENDIZAJE,
+]);
+
+/** Umbral de obligatoriedad — Ley 789/2002 art. 33. */
+export const SENA_QUOTA_OBLIGATION_THRESHOLD = 15;
+
+/**
+ * Entrada en vigencia de Ley 2466/2025 art. 23 (modifica monetización art. 34 Ley 789).
+ * Fuente operativa: Circular SENA 197 de 2025 — aplicación desde 2025-06-25.
+ */
+export const SENA_CUOTA_LEY_2466_EFFECTIVE_FROM = new Date('2025-06-25T00:00:00.000Z');
+
+/**
+ * Régimen histórico (antes de 2025-06-25): art. 34 Ley 789/2002 —
+ * monetización total = 5% × trabajadores (sin independientes/transitorios) × SMLMV;
+ * parcial = proporcional a aprendices no vinculados.
+ */
+export const SENA_CUOTA_HISTORICAL_WORKFORCE_PCT = 0.05;
+
+/**
+ * Fallback del factor post-reforma (1.5 SMLMV por aprendiz faltante) si NOM-06 no
+ * resuelve `SENA_CUOTA_MONETIZACION_FACTOR`. El valor canónico vive en LaborLegalParameter.
+ */
+export const SENA_CUOTA_POST_REFORM_PER_MISSING_SMLV = 1.5;

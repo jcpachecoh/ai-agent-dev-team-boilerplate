@@ -43,6 +43,10 @@ export class RolesGuard implements CanActivate {
       this.throwUnauthenticated(context);
     }
 
+    if (user.tokenType === 'KIOSK_MARKING') {
+      this.throwPermissionDenied(context);
+    }
+
     const headerTenantId = this.getOptionalHeaderTenantId(request);
     if (headerTenantId && headerTenantId !== user.tenantId) {
       this.throwPermissionDenied(context);

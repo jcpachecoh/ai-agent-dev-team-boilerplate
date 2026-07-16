@@ -123,6 +123,52 @@ describe('DailyCostCenterService', () => {
       expect(repository.upsertForDay).not.toHaveBeenCalled();
       expect(result).toBeNull();
     });
+
+    it('CONN-12 AC: rotante con turno sede A + marcación sede B → pide upsert MARCACION en B', async () => {
+      repository.findEmployeeCostCenter.mockResolvedValue(CostCenter.ROTANTE);
+      repository.upsertForDay.mockResolvedValue({
+        id: 'a-final',
+        tenantId: TENANT,
+        employeeId: ROTANTE_EMPLOYEE,
+        date: new Date('2026-07-15'),
+        locationId: 'loc-b',
+        shiftId: null,
+        source: AssignmentSource.MARCACION_ASISTENCIA,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      await service.resolveFromShift({
+        tenantId: TENANT,
+        employeeId: ROTANTE_EMPLOYEE,
+        workDate: new Date('2026-07-15'),
+        locationId: 'loc-a',
+        shiftId: 'shift-a',
+      });
+      const result = await service.resolveFromAttendance({
+        tenantId: TENANT,
+        employeeId: ROTANTE_EMPLOYEE,
+        eventDate: new Date('2026-07-15'),
+        locationId: 'loc-b',
+      });
+
+      expect(repository.upsertForDay).toHaveBeenNthCalledWith(
+        1,
+        expect.objectContaining({
+          locationId: 'loc-a',
+          source: AssignmentSource.TURNO_ASIGNADO,
+        }),
+      );
+      expect(repository.upsertForDay).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({
+          locationId: 'loc-b',
+          source: AssignmentSource.MARCACION_ASISTENCIA,
+        }),
+      );
+      expect(result?.locationId).toBe('loc-b');
+      expect(result?.source).toBe(AssignmentSource.MARCACION_ASISTENCIA);
+    });
   });
 
   describe('assignManual', () => {

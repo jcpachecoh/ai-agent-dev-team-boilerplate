@@ -1,0 +1,23 @@
+@use '../styles/payroll-report-panel' as prp;
+
+.badge {
+  @include prp.payroll-report-badge;
+}
+
+.exempt {
+  color: var(--prp-badge-neutral-fg);
+  background: var(--prp-badge-neutral-bg);
+  border-color: var(--prp-badge-neutral-border);
+}
+
+.compliant {
+  color: var(--prp-teal);
+  background: var(--prp-teal-soft);
+  border-color: var(--prp-teal-border);
+}
+
+.pending {
+  color: var(--prp-amber);
+  background: var(--prp-amber-soft);
+  border-color: var(--prp-amber-border);
+}

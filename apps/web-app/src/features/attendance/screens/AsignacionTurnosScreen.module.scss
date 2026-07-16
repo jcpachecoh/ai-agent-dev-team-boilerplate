@@ -1,8 +1,44 @@
-@use '@/styles/table-page-layout' as tablePage;
+// Scroll lives on .tableWrapper. Page scrolls when plan panel + table exceed viewport.
+// Do NOT set overflow:hidden on the section's direct child — it clips without bars.
+
+$grid-visible-height: 26rem; // header + ~5 body rows
+$table-bottom-gap: 1.5rem;
 
 .screen {
-  @include tablePage.app-list-screen-fill;
   min-width: 0;
+  // Beat CargoPage domain-list-page-fill overflow:hidden so tall content can scroll
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+
+  > section:last-of-type {
+    flex: 0 0 auto !important;
+    min-width: 0;
+    // Reserve room for 5 rows; don't let the plan panel crush this section
+    min-height: calc(#{$grid-visible-height} + #{$table-bottom-gap}) !important;
+    overflow: visible !important;
+    padding-bottom: $table-bottom-gap;
+
+    > .tableWrapper {
+      // block (not flex): a <table> inside a flex container shrinks and never overflows
+      display: block !important;
+      flex: none !important;
+      box-sizing: border-box;
+      min-width: 0;
+      width: 100%;
+      max-width: 100%;
+      min-height: $grid-visible-height !important;
+      height: $grid-visible-height;
+      max-height: $grid-visible-height;
+      overflow-x: auto !important;
+      overflow-y: auto !important;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+      border: 1px solid var(--cargo-border);
+      border-radius: 0.5rem;
+      background: var(--cargo-surface);
+      scrollbar-gutter: stable;
+    }
+  }
 }
 
 .readOnlyBanner {
@@ -22,6 +58,7 @@
   align-items: flex-end;
   gap: 0.75rem 1rem;
   width: 100%;
+  min-width: 0;
 }
 
 .field {
@@ -84,18 +121,15 @@
   white-space: nowrap;
 }
 
-.tableWrapper {
-  @include tablePage.app-table-wrap-fill;
-  border: 1px solid var(--cargo-border);
-  border-radius: 0.5rem;
-  background: var(--cargo-surface);
+.tableSection {
+  min-width: 0;
 }
 
 .table {
   border-collapse: separate;
   border-spacing: 0;
-  width: 100%;
-  min-width: 60rem;
+  width: max-content;
+  min-width: 68rem;
   color: var(--cargo-text);
 }
 
@@ -104,7 +138,7 @@
   position: sticky;
   top: 0;
   z-index: 2;
-  background: var(--cargo-surface-raised);
+  background-color: var(--cargo-surface-raised);
   padding: 0.7rem 0.85rem;
   font-size: 0.72rem;
   font-weight: 700;
@@ -113,16 +147,19 @@
   letter-spacing: 0.04em;
   border-bottom: 2px solid var(--cargo-border);
   text-align: left;
+  box-shadow: 0 1px 0 var(--cargo-border);
 }
 
 .fixedHeaderCell {
   left: 0;
   z-index: 3;
   min-width: 14rem;
+  width: 14rem;
 }
 
 .dayHeaderCell {
-  min-width: 7rem;
+  min-width: 7.5rem;
+  width: 7.5rem;
   text-align: center;
 }
 
@@ -139,8 +176,9 @@
 }
 
 .todayHeaderCell {
-  background: var(--cargo-secondary-soft);
+  background-color: color-mix(in srgb, var(--cargo-secondary) 12%, var(--cargo-surface-raised));
   border-bottom: 2px solid var(--cargo-secondary);
+  box-shadow: 0 1px 0 var(--cargo-secondary);
 
   .dayHeaderWeekday,
   .dayHeaderDate {
@@ -156,6 +194,9 @@
   padding: 0.6rem 0.85rem;
   border-bottom: 1px solid var(--cargo-border-subtle);
   min-width: 14rem;
+  width: 14rem;
+  height: 3.5rem;
+  vertical-align: middle;
 }
 
 .colaboradorRow,
@@ -186,10 +227,13 @@
 }
 
 .cell {
-  min-width: 7rem;
+  min-width: 7.5rem;
+  width: 7.5rem;
+  height: 3.5rem;
   padding: 0.55rem 0.65rem;
   border-bottom: 1px solid var(--cargo-border-subtle);
   text-align: center;
+  vertical-align: middle;
   cursor: pointer;
   color: var(--cargo-text);
   background-color: var(--cargo-surface);

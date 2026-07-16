@@ -7,7 +7,7 @@ import {
   NotFoundException,
   Optional,
 } from '@nestjs/common';
-import { TurnoAssignmentType } from '@prisma/client';
+import { TurnoAssignmentType, WeeklyShiftPlanStatus } from '@prisma/client';
 
 import { DailyCostCenterService } from '../../daily-cost-center/service/daily-cost-center.service';
 import { UserLocationsService } from '../../locations/service/user-locations.service';
@@ -32,8 +32,11 @@ import {
   SCOPE_FORBIDDEN_MESSAGE,
   TURNO_ASSIGNMENTS_LOCATION_SCOPED_ROLES,
   TURNO_ASSIGNMENTS_PAST_DATE_OVERRIDE_ROLES,
+  WEEKLY_SHIFT_PLAN_LOCATION_REQUIRED_MESSAGE,
+  WEEKLY_SHIFT_PLAN_LOCKED_MESSAGE,
 } from '../turnos.constants';
 import { startOfTodayUtc } from '../turnos.utils';
+import { WeeklyShiftPlanService } from './weekly-shift-plan.service';
 
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 200;
@@ -45,6 +48,7 @@ export class TurnoAssignmentsService implements ITurnoAssignmentsService {
   constructor(
     private readonly repository: TurnoAssignmentsRepository,
     private readonly userLocationsService: UserLocationsService,
+    private readonly weeklyShiftPlanService: WeeklyShiftPlanService,
     @Optional() private readonly dailyCostCenterService?: DailyCostCenterService,
   ) {}
 
@@ -139,6 +143,9 @@ export class TurnoAssignmentsService implements ITurnoAssignmentsService {
     // CONN-06: empleado ROTANTE sin sede fija — valida contra la sede del turno asignado.
     await this.assertLocationAllowed(tenantId, actor, employee.locationId ?? turnoLocationId);
 
+    const planLocationId = turnoLocationId ?? employee.locationId;
+    await this.assertWritableAgainstWeeklyPlan(tenantId, actor, planLocationId, workDate);
+
     const existing = await this.repository.findByEmployeeAndDate(
       tenantId,
       input.employeeId,
@@ -197,6 +204,9 @@ export class TurnoAssignmentsService implements ITurnoAssignmentsService {
       await this.assertLocationAllowed(tenantId, actor, employee.locationId);
     }
 
+    const planLocationId = existing.turno?.locationId ?? employee?.locationId ?? null;
+    await this.assertWritableAgainstWeeklyPlan(tenantId, actor, planLocationId, existing.workDate);
+
     const auditChanges = this.buildAuditChanges(
       existing.employeeId,
       existing.workDate,
@@ -224,6 +234,39 @@ export class TurnoAssignmentsService implements ITurnoAssignmentsService {
     if (isPast && !canOverride) {
       throw new ForbiddenException(PAST_DATE_FORBIDDEN_MESSAGE);
     }
+  }
+
+  /**
+   * CONN-12: escritura permitida en DRAFT/PENDING/REJECTED (crea DRAFT si no hay plan).
+   * Si APPROVED, solo same-day (contingencia); resto bloqueado hasta reopen (task futura).
+   */
+  private async assertWritableAgainstWeeklyPlan(
+    tenantId: string,
+    actor: ActorContext,
+    locationId: string | null,
+    workDate: Date,
+  ): Promise<void> {
+    if (!locationId) {
+      throw new BadRequestException(WEEKLY_SHIFT_PLAN_LOCATION_REQUIRED_MESSAGE);
+    }
+
+    const plan = await this.weeklyShiftPlanService.getOrCreatePlan(
+      tenantId,
+      actor,
+      locationId,
+      workDate,
+    );
+
+    if (plan.status !== WeeklyShiftPlanStatus.APPROVED) {
+      return;
+    }
+
+    const today = formatDateOnly(startOfTodayUtc());
+    if (formatDateOnly(workDate) === today) {
+      return;
+    }
+
+    throw new ConflictException(WEEKLY_SHIFT_PLAN_LOCKED_MESSAGE);
   }
 
   private async assertLocationAllowed(

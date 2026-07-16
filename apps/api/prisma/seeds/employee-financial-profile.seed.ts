@@ -20,6 +20,7 @@ const SEED_IDS = {
   operatorBankPrimary: 'cccccccc-0000-0000-0000-000000000058',
   ownerTaxInfo: 'cccccccc-0000-0000-0000-000000000059',
   ownerPaymentJune2026: 'cccccccc-0000-0000-0000-000000000060',
+  operatorPaymentJune2026: 'cccccccc-0000-0000-0000-000000000061',
 } as const;
 
 function getEncryptionKey(): Buffer {
@@ -266,7 +267,43 @@ export async function seedEmployeeFinancialProfiles(
     });
   }
 
+  await prisma.employeePaymentHistory.upsert({
+    where: {
+      financialProfileId_periodYear_periodMonth: {
+        financialProfileId: operatorProfile.id,
+        periodYear: 2026,
+        periodMonth: 6,
+      },
+    },
+    update: {
+      bankAccountId: SEED_IDS.operatorBankPrimary,
+      grossAmount: 1800000,
+      totalDeductions: 288000,
+      netAmount: 1512000,
+      paymentDate: new Date('2026-06-30T12:00:00.000Z'),
+      paymentMethod: PaymentMethod.BANK_TRANSFER,
+      status: FinancialPaymentStatus.PAID,
+      transactionReference: 'SEED-PAY-OPERATOR-2026-06',
+    },
+    create: {
+      id: SEED_IDS.operatorPaymentJune2026,
+      tenantId: operatorEmployee.tenantId,
+      financialProfileId: operatorProfile.id,
+      bankAccountId: SEED_IDS.operatorBankPrimary,
+      periodYear: 2026,
+      periodMonth: 6,
+      grossAmount: 1800000,
+      totalDeductions: 288000,
+      netAmount: 1512000,
+      paymentDate: new Date('2026-06-30T12:00:00.000Z'),
+      paymentMethod: PaymentMethod.BANK_TRANSFER,
+      status: FinancialPaymentStatus.PAID,
+      transactionReference: 'SEED-PAY-OPERATOR-2026-06',
+    },
+  });
+
   console.log('EmployeeFinancialProfile: seeded for owner and operator');
+  console.log('  OS-594 UI: owner + operator tienen pago Junio 2026 en historial (tab Pagos)');
   console.log(`  ownerFinancialProfileId=${ownerProfile.id}`);
   console.log(`  ownerPrimaryBankAccountId=${SEED_IDS.ownerBankPrimary}`);
   console.log(`  operatorFinancialProfileId=${operatorProfile.id}`);

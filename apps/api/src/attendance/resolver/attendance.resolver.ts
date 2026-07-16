@@ -59,7 +59,10 @@ export class AttendanceResolver {
 
   @Public()
   @Mutation(() => KioskAuthResultType, {
-    description: 'Autenticación kiosko: cédula + PIN → userId y JWT de sesión',
+    deprecationReason:
+      'Flujo cédula+PIN individual (NOM-03). Para tablet compartida usar activarModoMarcacionKiosko + registrarMarcacionKiosko.',
+    description:
+      '[DEPRECATED] Autenticación kiosko legacy: cédula + PIN → JWT de sesión completa del empleado. Preferir modo marcación tablet compartida.',
   })
   kioskAuth(
     @Context() context: GqlRequestContext,

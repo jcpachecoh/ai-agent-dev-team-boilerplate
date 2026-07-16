@@ -135,6 +135,19 @@ describe('TurnoAssignmentsImportService', () => {
     expect(result.errorCount).toBe(0);
   });
 
+  it('CONN-12: import no auto-aprueba — solo escribe vía assign (plan queda DRAFT)', async () => {
+    const buffer = await buildWorkbookBuffer(
+      [{ documento: '', nombre: '', employeeId: 'emp-1', '2026-08-03': 'TM' }],
+      ['2026-08-03'],
+    );
+
+    await service.importFromExcel(tenantId, ownerActor, buffer);
+
+    // Excel reutiliza assign (getOrCreatePlan → DRAFT). No hay submit/approve en el import.
+    expect(assignmentsService.assign).toHaveBeenCalledTimes(1);
+    expect(assignmentsService.resolveScope).toHaveBeenCalled();
+  });
+
   it('usa fallback por documento cuando no viene Employee ID', async () => {
     assignmentsRepository.findEmployeeScope.mockResolvedValue(null);
 

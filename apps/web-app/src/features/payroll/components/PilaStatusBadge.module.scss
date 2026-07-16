@@ -1,0 +1,35 @@
+@use '../styles/payroll-report-panel' as prp;
+
+.badge {
+  @include prp.payroll-report-badge;
+}
+
+.pending {
+  color: var(--prp-badge-neutral-fg);
+  background: var(--prp-badge-neutral-bg);
+  border-color: var(--prp-badge-neutral-border);
+}
+
+.failed {
+  color: var(--prp-coral);
+  background: var(--prp-coral-soft);
+  border-color: var(--prp-coral-border);
+}
+
+.generated {
+  color: var(--prp-sky);
+  background: var(--prp-sky-soft);
+  border-color: var(--prp-sky-border);
+}
+
+.paid {
+  color: var(--prp-teal);
+  background: var(--prp-teal-soft);
+  border-color: var(--prp-teal-border);
+}
+
+.voided {
+  color: var(--prp-coral);
+  background: var(--prp-coral-soft);
+  border-color: var(--prp-coral-border);
+}

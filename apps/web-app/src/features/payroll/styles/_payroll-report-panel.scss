@@ -1,0 +1,145 @@
+// Shared chrome for PILA / SENA panels on Nómina → Reportes.
+// Tokens mirror packages/ui asistencia/nomina dark+light so these siblings of
+// NominaDashboardPreview stay on the same black/#f6f4ef system.
+
+@mixin payroll-report-theme-dark {
+  --prp-page: #0a0a0a;
+  --prp-surface: #111111;
+  --prp-surface-raised: #141414;
+  --prp-header: #0d0d0d;
+  --prp-border: #2e2e2e;
+  --prp-border-subtle: #1a1a1a;
+  --prp-text: #f5f5f0;
+  --prp-text-secondary: #bbbbbb;
+  --prp-muted: #888888;
+  --prp-faint: #555555;
+  --prp-label: #9a9a9a;
+  --prp-accent: #c8a96e;
+  --prp-sky: #0ea5e9;
+  --prp-teal: #2ec4a0;
+  --prp-amber: #f0c040;
+  --prp-coral: #e05a44;
+  --prp-hover: rgb(255 255 255 / 6%);
+  --prp-badge-neutral-fg: #bbbbbb;
+  --prp-badge-neutral-bg: #1a1a1a;
+  --prp-badge-neutral-border: #2e2e2e;
+  --prp-teal-soft: rgb(46 196 160 / 12%);
+  --prp-teal-border: rgb(46 196 160 / 35%);
+  --prp-amber-soft: rgb(240 192 64 / 12%);
+  --prp-amber-border: rgb(240 192 64 / 40%);
+  --prp-coral-soft: rgb(224 90 68 / 12%);
+  --prp-coral-border: rgb(224 90 68 / 35%);
+  --prp-sky-soft: rgb(14 165 233 / 14%);
+  --prp-sky-border: rgb(14 165 233 / 40%);
+}
+
+@mixin payroll-report-theme-light {
+  --prp-page: #f6f4ef;
+  --prp-surface: #f6f4ef;
+  --prp-surface-raised: #fbfaf6;
+  --prp-header: #fbfaf6;
+  --prp-border: rgb(0 0 0 / 12%);
+  --prp-border-subtle: rgb(0 0 0 / 8%);
+  --prp-text: #1a1a1a;
+  --prp-text-secondary: #374151;
+  --prp-muted: #4b5563;
+  --prp-faint: #6b7280;
+  --prp-label: #6b7280;
+  --prp-accent: #c8a96e;
+  --prp-sky: #0284c7;
+  --prp-teal: #0d9488;
+  --prp-amber: #b8860b;
+  --prp-coral: #c2410c;
+  --prp-hover: rgb(0 0 0 / 4%);
+  --prp-badge-neutral-fg: #4b5563;
+  --prp-badge-neutral-bg: #f3f1eb;
+  --prp-badge-neutral-border: rgb(0 0 0 / 12%);
+  --prp-teal-soft: rgb(13 148 136 / 10%);
+  --prp-teal-border: rgb(13 148 136 / 35%);
+  --prp-amber-soft: rgb(184 134 11 / 12%);
+  --prp-amber-border: rgb(184 134 11 / 40%);
+  --prp-coral-soft: rgb(194 65 12 / 10%);
+  --prp-coral-border: rgb(194 65 12 / 35%);
+  --prp-sky-soft: rgb(2 132 199 / 10%);
+  --prp-sky-border: rgb(2 132 199 / 35%);
+}
+
+@mixin payroll-report-theme-classes {
+  &.theme--dark {
+    @include payroll-report-theme-dark;
+  }
+
+  &.theme--light {
+    @include payroll-report-theme-light;
+  }
+}
+
+@mixin payroll-report-panel {
+  @include payroll-report-theme-classes;
+
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--prp-border);
+  border-radius: 4px;
+  background: var(--prp-surface);
+  color: var(--prp-text);
+  overflow: hidden;
+}
+
+@mixin payroll-report-panel-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px 11px;
+  border-bottom: 1px solid var(--prp-border-subtle);
+  background: var(--prp-header);
+}
+
+@mixin payroll-report-eyebrow {
+  margin: 0;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--prp-label);
+}
+
+@mixin payroll-report-title {
+  margin: 4px 0 0;
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--prp-text);
+}
+
+@mixin payroll-report-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 16px 16px;
+}
+
+@mixin payroll-report-meta-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--prp-label);
+}
+
+@mixin payroll-report-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}

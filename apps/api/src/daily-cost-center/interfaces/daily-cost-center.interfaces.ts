@@ -1,14 +1,17 @@
 import { AssignmentSource, CostCenter } from '@prisma/client';
 
 /**
- * CONN-06 — Prioridad de fuente para la asignación diaria de sede de un empleado ROTANTE.
- * TURNO_ASIGNADO > MARCACION_ASISTENCIA > MANUAL — pero una vez fijada, MANUAL nunca es
- * sobrescrita automáticamente por turno/marcación posterior (decisión D2 del epic).
+ * CONN-06 / CONN-12 — Prioridad de fuente para la asignación diaria de sede (ROTANTE).
+ * MANUAL > MARCACION_ASISTENCIA > TURNO_ASIGNADO
+ *
+ * - MANUAL nunca es sobrescrita por automático (CONN-06 D2).
+ * - Marcación real prevalece sobre turno planificado (CONN-12 reunión / D4): el colaborador
+ *   puede marcar en sede distinta a la planeada y esa sede alimenta el prorrateo.
  */
 export const ASSIGNMENT_SOURCE_PRIORITY: Record<AssignmentSource, number> = {
   MANUAL: 3,
-  TURNO_ASIGNADO: 2,
-  MARCACION_ASISTENCIA: 1,
+  MARCACION_ASISTENCIA: 2,
+  TURNO_ASIGNADO: 1,
 };
 
 export interface UpsertDailyAssignmentInput {

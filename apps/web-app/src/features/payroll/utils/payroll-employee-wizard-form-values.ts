@@ -11,7 +11,7 @@ import type {
   PayrollEmployeeCreateTaxDraft,
 } from '../types/payroll-employee-create-wizard.types';
 import { formatMaskedAccountNumber, selectPrimaryBankAccount } from './bank-account-validation';
-import { splitEmployeeNameForForm } from './employee-name';
+import { splitEmployeeNameForForm, splitNombresForForm } from './employee-name';
 import { formatWithholdingRate } from './financial-profile-display';
 
 function toDateInputValue(value: string | null | undefined): string {
@@ -36,7 +36,8 @@ export function payrollEmployeeToFormValues(employee: PayrollEmployee): PayrollE
     documentType: (employee.user?.documentType as DocumentType) ?? 'CC',
     email: employee.user?.email ?? '',
     locationId: employee.locationId ?? '',
-    nombres: nameParts.nombres,
+    primerNombre: nameParts.primerNombre,
+    segundoNombre: nameParts.segundoNombre,
     primerApellido: nameParts.primerApellido,
     segundoApellido: nameParts.segundoApellido,
     positionId: employee.positionId ?? '',
@@ -54,6 +55,8 @@ export function payrollEmployeeToFormValues(employee: PayrollEmployee): PayrollE
     arlName: employee.arlName,
     arlRiskLevel: employee.arlRiskLevel,
     cajaCompensacion: employee.cajaCompensacion,
+    departamento: '',
+    ciudad: '',
     barrio: employee.barrio ?? '',
     localidad: employee.localidad ?? '',
     costCenter: (employee.costCenter as PayrollEmployeeFormValues['costCenter']) ?? 'OPERACIONES',
@@ -81,16 +84,26 @@ export function mergePersonalDataIntoFormValues(
 ): PayrollEmployeeFormValues {
   if (!personalData) return values;
 
+  const nombresFromPersonalData = personalData.nombres?.trim()
+    ? splitNombresForForm(personalData.nombres)
+    : null;
+
   return {
     ...values,
     documentType: personalData.tipoDocumento
       ? mapPersonalDataDocumentType(personalData.tipoDocumento)
       : values.documentType,
     cedula: personalData.numeroDocumento?.trim() || values.cedula,
-    nombres: personalData.nombres?.trim() || values.nombres,
+    primerNombre: nombresFromPersonalData?.primerNombre || values.primerNombre,
+    // Los datos personales son la fuente de verdad del segundo nombre (puede ser vacío).
+    segundoNombre: nombresFromPersonalData
+      ? nombresFromPersonalData.segundoNombre
+      : values.segundoNombre,
     primerApellido: personalData.primerApellido?.trim() || values.primerApellido,
     segundoApellido: personalData.segundoApellido?.trim() || values.segundoApellido,
     email: personalData.correo?.trim() || values.email,
+    departamento: personalData.departamento?.trim() || values.departamento,
+    ciudad: personalData.ciudad?.trim() || values.ciudad,
     barrio: personalData.barrio?.trim() || values.barrio,
     localidad: personalData.localidad?.trim() || values.localidad,
   };

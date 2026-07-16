@@ -20,6 +20,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAdminUsers } from '@/features/usuarios/hooks/useAdminUsers';
 import { useUiTheme } from '@/hooks/useUiTheme';
 import { getErrorMessage, isGraphqlConfigured } from '@/lib/graphql-client';
+import { useClientTablePagination } from '@/utils/useClientTablePagination';
 
 import { useLocation, useLocationMetrics, useLocationUsers } from '../hooks/useLocations';
 import { useDeleteLocation, useToggleLocationStatus } from '../hooks/useLocationMutations';
@@ -103,6 +104,8 @@ export default function SedesListView(): JSX.Element {
 
     return result;
   }, [rows, search, statusFilter, sort]);
+
+  const { page, pageItems, range, onPrevious, onNext } = useClientTablePagination(filteredRows);
 
   const handleToggleStatus = (id: string) => {
     setPendingToggleId(id);
@@ -201,12 +204,15 @@ export default function SedesListView(): JSX.Element {
               sortDirection={sort?.direction ?? 'asc'}
               onSortChange={handleSortChange}
               pagination={{
-                page: 1,
-                totalPages: 1,
-                summary: `Mostrando 1-${filteredRows.length} de ${rows.length}`,
+                page,
+                totalPages: range.totalPages,
+                summary: range.summary,
+                pageLabel: range.pageLabel,
+                onPrevious,
+                onNext,
               }}
             >
-              {filteredRows.map((row) => (
+              {pageItems.map((row) => (
                 <SedeTableItem
                   key={row.id}
                   {...row}

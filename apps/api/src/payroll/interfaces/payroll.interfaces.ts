@@ -162,6 +162,18 @@ export interface PayrollActor {
   roleCode: string;
 }
 
+export interface PayrollEmployeesListResult {
+  items: (EmployeeDetails & { user: User })[];
+  total: number;
+  limit: number;
+  offset: number;
+  summary: {
+    total: number;
+    active: number;
+    inactive: number;
+  };
+}
+
 export interface IPayrollService {
   create(tenantId: string, data: any): Promise<EmployeeDetails & { user: User }>;
   findAll(
@@ -169,6 +181,12 @@ export interface IPayrollService {
     filters: any,
     actor: PayrollActor,
   ): Promise<(EmployeeDetails & { user: User })[]>;
+  /** Listado HTTP paginado con total y resumen (mismo estilo que Colaboradores/Cesantías). */
+  listPaginated(
+    tenantId: string,
+    filters: any,
+    actor: PayrollActor,
+  ): Promise<PayrollEmployeesListResult>;
   findOne(
     tenantId: string,
     userId: string,

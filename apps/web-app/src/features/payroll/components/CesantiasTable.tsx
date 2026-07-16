@@ -1,4 +1,9 @@
-import { EmpleadoTableHeader, type EmpleadoTheme } from '@restopsiq/ui';
+import {
+  EmpleadoPagination,
+  EmpleadoTableHeader,
+  type EmpleadoPaginationProps,
+  type EmpleadoTheme,
+} from '@restopsiq/ui';
 import type { CSSProperties } from 'react';
 
 import type { CesantiasLiquidation } from '../types/cesantias.types';
@@ -15,6 +20,7 @@ interface Props {
   items: CesantiasLiquidation[];
   totals: { cesantias: number; interest: number };
   theme: EmpleadoTheme;
+  pagination?: EmpleadoPaginationProps;
 }
 
 /**
@@ -23,7 +29,7 @@ interface Props {
  * de las cesantías (requisito funcional explícito). Nunca muestra `employeeId` — solo
  * `employeeName`, ya resuelto por el backend (ver CesantiasService.listByYear).
  */
-export function CesantiasTable({ items, totals, theme }: Props): React.JSX.Element {
+export function CesantiasTable({ items, totals, theme, pagination }: Props): React.JSX.Element {
   const gridTemplate = getCesantiasGridTemplate();
 
   return (
@@ -51,6 +57,7 @@ export function CesantiasTable({ items, totals, theme }: Props): React.JSX.Eleme
           </div>
         </div>
       </div>
+      {pagination ? <EmpleadoPagination theme={theme} {...pagination} /> : null}
     </section>
   );
 }

@@ -18,4 +18,10 @@ export class EmployeeCatalogOptionResponseDto {
 
   @ApiProperty()
   name!: string;
+
+  @ApiPropertyOptional({
+    nullable: true,
+    description: 'Código oficial PILA (UGPP). Null si no aplica o no verificado.',
+  })
+  pilaCode!: string | null;
 }

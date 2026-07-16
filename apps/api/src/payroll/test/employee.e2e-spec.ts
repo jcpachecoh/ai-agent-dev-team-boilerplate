@@ -101,7 +101,8 @@ describe('EmployeesController (e2e)', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('x-tenant-id', mockTenantId);
     expect(listRes.status).toBe(200);
-    expect(Array.isArray(listRes.body)).toBe(true);
+    expect(Array.isArray(listRes.body.items)).toBe(true);
+    expect(typeof listRes.body.total).toBe('number');
 
     // 5. GET one
     const getOneRes = await request(app.getHttpServer())

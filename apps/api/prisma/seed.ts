@@ -60,6 +60,7 @@ import {
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { syncEmployeeCompensationHistory } from './seeds/employee-compensation-history.seed-util';
+import { seedWeeklyShiftPlansDemo } from './seeds/conn12-weekly-shift-plans.seed';
 
 const prisma = new PrismaClient();
 
@@ -629,8 +630,11 @@ const PERMISSION_SEEDS = [
   },
   // OS-591 (fase 3) — Liquidación definitiva de contrato: permisos granulares por acción
   // (separación de funciones — quien calcula no necesariamente aprueba/paga/anula).
+  // IDs 072–079: greenfield after configuracion.legal (064–065) and daily-cost-center (066–067).
+  // Legacy DBs may still have settlement at 064–071; seedPermissions matches by code and
+  // skips preferred ids that another code already owns (see seedPermissions).
   {
-    id: 'cccccccc-0000-0000-0000-000000000064',
+    id: 'cccccccc-0000-0000-0000-000000000072',
     code: 'nomina.settlement.read',
     name: 'Leer liquidaciones definitivas',
     description: 'Consultar liquidaciones definitivas de contrato de un empleado.',
@@ -639,7 +643,7 @@ const PERMISSION_SEEDS = [
     action: 'read',
   },
   {
-    id: 'cccccccc-0000-0000-0000-000000000065',
+    id: 'cccccccc-0000-0000-0000-000000000073',
     code: 'nomina.settlement.calculate',
     name: 'Calcular liquidaciones definitivas',
     description: 'Previsualizar, calcular y recalcular liquidaciones definitivas (automáticas).',
@@ -648,7 +652,7 @@ const PERMISSION_SEEDS = [
     action: 'calculate',
   },
   {
-    id: 'cccccccc-0000-0000-0000-000000000066',
+    id: 'cccccccc-0000-0000-0000-000000000074',
     code: 'nomina.settlement.manual',
     name: 'Registrar liquidaciones manuales',
     description: 'Crear liquidaciones definitivas manuales con líneas y soporte documental.',
@@ -657,7 +661,7 @@ const PERMISSION_SEEDS = [
     action: 'manual',
   },
   {
-    id: 'cccccccc-0000-0000-0000-000000000067',
+    id: 'cccccccc-0000-0000-0000-000000000075',
     code: 'nomina.settlement.reconcile_pending_salary',
     name: 'Reconciliar salario pendiente',
     description:
@@ -667,7 +671,7 @@ const PERMISSION_SEEDS = [
     action: 'reconcile_pending_salary',
   },
   {
-    id: 'cccccccc-0000-0000-0000-000000000068',
+    id: 'cccccccc-0000-0000-0000-000000000076',
     code: 'nomina.settlement.approve',
     name: 'Aprobar liquidaciones definitivas',
     description:
@@ -677,7 +681,7 @@ const PERMISSION_SEEDS = [
     action: 'approve',
   },
   {
-    id: 'cccccccc-0000-0000-0000-000000000069',
+    id: 'cccccccc-0000-0000-0000-000000000077',
     code: 'nomina.settlement.pay',
     name: 'Marcar liquidaciones como pagadas',
     description: 'Registrar el pago efectivo de una liquidación definitiva aprobada.',
@@ -686,7 +690,7 @@ const PERMISSION_SEEDS = [
     action: 'pay',
   },
   {
-    id: 'cccccccc-0000-0000-0000-000000000070',
+    id: 'cccccccc-0000-0000-0000-000000000078',
     code: 'nomina.settlement.void',
     name: 'Anular liquidaciones definitivas',
     description: 'Anular una liquidación definitiva en DRAFT/CALCULATED.',
@@ -695,13 +699,33 @@ const PERMISSION_SEEDS = [
     action: 'void',
   },
   {
-    id: 'cccccccc-0000-0000-0000-000000000071',
+    id: 'cccccccc-0000-0000-0000-000000000079',
     code: 'nomina.settlement.validate_legal_formula',
     name: 'Validar fórmula legal de indemnización',
     description: 'Registrar la validación legal de una versión de la fórmula de indemnización.',
     module: 'nomina',
     resource: 'settlement',
     action: 'validate_legal_formula',
+  },
+  // Shared tablet kiosk marking mode
+  {
+    id: 'cccccccc-0000-0000-0000-000000000080',
+    code: 'attendance.kiosk.activate',
+    name: 'Activar modo marcación kiosko',
+    description:
+      'Activar el modo marcación en tablet compartida de sede (emite token scoped KIOSK_MARKING).',
+    module: 'attendance',
+    resource: 'kiosk',
+    action: 'activate',
+  },
+  {
+    id: 'cccccccc-0000-0000-0000-000000000081',
+    code: 'attendance.kiosk.mark',
+    name: 'Registrar marcación kiosko',
+    description: 'Permiso efectivo solo en token scoped KIOSK_MARKING (no asignar a roles admin).',
+    module: 'attendance',
+    resource: 'kiosk',
+    action: 'mark',
   },
 ] as const;
 
@@ -775,6 +799,9 @@ const TURNOS_CATALOG_READ_CODES = ['attendance.turnos.read'] as const;
 // el service; NOMINA gestiona la corrección de sede para prorrateo de costo (tenant-wide).
 const DAILY_COST_CENTER_READ_CODES = ['attendance.daily-cost-center.read'] as const;
 const DAILY_COST_CENTER_WRITE_CODES = ['attendance.daily-cost-center.write'] as const;
+
+// Shared tablet — activar modo marcación (mark solo vive en JWT scoped, no en roles)
+const KIOSK_ACTIVATE_CODES = ['attendance.kiosk.activate'] as const;
 const SUPPLIER_DOCUMENT_READ_CODES = ['suppliers.documents.read'] as const;
 const SUPPLIER_DOCUMENT_WRITE_CODES = ['suppliers.documents.write'] as const;
 
@@ -807,6 +834,7 @@ const ROLE_PERMISSION_MATRIX: Record<string, readonly string[]> = {
     ...DAILY_COST_CENTER_READ_CODES,
     ...DAILY_COST_CENTER_WRITE_CODES,
     ...SETTLEMENT_READ_CODES,
+    ...KIOSK_ACTIVATE_CODES,
   ],
   MANAGER: [
     ...MANAGER_PERMISSION_CODES,
@@ -825,6 +853,7 @@ const ROLE_PERMISSION_MATRIX: Record<string, readonly string[]> = {
     ...DAILY_COST_CENTER_READ_CODES,
     ...DAILY_COST_CENTER_WRITE_CODES,
     ...SETTLEMENT_READ_CODES,
+    ...KIOSK_ACTIVATE_CODES,
     ...SETTLEMENT_CALCULATE_CODES,
     ...SETTLEMENT_MANUAL_CODES,
     ...SETTLEMENT_RECONCILE_PENDING_SALARY_CODES,
@@ -884,21 +913,43 @@ async function seedPermissions() {
   const permissions: Record<string, { id: string; code: string }> = {};
 
   for (const permissionSeed of PERMISSION_SEEDS) {
-    // Upsert by `code` (@@unique), not by id: some envs already have the same codes with
-    // older deterministic ids (e.g. nomina.roles.* at 027–036). Upserting by id would
-    // try to CREATE a duplicate code and fail with P2002.
-    const permission = await prisma.permission.upsert({
+    // Match by `code` (@@unique), never by id.
+    // Some envs already have the same codes with older deterministic ids
+    // (e.g. configuracion.legal.* at 027/028, or nomina.settlement.* still at 064–071
+    // after the seed remapped settlement → 072–079). Upserting by id would CREATE a
+    // duplicate code. Forcing create with a preferred id that another code already owns
+    // (e.g. daily-cost-center wanting 066 while settlement.manual occupies 066) → P2002.
+    const existingByCode = await prisma.permission.findUnique({
       where: { code: permissionSeed.code },
-      update: {
-        name: permissionSeed.name,
-        description: permissionSeed.description,
-        module: permissionSeed.module,
-        resource: permissionSeed.resource,
-        action: permissionSeed.action,
-        isActive: true,
-      },
-      create: {
-        id: permissionSeed.id,
+    });
+
+    if (existingByCode) {
+      const permission = await prisma.permission.update({
+        where: { code: permissionSeed.code },
+        data: {
+          name: permissionSeed.name,
+          description: permissionSeed.description,
+          module: permissionSeed.module,
+          resource: permissionSeed.resource,
+          action: permissionSeed.action,
+          isActive: true,
+        },
+      });
+      permissions[permissionSeed.code] = permission;
+      console.log('Permission:', permission.code, '—', permission.id);
+      continue;
+    }
+
+    const preferredIdOwner = await prisma.permission.findUnique({
+      where: { id: permissionSeed.id },
+      select: { id: true, code: true },
+    });
+
+    const permission = await prisma.permission.create({
+      data: {
+        // Prefer deterministic id on greenfield; if occupied by another code, let Prisma
+        // generate a cuid so re-seeds remain idempotent on legacy DBs / prod.
+        ...(preferredIdOwner ? {} : { id: permissionSeed.id }),
         code: permissionSeed.code,
         name: permissionSeed.name,
         description: permissionSeed.description,
@@ -909,7 +960,13 @@ async function seedPermissions() {
       },
     });
     permissions[permissionSeed.code] = permission;
-    console.log('Permission:', permission.code, '—', permission.id);
+    if (preferredIdOwner) {
+      console.log(
+        `Permission: ${permission.code} — ${permission.id} (preferred id ${permissionSeed.id} already used by ${preferredIdOwner.code})`,
+      );
+    } else {
+      console.log('Permission:', permission.code, '—', permission.id);
+    }
   }
 
   return permissions;
@@ -1028,6 +1085,9 @@ async function seedLocations() {
         address,
         city,
         phone,
+        // DIVIPOLA Bogotá D.C. — sede laboral (OS-595). No usar residencia del empleado.
+        departmentCode: '11',
+        municipalityCode: '001',
         isActive: true,
         businessHours: DEFAULT_BUSINESS_HOURS,
         openingTime: '08:00',
@@ -1041,6 +1101,8 @@ async function seedLocations() {
         address,
         city,
         phone,
+        departmentCode: '11',
+        municipalityCode: '001',
         isActive: true,
         businessHours: DEFAULT_BUSINESS_HOURS,
         openingTime: '08:00',
@@ -1470,6 +1532,8 @@ async function seedEmployeeDetails(
       laborClassification: LaborClassification.ADMINISTRATIVO,
       barrio: 'El Poblado',
       localidad: 'Medellín',
+      epsName: 'EPS Sura',
+      arlName: 'ARL Sura',
     },
     create: {
       userId: ownerUserId,
@@ -1486,10 +1550,10 @@ async function seedEmployeeDetails(
       salaryAmount: 15000000.0,
       hasTransportSubsidy: false,
       isExemptFromTax: false,
-      epsName: 'Sura',
+      epsName: 'EPS Sura',
       pensionFundName: 'Protección',
       cesantiasFundName: 'Protección',
-      arlName: 'Sura',
+      arlName: 'ARL Sura',
       arlRiskLevel: ArlRiskLevel.RIESGO_I,
       cajaCompensacion: 'Comfama',
       barrio: 'El Poblado',
@@ -1502,6 +1566,16 @@ async function seedEmployeeDetails(
     },
   });
   await syncEmployeeCompensationHistory(prisma, ownerEmployee);
+  await prisma.employeePersonalData.upsert({
+    where: { employeeDetailsId: ownerEmployee.id },
+    update: { nombres: 'Propietario', primerApellido: 'Principal' },
+    create: {
+      tenantId: OPERATIONAL_TENANT_ID,
+      employeeDetailsId: ownerEmployee.id,
+      nombres: 'Propietario',
+      primerApellido: 'Principal',
+    },
+  });
 
   // Seed for operator
   // NOM-03: pinHash = bcrypt('4321') — mismo PIN que OperationalUser del seed, para e2e de kiosko
@@ -1518,6 +1592,8 @@ async function seedEmployeeDetails(
       laborClassification: LaborClassification.COCINA,
       barrio: 'Laureles',
       localidad: 'Medellín',
+      epsName: 'EPS Sanitas',
+      arlName: 'ARL Sura',
     },
     create: {
       userId: operatorUserId,
@@ -1536,10 +1612,10 @@ async function seedEmployeeDetails(
       salaryAmount: 1800000.0,
       hasTransportSubsidy: true,
       isExemptFromTax: false,
-      epsName: 'Sanitas',
+      epsName: 'EPS Sanitas',
       pensionFundName: 'Porvenir',
       cesantiasFundName: 'Porvenir',
-      arlName: 'Sura',
+      arlName: 'ARL Sura',
       arlRiskLevel: ArlRiskLevel.RIESGO_II,
       cajaCompensacion: 'Compensar',
       barrio: 'Laureles',
@@ -1551,6 +1627,16 @@ async function seedEmployeeDetails(
     },
   });
   await syncEmployeeCompensationHistory(prisma, operatorEmployee);
+  await prisma.employeePersonalData.upsert({
+    where: { employeeDetailsId: operatorEmployee.id },
+    update: { nombres: 'Operario', primerApellido: 'Planta' },
+    create: {
+      tenantId: OPERATIONAL_TENANT_ID,
+      employeeDetailsId: operatorEmployee.id,
+      nombres: 'Operario',
+      primerApellido: 'Planta',
+    },
+  });
 
   console.log('EmployeeDetails: Seeded for owner and operator');
 }
@@ -1649,10 +1735,10 @@ async function seedSupervisorManagerDemoUsers(
       contractStart: new Date('2024-03-01'),
       salaryType: SalaryType.ORDINARIO,
       salaryAmount: supervisorPosition.baseSalaryRange,
-      epsName: 'Sura',
+      epsName: 'EPS Sura',
       pensionFundName: 'Protección',
       cesantiasFundName: 'Protección',
-      arlName: 'Sura',
+      arlName: 'ARL Sura',
       arlRiskLevel: ArlRiskLevel.RIESGO_I,
       cajaCompensacion: 'Comfama',
       costCenter: CostCenter.OPERACIONES,
@@ -1685,10 +1771,10 @@ async function seedSupervisorManagerDemoUsers(
       contractStart: new Date('2024-03-01'),
       salaryType: SalaryType.ORDINARIO,
       salaryAmount: managerPosition.baseSalaryRange,
-      epsName: 'Sanitas',
+      epsName: 'EPS Sanitas',
       pensionFundName: 'Porvenir',
       cesantiasFundName: 'Porvenir',
-      arlName: 'Sura',
+      arlName: 'ARL Sura',
       arlRiskLevel: ArlRiskLevel.RIESGO_I,
       cajaCompensacion: 'Compensar',
       costCenter: CostCenter.ADMINISTRATIVO,
@@ -1765,10 +1851,10 @@ async function seedRotanteDemoEmployee(roleId: string, locationAId: string, loca
       contractStart: new Date('2025-01-15'),
       salaryType: SalaryType.ORDINARIO,
       salaryAmount: position?.baseSalaryRange ?? 1_500_000,
-      epsName: 'Sura',
+      epsName: 'EPS Sura',
       pensionFundName: 'Porvenir',
       cesantiasFundName: 'Porvenir',
-      arlName: 'Sura',
+      arlName: 'ARL Sura',
       arlRiskLevel: ArlRiskLevel.RIESGO_I,
       cajaCompensacion: 'Compensar',
       costCenter: CostCenter.ROTANTE,
@@ -1784,6 +1870,17 @@ async function seedRotanteDemoEmployee(roleId: string, locationAId: string, loca
     { date: '2026-07-03', locationId: locationBId, source: AssignmentSource.MARCACION_ASISTENCIA },
     { date: '2026-07-04', locationId: locationBId, source: AssignmentSource.MANUAL },
   ];
+
+  await prisma.employeePersonalData.upsert({
+    where: { employeeDetailsId: rotanteEmployee.id },
+    update: { nombres: 'Laura', primerApellido: 'Rotante' },
+    create: {
+      tenantId: OPERATIONAL_TENANT_ID,
+      employeeDetailsId: rotanteEmployee.id,
+      nombres: 'Laura',
+      primerApellido: 'Rotante',
+    },
+  });
 
   for (const day of sampleDays) {
     await prisma.dailyCostCenterAssignment.upsert({
@@ -2029,7 +2126,9 @@ async function main() {
       name: 'Palos de Leña',
       legalName: 'Palos de Leña S.A.S.',
       tradeName: 'Palos de Leña',
-      nit: '900000000-1',
+      nit: '900000000',
+      // DV DIAN coherente con NIT 900000000 (módulo 11) — ver computeDianVerificationDigit.
+      verificationDigit: '5',
       legalRepresentativeName: 'Representante Legal Palos de Leña',
       legalRepresentativeDocumentType: DocumentType.CC,
       legalRepresentativeDocumentNumber: '1000000000',
@@ -2047,7 +2146,8 @@ async function main() {
       name: 'Palos de Leña',
       legalName: 'Palos de Leña S.A.S.',
       tradeName: 'Palos de Leña',
-      nit: '900000000-1',
+      nit: '900000000',
+      verificationDigit: '5',
       legalRepresentativeName: 'Representante Legal Palos de Leña',
       legalRepresentativeDocumentType: DocumentType.CC,
       legalRepresentativeDocumentNumber: '1000000000',
@@ -2750,6 +2850,8 @@ async function main() {
   // ── NOM-01: Seed EmployeeDetails ─────────────────────────────────────────
   const { seedEmployeeCatalogOptions } = await import('./seeds/employee-catalog.seed');
   await seedEmployeeCatalogOptions(prisma, OPERATIONAL_TENANT_ID);
+  const { seedTenantPilaConfig } = await import('./seeds/tenant-pila-config.seed');
+  await seedTenantPilaConfig(prisma, OPERATIONAL_TENANT_ID);
   await seedEmployeePositions(OPERATIONAL_TENANT_ID);
   const { seedEmployeeOrgChart } = await import('./seeds/employee-org-chart.seed');
   await seedEmployeeOrgChart(prisma);
@@ -2785,6 +2887,7 @@ async function main() {
     locations[2]!.id,
   );
   await seedRotanteDemoEmployee(roles.OPERATOR.id, locations[0]!.id, locations[1]!.id);
+  await seedWeeklyShiftPlansDemo(prisma, locations[0]!.id, locations[0]!.id);
   await seedEmployeeSocialProfiles(ownerGlobalUser.id, operatorGlobalUser.id);
   const { seedBulkAttendanceCollaborators } =
     await import('./seeds/attendance-collaborators-bulk.seed');
@@ -2834,11 +2937,18 @@ async function main() {
   const { seedLaborLegalParameters } = await import('./seeds/labor-legal-parameters.seed');
   await seedLaborLegalParameters(prisma);
 
+  const { seedTaxWithholdingBrackets } = await import('./seeds/tax-withholding-brackets.seed');
+  await seedTaxWithholdingBrackets(prisma);
+
   const { seedNovedadTypeConfigs } = await import('./seeds/novedad-type-config.seed');
   await seedNovedadTypeConfigs(prisma, OPERATIONAL_TENANT_ID);
 
   const { seedDataProcessingPolicy } = await import('./seeds/data-processing-policy.seed');
   await seedDataProcessingPolicy(prisma, OPERATIONAL_TENANT_ID);
+
+  const { seedOs594TaxWithholdingUiFixtures } =
+    await import('./seeds/os594-tax-withholding-ui.seed');
+  await seedOs594TaxWithholdingUiFixtures(prisma);
 }
 
 main()

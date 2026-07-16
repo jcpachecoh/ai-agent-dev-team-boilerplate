@@ -2,7 +2,6 @@ import type { SidebarAccent } from '@restopsiq/ui';
 import type { LucideIcon } from 'lucide-react';
 import {
   ArrowLeftRight,
-  BarChart3,
   Box,
   Briefcase,
   Building2,
@@ -242,7 +241,6 @@ export const navigationItems: NavItem[] = [
         path: '/payroll/positions',
         icon: Briefcase,
       },
-      { id: 'payroll-salaries', label: 'Salarios', path: '/payroll/salaries', icon: BarChart3 },
       {
         id: 'payroll-legal-parameters',
         label: 'Parámetros legales',
@@ -370,7 +368,6 @@ const routeLabels: Record<string, string> = {
   '/payroll/reports': 'Reportes de nómina',
   '/payroll/employees': 'Empleados',
   '/payroll/positions': 'Gestión de Cargos',
-  '/payroll/salaries': 'Salarios',
   '/payroll/dotaciones': 'Dotación',
   '/payroll/legal-parameters': 'Parámetros legales',
   '/payroll/novedades': 'Novedades',

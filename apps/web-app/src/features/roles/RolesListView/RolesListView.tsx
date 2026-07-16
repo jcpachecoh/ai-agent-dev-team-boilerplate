@@ -16,6 +16,7 @@ import { useMe } from '@/features/auth/hooks/useMe';
 import { getErrorMessage } from '@/lib/graphql-client';
 import { useTheme } from '@/providers/ThemeProvider';
 import { SYSTEM_ADMIN_ROLES } from '@/config/rbac.config';
+import { useClientTablePagination } from '@/utils/useClientTablePagination';
 
 import { DeactivateRoleDialog } from '../components/DeactivateRoleDialog';
 import { RoleFormModal } from '../components/RoleFormModal';
@@ -55,6 +56,7 @@ export default function RolesListView(): JSX.Element {
   const canAssignPermissions = isSystemAdmin;
 
   const roles = rolesQuery.data ?? [];
+  const { page, pageItems, range, onPrevious, onNext } = useClientTablePagination(roles);
 
   const openCreate = () => {
     setEditingRole(undefined);
@@ -172,8 +174,16 @@ export default function RolesListView(): JSX.Element {
                   theme={theme}
                   showActions={canManage}
                   emptyState={<div className={styles.emptyState}>No hay roles registrados.</div>}
+                  pagination={{
+                    page,
+                    totalPages: range.totalPages,
+                    summary: range.summary,
+                    pageLabel: range.pageLabel,
+                    onPrevious,
+                    onNext,
+                  }}
                 >
-                  {roles.map((role) => (
+                  {pageItems.map((role) => (
                     <RolTableRow
                       key={role.id}
                       id={role.id}

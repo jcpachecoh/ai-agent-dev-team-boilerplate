@@ -359,6 +359,7 @@ describe('AttendanceController', () => {
         '2026-06-01',
         '2026-06-30',
         { sub: 'user-001', roleCode: 'OWNER', locationId: undefined },
+        undefined,
       );
       expect(result).toEqual({ logs: [], observations: [], daySummaries: [] });
     });
@@ -447,7 +448,7 @@ describe('AttendanceController', () => {
       const user = makeJwtUser({ sub: 'actor-1', roleCode: 'SUPERVISOR' });
       collaboratorsServiceMock.list.mockResolvedValue({
         items: [],
-        pagination: { page: 1, pageSize: 20, total: 0, totalPages: 1 },
+        pagination: { page: 1, pageSize: 8, total: 0, totalPages: 1 },
       });
 
       const result = await controller.getCollaborators(user, '', {});
@@ -455,7 +456,7 @@ describe('AttendanceController', () => {
       expect(collaboratorsServiceMock.list).toHaveBeenCalledWith(
         TENANT,
         { userId: 'actor-1', roleCode: 'SUPERVISOR' },
-        expect.objectContaining({ status: 'all', page: 1, pageSize: 20 }),
+        expect.objectContaining({ status: 'all', page: 1, pageSize: 8 }),
       );
       expect(result.pagination.total).toBe(0);
     });

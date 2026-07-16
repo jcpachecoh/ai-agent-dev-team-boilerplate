@@ -193,10 +193,23 @@ const LEGAL_PARAMETER_SEEDS: LegalParameterSeed[] = [
     source: 'Decreto 1176 de 1932',
   },
 
-  // UVT (Unidad de Valor Tributario) — NO seeded. Value changes yearly via resolución DIAN
-  // and nothing in this PR consumes it yet (GAP(Task04) — retención en la fuente still pending).
-  // getValueAt('UVT', ...) will throw NotFoundException until a real vigencia is added; that is
-  // intentional — a wrong guessed UVT is worse than a loud failure. TODO(Task04): seed once wired up.
+  // ── UVT — Unidad de Valor Tributario (OS-594) ────────────────────────────────
+  {
+    key: 'UVT',
+    value: 49799,
+    validFrom: '2025-01-01',
+    validTo: '2025-12-31',
+    source: 'DIAN — Resolución 000187 de 2024',
+  },
+  {
+    key: 'UVT',
+    value: 52374,
+    validFrom: '2026-01-01',
+    validTo: null,
+    source: 'DIAN — Resolución 000238 de 2025',
+  },
+
+  // UVT seed wired up in OS-594 — consumed by PayrollCalculationService via getValueAt('UVT', ...).
 
   // ── PRIMA_DIVISOR_DIAS — semestre comercial de 180 días (30 días/mes), OS-591 fase 1 ──
   {
@@ -230,6 +243,17 @@ const LEGAL_PARAMETER_SEEDS: LegalParameterSeed[] = [
     validTo: null,
     source: 'OS-591 — fórmula provisional pendiente de validación legal, ver tasks/OS-591.md',
   },
+
+  // ── SENA_CUOTA_MONETIZACION_FACTOR — OS-599 (solo régimen post Ley 2466) ─────
+  // Histórico art. 34 Ley 789 (5% × trabajadores × SMLMV) se calcula en código
+  // (sena-quota.calculation.ts); no cabe en un multiplicador fijo por aprendiz.
+  {
+    key: 'SENA_CUOTA_MONETIZACION_FACTOR',
+    value: 1.5,
+    validFrom: '2025-06-25',
+    validTo: null,
+    source: 'Ley 2466 de 2025 art. 23 — 1.5 SMLMV por aprendiz no contratado',
+  },
 ];
 
 export async function seedLaborLegalParameters(prisma: PrismaClient): Promise<void> {
@@ -246,6 +270,7 @@ export async function seedLaborLegalParameters(prisma: PrismaClient): Promise<vo
         value: seed.value,
         validTo: seed.validTo ? new Date(`${seed.validTo}T23:59:59.999Z`) : null,
         source: seed.source,
+        deletedAt: null,
       },
       create: {
         tenantId: null,
@@ -258,5 +283,23 @@ export async function seedLaborLegalParameters(prisma: PrismaClient): Promise<vo
       },
     });
   }
+
+  // OS-599 cleanup: soft-delete únicamente la vigencia GLOBAL incorrecta value=1.0
+  // (validFrom 2020-01-01) creada por la aproximación pre-reforma. Idempotente:
+  // - where deletedAt:null → re-ejecutar no toca filas ya eliminadas
+  // - no incluye tenantScope distinto de GLOBAL → no toca overrides de tenant
+  // - no incluye validFrom 2025-06-25 → no toca la vigencia canónica 1.5
+  // getValueAt/findActiveAt filtran deletedAt:null, así que la fila queda ignorada.
+  await prisma.laborLegalParameter.updateMany({
+    where: {
+      tenantScope: GLOBAL_TENANT_SCOPE,
+      key: 'SENA_CUOTA_MONETIZACION_FACTOR',
+      validFrom: new Date('2020-01-01T00:00:00.000Z'),
+      value: 1,
+      deletedAt: null,
+    },
+    data: { deletedAt: new Date() },
+  });
+
   console.log(`Labor legal parameters seeded: ${LEGAL_PARAMETER_SEEDS.length} vigencias (global)`);
 }

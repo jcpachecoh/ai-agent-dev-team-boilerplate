@@ -1,4 +1,5 @@
 import {
+  EmpleadoPagination,
   EmptyState,
   ProveedorActionButton,
   ProveedorProductModal,
@@ -14,6 +15,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { ProveedorCatalogResponsiveTable } from '@/components/proveedores/ProveedorCatalogResponsiveTable';
 import { useUiTheme } from '@/hooks/useUiTheme';
 import { getErrorMessage } from '@/lib/graphql-client';
+import { useClientTablePagination } from '@/utils/useClientTablePagination';
 
 import { PROVEEDOR_TABLE_SIZE, STOCK_UNIT_OPTIONS } from '../constants';
 import { useSupplyItems } from '../hooks/useSupplyItems';
@@ -122,6 +124,14 @@ export default function EditableSupplierProductsTable({
     [rows],
   );
 
+  const {
+    page,
+    pageItems: pagedTableRows,
+    range,
+    onPrevious,
+    onNext,
+  } = useClientTablePagination(tableRows);
+
   const closeCreateModal = (): void => {
     setCreateOpen(false);
     setCreateDraft(EMPTY_DRAFT);
@@ -205,19 +215,32 @@ export default function EditableSupplierProductsTable({
         />
       </div>
 
-      <ProveedorCatalogResponsiveTable
-        rows={tableRows}
-        emptyState={
-          rows.length === 0 ? (
-            <EmptyState
-              variant="create"
-              theme={theme}
-              title="Sin productos"
-              description="Agrega el primer insumo al catálogo con el botón «Nuevo producto»."
-            />
-          ) : undefined
-        }
-      />
+      <div className={styles.suppliersCard}>
+        <ProveedorCatalogResponsiveTable
+          rows={pagedTableRows}
+          emptyState={
+            rows.length === 0 ? (
+              <EmptyState
+                variant="create"
+                theme={theme}
+                title="Sin productos"
+                description="Agrega el primer insumo al catálogo con el botón «Nuevo producto»."
+              />
+            ) : undefined
+          }
+        />
+        {rows.length > 0 ? (
+          <EmpleadoPagination
+            page={page}
+            totalPages={range.totalPages}
+            summary={range.summary}
+            pageLabel={range.pageLabel}
+            onPrevious={onPrevious}
+            onNext={onNext}
+            theme={theme === 'light' ? 'light' : 'dark'}
+          />
+        ) : null}
+      </div>
 
       <ProveedorProductModal
         open={createOpen}

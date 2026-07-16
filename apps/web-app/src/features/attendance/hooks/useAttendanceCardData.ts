@@ -10,6 +10,7 @@ interface UseAttendanceCardDataParams {
   userId: string;
   fromIso: string;
   toIso: string;
+  locationId?: string;
   enabled?: boolean;
 }
 
@@ -17,9 +18,16 @@ export function useAttendanceCardData({
   userId,
   fromIso,
   toIso,
+  locationId,
   enabled = true,
 }: UseAttendanceCardDataParams) {
-  const cardQuery = useAttendanceCardQuery({ userId, dateFrom: fromIso, dateTo: toIso, enabled });
+  const cardQuery = useAttendanceCardQuery({
+    userId,
+    dateFrom: fromIso,
+    dateTo: toIso,
+    locationId,
+    enabled,
+  });
 
   const rows = useMemo(() => {
     if (!enabled || !cardQuery.data) return [];

@@ -197,7 +197,7 @@ export function mapLegalAlertItems(
       return {
         id: employee.employeeId,
         title: employee.employeeName,
-        subtitle: `${locationName} · ${formatOvertimeMinutes(employee.overtimeMinutes)} extras`,
+        subtitle: `${locationName} · ${formatOvertimeMinutes(employee.overtimeMinutes)}`,
       };
     });
 }

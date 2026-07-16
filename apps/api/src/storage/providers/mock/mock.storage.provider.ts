@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { StorageProviderType } from '../../enums/storage.enums';
 import type {
   StorageProvider,
@@ -21,7 +21,7 @@ export class MockStorageProvider implements StorageProvider {
     return { key: options.key, etag: 'mock-etag' };
   }
 
-  async delete(key: string): Promise<void> {
+  async delete(key: string, _bucket: string): Promise<void> {
     this.store.delete(key);
   }
 
@@ -29,8 +29,16 @@ export class MockStorageProvider implements StorageProvider {
     return `https://mock.storage/${key}?ttl=${ttlSeconds}`;
   }
 
-  async exists(key: string): Promise<boolean> {
+  async exists(key: string, _bucket: string): Promise<boolean> {
     return this.store.has(key);
+  }
+
+  async getObjectBuffer(key: string, _bucket: string): Promise<Buffer> {
+    const buffer = this.store.get(key);
+    if (!buffer) {
+      throw new NotFoundException(`Mock storage object not found: ${key}`);
+    }
+    return Buffer.from(buffer);
   }
 
   /** Test helper — inspect what was stored */

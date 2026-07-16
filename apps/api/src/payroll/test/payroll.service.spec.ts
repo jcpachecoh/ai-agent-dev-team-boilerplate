@@ -109,6 +109,7 @@ describe('PayrollService', () => {
           useValue: {
             create: jest.fn(),
             findAll: jest.fn(),
+            count: jest.fn(),
             findByUserId: jest.fn(),
             update: mockUpdate,
             softDelete: mockSoftDelete,
@@ -414,6 +415,46 @@ describe('PayrollService', () => {
         tenantId: mockTenantId,
         allowedLocationIds: null,
       });
+    });
+  });
+
+  describe('listPaginated', () => {
+    it('returns items with total and summary counts', async () => {
+      (repository.findAll as jest.Mock).mockResolvedValue([{ tenantId: mockTenantId }]);
+      (repository.count as jest.Mock)
+        .mockResolvedValueOnce(12)
+        .mockResolvedValueOnce(10)
+        .mockResolvedValueOnce(2);
+
+      const result = await service.listPaginated(mockTenantId, { limit: 8, offset: 0 }, mockActor);
+
+      expect(result.items).toHaveLength(1);
+      expect(result.total).toBe(12);
+      expect(result.limit).toBe(8);
+      expect(result.offset).toBe(0);
+      expect(result.summary).toEqual({ total: 12, active: 10, inactive: 2 });
+      expect(repository.findAll).toHaveBeenCalledWith({
+        limit: 8,
+        offset: 0,
+        tenantId: mockTenantId,
+        allowedLocationIds: null,
+      });
+      expect(repository.count).toHaveBeenCalledTimes(3);
+    });
+
+    it('applies default limit/offset when filters are missing', async () => {
+      (repository.findAll as jest.Mock).mockResolvedValue([]);
+      (repository.count as jest.Mock)
+        .mockResolvedValueOnce(0)
+        .mockResolvedValueOnce(0)
+        .mockResolvedValueOnce(0);
+
+      const result = await service.listPaginated(mockTenantId, undefined, mockActor);
+
+      expect(result.limit).toBe(50);
+      expect(result.offset).toBe(0);
+      expect(result.total).toBe(0);
+      expect(result.summary).toEqual({ total: 0, active: 0, inactive: 0 });
     });
   });
 

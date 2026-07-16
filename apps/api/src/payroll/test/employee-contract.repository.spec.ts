@@ -288,4 +288,44 @@ describe('EmployeeContractRepository', (): void => {
       );
     });
   });
+
+  describe('findContractsAsOfForTenant (OS-599)', (): void => {
+    it('deduplica por empleado quedándose con el startDate más reciente', async (): Promise<void> => {
+      const asOf = new Date('2026-06-30T23:59:59.999Z');
+      const older = {
+        ...baseRow(),
+        id: 'c-old',
+        employeeDetailsId: 'emp-1',
+        startDate: new Date('2024-01-01T00:00:00.000Z'),
+      };
+      const newer = {
+        ...baseRow(),
+        id: 'c-new',
+        employeeDetailsId: 'emp-1',
+        startDate: new Date('2025-06-01T00:00:00.000Z'),
+      };
+      const other = {
+        ...baseRow(),
+        id: 'c-2',
+        employeeDetailsId: 'emp-2',
+        startDate: new Date('2025-01-01T00:00:00.000Z'),
+      };
+      // Repo ordena desc; simulamos el orden que Prisma devolvería.
+      findMany.mockResolvedValue([newer, older, other]);
+
+      const result = await repository.findContractsAsOfForTenant('tenant-1', asOf);
+
+      expect(findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            tenantId: 'tenant-1',
+            startDate: { lte: asOf },
+          }),
+          orderBy: { startDate: 'desc' },
+        }),
+      );
+      expect(result).toHaveLength(2);
+      expect(result.map((r) => r.id).sort()).toEqual(['c-2', 'c-new']);
+    });
+  });
 });

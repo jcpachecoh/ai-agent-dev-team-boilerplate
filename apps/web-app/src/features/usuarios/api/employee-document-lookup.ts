@@ -1,4 +1,4 @@
-import { listPayrollEmployees } from '@/features/payroll/api/payroll.client';
+import { listAllPayrollEmployees } from '@/features/payroll/api/payroll.client';
 import type { PayrollEmployee } from '@/features/payroll/types/payroll.types';
 
 import type { DocumentType } from '../types';
@@ -23,7 +23,7 @@ async function loadEmployeesForLookup(): Promise<PayrollEmployee[]> {
   }
 
   if (!employeesCachePromise) {
-    employeesCachePromise = listPayrollEmployees({ includeInactive: true })
+    employeesCachePromise = listAllPayrollEmployees({ includeInactive: true })
       .then((employees) => {
         employeesCache = employees;
         return employees;

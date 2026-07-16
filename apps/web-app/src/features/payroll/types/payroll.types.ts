@@ -126,6 +126,18 @@ export interface PayrollEmployeesFilters {
   offset?: number;
 }
 
+export interface PayrollEmployeesListResponse {
+  items: PayrollEmployee[];
+  total: number;
+  limit: number;
+  offset: number;
+  summary: {
+    total: number;
+    active: number;
+    inactive: number;
+  };
+}
+
 export interface CreatePayrollEmployeeInput {
   cedula: string;
   documentType: DocumentType;
@@ -180,7 +192,8 @@ export interface PayrollEmployeeFormValues {
   documentType: DocumentType;
   email: string;
   locationId: string;
-  nombres: string;
+  primerNombre: string;
+  segundoNombre: string;
   primerApellido: string;
   segundoApellido: string;
   positionId: string;
@@ -198,6 +211,8 @@ export interface PayrollEmployeeFormValues {
   arlName: string;
   arlRiskLevel: ArlRiskLevel;
   cajaCompensacion: string;
+  departamento: string;
+  ciudad: string;
   barrio: string;
   localidad: string;
   costCenter: CostCenter;

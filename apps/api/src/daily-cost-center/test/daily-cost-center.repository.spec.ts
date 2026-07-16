@@ -85,30 +85,35 @@ describe('DailyCostCenterRepository', () => {
       expect(result.locationId).toBe('loc-manual');
     });
 
-    it('actualiza cuando TURNO_ASIGNADO llega sobre una MARCACION_ASISTENCIA existente', async () => {
+    it('CONN-12: no permite que un turno haga downgrade de una marcación existente', async () => {
       prisma.dailyCostCenterAssignment.findUnique.mockResolvedValue(
-        row({ source: AssignmentSource.MARCACION_ASISTENCIA }),
-      );
-      prisma.dailyCostCenterAssignment.update.mockResolvedValue(
-        row({ source: AssignmentSource.TURNO_ASIGNADO, locationId: 'loc-b', shiftId: 'shift-1' }),
+        row({ source: AssignmentSource.MARCACION_ASISTENCIA, locationId: 'loc-marcacion' }),
       );
 
       const result = await repository.upsertForDay({
         tenantId: TENANT,
         employeeId: EMPLOYEE,
         date: new Date('2026-07-01'),
-        locationId: 'loc-b',
+        locationId: 'loc-turno',
         shiftId: 'shift-1',
         source: AssignmentSource.TURNO_ASIGNADO,
       });
 
-      expect(prisma.dailyCostCenterAssignment.update).toHaveBeenCalled();
-      expect(result.source).toBe(AssignmentSource.TURNO_ASIGNADO);
+      expect(prisma.dailyCostCenterAssignment.update).not.toHaveBeenCalled();
+      expect(result.locationId).toBe('loc-marcacion');
+      expect(result.source).toBe(AssignmentSource.MARCACION_ASISTENCIA);
     });
 
-    it('no permite que una marcación haga downgrade de un turno existente (D7)', async () => {
+    it('CONN-12: marcación real prevalece sobre turno planificado (sede distinta)', async () => {
       prisma.dailyCostCenterAssignment.findUnique.mockResolvedValue(
         row({ source: AssignmentSource.TURNO_ASIGNADO, locationId: 'loc-turno' }),
+      );
+      prisma.dailyCostCenterAssignment.update.mockResolvedValue(
+        row({
+          source: AssignmentSource.MARCACION_ASISTENCIA,
+          locationId: 'loc-marcacion',
+          shiftId: null,
+        }),
       );
 
       const result = await repository.upsertForDay({
@@ -119,8 +124,9 @@ describe('DailyCostCenterRepository', () => {
         source: AssignmentSource.MARCACION_ASISTENCIA,
       });
 
-      expect(prisma.dailyCostCenterAssignment.update).not.toHaveBeenCalled();
-      expect(result.locationId).toBe('loc-turno');
+      expect(prisma.dailyCostCenterAssignment.update).toHaveBeenCalled();
+      expect(result.locationId).toBe('loc-marcacion');
+      expect(result.source).toBe(AssignmentSource.MARCACION_ASISTENCIA);
     });
 
     it('actualiza el turno del día cuando cambia de sede el mismo día (D7)', async () => {

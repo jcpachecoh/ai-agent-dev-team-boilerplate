@@ -59,6 +59,12 @@ export const DatePicker: React.FC<DatePickerProps> = ({
     setIsOpen(false);
   };
 
+  const openPicker = (): void => {
+    if (!disabled) {
+      setIsOpen(true);
+    }
+  };
+
   const themeClass = theme === 'light' ? styles['theme--light'] : styles['theme--dark'];
   const sizeClass = styles[`size--${size}`];
 
@@ -69,17 +75,23 @@ export const DatePicker: React.FC<DatePickerProps> = ({
         .join(' ')}
     >
       <Popover.Root open={isOpen} onOpenChange={setIsOpen}>
-        <div className={styles.inputWrapper}>
+        <div className={styles.inputWrapper} onClick={openPicker}>
           <input
             type="text"
             className={styles.input}
             value={inputValue}
             onChange={handleInputChange}
+            onFocus={openPicker}
             placeholder={placeholder}
             disabled={disabled}
           />
           <Popover.Trigger asChild>
-            <button type="button" className={styles.trigger} disabled={disabled}>
+            <button
+              type="button"
+              className={styles.trigger}
+              disabled={disabled}
+              aria-label="Abrir calendario"
+            >
               <CalendarIcon size={18} />
             </button>
           </Popover.Trigger>

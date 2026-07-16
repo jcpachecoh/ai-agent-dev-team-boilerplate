@@ -4,7 +4,7 @@ export const ATTENDANCE_COLLABORATORS_LOCATION_SCOPED_ROLES = ['SUPERVISOR', 'MA
 /** Roles que pueden aparecer como "supervisor" de una sede (UserLocation + Role.code). */
 export const ATTENDANCE_COLLABORATORS_SUPERVISOR_ROLES = ['SUPERVISOR', 'MANAGER'] as const;
 
-export const ATTENDANCE_COLLABORATORS_PAGE_SIZES = [20, 50, 100] as const;
+export const ATTENDANCE_COLLABORATORS_PAGE_SIZES = [8, 20, 50, 100] as const;
 
 export const ATTENDANCE_COLLABORATORS_SCOPE_FORBIDDEN_MESSAGE =
   'El colaborador no pertenece a una sede asignada a este usuario';

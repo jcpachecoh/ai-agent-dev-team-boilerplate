@@ -64,6 +64,7 @@ export function extensionFromMime(mimeType: string): string {
     'image/jpg': 'jpg',
     'image/webp': 'webp',
     'application/pdf': 'pdf',
+    'text/plain': 'txt',
   };
   return map[mimeType] ?? 'bin';
 }

@@ -15,7 +15,8 @@ export function createMarkDraft(
   return {
     id: crypto.randomUUID(),
     type,
-    datetimeLocal: toDatetimeLocalValue(isoDate, type === 'ENTRY' ? '08:00:00' : '17:00:00'),
+    // EXIT default 16:00 alinea turnos seed demo (08:00–16:00); antes 17:00 fallaba ventana ±30m.
+    datetimeLocal: toDatetimeLocalValue(isoDate, type === 'ENTRY' ? '08:00:00' : '16:00:00'),
   };
 }
 

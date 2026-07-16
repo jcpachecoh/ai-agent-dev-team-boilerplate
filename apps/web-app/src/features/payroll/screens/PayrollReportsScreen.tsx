@@ -1,4 +1,3 @@
-import { Calendar } from 'lucide-react';
 import {
   LoadingState,
   NominaDashboardPreview,
@@ -6,17 +5,23 @@ import {
   type NominaReportDefinition,
   toast,
 } from '@restopsiq/ui';
+import { Calendar } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
-import { useTheme } from '@/providers/ThemeProvider';
 import { useLocations } from '@/features/sedes/hooks/useLocations';
+import { useTheme } from '@/providers/ThemeProvider';
+
+import styles from './PayrollReportsScreen.module.scss';
 import {
   exportAttendanceReport,
   exportEmployeeList,
   exportPayrollReport,
   PayrollApiError,
 } from '../api/payroll.client';
+import { PilaPeriodPanel } from '../components/PilaPeriodPanel';
+import { SenaQuotaPanel } from '../components/SenaQuotaPanel';
 import { useAttendanceReportQuery, usePayrollReportQuery } from '../hooks/usePayrollReportQueries';
+import { downloadExportBlob } from '../utils/download-export-blob';
 import {
   formatDateRangeBadgeLabel,
   getCurrentPayrollPeriod,
@@ -26,8 +31,6 @@ import {
   mapPayrollChartData,
   mapPayrollKpiMetrics,
 } from '../utils/mapPayrollReportToNomina';
-import { downloadExportBlob } from '../utils/download-export-blob';
-import styles from './PayrollReportsScreen.module.scss';
 
 const REPORT_ITEMS: NominaReportDefinition[] = [
   {
@@ -41,7 +44,7 @@ const REPORT_ITEMS: NominaReportDefinition[] = [
     id: 'nom-01-xlsx',
     code: 'NOM-01',
     title: 'Empleados (Excel)',
-    description: 'Listado completo en hoja de cálculo',
+    description: 'Listado completo en hoja de c?lculo',
     tone: 'accent',
   },
   {
@@ -55,7 +58,7 @@ const REPORT_ITEMS: NominaReportDefinition[] = [
     id: 'nom-02-xlsx',
     code: 'NOM-02',
     title: 'Contratos (Excel)',
-    description: 'Vigencia y condiciones en hoja de cálculo',
+    description: 'Vigencia y condiciones en hoja de c?lculo',
     tone: 'purple',
   },
   {
@@ -69,21 +72,21 @@ const REPORT_ITEMS: NominaReportDefinition[] = [
     id: 'nom-03-xlsx',
     code: 'NOM-03',
     title: 'Asistencia (Excel)',
-    description: 'Marcaciones del periodo en hoja de cálculo',
+    description: 'Marcaciones del periodo en hoja de c?lculo',
     tone: 'teal',
   },
   {
     id: 'nom-04-pdf',
     code: 'NOM-04',
-    title: 'Nómina (PDF)',
-    description: 'Liquidación del periodo en formato PDF',
+    title: 'N?mina (PDF)',
+    description: 'Liquidaci?n del periodo en formato PDF',
     tone: 'amber',
   },
   {
     id: 'nom-04-xlsx',
     code: 'NOM-04',
-    title: 'Nómina (Excel)',
-    description: 'Liquidación del periodo en hoja de cálculo',
+    title: 'N?mina (Excel)',
+    description: 'Liquidaci?n del periodo en hoja de c?lculo',
     tone: 'amber',
   },
 ];
@@ -131,12 +134,16 @@ export function PayrollReportsScreen(): React.JSX.Element {
   );
 
   const metrics = useMemo(() => {
-    if (!payrollQuery.data) return undefined;
+    if (!payrollQuery.data) {
+      return undefined;
+    }
     return mapPayrollKpiMetrics(payrollQuery.data, attendanceQuery.data, dateRange);
   }, [payrollQuery.data, attendanceQuery.data, dateRange]);
 
   const chart = useMemo(() => {
-    if (!payrollQuery.data) return undefined;
+    if (!payrollQuery.data) {
+      return undefined;
+    }
     return mapPayrollChartData(payrollQuery.data, dateRange, attendanceQuery.data);
   }, [payrollQuery.data, dateRange, attendanceQuery.data]);
 
@@ -158,14 +165,14 @@ export function PayrollReportsScreen(): React.JSX.Element {
 
   const isError = payrollQuery.isError || attendanceQuery.isError;
 
-  const handleDateFromChange = (value: string) => {
+  const handleDateFromChange = (value: string): void => {
     setDateFrom(value);
     if (value > dateTo) {
       setDateTo(value);
     }
   };
 
-  const handleDateToChange = (value: string) => {
+  const handleDateToChange = (value: string): void => {
     setDateTo(value);
     if (value < dateFrom) {
       setDateFrom(value);
@@ -218,14 +225,14 @@ export function PayrollReportsScreen(): React.JSX.Element {
       if (item.id === 'nom-04-pdf') {
         const blob = await exportPayrollReport(reportQuery, 'PDF');
         downloadExportBlob(blob, `payroll-report-${dateFrom}-${dateTo}.pdf`);
-        toast.success('Reporte de nómina PDF descargado');
+        toast.success('Reporte de n?mina PDF descargado');
         return;
       }
 
       if (item.id === 'nom-04-xlsx') {
         const blob = await exportPayrollReport(reportQuery, 'XLSX');
         downloadExportBlob(blob, `payroll-report-${dateFrom}-${dateTo}.xlsx`);
-        toast.success('Reporte de nómina Excel descargado');
+        toast.success('Reporte de n?mina Excel descargado');
       }
     } catch (error) {
       const message =
@@ -234,88 +241,108 @@ export function PayrollReportsScreen(): React.JSX.Element {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className={[styles.state, styles[`theme--${nominaTheme}`]].join(' ')}>
-        <LoadingState message="Cargando reportes de nómina…" theme={nominaTheme} layout="compact" />
+  const filtersBar = (
+    <div className={[styles.filtersBar, styles[`theme--${nominaTheme}`]].join(' ')}>
+      <div className={styles.filterField}>
+        <span className={styles.filterLabel}>Desde</span>
+        <div className={styles.dateInputWrap}>
+          <input
+            className={styles.filterInput}
+            type="date"
+            value={dateFrom}
+            onChange={(event) => handleDateFromChange(event.target.value)}
+          />
+          <Calendar className={styles.calendarIcon} aria-hidden strokeWidth={1.75} />
+        </div>
       </div>
-    );
-  }
+      <div className={styles.filterField}>
+        <span className={styles.filterLabel}>Hasta</span>
+        <div className={styles.dateInputWrap}>
+          <input
+            className={styles.filterInput}
+            type="date"
+            value={dateTo}
+            onChange={(event) => handleDateToChange(event.target.value)}
+          />
+          <Calendar className={styles.calendarIcon} aria-hidden strokeWidth={1.75} />
+        </div>
+      </div>
+      <div className={styles.filterField}>
+        <span className={styles.filterLabel}>Sede</span>
+        <RecetaFilterSelect
+          theme={nominaTheme}
+          size="md"
+          value={locationId}
+          options={[{ value: '', label: 'Todas las sedes' }, ...locationOptions]}
+          onChange={setLocationId}
+        />
+      </div>
+    </div>
+  );
 
-  if (isError || !payrollQuery.data || !metrics || !chart || !locationRows) {
-    return (
-      <div className={[styles.state, styles[`theme--${nominaTheme}`]].join(' ')}>
-        <p>No se pudieron cargar los reportes de nómina.</p>
-        <button type="button" onClick={() => void payrollQuery.refetch()}>
-          Reintentar
-        </button>
-      </div>
-    );
-  }
+  const hasPayrollDashboard =
+    !isLoading &&
+    !isError &&
+    Boolean(payrollQuery.data) &&
+    Boolean(metrics) &&
+    Boolean(chart) &&
+    Boolean(locationRows);
 
   return (
-    <NominaDashboardPreview
-      theme={nominaTheme}
-      className={styles.dashboard}
-      showPeriodToggle={false}
-      metrics={metrics}
-      closingBadgeLabel={closingBadgeLabel}
-      chartTitle={chart.title}
-      chartData={chart.data}
-      chartXDataKey={chart.xDataKey}
-      chartSeries={chart.series}
-      chartLegend={chart.legend}
-      chartValueType={chart.valueType}
-      locationRows={locationRows}
-      legalAlertsEmptyTitle={
-        legalAlertCount === 0 ? 'Sin alertas activas' : `${legalAlertCount} alertas detectadas`
-      }
-      legalAlertsEmptyDescription={
-        legalAlertCount === 0
-          ? 'Todos los contratos y marcaciones cumplen con la normativa vigente.'
-          : 'Hay empleados que superan los límites legales de horas extras en el periodo.'
-      }
-      legalAlertsItems={legalAlertItems}
-      reports={REPORT_ITEMS}
-      onReportDownload={(item) => void handleReportDownload(item)}
-      filtersBar={
-        <div className={[styles.filtersBar, styles[`theme--${nominaTheme}`]].join(' ')}>
-          <div className={styles.filterField}>
-            <span className={styles.filterLabel}>Desde</span>
-            <div className={styles.dateInputWrap}>
-              <input
-                className={styles.filterInput}
-                type="date"
-                value={dateFrom}
-                onChange={(event) => handleDateFromChange(event.target.value)}
+    <div className={styles.reportsLayout}>
+      {hasPayrollDashboard && metrics && chart && locationRows ? (
+        <NominaDashboardPreview
+          theme={nominaTheme}
+          className={styles.dashboard}
+          showPeriodToggle={false}
+          metrics={metrics}
+          closingBadgeLabel={closingBadgeLabel}
+          chartTitle={chart.title}
+          chartData={chart.data}
+          chartXDataKey={chart.xDataKey}
+          chartSeries={chart.series}
+          chartLegend={chart.legend}
+          chartValueType={chart.valueType}
+          locationRows={locationRows}
+          legalAlertsEmptyTitle={
+            legalAlertCount === 0 ? 'Sin alertas activas' : `${legalAlertCount} alertas detectadas`
+          }
+          legalAlertsEmptyDescription={
+            legalAlertCount === 0
+              ? 'Todos los contratos y marcaciones cumplen con la normativa vigente.'
+              : 'Hay empleados que superan los l?mites legales de horas extras en el periodo.'
+          }
+          legalAlertsItems={legalAlertItems}
+          reports={REPORT_ITEMS}
+          onReportDownload={(item) => void handleReportDownload(item)}
+          filtersBar={filtersBar}
+        />
+      ) : (
+        <>
+          {filtersBar}
+          <div className={[styles.state, styles[`theme--${nominaTheme}`]].join(' ')}>
+            {isLoading ? (
+              <LoadingState
+                message={'Cargando reportes de n\u00f3mina\u2026'}
+                theme={nominaTheme}
+                layout="compact"
               />
-              <Calendar className={styles.calendarIcon} aria-hidden strokeWidth={1.75} />
-            </div>
+            ) : (
+              <>
+                <p>{'No se pudieron cargar los reportes de n\u00f3mina.'}</p>
+                <button type="button" onClick={() => void payrollQuery.refetch()}>
+                  Reintentar
+                </button>
+              </>
+            )}
           </div>
-          <div className={styles.filterField}>
-            <span className={styles.filterLabel}>Hasta</span>
-            <div className={styles.dateInputWrap}>
-              <input
-                className={styles.filterInput}
-                type="date"
-                value={dateTo}
-                onChange={(event) => handleDateToChange(event.target.value)}
-              />
-              <Calendar className={styles.calendarIcon} aria-hidden strokeWidth={1.75} />
-            </div>
-          </div>
-          <div className={styles.filterField}>
-            <span className={styles.filterLabel}>Sede</span>
-            <RecetaFilterSelect
-              theme={nominaTheme}
-              size="md"
-              value={locationId}
-              options={[{ value: '', label: 'Todas las sedes' }, ...locationOptions]}
-              onChange={setLocationId}
-            />
-          </div>
-        </div>
-      }
-    />
+        </>
+      )}
+      {/* PILA y SENA: consulta propia; no dependen del exito del reporte payroll. */}
+      <div className={[styles.secondaryPanels, styles[`theme--${nominaTheme}`]].join(' ')}>
+        <PilaPeriodPanel period={payrollPeriod} />
+        <SenaQuotaPanel period={payrollPeriod} />
+      </div>
+    </div>
   );
 }

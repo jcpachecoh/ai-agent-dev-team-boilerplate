@@ -20,6 +20,8 @@ interface AssignmentCellModalProps {
   turnosActivos: Turno[];
   submitting?: boolean;
   readOnly?: boolean;
+  /** Mensaje cuando `readOnly` (pasado vs malla aprobada CONN-12). */
+  readOnlyReason?: string;
   theme?: 'light' | 'dark';
   onClose: () => void;
   onAssign: (turnoId: string) => void;
@@ -32,6 +34,7 @@ export function AssignmentCellModal({
   turnosActivos,
   submitting = false,
   readOnly = false,
+  readOnlyReason = 'No tienes permisos para modificar asignaciones en fechas pasadas.',
   theme = 'dark',
   onClose,
   onAssign,
@@ -73,7 +76,7 @@ export function AssignmentCellModal({
       <div className={styles.body}>
         {readOnly ? (
           <p className={styles.readOnlyNotice} role="status">
-            No tienes permisos para modificar asignaciones en fechas pasadas.
+            {readOnlyReason}
           </p>
         ) : (
           <>

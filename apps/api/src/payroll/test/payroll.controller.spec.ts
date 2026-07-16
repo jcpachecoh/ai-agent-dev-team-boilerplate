@@ -43,6 +43,7 @@ describe('PayrollController', () => {
           useValue: {
             create: jest.fn(),
             findAll: jest.fn(),
+            listPaginated: jest.fn(),
             findOne: jest.fn(),
             update: jest.fn(),
             remove: jest.fn(),
@@ -77,10 +78,16 @@ describe('PayrollController', () => {
   });
 
   describe('findAll', () => {
-    it('should delegate to service.findAll', async () => {
-      (service.findAll as jest.Mock).mockResolvedValue([mockEmployee]);
-      await controller.findAll(mockUser, mockTenantId, {} as any);
-      expect(service.findAll).toHaveBeenCalledWith(
+    it('should delegate to service.listPaginated and wrap response', async () => {
+      (service.listPaginated as jest.Mock).mockResolvedValue({
+        items: [mockEmployee],
+        total: 1,
+        limit: 50,
+        offset: 0,
+        summary: { total: 1, active: 1, inactive: 0 },
+      });
+      const result = await controller.findAll(mockUser, mockTenantId, {} as any);
+      expect(service.listPaginated).toHaveBeenCalledWith(
         mockTenantId,
         {},
         {
@@ -88,6 +95,16 @@ describe('PayrollController', () => {
           roleCode: 'OWNER',
         },
       );
+      expect(result).toEqual(
+        expect.objectContaining({
+          total: 1,
+          limit: 50,
+          offset: 0,
+          summary: { total: 1, active: 1, inactive: 0 },
+          items: expect.any(Array),
+        }),
+      );
+      expect(result.items).toHaveLength(1);
     });
   });
 

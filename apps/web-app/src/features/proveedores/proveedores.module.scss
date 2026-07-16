@@ -188,6 +188,29 @@
   }
 }
 
+/* Tarjeta que agrupa tabla + paginación para que el footer quede pegado (estilo Empleados). */
+.suppliersCard {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  overflow: hidden;
+  background: var(--color-bg-surface);
+
+  .suppliersTable {
+    border: none;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  &:has([role='list']) {
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    overflow: visible;
+  }
+}
+
 .tableSection {
   @include tablePage.app-table-wrap-fill;
   flex: 1;

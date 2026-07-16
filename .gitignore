@@ -67,3 +67,8 @@ apps/web-app/test-results/
 apps/api/docs/*.xlsx
 apps/api/docs/*.xls
 apps/api/docs/*.csv
+# Excepción OS-595: plantilla oficial en blanco (sin PII); requerida por tests CI
+!apps/api/docs/PlantillaXLSX..xlsx
+
+# Artefactos locales de validación operativa PILA (OS-595)
+apps/api/tmp/

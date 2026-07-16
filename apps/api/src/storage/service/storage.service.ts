@@ -123,6 +123,16 @@ export class StorageService implements IStorageService {
     return this.toResult(record);
   }
 
+  async getObjectBuffer(id: string, tenantId: string): Promise<Buffer> {
+    const record = await this.storageRepository.findActive(id, tenantId);
+
+    if (!record) {
+      throw new NotFoundException(`StorageObject ${id} no encontrado`);
+    }
+
+    return this.provider.getObjectBuffer(record.key, record.bucket);
+  }
+
   buildPublicUrl(key: string): string {
     return `${PUBLIC_DOMAIN()}/${key}`;
   }

@@ -1,4 +1,4 @@
-import { RecetaFilterSelect, RecetaFormButton } from '@restopsiq/ui';
+import { Combobox, RecetaFilterSelect, RecetaFormButton } from '@restopsiq/ui';
 import { useEffect, useMemo, useState } from 'react';
 
 import { ThousandsInput } from '@/components/shared/ThousandsInput';
@@ -23,7 +23,9 @@ import {
   useEmployeeCatalogsGrouped,
 } from '../hooks/useEmployeeCatalogOptions';
 import { useEmployeePositions } from '../hooks/useEmployeePositions';
-import { buildEmployeeFullName, splitEmployeeNameForForm } from '../utils/employee-name';
+import { getColombiaCities, getColombiaDepartments } from '../api/personal-data.client';
+import { getBarriosForLocalidad, getLocalidadesForCiudad } from '../constants/colombia-geo';
+import { splitEmployeeNameForForm } from '../utils/employee-name';
 import {
   BENEFICIARY_TYPE_OPTIONS,
   DISABILITY_OPTIONS,
@@ -59,7 +61,8 @@ export const PAYROLL_EMPLOYEE_FORM_EMPTY_VALUES: PayrollEmployeeFormValues = {
   documentType: 'CC',
   email: '',
   locationId: '',
-  nombres: '',
+  primerNombre: '',
+  segundoNombre: '',
   primerApellido: '',
   segundoApellido: '',
   positionId: '',
@@ -77,6 +80,8 @@ export const PAYROLL_EMPLOYEE_FORM_EMPTY_VALUES: PayrollEmployeeFormValues = {
   arlName: '',
   arlRiskLevel: 'RIESGO_I',
   cajaCompensacion: '',
+  departamento: '',
+  ciudad: '',
   barrio: '',
   localidad: '',
   costCenter: 'OPERACIONES',
@@ -97,7 +102,7 @@ const REQUIRED_CATALOG_FIELDS: Array<{
   >;
   label: string;
 }> = [
-  { key: 'department', label: 'Departamento' },
+  { key: 'department', label: 'Área' },
   { key: 'epsName', label: 'EPS' },
   { key: 'pensionFundName', label: 'Fondo de pensión' },
   { key: 'cesantiasFundName', label: 'Fondo de cesantías' },
@@ -119,7 +124,8 @@ function employeeToFormValues(employee: PayrollEmployee): PayrollEmployeeFormVal
     documentType: (employee.user?.documentType as DocumentType) ?? 'CC',
     email: employee.user?.email ?? '',
     locationId: employee.locationId ?? '',
-    nombres: nameParts.nombres,
+    primerNombre: nameParts.primerNombre,
+    segundoNombre: nameParts.segundoNombre,
     primerApellido: nameParts.primerApellido,
     segundoApellido: nameParts.segundoApellido,
     positionId: employee.positionId ?? '',
@@ -137,6 +143,8 @@ function employeeToFormValues(employee: PayrollEmployee): PayrollEmployeeFormVal
     arlName: employee.arlName,
     arlRiskLevel: employee.arlRiskLevel,
     cajaCompensacion: employee.cajaCompensacion,
+    departamento: '',
+    ciudad: '',
     barrio: employee.barrio ?? '',
     localidad: employee.localidad ?? '',
     costCenter: (employee.costCenter as CostCenter) ?? 'OPERACIONES',
@@ -253,6 +261,69 @@ export function PayrollEmployeeForm({
   const showPersonalFields = !wizardStep || wizardStep === 'personal';
   const showSocialFields = !wizardStep || wizardStep === 'social-security';
   const showPersonalIdentityFields = showPersonalFields && sectionScope !== 'employment-only';
+
+  const [departamentoOptions, setDepartamentoOptions] = useState<
+    Array<{ value: string; label: string }>
+  >([]);
+  const [ciudadOptions, setCiudadOptions] = useState<Array<{ value: string; label: string }>>([]);
+
+  useEffect(() => {
+    if (!showPersonalIdentityFields) return;
+    let cancelled = false;
+    getColombiaDepartments()
+      .then((items) => {
+        if (cancelled) return;
+        setDepartamentoOptions(items.map((item) => ({ value: item.code, label: item.name })));
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [showPersonalIdentityFields]);
+
+  useEffect(() => {
+    if (!showPersonalIdentityFields || !values.departamento) {
+      setCiudadOptions([]);
+      return;
+    }
+    let cancelled = false;
+    getColombiaCities(values.departamento)
+      .then((cities) => {
+        if (cancelled) return;
+        setCiudadOptions(cities.map((city) => ({ value: city, label: city })));
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [showPersonalIdentityFields, values.departamento]);
+
+  // Ciudades/localidades sin catálogo caen a texto libre para no bloquear el registro.
+  const hasLocalidadCatalog = getLocalidadesForCiudad(values.ciudad).length > 0;
+  const hasBarrioCatalog = getBarriosForLocalidad(values.ciudad, values.localidad).length > 0;
+
+  const localidadOptions = useMemo(() => {
+    const options = getLocalidadesForCiudad(values.ciudad).map((localidad) => ({
+      value: localidad,
+      label: localidad,
+    }));
+    // Valores guardados que no están en el catálogo siguen siendo seleccionables.
+    if (values.localidad && !options.some((option) => option.value === values.localidad)) {
+      options.unshift({ value: values.localidad, label: values.localidad });
+    }
+    return options;
+  }, [values.ciudad, values.localidad]);
+
+  const barrioOptions = useMemo(() => {
+    const options = getBarriosForLocalidad(values.ciudad, values.localidad).map((barrio) => ({
+      value: barrio,
+      label: barrio,
+    }));
+    if (values.barrio && !options.some((option) => option.value === values.barrio)) {
+      options.unshift({ value: values.barrio, label: values.barrio });
+    }
+    return options;
+  }, [values.ciudad, values.localidad, values.barrio]);
 
   const hasActivePositions = (positionsQuery.data ?? []).some((p) => p.isActive);
 
@@ -401,12 +472,12 @@ export function PayrollEmployeeForm({
     event.preventDefault();
 
     if (
-      !values.nombres.trim() ||
+      !values.primerNombre.trim() ||
       !values.primerApellido.trim() ||
       !values.email.trim() ||
       !values.cedula.trim()
     ) {
-      setError('Nombres, primer apellido, correo y cédula son obligatorios.');
+      setError('Primer nombre, primer apellido, correo y cédula son obligatorios.');
       return;
     }
 
@@ -417,7 +488,7 @@ export function PayrollEmployeeForm({
 
     // Rotante no tiene sede fija — la sede diaria se resuelve por turno/marcación (CONN-06).
     if (values.costCenter !== 'ROTANTE' && !values.locationId.trim()) {
-      setError('El área (sede) es obligatoria.');
+      setError('La sede es obligatoria.');
       return;
     }
 
@@ -527,12 +598,21 @@ export function PayrollEmployeeForm({
                     />
                   </label>
                   <label className={formStyles.field}>
-                    <span className={formStyles.fieldLabel}>Nombres *</span>
+                    <span className={formStyles.fieldLabel}>Primer nombre *</span>
                     <input
-                      aria-label="Nombres"
+                      aria-label="Primer nombre"
                       className={formStyles.input}
-                      value={values.nombres}
-                      onChange={(event) => update({ nombres: event.target.value })}
+                      value={values.primerNombre}
+                      onChange={(event) => update({ primerNombre: event.target.value })}
+                    />
+                  </label>
+                  <label className={formStyles.field}>
+                    <span className={formStyles.fieldLabel}>Segundo nombre</span>
+                    <input
+                      aria-label="Segundo nombre"
+                      className={formStyles.input}
+                      value={values.segundoNombre}
+                      onChange={(event) => update({ segundoNombre: event.target.value })}
                     />
                   </label>
                   <label className={formStyles.field}>
@@ -563,26 +643,117 @@ export function PayrollEmployeeForm({
                       onChange={(event) => update({ email: event.target.value })}
                     />
                   </label>
-                  <label className={formStyles.field}>
+                  {/* ── Ubicación ─────────────────────────────────────────────────── */}
+                  <div className={formStyles.field}>
+                    <span className={formStyles.fieldLabel}>Departamento</span>
+                    <Combobox
+                      options={departamentoOptions}
+                      value={values.departamento}
+                      placeholder="Seleccionar departamento"
+                      searchPlaceholder="Buscar departamento…"
+                      className={formStyles.combobox}
+                      onChange={(value) => {
+                        if (typeof value !== 'string') return;
+                        update({
+                          departamento: value,
+                          // Al cambiar el departamento, los niveles inferiores dejan de ser válidos.
+                          ciudad: value === values.departamento ? values.ciudad : '',
+                          localidad: value === values.departamento ? values.localidad : '',
+                          barrio: value === values.departamento ? values.barrio : '',
+                        });
+                      }}
+                      theme={theme}
+                      size="md"
+                    />
+                  </div>
+                  <div className={formStyles.field}>
+                    <span className={formStyles.fieldLabel}>Ciudad</span>
+                    <Combobox
+                      options={ciudadOptions}
+                      value={values.ciudad}
+                      placeholder={
+                        values.departamento ? 'Seleccionar ciudad' : 'Selecciona un departamento'
+                      }
+                      searchPlaceholder="Buscar ciudad…"
+                      className={formStyles.combobox}
+                      emptyMessage={
+                        values.departamento
+                          ? 'Sin resultados.'
+                          : 'Selecciona un departamento primero.'
+                      }
+                      onChange={(value) => {
+                        if (typeof value !== 'string') return;
+                        update({
+                          ciudad: value,
+                          // Al cambiar la ciudad, localidad y barrio dejan de ser válidos.
+                          localidad: value === values.ciudad ? values.localidad : '',
+                          barrio: value === values.ciudad ? values.barrio : '',
+                        });
+                      }}
+                      theme={theme}
+                      size="md"
+                    />
+                  </div>
+                  <div className={formStyles.field}>
+                    <span className={formStyles.fieldLabel}>Localidad</span>
+                    {hasLocalidadCatalog ? (
+                      <Combobox
+                        options={localidadOptions}
+                        value={values.localidad}
+                        placeholder="Seleccionar localidad"
+                        searchPlaceholder="Buscar localidad…"
+                        className={formStyles.combobox}
+                        onChange={(value) => {
+                          if (typeof value !== 'string') return;
+                          update({
+                            localidad: value,
+                            // Al cambiar la localidad el barrio deja de ser válido.
+                            barrio: value === values.localidad ? values.barrio : '',
+                          });
+                        }}
+                        theme={theme}
+                        size="md"
+                      />
+                    ) : (
+                      <input
+                        aria-label="Localidad"
+                        className={formStyles.input}
+                        maxLength={100}
+                        placeholder={values.ciudad ? '' : 'Selecciona una ciudad primero'}
+                        disabled={!values.ciudad}
+                        value={values.localidad}
+                        onChange={(event) => update({ localidad: event.target.value })}
+                      />
+                    )}
+                  </div>
+                  <div className={formStyles.field}>
                     <span className={formStyles.fieldLabel}>Barrio</span>
-                    <input
-                      aria-label="Barrio"
-                      className={formStyles.input}
-                      maxLength={100}
-                      value={values.barrio}
-                      onChange={(event) => update({ barrio: event.target.value })}
-                    />
-                  </label>
-                  <label className={formStyles.field}>
-                    <span className={formStyles.fieldLabel}>Localidad / Ciudad</span>
-                    <input
-                      aria-label="Localidad"
-                      className={formStyles.input}
-                      maxLength={100}
-                      value={values.localidad}
-                      onChange={(event) => update({ localidad: event.target.value })}
-                    />
-                  </label>
+                    {hasBarrioCatalog ? (
+                      <Combobox
+                        options={barrioOptions}
+                        value={values.barrio}
+                        placeholder="Seleccionar barrio"
+                        searchPlaceholder="Buscar barrio…"
+                        className={formStyles.combobox}
+                        onChange={(value) => {
+                          if (typeof value !== 'string') return;
+                          update({ barrio: value });
+                        }}
+                        theme={theme}
+                        size="md"
+                      />
+                    ) : (
+                      <input
+                        aria-label="Barrio"
+                        className={formStyles.input}
+                        maxLength={100}
+                        placeholder={values.ciudad ? '' : 'Selecciona una ciudad primero'}
+                        disabled={!values.ciudad}
+                        value={values.barrio}
+                        onChange={(event) => update({ barrio: event.target.value })}
+                      />
+                    )}
+                  </div>
                 </>
               ) : null}
 
@@ -606,10 +777,10 @@ export function PayrollEmployeeForm({
               </div>
               <div className={formStyles.field}>
                 <span className={formStyles.fieldLabel}>
-                  Áreas {values.costCenter === 'ROTANTE' ? '' : '*'}
+                  Sedes {values.costCenter === 'ROTANTE' ? '' : '*'}
                 </span>
                 <RecetaFilterSelect
-                  aria-label="Áreas"
+                  aria-label="Sedes"
                   options={locationSelectOptions}
                   value={values.locationId}
                   disabled={
@@ -619,8 +790,8 @@ export function PayrollEmployeeForm({
                     values.costCenter === 'ROTANTE'
                       ? 'No aplica para Rotante'
                       : locationsQuery.isLoading && !locations
-                        ? 'Cargando áreas...'
-                        : 'Seleccionar área'
+                        ? 'Cargando sedes...'
+                        : 'Seleccionar sede'
                   }
                   onChange={(value) => update({ locationId: value })}
                   theme={theme}
@@ -700,11 +871,11 @@ export function PayrollEmployeeForm({
                 )}
               </div>
 
-              {/* ── Departamento ─────────────────────────────────────────────── */}
+              {/* ── Área (catálogo organizacional, antes "Departamento") ─────── */}
               <div className={formStyles.field}>
-                <span className={formStyles.fieldLabel}>Departamento *</span>
+                <span className={formStyles.fieldLabel}>Área *</span>
                 <RecetaFilterSelect
-                  aria-label="Departamento"
+                  aria-label="Área"
                   options={departmentSelectOptions}
                   value={values.department}
                   disabled={catalogsLoading || departmentSelectOptions.length === 0}
@@ -722,7 +893,13 @@ export function PayrollEmployeeForm({
                   aria-label="Tipo de contrato"
                   options={CONTRACT_TYPE_OPTIONS}
                   value={values.contractType}
-                  onChange={(value) => update({ contractType: value as EmployeeContractType })}
+                  onChange={(value) =>
+                    update({
+                      contractType: value as EmployeeContractType,
+                      // Un contrato indefinido no tiene fecha de finalización.
+                      contractEnd: value === 'INDEFINIDO' ? '' : values.contractEnd,
+                    })
+                  }
                   theme={theme}
                   size="md"
                 />
@@ -745,15 +922,17 @@ export function PayrollEmployeeForm({
                   onChange={(event) => update({ contractStart: event.target.value })}
                 />
               </label>
-              <label className={formStyles.field}>
-                <span className={formStyles.fieldLabel}>Fin de contrato</span>
-                <input
-                  className={formStyles.input}
-                  type="date"
-                  value={values.contractEnd}
-                  onChange={(event) => update({ contractEnd: event.target.value })}
-                />
-              </label>
+              {values.contractType !== 'INDEFINIDO' ? (
+                <label className={formStyles.field}>
+                  <span className={formStyles.fieldLabel}>Fin de contrato</span>
+                  <input
+                    className={formStyles.input}
+                    type="date"
+                    value={values.contractEnd}
+                    onChange={(event) => update({ contractEnd: event.target.value })}
+                  />
+                </label>
+              ) : null}
 
               {/* ── Salario ──────────────────────────────────────────────────── */}
               <div className={formStyles.field}>

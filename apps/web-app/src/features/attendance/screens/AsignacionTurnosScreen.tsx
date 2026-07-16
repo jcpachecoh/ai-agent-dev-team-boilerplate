@@ -22,7 +22,9 @@ import {
   type AssignmentCellModalTarget,
 } from '../components/turno-assignments/AssignmentCellModal';
 import { BulkAssignmentModal } from '../components/turno-assignments/BulkAssignmentModal';
+import { WeeklyShiftPlanPanel } from '../components/turno-assignments/WeeklyShiftPlanPanel';
 import { TurnosSubNav } from '../components/turnos/TurnosSubNav';
+import { useAttendanceScopeLocations } from '../hooks/useAttendanceScopeLocations';
 import {
   useAssignTurnoMutation,
   useDeleteAssignmentMutation,
@@ -30,14 +32,28 @@ import {
 import { useTurnosQuery } from '../hooks/useTurnosQuery';
 import { useWeeklyAssignmentsFilters } from '../hooks/useWeeklyAssignmentsFilters';
 import { useWeeklyAssignmentsQuery } from '../hooks/useWeeklyAssignmentsQuery';
+import {
+  useApproveWeeklyShiftPlanMutation,
+  useRejectWeeklyShiftPlanMutation,
+  useSubmitWeeklyShiftPlanMutation,
+} from '../hooks/useWeeklyShiftPlanMutations';
+import { useWeeklyShiftPlansQuery } from '../hooks/useWeeklyShiftPlansQuery';
 import type { WeeklyAssignmentCell, WeeklyColaborador } from '../types/turno-assignments.types';
 import {
+  canApproveWeeklyShiftPlan,
+  canSubmitWeeklyShiftPlan,
+} from '../utils/weekly-shift-plan-rbac';
+import {
+  formatDateOnly,
   formatDayMonth,
   formatWeekRangeLabel,
   todayDateOnly,
   weekdayLabel,
 } from '../utils/week.utils';
 import styles from './AsignacionTurnosScreen.module.scss';
+
+const PLAN_APPROVED_READONLY_REASON =
+  'La planeación semanal de esta sede está aprobada. Solo se puede modificar el día de hoy.';
 
 const VIEW_OPTIONS = [
   { value: 'semana', label: 'Semanal' },
@@ -65,26 +81,73 @@ export function AsignacionTurnosScreen(): React.JSX.Element {
   const { data: me } = useMe();
   const roleCode = me?.roleCode ?? getRoleCodeFromToken();
   const canWrite = canWriteTurnoAssignments(roleCode);
+  const canSubmitPlan = canSubmitWeeklyShiftPlan(roleCode);
+  const canApprovePlan = canApproveWeeklyShiftPlan(roleCode);
   const canOverridePastDate = canOverridePastDateAssignments(roleCode);
   const today = todayDateOnly();
+  const { locations: scopeLocations } = useAttendanceScopeLocations();
 
   const { weekStart, search, setSearch, queryFilters, goToPreviousWeek, goToNextWeek, goToToday } =
     useWeeklyAssignmentsFilters();
+  const weekStartIso = formatDateOnly(weekStart);
 
   const weeklyQuery = useWeeklyAssignmentsQuery(queryFilters);
   const turnosActivosQuery = useTurnosQuery({ estado: true, limit: 200 });
   const assignTurno = useAssignTurnoMutation();
   const deleteAssignment = useDeleteAssignmentMutation();
+  const submitPlan = useSubmitWeeklyShiftPlanMutation();
+  const approvePlan = useApproveWeeklyShiftPlanMutation();
+  const rejectPlan = useRejectWeeklyShiftPlanMutation();
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [modalTarget, setModalTarget] = useState<AssignmentCellModalTarget | null>(null);
   const [submittingCell, setSubmittingCell] = useState(false);
   const [bulkModalOpen, setBulkModalOpen] = useState(false);
+  const [busyPlanId, setBusyPlanId] = useState<string | null>(null);
 
   const dates = weeklyQuery.data?.dates ?? [];
   const colaboradores = weeklyQuery.data?.colaboradores ?? [];
   const turnosActivos = turnosActivosQuery.data?.data ?? [];
   const weekRangeLabel = useMemo(() => formatWeekRangeLabel(dates), [dates]);
+
+  const locationIds = useMemo(
+    () =>
+      colaboradores
+        .map((colaborador) => colaborador.locationId)
+        .filter((id): id is string => Boolean(id)),
+    [colaboradores],
+  );
+  const { plans, statusByLocationId } = useWeeklyShiftPlansQuery(locationIds, weekStartIso);
+  const locationNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    scopeLocations.forEach((location) => map.set(location.id, location.name));
+    return map;
+  }, [scopeLocations]);
+  const hasApprovedPlan = useMemo(
+    () => [...statusByLocationId.values()].some((status) => status === 'APPROVED'),
+    [statusByLocationId],
+  );
+
+  const runPlanAction = async (
+    planId: string,
+    action: () => Promise<unknown>,
+    successMessage: string,
+  ): Promise<void> => {
+    setBusyPlanId(planId);
+    try {
+      await action();
+      toast.success(successMessage);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'No se pudo actualizar el plan');
+    } finally {
+      setBusyPlanId(null);
+    }
+  };
+
+  const isPlanApprovedLocked = (locationId: string | null, fecha: string): boolean => {
+    if (!locationId || fecha === today) return false;
+    return statusByLocationId.get(locationId) === 'APPROVED';
+  };
 
   const toggleSelected = (employeeId: string): void => {
     setSelectedIds((current) => {
@@ -132,9 +195,19 @@ export function AsignacionTurnosScreen(): React.JSX.Element {
   };
 
   const isPastDate = (fecha: string): boolean => fecha < today;
-  const modalReadOnly = Boolean(
+  const modalColaborador = modalTarget
+    ? colaboradores.find((colaborador) => colaborador.id === modalTarget.employeeId)
+    : undefined;
+  const modalPastLocked = Boolean(
     modalTarget && isPastDate(modalTarget.fecha) && !canOverridePastDate,
   );
+  const modalPlanLocked = Boolean(
+    modalTarget && isPlanApprovedLocked(modalColaborador?.locationId ?? null, modalTarget.fecha),
+  );
+  const modalReadOnly = modalPastLocked || modalPlanLocked;
+  const modalReadOnlyReason = modalPlanLocked
+    ? PLAN_APPROVED_READONLY_REASON
+    : 'No tienes permisos para modificar asignaciones en fechas pasadas.';
 
   const closeModal = (): void => setModalTarget(null);
 
@@ -210,6 +283,38 @@ export function AsignacionTurnosScreen(): React.JSX.Element {
             Tu rol solo permite consultar la asignación de turnos.
           </p>
         ) : null}
+        {hasApprovedPlan ? (
+          <p className={styles.readOnlyBanner} role="status">
+            Hay sedes con malla aprobada esta semana: solo se puede editar el día de hoy
+            (contingencia). El resto queda bloqueado hasta reabrir/reaprobar el plan.
+          </p>
+        ) : null}
+
+        <WeeklyShiftPlanPanel
+          plans={plans}
+          locationNameById={locationNameById}
+          canSubmit={canSubmitPlan}
+          canApprove={canApprovePlan}
+          busyPlanId={busyPlanId}
+          theme={cargoTheme}
+          onSubmit={(planId) =>
+            void runPlanAction(
+              planId,
+              () => submitPlan.mutateAsync(planId),
+              'Planeación enviada a aprobación',
+            )
+          }
+          onApprove={(planId) =>
+            void runPlanAction(planId, () => approvePlan.mutateAsync(planId), 'Planeación aprobada')
+          }
+          onReject={(planId, reason) =>
+            void runPlanAction(
+              planId,
+              () => rejectPlan.mutateAsync({ planId, reason }),
+              'Planeación rechazada',
+            )
+          }
+        />
 
         <div className={styles.toolbar}>
           <div className={styles.field}>
@@ -286,7 +391,7 @@ export function AsignacionTurnosScreen(): React.JSX.Element {
         </div>
       </CargoPageSection>
 
-      <CargoPageSection theme={cargoTheme} variant="default">
+      <CargoPageSection theme={cargoTheme} variant="default" className={styles.tableSection}>
         {weeklyQuery.isLoading ? (
           <LoadingState
             message="Cargando asignaciones…"
@@ -400,6 +505,7 @@ export function AsignacionTurnosScreen(): React.JSX.Element {
         turnosActivos={turnosActivos}
         submitting={submittingCell}
         readOnly={modalReadOnly}
+        readOnlyReason={modalReadOnlyReason}
         theme={cargoTheme}
         onClose={closeModal}
         onAssign={(turnoId) => void handleAssign(turnoId)}

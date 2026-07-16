@@ -35,6 +35,30 @@ export const TURNO_ASSIGNMENTS_PAST_DATE_OVERRIDE_ROLES = [...SYSTEM_ADMIN_ROLES
 /** Roles cuyo acceso queda acotado a las sedes asignadas vía UserLocation. */
 export const TURNO_ASSIGNMENTS_LOCATION_SCOPED_ROLES = ['SUPERVISOR', 'MANAGER'] as const;
 
+// CONN-12 — Aprobación semanal de malla (WeeklyShiftPlan)
+/** Lectura/escritura del plan reutiliza permisos de asignación (sin seed nuevo en este task). */
+export const WEEKLY_SHIFT_PLAN_READ_PERMISSION = TURNO_ASSIGNMENTS_READ_PERMISSION;
+export const WEEKLY_SHIFT_PLAN_WRITE_PERMISSION = TURNO_ASSIGNMENTS_WRITE_PERMISSION;
+export const WEEKLY_SHIFT_PLAN_READ_ROLES = TURNO_ASSIGNMENTS_READ_ROLES;
+export const WEEKLY_SHIFT_PLAN_SUBMIT_ROLES = TURNO_ASSIGNMENTS_WRITE_ROLES;
+/**
+ * D2: aprueba/rechaza el gerente de operaciones (`MANAGER`) + admins.
+ * SUPERVISOR puede armar/enviar, no aprobar.
+ */
+export const WEEKLY_SHIFT_PLAN_APPROVE_ROLES = [...SYSTEM_ADMIN_ROLES, 'MANAGER'] as const;
+
+export const WEEKLY_SHIFT_PLAN_INVALID_TRANSITION_MESSAGE =
+  'Transición de estado del plan semanal no permitida';
+export const WEEKLY_SHIFT_PLAN_APPROVE_FORBIDDEN_MESSAGE =
+  'Solo el gerente de operaciones puede aprobar o rechazar la planeación semanal';
+export const WEEKLY_SHIFT_PLAN_REJECT_REASON_REQUIRED_MESSAGE =
+  'El motivo de rechazo es obligatorio';
+/** CONN-12 task-03: malla APPROVED bloquea edición salvo same-day. */
+export const WEEKLY_SHIFT_PLAN_LOCKED_MESSAGE =
+  'La planeación semanal de esta sede está aprobada. Solo se permite modificar el día de hoy (contingencia) o reabrir el plan.';
+export const WEEKLY_SHIFT_PLAN_LOCATION_REQUIRED_MESSAGE =
+  'No se puede determinar la sede del plan semanal para esta asignación';
+
 export const HH_MM_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 export const TURNO_EXPORT_COLUMNS = [

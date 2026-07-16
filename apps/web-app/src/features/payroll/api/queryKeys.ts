@@ -40,6 +40,7 @@ export const payrollKeys = {
   reports: () => [...payrollKeys.all, 'reports'] as const,
   payrollReport: (query: PayrollReportQuery) =>
     [...payrollKeys.reports(), 'payroll', query] as const,
+  senaQuota: (period: string) => [...payrollKeys.reports(), 'sena-quota', period] as const,
   attendanceReport: (query: AttendanceReportQuery) =>
     [...payrollKeys.reports(), 'attendance', query] as const,
   medicalLeaves: () => [...payrollKeys.all, 'medical-leaves'] as const,
@@ -81,4 +82,8 @@ export const payrollKeys = {
   legalFormulaValidations: () => [...payrollKeys.all, 'legal-formula-validations'] as const,
   legalFormulaValidationActive: (formulaVersion: number) =>
     [...payrollKeys.legalFormulaValidations(), 'active', formulaVersion] as const,
+  pila: () => [...payrollKeys.all, 'pila'] as const,
+  pilaList: (period: string) => [...payrollKeys.pila(), 'list', period] as const,
+  pilaValidation: (period: string) => [...payrollKeys.pila(), 'validation', period] as const,
+  pilaDeadline: (period: string) => [...payrollKeys.pila(), 'deadline', period] as const,
 };

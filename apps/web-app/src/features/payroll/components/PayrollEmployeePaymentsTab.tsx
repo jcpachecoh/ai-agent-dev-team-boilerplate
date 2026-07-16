@@ -1,12 +1,26 @@
-import { Button, EmptyState, RecetaFormButton, StatusBadge } from '@restopsiq/ui';
+import {
+  Button,
+  EmptyState,
+  EmpleadoRowActionButton,
+  LoadingState,
+  Modal,
+  RecetaFormButton,
+  StatusBadge,
+} from '@restopsiq/ui';
+import { useQuery } from '@tanstack/react-query';
 import { Receipt } from 'lucide-react';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 
 import { getErrorMessage } from '@/lib/graphql-client';
 
-import { PayrollApiError } from '../api/payroll.client';
+import styles from './PayrollEmployeePaymentsTab.module.scss';
+import { PayrollEmployeeProfileTabLoading } from './PayrollEmployeeProfileTabLoading';
+import { PayrollTaxWithholdingBreakdownSection } from './PayrollTaxWithholdingBreakdownSection';
+import { getPayrollReport, PayrollApiError } from '../api/payroll.client';
+import { payrollKeys } from '../api/queryKeys';
 import { useEmployeePaymentHistoryQuery } from '../hooks/useEmployeePaymentHistoryQuery';
 import { usePayrollEmployeeQuery } from '../hooks/usePayrollEmployeeQuery';
+import type { EmployeePaymentHistoryRecord } from '../types/financial-profile.types';
 import {
   formatPaymentDate,
   formatPaymentMethod,
@@ -14,12 +28,14 @@ import {
   formatPayrollCurrency,
   mapPaymentStatusToBadge,
 } from '../utils/financial-profile-display';
-import { PayrollEmployeeProfileTabLoading } from './PayrollEmployeeProfileTabLoading';
-import styles from './PayrollEmployeePaymentsTab.module.scss';
 
 interface PayrollEmployeePaymentsTabProps {
   userId: string;
   theme: 'light' | 'dark';
+}
+
+function formatPayrollPeriod(year: number, month: number): string {
+  return `${year}-${String(month).padStart(2, '0')}`;
 }
 
 export function PayrollEmployeePaymentsTab({
@@ -29,6 +45,23 @@ export function PayrollEmployeePaymentsTab({
   const employeeQuery = usePayrollEmployeeQuery(userId);
   const employeeId = employeeQuery.data?.id;
   const paymentsQuery = useEmployeePaymentHistoryQuery(employeeId);
+  const [selectedPayment, setSelectedPayment] = useState<EmployeePaymentHistoryRecord | null>(null);
+
+  const liquidationReportQuery =
+    selectedPayment && employeeId
+      ? {
+          period: formatPayrollPeriod(selectedPayment.periodYear, selectedPayment.periodMonth),
+          employeeId,
+        }
+      : null;
+  const liquidationQuery = useQuery({
+    queryKey: liquidationReportQuery
+      ? payrollKeys.payrollReport(liquidationReportQuery)
+      : ['payroll-report', 'idle'],
+    queryFn: () => getPayrollReport(liquidationReportQuery!),
+    enabled: liquidationReportQuery !== null,
+  });
+  const liquidationBreakdown = liquidationQuery.data?.employees[0]?.taxWithholdingBreakdown;
 
   const rows = useMemo(
     () => paymentsQuery.data?.pages.flatMap((page) => page.edges) ?? [],
@@ -101,6 +134,7 @@ export function PayrollEmployeePaymentsTab({
                   <th>Método</th>
                   <th>Estado</th>
                   <th>Referencia</th>
+                  <th aria-label="Acciones" />
                 </tr>
               </thead>
               <tbody>
@@ -121,6 +155,15 @@ export function PayrollEmployeePaymentsTab({
                       />
                     </td>
                     <td className={styles.reference}>{row.transactionReference?.trim() || '—'}</td>
+                    <td className={styles.actionsCell}>
+                      <EmpleadoRowActionButton
+                        variant="view"
+                        theme={theme}
+                        size="sm"
+                        onClick={() => setSelectedPayment(row)}
+                        aria-label={`Ver detalle de liquidación ${formatPaymentPeriod(row.periodYear, row.periodMonth)}`}
+                      />
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -141,6 +184,54 @@ export function PayrollEmployeePaymentsTab({
           ) : null}
         </>
       )}
+
+      <Modal
+        open={selectedPayment !== null}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen) {
+            setSelectedPayment(null);
+          }
+        }}
+        size="lg"
+        theme={theme}
+        title={
+          selectedPayment
+            ? `Liquidación ${formatPaymentPeriod(selectedPayment.periodYear, selectedPayment.periodMonth)}`
+            : 'Liquidación'
+        }
+        description="Desglose de retención en la fuente calculado por el motor de nómina."
+        footer={null}
+      >
+        <div className={styles.detailContent}>
+          {selectedPayment && liquidationQuery.isLoading ? (
+            <LoadingState message="Cargando liquidación…" theme={theme} layout="compact" />
+          ) : null}
+
+          {selectedPayment && liquidationQuery.isError ? (
+            <div className={styles.detailState}>
+              <p>No se pudo cargar el detalle de la liquidación.</p>
+              <Button
+                variant="secondary"
+                size="small"
+                onClick={() => void liquidationQuery.refetch()}
+              >
+                Reintentar
+              </Button>
+            </div>
+          ) : null}
+
+          {selectedPayment && liquidationBreakdown ? (
+            <PayrollTaxWithholdingBreakdownSection breakdown={liquidationBreakdown} />
+          ) : null}
+
+          {selectedPayment &&
+          !liquidationQuery.isLoading &&
+          !liquidationQuery.isError &&
+          !liquidationBreakdown ? (
+            <p className={styles.detailState}>No hay desglose de retención para este periodo.</p>
+          ) : null}
+        </div>
+      </Modal>
     </div>
   );
 }

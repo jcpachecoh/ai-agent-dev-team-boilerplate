@@ -7,7 +7,7 @@ import type { LaborClassificationFilterValue } from '../utils/labor-classificati
 
 export type AttendanceCollaboratorsStatusFilter = 'all' | 'active' | 'inactive';
 
-export const ATTENDANCE_COLLABORATORS_PAGE_SIZE_OPTIONS = [20, 50, 100] as const;
+export const ATTENDANCE_COLLABORATORS_PAGE_SIZE_OPTIONS = [8, 20, 50, 100] as const;
 export type AttendanceCollaboratorsPageSize =
   (typeof ATTENDANCE_COLLABORATORS_PAGE_SIZE_OPTIONS)[number];
 
@@ -40,7 +40,7 @@ const INITIAL_STATE: Omit<AttendanceCollaboratorsFilterState, 'pageSize'> = {
  * no en este hook — se combina con `queryFilters` en el sitio de uso.
  */
 export function useAttendanceCollaboratorsFilters(
-  defaultPageSize: AttendanceCollaboratorsPageSize = 20,
+  defaultPageSize: AttendanceCollaboratorsPageSize = 8,
 ) {
   const [state, setState] = useState<AttendanceCollaboratorsFilterState>({
     ...INITIAL_STATE,

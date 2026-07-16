@@ -8,6 +8,7 @@ export interface InventarioPaginationProps {
   page?: number;
   totalPages?: number;
   summary?: string;
+  pageLabel?: string;
   onPrevious?: () => void;
   onNext?: () => void;
   theme?: InventarioTheme;
@@ -17,15 +18,17 @@ export interface InventarioPaginationProps {
 
 export function InventarioPagination({
   page = 1,
-  totalPages = 10,
+  totalPages = 1,
   summary,
+  pageLabel,
   onPrevious,
   onNext,
   theme = 'light',
   size = 'md',
   className,
 }: InventarioPaginationProps): JSX.Element {
-  const resolvedSummary = summary ?? `Página ${page} de ${totalPages}`;
+  const resolvedSummary = summary ?? '1-8 de 8';
+  const resolvedPageLabel = pageLabel ?? `Pág. ${page}/${totalPages}`;
   const prevDisabled = page <= 1;
   const nextDisabled = page >= totalPages;
 
@@ -38,6 +41,7 @@ export function InventarioPagination({
     >
       <span className={styles.summary}>{resolvedSummary}</span>
       <div className={styles.controls}>
+        <span className={styles.pageLabel}>{resolvedPageLabel}</span>
         <button
           type="button"
           className={styles.navButton}

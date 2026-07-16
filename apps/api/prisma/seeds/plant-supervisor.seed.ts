@@ -943,7 +943,13 @@ export async function seedPlantSupervisor(prisma: PrismaClient): Promise<void> {
 
   const operator2Employee = await prisma.employeeDetails.upsert({
     where: { userId: GLOBAL_MES_OPERATOR2_USER_ID },
-    update: { isActive: true, pinHash: operator2PinHashEmployee, name: 'Carlos Mendoza' },
+    update: {
+      isActive: true,
+      pinHash: operator2PinHashEmployee,
+      name: 'Carlos Mendoza',
+      epsName: 'Nueva EPS',
+      arlName: 'ARL Sura',
+    },
     create: {
       userId: GLOBAL_MES_OPERATOR2_USER_ID,
       tenantId: TENANT_ID,
@@ -962,7 +968,7 @@ export async function seedPlantSupervisor(prisma: PrismaClient): Promise<void> {
       epsName: 'Nueva EPS',
       pensionFundName: 'Colfondos',
       cesantiasFundName: 'Colfondos',
-      arlName: 'Sura',
+      arlName: 'ARL Sura',
       arlRiskLevel: ArlRiskLevel.RIESGO_II,
       cajaCompensacion: 'Comfama',
       pinHash: operator2PinHashEmployee,
@@ -970,10 +976,26 @@ export async function seedPlantSupervisor(prisma: PrismaClient): Promise<void> {
     },
   });
   await syncEmployeeCompensationHistory(prisma, operator2Employee);
+  await prisma.employeePersonalData.upsert({
+    where: { employeeDetailsId: operator2Employee.id },
+    update: { nombres: 'Carlos', primerApellido: 'Mendoza' },
+    create: {
+      tenantId: TENANT_ID,
+      employeeDetailsId: operator2Employee.id,
+      nombres: 'Carlos',
+      primerApellido: 'Mendoza',
+    },
+  });
 
   const opsAdminEmployee = await prisma.employeeDetails.upsert({
     where: { userId: GLOBAL_MES_OPERATIONS_ADMIN_USER_ID },
-    update: { isActive: true, pinHash: opsAdminPinHashEmployee, name: 'Admin de Operaciones' },
+    update: {
+      isActive: true,
+      pinHash: opsAdminPinHashEmployee,
+      name: 'Admin de Operaciones',
+      epsName: 'EPS Sura',
+      arlName: 'ARL Sura',
+    },
     create: {
       userId: GLOBAL_MES_OPERATIONS_ADMIN_USER_ID,
       tenantId: TENANT_ID,
@@ -989,10 +1011,10 @@ export async function seedPlantSupervisor(prisma: PrismaClient): Promise<void> {
       salaryAmount: 8000000.0,
       hasTransportSubsidy: false,
       isExemptFromTax: false,
-      epsName: 'Sura',
+      epsName: 'EPS Sura',
       pensionFundName: 'Protección',
       cesantiasFundName: 'Protección',
-      arlName: 'Sura',
+      arlName: 'ARL Sura',
       arlRiskLevel: ArlRiskLevel.RIESGO_I,
       cajaCompensacion: 'Comfama',
       pinHash: opsAdminPinHashEmployee,
@@ -1000,6 +1022,16 @@ export async function seedPlantSupervisor(prisma: PrismaClient): Promise<void> {
     },
   });
   await syncEmployeeCompensationHistory(prisma, opsAdminEmployee);
+  await prisma.employeePersonalData.upsert({
+    where: { employeeDetailsId: opsAdminEmployee.id },
+    update: { nombres: 'Admin', primerApellido: 'Operaciones' },
+    create: {
+      tenantId: TENANT_ID,
+      employeeDetailsId: opsAdminEmployee.id,
+      nombres: 'Admin',
+      primerApellido: 'Operaciones',
+    },
+  });
   console.log('EmployeeDetails: seeded for operator2 and operations_admin');
 
   console.log(

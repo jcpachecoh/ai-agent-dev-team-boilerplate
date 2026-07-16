@@ -1,9 +1,10 @@
-import { ReportPdfService } from '../service/report-pdf.service';
-import { PayrollReportResponseDto } from '../controller/dto/payroll-report-response.dto';
-import { EmployeeListReportType } from '../controller/dto/employee-list-export-query.dto';
-import { EmployeeListReportResponseDto } from '../controller/dto/employee-list-report-response.dto';
-import { AttendanceReportResponseDto } from '../controller/dto/attendance-report-response.dto';
 import { EmployeeContractType, SalaryType } from '@prisma/client';
+
+import type { AttendanceReportResponseDto } from '../controller/dto/attendance-report-response.dto';
+import { EmployeeListReportType } from '../controller/dto/employee-list-export-query.dto';
+import type { EmployeeListReportResponseDto } from '../controller/dto/employee-list-report-response.dto';
+import type { PayrollReportResponseDto } from '../controller/dto/payroll-report-response.dto';
+import { ReportPdfService } from '../service/report-pdf.service';
 
 const PDF_MAGIC = Buffer.from('%PDF');
 
@@ -22,6 +23,7 @@ function makeEmployee(
     workedDays: 30,
     calendarDays: 30,
     salaryBase: 1800000,
+    contributionBase: 1800000,
     transportSubsidy: 162000,
     overtimePay: 0,
     overtimeBreakdown: [],
@@ -29,6 +31,17 @@ function makeEmployee(
     healthDeduction: 72000,
     pensionDeduction: 72000,
     incomeTaxWithholding: 0,
+    taxWithholdingBreakdown: {
+      taxWithholdingBase: 1_656_000,
+      uvtValue: 49_799,
+      taxWithholdingBaseUvt: 33.25,
+      bracketLowerUvtExclusive: 0,
+      bracketUpperUvtInclusive: 95,
+      marginalRate: 0,
+      fixedTaxUvt: 0,
+      incomeTaxWithholding: 0,
+      isExemptFromTax: false,
+    },
     totalDeductions: 144000,
     netPay: 1818000,
     employerHealthContribution: 153000,
@@ -195,6 +208,32 @@ describe('ReportPdfService', () => {
       expect(buffer.length).toBeGreaterThan(emptyBuffer.length);
     });
 
+    it('reflects incomeTaxWithholding in totalDeductions export payload (OS-594)', async () => {
+      const incomeTaxWithholding = 499_529;
+      const healthDeduction = 320_000;
+      const pensionDeduction = 320_000;
+      const totalDeductions = healthDeduction + pensionDeduction + incomeTaxWithholding;
+
+      const emp = makeEmployee({
+        salaryAmount: 8_000_000,
+        salaryBase: 8_000_000,
+        grossPay: 8_000_000,
+        healthDeduction,
+        pensionDeduction,
+        incomeTaxWithholding,
+        totalDeductions,
+        netPay: 8_000_000 - totalDeductions,
+      });
+      const report = makeReport([emp]);
+
+      expect(report.tenantTotals.totalDeductions).toBe(totalDeductions);
+      expect(emp.totalDeductions).toBeGreaterThan(healthDeduction + pensionDeduction);
+
+      const buffer = await service.generatePayrollPdf(report);
+      expect(buffer.slice(0, 4)).toEqual(PDF_MAGIC);
+      expect(buffer.length).toBeGreaterThan(0);
+    });
+
     it('includes filters summary lines in payroll PDF', async () => {
       const buffer = await service.generatePayrollPdf(makeReport([makeEmployee()]), [
         'Periodo: 2025-06',
@@ -245,7 +284,7 @@ describe('ReportPdfService', () => {
           ...employeeListReport,
           employees: [
             {
-              ...employeeListReport.employees[0]!,
+              ...employeeListReport.employees[0],
               contractEnd: '2025-12-31',
               isActive: false,
             },

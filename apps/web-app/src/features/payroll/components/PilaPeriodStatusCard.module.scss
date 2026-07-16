@@ -1,0 +1,71 @@
+@use '../styles/payroll-report-panel' as prp;
+
+.card {
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  @include prp.payroll-report-panel-header;
+}
+
+.eyebrow {
+  @include prp.payroll-report-eyebrow;
+}
+
+.title {
+  @include prp.payroll-report-title;
+}
+
+.content {
+  @include prp.payroll-report-body;
+}
+
+.description {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--prp-text);
+}
+
+.hint {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--prp-muted);
+}
+
+.warning {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--prp-amber-border);
+  background: var(--prp-amber-soft);
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--prp-text-secondary);
+}
+
+.meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px 12px;
+  margin: 0;
+}
+
+.meta dt {
+  @include prp.payroll-report-meta-label;
+}
+
+.meta dd {
+  margin: 4px 0 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--prp-text);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}

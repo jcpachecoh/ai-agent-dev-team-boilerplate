@@ -1,149 +1,11 @@
 import { EmployeeCatalogType, PrismaClient } from '@prisma/client';
 
 import { employeeCatalogOptionClient } from './employee-catalog-prisma';
-
-type CatalogSeed = {
-  type: EmployeeCatalogType;
-  names: string[];
-};
-
-/** 28 EPS autorizadas (Ministerio de Salud, corte junio 2025). */
-const EPS_NAMES = [
-  'Coosalud EPS-S',
-  'Nueva EPS',
-  'Mutual SER',
-  'Salud Mía',
-  'Aliansalud EPS',
-  'Salud Total EPS',
-  'EPS Sanitas',
-  'EPS Sura',
-  'Famisanar',
-  'Servicio Occidental de Salud EPS (SOS)',
-  'Comfenalco Valle',
-  'Compensar EPS',
-  'Empresas Públicas de Medellín (EPM)',
-  'Fondo de Pasivo Social de Ferrocarriles Nacionales de Colombia',
-  'Cajacopi Atlántico',
-  'Capresoca',
-  'Comfachocó',
-  'Comfaoriente',
-  'EPS Familiar de Colombia',
-  'Asmet Salud',
-  'Emssanar E.S.S.',
-  'Capital Salud EPS',
-  'Savia Salud EPS',
-  'Dusakawi EPSI',
-  'Asociación Indígena del Cauca EPSI',
-  'Anas Wayuu EPSI',
-  'Mallamas EPSI',
-  'Pijaos Salud EPSI',
-] as const;
-
-/** 10 ARL autorizadas a nivel nacional (Fasecolda / Superfinanciera). */
-const ARL_NAMES = [
-  'ARL Sura',
-  'Positiva Compañía de Seguros',
-  'Colmena Seguros',
-  'Seguros Bolívar',
-  'Axa Colpatria',
-  'La Equidad Seguros',
-  'Seguros de Vida Alfa',
-  'Mapfre Seguros',
-  'Liberty Seguros',
-  'Seguros de Vida Aurora',
-] as const;
-
-/** Régimen público (Prima Media) + administradoras privadas (Ahorro Individual). */
-const PENSION_FUND_NAMES = [
-  'Colpensiones',
-  'Porvenir',
-  'Protección',
-  'Colfondos',
-  'Skandia',
-] as const;
-
-const CESANTIAS_FUND_NAMES = [
-  'Fondo Nacional del Ahorro',
-  'Porvenir',
-  'Protección',
-  'Colfondos',
-  'Skandia',
-] as const;
-
-/** 43 Cajas de Compensación Familiar (Superintendencia de Subsidio Familiar). */
-const CAJA_COMPENSACION_NAMES = [
-  'Colsubsidio',
-  'Comfamiliar Camacol',
-  'Comfama',
-  'Combarranquilla',
-  'Comfaboy',
-  'Comfenalco Cartagena',
-  'Comfenalco Tolima',
-  'Comfaguajira',
-  'Comfamiliar Risaralda',
-  'Comfaca',
-  'Cafam',
-  'Cajacopi Atlántico',
-  'Cofrem',
-  'Comfamiliar Atlántico',
-  'Comfenalco Antioquia',
-  'Comfenalco Santander',
-  'Compensar',
-  'Confa',
-  'Comcaja',
-  'Comfiar',
-  'Comfacasanare',
-  'Comfacauca',
-  'Comfacesar',
-  'Comfachocó',
-  'Comfamiliar Huila',
-  'Cajamag',
-  'Comfanorte',
-  'Comfaoriente',
-  'Comfamiliar Putumayo',
-  'Comfasur',
-  'Comfatolima',
-  'Comfenalco Valle del Agente',
-  'Comfandi',
-  'Cajasan',
-  'Comfasucre',
-  'Comfenalco Quindío',
-  'Cajasai',
-  'Cafamaz',
-  'Comfacor',
-  'Comfacundi',
-  'Comfamiliar Cartagena',
-  'Comfamiliar Nariño',
-  'Comfamiliar Neiva',
-] as const;
-
-const AREA_NAMES = [
-  'Administración',
-  'Operaciones',
-  'Cocina',
-  'Servicio',
-  'Logística',
-  'Producción',
-] as const;
-
-const DEPARTMENT_NAMES = [
-  'Gerencia',
-  'Recursos Humanos',
-  'Contabilidad',
-  'Producción',
-  'Calidad',
-  'Mantenimiento',
-] as const;
-
-const CATALOG_SEEDS: CatalogSeed[] = [
-  { type: EmployeeCatalogType.EPS, names: [...EPS_NAMES] },
-  { type: EmployeeCatalogType.ARL, names: [...ARL_NAMES] },
-  { type: EmployeeCatalogType.PENSION_FUND, names: [...PENSION_FUND_NAMES] },
-  { type: EmployeeCatalogType.CESANTIAS_FUND, names: [...CESANTIAS_FUND_NAMES] },
-  { type: EmployeeCatalogType.CAJA_COMPENSACION, names: [...CAJA_COMPENSACION_NAMES] },
-  { type: EmployeeCatalogType.AREA, names: [...AREA_NAMES] },
-  { type: EmployeeCatalogType.DEPARTMENT, names: [...DEPARTMENT_NAMES] },
-];
+import {
+  PILA_ADMIN_CODES_SOURCE,
+  PILA_CATALOG_SEED_ROWS,
+} from '../../src/payroll/constants/pila-admin-codes';
+import { catalogSeedPilaCodeUpdate } from '../../src/payroll/utils/pila-master-data.util';
 
 function catalogOptionId(tenantId: string, type: EmployeeCatalogType, name: string): string {
   const slug = name
@@ -161,26 +23,41 @@ export async function seedEmployeeCatalogOptions(
 ): Promise<void> {
   const catalog = employeeCatalogOptionClient(prisma);
   const activeIds = new Set<string>();
+  let withCode = 0;
+  let withoutCode = 0;
 
-  for (const group of CATALOG_SEEDS) {
-    for (const name of group.names) {
-      const id = catalogOptionId(tenantId, group.type, name);
-      activeIds.add(id);
-      await catalog.upsert({
-        where: { id },
-        update: { name, isActive: true, type: group.type },
-        create: {
-          id,
-          tenantId,
-          type: group.type,
-          name,
-          isActive: true,
-        },
-      });
+  for (const row of PILA_CATALOG_SEED_ROWS) {
+    const id = catalogOptionId(tenantId, row.type, row.name);
+    activeIds.add(id);
+    if (row.pilaCode) {
+      withCode += 1;
+    } else {
+      withoutCode += 1;
     }
+    // Idempotente: si el seed no trae pilaCode oficial, no pisa un código manual existente.
+    await catalog.upsert({
+      where: { id },
+      update: {
+        name: row.name,
+        isActive: true,
+        type: row.type,
+        ...catalogSeedPilaCodeUpdate(row.pilaCode),
+      },
+      create: {
+        id,
+        tenantId,
+        type: row.type,
+        name: row.name,
+        pilaCode: row.pilaCode,
+        isActive: true,
+      },
+    });
   }
 
-  const catalogTypes = CATALOG_SEEDS.map((group) => group.type);
+  const catalogTypes = [
+    ...new Set(PILA_CATALOG_SEED_ROWS.map((row) => row.type)),
+  ] as EmployeeCatalogType[];
+
   await catalog.updateMany({
     where: {
       tenantId,
@@ -195,5 +72,8 @@ export async function seedEmployeeCatalogOptions(
     where: { tenantId, isActive: true },
   });
 
-  console.log(`EmployeeCatalogOptions: seeded ${total} active options for tenant ${tenantId}`);
+  console.log(
+    `EmployeeCatalogOptions: seeded ${total} active options for tenant ${tenantId}` +
+      ` (pilaCode set=${withCode}, unset=${withoutCode}; source=${PILA_ADMIN_CODES_SOURCE.primary})`,
+  );
 }

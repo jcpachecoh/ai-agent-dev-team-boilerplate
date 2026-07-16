@@ -19,7 +19,7 @@ const REQUIRED_CATALOG_FIELDS: Array<{
   >;
   label: string;
 }> = [
-  { key: 'department', label: 'Departamento' },
+  { key: 'department', label: 'Área' },
   { key: 'epsName', label: 'EPS' },
   { key: 'pensionFundName', label: 'Fondo de pensión' },
   { key: 'cesantiasFundName', label: 'Fondo de cesantías' },
@@ -35,12 +35,12 @@ export function validatePayrollEmployeePersonalStep(
   },
 ): string | null {
   if (
-    !values.nombres.trim() ||
+    !values.primerNombre.trim() ||
     !values.primerApellido.trim() ||
     !values.email.trim() ||
     !values.cedula.trim()
   ) {
-    return 'Nombres, primer apellido, correo y cédula son obligatorios.';
+    return 'Primer nombre, primer apellido, correo y cédula son obligatorios.';
   }
 
   if (!values.costCenter) {
@@ -49,7 +49,7 @@ export function validatePayrollEmployeePersonalStep(
 
   // Rotante no tiene sede fija — la sede diaria se resuelve por turno/marcación (CONN-06).
   if (values.costCenter !== 'ROTANTE' && !values.locationId.trim()) {
-    return 'El área (sede) es obligatoria.';
+    return 'La sede es obligatoria.';
   }
 
   if (!values.laborClassification) {
@@ -77,7 +77,7 @@ export function validatePayrollEmployeePersonalStep(
   }
 
   if (!values.department.trim()) {
-    return 'Departamento es obligatorio.';
+    return 'Área es obligatoria.';
   }
 
   for (let index = 0; index < values.beneficiaries.length; index += 1) {

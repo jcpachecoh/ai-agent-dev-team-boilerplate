@@ -69,6 +69,7 @@ model StorageObject {
   vacationRequestLetters    VacationRequest[]
   medicalLeaveSupportDocs   MedicalLeave[]
   payrollNovedadSupportDocs PayrollNovedad[]
+  pilaPeriodExport          PilaPeriodExport?
 
   @@index([tenantId])
   @@index([tenantId, domain])
@@ -557,7 +558,10 @@ enum DocumentType {
 model Tenant {
   id                                String        @id @default(cuid())
   name                              String
+  // NIT base sin DV (solo dígitos). El DV va en verificationDigit — no usar guion embebido.
   nit                               String?       @unique
+  // Dígito de verificación DIAN (0–9). Separado de nit para encabezado PILA (campos 6–7).
+  verificationDigit                 String?
   legalName                         String?
   tradeName                         String?
   legalRepresentativeName           String?
@@ -579,9 +583,94 @@ model Tenant {
   deletedAt                         DateTime?
 
   tenantLocations Location[]
+  pilaConfig      TenantPilaConfig?
+  pilaPeriodExports PilaPeriodExport[]
 
   @@index([isActive])
   @@map("tenants")
+}
+
+// OS-595 — Configuración PILA del aportante (1:1 con Tenant). Tipada; sin JSON opaco.
+// Campos opcionales permiten tenants existentes sin romper migraciones; el export v1
+// exigirá los obligatorios vía validación de aplicación.
+model TenantPilaConfig {
+  id                              String   @id @default(cuid())
+  tenantId                        String   @unique
+  // Tipo documento aportante PILA (NI = NIT persona jurídica).
+  documentType                    String   @default("NI") @db.VarChar(2)
+  // Clase de aportante Anexo Técnico 2 archivo tipo 1 (A/B/C/D/I…).
+  claseAportante                  String   @default("B") @db.VarChar(1)
+  // Naturaleza jurídica: 1 pública, 2 privada, 3 mixta, …
+  naturalezaJuridica              String   @default("2") @db.VarChar(1)
+  // Forma de presentación: U único, S sucursal. v1 fija U.
+  formaPresentacion               String   @default("U") @db.VarChar(1)
+  // Tipo de aportante (01 empleador, …).
+  tipoAportante                   String   @default("01") @db.VarChar(2)
+  // Código ARL del aportante (reg. tipo 1 campo 14). Nullable hasta configurar.
+  arlCode                         String?  @db.VarChar(10)
+  // Actividad económica ARL (reg. tipo 2 campo 98, 7 dígitos Decreto 768/2022).
+  actividadEconomicaArl           String?  @db.VarChar(7)
+  // Si true, OS-380 aún no calcula tarifas Ley 1607 — el export v1 debe bloquear.
+  exemptFromHealthSenaIcbfLey1607 Boolean  @default(false)
+  createdAt                       DateTime @default(now())
+  updatedAt                       DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("tenant_pila_configs")
+}
+
+// OS-595 Fase 4 — exportación PILA persistida (solo GENERATED|PAID|VOIDED; no PENDING).
+enum PilaPeriodExportStatus {
+  GENERATED
+  PAID
+  VOIDED
+}
+
+/// Formato de artefacto PILA. TXT = Anexo 2 fixed-width; XLSX = plantilla Aportes en Línea.
+enum PilaExportFormat {
+  TXT
+  XLSX
+}
+
+model PilaPeriodExport {
+  id                  String                 @id @default(cuid())
+  tenantId            String
+  periodHealth        String                 @db.VarChar(7)
+  periodOther         String                 @db.VarChar(7)
+  /// Canal de salida. Versionado e “activo” son independientes por formato.
+  format              PilaExportFormat       @default(TXT)
+  status              PilaPeriodExportStatus
+  version             Int
+  technicalVersion    String                 @db.VarChar(32)
+  fileName            String
+  fileChecksum        String
+  employeeCount       Int
+  totalPayrollAmount  Int
+  totalContribution   Int
+  snapshotJson        Json
+  storageObjectId     String                 @unique
+  generatedAt         DateTime
+  generatedBy         String
+  paidAt              DateTime?
+  paidConfirmedBy     String?
+  planNumber          String?
+  paymentReference    String?
+  voidedAt            DateTime?
+  voidedBy            String?
+  voidReason          String?
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
+
+  tenant        Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  storageObject StorageObject @relation(fields: [storageObjectId], references: [id], onDelete: Restrict)
+
+  @@unique([tenantId, periodHealth, format, version])
+  @@index([tenantId, periodHealth])
+  @@index([tenantId, periodHealth, format])
+  @@index([tenantId, status])
+  @@index([tenantId, periodHealth, status])
+  @@map("pila_period_exports")
 }
 
 model Role {
@@ -644,6 +733,10 @@ model User {
   attendanceObservationsCreated         AttendanceObservation[]     @relation("AttendanceObservationCreatedBy")
   attendanceObservationsUpdated         AttendanceObservation[]     @relation("AttendanceObservationUpdatedBy")
   overtimeApprovals                     OvertimeApproval[]          @relation("OvertimeApprovalApprover")
+  weeklyShiftPlansSubmitted             WeeklyShiftPlan[]           @relation("WeeklyShiftPlanSubmittedBy")
+  weeklyShiftPlansApproved              WeeklyShiftPlan[]           @relation("WeeklyShiftPlanApprovedBy")
+  weeklyShiftPlansRejected              WeeklyShiftPlan[]           @relation("WeeklyShiftPlanRejectedBy")
+  kioskMarkingSessionsActivated         KioskMarkingSession[]       @relation("KioskMarkingSessionActivatedBy")
 
   @@unique([tenantId, email])
   @@unique([tenantId, cedula])
@@ -709,7 +802,11 @@ model Location {
   address             String
   city                String?
   phone               String?
+  // Código interno de sede (PL-01, …) — NO es DIVIPOLA.
   code                String?
+  // DIVIPOLA — sede laboral usada por EmployeeDetails.locationId (PILA reg. tipo 2 campos 9–10).
+  departmentCode      String?   @db.VarChar(2)
+  municipalityCode    String?   @db.VarChar(3)
   latitude            String?
   longitude           String?
   // Geo fields for mobile attendance geofencing (OS-499/OS-505).
@@ -737,6 +834,8 @@ model Location {
   overtimeRequests           OvertimeRequest[]
   dailyCostCenterAssignments DailyCostCenterAssignment[]
   jornadaCutoffs             JornadaCutoff[]
+  weeklyShiftPlans           WeeklyShiftPlan[]
+  kioskMarkingSessions       KioskMarkingSession[]
 
   @@unique([tenantId, name])
   @@unique([tenantId, code])
@@ -1194,11 +1293,16 @@ model EmployeeCatalogOption {
   tenantId  String
   type      EmployeeCatalogType
   name      String
+  // Código oficial PILA (UGPP / Minsalud). Solo EPS, PENSION_FUND, ARL, CAJA_COMPENSACION.
+  // Null para AREA/DEPARTMENT/CESANTIAS_FUND o cuando no hay código verificable.
+  pilaCode  String?             @db.VarChar(10)
   isActive  Boolean             @default(true)
   createdAt DateTime            @default(now())
   updatedAt DateTime            @updatedAt
 
   @@unique([tenantId, type, name])
+  // Un mismo código PILA no puede repetirse dentro del mismo tipo y tenant (NULLs permitidos).
+  @@unique([tenantId, type, pilaCode])
   @@index([tenantId, type, isActive])
   @@map("employee_catalog_options")
 }
@@ -2075,6 +2179,14 @@ enum AttendanceLogSource {
   APP_MOVIL
   MANUAL
   SYSTEM // CONN-11 — EXIT de corte automático de jornada
+  KIOSK // tablet compartida modo marcación (token scoped KIOSK_MARKING)
+}
+
+// Método de verificación de identidad en marcación kiosko (tablet compartida).
+enum AttendanceVerificationMethod {
+  FACIAL_MATCH
+  PIN
+  NONE // match facial deshabilitado / sin consentimiento → solo PIN u omitido
 }
 
 // CONN-11 — alcance de la marcación dentro de la jornada.
@@ -2130,12 +2242,17 @@ model AttendanceLog {
   facialMatchResult String?
   rejectionReason   String?
 
+  // Tablet compartida — trazabilidad de verificación y sesión kiosko
+  verificationMethod AttendanceVerificationMethod?
+  kioskSessionId     String?
+
   employee EmployeeDetails @relation(fields: [employeeId], references: [id])
   location Location        @relation(fields: [locationId], references: [id])
 
   createdBy       User?           @relation("AttendanceLogCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
   manualParentLog AttendanceLog?  @relation("AttendanceLogManualParent", fields: [manualParentLogId], references: [id], onDelete: SetNull)
   manualChildLogs AttendanceLog[] @relation("AttendanceLogManualParent")
+  kioskSession    KioskMarkingSession? @relation(fields: [kioskSessionId], references: [id], onDelete: SetNull)
 
   payrollNovedadFromSource PayrollNovedad? @relation("PayrollNovedadSourceAttendanceLog")
   medicalLeaveFromSource   MedicalLeave?   @relation("MedicalLeaveSourceAttendanceLog")
@@ -2146,7 +2263,27 @@ model AttendanceLog {
   @@index([tenantId, workDate])
   @@index([tenantId, validationStatus])
   @@index([manualParentLogId])
+  @@index([kioskSessionId])
   @@map("attendance_logs")
+}
+
+// Sesión de modo marcación en tablet compartida (token scoped + revocación).
+model KioskMarkingSession {
+  id                String    @id @default(cuid())
+  tenantId          String
+  locationId        String
+  activatedByUserId String
+  expiresAt         DateTime
+  revokedAt         DateTime?
+  createdAt         DateTime  @default(now())
+
+  location     Location        @relation(fields: [locationId], references: [id])
+  activatedBy  User            @relation("KioskMarkingSessionActivatedBy", fields: [activatedByUserId], references: [id], onDelete: Cascade)
+  attendanceLogs AttendanceLog[]
+
+  @@index([tenantId, locationId])
+  @@index([tenantId, activatedByUserId])
+  @@map("kiosk_marking_sessions")
 }
 
 // CONN-11 — corte automático de jornada ordinaria al shiftEndTime.
@@ -2290,6 +2427,45 @@ model TurnoAssignment {
   @@index([tenantId, turnoId, workDate])
   @@index([tenantId, employeeId, workDate])
   @@map("turno_assignments")
+}
+
+// CONN-12: ciclo de aprobación semanal de la malla de turnos por sede.
+// Las celdas `TurnoAssignment` se asocian implícitamente por
+// (locationId del plan, workDate ∈ [weekStart, weekStart+6]) — sin FK en turno_assignments.
+// Solo status=APPROVED es insumo operativo para CONN-11 y liquidación.
+enum WeeklyShiftPlanStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+}
+
+model WeeklyShiftPlan {
+  id                String                @id @default(cuid())
+  tenantId          String
+  locationId        String
+  /// Lunes de la semana (alineado a OS-582 `getMondayOfWeek`).
+  weekStart         DateTime              @db.Date
+  status            WeeklyShiftPlanStatus @default(DRAFT)
+  submittedByUserId String?
+  submittedAt       DateTime?
+  approvedByUserId  String?
+  approvedAt        DateTime?
+  rejectedByUserId  String?
+  rejectedAt        DateTime?
+  rejectionReason   String?
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+
+  location    Location @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  submittedBy User?    @relation("WeeklyShiftPlanSubmittedBy", fields: [submittedByUserId], references: [id], onDelete: SetNull)
+  approvedBy  User?    @relation("WeeklyShiftPlanApprovedBy", fields: [approvedByUserId], references: [id], onDelete: SetNull)
+  rejectedBy  User?    @relation("WeeklyShiftPlanRejectedBy", fields: [rejectedByUserId], references: [id], onDelete: SetNull)
+
+  @@unique([tenantId, locationId, weekStart])
+  @@index([tenantId, status, weekStart])
+  @@index([tenantId, locationId, weekStart])
+  @@map("weekly_shift_plans")
 }
 
 // OS-548: descarte persistido de alertas del panel de control de asistencia.
@@ -2437,6 +2613,30 @@ model LaborLegalParameter {
   @@index([tenantId, key, validFrom])
   @@index([deletedAt])
   @@map("labor_legal_parameters")
+}
+
+// ── Retención en la fuente — tabla progresiva UVT (OS-594 / Ley 2277/2022) ───
+
+model TaxWithholdingBracket {
+  id            String    @id @default(cuid())
+  tenantId      String? // null = global
+  tenantScope   String    @default("GLOBAL")
+  sortOrder     Int // orden del tramo (1..7) dentro de una vigencia
+  lowerUvtBound Decimal   @db.Decimal(14, 4) // límite inferior exclusivo (UVT)
+  upperUvtBound Decimal?  @db.Decimal(14, 4) // límite superior inclusivo; null = abierto
+  marginalRate  Decimal   @db.Decimal(8, 6)
+  fixedTaxUvt   Decimal   @db.Decimal(14, 4) // impuesto fijo en UVT (deducción)
+  validFrom     DateTime
+  validTo       DateTime?
+  source        String?
+  deletedAt     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([tenantScope, validFrom, sortOrder])
+  @@index([tenantScope, validFrom, validTo])
+  @@index([deletedAt])
+  @@map("tax_withholding_brackets")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

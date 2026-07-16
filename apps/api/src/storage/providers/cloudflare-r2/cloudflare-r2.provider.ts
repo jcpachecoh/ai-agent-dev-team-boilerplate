@@ -69,6 +69,16 @@ export class CloudflareR2StorageProvider implements StorageProvider {
     return getSignedUrl(this.client, command, { expiresIn: ttlSeconds });
   }
 
+  async getObjectBuffer(key: string, bucket: string): Promise<Buffer> {
+    const response = await this.client.send(new GetObjectCommand({ Bucket: bucket, Key: key }));
+    const body = response.Body;
+    if (!body) {
+      throw new Error(`Empty body for key=${key}`);
+    }
+    const bytes = await body.transformToByteArray();
+    return Buffer.from(bytes);
+  }
+
   async exists(key: string, bucket: string): Promise<boolean> {
     try {
       await this.client.send(new HeadObjectCommand({ Bucket: bucket, Key: key }));

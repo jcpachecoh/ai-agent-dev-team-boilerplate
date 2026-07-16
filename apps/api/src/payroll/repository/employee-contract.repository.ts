@@ -58,6 +58,31 @@ export class EmployeeContractRepository implements IEmployeeContractRepository {
     return row ? this.map(row) : null;
   }
 
+  async findContractsAsOfForTenant(
+    tenantId: string,
+    asOfDate: Date,
+  ): Promise<EmploymentContractRecord[]> {
+    // Una sola query tenant-wide; misma ventana temporal que findContractAt.
+    // Deduplicación en memoria: orderBy startDate desc → primer hit por empleado gana.
+    const rows = await this.prisma.employmentContract.findMany({
+      where: {
+        tenantId,
+        startDate: { lte: asOfDate },
+        OR: [{ status: 'ACTIVO' }, { terminationDate: { gte: asOfDate } }],
+      },
+      orderBy: { startDate: 'desc' },
+    });
+
+    const byEmployee = new Map<string, EmploymentContract>();
+    for (const row of rows) {
+      if (!byEmployee.has(row.employeeDetailsId)) {
+        byEmployee.set(row.employeeDetailsId, row);
+      }
+    }
+
+    return [...byEmployee.values()].map((row): EmploymentContractRecord => this.map(row));
+  }
+
   async createInitialContractTx(
     tx: Prisma.TransactionClient,
     data: CreateInitialContractData,

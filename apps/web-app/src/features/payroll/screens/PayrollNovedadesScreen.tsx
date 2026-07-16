@@ -19,6 +19,7 @@ import { useLocations } from '@/features/sedes/hooks/useLocations';
 import { getRoleCodeFromToken } from '@/lib/auth-token';
 import { useUiTheme } from '@/hooks/useUiTheme';
 import { useTheme } from '@/providers/ThemeProvider';
+import { useClientTablePagination } from '@/utils/useClientTablePagination';
 
 import { usePayrollNovedadMutations } from '../hooks/usePayrollNovedadMutations';
 import { usePayrollNovedadesQuery } from '../hooks/usePayrollNovedadesQuery';
@@ -122,6 +123,13 @@ export function PayrollNovedadesScreen(): React.JSX.Element {
   } = usePayrollNovedadMutations(listFilters);
 
   const novedades = novedadesQuery.data ?? [];
+  const {
+    page,
+    pageItems: pagedNovedades,
+    range,
+    onPrevious,
+    onNext,
+  } = useClientTablePagination(novedades);
 
   const locationOptions = useMemo(
     () => [
@@ -240,16 +248,6 @@ export function PayrollNovedadesScreen(): React.JSX.Element {
         </div>
         <PayrollFilterBar>
           <div className={styles.filterField}>
-            <span className={styles.filterLabel}>Sede</span>
-            <RecetaFilterSelect
-              value={selectedLocationId}
-              options={locationOptions}
-              onChange={setSelectedLocationId}
-              theme={empleadoTheme}
-              size="md"
-            />
-          </div>
-          <div className={styles.filterField}>
             <span className={styles.filterLabel}>Empleado</span>
             <Combobox
               value={selectedEmployeeId}
@@ -293,6 +291,16 @@ export function PayrollNovedadesScreen(): React.JSX.Element {
               className={styles.datePicker}
             />
           </div>
+          <div className={styles.filterField}>
+            <span className={styles.filterLabel}>Sede</span>
+            <RecetaFilterSelect
+              value={selectedLocationId}
+              options={locationOptions}
+              onChange={setSelectedLocationId}
+              theme={empleadoTheme}
+              size="md"
+            />
+          </div>
         </PayrollFilterBar>
       </EmpleadoPageSection>
 
@@ -301,12 +309,20 @@ export function PayrollNovedadesScreen(): React.JSX.Element {
           <div className={styles.state}>No hay novedades para mostrar.</div>
         ) : (
           <PayrollNovedadesTable
-            novedades={novedades}
+            novedades={pagedNovedades}
             theme={empleadoTheme}
             showInboxActions={tab === 'inbox'}
             canWrite={canWrite}
             supervisor={supervisor}
             rrhh={rrhh}
+            pagination={{
+              page,
+              totalPages: range.totalPages,
+              summary: range.summary,
+              pageLabel: range.pageLabel,
+              onPrevious,
+              onNext,
+            }}
             onApprove={handleApprove}
             onReject={(row) => {
               setRejectTarget(row);

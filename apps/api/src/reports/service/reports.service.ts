@@ -1,37 +1,43 @@
 import { BadRequestException, Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { AttendanceEventType, AttendanceLog, CostCenter, OvertimeStatus } from '@prisma/client';
+
 import { COLOMBIA_TZ, REGULAR_DAY_MINUTES } from '../../attendance/attendance.constants';
-import { AttendanceOvertimeType } from '../../payroll/payroll.constants';
-import { isColombianHoliday } from './colombia-holidays.util';
-import { IReportsService, ReportsActor } from '../interfaces/reports.interfaces';
+import { countApprovedVacationDaysInRange } from '../../attendance/service/vacation-attendance.guard';
+import { decimalToNumber } from '../../common/utils/decimal.util';
+import type { RotanteProrationResult } from '../../daily-cost-center/interfaces/rotante-proration.interfaces';
+import { RotanteProrationService } from '../../daily-cost-center/service/rotante-proration.service';
+import { LaborLegalParametersService } from '../../labor-legal-parameters/service/labor-legal-parameters.service';
 import { UserLocationsService } from '../../locations/service/user-locations.service';
+import { MedicalLeavesRepository } from '../../medical-leaves/repository/medical-leaves.repository';
+import { OvertimeRepository } from '../../overtime/repository/overtime.repository';
 import {
   AttendanceMonthSummary,
   EmployeePayrollInput,
   OvertimeMinutesEntry,
   PayrollLegalRates,
 } from '../../payroll/interfaces/payroll-report.interfaces';
-import { PayrollCalculationService } from '../../payroll/service/payroll-calculation.service';
-import { LaborLegalParametersService } from '../../labor-legal-parameters/service/labor-legal-parameters.service';
-import { decimalToNumber } from '../../common/utils/decimal.util';
-import { EmployeeWithUserAndLocation, ReportsRepository } from '../repository/reports.repository';
+import { AttendanceOvertimeType } from '../../payroll/payroll.constants';
 import { PayrollRepository } from '../../payroll/repository/payroll.repository';
-import { AttendanceQueryDto, PeriodQueryDto } from '../controller/dto/report-query.dto';
-import { EmployeeListExportQueryDto } from '../controller/dto/employee-list-export-query.dto';
+import { PayrollCalculationService } from '../../payroll/service/payroll-calculation.service';
+import { calculateMedicalLeaveMonthAdjustment } from '../../payroll/utils/medical-leave-payroll.utils';
+import { classifyOvertimeSurcharge } from '../../payroll/utils/overtime-surcharge.util';
+import { calculatePayrollNovedadMonthAdjustment } from '../../payroll/utils/payroll-novedad-payroll.utils';
+import { PayrollNovedadesRepository } from '../../payroll-novedades/repository/payroll-novedades.repository';
+import { TaxWithholdingBracketsService } from '../../tax-withholding-brackets/service/tax-withholding-brackets.service';
+import { VacationsService } from '../../vacations/service/vacations.service';
 import {
   AttendanceExportQueryDto,
   AttendanceReportStatusFilter,
 } from '../controller/dto/attendance-export-query.dto';
 import {
+  AttendanceEmployeeRowDto,
+  AttendanceReportResponseDto,
+} from '../controller/dto/attendance-report-response.dto';
+import { EmployeeListExportQueryDto } from '../controller/dto/employee-list-export-query.dto';
+import {
   EmployeeListReportResponseDto,
   EmployeeListRowDto,
 } from '../controller/dto/employee-list-report-response.dto';
-import { MAX_EXPORT_ROWS } from '../reports.constants';
-import { buildAttendanceFiltersSummary } from './export-filters-summary.util';
-import { OvertimeRepository } from '../../overtime/repository/overtime.repository';
-import { buildEmployeeListFiltersSummary } from './export-filters-summary.util';
-import { RotanteProrationService } from '../../daily-cost-center/service/rotante-proration.service';
-import type { RotanteProrationResult } from '../../daily-cost-center/interfaces/rotante-proration.interfaces';
 import {
   LocationPayrollTotalsDto,
   PayrollEmployeeRowDto,
@@ -39,21 +45,19 @@ import {
   RotanteProrationMetaDto,
   TenantPayrollTotalsDto,
 } from '../controller/dto/payroll-report-response.dto';
-import {
-  AttendanceEmployeeRowDto,
-  AttendanceReportResponseDto,
-} from '../controller/dto/attendance-report-response.dto';
+import { AttendanceQueryDto, PeriodQueryDto } from '../controller/dto/report-query.dto';
 import {
   SocialSecurityEmployeeRowDto,
   SocialSecurityReportResponseDto,
 } from '../controller/dto/social-security-report-response.dto';
-import { VacationsService } from '../../vacations/service/vacations.service';
-import { countApprovedVacationDaysInRange } from '../../attendance/service/vacation-attendance.guard';
-import { MedicalLeavesRepository } from '../../medical-leaves/repository/medical-leaves.repository';
-import { PayrollNovedadesRepository } from '../../payroll-novedades/repository/payroll-novedades.repository';
-import { calculateMedicalLeaveMonthAdjustment } from '../../payroll/utils/medical-leave-payroll.utils';
-import { classifyOvertimeSurcharge } from '../../payroll/utils/overtime-surcharge.util';
-import { calculatePayrollNovedadMonthAdjustment } from '../../payroll/utils/payroll-novedad-payroll.utils';
+import { IReportsService, ReportsActor } from '../interfaces/reports.interfaces';
+import { MAX_EXPORT_ROWS } from '../reports.constants';
+import { EmployeeWithUserAndLocation, ReportsRepository } from '../repository/reports.repository';
+import { isColombianHoliday } from './colombia-holidays.util';
+import {
+  buildAttendanceFiltersSummary,
+  buildEmployeeListFiltersSummary,
+} from './export-filters-summary.util';
 
 // CST art. 168: maximum 2h/day and 12h/week of extra (overtime) hours.
 // These are OT-only caps — distinct from the total jornada limit (Ley 2101/2021), which is
@@ -164,7 +168,9 @@ function buildDayRecords(
   const byDate = new Map<string, AttendanceLog[]>();
   for (const log of logs) {
     const key = log.workDate.toISOString().slice(0, 10);
-    if (!byDate.has(key)) byDate.set(key, []);
+    if (!byDate.has(key)) {
+      byDate.set(key, []);
+    }
     byDate.get(key)!.push(log);
   }
 
@@ -194,7 +200,9 @@ function buildDayRecords(
       const entry = entries[i];
       const exit = exits[i];
       const durationMs = exit.timestamp.getTime() - entry.timestamp.getTime();
-      if (durationMs <= 0) continue; // invalid pair — skip
+      if (durationMs <= 0) {
+        continue;
+      } // invalid pair — skip
 
       dayWorkedMinutes += Math.floor(durationMs / 60_000);
       hasPair = true;
@@ -276,7 +284,9 @@ function buildAttendanceSummary(
 
   const overtimeEntries: OvertimeMinutesEntry[] = [];
   for (const r of dayRecords) {
-    if (r.overtimeMinutes <= 0) continue;
+    if (r.overtimeMinutes <= 0) {
+      continue;
+    }
     const date = parseCalendarDateKey(r.dateKey);
     // Ley 51/1983: festivo + nocturno → FESTIVO_NOCTURNO (surcharge nocturno + dominical/festivo)
     //              festivo + diurno  → FESTIVO_DIURNO  (surcharge RECARGO_DOMINICAL_FESTIVO)
@@ -312,7 +322,9 @@ function checkExceededOvertimeLimit(
   dayRecords: { dateKey: string; overtimeMinutes: number }[],
 ): boolean {
   for (const r of dayRecords) {
-    if (r.overtimeMinutes > DAILY_OVERTIME_LIMIT_MINUTES) return true;
+    if (r.overtimeMinutes > DAILY_OVERTIME_LIMIT_MINUTES) {
+      return true;
+    }
   }
 
   const weekly = new Map<string, number>();
@@ -321,7 +333,9 @@ function checkExceededOvertimeLimit(
     weekly.set(week, (weekly.get(week) ?? 0) + r.overtimeMinutes);
   }
   for (const total of weekly.values()) {
-    if (total > WEEKLY_OVERTIME_LIMIT_MINUTES) return true;
+    if (total > WEEKLY_OVERTIME_LIMIT_MINUTES) {
+      return true;
+    }
   }
 
   return false;
@@ -344,6 +358,7 @@ function mapToPayrollEmployeeRow(
     workedDays: calc.workedDays,
     calendarDays: calc.calendarDays,
     salaryBase: calc.salaryBase,
+    contributionBase: calc.contributionBase,
     transportSubsidy: calc.transportSubsidy,
     overtimePay: calc.overtimePay,
     overtimeBreakdown: calc.overtimeBreakdown,
@@ -351,6 +366,7 @@ function mapToPayrollEmployeeRow(
     healthDeduction: calc.healthDeduction,
     pensionDeduction: calc.pensionDeduction,
     incomeTaxWithholding: calc.incomeTaxWithholding,
+    taxWithholdingBreakdown: calc.taxWithholdingBreakdown,
     totalDeductions: calc.totalDeductions,
     netPay: calc.netPay,
     employerHealthContribution: calc.employerHealthContribution,
@@ -490,6 +506,7 @@ export class ReportsService implements IReportsService {
     private readonly payrollCalculationService: PayrollCalculationService,
     private readonly userLocationsService: UserLocationsService,
     private readonly legalParametersService: LaborLegalParametersService,
+    private readonly taxWithholdingBracketsService: TaxWithholdingBracketsService,
     @Optional() private readonly rotanteProrationService?: RotanteProrationService,
     @Optional() private readonly vacationsService?: VacationsService,
     @Optional() private readonly medicalLeavesRepository?: MedicalLeavesRepository,
@@ -677,6 +694,7 @@ export class ReportsService implements IReportsService {
       [
         'SMLV',
         'AUXILIO_TRANSPORTE',
+        'UVT',
         'RECARGO_DOMINICAL_FESTIVO',
         'HORARIO_NOCTURNO_INICIO',
         'RECARGO_HORA_EXTRA_DIURNA',
@@ -687,6 +705,7 @@ export class ReportsService implements IReportsService {
       to,
       tenantId,
     );
+    const taxBracketSnapshot = await this.taxWithholdingBracketsService.preload(from, to, tenantId);
     // Overtime surcharges and the hourly-rate divisor vary by the date the minutes were
     // actually worked (OS-586) — e.g. JORNADA_MAX_SEMANAL steps down on July 15, which does
     // not align to a calendar-month period boundary. Resolved per work-day inside
@@ -714,6 +733,8 @@ export class ReportsService implements IReportsService {
       smlv,
       transportSubsidyThreshold: smlv * 2,
       transportSubsidy: legalSnapshot.numberAt('AUXILIO_TRANSPORTE', to),
+      uvt: legalSnapshot.numberAt('UVT', to),
+      taxWithholdingBrackets: taxBracketSnapshot.bracketsAt(to),
     };
 
     const rows: PayrollEmployeeRowDto[] = [];
@@ -774,6 +795,7 @@ export class ReportsService implements IReportsService {
         payrollNovedadUnpaidDays: payrollNovedad?.payrollNovedadUnpaidDays ?? 0,
         payrollNovedadUnpaidDeduction: payrollNovedad?.payrollNovedadUnpaidDeduction ?? 0,
         payrollNovedadPaidDays: payrollNovedad?.payrollNovedadPaidDays ?? 0,
+        isExemptFromTax: emp.isExemptFromTax,
       };
 
       const calc = this.payrollCalculationService.calculateEmployeePeriod(
@@ -832,7 +854,7 @@ export class ReportsService implements IReportsService {
     );
 
     const allowedLocationIds = await this.resolveLocationScope(tenantId, actor, query.locationId);
-    let employees = await this.reportsRepository.findActiveEmployees(tenantId, {
+    const employees = await this.reportsRepository.findActiveEmployees(tenantId, {
       locationId: query.locationId,
       allowedLocationIds,
       employeeId: query.employeeId,
@@ -1032,7 +1054,9 @@ export class ReportsService implements IReportsService {
 function groupLogsByEmployee(logs: AttendanceLog[]): Map<string, AttendanceLog[]> {
   const map = new Map<string, AttendanceLog[]>();
   for (const log of logs) {
-    if (!map.has(log.employeeId)) map.set(log.employeeId, []);
+    if (!map.has(log.employeeId)) {
+      map.set(log.employeeId, []);
+    }
     map.get(log.employeeId)!.push(log);
   }
   return map;

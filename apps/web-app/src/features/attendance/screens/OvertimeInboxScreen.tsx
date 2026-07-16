@@ -13,6 +13,7 @@ import { useMemo, useState } from 'react';
 import { useMe } from '@/features/auth/hooks/useMe';
 import { getRoleCodeFromToken } from '@/lib/auth-token';
 import { useTheme } from '@/providers/ThemeProvider';
+import { useClientTablePagination } from '@/utils/useClientTablePagination';
 
 import { OvertimeObjectModal } from '../components/OvertimeObjectModal';
 import { OvertimeTable } from '../components/OvertimeTable';
@@ -59,6 +60,7 @@ export function OvertimeInboxScreen(): React.JSX.Element {
 
   const items = inboxQuery.data?.items ?? [];
   const pendingCount = summaryQuery.data?.pendingCount ?? 0;
+  const { page, pageItems, range, onPrevious, onNext } = useClientTablePagination(items);
 
   const subtitle = useMemo(
     () => `Período ${payrollPeriod} · ${items.length} solicitud(es)`,
@@ -141,11 +143,19 @@ export function OvertimeInboxScreen(): React.JSX.Element {
           <div className={styles.state}>No hay solicitudes para este período.</div>
         ) : (
           <OvertimeTable
-            items={items}
+            items={pageItems}
             theme={empleadoTheme}
             roleCode={roleCode}
             positionId={positionId}
             actionsDisabled={approveMutation.isPending || objectMutation.isPending}
+            pagination={{
+              page,
+              totalPages: range.totalPages,
+              summary: range.summary,
+              pageLabel: range.pageLabel,
+              onPrevious,
+              onNext,
+            }}
             onApprove={(item) => void handleApprove(item)}
             onObject={setObjectTarget}
           />

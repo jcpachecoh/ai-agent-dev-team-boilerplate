@@ -236,8 +236,9 @@ export function getAttendanceCard(
   userId: string,
   dateFrom: string,
   dateTo: string,
+  locationId?: string,
 ): Promise<AttendanceCardResult> {
-  const query = toQueryString({ dateFrom, dateTo });
+  const query = toQueryString({ dateFrom, dateTo, locationId });
   return attendanceFetch<AttendanceCardResult>(`/attendance/employees/${userId}/card${query}`);
 }
 

@@ -58,6 +58,11 @@ vi.mock('../hooks/useEmployeePositions', () => ({
   }),
 }));
 
+vi.mock('../api/personal-data.client', () => ({
+  getColombiaDepartments: () => Promise.resolve([{ code: '11', name: 'Bogotá D.C.' }]),
+  getColombiaCities: () => Promise.resolve(['Bogotá D.C.']),
+}));
+
 function renderForm(
   props: Omit<React.ComponentProps<typeof PayrollEmployeeForm>, 'onCancel' | 'onSubmit'> & {
     onSubmit?: (values: PayrollEmployeeFormValues) => void;
@@ -85,7 +90,7 @@ describe('PayrollEmployeeForm', () => {
     await user.click(screen.getByRole('button', { name: 'Crear empleado' }));
 
     expect(
-      screen.getByText('Nombres, primer apellido, correo y cédula son obligatorios.'),
+      screen.getByText('Primer nombre, primer apellido, correo y cédula son obligatorios.'),
     ).toBeInTheDocument();
     expect(onSubmit).not.toHaveBeenCalled();
   });
@@ -96,16 +101,16 @@ describe('PayrollEmployeeForm', () => {
 
     renderForm({ mode: 'create', locations: TEST_LOCATIONS, onSubmit });
 
-    await user.type(screen.getByLabelText('Nombres'), 'Carlos');
+    await user.type(screen.getByLabelText('Primer nombre'), 'Carlos');
     await user.type(screen.getByLabelText('Primer apellido'), 'Perez');
     await user.type(screen.getByLabelText('Cédula'), '12345678');
     await user.type(screen.getByLabelText('Correo'), 'carlos@test.com');
-    await user.click(screen.getByRole('button', { name: 'Áreas' }));
+    await user.click(screen.getByRole('button', { name: 'Sedes' }));
     await user.click(screen.getByRole('option', { name: 'Sede Palos de Leña 1' }));
     await user.click(screen.getByRole('button', { name: 'Cargo' }));
     await user.click(screen.getByRole('option', { name: 'Programador' }));
     await user.type(screen.getByLabelText('Salario'), '3000000');
-    await user.click(screen.getByRole('button', { name: 'Departamento' }));
+    await user.click(screen.getByRole('button', { name: 'Área' }));
     await user.click(screen.getByRole('option', { name: 'Gerencia' }));
     await user.click(screen.getByRole('button', { name: 'EPS' }));
     await user.click(screen.getByRole('option', { name: 'Sura' }));
@@ -120,7 +125,7 @@ describe('PayrollEmployeeForm', () => {
     await user.click(screen.getByRole('button', { name: 'Crear empleado' }));
 
     expect(onSubmit).toHaveBeenCalledTimes(1);
-    expect(onSubmit.mock.calls[0][0].nombres).toBe('Carlos');
+    expect(onSubmit.mock.calls[0][0].primerNombre).toBe('Carlos');
     expect(onSubmit.mock.calls[0][0].primerApellido).toBe('Perez');
     expect(onSubmit.mock.calls[0][0].positionId).toBe('pos-1');
     expect(onSubmit.mock.calls[0][0].area).toBe('Administración');
@@ -131,14 +136,14 @@ describe('PayrollEmployeeForm', () => {
 
     renderForm({ mode: 'create', locations: TEST_LOCATIONS });
 
-    await user.click(screen.getByRole('button', { name: 'Áreas' }));
+    await user.click(screen.getByRole('button', { name: 'Sedes' }));
     await user.click(screen.getByRole('option', { name: 'Sede Palos de Leña 1' }));
-    expect(screen.getByRole('button', { name: 'Áreas' })).toHaveTextContent('Sede Palos de Leña 1');
+    expect(screen.getByRole('button', { name: 'Sedes' })).toHaveTextContent('Sede Palos de Leña 1');
 
     await user.click(screen.getByRole('button', { name: 'Centro de Costos' }));
     await user.click(screen.getByRole('option', { name: 'Rotante' }));
 
-    const areasButton = screen.getByRole('button', { name: 'Áreas' });
+    const areasButton = screen.getByRole('button', { name: 'Sedes' });
     expect(areasButton).toBeDisabled();
     expect(areasButton).toHaveTextContent('No aplica para Rotante');
     expect(
@@ -148,7 +153,7 @@ describe('PayrollEmployeeForm', () => {
     await user.click(screen.getByRole('button', { name: 'Centro de Costos' }));
     await user.click(screen.getByRole('option', { name: 'Operaciones' }));
 
-    expect(screen.getByRole('button', { name: 'Áreas' })).not.toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Sedes' })).not.toBeDisabled();
   });
 
   it('CONN-06: no exige Áreas cuando el Centro de Costos es Rotante', async () => {
@@ -157,7 +162,7 @@ describe('PayrollEmployeeForm', () => {
 
     renderForm({ mode: 'create', locations: TEST_LOCATIONS, onSubmit });
 
-    await user.type(screen.getByLabelText('Nombres'), 'Ana');
+    await user.type(screen.getByLabelText('Primer nombre'), 'Ana');
     await user.type(screen.getByLabelText('Primer apellido'), 'Rotante');
     await user.type(screen.getByLabelText('Cédula'), '87654321');
     await user.type(screen.getByLabelText('Correo'), 'ana@test.com');
@@ -166,7 +171,7 @@ describe('PayrollEmployeeForm', () => {
     await user.click(screen.getByRole('button', { name: 'Cargo' }));
     await user.click(screen.getByRole('option', { name: 'Programador' }));
     await user.type(screen.getByLabelText('Salario'), '3000000');
-    await user.click(screen.getByRole('button', { name: 'Departamento' }));
+    await user.click(screen.getByRole('button', { name: 'Área' }));
     await user.click(screen.getByRole('option', { name: 'Gerencia' }));
     await user.click(screen.getByRole('button', { name: 'EPS' }));
     await user.click(screen.getByRole('option', { name: 'Sura' }));

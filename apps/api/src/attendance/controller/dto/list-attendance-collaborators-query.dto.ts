@@ -68,7 +68,7 @@ export class ListAttendanceCollaboratorsQueryDto {
   @IsOptional()
   page?: number;
 
-  @ApiPropertyOptional({ enum: ATTENDANCE_COLLABORATORS_PAGE_SIZES, default: 20 })
+  @ApiPropertyOptional({ enum: ATTENDANCE_COLLABORATORS_PAGE_SIZES, default: 8 })
   @Transform(({ value }) => (value != null ? Number(value) : undefined))
   @IsIn(ATTENDANCE_COLLABORATORS_PAGE_SIZES)
   @IsOptional()

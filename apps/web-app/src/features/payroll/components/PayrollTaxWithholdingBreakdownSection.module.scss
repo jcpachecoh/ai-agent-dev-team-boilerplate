@@ -1,0 +1,47 @@
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--tax-border, rgba(0, 0, 0, 0.1));
+  border-radius: 8px;
+  background: var(--tax-bg, #fff);
+
+  h3 {
+    margin: 0;
+    font-size: 0.9375rem;
+    font-weight: 600;
+  }
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px 16px;
+  margin: 0;
+}
+
+.item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  dt {
+    margin: 0;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--tax-label, #666);
+  }
+
+  dd {
+    margin: 0;
+    font-size: 0.875rem;
+    color: var(--tax-value, #1a1a1a);
+  }
+}
+
+.withholdingAmount {
+  font-weight: 700;
+}

@@ -15,6 +15,7 @@ import { useMe } from '@/features/auth/hooks/useMe';
 import { useLocations } from '@/features/sedes/hooks/useLocations';
 import { getRoleCodeFromToken } from '@/lib/auth-token';
 import { useTheme } from '@/providers/ThemeProvider';
+import { useClientTablePagination } from '@/utils/useClientTablePagination';
 
 import { PayrollFilterBar } from '../components/PayrollFilterBar';
 import { fetchMedicalLeaveSupportDocumentUrl } from '../api/medical-leaves.client';
@@ -74,6 +75,13 @@ export function MedicalLeavesScreen(): React.JSX.Element {
   const { updateStatusMutation } = useMedicalLeaveMutations(listFilters);
 
   const leaves = leavesQuery.data ?? [];
+  const {
+    page,
+    pageItems: pagedLeaves,
+    range,
+    onPrevious,
+    onNext,
+  } = useClientTablePagination(leaves);
 
   const locationOptions = useMemo(
     () => [
@@ -242,11 +250,19 @@ export function MedicalLeavesScreen(): React.JSX.Element {
           </div>
         ) : (
           <MedicalLeavesTable
-            leaves={leaves}
+            leaves={pagedLeaves}
             theme={empleadoTheme}
             canWrite={canWrite}
             downloadingId={downloadingId}
             statusBusy={updateStatusMutation.isPending}
+            pagination={{
+              page,
+              totalPages: range.totalPages,
+              summary: range.summary,
+              pageLabel: range.pageLabel,
+              onPrevious,
+              onNext,
+            }}
             onView={openDetail}
             onDownload={(leave) => void handleDownloadSupport(leave)}
             onRadicate={(leave) => void handleStatusChange(leave.id, 'RADICADA_EPS')}

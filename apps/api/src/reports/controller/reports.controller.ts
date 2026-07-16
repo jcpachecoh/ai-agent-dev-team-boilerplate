@@ -19,27 +19,33 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { Response } from 'express';
+
+import type { JwtPayload } from '../../auth/interfaces/auth.interfaces';
+import { PAYROLL_MODULE_ROLES, PAYROLL_WRITE_ROLES } from '../../common/config/rbac.config';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { Roles } from '../../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
-import { Roles } from '../../common/decorators/roles.decorator';
-import { PAYROLL_MODULE_ROLES, PAYROLL_WRITE_ROLES } from '../../common/config/rbac.config';
-import { AttendanceQueryDto, PeriodQueryDto } from './dto/report-query.dto';
-import { PayrollReportResponseDto } from './dto/payroll-report-response.dto';
-import { AttendanceReportResponseDto } from './dto/attendance-report-response.dto';
-import { SocialSecurityReportResponseDto } from './dto/social-security-report-response.dto';
-import { ExportPayrollReportDto, ExportFormat } from './dto/export-payroll-report.dto';
-import { EmployeeListExportQueryDto } from './dto/employee-list-export-query.dto';
-import { AttendanceExportQueryDto } from './dto/attendance-export-query.dto';
-import { ReportsService } from '../service/reports.service';
-import { ReportPdfService } from '../service/report-pdf.service';
-import { ReportExcelService } from '../service/report-excel.service';
+import { SenaQuotaService } from '../../payroll/service/sena-quota.service';
 import {
   buildAttendanceFiltersSummary,
   buildPayrollFiltersSummary,
 } from '../service/export-filters-summary.util';
-import { EmployeeListReportType } from './dto/employee-list-export-query.dto';
-import type { JwtPayload } from '../../auth/interfaces/auth.interfaces';
+import { ReportExcelService } from '../service/report-excel.service';
+import { ReportPdfService } from '../service/report-pdf.service';
+import { ReportsService } from '../service/reports.service';
+import { AttendanceExportQueryDto } from './dto/attendance-export-query.dto';
+import { AttendanceReportResponseDto } from './dto/attendance-report-response.dto';
+import {
+  EmployeeListExportQueryDto,
+  EmployeeListReportType,
+} from './dto/employee-list-export-query.dto';
+import { ExportFormat, ExportPayrollReportDto } from './dto/export-payroll-report.dto';
+import { PayrollReportResponseDto } from './dto/payroll-report-response.dto';
+import { AttendanceQueryDto, PeriodQueryDto } from './dto/report-query.dto';
+import { SenaQuotaQueryDto } from './dto/sena-quota-query.dto';
+import { SenaQuotaResponseDto } from './dto/sena-quota-response.dto';
+import { SocialSecurityReportResponseDto } from './dto/social-security-report-response.dto';
 
 @ApiTags('reports')
 @ApiBearerAuth()
@@ -52,6 +58,7 @@ export class ReportsController {
     private readonly reportsService: ReportsService,
     private readonly reportPdfService: ReportPdfService,
     private readonly reportExcelService: ReportExcelService,
+    private readonly senaQuotaService: SenaQuotaService,
   ) {}
 
   @ApiOperation({ summary: 'Monthly payroll report for the tenant' })
@@ -67,6 +74,24 @@ export class ReportsController {
       userId: user?.sub ?? '',
       roleCode: user?.roleCode ?? '',
     });
+  }
+
+  @ApiOperation({
+    summary: 'Estimación de cuota de aprendizaje SENA (OS-599)',
+    description:
+      'Resultado **estimativo** (`estimated: true`). No sustituye la cuota oficial fijada por la regional SENA ni el acto administrativo de monetización. ' +
+      'El cálculo usa contratos vigentes al cierre del período (`EmploymentContract`) y parámetros legales NOM-06 (SMLV; factor 1.5 post Ley 2466). ' +
+      'Régimen: `LEY_789_2002` si as-of < 2025-06-25; `LEY_2466_2025` desde esa fecha inclusive.',
+  })
+  @ApiOkResponse({ type: SenaQuotaResponseDto })
+  @Get('sena-quota')
+  async getSenaQuota(
+    @CurrentUser() user: JwtPayload,
+    @Headers('x-tenant-id') headerTenantId: string,
+    @Query() query: SenaQuotaQueryDto,
+  ): Promise<SenaQuotaResponseDto> {
+    const tenantId = this.resolveTenantId(user, headerTenantId);
+    return this.senaQuotaService.calculateForTenant(tenantId, query.period);
   }
 
   @ApiOperation({ summary: 'Attendance summary report for the tenant' })

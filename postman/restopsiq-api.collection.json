@@ -658,6 +658,30 @@
       "value": "2026-07-10T17:01:00.000Z",
       "type": "string",
       "description": "CONN-11 — instante simulado del job de corte (post shiftEnd)"
+    },
+    {
+      "key": "conn12WeekStart",
+      "value": "2026-07-20",
+      "type": "string",
+      "description": "CONN-12 — lunes de la semana del plan (YYYY-MM-DD)"
+    },
+    {
+      "key": "conn12LocationId",
+      "value": "",
+      "type": "string",
+      "description": "CONN-12 — Location.id (capturar de OS-582 o seed locations)"
+    },
+    {
+      "key": "conn12PlanId",
+      "value": "seed-weekly-plan-draft-conn12",
+      "type": "string",
+      "description": "CONN-12 — WeeklyShiftPlan.id (seed draft o capturado en GET)"
+    },
+    {
+      "key": "conn12RejectReason",
+      "value": "Falta cobertura el viernes",
+      "type": "string",
+      "description": "CONN-12 — motivo de rechazo"
     }
   ],
   "item": [
@@ -1001,7 +1025,7 @@
             },
             {
               "name": "Verify Email",
-              "description": "AUTH-04 / RES-226 — Verify the user's email address using the 6-digit OTP.\n\nPublic endpoint — no Authorization header required.\nNo x-tenant-id header required.\n\nPrerequisite: Signup automatically sends an OTP. Copy it from the email or worker/dev logs and set {{otpCode}}. If missing or expired, run Resend Verification first.\n\nExpected: 200 { message: 'Email verified successfully.' }\nSide effects: OTP consumed (single-use); User.emailVerified set to true.\n\nAfter success, run Me — Check emailVerified (requires Login + Bearer {{accessToken}}) to confirm emailVerified: true.",
+              "description": "AUTH-04 / RES-226 — Verify the user's email address using the 6-digit OTP.\n\nPublic endpoint — no Authorization header required.\nNo x-tenant-id header required.\n\nPrerequisite: Signup automatically sends an OTP. Copy it from the email or worker/dev logs and set {{otpCode}}. If missing or expired, run Resend Verification first.\n\nExpected: 200 { message: 'Email verified successfully.' }Side effects: OTP consumed (single-use); User.emailVerified set to true.\n\nAfter success, run Me — Check emailVerified (requires Login + Bearer {{accessToken}}) to confirm emailVerified: true.",
               "event": [
                 {
                   "listen": "test",
@@ -1186,7 +1210,7 @@
             },
             {
               "name": "Reset Password",
-              "description": "RES-226 — Reset the user's password using a valid single-use token.\n\nPublic endpoint — no Authorization header required.\nNo x-tenant-id header required.\nPrerequisite: run Forgot Password first, extract the raw token from the email link, and set {{resetToken}}.\nExpected: 200 { message: 'Password updated successfully.' }\nThe token row in password_reset_tokens will have usedAt set after this call.",
+              "description": "RES-226 — Reset the user's password using a valid single-use token.\n\nPublic endpoint — no Authorization header required.\nNo x-tenant-id header required.\nPrerequisite: run Forgot Password first, extract the raw token from the email link, and set {{resetToken}}.\nExpected: 200 { message: 'Password updated successfully.' }The token row in password_reset_tokens will have usedAt set after this call.",
               "event": [
                 {
                   "listen": "test",
@@ -1926,7 +1950,7 @@
     },
     {
       "name": "02 — Operational Auth / Plant Floor Login",
-      "description": "OperationalUser plant-floor login (cédula + PIN) — still active after USR-01.\n\nSeparate from **01 — Global Auth** (User email/password). OperationalUser.userId may link to User, but login flows and JWTs are not merged.\n\n- Login: POST /api/mes/auth/login with x-tenant-id: {{tenantId}}\n- Token: saves {{mesAccessToken}} (response field is accessToken — do not store in {{accessToken}})\n- Use {{mesAccessToken}} for /api/plant/* and /api/mes/* only\n- Do **not** use {{mesAccessToken}} on /api/supply-items/* (use global {{accessToken}} + x-tenant-id)",
+      "description": "OperationalUser plant-floor login (cédula + PIN) — still active after USR-01.\n\nSeparate from **01 — Global Auth** (User email/password). OperationalUser.userId may link to User, but login flows and JWTs are not merged.\n\n- Login: POST /api/mes/auth/login with x-tenant-id: {{tenantId}}- Token: saves {{mesAccessToken}} (response field is accessToken — do not store in {{accessToken}})\n- Use {{mesAccessToken}} for /api/plant/* and /api/mes/* only\n- Do **not** use {{mesAccessToken}} on /api/supply-items/* (use global {{accessToken}} + x-tenant-id)",
       "item": [
         {
           "name": "01 Login & Session",
@@ -2499,7 +2523,7 @@
             "method": "GET",
             "header": [],
             "url": "{{baseUrl}}/api/",
-            "description": "Documentation — read before running MES + back-office flows together.\n\n## Two identity layers\n\n| Layer | Auth | Token variable | Used for |\n|---|---|---|---|\n| Global User | email + password + x-tenant-id | {{accessToken}} | Supply Items, web-app back-office |\n| OperationalUser | cédula + PIN + x-tenant-id | {{mesAccessToken}} / {{mesTokenOwner}} | MES session, Plant routes |\n\n## USR-06 link\n- `OperationalUser.userId` is nullable, unique — links to global `users.id` when backfilled.\n- Seeded OWNER: globalUserId `11111111-0000-0000-0000-000000000004` ↔ operationalUserId `dddddddd-0000-0000-0000-000000000004`\n- Seeded OPERATOR: globalOperatorUserId `11111111-0000-0000-0000-000000000005` ↔ mesOperatorId `eeeeeeee-0000-0000-0000-000000000005`\n\n## Rules\n- Never send {{accessToken}} to /api/plant/* or /api/mes/*\n- Never send {{mesAccessToken}} to /api/supply-items/*\n- {{operationalUserId}} = MES JWT `sub` (OperationalUser id)\n- {{globalUserId}} = global JWT `sub` (User id)\n- {{mesUserId}} is a legacy alias of {{operationalUserId}}\n"
+            "description": "Documentation — read before running MES + back-office flows together.\n\n## Two identity layers\n\n| Layer | Auth | Token variable | Used for |\n|---|---|---|---|\n| Global User | email + password + x-tenant-id | {{accessToken}} | Supply Items, web-app back-office |\n| OperationalUser | cédula + PIN + x-tenant-id | {{mesAccessToken}} / {{mesTokenOwner}} | MES session, Plant routes |\n\n## USR-06 link\n- `OperationalUser.userId` is nullable, unique — links to global `users.id` when backfilled.\n- Seeded OWNER: globalUserId `11111111-0000-0000-0000-000000000004` ↔ operationalUserId `dddddddd-0000-0000-0000-000000000004`\n- Seeded OPERATOR: globalOperatorUserId `11111111-0000-0000-0000-000000000005` ↔ mesOperatorId `eeeeeeee-0000-0000-0000-000000000005`\n\n## Rules\n- Never send {{accessToken}} to /api/plant/* or /api/mes/*\n- Never send {{mesAccessToken}} to /api/supply-items/*\n- {{operationalUserId}} = MES JWT `sub` (OperationalUser id)\n- {{globalUserId}} = global JWT `sub` (User id)\n- {{mesUserId}} is a legacy alias of {{operationalUserId}}"
           },
           "response": [],
           "event": [
@@ -3301,7 +3325,7 @@
             "url": "{{baseUrl}}/api/plant/recipes",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"{{plantRecipeName}}\",\n  \"finishedProductId\": \"product-demo-1\",\n  \"batchSize\": \"10.000\",\n  \"batchUnit\": \"UNIT\",\n  \"estimatedMinutes\": 60,\n  \"notes\": \"Creada desde Postman\",\n  \"phases\": [\n    {\n      \"order\": 1,\n      \"name\": \"Mezclado\",\n      \"workStationId\": \"{{workstationId}}\",\n      \"standardMinutes\": 15,\n      \"inputs\": []\n    },\n    {\n      \"order\": 2,\n      \"name\": \"Horneado\",\n      \"workStationId\": \"{{workstationId}}\",\n      \"standardMinutes\": 25,\n      \"inputs\": []\n    }\n  ]\n}",
+              "raw": "{\n  \"name\": \"{{plantRecipeName}}\",\n  \"finishedProductId\": \"product-demo-1\",\n  \"batchSize\": \"10.000\",\n  \"batchUnit\": \"UNIT\",\n  \"estimatedMinutes\": 60,\n  \"notes\": \"Creada desde Postman\",\n  \"phases\": [\n    {\n      \"order\": 1,\n      \"name\": \"Mezclado\",\n      \"workStationId\": \"{{workstationId}}\",\n      \"standardMinutes\": 15,\n      \"inputs\": []\n    },\n    {\n      \"order\": 2,\n      \"name\": \"Horneado\",\n      \"workStationId\": \"{{workstationId}}\",\n      \"standardMinutes\": 25,\n      \"inputs\": []\n    }  ]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -3415,7 +3439,7 @@
             "url": "{{baseUrl}}/api/plant/recipes/{{recipeId}}/phases/reorder",
             "body": {
               "mode": "raw",
-              "raw": "[\n  { \"phaseId\": \"{{phaseId1}}\", \"newOrder\": 2 },\n  { \"phaseId\": \"{{phaseId2}}\", \"newOrder\": 1 }\n]",
+              "raw": "[\n  { \"phaseId\": \"{{phaseId1}}\", \"newOrder\": 2 },\n  { \"phaseId\": \"{{phaseId2}}\", \"newOrder\": 1 }]",
               "options": {
                 "raw": {
                   "language": "json"
@@ -3938,7 +3962,7 @@
             "url": "{{baseUrl}}/api/plant/recipes",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"{{plantRecipeName}}\",\n  \"finishedProductId\": \"product-op-demo\",\n  \"batchSize\": \"10.000\",\n  \"batchUnit\": \"UNIT\",\n  \"estimatedMinutes\": 120,\n  \"phases\": [\n    { \"order\": 1, \"name\": \"Prep\", \"workStationId\": \"{{workstationId}}\", \"standardMinutes\": 10, \"requiresQA\": false },\n    { \"order\": 2, \"name\": \"Mezclado\", \"workStationId\": \"{{workstationId}}\", \"standardMinutes\": 15, \"requiresQA\": true },\n    { \"order\": 3, \"name\": \"Reposo\", \"workStationId\": \"{{workstationId}}\", \"standardMinutes\": 20, \"requiresQA\": false },\n    { \"order\": 4, \"name\": \"Horneado\", \"workStationId\": \"{{workstationId}}\", \"standardMinutes\": 25, \"requiresQA\": false },\n    { \"order\": 5, \"name\": \"Empaque\", \"workStationId\": \"{{workstationId}}\", \"standardMinutes\": 12, \"requiresQA\": false }\n  ]\n}",
+              "raw": "{\n  \"name\": \"{{plantRecipeName}}\",\n  \"finishedProductId\": \"product-op-demo\",\n  \"batchSize\": \"10.000\",\n  \"batchUnit\": \"UNIT\",\n  \"estimatedMinutes\": 120,\n  \"phases\": [\n    { \"order\": 1, \"name\": \"Prep\", \"workStationId\": \"{{workstationId}}\", \"standardMinutes\": 10, \"requiresQA\": false },\n    { \"order\": 2, \"name\": \"Mezclado\", \"workStationId\": \"{{workstationId}}\", \"standardMinutes\": 15, \"requiresQA\": true },\n    { \"order\": 3, \"name\": \"Reposo\", \"workStationId\": \"{{workstationId}}\", \"standardMinutes\": 20, \"requiresQA\": false },\n    { \"order\": 4, \"name\": \"Horneado\", \"workStationId\": \"{{workstationId}}\", \"standardMinutes\": 25, \"requiresQA\": false },\n    { \"order\": 5, \"name\": \"Empaque\", \"workStationId\": \"{{workstationId}}\", \"standardMinutes\": 12, \"requiresQA\": false }  ]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -4974,7 +4998,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"query\": \"mutation Signup($input: SignupInput!) { signup(input: $input) { accessToken refreshToken } }\",\n  \"variables\": {\n    \"input\": {\n      \"email\": \"{{signupEmail}}\",\n      \"cedula\": \"{{signupCedula}}\",\n      \"documentType\": \"CC\",\n      \"password\": \"{{password}}\"\n    }\n  }\n}",
+              "raw": "{\n  \"query\": \"mutation Signup($input: SignupInput!) { signup(input: $input) { accessToken refreshToken } }\",\n  \"variables\": {\n    \"input\": {\n      \"email\": \"{{signupEmail}}\",\n      \"cedula\": \"{{signupCedula}}\",\n      \"documentType\": \"CC\",\n      \"password\": \"{{password}}\"\n    }  }}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -5040,7 +5064,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"query\": \"mutation Login($input: GlobalLoginInput!) { login(input: $input) { accessToken refreshToken } }\",\n  \"variables\": {\n    \"input\": {\n      \"email\": \"{{email}}\",\n      \"password\": \"{{password}}\"\n    }\n  }\n}",
+              "raw": "{\n  \"query\": \"mutation Login($input: GlobalLoginInput!) { login(input: $input) { accessToken refreshToken } }\",\n  \"variables\": {\n    \"input\": {\n      \"email\": \"{{email}}\",\n      \"password\": \"{{password}}\"\n    }  }}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -5225,7 +5249,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"query\": \"mutation ChangePassword($input: ChangePasswordInput!) { changePassword(input: $input) { message } }\",\n  \"variables\": {\n    \"input\": {\n      \"currentPassword\": \"{{password}}\",\n      \"newPassword\": \"{{newPassword}}\"\n    }\n  }\n}",
+              "raw": "{\n  \"query\": \"mutation ChangePassword($input: ChangePasswordInput!) { changePassword(input: $input) { message } }\",\n  \"variables\": {\n    \"input\": {\n      \"currentPassword\": \"{{password}}\",\n      \"newPassword\": \"{{newPassword}}\"\n    }  }}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -5272,7 +5296,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"query\": \"mutation ResendVerification($input: ResendVerificationInput!) { resendVerification(input: $input) { message } }\",\n  \"variables\": {\n    \"input\": {\n      \"email\": \"{{authEmail}}\"\n    }\n  }\n}",
+              "raw": "{\n  \"query\": \"mutation ResendVerification($input: ResendVerificationInput!) { resendVerification(input: $input) { message } }\",\n  \"variables\": {\n    \"input\": {\n      \"email\": \"{{authEmail}}\"\n    }  }}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -5317,7 +5341,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"query\": \"mutation VerifyEmail($input: VerifyEmailInput!) { verifyEmail(input: $input) { message } }\",\n  \"variables\": {\n    \"input\": {\n      \"otpCode\": \"{{otpCode}}\"\n    }\n  }\n}",
+              "raw": "{\n  \"query\": \"mutation VerifyEmail($input: VerifyEmailInput!) { verifyEmail(input: $input) { message } }\",\n  \"variables\": {\n    \"input\": {\n      \"otpCode\": \"{{otpCode}}\"\n    }  }}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -5428,7 +5452,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"query\": \"mutation ForgotPassword($input: ForgotPasswordInput!) { forgotPassword(input: $input) { message } }\",\n  \"variables\": {\n    \"input\": {\n      \"email\": \"{{authEmail}}\"\n    }\n  }\n}",
+              "raw": "{\n  \"query\": \"mutation ForgotPassword($input: ForgotPasswordInput!) { forgotPassword(input: $input) { message } }\",\n  \"variables\": {\n    \"input\": {\n      \"email\": \"{{authEmail}}\"\n    }  }}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -5473,7 +5497,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"query\": \"mutation ResetPassword($input: ResetPasswordInput!) { resetPassword(input: $input) { message } }\",\n  \"variables\": {\n    \"input\": {\n      \"token\": \"{{resetToken}}\",\n      \"newPassword\": \"{{newPassword}}\"\n    }\n  }\n}",
+              "raw": "{\n  \"query\": \"mutation ResetPassword($input: ResetPasswordInput!) { resetPassword(input: $input) { message } }\",\n  \"variables\": {\n    \"input\": {\n      \"token\": \"{{resetToken}}\",\n      \"newPassword\": \"{{newPassword}}\"\n    }  }}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -5577,7 +5601,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"query\": \"mutation LoginOperational($input: OperationalLoginInput!) { loginOperational(input: $input) { accessToken refreshToken operator { id role tenantId sedeId } } }\",\n  \"variables\": {\n    \"input\": {\n      \"cedula\": \"{{mesOwnerCedula}}\",\n      \"pin\": \"{{mesOwnerPin}}\"\n    }\n  }\n}",
+              "raw": "{\n  \"query\": \"mutation LoginOperational($input: OperationalLoginInput!) { loginOperational(input: $input) { accessToken refreshToken operator { id role tenantId sedeId } } }\",\n  \"variables\": {\n    \"input\": {\n      \"cedula\": \"{{mesOwnerCedula}}\",\n      \"pin\": \"{{mesOwnerPin}}\"\n    }  }}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -5744,7 +5768,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"query\": \"mutation Signup($input: SignupInput!) { signup(input: $input) { accessToken refreshToken } }\",\n  \"variables\": {\n    \"input\": {\n      \"email\": \"weak-gql-{{$timestamp}}@palos-de-lena.dev\",\n      \"cedula\": \"66123456789\",\n      \"documentType\": \"CC\",\n      \"password\": \"12345678\"\n    }\n  }\n}",
+              "raw": "{\n  \"query\": \"mutation Signup($input: SignupInput!) { signup(input: $input) { accessToken refreshToken } }\",\n  \"variables\": {\n    \"input\": {\n      \"email\": \"weak-gql-{{$timestamp}}@palos-de-lena.dev\",\n      \"cedula\": \"66123456789\",\n      \"documentType\": \"CC\",\n      \"password\": \"12345678\"\n    }  }}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -5793,7 +5817,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"query\": \"mutation Signup($input: SignupInput!) { signup(input: $input) { accessToken refreshToken } }\",\n  \"variables\": {\n    \"input\": {\n      \"email\": \"{{email}}\",\n      \"cedula\": \"55998877\",\n      \"documentType\": \"CC\",\n      \"password\": \"{{password}}\"\n    }\n  }\n}",
+              "raw": "{\n  \"query\": \"mutation Signup($input: SignupInput!) { signup(input: $input) { accessToken refreshToken } }\",\n  \"variables\": {\n    \"input\": {\n      \"email\": \"{{email}}\",\n      \"cedula\": \"55998877\",\n      \"documentType\": \"CC\",\n      \"password\": \"{{password}}\"\n    }  }}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -5825,7 +5849,7 @@
     },
     {
       "name": "11 — GraphQL RBAC",
-      "description": "AUTH-09 GraphQL permission tests for supplyItems.\n\nPrerequisites: API on :3001, seed data, folder run top-to-bottom.\n\n1. Login Global Owner → {{accessTokenOwner}}\n2. Login Global Operator → {{accessTokenOperator}}\n3. supplyItems queries (requires supply.items.read)\n\nOPERATOR has supply.items.read only (no manage). No GraphQL supply mutations yet — manage cases are documented only.\n\nDo not use {{mesAccessToken}} on these requests.",
+      "description": "AUTH-09 GraphQL permission tests for supplyItems.\n\nPrerequisites: API on :3001, seed data, folder run top-to-bottom.\n\n1. Login Global Owner → {{accessTokenOwner}}2. Login Global Operator → {{accessTokenOperator}}3. supplyItems queries (requires supply.items.read)\n\nOPERATOR has supply.items.read only (no manage). No GraphQL supply mutations yet — manage cases are documented only.\n\nDo not use {{mesAccessToken}} on these requests.",
       "item": [
         {
           "name": "[DOC] AUTH-09 GraphQL RBAC",
@@ -5970,7 +5994,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"query\": \"query SupplyItems($search: String, $limit: Int) { supplyItems(search: $search, limit: $limit) { id tenantId nombre codigoInterno unidadBase isActive } }\",\n  \"variables\": {\n    \"search\": null,\n    \"limit\": 10\n  }\n}",
+              "raw": "{\n  \"query\": \"query SupplyItems($search: String, $limit: Int) { supplyItems(search: $search, limit: $limit) { id tenantId nombre codigoInterno unidadBase isActive } }\",\n  \"variables\": {\n    \"search\": null,\n    \"limit\": 10\n  }}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -6021,7 +6045,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"query\": \"query SupplyItems($search: String, $limit: Int) { supplyItems(search: $search, limit: $limit) { id tenantId nombre codigoInterno unidadBase isActive } }\",\n  \"variables\": {\n    \"search\": null,\n    \"limit\": 10\n  }\n}",
+              "raw": "{\n  \"query\": \"query SupplyItems($search: String, $limit: Int) { supplyItems(search: $search, limit: $limit) { id tenantId nombre codigoInterno unidadBase isActive } }\",\n  \"variables\": {\n    \"search\": null,\n    \"limit\": 10\n  }}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -6064,7 +6088,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"query\": \"query SupplyItems($search: String, $limit: Int) { supplyItems(search: $search, limit: $limit) { id tenantId nombre codigoInterno unidadBase isActive } }\",\n  \"variables\": {\n    \"search\": null,\n    \"limit\": 10\n  }\n}",
+              "raw": "{\n  \"query\": \"query SupplyItems($search: String, $limit: Int) { supplyItems(search: $search, limit: $limit) { id tenantId nombre codigoInterno unidadBase isActive } }\",\n  \"variables\": {\n    \"search\": null,\n    \"limit\": 10\n  }}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -6117,7 +6141,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"query\": \"query SupplyItems($search: String, $limit: Int) { supplyItems(search: $search, limit: $limit) { id tenantId nombre codigoInterno unidadBase isActive } }\",\n  \"variables\": {\n    \"search\": null,\n    \"limit\": 10\n  }\n}",
+              "raw": "{\n  \"query\": \"query SupplyItems($search: String, $limit: Int) { supplyItems(search: $search, limit: $limit) { id tenantId nombre codigoInterno unidadBase isActive } }\",\n  \"variables\": {\n    \"search\": null,\n    \"limit\": 10\n  }}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -6170,7 +6194,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"query\": \"query SupplyItems($search: String, $limit: Int) { supplyItems(search: $search, limit: $limit) { id tenantId nombre codigoInterno unidadBase isActive } }\",\n  \"variables\": {\n    \"search\": null,\n    \"limit\": 10\n  }\n}",
+              "raw": "{\n  \"query\": \"query SupplyItems($search: String, $limit: Int) { supplyItems(search: $search, limit: $limit) { id tenantId nombre codigoInterno unidadBase isActive } }\",\n  \"variables\": {\n    \"search\": null,\n    \"limit\": 10\n  }}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -6221,7 +6245,7 @@
             "method": "GET",
             "header": [],
             "url": "{{baseUrl}}/api/",
-            "description": "# Flujo de prueba — Alertas de Inventario (Resueltas)\n\n## Requisitos previos\n- API corriendo en `{{baseUrl}}` (default: http://localhost:3001)\n- Environment: `RestOpsIQ — Local` con `tenantId = palos-de-lena`\n- Seed ejecutado: `pnpm prisma db seed`\n\n## Variables capturadas automáticamente\n| Variable | Capturada en | Descripción |\n|---|---|---|\n| `alertSupplyItemId` | Paso 01 | ID del insumo de prueba con stock bajo |\n| `alertSupplyItemCode` | Paso 01 | Código interno único por run |\n| `alertId` | Paso 02 | ID de la alerta activa (`alert-<supplyItemId>`) |\n\n## Flujo completo\n```\n01 → Crear insumo con stock bajo  (POST /api/supply-items)\n02 → Ver alertas activas            (GET  /inventory/alerts)          → alerta crítica visible\n03 → Ver resumen                   (GET  /inventory/alerts/summary)   → critical:1, warning:0\n04 → Resolver SIN nota             (PATCH /inventory/alerts/{{alertId}}/resolve)  body: {}\n05 → Ver activas (suprimida hoy)   (GET  /inventory/alerts)          → alerta no aparece\n06 → Resolver CON nota             (PATCH /inventory/alerts/{{alertId}}/resolve)  body: {note:\"...\"}\n07 → Ver resueltas                 (GET  /inventory/alerts/resolved)  → 2 registros con y sin nota\n08 → Ver resueltas paginado        (GET  /inventory/alerts/resolved?take=1)\n09 → Cleanup: Restaurar stock      (PATCH /api/supply-items/{{alertSupplyItemId}})\n```\n\n## Notas técnicas\n- `resolvedById` siempre es `null` — este controller no usa JWT (solo `x-tenant-id`).\n- Una alerta resuelta HOY se suprime en `GET /alerts`. Si el stock sigue bajo mañana, reaparece.\n- Se pueden crear múltiples resoluciones para el mismo ítem; cada una queda en historial.\n- El campo `note` es opcional (max 500 chars). Sin body o con `{}` funciona igual."
+            "description": "# Flujo de prueba — Alertas de Inventario (Resueltas)\n\n## Requisitos previos\n- API corriendo en `{{baseUrl}}` (default: http://localhost:3001)\n- Environment: `RestOpsIQ — Local` con `tenantId = palos-de-lena`\n- Seed ejecutado: `pnpm prisma db seed`\n\n## Variables capturadas automáticamente\n| Variable | Capturada en | Descripción |\n|---|---|---|\n| `alertSupplyItemId` | Paso 01 | ID del insumo de prueba con stock bajo |\n| `alertSupplyItemCode` | Paso 01 | Código interno único por run |\n| `alertId` | Paso 02 | ID de la alerta activa (`alert-<supplyItemId>`) |\n\n## Flujo completo\n```\n01 → Crear insumo con stock bajo  (POST /api/supply-items)\n02 → Ver alertas activas            (GET  /inventory/alerts)          → alerta crítica visible\n03 → Ver resumen                   (GET  /inventory/alerts/summary)   → critical:1, warning:0\n04 → Resolver SIN nota             (PATCH /inventory/alerts/{{alertId}}/resolve)  body: {}05 → Ver activas (suprimida hoy)   (GET  /inventory/alerts)          → alerta no aparece\n06 → Resolver CON nota             (PATCH /inventory/alerts/{{alertId}}/resolve)  body: {note:\"...\"}07 → Ver resueltas                 (GET  /inventory/alerts/resolved)  → 2 registros con y sin nota\n08 → Ver resueltas paginado        (GET  /inventory/alerts/resolved?take=1)\n09 → Cleanup: Restaurar stock      (PATCH /api/supply-items/{{alertSupplyItemId}})\n```\n\n## Notas técnicas\n- `resolvedById` siempre es `null` — este controller no usa JWT (solo `x-tenant-id`).\n- Una alerta resuelta HOY se suprime en `GET /alerts`. Si el stock sigue bajo mañana, reaparece.\n- Se pueden crear múltiples resoluciones para el mismo ítem; cada una queda en historial.\n- El campo `note` es opcional (max 500 chars). Sin body o con `{}` funciona igual."
           },
           "response": [],
           "event": [
@@ -9846,6 +9870,71 @@
                   "    pm.expect(body.period.month).to.be.a('number');",
                   "    pm.expect(body.employees).to.be.an('array');",
                   "    pm.expect(body.tenantTotals).to.be.an('object');",
+                  "});",
+                  "pm.test('payroll: employee row incluye taxWithholdingBreakdown (OS-594)', () => {",
+                  "    const body = pm.response.json();",
+                  "    if (!body.employees.length) return;",
+                  "    const row = body.employees[0];",
+                  "    pm.expect(row.taxWithholdingBreakdown).to.be.an('object');",
+                  "    pm.expect(row.taxWithholdingBreakdown.taxWithholdingBase).to.be.a('number');",
+                  "    pm.expect(row.taxWithholdingBreakdown.uvtValue).to.be.a('number');",
+                  "    pm.expect(row.taxWithholdingBreakdown.taxWithholdingBaseUvt).to.be.a('number');",
+                  "    pm.expect(row.taxWithholdingBreakdown.incomeTaxWithholding).to.eql(row.incomeTaxWithholding);",
+                  "    pm.expect(row.taxWithholdingBreakdown.isExemptFromTax).to.be.a('boolean');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/reports/sena-quota (OS-599)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/sena-quota?period=2026-07",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "sena-quota"],
+              "query": [
+                {
+                  "key": "period",
+                  "value": "2026-07",
+                  "description": "YYYY-MM (cierre de mes UTC)"
+                }
+              ]
+            },
+            "description": "OS-599 — Estimación de cuota de aprendizaje SENA para el tenant autenticado.\n\n**Carácter estimativo:** `estimated` siempre es `true`. Este endpoint **no sustituye** la cuota oficial fijada por la regional SENA ni el acto administrativo de monetización.\n\nContrato: `period`, `eligibleWorkers`, `requiredApprentices`, `activeApprentices`, `missingApprentices`, `smlv`, `monetizationRegime` (`LEY_789_2002` | `LEY_2466_2025`), `estimatedMonetizationAmount`, `status` (`EXEMPT` | `COMPLIANT` | `PENDING`), `estimated`.\n\nNo expone `monetizationFactor`. Roles: mismos de lectura de reportes de nómina (`PAYROLL_MODULE_ROLES`).\n\nEjemplo de respuesta:\n```json\n{\n  \"period\": \"2026-07\",\n  \"eligibleWorkers\": 15,\n  \"requiredApprentices\": 1,\n  \"activeApprentices\": 0,\n  \"missingApprentices\": 1,\n  \"smlv\": 1750905,\n  \"monetizationRegime\": \"LEY_2466_2025\",\n  \"estimatedMonetizationAmount\": 2626358,\n  \"status\": \"PENDING\",\n  \"estimated\": true\n}\n```"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('sena-quota: status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('sena-quota: contrato estimativo (OS-599)', () => {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.period).to.be.a('string');",
+                  "    pm.expect(body.eligibleWorkers).to.be.a('number');",
+                  "    pm.expect(body.requiredApprentices).to.be.a('number');",
+                  "    pm.expect(body.activeApprentices).to.be.a('number');",
+                  "    pm.expect(body.missingApprentices).to.be.a('number');",
+                  "    pm.expect(body.smlv).to.be.a('number');",
+                  "    pm.expect(body.monetizationRegime).to.be.oneOf(['LEY_789_2002', 'LEY_2466_2025']);",
+                  "    pm.expect(body.estimatedMonetizationAmount).to.be.a('number');",
+                  "    pm.expect(body.status).to.be.oneOf(['EXEMPT', 'COMPLIANT', 'PENDING']);",
+                  "    pm.expect(body.estimated).to.eql(true);",
+                  "    pm.expect(body).to.not.have.property('monetizationFactor');",
                   "});"
                 ]
               }
@@ -10179,6 +10268,342 @@
               }
             }
           ]
+        },
+        {
+          "name": "GET /api/reports/pila/:period/validation",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/pila/{{reportPeriod}}/validation",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "pila", "{{reportPeriod}}", "validation"]
+            },
+            "description": "OS-595: valida preparación PILA sin generar ni persistir archivo."
+          }
+        },
+        {
+          "name": "GET /api/reports/pila/:period/deadline",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/pila/{{reportPeriod}}/deadline",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "pila", "{{reportPeriod}}", "deadline"]
+            },
+            "description": "OS-595: fecha límite / alerta bajo demanda (NIT últimos 2 dígitos sin DV, días hábiles). No persiste."
+          }
+        },
+        {
+          "name": "POST /api/reports/pila/:period/generate (TXT)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201 || pm.response.code === 200) {",
+                  "  const j = pm.response.json();",
+                  "  if (j && j.id) { pm.collectionVariables.set('pilaExportId', j.id); }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/pila/{{reportPeriod}}/generate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "pila", "{{reportPeriod}}", "generate"]
+            },
+            "description": "OS-595: genera archivo plano TXT (Anexo 2 v29). Body format=TXT|XLSX. Default TXT.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"format\": \"TXT\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /api/reports/pila/:period/generate (XLSX)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201 || pm.response.code === 200) {",
+                  "  const j = pm.response.json();",
+                  "  if (j && j.id) { pm.collectionVariables.set('pilaExportId', j.id); }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/pila/{{reportPeriod}}/generate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "pila", "{{reportPeriod}}", "generate"]
+            },
+            "description": "OS-595: genera plantilla XLSX Aportes en Línea (aportes-en-linea-v1). No anula TXT activo.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"format\": \"XLSX\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /api/reports/pila/:period/generate — validation error",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/pila/2099-01/generate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "pila", "2099-01", "generate"]
+            },
+            "description": "OS-595: ejemplo de fallo de preparación (sin nómina / errores estructurados) → 400."
+          }
+        },
+        {
+          "name": "GET /api/reports/pila",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/pila?period={{reportPeriod}}&format=TXT",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "pila"],
+              "query": [
+                {
+                  "key": "period",
+                  "value": "{{reportPeriod}}"
+                },
+                {
+                  "key": "format",
+                  "value": "TXT",
+                  "description": "Opcional: TXT | XLSX"
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "OS-595: lista metadatos/versiones por período; filtro opcional format=TXT|XLSX (sin snapshotJson ni bytes)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('list: sin snapshotJson', () => {",
+                  "  const body = pm.response.json();",
+                  "  const rows = Array.isArray(body) ? body : [];",
+                  "  rows.forEach((row) => pm.expect(row).to.not.have.property('snapshotJson'));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/reports/pila?format=XLSX",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/pila?period={{reportPeriod}}&format=XLSX",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "pila"],
+              "query": [
+                {
+                  "key": "period",
+                  "value": "{{reportPeriod}}"
+                },
+                {
+                  "key": "format",
+                  "value": "XLSX"
+                }
+              ]
+            },
+            "description": "OS-595: listado filtrado solo XLSX del período."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('list: sin snapshotJson', () => {",
+                  "  const body = pm.response.json();",
+                  "  const rows = Array.isArray(body) ? body : [];",
+                  "  rows.forEach((row) => pm.expect(row).to.not.have.property('snapshotJson'));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/reports/pila/exports/:id/download",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/pila/exports/{{pilaExportId}}/download",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "pila", "exports", "{{pilaExportId}}", "download"]
+            },
+            "description": "OS-595: descarga binaria desde Storage (text/plain o XLSX según format del artefacto). Bytes exactos; no regenera."
+          }
+        },
+        {
+          "name": "PATCH /api/reports/pila/exports/:id/paid",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"planNumber\": \"PL-DEMO-001\",\n  \"paymentReference\": \"REF-001\",\n  \"paidAt\": \"2026-07-15T18:00:00.000Z\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/pila/exports/{{pilaExportId}}/paid",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "pila", "exports", "{{pilaExportId}}", "paid"]
+            },
+            "description": "OS-595: confirmación manual de pago (solo desde GENERATED)."
+          }
+        },
+        {
+          "name": "PATCH /api/reports/pila/exports/:id/void",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Corrección de datos del aportante\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/pila/exports/{{pilaExportId}}/void",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "pila", "exports", "{{pilaExportId}}", "void"]
+            },
+            "description": "OS-595: anula GENERATED o PAID con razón obligatoria."
+          }
         }
       ]
     },
@@ -10290,7 +10715,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"query\": \"mutation RegistrarMarcacion($input: RegistrarMarcacionInput!) {\\n  registrarMarcacion(input: $input) {\\n    id\\n    status\\n    distanceMeters\\n    rejectionReason\\n    timestamp\\n    workDate\\n  }\\n}\",\n  \"variables\": {\n    \"input\": {\n      \"locationId\": \"{{locationId}}\",\n      \"eventType\": \"ENTRY\",\n      \"clientLatitude\": {{mobileClientLatitude}},\n      \"clientLongitude\": {{mobileClientLongitude}},\n      \"storageObjectId\": \"{{mobileStorageObjectId}}\",\n      \"facialMatchScore\": {{mobileFacialMatchScore}},\n      \"facialMatchResult\": \"{{mobileFacialMatchResult}}\",\n      \"notes\": \"Marcación de prueba desde Postman\"\n    }\n  }\n}",
+              "raw": "{\n  \"query\": \"mutation RegistrarMarcacion($input: RegistrarMarcacionInput!) {\\n  registrarMarcacion(input: $input) {\\n    id\\n    status\\n    distanceMeters\\n    rejectionReason\\n    timestamp\\n    workDate\\n  }\\n}\",\n  \"variables\": {\n    \"input\": {\n      \"locationId\": \"{{locationId}}\",\n      \"eventType\": \"ENTRY\",\n      \"clientLatitude\": {{mobileClientLatitude}},\n      \"clientLongitude\": {{mobileClientLongitude}},\n      \"storageObjectId\": \"{{mobileStorageObjectId}}\",\n      \"facialMatchScore\": {{mobileFacialMatchScore}},\n      \"facialMatchResult\": \"{{mobileFacialMatchResult}}\",\n      \"notes\": \"Marcación de prueba desde Postman\"\n    }  }}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -10350,7 +10775,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"query\": \"mutation RegistrarMarcacion($input: RegistrarMarcacionInput!) {\\n  registrarMarcacion(input: $input) {\\n    id\\n    status\\n    distanceMeters\\n    rejectionReason\\n    timestamp\\n    workDate\\n  }\\n}\",\n  \"variables\": {\n    \"input\": {\n      \"locationId\": \"{{locationId}}\",\n      \"eventType\": \"EXIT\",\n      \"clientLatitude\": {{mobileClientLatitude}},\n      \"clientLongitude\": {{mobileClientLongitude}}\n    }\n  }\n}",
+              "raw": "{\n  \"query\": \"mutation RegistrarMarcacion($input: RegistrarMarcacionInput!) {\\n  registrarMarcacion(input: $input) {\\n    id\\n    status\\n    distanceMeters\\n    rejectionReason\\n    timestamp\\n    workDate\\n  }\\n}\",\n  \"variables\": {\n    \"input\": {\n      \"locationId\": \"{{locationId}}\",\n      \"eventType\": \"EXIT\",\n      \"clientLatitude\": {{mobileClientLatitude}},\n      \"clientLongitude\": {{mobileClientLongitude}}    }  }}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -10402,7 +10827,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"query\": \"mutation RegistrarMarcacion($input: RegistrarMarcacionInput!) {\\n  registrarMarcacion(input: $input) {\\n    id\\n    status\\n    distanceMeters\\n    rejectionReason\\n    timestamp\\n    workDate\\n  }\\n}\",\n  \"variables\": {\n    \"input\": {\n      \"locationId\": \"{{locationId}}\",\n      \"eventType\": \"ENTRY\",\n      \"clientLatitude\": {{mobileClientLatitudeOutside}},\n      \"clientLongitude\": {{mobileClientLongitudeOutside}},\n      \"notes\": \"Prueba fuera del radio desde Postman\"\n    }\n  }\n}",
+              "raw": "{\n  \"query\": \"mutation RegistrarMarcacion($input: RegistrarMarcacionInput!) {\\n  registrarMarcacion(input: $input) {\\n    id\\n    status\\n    distanceMeters\\n    rejectionReason\\n    timestamp\\n    workDate\\n  }\\n}\",\n  \"variables\": {\n    \"input\": {\n      \"locationId\": \"{{locationId}}\",\n      \"eventType\": \"ENTRY\",\n      \"clientLatitude\": {{mobileClientLatitudeOutside}},\n      \"clientLongitude\": {{mobileClientLongitudeOutside}},\n      \"notes\": \"Prueba fuera del radio desde Postman\"\n    }  }}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -10457,7 +10882,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"query\": \"query MisMarcaciones($take: Int, $cursor: ID, $dateFrom: String, $dateTo: String) {\\n  misMarcaciones(take: $take, cursor: $cursor, dateFrom: $dateFrom, dateTo: $dateTo) {\\n    edges {\\n      cursor\\n      node {\\n        id\\n        eventType\\n        status\\n        locationName\\n        timestamp\\n        workDate\\n        distanceMeters\\n        rejectionReason\\n      }\\n    }\\n    pageInfo { hasNextPage endCursor }\\n  }\\n}\",\n  \"variables\": {\n    \"take\": 20,\n    \"cursor\": null,\n    \"dateFrom\": null,\n    \"dateTo\": null\n  }\n}",
+              "raw": "{\n  \"query\": \"query MisMarcaciones($take: Int, $cursor: ID, $dateFrom: String, $dateTo: String) {\\n  misMarcaciones(take: $take, cursor: $cursor, dateFrom: $dateFrom, dateTo: $dateTo) {\\n    edges {\\n      cursor\\n      node {\\n        id\\n        eventType\\n        status\\n        locationName\\n        timestamp\\n        workDate\\n        distanceMeters\\n        rejectionReason\\n      }\\n    }\\n    pageInfo { hasNextPage endCursor }\\n  }\\n}\",\n  \"variables\": {\n    \"take\": 20,\n    \"cursor\": null,\n    \"dateFrom\": null,\n    \"dateTo\": null\n  }}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -10513,7 +10938,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"query\": \"query MarcacionesPorSede($input: MarcacionesPorSedeInput!) {\\n  marcacionesPorSede(input: $input) {\\n    edges {\\n      cursor\\n      node {\\n        id\\n        employeeId\\n        eventType\\n        status\\n        timestamp\\n        distanceMeters\\n        rejectionReason\\n        photoUrl\\n      }\\n    }\\n    pageInfo { hasNextPage endCursor }\\n  }\\n}\",\n  \"variables\": {\n    \"input\": {\n      \"locationId\": \"{{locationId}}\",\n      \"dateFrom\": \"2026-06-01\",\n      \"dateTo\": \"2026-06-30\",\n      \"status\": null,\n      \"cursor\": null,\n      \"take\": 20\n    }\n  }\n}",
+              "raw": "{\n  \"query\": \"query MarcacionesPorSede($input: MarcacionesPorSedeInput!) {\\n  marcacionesPorSede(input: $input) {\\n    edges {\\n      cursor\\n      node {\\n        id\\n        employeeId\\n        eventType\\n        status\\n        timestamp\\n        distanceMeters\\n        rejectionReason\\n        photoUrl\\n      }\\n    }\\n    pageInfo { hasNextPage endCursor }\\n  }\\n}\",\n  \"variables\": {\n    \"input\": {\n      \"locationId\": \"{{locationId}}\",\n      \"dateFrom\": \"2026-06-01\",\n      \"dateTo\": \"2026-06-30\",\n      \"status\": null,\n      \"cursor\": null,\n      \"take\": 20\n    }  }}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -10569,7 +10994,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"query\": \"query MarcacionesPorEmpleado($input: MarcacionesPorEmpleadoInput!) {\\n  marcacionesPorEmpleado(input: $input) {\\n    edges {\\n      cursor\\n      node {\\n        id\\n        employeeId\\n        eventType\\n        status\\n        timestamp\\n        workDate\\n        distanceMeters\\n        rejectionReason\\n      }\\n    }\\n    pageInfo { hasNextPage endCursor }\\n  }\\n}\",\n  \"variables\": {\n    \"input\": {\n      \"employeeId\": \"{{attendanceEmployeeId}}\",\n      \"dateFrom\": \"2026-06-01\",\n      \"dateTo\": \"2026-06-30\",\n      \"status\": null,\n      \"cursor\": null,\n      \"take\": 20\n    }\n  }\n}",
+              "raw": "{\n  \"query\": \"query MarcacionesPorEmpleado($input: MarcacionesPorEmpleadoInput!) {\\n  marcacionesPorEmpleado(input: $input) {\\n    edges {\\n      cursor\\n      node {\\n        id\\n        employeeId\\n        eventType\\n        status\\n        timestamp\\n        workDate\\n        distanceMeters\\n        rejectionReason\\n      }\\n    }\\n    pageInfo { hasNextPage endCursor }\\n  }\\n}\",\n  \"variables\": {\n    \"input\": {\n      \"employeeId\": \"{{attendanceEmployeeId}}\",\n      \"dateFrom\": \"2026-06-01\",\n      \"dateTo\": \"2026-06-30\",\n      \"status\": null,\n      \"cursor\": null,\n      \"take\": 20\n    }  }}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -10624,7 +11049,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"query\": \"query SedeMarcacionConfig($locationId: ID!) {\\n  sedeMarcacionConfig(locationId: $locationId) {\\n    locationId\\n    name\\n    geoLatitude\\n    geoLongitude\\n    checkInRadiusMeters\\n    requiresPhoto\\n  }\\n}\",\n  \"variables\": {\n    \"locationId\": \"{{locationId}}\"\n  }\n}",
+              "raw": "{\n  \"query\": \"query SedeMarcacionConfig($locationId: ID!) {\\n  sedeMarcacionConfig(locationId: $locationId) {\\n    locationId\\n    name\\n    geoLatitude\\n    geoLongitude\\n    checkInRadiusMeters\\n    requiresPhoto\\n  }\\n}\",\n  \"variables\": {\n    \"locationId\": \"{{locationId}}\"\n  }}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -10723,7 +11148,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"query\": \"query MarcacionesPorSede($input: MarcacionesPorSedeInput!) {\\n  marcacionesPorSede(input: $input) {\\n    edges {\\n      cursor\\n      node {\\n        id\\n        employeeId\\n        eventType\\n        status\\n        timestamp\\n        distanceMeters\\n        rejectionReason\\n        photoUrl\\n      }\\n    }\\n    pageInfo { hasNextPage endCursor }\\n  }\\n}\",\n  \"variables\": {\n    \"input\": {\n      \"locationId\": \"{{locationId}}\",\n      \"dateFrom\": \"2026-06-01\",\n      \"dateTo\": \"2026-06-30\",\n      \"take\": 5\n    }\n  }\n}",
+              "raw": "{\n  \"query\": \"query MarcacionesPorSede($input: MarcacionesPorSedeInput!) {\\n  marcacionesPorSede(input: $input) {\\n    edges {\\n      cursor\\n      node {\\n        id\\n        employeeId\\n        eventType\\n        status\\n        timestamp\\n        distanceMeters\\n        rejectionReason\\n        photoUrl\\n      }\\n    }\\n    pageInfo { hasNextPage endCursor }\\n  }\\n}\",\n  \"variables\": {\n    \"input\": {\n      \"locationId\": \"{{locationId}}\",\n      \"dateFrom\": \"2026-06-01\",\n      \"dateTo\": \"2026-06-30\",\n      \"take\": 5\n    }  }}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -13152,7 +13577,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"recipients\": [\"qa@restopsiq.dev\"],\n  \"format\": \"excel\",\n  \"filters\": { \"status\": \"all\" }\n}"
+              "raw": "{\n  \"recipients\": [\"qa@restopsiq.dev\"],\n  \"format\": \"excel\",\n  \"filters\": { \"status\": \"all\" }}"
             },
             "description": "Encola el email con adjunto vía EmailService (BullMQ) — confirmar en logs/worker que el job se procesó."
           },
@@ -13196,7 +13621,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"recipients\": [\"no-es-un-email\"],\n  \"format\": \"excel\",\n  \"filters\": {}\n}"
+              "raw": "{\n  \"recipients\": [\"no-es-un-email\"],\n  \"format\": \"excel\",\n  \"filters\": {}}"
             }
           },
           "event": [
@@ -13234,7 +13659,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"recipients\": [\"a1@x.dev\",\"a2@x.dev\",\"a3@x.dev\",\"a4@x.dev\",\"a5@x.dev\",\"a6@x.dev\",\"a7@x.dev\",\"a8@x.dev\",\"a9@x.dev\",\"a10@x.dev\",\"a11@x.dev\"],\n  \"format\": \"excel\",\n  \"filters\": {}\n}"
+              "raw": "{\n  \"recipients\": [\"a1@x.dev\",\"a2@x.dev\",\"a3@x.dev\",\"a4@x.dev\",\"a5@x.dev\",\"a6@x.dev\",\"a7@x.dev\",\"a8@x.dev\",\"a9@x.dev\",\"a10@x.dev\",\"a11@x.dev\"],\n  \"format\": \"excel\",\n  \"filters\": {}}"
             }
           },
           "event": [
@@ -13393,7 +13818,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"query\": \"mutation Login($input: LoginInput!) { login(input: $input) { accessToken } }\",\n  \"variables\": { \"input\": { \"email\": \"{{ownerEmail}}\", \"password\": \"{{password}}\" } }\n}"
+              "raw": "{\n  \"query\": \"mutation Login($input: LoginInput!) { login(input: $input) { accessToken } }\",\n  \"variables\": { \"input\": { \"email\": \"{{ownerEmail}}\", \"password\": \"{{password}}\" } }}"
             },
             "url": "{{graphqlUrl}}"
           }
@@ -13418,7 +13843,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"query\": \"mutation CreateSupplier($input: CreateSupplierInput!) { createSupplier(input: $input) { id logistics { status leadTimeDays } } }\",\n  \"variables\": {\n    \"input\": {\n      \"razonSocial\": \"Proveedor Logística Draft\",\n      \"nit\": \"901{{$timestamp}}\",\n      \"tipo\": \"PERSONA_JURIDICA\",\n      \"condicionPago\": \"DIAS_30\",\n      \"saveLogisticsAsDraft\": true,\n      \"logistics\": {\n        \"leadTimeDays\": 2,\n        \"deliveryDays\": [1, 3]\n      }\n    }\n  }\n}"
+              "raw": "{\n  \"query\": \"mutation CreateSupplier($input: CreateSupplierInput!) { createSupplier(input: $input) { id logistics { status leadTimeDays } } }\",\n  \"variables\": {\n    \"input\": {\n      \"razonSocial\": \"Proveedor Logística Draft\",\n      \"nit\": \"901{{$timestamp}}\",\n      \"tipo\": \"PERSONA_JURIDICA\",\n      \"condicionPago\": \"DIAS_30\",\n      \"saveLogisticsAsDraft\": true,\n      \"logistics\": {\n        \"leadTimeDays\": 2,\n        \"deliveryDays\": [1, 3]\n      }    }  }}"
             },
             "url": "{{graphqlUrl}}"
           },
@@ -13459,7 +13884,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"query\": \"mutation UpdateSupplier($id: ID!, $input: UpdateSupplierInput!) { updateSupplier(id: $id, input: $input) { id logistics { status leadTimeDays deliveryMode transportType } } }\",\n  \"variables\": {\n    \"id\": \"{{supplierId}}\",\n    \"input\": {\n      \"saveLogisticsAsDraft\": false,\n      \"logistics\": {\n        \"deliveryMode\": \"SUPPLIER_DELIVERS\",\n        \"deliveryPlace\": \"PLANT\",\n        \"deliveryDays\": [1, 2, 3, 4, 5],\n        \"leadTimeDays\": 5,\n        \"receptionResponsibleUserId\": \"{{receptionUserId}}\",\n        \"transportType\": \"OWN\",\n        \"requiresColdChain\": false,\n        \"coverageLocationIds\": [\"{{locationId}}\"]\n      }\n    }\n  }\n}"
+              "raw": "{\n  \"query\": \"mutation UpdateSupplier($id: ID!, $input: UpdateSupplierInput!) { updateSupplier(id: $id, input: $input) { id logistics { status leadTimeDays deliveryMode transportType } } }\",\n  \"variables\": {\n    \"id\": \"{{supplierId}}\",\n    \"input\": {\n      \"saveLogisticsAsDraft\": false,\n      \"logistics\": {\n        \"deliveryMode\": \"SUPPLIER_DELIVERS\",\n        \"deliveryPlace\": \"PLANT\",\n        \"deliveryDays\": [1, 2, 3, 4, 5],\n        \"leadTimeDays\": 5,\n        \"receptionResponsibleUserId\": \"{{receptionUserId}}\",\n        \"transportType\": \"OWN\",\n        \"requiresColdChain\": false,\n        \"coverageLocationIds\": [\"{{locationId}}\"]\n      }    }  }}"
             },
             "url": "{{graphqlUrl}}"
           },
@@ -13493,7 +13918,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"query\": \"query Supplier($id: ID!) { supplier(id: $id) { id logistics { status leadTimeDays coverageLocations { id name } } } }\",\n  \"variables\": { \"id\": \"{{supplierId}}\" }\n}"
+              "raw": "{\n  \"query\": \"query Supplier($id: ID!) { supplier(id: $id) { id logistics { status leadTimeDays coverageLocations { id name } } } }\",\n  \"variables\": { \"id\": \"{{supplierId}}\" }}"
             },
             "url": "{{graphqlUrl}}"
           }
@@ -13514,7 +13939,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"query\": \"query History($supplierId: ID!) { supplierLogisticsHistory(supplierId: $supplierId) { id action changes { field oldValue newValue } } }\",\n  \"variables\": { \"supplierId\": \"{{supplierId}}\" }\n}"
+              "raw": "{\n  \"query\": \"query History($supplierId: ID!) { supplierLogisticsHistory(supplierId: $supplierId) { id action changes { field oldValue newValue } } }\",\n  \"variables\": { \"supplierId\": \"{{supplierId}}\" }}"
             },
             "url": "{{graphqlUrl}}"
           }
@@ -13535,7 +13960,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"query\": \"mutation UpdateSupplier($id: ID!, $input: UpdateSupplierInput!) { updateSupplier(id: $id, input: $input) { id } }\",\n  \"variables\": {\n    \"id\": \"{{supplierId}}\",\n    \"input\": {\n      \"saveLogisticsAsDraft\": false,\n      \"logistics\": {\n        \"deliveryMode\": \"SUPPLIER_DELIVERS\",\n        \"deliveryPlace\": \"PLANT\",\n        \"deliveryDays\": [1],\n        \"leadTimeDays\": 3,\n        \"receptionResponsibleUserId\": \"{{receptionUserId}}\",\n        \"transportType\": \"OWN\",\n        \"requiresColdChain\": true\n      }\n    }\n  }\n}"
+              "raw": "{\n  \"query\": \"mutation UpdateSupplier($id: ID!, $input: UpdateSupplierInput!) { updateSupplier(id: $id, input: $input) { id } }\",\n  \"variables\": {\n    \"id\": \"{{supplierId}}\",\n    \"input\": {\n      \"saveLogisticsAsDraft\": false,\n      \"logistics\": {\n        \"deliveryMode\": \"SUPPLIER_DELIVERS\",\n        \"deliveryPlace\": \"PLANT\",\n        \"deliveryDays\": [1],\n        \"leadTimeDays\": 3,\n        \"receptionResponsibleUserId\": \"{{receptionUserId}}\",\n        \"transportType\": \"OWN\",\n        \"requiresColdChain\": true\n      }    }  }}"
             },
             "url": "{{graphqlUrl}}"
           },
@@ -14535,7 +14960,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"query\": \"mutation GrantDataConsent($input: GrantDataConsentInput!) { grantDataConsent(input: $input) { id tenantId employeeId consentType granted policyVersion grantedAt revokedAt } }\",\n  \"variables\": {\n    \"input\": {\n      \"policyVersion\": \"{{dataConsentPolicyVersion}}\",\n      \"consentTypes\": [\"BIOMETRICO_FACIAL\", \"GEOLOCALIZACION\"],\n      \"accepted\": true,\n      \"deviceId\": \"postman-device-001\"\n    }\n  }\n}",
+              "raw": "{\n  \"query\": \"mutation GrantDataConsent($input: GrantDataConsentInput!) { grantDataConsent(input: $input) { id tenantId employeeId consentType granted policyVersion grantedAt revokedAt } }\",\n  \"variables\": {\n    \"input\": {\n      \"policyVersion\": \"{{dataConsentPolicyVersion}}\",\n      \"consentTypes\": [\"BIOMETRICO_FACIAL\", \"GEOLOCALIZACION\"],\n      \"accepted\": true,\n      \"deviceId\": \"postman-device-001\"\n    }  }}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -14757,7 +15182,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"query\": \"mutation PublishDataProcessingPolicy($input: PublishDataProcessingPolicyInput!) { publishDataProcessingPolicy(input: $input) { id version title isActive publishedAt } }\",\n  \"variables\": {\n    \"input\": {\n      \"version\": \"2026.07.2-postman\",\n      \"title\": \"Política de tratamiento de datos biométricos y geolocalización\",\n      \"content\": \"[BORRADOR POSTMAN] Texto de prueba — reemplazar tras revisión legal.\",\n      \"consentLabel\": \"Autorizo el tratamiento de mi dato biométrico facial y de geolocalización para los fines aquí descritos.\"\n    }\n  }\n}",
+              "raw": "{\n  \"query\": \"mutation PublishDataProcessingPolicy($input: PublishDataProcessingPolicyInput!) { publishDataProcessingPolicy(input: $input) { id version title isActive publishedAt } }\",\n  \"variables\": {\n    \"input\": {\n      \"version\": \"2026.07.2-postman\",\n      \"title\": \"Política de tratamiento de datos biométricos y geolocalización\",\n      \"content\": \"[BORRADOR POSTMAN] Texto de prueba — reemplazar tras revisión legal.\",\n      \"consentLabel\": \"Autorizo el tratamiento de mi dato biométrico facial y de geolocalización para los fines aquí descritos.\"\n    }  }}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -16440,7 +16865,7 @@
                 },
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"employeeDetailsId\": \"REEMPLAZAR — EmployeeDetails.id (el contrato ACTIVO se resuelve server-side)\",\n  \"effectiveTerminationDate\": \"2026-07-14\",\n  \"terminationReason\": \"MUTUO_ACUERDO\",\n  \"lines\": [\n    {\n      \"code\": \"AJUSTE_MANUAL\",\n      \"name\": \"Ajuste manual acordado\",\n      \"type\": \"DEVENGO\",\n      \"amount\": \"1000000.00\",\n      \"manualJustification\": \"Acuerdo documentado en acta firmada por las partes\"\n    }\n  ],\n  \"manualJustification\": \"Liquidación por mutuo acuerdo documentado en acta firmada por las partes\",\n  \"manualReference\": \"ACTA-2026-DEMO\",\n  \"manualResponsible\": \"Gerencia de Recursos Humanos\"\n}"
+                  "raw": "{\n  \"employeeDetailsId\": \"REEMPLAZAR — EmployeeDetails.id (el contrato ACTIVO se resuelve server-side)\",\n  \"effectiveTerminationDate\": \"2026-07-14\",\n  \"terminationReason\": \"MUTUO_ACUERDO\",\n  \"lines\": [\n    {\n      \"code\": \"AJUSTE_MANUAL\",\n      \"name\": \"Ajuste manual acordado\",\n      \"type\": \"DEVENGO\",\n      \"amount\": \"1000000.00\",\n      \"manualJustification\": \"Acuerdo documentado en acta firmada por las partes\"\n    }  ],\n  \"manualJustification\": \"Liquidación por mutuo acuerdo documentado en acta firmada por las partes\",\n  \"manualReference\": \"ACTA-2026-DEMO\",\n  \"manualResponsible\": \"Gerencia de Recursos Humanos\"\n}"
                 }
               },
               "event": [
@@ -18111,7 +18536,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"query\": \"mutation RegistrarMarcacion($input: RegistrarMarcacionInput!) { registrarMarcacion(input: $input) { id status timestamp workDate } }\",\n  \"variables\": {\n    \"input\": {\n      \"locationId\": \"{{attendanceLocationId}}\",\n      \"eventType\": \"ENTRY\",\n      \"markingScope\": \"OVERTIME\",\n      \"clientLatitude\": {{mobileClientLatitude}},\n      \"clientLongitude\": {{mobileClientLongitude}},\n      \"notes\": \"CONN-11 OVERTIME ENTRY Postman\"\n    }\n  }\n}"
+              "raw": "{\n  \"query\": \"mutation RegistrarMarcacion($input: RegistrarMarcacionInput!) { registrarMarcacion(input: $input) { id status timestamp workDate } }\",\n  \"variables\": {\n    \"input\": {\n      \"locationId\": \"{{attendanceLocationId}}\",\n      \"eventType\": \"ENTRY\",\n      \"markingScope\": \"OVERTIME\",\n      \"clientLatitude\": {{mobileClientLatitude}},\n      \"clientLongitude\": {{mobileClientLongitude}},\n      \"notes\": \"CONN-11 OVERTIME ENTRY Postman\"\n    }  }}"
             },
             "url": "{{graphqlUrl}}"
           },
@@ -18155,7 +18580,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"query\": \"mutation RegistrarMarcacion($input: RegistrarMarcacionInput!) { registrarMarcacion(input: $input) { id status timestamp workDate } }\",\n  \"variables\": {\n    \"input\": {\n      \"locationId\": \"{{attendanceLocationId}}\",\n      \"eventType\": \"EXIT\",\n      \"markingScope\": \"OVERTIME\",\n      \"clientLatitude\": {{mobileClientLatitude}},\n      \"clientLongitude\": {{mobileClientLongitude}},\n      \"notes\": \"CONN-11 OVERTIME EXIT Postman\"\n    }\n  }\n}"
+              "raw": "{\n  \"query\": \"mutation RegistrarMarcacion($input: RegistrarMarcacionInput!) { registrarMarcacion(input: $input) { id status timestamp workDate } }\",\n  \"variables\": {\n    \"input\": {\n      \"locationId\": \"{{attendanceLocationId}}\",\n      \"eventType\": \"EXIT\",\n      \"markingScope\": \"OVERTIME\",\n      \"clientLatitude\": {{mobileClientLatitude}},\n      \"clientLongitude\": {{mobileClientLongitude}},\n      \"notes\": \"CONN-11 OVERTIME EXIT Postman\"\n    }  }}"
             },
             "url": "{{graphqlUrl}}"
           },
@@ -18775,6 +19200,242 @@
               }
             }
           ]
+        }
+      ]
+    },
+    {
+      "name": "CONN-12 Weekly Shift Plan Approval",
+      "description": "CONN-12 — ciclo de aprobación semanal de malla de turnos (WeeklyShiftPlan).\n\nPrerrequisitos:\n1. Migración `conn12_weekly_shift_plan_approval` + seed (planes `seed-weekly-plan-draft-conn12` / `seed-weekly-plan-approved-conn12`)\n2. Login OWNER/SUPERVISOR para submit; MANAGER/OWNER para approve/reject\n3. Variables: `{{conn12LocationId}}`, `{{conn12WeekStart}}`, `{{conn12PlanId}}`\n4. Orden: GET plan → POST submit → POST approve | POST reject\n\nNota: asignaciones OS-582/OS-583 quedan en DRAFT hasta approve; malla sin APPROVED no alimenta CONN-11.",
+      "item": [
+        {
+          "name": "GET Or create weekly plan",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/turnos/planes-semanales?locationId={{conn12LocationId}}&weekStart={{conn12WeekStart}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "turnos", "planes-semanales"],
+              "query": [
+                {
+                  "key": "locationId",
+                  "value": "{{conn12LocationId}}"
+                },
+                {
+                  "key": "weekStart",
+                  "value": "{{conn12WeekStart}}"
+                }
+              ]
+            },
+            "description": "Obtiene o crea (DRAFT) el plan semanal. Captura `conn12PlanId`. Si `conn12LocationId` está vacío, ejecutar antes OS-582 GET semanal."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('plan GET: status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.expect(body).to.have.property('id');",
+                  "pm.expect(body).to.have.property('status');",
+                  "pm.collectionVariables.set('conn12PlanId', body.id);",
+                  "if (body.locationId) pm.collectionVariables.set('conn12LocationId', body.locationId);",
+                  "if (body.weekStart) pm.collectionVariables.set('conn12WeekStart', String(body.weekStart).slice(0, 10));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Submit for approval",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/turnos/planes-semanales/{{conn12PlanId}}/submit",
+            "description": "DRAFT/REJECTED → PENDING_APPROVAL (SUPERVISOR/MANAGER/OWNER)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('submit: status 200', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().status).to.eql('PENDING_APPROVAL');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Approve plan",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenManager}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/turnos/planes-semanales/{{conn12PlanId}}/approve",
+            "description": "PENDING → APPROVED. Usa {{accessTokenManager}} (MANAGER) o OWNER. SUPERVISOR debe recibir 403."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('approve: status 200', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().status).to.eql('APPROVED');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Reject plan",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenManager}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"{{conn12RejectReason}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/turnos/planes-semanales/{{conn12PlanId}}/reject",
+            "description": "PENDING → REJECTED con motivo. Ejecutar sobre un plan PENDING (re-submit tras reject o plan fresco)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('reject: status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.status).to.eql('REJECTED');",
+                  "pm.expect(body.rejectionReason).to.be.a(\"string\").and.not.empty;"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Kiosk Marking Mode (shared tablet)",
+      "description": "Modo marcación tablet compartida — GraphQL scoped token KIOSK_MARKING. Ver tasks/attendance/shared-tablet-kiosk-mode/graphql-contract-for-fe.graphql",
+      "item": [
+        {
+          "name": "GraphQL — activarModoMarcacionKiosko",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation($input: ActivarModoMarcacionKioskoInput!) { activarModoMarcacionKiosko(input: $input) { accessToken expiresAt locationId sessionId } }\",\n  \"variables\": {\n    \"input\": {\n      \"locationId\": \"{{locationId}}\"\n    }  }}"
+            },
+            "url": "{{baseUrl}}/graphql"
+          }
+        },
+        {
+          "name": "GraphQL — empleadosTurnoHoyKiosko",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{kioskMarkingToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query { empleadosTurnoHoyKiosko { employeeId fullName suggestedEventType hasPinConfigured hasFacialReference hasBiometricConsent } }\"\n}"
+            },
+            "url": "{{baseUrl}}/graphql"
+          }
+        },
+        {
+          "name": "GraphQL — registrarMarcacionKiosko",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{kioskMarkingToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation($input: RegistrarMarcacionKioskoInput!) { registrarMarcacionKiosko(input: $input) { id eventType workDate verificationMethod status } }\",\n  \"variables\": {\n    \"input\": {\n      \"employeeId\": \"{{attendanceEmployeeId}}\",\n      \"eventType\": \"ENTRY\",\n      \"storageObjectId\": \"{{mobileStorageObjectId}}\",\n      \"facialMatchScore\": 0.92,\n      \"facialMatchResult\": \"MATCH\"\n    }  }}"
+            },
+            "url": "{{baseUrl}}/graphql"
+          }
         }
       ]
     }

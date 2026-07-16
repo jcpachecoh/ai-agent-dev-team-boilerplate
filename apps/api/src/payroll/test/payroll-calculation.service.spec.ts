@@ -1,8 +1,22 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { BadRequestException } from '@nestjs/common';
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { ArlRiskLevel, EmployeeContractType, SalaryType } from '@prisma/client';
-import { AttendanceOvertimeType } from '../payroll.constants';
+
+import {
+  makeOfficialResolvedTaxWithholdingBrackets,
+  TEST_UVT_2025,
+  uvtIncomeToCop,
+} from '../../tax-withholding-brackets/test/tax-withholding-brackets.test-fixtures';
+import type {
+  AttendanceMonthSummary,
+  EmployeePayrollInput,
+  OvertimeMinutesEntry,
+  PayrollLegalRates,
+} from '../interfaces/payroll-report.interfaces';
 import {
   ARL_RATES,
+  AttendanceOvertimeType,
   EMPLOYEE_HEALTH_PCT,
   EMPLOYEE_PENSION_PCT,
   EMPLOYER_CAJA_PCT,
@@ -16,12 +30,7 @@ import {
   TRANSPORT_SUBSIDY_THRESHOLD,
 } from '../payroll.constants';
 import { PayrollCalculationService } from '../service/payroll-calculation.service';
-import {
-  AttendanceMonthSummary,
-  EmployeePayrollInput,
-  OvertimeMinutesEntry,
-  PayrollLegalRates,
-} from '../interfaces/payroll-report.interfaces';
+import { calcularRetencionFuente } from '../utils/income-tax-withholding.utils';
 
 // ── Test fixtures ─────────────────────────────────────────────────────────────
 
@@ -36,13 +45,14 @@ const RECARGO_DOMINICAL_FESTIVO = 0.75;
 // matching the pre-OS-586 hardcoded MONTHLY_HOURS_BASE so existing assertions keep passing unchanged.
 const TEST_MONTHLY_HOURS_BASE = 240;
 
-// Reproduces the pre-OS-585 hardcoded constants (SMLV_2025, TRANSPORT_SUBSIDY_2025) as resolved
-// LaborLegalParametersService values, so existing assertions keep passing unchanged. Overtime
-// surcharges/divisor are no longer period-flat — see makeOvertimeEntry below (OS-586).
+const TEST_TAX_BRACKETS = makeOfficialResolvedTaxWithholdingBrackets();
+
 const LEGAL_RATES: PayrollLegalRates = {
   smlv: SMLV_2025,
   transportSubsidyThreshold: TRANSPORT_SUBSIDY_THRESHOLD,
   transportSubsidy: TRANSPORT_SUBSIDY_2025,
+  uvt: TEST_UVT_2025,
+  taxWithholdingBrackets: TEST_TAX_BRACKETS,
 };
 
 function makeOvertimeEntry(
@@ -65,6 +75,7 @@ function makeEmployee(overrides: Partial<EmployeePayrollInput> = {}): EmployeePa
     salaryAmount: SMLV_2025, // 1,423,500 COP
     hasTransportSubsidy: true,
     arlRiskLevel: ArlRiskLevel.RIESGO_I,
+    isExemptFromTax: false,
     ...overrides,
   };
 }
@@ -147,6 +158,23 @@ describe('PayrollCalculationService', () => {
       );
       expect(result.calendarDays).toBe(28);
       expect(result.salaryBase).toBe(2_800_000);
+    });
+
+    it('subtracts payroll novedad unpaid deduction from salaryBase', (): void => {
+      const unpaidDays = 3;
+      const deduction = roundCOP((SMLV_2025 / 30) * unpaidDays);
+      const result = service.calculateEmployeePeriod(
+        makeEmployee({
+          payrollNovedadUnpaidDays: unpaidDays,
+          payrollNovedadUnpaidDeduction: deduction,
+        }),
+        makeAttendance(),
+        LEGAL_RATES,
+      );
+
+      expect(result.salaryBase).toBe(SMLV_2025 - deduction);
+      expect(result.payrollNovedadUnpaidDays).toBe(unpaidDays);
+      expect(result.payrollNovedadUnpaidDeduction).toBe(deduction);
     });
   });
 
@@ -416,16 +444,157 @@ describe('PayrollCalculationService', () => {
       expect(result.pensionDeduction).toBe(roundCOP(base * EMPLOYEE_PENSION_PCT));
     });
 
-    it('incomeTaxWithholding is always 0 (GAP Task04)', () => {
+    it('salary 3_000_000 COP → incomeTaxWithholding 0 (< 95 UVT, AC-1)', () => {
       const result = service.calculateEmployeePeriod(
-        makeEmployee({ salaryAmount: 20_000_000 }),
+        makeEmployee({ salaryAmount: 3_000_000, hasTransportSubsidy: false }),
         makeAttendance(),
         LEGAL_RATES,
       );
       expect(result.incomeTaxWithholding).toBe(0);
     });
 
-    it('totalDeductions = healthDeduction + pensionDeduction + incomeTaxWithholding', () => {
+    it('salary 8_000_000 COP → incomeTaxWithholding in 19% bracket (AC-2)', () => {
+      const result = service.calculateEmployeePeriod(
+        makeEmployee({ salaryAmount: 8_000_000, hasTransportSubsidy: false }),
+        makeAttendance(),
+        LEGAL_RATES,
+      );
+      const contributionBase = 8_000_000;
+      const health = roundCOP(contributionBase * EMPLOYEE_HEALTH_PCT);
+      const pension = roundCOP(contributionBase * EMPLOYEE_PENSION_PCT);
+      const ingresoBase = contributionBase - health - pension;
+      const expected = calcularRetencionFuente(
+        ingresoBase,
+        TEST_UVT_2025,
+        TEST_TAX_BRACKETS,
+      ).incomeTaxWithholding;
+      expect(expected).toBeGreaterThan(0);
+      expect(result.incomeTaxWithholding).toBe(expected);
+      const uvtIncome = ingresoBase / TEST_UVT_2025;
+      expect(uvtIncome).toBeGreaterThan(95);
+      expect(uvtIncome).toBeLessThanOrEqual(150);
+    });
+
+    it('isExemptFromTax = true → incomeTaxWithholding 0 always (AC-3)', () => {
+      const result = service.calculateEmployeePeriod(
+        makeEmployee({
+          salaryAmount: 20_000_000,
+          hasTransportSubsidy: false,
+          isExemptFromTax: true,
+        }),
+        makeAttendance(),
+        LEGAL_RATES,
+      );
+      expect(result.incomeTaxWithholding).toBe(0);
+      expect(result.taxWithholdingBreakdown.isExemptFromTax).toBe(true);
+      expect(result.taxWithholdingBreakdown.bracketLowerUvtExclusive).toBeNull();
+      expect(result.taxWithholdingBreakdown.marginalRate).toBeNull();
+    });
+
+    it('exposes tax withholding breakdown aligned with calculation for taxable employee', (): void => {
+      const result = service.calculateEmployeePeriod(
+        makeEmployee({ salaryAmount: 8_000_000, hasTransportSubsidy: false }),
+        makeAttendance(),
+        LEGAL_RATES,
+      );
+      const expected = calcularRetencionFuente(
+        result.taxWithholdingBreakdown.taxWithholdingBase,
+        TEST_UVT_2025,
+        TEST_TAX_BRACKETS,
+      );
+
+      expect(result.taxWithholdingBreakdown).toEqual(expected.breakdown);
+      expect(result.incomeTaxWithholding).toBe(expected.incomeTaxWithholding);
+    });
+
+    it('breakdown shows non-taxable bracket for base below 95 UVT', (): void => {
+      const result = service.calculateEmployeePeriod(
+        makeEmployee({ salaryAmount: 3_000_000, hasTransportSubsidy: false }),
+        makeAttendance(),
+        LEGAL_RATES,
+      );
+
+      expect(result.incomeTaxWithholding).toBe(0);
+      expect(result.taxWithholdingBreakdown.marginalRate).toBe(0);
+      expect(result.taxWithholdingBreakdown.bracketUpperUvtInclusive).toBe(95);
+      expect(result.taxWithholdingBreakdown.isExemptFromTax).toBe(false);
+    });
+
+    it('INTEGRAL salary uses 70% contributionBase for income tax withholding', () => {
+      const salary = 15_000_000;
+      const result = service.calculateEmployeePeriod(
+        makeEmployee({
+          salaryAmount: salary,
+          salaryType: SalaryType.INTEGRAL,
+          hasTransportSubsidy: false,
+        }),
+        makeAttendance(),
+        LEGAL_RATES,
+      );
+      const contributionBase = roundCOP(salary * INTEGRAL_CONTRIBUTIONS_BASE_PCT);
+      const health = roundCOP(contributionBase * EMPLOYEE_HEALTH_PCT);
+      const pension = roundCOP(contributionBase * EMPLOYEE_PENSION_PCT);
+      const ingresoBase = contributionBase - health - pension;
+      expect(result.incomeTaxWithholding).toBe(
+        calcularRetencionFuente(ingresoBase, TEST_UVT_2025, TEST_TAX_BRACKETS).incomeTaxWithholding,
+      );
+      expect(result.incomeTaxWithholding).toBeLessThan(
+        calcularRetencionFuente(salary - health * 2, TEST_UVT_2025, TEST_TAX_BRACKETS)
+          .incomeTaxWithholding,
+      );
+    });
+
+    it('throws BadRequestException when taxWithholdingBrackets is empty', (): void => {
+      const ratesWithoutBrackets: PayrollLegalRates = {
+        ...LEGAL_RATES,
+        taxWithholdingBrackets: [],
+      };
+      expect(() =>
+        service.calculateEmployeePeriod(
+          makeEmployee({ salaryAmount: 20_000_000, hasTransportSubsidy: false }),
+          makeAttendance(),
+          ratesWithoutBrackets,
+        ),
+      ).toThrow(BadRequestException);
+    });
+
+    it('throws BadRequestException when uvt is zero', (): void => {
+      const ratesWithoutUvt: PayrollLegalRates = {
+        ...LEGAL_RATES,
+        uvt: 0,
+      };
+      expect(() =>
+        service.calculateEmployeePeriod(
+          makeEmployee({ salaryAmount: 20_000_000, hasTransportSubsidy: false }),
+          makeAttendance(),
+          ratesWithoutUvt,
+        ),
+      ).toThrow(BadRequestException);
+    });
+
+    it.each([
+      ['28%', 11_000_000],
+      ['33%', 20_000_000],
+      ['35%', 35_000_000],
+      ['37%', 80_000_000],
+      ['39%', 130_000_000],
+    ] as const)('salary %s bracket applies through motor', (_label, salaryAmount): void => {
+      const result = service.calculateEmployeePeriod(
+        makeEmployee({ salaryAmount, hasTransportSubsidy: false }),
+        makeAttendance(),
+        LEGAL_RATES,
+      );
+      const contributionBase = salaryAmount;
+      const health = roundCOP(contributionBase * EMPLOYEE_HEALTH_PCT);
+      const pension = roundCOP(contributionBase * EMPLOYEE_PENSION_PCT);
+      const ingresoBase = contributionBase - health - pension;
+      expect(result.incomeTaxWithholding).toBe(
+        calcularRetencionFuente(ingresoBase, TEST_UVT_2025, TEST_TAX_BRACKETS).incomeTaxWithholding,
+      );
+      expect(result.incomeTaxWithholding).toBeGreaterThan(0);
+    });
+
+    it('totalDeductions = healthDeduction + pensionDeduction + incomeTaxWithholding', (): void => {
       const result = service.calculateEmployeePeriod(
         makeEmployee({ salaryAmount: 5_000_000 }),
         makeAttendance(),
@@ -706,6 +875,20 @@ describe('PayrollCalculationService', () => {
       expect(result.salaryBase).toBe(0);
       expect(result.medicalLeaveEmployerPay).toBe(0);
       expect(result.medicalLeaveOrdinaryDaysExcluded).toBe(5);
+    });
+  });
+
+  describe('income tax withholding integration', (): void => {
+    it('returns open-ended bracket in breakdown for high income', (): void => {
+      const result = service.calculateEmployeePeriod(
+        makeEmployee({ salaryAmount: 130_000_000, hasTransportSubsidy: false }),
+        makeAttendance(),
+        LEGAL_RATES,
+      );
+
+      expect(result.incomeTaxWithholding).toBeGreaterThan(0);
+      expect(result.taxWithholdingBreakdown.bracketUpperUvtInclusive).toBeNull();
+      expect(result.taxWithholdingBreakdown.marginalRate).toBe(0.39);
     });
   });
 });

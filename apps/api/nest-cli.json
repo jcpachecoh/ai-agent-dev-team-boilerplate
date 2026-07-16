@@ -4,6 +4,16 @@
   "sourceRoot": "src",
   "compilerOptions": {
     "deleteOutDir": true,
-    "tsConfigPath": "tsconfig.build.json"
+    "tsConfigPath": "tsconfig.build.json",
+    "assets": [
+      {
+        "include": "payroll/pila/templates/**/*",
+        "watchAssets": true
+      },
+      {
+        "include": "payroll/pila/serializer/fixtures/golden/**/*",
+        "watchAssets": true
+      }
+    ]
   }
 }

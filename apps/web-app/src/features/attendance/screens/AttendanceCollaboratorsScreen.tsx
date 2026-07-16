@@ -23,6 +23,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { isPayrollReadOnlyRole, SYSTEM_ADMIN_ROLES } from '@/config/rbac.config';
+import { getTablePaginationRange } from '@/utils/table-pagination';
 import { useMe } from '@/features/auth/hooks/useMe';
 import { PayrollApiError } from '@/features/payroll/api/payroll.client';
 import { FinalSettlementWizard } from '@/features/payroll/components/FinalSettlementWizard';
@@ -205,7 +206,7 @@ export function AttendanceCollaboratorsScreen(): React.JSX.Element {
     setPage,
     setPageSize,
     resetFilters,
-  } = useAttendanceCollaboratorsFilters(20);
+  } = useAttendanceCollaboratorsFilters(8);
 
   const [sortColumn, setSortColumn] = useState<EmpleadoSortColumnKey | null>(null);
   const [sortDirection, setSortDirection] = useState<EmpleadoSortDirection>('asc');
@@ -254,11 +255,13 @@ export function AttendanceCollaboratorsScreen(): React.JSX.Element {
   };
 
   const handleView = (collaborator: AttendanceCollaborator) => {
-    if (!collaborator.locationId) {
-      toast.error('Este colaborador no tiene una sede asignada.');
+    // ROTANTE: sin sede fija — abrir tarjeta con la sede del filtro de contexto.
+    const sedeId = collaborator.locationId ?? state.locationId.trim();
+    if (!sedeId) {
+      toast.error('Seleccione una sede en el filtro para ver la tarjeta de un rotante.');
       return;
     }
-    navigate(ATTENDANCE_ROUTES.employeeCard(collaborator.locationId, collaborator.userId));
+    navigate(ATTENDANCE_ROUTES.employeeCard(sedeId, collaborator.userId));
   };
 
   const handleTogglePortalWorker = async (employeeDetailsId: string, enabled: boolean) => {
@@ -304,9 +307,11 @@ export function AttendanceCollaboratorsScreen(): React.JSX.Element {
   const inactiveCount = summary?.inactive ?? 0;
   const page = pagination?.page ?? state.page;
   const pageSize = pagination?.pageSize ?? state.pageSize;
-  const totalPages = pagination?.totalPages ?? 1;
-  const pageStart = totalCount === 0 ? 0 : (page - 1) * pageSize + 1;
-  const pageEnd = Math.min(page * pageSize, totalCount);
+  const {
+    totalPages,
+    summary: paginationSummary,
+    pageLabel,
+  } = getTablePaginationRange(page, pageSize, totalCount);
 
   const areaOptions = [
     { value: 'all', label: 'Todas las áreas' },
@@ -607,7 +612,8 @@ export function AttendanceCollaboratorsScreen(): React.JSX.Element {
             pagination={{
               page,
               totalPages,
-              summary: `${pageStart}-${pageEnd} de ${totalCount}`,
+              summary: paginationSummary,
+              pageLabel,
               onPrevious: () => setPage(Math.max(1, page - 1)),
               onNext: () => setPage(Math.min(totalPages, page + 1)),
             }}

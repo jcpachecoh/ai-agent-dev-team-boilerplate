@@ -11,11 +11,13 @@ import type {
   PayrollReportExportFormat,
   PayrollReportQuery,
   PayrollReportResponse,
+  SenaQuotaResponse,
 } from '../types/payroll-reports.types';
 import type {
   CreatePayrollEmployeeInput,
   PayrollEmployee,
   PayrollEmployeesFilters,
+  PayrollEmployeesListResponse,
   UpdatePayrollEmployeeInput,
 } from '../types/payroll.types';
 
@@ -173,6 +175,12 @@ export function getPayrollReport(query: PayrollReportQuery): Promise<PayrollRepo
   return payrollFetch<PayrollReportResponse>(`/reports/payroll${params}`);
 }
 
+/** OS-599 — estimación de cuota SENA (no oficial). tenantId solo vía auth headers. */
+export function getSenaQuota(period: string): Promise<SenaQuotaResponse> {
+  const params = toQueryString({ period });
+  return payrollFetch<SenaQuotaResponse>(`/reports/sena-quota${params}`);
+}
+
 export function getAttendanceReport(
   query: AttendanceReportQuery,
 ): Promise<AttendanceReportResponse> {
@@ -219,7 +227,7 @@ export function exportAttendanceReport(
 
 export function listPayrollEmployees(
   filters: PayrollEmployeesFilters = {},
-): Promise<PayrollEmployee[]> {
+): Promise<PayrollEmployeesListResponse> {
   const query = toQueryString({
     locationId: filters.locationId,
     contractType: filters.contractType,
@@ -232,7 +240,7 @@ export function listPayrollEmployees(
     limit: filters.limit,
     offset: filters.offset,
   });
-  return payrollFetch<PayrollEmployee[]>(`/employees${query}`);
+  return payrollFetch<PayrollEmployeesListResponse>(`/employees${query}`);
 }
 
 const PAYROLL_EMPLOYEES_MAX_PAGE_SIZE = 100;
@@ -249,9 +257,9 @@ export async function listAllPayrollEmployees(
       limit: PAYROLL_EMPLOYEES_MAX_PAGE_SIZE,
       offset,
     });
-    employees.push(...page);
+    employees.push(...page.items);
 
-    if (page.length < PAYROLL_EMPLOYEES_MAX_PAGE_SIZE) {
+    if (page.items.length < PAYROLL_EMPLOYEES_MAX_PAGE_SIZE) {
       return employees;
     }
 

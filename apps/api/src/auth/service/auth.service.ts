@@ -29,6 +29,7 @@ import type { LoginDto } from '../controller/dto/login.dto';
 const SALT_ROUNDS = 12;
 const ACCESS_TOKEN_TTL = '60m';
 const REFRESH_TOKEN_TTL = '7d';
+const KIOSK_MARKING_TOKEN_TTL_SECONDS = 20 * 60; // 20 min
 const DEFAULT_ROLE_CODE = 'OPERATOR';
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOCK_DURATION_MS = 15 * 60 * 1000;
@@ -326,6 +327,51 @@ export class AuthService implements IAuthService {
       accessToken: session.accessToken,
       refreshToken: session.refreshToken,
     };
+  }
+
+  async issueKioskMarkingToken(
+    adminUserId: string,
+    tenantId: string,
+    locationId: string,
+    sessionId: string,
+  ): Promise<{ accessToken: string; expiresAt: Date }> {
+    const resolvedTenantId = this.requireTenantId(tenantId);
+    const trimmedLocationId = locationId.trim();
+    const trimmedSessionId = sessionId.trim();
+    if (!trimmedLocationId) {
+      throw new BadRequestException('locationId is required');
+    }
+    if (!trimmedSessionId) {
+      throw new BadRequestException('sessionId is required');
+    }
+
+    const claims = await this.resolveJwtPayload(adminUserId);
+    if (claims.tenantId !== resolvedTenantId) {
+      throw new ForbiddenException('Tenant mismatch');
+    }
+
+    const expiresAt = new Date(Date.now() + KIOSK_MARKING_TOKEN_TTL_SECONDS * 1000);
+    const payload: JwtPayload = {
+      ...claims,
+      tenantId: resolvedTenantId,
+      locationId: trimmedLocationId,
+      tokenType: 'KIOSK_MARKING',
+      sessionId: trimmedSessionId,
+    };
+
+    const accessToken = await this.jwtService.signAsync(payload, {
+      expiresIn: KIOSK_MARKING_TOKEN_TTL_SECONDS,
+    });
+
+    return { accessToken, expiresAt };
+  }
+
+  async verifyUserPassword(userId: string, password: string): Promise<boolean> {
+    const user = await this.authRepository.findByIdForAuth(userId);
+    if (!user || !user.isActive || user.deletedAt) {
+      return false;
+    }
+    return bcrypt.compare(password, user.passwordHash);
   }
 
   async changePassword(

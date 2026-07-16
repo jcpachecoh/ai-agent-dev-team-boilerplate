@@ -1,0 +1,31 @@
+@use '../styles/payroll-report-panel' as prp;
+
+.panel {
+  @include prp.payroll-report-panel;
+}
+
+.body {
+  @include prp.payroll-report-body;
+}
+
+.errorText {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--prp-text);
+}
+
+.retryButton {
+  align-self: flex-start;
+  margin-top: 4px;
+  padding: 6px 12px;
+  border-radius: 4px;
+  border: 1px solid var(--prp-border);
+  background: var(--prp-header);
+  color: var(--prp-text);
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.retryButton:hover {
+  background: var(--prp-hover);
+}
