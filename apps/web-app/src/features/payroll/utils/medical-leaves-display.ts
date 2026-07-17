@@ -85,9 +85,16 @@ export function canMarkRecovered(status: LeaveStatus): boolean {
   return status === 'RADICADA_EPS';
 }
 
+/**
+ * NOM-13: el rechazo solo aplica mientras la incapacidad está REGISTRADA.
+ * Una vez radicada ante EPS/ARL, el caso pasa a gestión manual de RRHH.
+ */
 export function canRejectMedicalLeave(status: LeaveStatus): boolean {
-  return status === 'REGISTRADA' || status === 'RADICADA_EPS';
+  return status === 'REGISTRADA';
 }
+
+export const MEDICAL_LEAVE_MANUAL_REJECTION_NOTE =
+  'Una incapacidad radicada ante EPS/ARL ya no puede rechazarse desde el sistema; ese caso requiere gestión manual de RRHH.';
 
 /** El soporte solo se puede editar antes de confirmar la recobrada (o el rechazo). */
 export function canEditMedicalLeaveSupport(status: LeaveStatus): boolean {

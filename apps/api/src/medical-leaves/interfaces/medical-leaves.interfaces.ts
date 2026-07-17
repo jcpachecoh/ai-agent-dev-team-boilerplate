@@ -123,6 +123,13 @@ export interface UpdateMedicalLeaveData {
   employerAmount?: Decimal;
 }
 
+/** Metadatos de auditoría del rechazo de una incapacidad (NOM-13 / OS-324). */
+export interface MedicalLeaveRejectionAudit {
+  actorUserId: string;
+  oldValue: Record<string, unknown>;
+  newValue: Record<string, unknown>;
+}
+
 /** Incapacidad activa que intersecta un período de liquidación (task 07). */
 export interface MedicalLeavePayrollPeriodRange {
   id: string;
@@ -141,6 +148,12 @@ export interface IMedicalLeavesRepository {
   findById(tenantId: string, id: string): Promise<MedicalLeaveRecord | null>;
   create(tenantId: string, data: CreateMedicalLeaveData): Promise<MedicalLeaveRecord>;
   update(tenantId: string, id: string, data: UpdateMedicalLeaveData): Promise<MedicalLeaveRecord>;
+  updateWithRejectionAudit(
+    tenantId: string,
+    id: string,
+    data: UpdateMedicalLeaveData,
+    audit: MedicalLeaveRejectionAudit,
+  ): Promise<MedicalLeaveRecord>;
   softDelete(tenantId: string, id: string): Promise<MedicalLeaveRecord>;
   listSummaries(
     tenantId: string,

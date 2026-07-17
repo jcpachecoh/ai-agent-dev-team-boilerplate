@@ -14,6 +14,7 @@ import type {
 } from '../types/medical-leaves.types';
 import {
   LEAVE_ORIGIN_LABELS,
+  MEDICAL_LEAVE_MANUAL_REJECTION_NOTE,
   canEditMedicalLeaveSupport,
   canMarkRecovered,
   canRadicateMedicalLeave,
@@ -195,6 +196,10 @@ export function MedicalLeaveDetailModal({
             leave={detail}
             annualAccumulatedDays={detail.annualAccumulatedDays}
           />
+
+          {canWrite && detail.status === 'RADICADA_EPS' ? (
+            <p className={styles.successNote}>{MEDICAL_LEAVE_MANUAL_REJECTION_NOTE}</p>
+          ) : null}
 
           <div className={styles.supportBlock}>
             <span className={styles.label}>Soporte médico</span>

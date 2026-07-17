@@ -38,12 +38,17 @@ export interface MedicalLeaveSupportDocumentFile {
 
 const ANNUAL_DAYS_WARNING_THRESHOLD = 180;
 
+// NOM-13: el rechazo solo aplica mientras la incapacidad está REGISTRADA.
+// Una vez radicada ante EPS/ARL, la corrección pasa a gestión manual de RRHH.
 const ALLOWED_STATUS_TRANSITIONS: Readonly<Record<LeaveStatus, readonly LeaveStatus[]>> = {
   [LeaveStatus.REGISTRADA]: [LeaveStatus.RADICADA_EPS, LeaveStatus.RECHAZADA],
-  [LeaveStatus.RADICADA_EPS]: [LeaveStatus.RECOBRADA, LeaveStatus.RECHAZADA],
+  [LeaveStatus.RADICADA_EPS]: [LeaveStatus.RECOBRADA],
   [LeaveStatus.RECOBRADA]: [],
   [LeaveStatus.RECHAZADA]: [],
 };
+
+const REJECTION_AFTER_RADICADA_MESSAGE =
+  'No se puede rechazar una incapacidad ya radicada ante EPS/ARL. Este caso debe gestionarse manualmente por RRHH.';
 
 @Injectable()
 export class MedicalLeavesService implements IMedicalLeavesService {
@@ -113,6 +118,11 @@ export class MedicalLeavesService implements IMedicalLeavesService {
     await this.assertNominaWrite(tenantId, actorUserId);
 
     const leave = await this.requireLeave(tenantId, id);
+
+    if (input.status === LeaveStatus.RECHAZADA && leave.status !== LeaveStatus.REGISTRADA) {
+      throw new BadRequestException(REJECTION_AFTER_RADICADA_MESSAGE);
+    }
+
     this.assertValidStatusTransition(leave.status, input.status);
 
     if (input.status === LeaveStatus.RECHAZADA && !input.rejectionReason?.trim()) {
@@ -137,6 +147,17 @@ export class MedicalLeavesService implements IMedicalLeavesService {
     } else if (input.status === LeaveStatus.RECHAZADA) {
       updateData.rejectedAt = now;
       updateData.rejectionReason = input.rejectionReason?.trim() ?? null;
+
+      // NOM-13/OS-324: el rechazo queda auditado (quién, cuándo, motivo).
+      return this.medicalLeavesRepository.updateWithRejectionAudit(tenantId, id, updateData, {
+        actorUserId,
+        oldValue: { status: leave.status },
+        newValue: {
+          status: LeaveStatus.RECHAZADA,
+          rejectionReason: updateData.rejectionReason,
+          rejectedAt: now.toISOString(),
+        },
+      });
     }
 
     return this.medicalLeavesRepository.update(tenantId, id, updateData);
@@ -284,8 +305,11 @@ export class MedicalLeavesService implements IMedicalLeavesService {
       dateTo: input.endDate,
     });
 
+    // NOM-13: una incapacidad RECHAZADA no bloquea el nuevo registro con las
+    // mismas fechas — el flujo esperado es "rechazar y crear uno nuevo".
     const duplicate = candidates.find(
       (leave) =>
+        leave.status !== LeaveStatus.RECHAZADA &&
         this.isSameCalendarDate(leave.startDate, input.startDate) &&
         this.isSameCalendarDate(leave.endDate, input.endDate),
     );
