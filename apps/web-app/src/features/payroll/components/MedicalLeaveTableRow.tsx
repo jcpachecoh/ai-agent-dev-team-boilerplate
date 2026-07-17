@@ -5,7 +5,7 @@ import {
   resolveEmpleadoInitials,
   type EmpleadoTheme,
 } from '@restopsiq/ui';
-import { Check, Download, X } from 'lucide-react';
+import { Check, DollarSign, Download, X } from 'lucide-react';
 import type { CSSProperties } from 'react';
 
 import type { MedicalLeaveSummary } from '../types/medical-leaves.types';
@@ -95,6 +95,7 @@ export function MedicalLeaveTableRow({
             variant="view"
             theme={theme}
             onClick={onView}
+            title="Ver"
             aria-label="Ver detalle de incapacidad"
           />
           {leave.supportStorageObjectId ? (
@@ -103,6 +104,7 @@ export function MedicalLeaveTableRow({
               theme={theme}
               onClick={onDownload}
               disabled={downloading}
+              title="Descargar"
               aria-label="Descargar soporte médico"
               icon={<Download aria-hidden />}
             />
@@ -115,18 +117,22 @@ export function MedicalLeaveTableRow({
               icon={<Check aria-hidden />}
               onClick={onRadicate}
               disabled={statusBusy}
+              title="Radicar"
               aria-label="Radicar incapacidad"
             />
           ) : null}
           {canMarkRecovered(leave.status) ? (
-            <button
-              type="button"
-              className={styles.textAction}
+            <EmpleadoRowActionButton
+              variant="toggle"
+              active
+              theme={theme}
+              icon={<DollarSign aria-hidden />}
               onClick={onRecovered}
               disabled={statusBusy}
-            >
-              Recobrada
-            </button>
+              title="Recobrar"
+              aria-label="Marcar incapacidad como recobrada"
+              className={styles.recoverAction}
+            />
           ) : null}
           {canRejectMedicalLeave(leave.status) ? (
             <EmpleadoRowActionButton
@@ -134,6 +140,7 @@ export function MedicalLeaveTableRow({
               theme={theme}
               icon={<X aria-hidden />}
               onClick={onReject}
+              title="Rechazar"
               aria-label="Rechazar incapacidad"
               className={styles.rejectAction}
             />

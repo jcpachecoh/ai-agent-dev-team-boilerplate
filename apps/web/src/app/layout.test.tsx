@@ -4,6 +4,21 @@ import { render, screen } from '@testing-library/react';
 import RootLayout, { metadata } from './layout';
 
 describe('RootLayout', () => {
+  beforeEach(() => {
+    // RootLayout renders <html>, which jsdom cannot host under any container.
+    // React 19's DOM-nesting validator warns even though its singleton handling
+    // renders the layout correctly. Suppress only that known false alarm.
+    const originalError = console.error.bind(console);
+    jest.spyOn(console, 'error').mockImplementation((...args: unknown[]) => {
+      const isKnownNestingWarning =
+        typeof args[0] === 'string' && args[0].includes('cannot be a child of');
+      if (isKnownNestingWarning) {
+        return;
+      }
+      originalError(...(args as Parameters<typeof console.error>));
+    });
+  });
+
   it('renders children', () => {
     render(<RootLayout>{'content'}</RootLayout>);
     expect(screen.getByText('content')).toBeInTheDocument();

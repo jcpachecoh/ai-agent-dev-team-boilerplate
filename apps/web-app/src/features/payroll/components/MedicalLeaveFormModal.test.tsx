@@ -91,6 +91,13 @@ function renderModal(open = true) {
   );
 }
 
+function attachSupportFile() {
+  const fileInput = document.querySelector<HTMLInputElement>('input[type="file"]');
+  if (!fileInput) throw new Error('No se encontró el input de archivo');
+  const file = new File(['soporte'], 'incapacidad.pdf', { type: 'application/pdf' });
+  fireEvent.change(fileInput, { target: { files: [file] } });
+}
+
 describe('MedicalLeaveFormModal', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -124,6 +131,7 @@ describe('MedicalLeaveFormModal', () => {
     fireEvent.change(screen.getByLabelText('Fecha fin'), {
       target: { value: '2026-03-01' },
     });
+    attachSupportFile();
 
     await userEvent.click(screen.getByRole('button', { name: 'Registrar' }));
 
@@ -133,7 +141,8 @@ describe('MedicalLeaveFormModal', () => {
     expect(registerMutateAsync).not.toHaveBeenCalled();
   });
 
-  it('muestra la alerta de 180 días cuando el API lo indica tras registrar', async () => {
+  it('exige el soporte médico antes de registrar la incapacidad', async () => {
+    uploadMutateAsync.mockResolvedValue({ supportStorageObjectId: 'obj-1' });
     renderModal();
 
     fireEvent.change(screen.getByLabelText('medical-leave-employee'), {
@@ -148,10 +157,42 @@ describe('MedicalLeaveFormModal', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'Registrar' }));
 
+    expect(
+      await screen.findByText('El soporte médico es obligatorio para registrar la incapacidad'),
+    ).toBeInTheDocument();
+    expect(registerMutateAsync).not.toHaveBeenCalled();
+
+    attachSupportFile();
+    await userEvent.click(screen.getByRole('button', { name: 'Registrar' }));
+
+    await waitFor(() => {
+      expect(registerMutateAsync).toHaveBeenCalled();
+    });
+    expect(uploadMutateAsync).toHaveBeenCalled();
+  });
+
+  it('muestra la alerta de 180 días cuando el API lo indica tras registrar', async () => {
+    uploadMutateAsync.mockResolvedValue({ supportStorageObjectId: 'obj-1' });
+    renderModal();
+
+    fireEvent.change(screen.getByLabelText('medical-leave-employee'), {
+      target: { value: 'emp-1' },
+    });
+    fireEvent.change(screen.getByLabelText('Fecha inicio'), {
+      target: { value: '2026-03-01' },
+    });
+    fireEvent.change(screen.getByLabelText('Fecha fin'), {
+      target: { value: '2026-03-05' },
+    });
+    attachSupportFile();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Registrar' }));
+
     await waitFor(() => {
       expect(registerMutateAsync).toHaveBeenCalled();
     });
 
+    expect(uploadMutateAsync).toHaveBeenCalled();
     expect(await screen.findByText(MEDICAL_LEAVE_180_DAY_WARNING)).toBeInTheDocument();
     expect(screen.getByRole('alert')).toBeInTheDocument();
   });

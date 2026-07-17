@@ -1,5 +1,5 @@
 import { Button, Modal, toast } from '@restopsiq/ui';
-import { Download } from 'lucide-react';
+import { Download, FileText } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import { useTheme } from '@/providers/ThemeProvider';
@@ -14,6 +14,7 @@ import type {
 } from '../types/medical-leaves.types';
 import {
   LEAVE_ORIGIN_LABELS,
+  canEditMedicalLeaveSupport,
   canMarkRecovered,
   canRadicateMedicalLeave,
   canRejectMedicalLeave,
@@ -47,17 +48,25 @@ export function MedicalLeaveDetailModal({
   const detailQuery = useMedicalLeaveDetailQuery(leaveId ?? undefined, open && !!leaveId);
   const { updateStatusMutation, uploadSupportMutation } = useMedicalLeaveMutations(listFilters);
 
-  const [detailUploadFile, setDetailUploadFile] = useState<File | null>(null);
-  const [detailUploadError, setDetailUploadError] = useState<string | null>(null);
   const [downloading, setDownloading] = useState(false);
+  const [editingSupport, setEditingSupport] = useState(false);
+  const [replacementFile, setReplacementFile] = useState<File | null>(null);
+  const [replacementError, setReplacementError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) {
-      setDetailUploadFile(null);
-      setDetailUploadError(null);
       setDownloading(false);
+      setEditingSupport(false);
+      setReplacementFile(null);
+      setReplacementError(null);
     }
   }, [open, leaveId]);
+
+  const closeSupportEditor = () => {
+    setEditingSupport(false);
+    setReplacementFile(null);
+    setReplacementError(null);
+  };
 
   const handleStatusChange = async (status: LeaveStatus) => {
     if (!leaveId) return;
@@ -72,19 +81,18 @@ export function MedicalLeaveDetailModal({
     }
   };
 
-  const handleUploadSupport = async () => {
-    if (!leaveId || !detailUploadFile) {
-      toast.error('Selecciona un archivo de soporte');
+  const handleReplaceSupport = async () => {
+    if (!leaveId || !replacementFile) {
+      setReplacementError('Selecciona un archivo de soporte');
       return;
     }
     try {
-      await uploadSupportMutation.mutateAsync({ id: leaveId, file: detailUploadFile });
-      setDetailUploadFile(null);
-      setDetailUploadError(null);
+      await uploadSupportMutation.mutateAsync({ id: leaveId, file: replacementFile });
       await detailQuery.refetch();
-      toast.success('Soporte médico adjuntado');
+      toast.success('Soporte médico actualizado');
+      closeSupportEditor();
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'No se pudo adjuntar el soporte';
+      const message = error instanceof Error ? error.message : 'No se pudo actualizar el soporte';
       toast.error(message);
     }
   };
@@ -111,6 +119,7 @@ export function MedicalLeaveDetailModal({
   const detail = detailQuery.data;
   const busy =
     updateStatusMutation.isPending || uploadSupportMutation.isPending || detailQuery.isLoading;
+  const supportEditable = canWrite && !!detail && canEditMedicalLeaveSupport(detail.status);
 
   return (
     <Modal
@@ -187,29 +196,67 @@ export function MedicalLeaveDetailModal({
             annualAccumulatedDays={detail.annualAccumulatedDays}
           />
 
-          {canWrite && !detail.supportStorageObjectId ? (
-            <div className={styles.uploadBlock}>
-              <span className={styles.label}>Adjuntar soporte médico</span>
-              <MedicalLeaveSupportFileUpload
-                resetKey={leaveId}
-                disabled={uploadSupportMutation.isPending}
-                error={detailUploadError}
-                onErrorChange={setDetailUploadError}
-                onChange={setDetailUploadFile}
-                description="Requerido antes de radicar ante EPS/ARL"
-              />
-              <Button
-                type="button"
-                variant="secondary"
-                disabled={!detailUploadFile || uploadSupportMutation.isPending}
-                onClick={() => void handleUploadSupport()}
-              >
-                {uploadSupportMutation.isPending ? 'Subiendo…' : 'Subir soporte'}
-              </Button>
-            </div>
-          ) : detail.supportStorageObjectId ? (
-            <p className={styles.successNote}>Soporte médico adjuntado correctamente.</p>
-          ) : null}
+          <div className={styles.supportBlock}>
+            <span className={styles.label}>Soporte médico</span>
+            {detail.supportStorageObjectId ? (
+              <div className={styles.supportFile}>
+                <FileText size={18} aria-hidden className={styles.supportFileIcon} />
+                <span className={styles.supportFileName}>Soporte médico adjuntado</span>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  disabled={downloading}
+                  onClick={() => void handleDownloadSupport()}
+                >
+                  {downloading ? 'Abriendo…' : 'Ver archivo'}
+                </Button>
+                {supportEditable && !editingSupport ? (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    disabled={busy}
+                    onClick={() => setEditingSupport(true)}
+                  >
+                    Editar
+                  </Button>
+                ) : null}
+              </div>
+            ) : (
+              <p className={styles.successNote}>Esta incapacidad no tiene soporte adjunto.</p>
+            )}
+
+            {supportEditable && (editingSupport || !detail.supportStorageObjectId) ? (
+              <div className={styles.supportEditor}>
+                <MedicalLeaveSupportFileUpload
+                  resetKey={leaveId}
+                  disabled={uploadSupportMutation.isPending}
+                  error={replacementError}
+                  onErrorChange={setReplacementError}
+                  onChange={setReplacementFile}
+                  description="El nuevo archivo reemplaza el soporte actual · PDF, JPG o PNG · máximo 10 MB"
+                />
+                <div className={styles.supportEditorActions}>
+                  {detail.supportStorageObjectId ? (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      disabled={uploadSupportMutation.isPending}
+                      onClick={closeSupportEditor}
+                    >
+                      Cancelar
+                    </Button>
+                  ) : null}
+                  <Button
+                    type="button"
+                    disabled={!replacementFile || uploadSupportMutation.isPending}
+                    onClick={() => void handleReplaceSupport()}
+                  >
+                    {uploadSupportMutation.isPending ? 'Guardando…' : 'Guardar soporte'}
+                  </Button>
+                </div>
+              </div>
+            ) : null}
+          </div>
         </div>
       ) : (
         <p className={styles.successNote}>No se pudo cargar el detalle de la incapacidad.</p>

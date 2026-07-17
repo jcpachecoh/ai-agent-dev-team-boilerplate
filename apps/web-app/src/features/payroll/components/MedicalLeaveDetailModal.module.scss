@@ -6,7 +6,7 @@
   gap: 16px;
 }
 
-.uploadBlock {
+.supportBlock {
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -14,6 +14,36 @@
   border: 1px solid var(--color-border);
   border-radius: 8px;
   background: var(--color-bg-surface-raised);
+}
+
+.supportFile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.supportFileIcon {
+  flex-shrink: 0;
+  color: var(--color-text-secondary);
+}
+
+.supportFileName {
+  flex: 1;
+  font-size: 0.8125rem;
+  color: var(--color-text-primary);
+}
+
+.supportEditor {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.supportEditorActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
 .label {

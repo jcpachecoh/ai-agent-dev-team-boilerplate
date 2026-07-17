@@ -27,12 +27,20 @@
   text-transform: uppercase;
 }
 
+.tableFill {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
 .toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
+  flex: 0 0 auto;
   margin-bottom: 16px;
 }
 

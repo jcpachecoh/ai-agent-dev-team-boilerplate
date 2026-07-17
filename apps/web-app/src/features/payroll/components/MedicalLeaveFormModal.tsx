@@ -32,6 +32,18 @@ function filterEmployeeOptions(
   return options.filter((option) => option.label.toLowerCase().includes(normalized));
 }
 
+/** Abre el date picker nativo al hacer clic en cualquier parte del campo de fecha. */
+function openDatePicker(event: React.MouseEvent<HTMLInputElement>): void {
+  const input = event.currentTarget;
+  if (typeof input.showPicker === 'function') {
+    try {
+      input.showPicker();
+    } catch {
+      // showPicker puede lanzar si el input no está activo; se ignora sin romper el clic.
+    }
+  }
+}
+
 type FormValues = MedicalLeaveFormSchema;
 
 const schema = medicalLeaveFormSchema;
@@ -132,6 +144,12 @@ export function MedicalLeaveFormModal({
   };
 
   const onSubmit = async (values: FormValues) => {
+    // El soporte médico es obligatorio: sin archivo no se crea la novedad.
+    if (!selectedFile) {
+      setFileError('El soporte médico es obligatorio para registrar la incapacidad');
+      return;
+    }
+
     try {
       const created = await registerMutation.mutateAsync({
         employeeId: values.employeeId,
@@ -140,14 +158,11 @@ export function MedicalLeaveFormModal({
         endDate: values.endDate,
       });
 
-      let finalLeave = created;
-      if (selectedFile) {
-        finalLeave = {
-          ...created,
-          ...(await uploadSupportMutation.mutateAsync({ id: created.id, file: selectedFile })),
-        };
-        clearFile();
-      }
+      const finalLeave = {
+        ...created,
+        ...(await uploadSupportMutation.mutateAsync({ id: created.id, file: selectedFile })),
+      };
+      clearFile();
 
       setCreatedLeave(finalLeave);
       setStep('success');
@@ -156,25 +171,6 @@ export function MedicalLeaveFormModal({
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'No se pudo registrar la incapacidad';
-      toast.error(message);
-    }
-  };
-
-  const handleUploadSupport = async () => {
-    if (!createdLeave || !selectedFile) {
-      setFileError('Selecciona un archivo de soporte');
-      return;
-    }
-    try {
-      const updated = await uploadSupportMutation.mutateAsync({
-        id: createdLeave.id,
-        file: selectedFile,
-      });
-      setCreatedLeave({ ...createdLeave, ...updated });
-      toast.success('Soporte médico adjuntado');
-      clearFile();
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'No se pudo adjuntar el soporte';
       toast.error(message);
     }
   };
@@ -196,11 +192,21 @@ export function MedicalLeaveFormModal({
           : 'Revisa el desglose calculado y adjunta el soporte médico si lo tienes disponible.'
       }
       onInteractOutside={(event) => {
-        if (busy) event.preventDefault();
+        // El date picker nativo se renderiza fuera del DOM del diálogo; si no se
+        // previene, Radix lo interpreta como clic externo y cierra el modal.
+        event.preventDefault();
       }}
     >
       {step === 'form' ? (
-        <form className={styles.form} onSubmit={(event) => void handleSubmit(onSubmit)(event)}>
+        <form
+          className={styles.form}
+          onSubmit={(event) => {
+            if (!selectedFile) {
+              setFileError('El soporte médico es obligatorio para registrar la incapacidad');
+            }
+            void handleSubmit(onSubmit)(event);
+          }}
+        >
           <label className={styles.field}>
             <span className={styles.label}>Empleado</span>
             <Controller
@@ -252,6 +258,7 @@ export function MedicalLeaveFormModal({
                 type="date"
                 className={styles.input}
                 {...register('startDate')}
+                onClick={openDatePicker}
               />
               {errors.startDate ? (
                 <span className={styles.error}>{errors.startDate.message}</span>
@@ -264,6 +271,7 @@ export function MedicalLeaveFormModal({
                 type="date"
                 className={styles.input}
                 {...register('endDate')}
+                onClick={openDatePicker}
               />
               {errors.endDate ? (
                 <span className={styles.error}>{errors.endDate.message}</span>
@@ -272,11 +280,12 @@ export function MedicalLeaveFormModal({
           </div>
 
           <div className={styles.field}>
-            <span className={styles.label}>Soporte médico (opcional al registrar)</span>
+            <span className={styles.label}>Soporte médico *</span>
             <MedicalLeaveSupportFileUpload
               resetKey={uploadResetKey}
               disabled={busy}
               error={fileError}
+              description="Requerido para registrar · PDF, JPG o PNG · máximo 10 MB"
               onErrorChange={setFileError}
               onChange={setSelectedFile}
             />
@@ -301,29 +310,7 @@ export function MedicalLeaveFormModal({
             annualAccumulatedDays={createdLeave.annualAccumulatedDays}
           />
 
-          {!createdLeave.supportStorageObjectId ? (
-            <div className={styles.uploadBlock}>
-              <span className={styles.label}>Adjuntar soporte médico</span>
-              <MedicalLeaveSupportFileUpload
-                resetKey={uploadResetKey}
-                disabled={uploadSupportMutation.isPending}
-                error={fileError}
-                onErrorChange={setFileError}
-                onChange={setSelectedFile}
-                description="Requerido antes de radicar ante EPS/ARL"
-              />
-              <Button
-                type="button"
-                variant="secondary"
-                disabled={!selectedFile || uploadSupportMutation.isPending}
-                onClick={() => void handleUploadSupport()}
-              >
-                {uploadSupportMutation.isPending ? 'Subiendo…' : 'Subir soporte'}
-              </Button>
-            </div>
-          ) : (
-            <p className={styles.successNote}>Soporte médico adjuntado correctamente.</p>
-          )}
+          <p className={styles.successNote}>Soporte médico adjuntado correctamente.</p>
 
           <div className={styles.actions}>
             <Button type="button" onClick={onClose}>

@@ -53,10 +53,19 @@
 }
 
 .variant--view,
-.variant--toggle {
+.variant--toggle,
+.variant--history {
   background: var(--empleado-hover);
   border-color: var(--empleado-border);
-  color: var(--empleado-faint);
+  // Usar muted (no faint) para que el ícono sea legible en dark mode.
+  color: var(--empleado-muted);
+}
+
+.variant--view:hover:not(:disabled),
+.variant--toggle:hover:not(:disabled),
+.variant--history:hover:not(:disabled) {
+  color: var(--empleado-text);
+  background: var(--empleado-hover);
 }
 
 .toggleActive {

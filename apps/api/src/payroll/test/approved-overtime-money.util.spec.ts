@@ -247,6 +247,128 @@ describe('computeApprovedOvertimeMoney', (): void => {
     expect(result.usedLegacyAutomatic).toBe(false);
   });
 
+  it('requests sin payrollPeriod usan el rango fallback para filtrar logs', (): void => {
+    const result = computeApprovedOvertimeMoney({
+      requests: [adminRequest({ payrollPeriod: null })],
+      logs: [
+        // Log fuera del rango fallback — debe descartarse
+        {
+          eventType: AttendanceEventType.ENTRY,
+          markingScope: AttendanceMarkingScope.OVERTIME,
+          timestamp: new Date('2026-02-10T03:00:00.000Z'),
+          isActive: true,
+        },
+        // Par dentro del rango; isActive omitido para ejercer el default `?? true`
+        {
+          eventType: AttendanceEventType.ENTRY,
+          markingScope: AttendanceMarkingScope.OVERTIME,
+          timestamp: new Date('2026-03-17T03:00:00.000Z'),
+        },
+        {
+          eventType: AttendanceEventType.EXIT,
+          markingScope: AttendanceMarkingScope.OVERTIME,
+          timestamp: new Date('2026-03-17T04:00:00.000Z'),
+        },
+      ],
+      rangeStart: RANGE_START,
+      rangeEnd: RANGE_END,
+      legalSnapshot: SNAPSHOT,
+      resolveSalaryAt: (): Prisma.Decimal => SALARY,
+    });
+
+    // 60 min ∩ ventana admin nocturna; 10000 * 1.75 * 1h = 17500
+    expect(result.amount.toFixed(2)).toBe('17500.00');
+    expect(result.liquidableMinutes).toBe(60);
+  });
+
+  it('legacy: accumulatedMinutes null o 0 no aportan dinero', (): void => {
+    const result = computeApprovedOvertimeMoney({
+      requests: [
+        autoRequest({ id: 'auto-null', accumulatedMinutes: null }),
+        autoRequest({ id: 'auto-zero', accumulatedMinutes: 0 }),
+      ],
+      logs: [],
+      rangeStart: RANGE_START,
+      rangeEnd: RANGE_END,
+      legalSnapshot: SNAPSHOT,
+      resolveSalaryAt: (): Prisma.Decimal => SALARY,
+    });
+
+    expect(result.usedLegacyAutomatic).toBe(true);
+    expect(result.amount.toFixed(2)).toBe('0.00');
+    expect(result.sourceIds).toEqual([]);
+  });
+
+  it('legacy: sin salario resoluble no aporta dinero', (): void => {
+    const result = computeApprovedOvertimeMoney({
+      requests: [autoRequest()],
+      logs: [],
+      rangeStart: RANGE_START,
+      rangeEnd: RANGE_END,
+      legalSnapshot: SNAPSHOT,
+      resolveSalaryAt: (): null => null,
+    });
+
+    expect(result.usedLegacyAutomatic).toBe(true);
+    expect(result.amount.toFixed(2)).toBe('0.00');
+  });
+
+  it('intervalo liquidable menor a un minuto se descarta', (): void => {
+    const result = computeApprovedOvertimeMoney({
+      requests: [autoRequest()],
+      logs: [
+        {
+          eventType: AttendanceEventType.ENTRY,
+          markingScope: AttendanceMarkingScope.OVERTIME,
+          timestamp: new Date('2026-03-17T03:00:00.000Z'),
+          isActive: true,
+        },
+        {
+          eventType: AttendanceEventType.EXIT,
+          markingScope: AttendanceMarkingScope.OVERTIME,
+          timestamp: new Date('2026-03-17T03:00:30.000Z'),
+          isActive: true,
+        },
+      ],
+      rangeStart: RANGE_START,
+      rangeEnd: RANGE_END,
+      legalSnapshot: SNAPSHOT,
+      resolveSalaryAt: (): Prisma.Decimal => SALARY,
+    });
+
+    expect(result.usedLegacyAutomatic).toBe(false);
+    expect(result.amount.toFixed(2)).toBe('0.00');
+    expect(result.liquidableMinutes).toBe(0);
+  });
+
+  it('intervalo liquidable sin salario resoluble no aporta dinero', (): void => {
+    const result = computeApprovedOvertimeMoney({
+      requests: [autoRequest()],
+      logs: [
+        {
+          eventType: AttendanceEventType.ENTRY,
+          markingScope: AttendanceMarkingScope.OVERTIME,
+          timestamp: new Date('2026-03-17T03:00:00.000Z'),
+          isActive: true,
+        },
+        {
+          eventType: AttendanceEventType.EXIT,
+          markingScope: AttendanceMarkingScope.OVERTIME,
+          timestamp: new Date('2026-03-17T04:00:00.000Z'),
+          isActive: true,
+        },
+      ],
+      rangeStart: RANGE_START,
+      rangeEnd: RANGE_END,
+      legalSnapshot: SNAPSHOT,
+      resolveSalaryAt: (): null => null,
+    });
+
+    expect(result.usedLegacyAutomatic).toBe(false);
+    expect(result.amount.toFixed(2)).toBe('0.00');
+    expect(result.liquidableMinutes).toBe(0);
+  });
+
   it('fila admin con metadata nullable incompleta no falla y aporta 0', (): void => {
     const result = computeApprovedOvertimeMoney({
       requests: [

@@ -88,3 +88,8 @@ export function canMarkRecovered(status: LeaveStatus): boolean {
 export function canRejectMedicalLeave(status: LeaveStatus): boolean {
   return status === 'REGISTRADA' || status === 'RADICADA_EPS';
 }
+
+/** El soporte solo se puede editar antes de confirmar la recobrada (o el rechazo). */
+export function canEditMedicalLeaveSupport(status: LeaveStatus): boolean {
+  return status === 'REGISTRADA' || status === 'RADICADA_EPS';
+}

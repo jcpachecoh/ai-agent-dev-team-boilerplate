@@ -3,6 +3,7 @@ import { AttendanceEventType, AttendanceMarkingScope } from '@prisma/client';
 import {
   computeLiquidableOvertimeIntervals,
   intersectMarkedWithWindows,
+  intervalMinutes,
   mergeIntervals,
   pairOvertimeMarkingIntervals,
   subtractIntervals,
@@ -19,7 +20,18 @@ function interval(startIso: string, endIso: string) {
 }
 
 describe('liquidable-overtime-intervals.util', () => {
+  describe('intervalMinutes', () => {
+    it('intervalo inválido (end <= start o no finito) → 0', () => {
+      expect(intervalMinutes({ startMs: 100, endMs: 100 })).toBe(0);
+      expect(intervalMinutes({ startMs: Number.NaN, endMs: 100 })).toBe(0);
+    });
+  });
+
   describe('mergeIntervals', () => {
+    it('descarta intervalos inválidos antes de fusionar', () => {
+      expect(mergeIntervals([{ startMs: 200, endMs: 100 }])).toEqual([]);
+    });
+
     it('fusiona intervalos superpuestos y contiguos', () => {
       expect(
         mergeIntervals([
@@ -185,6 +197,18 @@ describe('liquidable-overtime-intervals.util', () => {
         },
       ]);
       expect(totalIntervalMinutes(pairs)).toBe(60);
+    });
+
+    it('ENTRY sin EXIT correspondiente queda sin emparejar', () => {
+      const pairs = pairOvertimeMarkingIntervals([
+        {
+          eventType: AttendanceEventType.ENTRY,
+          markingScope: AttendanceMarkingScope.OVERTIME,
+          timestamp: new Date('2026-07-16T22:00:00.000-05:00'),
+          isActive: true,
+        },
+      ]);
+      expect(pairs).toEqual([]);
     });
   });
 });

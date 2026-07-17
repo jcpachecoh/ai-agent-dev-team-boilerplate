@@ -12,7 +12,7 @@
 
 Cerrar 3 gaps puntuales detectados en la auditoría de cobertura de OS-548 sobre el dashboard
 `GET /api/attendance/control-panel`, sin tocar el cálculo principal de asistencia ni construir
-funcionalidad fuera de alcance (mapa, geocerca visual, historial de ubicaciones).
+funcionaliddad fuera de alcance (mapa, geocerca visual, historial de ubicaciones).
 
 ---
 

@@ -220,56 +220,58 @@ export function MedicalLeavesScreen(): React.JSX.Element {
       </EmpleadoPageSection>
 
       <EmpleadoPageSection theme={empleadoTheme}>
-        <div className={styles.toolbar}>
-          <span className={styles.count}>
-            {leaves.length} incapacidad{leaves.length === 1 ? '' : 'es'}
-          </span>
-        </div>
+        <div className={styles.tableFill}>
+          <div className={styles.toolbar}>
+            <span className={styles.count}>
+              {leaves.length} incapacidad{leaves.length === 1 ? '' : 'es'}
+            </span>
+          </div>
 
-        {leavesQuery.isLoading ? (
-          <LoadingState
-            message="Cargando incapacidades…"
-            theme={empleadoTheme === 'dark' ? 'dark' : 'light'}
-            layout="compact"
-          />
-        ) : leavesQuery.isError ? (
-          <div className={styles.state}>
-            <p>No se pudo cargar el listado de incapacidades.</p>
-            <button
-              type="button"
-              className={styles.btnSecondary}
-              onClick={() => void leavesQuery.refetch()}
-            >
-              <RefreshCw size={13} aria-hidden />
-              Reintentar
-            </button>
-          </div>
-        ) : leaves.length === 0 ? (
-          <div className={styles.state}>
-            <p>No hay incapacidades para los filtros seleccionados.</p>
-          </div>
-        ) : (
-          <MedicalLeavesTable
-            leaves={pagedLeaves}
-            theme={empleadoTheme}
-            canWrite={canWrite}
-            downloadingId={downloadingId}
-            statusBusy={updateStatusMutation.isPending}
-            pagination={{
-              page,
-              totalPages: range.totalPages,
-              summary: range.summary,
-              pageLabel: range.pageLabel,
-              onPrevious,
-              onNext,
-            }}
-            onView={openDetail}
-            onDownload={(leave) => void handleDownloadSupport(leave)}
-            onRadicate={(leave) => void handleStatusChange(leave.id, 'RADICADA_EPS')}
-            onRecovered={(leave) => void handleStatusChange(leave.id, 'RECOBRADA')}
-            onReject={setRejectTarget}
-          />
-        )}
+          {leavesQuery.isLoading ? (
+            <LoadingState
+              message="Cargando incapacidades…"
+              theme={empleadoTheme === 'dark' ? 'dark' : 'light'}
+              layout="compact"
+            />
+          ) : leavesQuery.isError ? (
+            <div className={styles.state}>
+              <p>No se pudo cargar el listado de incapacidades.</p>
+              <button
+                type="button"
+                className={styles.btnSecondary}
+                onClick={() => void leavesQuery.refetch()}
+              >
+                <RefreshCw size={13} aria-hidden />
+                Reintentar
+              </button>
+            </div>
+          ) : leaves.length === 0 ? (
+            <div className={styles.state}>
+              <p>No hay incapacidades para los filtros seleccionados.</p>
+            </div>
+          ) : (
+            <MedicalLeavesTable
+              leaves={pagedLeaves}
+              theme={empleadoTheme}
+              canWrite={canWrite}
+              downloadingId={downloadingId}
+              statusBusy={updateStatusMutation.isPending}
+              pagination={{
+                page,
+                totalPages: range.totalPages,
+                summary: range.summary,
+                pageLabel: range.pageLabel,
+                onPrevious,
+                onNext,
+              }}
+              onView={openDetail}
+              onDownload={(leave) => void handleDownloadSupport(leave)}
+              onRadicate={(leave) => void handleStatusChange(leave.id, 'RADICADA_EPS')}
+              onRecovered={(leave) => void handleStatusChange(leave.id, 'RECOBRADA')}
+              onReject={setRejectTarget}
+            />
+          )}
+        </div>
       </EmpleadoPageSection>
 
       <MedicalLeaveFormModal

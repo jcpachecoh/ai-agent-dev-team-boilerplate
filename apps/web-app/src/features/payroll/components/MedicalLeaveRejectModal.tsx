@@ -1,6 +1,6 @@
-import { Button, Modal, toast } from '@restopsiq/ui';
+import { Button, Modal, RolTextarea, toast } from '@restopsiq/ui';
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 
@@ -35,7 +35,7 @@ export function MedicalLeaveRejectModal({
   const [submitting, setSubmitting] = useState(false);
 
   const {
-    register,
+    control,
     handleSubmit,
     formState: { errors },
   } = useForm<FormValues>({
@@ -74,19 +74,29 @@ export function MedicalLeaveRejectModal({
       }}
     >
       <form className={styles.form} onSubmit={(event) => void handleSubmit(onSubmit)(event)}>
-        <label className={styles.field}>
+        <div className={styles.field}>
           <span className={styles.label}>Motivo del rechazo</span>
-          <textarea
-            {...register('rejectionReason')}
-            className={styles.textarea}
-            rows={4}
-            placeholder="Describe el motivo del rechazo"
-            disabled={pending}
+          <Controller
+            name="rejectionReason"
+            control={control}
+            render={({ field }) => (
+              <RolTextarea
+                theme={modalTheme}
+                size="md"
+                rows={4}
+                placeholder="Describe el motivo del rechazo"
+                value={field.value}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+                disabled={pending}
+                aria-label="Motivo del rechazo"
+              />
+            )}
           />
           {errors.rejectionReason ? (
             <span className={styles.error}>{errors.rejectionReason.message}</span>
           ) : null}
-        </label>
+        </div>
 
         <div className={styles.actions}>
           <Button type="button" variant="secondary" onClick={onClose} disabled={pending}>
