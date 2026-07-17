@@ -1,14 +1,65 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { listEmployeeCatalogOptions } from '../api/payroll.client';
+import {
+  createEmployeeCatalogOption,
+  deactivateEmployeeCatalogOption,
+  listEmployeeCatalogOptions,
+  updateEmployeeCatalogOption,
+} from '../api/payroll.client';
 import { payrollKeys } from '../api/queryKeys';
-import type { EmployeeCatalogOption, EmployeeCatalogType } from '../types/employee-catalog.types';
+import type {
+  CreateEmployeeCatalogOptionInput,
+  EmployeeCatalogOption,
+  EmployeeCatalogType,
+  UpdateEmployeeCatalogOptionInput,
+} from '../types/employee-catalog.types';
 
+/** Active-only list — forms de solicitud / nómina (sin permiso de edición). */
 export function useEmployeeCatalogOptions(type?: EmployeeCatalogType) {
   return useQuery({
-    queryKey: payrollKeys.catalogList(type),
-    queryFn: () => listEmployeeCatalogOptions(type),
+    queryKey: payrollKeys.catalogList(type, false),
+    queryFn: () => listEmployeeCatalogOptions(type, false),
     staleTime: 5 * 60 * 1000,
+  });
+}
+
+/** Admin: incluye inactivos. Escritura vía PAYROLL_WRITE_ROLES (no overtime.request). */
+export function useEmployeeCatalogAdminOptions(type?: EmployeeCatalogType) {
+  return useQuery({
+    queryKey: payrollKeys.catalogList(type, true),
+    queryFn: () => listEmployeeCatalogOptions(type, true),
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useCreateEmployeeCatalogOptionMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: CreateEmployeeCatalogOptionInput) => createEmployeeCatalogOption(input),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: payrollKeys.catalogs() });
+    },
+  });
+}
+
+export function useUpdateEmployeeCatalogOptionMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: UpdateEmployeeCatalogOptionInput }) =>
+      updateEmployeeCatalogOption(id, input),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: payrollKeys.catalogs() });
+    },
+  });
+}
+
+export function useDeactivateEmployeeCatalogOptionMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deactivateEmployeeCatalogOption(id),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: payrollKeys.catalogs() });
+    },
   });
 }
 

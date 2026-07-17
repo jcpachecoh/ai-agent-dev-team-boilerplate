@@ -18,23 +18,29 @@ import {
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
-import { useMe } from '@/features/auth/hooks/useMe';
 import { canWritePayrollEmployee } from '@/config/rbac.config';
-import { PayrollNovedadSupportFileUpload } from '@/features/payroll/components/PayrollNovedadSupportFileUpload';
+import { useMe } from '@/features/auth/hooks/useMe';
 import { uploadPayrollNovedadSupportDraft } from '@/features/payroll/api/payroll-novedades.client';
+import { PayrollNovedadSupportFileUpload } from '@/features/payroll/components/PayrollNovedadSupportFileUpload';
 import { useNovedadTypeConfigQuery } from '@/features/payroll/hooks/useNovedadTypeConfigQuery';
 import { useTheme } from '@/providers/ThemeProvider';
 
+import styles from './AttendanceCardScreen.module.scss';
 import { ATTENDANCE_ROUTES } from '../constants/routes';
 import { useAttendanceCardData } from '../hooks/useAttendanceCardData';
-import { useOvertimeRequestsQuery } from '../hooks/useOvertimeRequests';
-import { useManualMarkingReasonsQuery } from '../hooks/useManualMarkingReasonsQuery';
+import { useAttendanceCardOvertimeQuery } from '../hooks/useAttendanceCardOvertimeQuery';
+import { useAttendanceCardOvertimeReasons } from '../hooks/useAttendanceCardOvertimeReasons';
 import {
   useCreateManualMarkingMutation,
   useDeleteManualMarkingMutation,
   useUpsertObservationMutation,
 } from '../hooks/useAttendanceMutations';
+import { useManualMarkingReasonsQuery } from '../hooks/useManualMarkingReasonsQuery';
 import { usePayrollEmployeeQuery } from '../hooks/usePayrollEmployeeQuery';
+import {
+  applyOvertimeRequestsToCardRows,
+  buildOvertimeReasonNameMap,
+} from '../mappers/attendance-card-overtime.mapper';
 import {
   mapPayrollEmployeeToCardHeader,
   sortAttendanceCardRows,
@@ -48,9 +54,6 @@ import {
   validateAttendanceDateRange,
 } from '../utils/attendance-card-dates';
 import { createMarkDraft, nextMarkType } from '../utils/attendance-card-drafts';
-import { formatOvertimeApprovalIndicator } from '../types/overtime.types';
-
-import styles from './AttendanceCardScreen.module.scss';
 
 const SUPER_ROLES = new Set(['OWNER', 'SUPER_ADMIN', 'ADMIN']);
 const PAYROLL_PROVISION_ROLES = new Set(['NOMINA', 'OWNER', 'SUPER_ADMIN']);
@@ -109,15 +112,23 @@ export function AttendanceCardScreen(): React.JSX.Element {
     enabled: Boolean(userId && employeeId && locationId && hasLocationAccess),
   });
 
-  const overtimeQuery = useOvertimeRequestsQuery(
-    {
-      payrollPeriod: appliedFrom.slice(0, 7),
-      employeeId,
-      take: 5,
-    },
+  // Query dedicada con status[] explícito (MANAGER ve admin + histórico del período).
+  const overtimeQuery = useAttendanceCardOvertimeQuery(
+    employeeId,
+    appliedFrom.slice(0, 7),
     Boolean(employeeId),
   );
-  const overtimeRequest = overtimeQuery.data?.items[0];
+  const overtimeRequests = overtimeQuery.data?.items ?? [];
+  const hasAdminOvertime = overtimeRequests.some(
+    (item) => item.type === 'SOLICITUD_ADMINISTRATIVA',
+  );
+
+  // Motivos vía FK (includeInactive para motivos desactivados). retry:false si 403.
+  const reasonsQuery = useAttendanceCardOvertimeReasons(hasAdminOvertime, true);
+  const reasonNameById = useMemo(
+    () => buildOvertimeReasonNameMap(reasonsQuery.data),
+    [reasonsQuery.data],
+  );
 
   const upsertObservationMutation = useUpsertObservationMutation();
   const createManualMarkingMutation = useCreateManualMarkingMutation();
@@ -166,7 +177,9 @@ export function AttendanceCardScreen(): React.JSX.Element {
   }, [requiresSupportDocument]);
 
   useEffect(() => {
-    if (!markingRow) return;
+    if (!markingRow) {
+      return;
+    }
     if (requiresMarkTimes) {
       setMarkDrafts((current) =>
         current.length > 0 ? current : [createMarkDraft(markingRow.id, 'ENTRY')],
@@ -188,16 +201,10 @@ export function AttendanceCardScreen(): React.JSX.Element {
       ? sortedRows.slice((page - 1) * ATTENDANCE_CARD_PAGE_SIZE, page * ATTENDANCE_CARD_PAGE_SIZE)
       : sortedRows;
 
-  const paginatedRowsWithOvertime = useMemo(() => {
-    if (!overtimeRequest) return paginatedRows;
-    const indicator = formatOvertimeApprovalIndicator(
-      overtimeRequest.status,
-      overtimeRequest.accumulatedMinutes,
-    );
-    return paginatedRows.map((row) =>
-      row.overtimeHours !== '—' ? { ...row, approvedOvertimeHours: indicator } : row,
-    );
-  }, [paginatedRows, overtimeRequest]);
+  const paginatedRowsWithOvertime = useMemo(
+    () => applyOvertimeRequestsToCardRows(paginatedRows, overtimeRequests, reasonNameById),
+    [paginatedRows, overtimeRequests, reasonNameById],
+  );
 
   const header = mapPayrollEmployeeToCardHeader(employee);
 
@@ -212,7 +219,9 @@ export function AttendanceCardScreen(): React.JSX.Element {
   );
 
   const existingMarksForDay = useMemo((): AsistenciaTarjetaExistingMark[] => {
-    if (!markingRow) return [];
+    if (!markingRow) {
+      return [];
+    }
     return (cardQuery.data?.logs ?? [])
       .filter((log) => log.workDate.slice(0, 10) === markingRow.id)
       .map((log) => ({
@@ -271,7 +280,9 @@ export function AttendanceCardScreen(): React.JSX.Element {
       return;
     }
 
-    if (action !== 'marking') return;
+    if (action !== 'marking') {
+      return;
+    }
 
     setOpenMenuRowId(null);
 
@@ -289,7 +300,9 @@ export function AttendanceCardScreen(): React.JSX.Element {
   };
 
   const saveObservationModal = async () => {
-    if (!observationRow) return;
+    if (!observationRow) {
+      return;
+    }
     if (observationText.length > 500) {
       toast.error('La observación acepta hasta 500 caracteres.');
       return;
@@ -320,7 +333,9 @@ export function AttendanceCardScreen(): React.JSX.Element {
   };
 
   const resetMarkingModal = () => {
-    if (!markingRow) return;
+    if (!markingRow) {
+      return;
+    }
     setChangeReason('');
     setMarkDrafts([]);
     setSupportFile(null);
@@ -333,7 +348,9 @@ export function AttendanceCardScreen(): React.JSX.Element {
   };
 
   const saveMarkingModal = async () => {
-    if (!markingRow) return;
+    if (!markingRow) {
+      return;
+    }
 
     if (!changeReason.trim()) {
       toast.error('Seleccione un motivo de cambio.');
@@ -418,7 +435,9 @@ export function AttendanceCardScreen(): React.JSX.Element {
   };
 
   const addMarkDraft = () => {
-    if (!markingRow) return;
+    if (!markingRow) {
+      return;
+    }
     setMarkDrafts((current) => [...current, createMarkDraft(markingRow.id, nextMarkType(current))]);
   };
 

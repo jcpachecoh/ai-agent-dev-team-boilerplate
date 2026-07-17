@@ -5,6 +5,7 @@ import PayrollPage from './PayrollPage';
 
 vi.mock('@/features/payroll', () => ({
   CesantiasScreen: () => <div>Cesantias Screen</div>,
+  EmployeeCatalogAdminScreen: () => <div>Employee Catalog Admin Screen</div>,
   EmployeePositionsListScreen: () => <div>Positions Screen</div>,
   MedicalLeavesScreen: () => <div>Medical Leaves Screen</div>,
   PayrollEmployeeProfileScreen: () => <div>Employee Profile Screen</div>,

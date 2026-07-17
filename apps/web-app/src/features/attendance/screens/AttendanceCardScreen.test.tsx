@@ -71,6 +71,19 @@ vi.mock('@/features/auth/hooks/useMe', () => ({
   useMe: () => useMeMock(),
 }));
 
+const useAttendanceCardOvertimeQueryMock = vi.fn();
+const useAttendanceCardOvertimeReasonsMock = vi.fn();
+
+vi.mock('../hooks/useAttendanceCardOvertimeQuery', () => ({
+  useAttendanceCardOvertimeQuery: (...args: unknown[]) =>
+    useAttendanceCardOvertimeQueryMock(...args),
+}));
+
+vi.mock('../hooks/useAttendanceCardOvertimeReasons', () => ({
+  useAttendanceCardOvertimeReasons: (...args: unknown[]) =>
+    useAttendanceCardOvertimeReasonsMock(...args),
+}));
+
 const getPayrollEmployeeByUserIdMock = vi.fn();
 
 vi.mock('@/features/payroll/api/payroll.client', async (importOriginal) => {
@@ -138,6 +151,16 @@ describe('AttendanceCardScreen', () => {
     vi.clearAllMocks();
     useMeMock.mockReturnValue({ data: { roleCode: 'OWNER', email: 'owner@restopsiq.dev' } });
     getPayrollEmployeeByUserIdMock.mockResolvedValue(employee);
+    useAttendanceCardOvertimeQueryMock.mockReturnValue({
+      data: { items: [], pageInfo: { hasNextPage: false, endCursor: null } },
+      isLoading: false,
+      isError: false,
+    });
+    useAttendanceCardOvertimeReasonsMock.mockReturnValue({
+      data: [],
+      isLoading: false,
+      isError: false,
+    });
     getAttendanceCardMock.mockResolvedValue({
       logs: [
         {
@@ -162,6 +185,7 @@ describe('AttendanceCardScreen', () => {
           updatedBy: { email: 'ana@restopsiq.dev' },
         },
       ],
+      daySummaries: [],
     });
   });
 
@@ -198,6 +222,7 @@ describe('AttendanceCardScreen', () => {
       expect(upsertAttendanceObservationMock).toHaveBeenCalledWith('user-1', {
         workDate: WORK_DATE,
         note: 'Nueva nota',
+        locationId: 'loc-1',
       });
     });
   });
@@ -270,6 +295,8 @@ describe('AttendanceCardScreen', () => {
         eventType: 'ENTRY',
         timestamp: expect.any(String),
         reason: 'CORRECCION_MARCACION',
+        locationId: 'loc-1',
+        supportStorageObjectId: undefined,
       });
     });
   });
@@ -383,6 +410,147 @@ describe('AttendanceCardScreen', () => {
         screen.getByRole('option', { name: 'Incapacidad médica (común)' }),
       ).toBeInTheDocument();
       expect(screen.queryByRole('option', { name: 'Olvido de marcación' })).not.toBeInTheDocument();
+    });
+  });
+
+  describe('OS-606 Task-07 — origen overtime en HEAprob', () => {
+    it('conserva presentación de detección automática con origen', async () => {
+      getAttendanceCardMock.mockResolvedValue({
+        logs: [
+          {
+            id: 'log-1',
+            employeeId: 'emp-1',
+            locationId: 'loc-1',
+            eventType: 'ENTRY',
+            timestamp: `${WORK_DATE}T13:00:00.000Z`,
+            workDate: WORK_DATE,
+            source: 'DEVICE',
+          },
+          {
+            id: 'log-2',
+            employeeId: 'emp-1',
+            locationId: 'loc-1',
+            eventType: 'EXIT',
+            timestamp: `${WORK_DATE}T23:00:00.000Z`,
+            workDate: WORK_DATE,
+            source: 'DEVICE',
+          },
+        ],
+        observations: [],
+        daySummaries: [
+          {
+            workDate: WORK_DATE,
+            targetMinutes: 480,
+            targetHours: '08:00:00',
+            ordinaryMinutes: 480,
+            unworkedMinutes: 0,
+            overtimeMinutes: 45,
+            resolvedKind: 'ASSIGNED',
+            shiftName: 'Tarde',
+            shiftRange: '14:00-22:00',
+          },
+        ],
+      });
+      useAttendanceCardOvertimeQueryMock.mockReturnValue({
+        data: {
+          items: [
+            {
+              id: 'req-auto',
+              employeeId: 'emp-1',
+              employeeName: 'Ana',
+              locationId: 'loc-1',
+              locationName: 'PL-01',
+              type: 'DETECCION_AUTOMATICA',
+              accumulatedMinutes: 45,
+              shiftEndTime: `${WORK_DATE}T22:00:00.000Z`,
+              actualEndTime: `${WORK_DATE}T22:45:00.000Z`,
+              status: 'PENDIENTE_ADMIN',
+              payrollPeriod: WORK_DATE.slice(0, 7),
+              createdAt: `${WORK_DATE}T22:45:00.000Z`,
+              updatedAt: `${WORK_DATE}T22:45:00.000Z`,
+            },
+          ],
+          pageInfo: { hasNextPage: false, endCursor: null },
+        },
+        isLoading: false,
+        isError: false,
+      });
+
+      renderScreen();
+
+      expect(
+        await screen.findAllByText(/Detección automática · Pendiente \(45 min\)/),
+      ).not.toHaveLength(0);
+    });
+
+    it('muestra solicitud administrativa con estado, ventana y motivo', async () => {
+      getAttendanceCardMock.mockResolvedValue({
+        logs: [],
+        observations: [],
+        daySummaries: [
+          {
+            workDate: WORK_DATE,
+            targetMinutes: 480,
+            targetHours: '08:00:00',
+            ordinaryMinutes: 0,
+            unworkedMinutes: 480,
+            overtimeMinutes: 0,
+            resolvedKind: 'ASSIGNED',
+            shiftName: 'Tarde',
+            shiftRange: '14:00-22:00',
+          },
+        ],
+      });
+      useAttendanceCardOvertimeQueryMock.mockReturnValue({
+        data: {
+          items: [
+            {
+              id: 'req-admin',
+              employeeId: 'emp-1',
+              employeeName: 'Ana',
+              locationId: 'loc-1',
+              locationName: 'PL-01',
+              type: 'SOLICITUD_ADMINISTRATIVA',
+              accumulatedMinutes: null,
+              shiftEndTime: null,
+              actualEndTime: null,
+              status: 'PENDIENTE_GERENCIA_OPERACIONES',
+              payrollPeriod: WORK_DATE.slice(0, 7),
+              workDate: WORK_DATE,
+              proposedStartTime: `${WORK_DATE}T22:00:00.000-05:00`,
+              proposedEndTime: `${WORK_DATE}T23:30:00.000-05:00`,
+              proposedMinutes: 90,
+              reasonOptionId: 'reason-1',
+              createdAt: `${WORK_DATE}T10:00:00.000Z`,
+              updatedAt: `${WORK_DATE}T10:00:00.000Z`,
+            },
+          ],
+          pageInfo: { hasNextPage: false, endCursor: null },
+        },
+        isLoading: false,
+        isError: false,
+      });
+      useAttendanceCardOvertimeReasonsMock.mockReturnValue({
+        data: [
+          {
+            id: 'reason-1',
+            name: 'Inventario físico semana',
+            type: 'OVERTIME_REASON',
+            isActive: false,
+          },
+        ],
+        isLoading: false,
+        isError: false,
+      });
+
+      renderScreen();
+
+      const cells = await screen.findAllByText(
+        /Solicitud administrativa · Pendiente gerencia operaciones/,
+      );
+      expect(cells.length).toBeGreaterThan(0);
+      expect(cells[0]!.textContent).toContain('Inventario físico semana');
+      expect(cells[0]!.textContent).toContain('90 min');
     });
   });
 });

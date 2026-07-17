@@ -8,14 +8,55 @@ import {
 import { Check, X } from 'lucide-react';
 import type { CSSProperties } from 'react';
 
-import type { OvertimeRequestItem } from '../types/overtime.types';
-import { getOvertimeGridTemplate } from '../utils/overtime-table.columns';
 import { OvertimeStatusBadge } from './OvertimeStatusBadge';
 import styles from './OvertimeTableRow.module.scss';
+import { OVERTIME_TYPE_LABELS, type OvertimeRequestItem } from '../types/overtime.types';
+import { getOvertimeGridTemplate } from '../utils/overtime-table.columns';
 
-function formatDateTime(value: string): string {
+function formatDateTime(value: string | null | undefined): string {
+  if (!value) {
+    return '—';
+  }
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? value : date.toLocaleString('es-CO');
+}
+
+function formatWorkDate(value: string | null | undefined): string {
+  if (!value) {
+    return '—';
+  }
+  // DATE often arrives as YYYY-MM-DD or ISO midnight
+  const day = value.slice(0, 10);
+  const [y, m, d] = day.split('-');
+  if (!y || !m || !d) {
+    return value;
+  }
+  return `${d}/${m}/${y}`;
+}
+
+function formatWindowCell(item: OvertimeRequestItem): string {
+  if (item.type === 'SOLICITUD_ADMINISTRATIVA') {
+    const date = formatWorkDate(item.workDate);
+    const start = item.proposedStartTime
+      ? new Date(item.proposedStartTime).toLocaleTimeString('es-CO', {
+          hour: '2-digit',
+          minute: '2-digit',
+        })
+      : '—';
+    const end = item.proposedEndTime
+      ? new Date(item.proposedEndTime).toLocaleTimeString('es-CO', {
+          hour: '2-digit',
+          minute: '2-digit',
+        })
+      : '—';
+    const minutes =
+      item.proposedMinutes !== null && item.proposedMinutes !== undefined
+        ? ` · ${item.proposedMinutes} min`
+        : '';
+    return `${date} ${start}–${end}${minutes}`;
+  }
+
+  return `${formatDateTime(item.shiftEndTime)} → ${formatDateTime(item.actualEndTime)}`;
 }
 
 interface Props {
@@ -35,6 +76,12 @@ export function OvertimeTableRow({
   onApprove,
   onObject,
 }: Props): React.JSX.Element {
+  const type = item.type ?? 'DETECCION_AUTOMATICA';
+  const minutesLabel =
+    type === 'SOLICITUD_ADMINISTRATIVA'
+      ? (item.proposedMinutes ?? '—')
+      : (item.accumulatedMinutes ?? '—');
+
   return (
     <div
       className={styles.row}
@@ -60,14 +107,14 @@ export function OvertimeTableRow({
       <span className={styles.textCell} role="cell">
         {item.locationName}
       </span>
+      <span className={styles.textCell} role="cell">
+        {OVERTIME_TYPE_LABELS[type]}
+      </span>
       <span className={`${styles.monoCell} ${styles.centerCell}`} role="cell">
-        {item.accumulatedMinutes}
+        {minutesLabel}
       </span>
       <span className={styles.monoCell} role="cell">
-        {formatDateTime(item.shiftEndTime)}
-      </span>
-      <span className={styles.monoCell} role="cell">
-        {formatDateTime(item.actualEndTime)}
+        {formatWindowCell(item)}
       </span>
       <div className={styles.centerCell} role="cell">
         <OvertimeStatusBadge status={item.status} />

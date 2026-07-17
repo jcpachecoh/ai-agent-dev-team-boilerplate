@@ -3,6 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { OvertimeRequestType, OvertimeStatus } from '@prisma/client';
 
 import { OvertimeRepository } from '../repository/overtime.repository';
+import { OvertimeAdminCreateService } from '../service/overtime-admin-create.service';
 import { OvertimeApprovalService } from '../service/overtime-approval.service';
 import { OvertimeService } from '../service/overtime.service';
 
@@ -10,6 +11,7 @@ describe('OvertimeService', () => {
   let service: OvertimeService;
   let repository: jest.Mocked<OvertimeRepository>;
   let approvalService: jest.Mocked<OvertimeApprovalService>;
+  let adminCreateService: jest.Mocked<OvertimeAdminCreateService>;
 
   beforeEach(async () => {
     repository = {
@@ -25,11 +27,16 @@ describe('OvertimeService', () => {
       assertActorCanApproveLevel: jest.fn(),
     } as unknown as jest.Mocked<OvertimeApprovalService>;
 
+    adminCreateService = {
+      createAdministrativeBatch: jest.fn(),
+    } as unknown as jest.Mocked<OvertimeAdminCreateService>;
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         OvertimeService,
         { provide: OvertimeRepository, useValue: repository },
         { provide: OvertimeApprovalService, useValue: approvalService },
+        { provide: OvertimeAdminCreateService, useValue: adminCreateService },
       ],
     }).compile();
 
@@ -64,6 +71,13 @@ describe('OvertimeService', () => {
       accumulatedMinutes: 40,
       status: OvertimeStatus.PENDIENTE_ADMIN,
       payrollPeriod: '2026-07',
+      workDate: null,
+      proposedStartTime: null,
+      proposedEndTime: null,
+      proposedMinutes: null,
+      reasonOptionId: null,
+      requestedByUserId: null,
+      batchId: null,
       createdAt: new Date(),
       updatedAt: new Date(),
       deletedAt: null,
@@ -94,6 +108,13 @@ describe('OvertimeService', () => {
       accumulatedMinutes: 40,
       status: OvertimeStatus.PENDIENTE_ADMIN,
       payrollPeriod: '2026-07',
+      workDate: null,
+      proposedStartTime: null,
+      proposedEndTime: null,
+      proposedMinutes: null,
+      reasonOptionId: null,
+      requestedByUserId: null,
+      batchId: null,
       createdAt: new Date(),
       updatedAt: new Date(),
       deletedAt: null,
@@ -140,6 +161,13 @@ describe('OvertimeService', () => {
       accumulatedMinutes: 40,
       status: OvertimeStatus.PENDIENTE_ADMIN,
       payrollPeriod: '2026-07',
+      workDate: null,
+      proposedStartTime: null,
+      proposedEndTime: null,
+      proposedMinutes: null,
+      reasonOptionId: null,
+      requestedByUserId: null,
+      batchId: null,
       createdAt: new Date(),
       updatedAt: new Date(),
       deletedAt: null,
@@ -171,6 +199,13 @@ describe('OvertimeService', () => {
       accumulatedMinutes: 40,
       status: OvertimeStatus.PENDIENTE_GERENCIA_OPERACIONES,
       payrollPeriod: '2026-07',
+      workDate: null,
+      proposedStartTime: null,
+      proposedEndTime: null,
+      proposedMinutes: null,
+      reasonOptionId: null,
+      requestedByUserId: null,
+      batchId: null,
       createdAt: new Date(),
       updatedAt: new Date(),
       deletedAt: null,
@@ -200,6 +235,13 @@ describe('OvertimeService', () => {
           accumulatedMinutes: 40,
           status: OvertimeStatus.PENDIENTE_GERENCIA_OPERACIONES,
           payrollPeriod: '2026-07',
+          workDate: null,
+          proposedStartTime: null,
+          proposedEndTime: null,
+          proposedMinutes: null,
+          reasonOptionId: null,
+          requestedByUserId: null,
+          batchId: null,
           createdAt: new Date(),
           updatedAt: new Date(),
           deletedAt: null,
@@ -226,6 +268,13 @@ describe('OvertimeService', () => {
       accumulatedMinutes: 40,
       status: OvertimeStatus.APROBADA,
       payrollPeriod: '2026-07',
+      workDate: null,
+      proposedStartTime: null,
+      proposedEndTime: null,
+      proposedMinutes: null,
+      reasonOptionId: null,
+      requestedByUserId: null,
+      batchId: null,
       createdAt: new Date(),
       updatedAt: new Date(),
       deletedAt: null,

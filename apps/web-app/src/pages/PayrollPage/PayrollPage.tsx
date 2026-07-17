@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 
 import {
   CesantiasScreen,
+  EmployeeCatalogAdminScreen,
   EmployeePositionsListScreen,
   MedicalLeavesScreen,
   PayrollEmployeeProfileScreen,
@@ -22,6 +23,7 @@ export default function PayrollPage(): React.JSX.Element {
       <Route path="employees" element={<PayrollEmployeesListScreen />} />
       <Route path="employees/:userId/profile" element={<PayrollEmployeeProfileScreen />} />
       <Route path="positions" element={<EmployeePositionsListScreen />} />
+      <Route path="catalogs" element={<EmployeeCatalogAdminScreen />} />
       <Route path="attendance/*" element={<RedirectLegacyPayrollAttendance />} />
       <Route path="legal-parameters" element={<PayrollLegalParametersScreen />} />
       <Route path="novedades" element={<PayrollNovedadesScreen />} />

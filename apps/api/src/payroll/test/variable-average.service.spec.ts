@@ -1,4 +1,11 @@
-import { OvertimeStatus, Prisma, type LaborLegalParameter } from '@prisma/client';
+import {
+  AttendanceEventType,
+  AttendanceMarkingScope,
+  OvertimeRequestType,
+  OvertimeStatus,
+  Prisma,
+  type LaborLegalParameter,
+} from '@prisma/client';
 
 import type { LaborLegalParametersService } from '../../labor-legal-parameters/service/labor-legal-parameters.service';
 import { LegalParameterSnapshot } from '../../labor-legal-parameters/service/legal-parameter-snapshot';
@@ -36,10 +43,15 @@ const DEFAULT_LEGAL_ROWS: LaborLegalParameter[] = [
 function overtimeRow(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
     id: 'ot-1',
+    type: OvertimeRequestType.DETECCION_AUTOMATICA,
     accumulatedMinutes: 120,
     shiftEndTime: new Date('2026-03-16T19:00:00.000Z'),
     actualEndTime: new Date('2026-03-16T21:00:00.000Z'),
     payrollPeriod: '2026-03',
+    workDate: null,
+    proposedStartTime: null,
+    proposedEndTime: null,
+    proposedMinutes: null,
     ...overrides,
   };
 }
@@ -67,16 +79,19 @@ describe('VariableAverageService', (): void => {
   let service: VariableAverageService;
   let findManyOvertime: jest.Mock;
   let findManySalary: jest.Mock;
+  let findManyAttendance: jest.Mock;
   let preload: jest.Mock;
 
   beforeEach((): void => {
     findManyOvertime = jest.fn().mockResolvedValue([]);
     findManySalary = jest.fn().mockResolvedValue([salaryEntry()]);
+    findManyAttendance = jest.fn().mockResolvedValue([]);
     preload = jest.fn().mockResolvedValue(new LegalParameterSnapshot(DEFAULT_LEGAL_ROWS, null));
 
     const prisma = {
       overtimeRequest: { findMany: findManyOvertime },
       employeeSalaryHistory: { findMany: findManySalary },
+      attendanceLog: { findMany: findManyAttendance },
     } as unknown as PrismaService;
 
     const legalParamsService = { preload } as unknown as LaborLegalParametersService;
@@ -187,15 +202,89 @@ describe('VariableAverageService', (): void => {
     await service.calculate('tenant-1', 'emp-1', EFFECTIVE_TERMINATION_DATE, CONTRACT_START_DATE);
 
     const [args] = findManyOvertime.mock.calls[0] as [
-      { where: { shiftEndTime: { gte: Date; lte: Date } } },
+      {
+        where: {
+          OR: Array<{
+            shiftEndTime?: { gte: Date; lte: Date };
+            workDate?: { gte: Date; lte: Date };
+          }>;
+        };
+      },
     ];
-    const { gte, lte } = args.where.shiftEndTime;
-
-    expect(lte).toEqual(EFFECTIVE_TERMINATION_DATE);
+    const shiftFilter = args.where.OR.find((clause) => clause.shiftEndTime)?.shiftEndTime;
+    expect(shiftFilter).toBeDefined();
+    expect(shiftFilter!.lte).toEqual(EFFECTIVE_TERMINATION_DATE);
     // windowStart = 6 meses antes de la terminación, día 1 del mes
-    expect(gte.getFullYear()).toBe(2025);
-    expect(gte.getMonth()).toBe(11); // diciembre (0-indexed)
-    expect(gte.getDate()).toBe(1);
+    expect(shiftFilter!.gte.getFullYear()).toBe(2025);
+    expect(shiftFilter!.gte.getMonth()).toBe(11); // diciembre (0-indexed)
+    expect(shiftFilter!.gte.getDate()).toBe(1);
+  });
+
+  it('OS-606: admin APROBADA sin marcación no altera el promedio (0 variable)', async (): Promise<void> => {
+    findManyOvertime.mockResolvedValue([
+      overtimeRow({
+        id: 'admin-demo',
+        type: OvertimeRequestType.SOLICITUD_ADMINISTRATIVA,
+        accumulatedMinutes: null,
+        shiftEndTime: null,
+        actualEndTime: null,
+        workDate: new Date('2026-03-16T00:00:00.000Z'),
+        proposedStartTime: new Date('2026-03-17T03:00:00.000Z'),
+        proposedEndTime: new Date('2026-03-17T04:30:00.000Z'),
+        proposedMinutes: 90,
+      }),
+    ]);
+
+    const result = await service.calculate(
+      'tenant-1',
+      'emp-1',
+      EFFECTIVE_TERMINATION_DATE,
+      CONTRACT_START_DATE,
+    );
+
+    expect(result.totalVariable).toBe('0.00');
+    expect(result.monthlyAverage).toBe('0.00');
+    expect(result.includedConcepts).toEqual([]);
+  });
+
+  it('OS-606: admin APROBADA + marcación diurna clasifica DIURNO (nunca 75% por type)', async (): Promise<void> => {
+    findManyOvertime.mockResolvedValue([
+      overtimeRow({
+        id: 'admin-1',
+        type: OvertimeRequestType.SOLICITUD_ADMINISTRATIVA,
+        accumulatedMinutes: null,
+        shiftEndTime: null,
+        actualEndTime: null,
+        workDate: new Date('2026-03-16T00:00:00.000Z'),
+        proposedStartTime: new Date('2026-03-16T19:00:00.000Z'),
+        proposedEndTime: new Date('2026-03-16T21:00:00.000Z'),
+        proposedMinutes: 120,
+      }),
+    ]);
+    findManyAttendance.mockResolvedValue([
+      {
+        eventType: AttendanceEventType.ENTRY,
+        markingScope: AttendanceMarkingScope.OVERTIME,
+        timestamp: new Date('2026-03-16T19:00:00.000Z'),
+        isActive: true,
+      },
+      {
+        eventType: AttendanceEventType.EXIT,
+        markingScope: AttendanceMarkingScope.OVERTIME,
+        timestamp: new Date('2026-03-16T21:00:00.000Z'),
+        isActive: true,
+      },
+    ]);
+
+    const result = await service.calculate(
+      'tenant-1',
+      'emp-1',
+      EFFECTIVE_TERMINATION_DATE,
+      CONTRACT_START_DATE,
+    );
+
+    expect(result.totalVariable).toBe('25000.00');
+    expect(result.includedConcepts).toEqual(['OVERTIME:DIURNO']);
   });
 
   it('advierte y acota monthsCovered cuando el contrato inició hace menos de 6 meses', async (): Promise<void> => {

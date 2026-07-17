@@ -733,6 +733,7 @@ model User {
   attendanceObservationsCreated         AttendanceObservation[]     @relation("AttendanceObservationCreatedBy")
   attendanceObservationsUpdated         AttendanceObservation[]     @relation("AttendanceObservationUpdatedBy")
   overtimeApprovals                     OvertimeApproval[]          @relation("OvertimeApprovalApprover")
+  overtimeRequestsRequested             OvertimeRequest[]           @relation("OvertimeRequestRequestedBy")
   weeklyShiftPlansSubmitted             WeeklyShiftPlan[]           @relation("WeeklyShiftPlanSubmittedBy")
   weeklyShiftPlansApproved              WeeklyShiftPlan[]           @relation("WeeklyShiftPlanApprovedBy")
   weeklyShiftPlansRejected              WeeklyShiftPlan[]           @relation("WeeklyShiftPlanRejectedBy")
@@ -793,6 +794,8 @@ enum EmployeeCatalogType {
   CAJA_COMPENSACION
   AREA
   DEPARTMENT
+  // OS-606 / CONN-04b — motivos de solicitud administrativa de extensión de jornada.
+  OVERTIME_REASON
 }
 
 model Location {
@@ -1294,11 +1297,13 @@ model EmployeeCatalogOption {
   type      EmployeeCatalogType
   name      String
   // Código oficial PILA (UGPP / Minsalud). Solo EPS, PENSION_FUND, ARL, CAJA_COMPENSACION.
-  // Null para AREA/DEPARTMENT/CESANTIAS_FUND o cuando no hay código verificable.
+  // Null para AREA/DEPARTMENT/CESANTIAS_FUND/OVERTIME_REASON o cuando no hay código verificable.
   pilaCode  String?             @db.VarChar(10)
   isActive  Boolean             @default(true)
   createdAt DateTime            @default(now())
   updatedAt DateTime            @updatedAt
+
+  overtimeRequests OvertimeRequest[]
 
   @@unique([tenantId, type, name])
   // Un mismo código PILA no puede repetirse dentro del mismo tipo y tenant (NULLs permitidos).
@@ -2977,26 +2982,46 @@ model OvertimeRequest {
   employeeId         String
   locationId         String
   type               OvertimeRequestType
-  shiftEndTime       DateTime
-  actualEndTime      DateTime
-  accumulatedMinutes Int
+  // CONN-04a detección: metadata del acumulado. Nullable para CONN-04b admin (no reutilizar semántica).
+  shiftEndTime       DateTime?
+  actualEndTime      DateTime?
+  accumulatedMinutes Int?
   status             OvertimeStatus      @default(PENDIENTE_ADMIN)
   payrollPeriod      String?
+  // OS-606 / CONN-04b — ventana propuesta (SOLICITUD_ADMINISTRATIVA). Null en DETECCION_AUTOMATICA.
+  workDate           DateTime?           @db.Date
+  proposedStartTime  DateTime?
+  proposedEndTime    DateTime?
+  proposedMinutes    Int?
+  reasonOptionId     String?
+  requestedByUserId  String?
+  /// Trazabilidad multi-empleado; no es entidad de aprobación.
+  batchId            String?
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
   deletedAt          DateTime?
 
-  employee  EmployeeDetails    @relation(fields: [employeeId], references: [id], onDelete: Restrict)
-  location  Location           @relation(fields: [locationId], references: [id], onDelete: Restrict)
-  approvals OvertimeApproval[]
+  employee     EmployeeDetails        @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  location     Location               @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  reasonOption EmployeeCatalogOption? @relation(fields: [reasonOptionId], references: [id], onDelete: Restrict)
+  requestedBy  User?                  @relation("OvertimeRequestRequestedBy", fields: [requestedByUserId], references: [id], onDelete: Restrict)
+  approvals    OvertimeApproval[]
 
-  @@unique([tenantId, employeeId, locationId, payrollPeriod, type])
+  // Uniques parciales PostgreSQL viven solo en migration.sql (Prisma no modela WHERE):
+  // - auto: (tenantId, employeeId, locationId, payrollPeriod) WHERE DETECCION + deletedAt IS NULL
+  // - admin: (…, workDate, proposedStart/End, type) WHERE SOLICITUD_ADMIN + deletedAt IS NULL
+  //   AND status <> OBJETADA (re-solicitud tras objeción permitida a nivel DB; ver OS-606 D10/P5)
   @@index([tenantId])
   @@index([tenantId, employeeId])
   @@index([tenantId, locationId])
   @@index([tenantId, status])
   @@index([tenantId, payrollPeriod])
   @@index([tenantId, deletedAt])
+  @@index([tenantId, workDate])
+  @@index([tenantId, batchId])
+  @@index([tenantId, type, status])
+  @@index([reasonOptionId])
+  @@index([requestedByUserId])
   @@map("overtime_requests")
 }
 

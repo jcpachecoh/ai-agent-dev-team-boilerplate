@@ -24,7 +24,8 @@ export const payrollKeys = {
   paymentHistory: (employeeId: string) =>
     [...payrollKeys.all, 'payment-history', employeeId] as const,
   catalogs: () => [...payrollKeys.all, 'employee-catalogs'] as const,
-  catalogList: (type?: string) => [...payrollKeys.catalogs(), type ?? 'all'] as const,
+  catalogList: (type?: string, includeInactive = false) =>
+    [...payrollKeys.catalogs(), type ?? 'all', includeInactive ? 'all-status' : 'active'] as const,
   positions: () => [...payrollKeys.all, 'employee-positions'] as const,
   positionList: (filters: ListEmployeePositionsFilters = {}) =>
     [...payrollKeys.positions(), filters] as const,

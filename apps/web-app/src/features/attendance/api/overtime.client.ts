@@ -3,6 +3,8 @@ import { getTenantId } from '@/lib/tenant';
 
 import { AttendanceApiError } from './attendance.client';
 import type {
+  CreateAdministrativeOvertimeBatchResult,
+  CreateAdministrativeOvertimeRequestInput,
   OvertimeInboxFilters,
   OvertimeInboxResult,
   OvertimePeriodSummary,
@@ -12,7 +14,9 @@ import type {
 function toQueryString(params: Record<string, string | number | boolean | undefined>): string {
   const search = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
-    if (value === undefined || value === null || value === '') continue;
+    if (value === undefined || value === null || value === '') {
+      continue;
+    }
     search.set(key, String(value));
   }
   const encoded = search.toString();
@@ -20,7 +24,7 @@ function toQueryString(params: Record<string, string | number | boolean | undefi
 }
 
 function getApiBaseUrl(): string {
-  const fromEnv = import.meta.env.VITE_API_URL;
+  const fromEnv = import.meta.env.VITE_API_URL as string | undefined;
   if (typeof fromEnv === 'string' && fromEnv.trim()) {
     return fromEnv.replace(/\/$/, '');
   }
@@ -30,6 +34,24 @@ function getApiBaseUrl(): string {
 function buildApiUrl(path: string): string {
   const base = getApiBaseUrl();
   return base ? `${base}/api${path}` : `/api${path}`;
+}
+
+function parseErrorMessage(body: string, fallback: string): string {
+  if (!body) {
+    return fallback;
+  }
+  try {
+    const parsed = JSON.parse(body) as { message?: string | string[] };
+    if (Array.isArray(parsed.message)) {
+      return parsed.message.join('. ');
+    }
+    if (typeof parsed.message === 'string') {
+      return parsed.message;
+    }
+  } catch {
+    // plain text
+  }
+  return body.length > 240 ? fallback : body;
 }
 
 async function overtimeFetch<T>(path: string, init?: RequestInit): Promise<T> {
@@ -50,7 +72,8 @@ async function overtimeFetch<T>(path: string, init?: RequestInit): Promise<T> {
   }
   if (!response.ok) {
     const body = await response.text();
-    throw new AttendanceApiError(body || response.statusText, response.status);
+    const message = parseErrorMessage(body, response.statusText);
+    throw new AttendanceApiError(message, response.status);
   }
   return (await response.json()) as T;
 }
@@ -89,4 +112,16 @@ export function objectOvertimeRequest(id: string, comment: string): Promise<Over
     method: 'POST',
     body: JSON.stringify({ comment }),
   });
+}
+
+export function createAdministrativeOvertimeRequests(
+  input: CreateAdministrativeOvertimeRequestInput,
+): Promise<CreateAdministrativeOvertimeBatchResult> {
+  return overtimeFetch<CreateAdministrativeOvertimeBatchResult>(
+    '/attendance/overtime-requests/administrative',
+    {
+      method: 'POST',
+      body: JSON.stringify(input),
+    },
+  );
 }

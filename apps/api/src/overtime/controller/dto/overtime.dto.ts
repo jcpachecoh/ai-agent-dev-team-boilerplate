@@ -1,6 +1,21 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { OvertimeApprovalDecision, OvertimeApprovalLevel, OvertimeStatus } from '@prisma/client';
-import { IsNotEmpty, IsOptional, IsString, Matches, MaxLength } from 'class-validator';
+import {
+  OvertimeApprovalDecision,
+  OvertimeApprovalLevel,
+  OvertimeRequestType,
+  OvertimeStatus,
+} from '@prisma/client';
+import {
+  ArrayNotEmpty,
+  ArrayUnique,
+  IsArray,
+  IsISO8601,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Matches,
+  MaxLength,
+} from 'class-validator';
 
 export class ListOvertimeRequestsQueryDto {
   @ApiPropertyOptional({ enum: OvertimeStatus, isArray: true })
@@ -75,6 +90,39 @@ export class OvertimeApprovalResponseDto {
   comment?: string | null;
 }
 
+export class CreateAdministrativeOvertimeRequestDto {
+  @ApiProperty({ type: [String], example: ['emp_1', 'emp_2'] })
+  @IsArray()
+  @ArrayNotEmpty()
+  @ArrayUnique()
+  @IsString({ each: true })
+  @IsNotEmpty({ each: true })
+  employeeIds!: string[];
+
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  locationId!: string;
+
+  /** Día laboral YYYY-MM-DD (America/Bogota intent; stored as UTC midnight DATE). */
+  @ApiProperty({ example: '2026-07-20' })
+  @Matches(/^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/)
+  workDate!: string;
+
+  @ApiProperty({ example: '2026-07-20T22:00:00.000-05:00' })
+  @IsISO8601()
+  proposedStartTime!: string;
+
+  @ApiProperty({ example: '2026-07-21T01:00:00.000-05:00' })
+  @IsISO8601()
+  proposedEndTime!: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  reasonOptionId!: string;
+}
+
 export class OvertimeRequestResponseDto {
   @ApiProperty()
   id!: string;
@@ -91,14 +139,20 @@ export class OvertimeRequestResponseDto {
   @ApiProperty()
   locationName!: string;
 
-  @ApiProperty()
-  accumulatedMinutes!: number;
+  @ApiProperty({ enum: OvertimeRequestType })
+  type!: OvertimeRequestType;
 
-  @ApiProperty()
-  shiftEndTime!: Date;
+  /** Null on SOLICITUD_ADMINISTRATIVA (OS-606); populated for DETECCION_AUTOMATICA. */
+  @ApiPropertyOptional({ nullable: true, type: Number })
+  accumulatedMinutes!: number | null;
 
-  @ApiProperty()
-  actualEndTime!: Date;
+  /** Null on SOLICITUD_ADMINISTRATIVA (OS-606); populated for DETECCION_AUTOMATICA. */
+  @ApiPropertyOptional({ nullable: true, type: Date })
+  shiftEndTime!: Date | null;
+
+  /** Null on SOLICITUD_ADMINISTRATIVA (OS-606); populated for DETECCION_AUTOMATICA. */
+  @ApiPropertyOptional({ nullable: true, type: Date })
+  actualEndTime!: Date | null;
 
   @ApiProperty({ enum: OvertimeStatus })
   status!: OvertimeStatus;
@@ -106,11 +160,96 @@ export class OvertimeRequestResponseDto {
   @ApiPropertyOptional()
   payrollPeriod?: string | null;
 
+  /** OS-606 admin; null on DETECCION_AUTOMATICA. */
+  @ApiPropertyOptional({ nullable: true, type: Date })
+  workDate?: Date | null;
+
+  @ApiPropertyOptional({ nullable: true, type: Date })
+  proposedStartTime?: Date | null;
+
+  @ApiPropertyOptional({ nullable: true, type: Date })
+  proposedEndTime?: Date | null;
+
+  @ApiPropertyOptional({ nullable: true, type: Number })
+  proposedMinutes?: number | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  reasonOptionId?: string | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  requestedByUserId?: string | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  batchId?: string | null;
+
   @ApiProperty()
   createdAt!: Date;
 
   @ApiProperty()
   updatedAt!: Date;
+}
+
+/** Item shape for POST administrative create (no employeeName/locationName required). */
+export class AdministrativeOvertimeCreatedItemDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty()
+  employeeId!: string;
+
+  @ApiProperty()
+  locationId!: string;
+
+  @ApiProperty({ enum: OvertimeRequestType })
+  type!: OvertimeRequestType;
+
+  @ApiProperty({ enum: OvertimeStatus })
+  status!: OvertimeStatus;
+
+  @ApiPropertyOptional({ nullable: true, type: Date })
+  workDate!: Date | null;
+
+  @ApiPropertyOptional({ nullable: true, type: Date })
+  proposedStartTime!: Date | null;
+
+  @ApiPropertyOptional({ nullable: true, type: Date })
+  proposedEndTime!: Date | null;
+
+  @ApiPropertyOptional({ nullable: true, type: Number })
+  proposedMinutes!: number | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  reasonOptionId!: string | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  requestedByUserId!: string | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  batchId!: string | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  payrollPeriod!: string | null;
+
+  /** Detection-only; always null on admin create. */
+  @ApiPropertyOptional({ nullable: true, type: Number })
+  accumulatedMinutes!: number | null;
+
+  @ApiPropertyOptional({ nullable: true, type: Date })
+  shiftEndTime!: Date | null;
+
+  @ApiPropertyOptional({ nullable: true, type: Date })
+  actualEndTime!: Date | null;
+}
+
+export class CreateAdministrativeOvertimeBatchResponseDto {
+  @ApiProperty()
+  batchId!: string;
+
+  @ApiProperty()
+  createdCount!: number;
+
+  @ApiProperty({ type: [AdministrativeOvertimeCreatedItemDto] })
+  items!: AdministrativeOvertimeCreatedItemDto[];
 }
 
 export class OvertimeRequestDetailResponseDto extends OvertimeRequestResponseDto {

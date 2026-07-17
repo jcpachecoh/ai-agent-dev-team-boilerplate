@@ -7,6 +7,20 @@ export const OVERTIME_APPROVER_POSITION_IDS: Record<OvertimeApprovalLevel, reado
   [OvertimeApprovalLevel.GERENCIA_GENERAL]: ['pos-pdl-007'],
 };
 
+/**
+ * OS-606 / D6 — cargo Administrador de sede que puede crear solicitudes administrativas.
+ * Kept separate from OVERTIME_APPROVER_POSITION_IDS (approver cascade), even though the
+ * seed id currently matches ADMINISTRADOR approver for PDL.
+ */
+export const OVERTIME_ADMIN_REQUESTER_POSITION_IDS = ['pos-pdl-001'] as const;
+
+/** Admin windows that block a new overlapping request (OBJETADA does not block). */
+export const OVERTIME_ADMIN_OVERLAP_BLOCKING_STATUSES: readonly OvertimeStatus[] = [
+  OvertimeStatus.PENDIENTE_GERENCIA_OPERACIONES,
+  OvertimeStatus.PENDIENTE_GERENCIA_GENERAL,
+  OvertimeStatus.APROBADA,
+];
+
 export const OVERTIME_STATUS_TO_LEVEL: Partial<Record<OvertimeStatus, OvertimeApprovalLevel>> = {
   [OvertimeStatus.PENDIENTE_ADMIN]: OvertimeApprovalLevel.ADMINISTRADOR,
   [OvertimeStatus.PENDIENTE_GERENCIA_OPERACIONES]: OvertimeApprovalLevel.GERENCIA_OPERACIONES,

@@ -579,3 +579,38 @@ newman run postman/restopsiq-api.collection.json \
   --folder "CONN-11 Jornada Cutoff" \
   --bail
 ```
+
+---
+
+## OS-606 / CONN-04b — Solicitud administrativa de extensión
+
+Folder **`OS-606 / CONN-04b — Solicitud administrativa de extensión`** valida create multi-empleado, cascada Ops→GG (sin nivel Admin), objeción en Ops, catálogo `OVERTIME_REASON`, Tarjeta OS-551 y reporte NOM-07.
+
+**Prerrequisitos:**
+
+1. Migración `20260716235900_os606_admin_overtime_request` aplicada
+2. `pnpm db:seed` (permiso `attendance.overtime.request`, 3 motivos `OVERTIME_REASON`, demo admin)
+3. Variables de asistencia: `attendanceLocationId`, `attendanceEmployeeId`, `attendanceEmployeeId2` (segundo `EmployeeDetails.id` del tenant demo)
+4. `overtimePayrollPeriod` alineado al `workDate` de prueba (default colección: `os606WorkDate=2026-07-25`)
+5. Tokens: login mes-manager → `accessTokenManager`; Ops/GG → `accessTokenOvertimeOps` / `accessTokenOvertimeGG` (reutilizados de CONN-04a); nómina → `accessTokenNomina` para el reporte
+
+**Orden sugerido:**
+
+1. Login mes-manager / Ops / GG
+2. GET motivos `OVERTIME_REASON` (captura `os606ReasonOptionId`)
+3. POST create administrative (2 empleados → `os606BatchId`, `os606RequestId`, `os606ObjectRequestId`)
+4. GET inbox del período (filtrar client-side `SOLICITUD_ADMINISTRATIVA`)
+5. Approve Ops → Approve GG sobre `os606RequestId`
+6. Object Ops sobre `os606ObjectRequestId` (hermana del batch)
+7. GET Tarjeta OS-551 + GET payroll NOM-07 + GET detail APROBADA
+
+**Variables de colección:** `os606WorkDate`, `os606ProposedStart`, `os606ProposedEnd`, `os606ReasonOptionId`, `os606BatchId`, `os606RequestId`, `os606ObjectRequestId`, `attendanceEmployeeId2`.
+
+Usar una ventana distinta a la demo seed para evitar 409 por unique admin.
+
+```bash
+newman run postman/restopsiq-api.collection.json \
+  --environment postman/local.environment.json \
+  --folder "OS-606 / CONN-04b — Solicitud administrativa de extensión" \
+  --bail
+```

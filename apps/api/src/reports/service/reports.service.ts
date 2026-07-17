@@ -9,7 +9,10 @@ import { RotanteProrationService } from '../../daily-cost-center/service/rotante
 import { LaborLegalParametersService } from '../../labor-legal-parameters/service/labor-legal-parameters.service';
 import { UserLocationsService } from '../../locations/service/user-locations.service';
 import { MedicalLeavesRepository } from '../../medical-leaves/repository/medical-leaves.repository';
+import type { ApprovedAdministrativeOvertimeWindow } from '../../overtime/interfaces/overtime.interfaces';
 import { OvertimeRepository } from '../../overtime/repository/overtime.repository';
+import { decideNom07OvertimeLiquidation } from '../../overtime/utils/nom07-overtime-liquidation.util';
+import type { TimeInterval } from '../../overtime/utils/liquidable-overtime-intervals.util';
 import {
   AttendanceMonthSummary,
   EmployeePayrollInput,
@@ -479,21 +482,91 @@ function payrollPeriodKey(period: { year: number; month: number }): string {
   return `${period.year}-${String(period.month).padStart(2, '0')}`;
 }
 
+function bogotaDateKey(ts: Date): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: COLOMBIA_TZ,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(ts);
+}
+
+function buildOvertimeEntriesFromIntervals(
+  intervals: TimeInterval[],
+  resolvers: OvertimeLegalRateResolvers,
+): { overtimeMinutes: number; overtimeEntries: OvertimeMinutesEntry[] } {
+  const overtimeEntries: OvertimeMinutesEntry[] = [];
+  let overtimeMinutes = 0;
+
+  for (const interval of intervals) {
+    const minutes = Math.floor((interval.endMs - interval.startMs) / 60_000);
+    if (minutes <= 0) {
+      continue;
+    }
+    overtimeMinutes += minutes;
+
+    const start = new Date(interval.startMs);
+    const end = new Date(interval.endMs);
+    const dateKey = bogotaDateKey(start);
+    const date = parseCalendarDateKey(dateKey);
+    const nocturnoStartHour = resolvers.nocturnoStartHourAt(date);
+    const isNocturno =
+      getBogotaHour(start) >= nocturnoStartHour || getBogotaHour(end) >= nocturnoStartHour;
+    const isFestivo = isColombianHoliday(dateKey);
+    const { type, surchargeRate } = classifyOvertimeSurcharge(isNocturno, isFestivo, {
+      recargoHoraExtraDiurna: resolvers.recargoHoraExtraDiurnaAt(date),
+      recargoHoraExtraNocturna: resolvers.recargoHoraExtraNocturnaAt(date),
+      recargoDominicalFestivo: resolvers.recargoDominicalFestivoAt(date),
+    });
+    addOvertimeMinutes(
+      overtimeEntries,
+      type,
+      minutes,
+      resolvers.monthlyHoursBaseAt(date),
+      surchargeRate,
+    );
+  }
+
+  return { overtimeMinutes, overtimeEntries };
+}
+
 /**
- * CONN-04a — closes GAP(OS-586): only liquidate overtime when the automatic request is APROBADA.
+ * CONN-04a + OS-606 Task-08 (NOM-07):
+ * - DETECCION_AUTOMATICA APROBADA without OVERTIME pairs → legacy total−480 summary
+ * - With OVERTIME pairs → liquidable = union(auto∩marked, adminWindows∩marked) without double-count
+ * - Admin alone never pays proposedMinutes; only marked ∩ window
  */
 function applyOvertimeApprovalGate(
   summary: AttendanceMonthSummary,
+  logs: AttendanceLog[],
   approvalStatus: OvertimeStatus | null | undefined,
+  approvedAdminWindows: ApprovedAdministrativeOvertimeWindow[],
+  resolvers: OvertimeLegalRateResolvers,
 ): AttendanceMonthSummary {
-  if (approvalStatus !== OvertimeStatus.APROBADA) {
+  const decision = decideNom07OvertimeLiquidation({
+    logs,
+    automaticStatus: approvalStatus,
+    approvedAdminWindows,
+  });
+
+  if (decision.useLegacyAutomaticSummary) {
+    return summary;
+  }
+
+  if (decision.zeroOvertime) {
     return {
       ...summary,
       overtimeMinutes: 0,
       overtimeEntries: [],
     };
   }
-  return summary;
+
+  const rebuilt = buildOvertimeEntriesFromIntervals(decision.computation.liquidable, resolvers);
+  return {
+    ...summary,
+    overtimeMinutes: rebuilt.overtimeMinutes,
+    overtimeEntries: rebuilt.overtimeEntries,
+  };
 }
 
 // ── Service ──────────────────────────────────────────────────────────────────
@@ -678,15 +751,28 @@ export class ReportsService implements IReportsService {
 
     const payrollPeriod = payrollPeriodKey(period);
     let overtimeApprovalByEmployee = new Map<string, OvertimeStatus>();
+    const adminWindowsByEmployee = new Map<string, ApprovedAdministrativeOvertimeWindow[]>();
     if (this.overtimeRepository && employeeIds.length > 0) {
-      const approvalRows = await this.overtimeRepository.findApprovalStatusByEmployeeIdsForPeriod(
-        tenantId,
-        employeeIds,
-        payrollPeriod,
-      );
+      const [approvalRows, adminWindows] = await Promise.all([
+        this.overtimeRepository.findApprovalStatusByEmployeeIdsForPeriod(
+          tenantId,
+          employeeIds,
+          payrollPeriod,
+        ),
+        this.overtimeRepository.findApprovedAdministrativeWindowsByEmployeeIdsForPeriod(
+          tenantId,
+          employeeIds,
+          payrollPeriod,
+        ),
+      ]);
       overtimeApprovalByEmployee = new Map(
         approvalRows.map((row) => [row.employeeId, row.status as OvertimeStatus]),
       );
+      for (const window of adminWindows) {
+        const bucket = adminWindowsByEmployee.get(window.employeeId) ?? [];
+        bucket.push(window);
+        adminWindowsByEmployee.set(window.employeeId, bucket);
+      }
     }
 
     // Preload once per report run (not per employee) — see LegalParameterSnapshot.
@@ -771,7 +857,10 @@ export class ReportsService implements IReportsService {
       );
       const gatedAttendance = applyOvertimeApprovalGate(
         attendance,
+        empLogs,
         overtimeApprovalByEmployee.get(emp.id) ?? null,
+        adminWindowsByEmployee.get(emp.id) ?? [],
+        rateResolvers,
       );
 
       const medicalLeave = medicalLeaveAdjustments.get(emp.id);

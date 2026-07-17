@@ -1,8 +1,13 @@
 import { Injectable } from '@nestjs/common';
-import { LeaveStatus, NovedadStatus, Prisma } from '@prisma/client';
+import { LeaveStatus, NovedadStatus, OvertimeStatus, Prisma } from '@prisma/client';
 
+import { LaborLegalParametersService } from '../../labor-legal-parameters/service/labor-legal-parameters.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PendingSalaryResult } from '../interfaces/final-settlement.interfaces';
+import {
+  computeApprovedOvertimeMoney,
+  type ApprovedOvertimeRequestSlice,
+} from '../utils/approved-overtime-money.util';
 
 /**
  * OS-591 (fase 2) — Cálculo del tramo salarial no pagado hasta la fecha de terminación.
@@ -28,14 +33,20 @@ import { PendingSalaryResult } from '../interfaces/final-settlement.interfaces';
  *    a partir del 4to día — CST art. 227). Simplificación: se descuentan TODOS los
  *    días de incapacidad del tramo como "no pagados por el empleador".
  *
- * 5. **Horas extra pendientes**: se suman las `OvertimeRequest` con `status=APROBADA`
- *    que caen en el tramo y no han sido liquidadas en nómina previa.
+ * 5. **Horas extra pendientes (OS-606 Task-09)**: solo `OvertimeRequest` `APROBADA`
+ *    valorizadas con el motor NOM-07 (Task-08): minutos liquidables = marcación
+ *    OVERTIME ∩ ventanas aprobadas (admin) ∪ auto autorizada. `type` es origen, no
+ *    tarifa — nunca se infiere 75% nocturno por `SOLICITUD_ADMINISTRATIVA`.
+ *    Sin marcación liquidable → 0. Pendiente/objetada no entran (filtro APROBADA).
  *
  * 6. **NO ejecuta batch**: solo calcula para el empleado especificado.
  */
 @Injectable()
 export class PendingSalaryService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly legalParamsService: LaborLegalParametersService,
+  ) {}
 
   async calculate(
     tenantId: string,
@@ -89,11 +100,11 @@ export class PendingSalaryService {
       where: {
         tenantId,
         employeeId: employeeDetailsId,
-        status: 'APROBADA',
+        status: OvertimeStatus.APROBADA,
         deletedAt: null,
         payrollPeriod: { not: null },
       },
-      orderBy: { shiftEndTime: 'desc' },
+      orderBy: [{ workDate: 'desc' }, { shiftEndTime: 'desc' }],
       select: { payrollPeriod: true },
     });
 
@@ -199,46 +210,104 @@ export class PendingSalaryService {
       );
     }
 
-    // ── 6. Horas extra aprobadas pendientes en el tramo ────────────────────
+    // ── 6. Horas extra aprobadas pendientes (NOM-07 / OS-606 Task-09) ───────
     const pendingOvertime = await this.prisma.overtimeRequest.findMany({
       where: {
         tenantId,
         employeeId: employeeDetailsId,
-        status: 'APROBADA',
+        status: OvertimeStatus.APROBADA,
         deletedAt: null,
-        shiftEndTime: {
-          gte: periodStart,
-          lte: periodEnd,
-        },
+        OR: [
+          {
+            shiftEndTime: {
+              gte: periodStart,
+              lte: periodEnd,
+            },
+          },
+          {
+            workDate: {
+              gte: periodStart,
+              lte: periodEnd,
+            },
+          },
+          {
+            proposedStartTime: {
+              gte: periodStart,
+              lte: periodEnd,
+            },
+          },
+        ],
       },
       select: {
         id: true,
-        accumulatedMinutes: true,
         type: true,
+        payrollPeriod: true,
+        accumulatedMinutes: true,
+        shiftEndTime: true,
+        actualEndTime: true,
+        workDate: true,
+        proposedStartTime: true,
+        proposedEndTime: true,
+        proposedMinutes: true,
       },
     });
 
-    const MONTHLY_HOURS_BASE = 240;
-    const EXTRA_DIURNA_RATE = 0.25;
-    const EXTRA_NOCTURNA_RATE = 0.75;
-    let pendingOvertimeAmount = new Prisma.Decimal(0);
+    const attendanceLogs = await this.prisma.attendanceLog.findMany({
+      where: {
+        tenantId,
+        employeeId: employeeDetailsId,
+        isActive: true,
+        timestamp: {
+          gte: periodStart,
+          lte: new Date(periodEnd.getTime() + 24 * 60 * 60 * 1000),
+        },
+      },
+      select: {
+        eventType: true,
+        timestamp: true,
+        isActive: true,
+        markingScope: true,
+      },
+    });
 
-    for (const ot of pendingOvertime) {
-      const hours = ot.accumulatedMinutes / 60;
-      const surchargeRate =
-        ot.type === 'SOLICITUD_ADMINISTRATIVA' ? EXTRA_NOCTURNA_RATE : EXTRA_DIURNA_RATE;
-      const hourlyRate = monthlySalary.dividedBy(MONTHLY_HOURS_BASE);
-      pendingOvertimeAmount = pendingOvertimeAmount.plus(
-        hourlyRate.times(1 + surchargeRate).times(hours),
-      );
-      sources.push(`OvertimeRequest:${ot.id}`);
+    const legalSnapshot = await this.legalParamsService.preload(
+      [
+        'HORARIO_NOCTURNO_INICIO',
+        'RECARGO_DOMINICAL_FESTIVO',
+        'RECARGO_HORA_EXTRA_DIURNA',
+        'RECARGO_HORA_EXTRA_NOCTURNA',
+      ],
+      periodStart,
+      periodEnd,
+      tenantId,
+    );
+
+    const overtimeMoney = computeApprovedOvertimeMoney({
+      requests: pendingOvertime as ApprovedOvertimeRequestSlice[],
+      logs: attendanceLogs,
+      rangeStart: periodStart,
+      rangeEnd: periodEnd,
+      legalSnapshot,
+      resolveSalaryAt: (): Prisma.Decimal | null =>
+        monthlySalary.greaterThan(0) ? monthlySalary : null,
+    });
+
+    for (const id of overtimeMoney.sourceIds) {
+      sources.push(`OvertimeRequest:${id}`);
     }
 
     if (pendingOvertime.length > 0) {
       warnings.push(
-        'pending_salary_overtime_approximation — tasa de recargo estimada para horas extra pendientes en el tramo',
+        overtimeMoney.liquidableMinutes > 0
+          ? 'pending_salary_overtime_nom07 — horas extra pendientes valorizadas con minutos liquidables NOM-07 (marcación real ∩ ventanas aprobadas; type≠tarifa)'
+          : 'pending_salary_overtime_no_liquidable — hay solicitudes APROBADA en el tramo pero 0 minutos liquidables (sin marcación OVERTIME en ventana / sin auto liquidable)',
       );
     }
+
+    const pendingOvertimeRounded = overtimeMoney.amount.toDecimalPlaces(
+      2,
+      Prisma.Decimal.ROUND_HALF_UP,
+    );
 
     // ── 7. Calcular tramo de salario base pendiente ────────────────────────
     const paidDays = unpaidNovedadDays + medicalLeaveDays;
@@ -250,11 +319,6 @@ export class PendingSalaryService {
     const novedadDeductions = dailySalary
       .times(effectivePaidDays)
       .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
-
-    const pendingOvertimeRounded = pendingOvertimeAmount.toDecimalPlaces(
-      2,
-      Prisma.Decimal.ROUND_HALF_UP,
-    );
 
     const totalPendingSalary = basePendingSalary
       .plus(pendingOvertimeRounded)
@@ -280,7 +344,7 @@ export class PendingSalaryService {
       breakdown.push({
         concept: 'HORAS_EXTRA_PENDIENTES',
         amount: pendingOvertimeRounded.toFixed(2),
-        detail: `${pendingOvertime.length} solicitud(es) de overtime en el tramo`,
+        detail: `${overtimeMoney.liquidableMinutes} min liquidables NOM-07 (${overtimeMoney.sourceIds.length} solicitud(es))`,
       });
     }
 

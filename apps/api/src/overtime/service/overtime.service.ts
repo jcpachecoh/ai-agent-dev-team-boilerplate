@@ -2,7 +2,9 @@ import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/commo
 import { OvertimeStatus } from '@prisma/client';
 
 import type {
+  AdministrativeOvertimeBatchResult,
   ApproveOvertimeInput,
+  CreateAdministrativeOvertimeBatchInput,
   IOvertimeService,
   ObjectOvertimeInput,
   OvertimeInboxFilters,
@@ -16,6 +18,7 @@ import {
   resolveActiveApprovalLevel,
 } from '../overtime-approval.constants';
 import { OvertimeRepository } from '../repository/overtime.repository';
+import { OvertimeAdminCreateService } from './overtime-admin-create.service';
 import { OvertimeApprovalService } from './overtime-approval.service';
 
 @Injectable()
@@ -23,6 +26,7 @@ export class OvertimeService implements IOvertimeService {
   constructor(
     private readonly repository: OvertimeRepository,
     private readonly approvalService: OvertimeApprovalService,
+    private readonly adminCreateService: OvertimeAdminCreateService,
   ) {}
 
   async getById(tenantId: string, actorUserId: string, id: string): Promise<OvertimeRequestDetail> {
@@ -100,5 +104,13 @@ export class OvertimeService implements IOvertimeService {
       approvedCount,
       objectedCount,
     };
+  }
+
+  createAdministrativeBatch(
+    tenantId: string,
+    actorUserId: string,
+    input: CreateAdministrativeOvertimeBatchInput,
+  ): Promise<AdministrativeOvertimeBatchResult> {
+    return this.adminCreateService.createAdministrativeBatch(tenantId, actorUserId, input);
   }
 }

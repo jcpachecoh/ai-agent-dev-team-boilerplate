@@ -242,6 +242,12 @@ export const navigationItems: NavItem[] = [
         icon: Briefcase,
       },
       {
+        id: 'payroll-catalogs',
+        label: 'Catálogos',
+        path: '/payroll/catalogs',
+        icon: Tags,
+      },
+      {
         id: 'payroll-legal-parameters',
         label: 'Parámetros legales',
         path: '/payroll/legal-parameters',
@@ -368,6 +374,7 @@ const routeLabels: Record<string, string> = {
   '/payroll/reports': 'Reportes de nómina',
   '/payroll/employees': 'Empleados',
   '/payroll/positions': 'Gestión de Cargos',
+  '/payroll/catalogs': 'Catálogos',
   '/payroll/dotaciones': 'Dotación',
   '/payroll/legal-parameters': 'Parámetros legales',
   '/payroll/novedades': 'Novedades',

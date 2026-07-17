@@ -55,7 +55,7 @@
       "key": "refreshToken",
       "value": "",
       "type": "default",
-      "enabled": true,
+      "enabled": false,
       "description": "Global User refresh token — set by 01 Auth / Login."
     },
     {
@@ -548,14 +548,14 @@
     },
     {
       "key": "attendanceUserId",
-      "value": "",
+      "value": "11111111-0000-0000-0000-000000000005",
       "type": "default",
       "enabled": true,
       "description": "NOM-03 Attendance — Captured from POST kiosk-auth response (operator userId)"
     },
     {
       "key": "attendanceLocationId",
-      "value": "cmq8ock4r002j147apx4q6npl",
+      "value": "cmro31m4b00chl5i1kkidm8w6",
       "type": "default",
       "enabled": true,
       "description": "NOM-03 Attendance — Captured from POST kiosk-auth response (locationId of the kiosk)"
@@ -576,7 +576,7 @@
     },
     {
       "key": "attendanceEmployeeId",
-      "value": "",
+      "value": "cmro31ng100dhl5i1ussjcjws",
       "type": "default",
       "enabled": true,
       "description": "NOM-03 Attendance — Captured from POST kiosk-auth response (EmployeeDetails.id)"
@@ -686,18 +686,78 @@
       "enabled": true,
       "description": "OS-499 Mobile Attendance — Resultado textual del reconocimiento facial (match|no_match). Informativo; no determina el status."
     },
-    { "key": "os582WeekStart", "value": "2026-07-06", "type": "default", "enabled": true },
-    { "key": "os582FutureDate", "value": "2026-08-10", "type": "default", "enabled": true },
-    { "key": "os582FutureDateRest", "value": "2026-08-11", "type": "default", "enabled": true },
-    { "key": "os582EmployeeId", "value": "", "type": "default", "enabled": true },
-    { "key": "os582LocationId", "value": "", "type": "default", "enabled": true },
-    { "key": "os582TurnoId", "value": "", "type": "default", "enabled": true },
-    { "key": "os582AssignmentId", "value": "", "type": "default", "enabled": true },
-    { "key": "shiftAssignmentFrom", "value": "2026-08-03", "type": "default", "enabled": true },
-    { "key": "shiftAssignmentTo", "value": "2026-08-09", "type": "default", "enabled": true },
-    { "key": "shiftAssignmentWeekdays", "value": "1,2,3,4,5", "type": "default", "enabled": true },
-    { "key": "shiftAssignmentEmployeeIds", "value": "", "type": "default", "enabled": true },
-    { "key": "accessTokenSupervisor", "value": "", "type": "default", "enabled": true },
+    {
+      "key": "os582WeekStart",
+      "value": "2026-07-06",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "os582FutureDate",
+      "value": "2026-08-10",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "os582FutureDateRest",
+      "value": "2026-08-11",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "os582EmployeeId",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "os582LocationId",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "os582TurnoId",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "os582AssignmentId",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "shiftAssignmentFrom",
+      "value": "2026-08-03",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "shiftAssignmentTo",
+      "value": "2026-08-09",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "shiftAssignmentWeekdays",
+      "value": "1,2,3,4,5",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "shiftAssignmentEmployeeIds",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "accessTokenSupervisor",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
     {
       "key": "accessTokenNomina",
       "value": "",
@@ -760,6 +820,76 @@
       "type": "default",
       "enabled": true,
       "description": "Ley 1581 — User.id del empleado (mes-operator en seed)"
+    },
+    {
+      "key": "attendanceEmployeeId2",
+      "value": "cmro31pwa012wl5i12f30g2bl",
+      "type": "default",
+      "enabled": true,
+      "description": "OS-606 smoke — attendanceEmployeeId2"
+    },
+    {
+      "key": "os606ReasonOptionId",
+      "value": "seed-catalog-palos-de-lena-overtime_reason-inventario-fisico-semana",
+      "type": "default",
+      "enabled": true,
+      "description": "OS-606 smoke — os606ReasonOptionId"
+    },
+    {
+      "key": "os606WorkDate",
+      "value": "2026-08-01",
+      "type": "default",
+      "enabled": true,
+      "description": "OS-606 smoke — os606WorkDate"
+    },
+    {
+      "key": "os606ProposedStart",
+      "value": "2026-08-01T22:00:00.000-05:00",
+      "type": "default",
+      "enabled": true,
+      "description": "OS-606 smoke — os606ProposedStart"
+    },
+    {
+      "key": "os606ProposedEnd",
+      "value": "2026-08-01T23:30:00.000-05:00",
+      "type": "default",
+      "enabled": true,
+      "description": "OS-606 smoke — os606ProposedEnd"
+    },
+    {
+      "key": "overtimePayrollPeriod",
+      "value": "2026-08",
+      "type": "default",
+      "enabled": true,
+      "description": "OS-606 smoke — overtimePayrollPeriod"
+    },
+    {
+      "key": "os606ForbiddenLocationId",
+      "value": "cmro31m4n00d1l5i16z2sce7r",
+      "type": "default",
+      "enabled": true,
+      "description": "OS-606 smoke — os606ForbiddenLocationId"
+    },
+    {
+      "key": "accessTokenManager",
+      "value": "",
+      "type": "default",
+      "enabled": true,
+      "description": "OS-606 — accessTokenManager"
+    },
+    {
+      "key": "accessTokenOvertimeOps",
+      "value": "",
+      "type": "default",
+      "enabled": true,
+      "description": "OS-606 — accessTokenOvertimeOps"
+    },
+    {
+      "key": "accessTokenOvertimeGG",
+      "value": "",
+      "type": "default",
+      "enabled": true,
+      "description": "OS-606 — accessTokenOvertimeGG"
     }
   ],
   "_postman_variable_scope": "environment",

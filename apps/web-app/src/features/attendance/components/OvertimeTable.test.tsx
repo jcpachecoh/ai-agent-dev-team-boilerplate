@@ -9,6 +9,7 @@ const baseItem: OvertimeRequestItem = {
   employeeName: 'Ana',
   locationId: 'loc-1',
   locationName: 'PL-01',
+  type: 'DETECCION_AUTOMATICA',
   accumulatedMinutes: 45,
   shiftEndTime: '2026-07-10T22:00:00.000Z',
   actualEndTime: '2026-07-10T22:45:00.000Z',

@@ -16,6 +16,10 @@ import {
 import * as bcrypt from 'bcrypt';
 
 import { getTodayWorkDate } from './attendance.seed';
+import {
+  OS606_OVERTIME_REASON_OPTION_IDS,
+  seedOvertimeReasonOptions,
+} from './overtime-reason.seed';
 
 const TENANT_ID = 'palos-de-lena';
 const SALT_ROUNDS = 12;
@@ -36,6 +40,16 @@ const REQUEST_IDS = {
   pendingGg: 'ffffffff-0000-0000-0000-000000000203',
   approved: 'ffffffff-0000-0000-0000-000000000204',
   objected: 'ffffffff-0000-0000-0000-000000000205',
+} as const;
+
+/** OS-606 / CONN-04b — lote demo administrativo (mismo batchId, N filas). */
+export const ADMIN_DEMO_BATCH_ID = 'ffffffff-0000-0000-0000-000000000300';
+
+export const ADMIN_REQUEST_IDS = {
+  pendingOps: 'ffffffff-0000-0000-0000-000000000301',
+  pendingGg: 'ffffffff-0000-0000-0000-000000000302',
+  approved: 'ffffffff-0000-0000-0000-000000000303',
+  objected: 'ffffffff-0000-0000-0000-000000000304',
 } as const;
 
 function payrollPeriodFromWorkDate(workDate: Date): string {
@@ -436,6 +450,242 @@ async function seedOvertimeRequests(
   }
 }
 
+/**
+ * OS-606 / CONN-04b — mínimo demo SOLICITUD_ADMINISTRATIVA.
+ *
+ * Varias filas con el mismo batchId (trazabilidad multi-empleado).
+ * Detection fields quedan null.
+ *
+ * APROBADA admin (Task-08/09): detection null + sin marcación OVERTIME → 0 minutos
+ * liquidables NOM-07; pending-salary / variable-average no aplican 75% por `type`.
+ * Conservar la fila demo: valida exactamente ese comportamiento.
+ */
+export async function seedAdministrativeOvertimeRequests(
+  prisma: PrismaClient,
+  locationId: string,
+  payrollPeriod: string,
+  workDate: Date,
+): Promise<void> {
+  await seedOvertimeReasonOptions(prisma, TENANT_ID);
+
+  const reasonSemana = await prisma.employeeCatalogOption.findFirst({
+    where: {
+      tenantId: TENANT_ID,
+      type: 'OVERTIME_REASON',
+      OR: [
+        { id: OS606_OVERTIME_REASON_OPTION_IDS.inventarioFisicoSemana },
+        { name: 'Inventario físico semana' },
+      ],
+      isActive: true,
+    },
+    select: { id: true },
+  });
+  const reasonMensual = await prisma.employeeCatalogOption.findFirst({
+    where: {
+      tenantId: TENANT_ID,
+      type: 'OVERTIME_REASON',
+      OR: [
+        { id: OS606_OVERTIME_REASON_OPTION_IDS.inventarioFisicoMensual },
+        { name: 'Inventario físico mensual' },
+      ],
+      isActive: true,
+    },
+    select: { id: true },
+  });
+  const reasonAseo = await prisma.employeeCatalogOption.findFirst({
+    where: {
+      tenantId: TENANT_ID,
+      type: 'OVERTIME_REASON',
+      OR: [{ id: OS606_OVERTIME_REASON_OPTION_IDS.aseo }, { name: 'Aseo' }],
+      isActive: true,
+    },
+    select: { id: true },
+  });
+
+  if (!reasonSemana || !reasonMensual || !reasonAseo) {
+    console.warn('Overtime admin demo: missing OVERTIME_REASON options — skipping');
+    return;
+  }
+
+  const employees = await prisma.employeeDetails.findMany({
+    where: {
+      tenantId: TENANT_ID,
+      userId: {
+        in: [
+          GLOBAL_MES_OPERATOR_USER_ID,
+          GLOBAL_MES_OPERATOR2_USER_ID,
+          GLOBAL_MES_OPERATIONS_ADMIN_USER_ID,
+          GLOBAL_MES_SUPERVISOR_USER_ID,
+        ],
+      },
+      isActive: true,
+      deletedAt: null,
+    },
+    select: { id: true, userId: true },
+  });
+
+  const byUserId = new Map(employees.map((row) => [row.userId, row]));
+  const operator = byUserId.get(GLOBAL_MES_OPERATOR_USER_ID);
+  const operator2 = byUserId.get(GLOBAL_MES_OPERATOR2_USER_ID);
+  const opsAdmin = byUserId.get(GLOBAL_MES_OPERATIONS_ADMIN_USER_ID);
+  const supervisor = byUserId.get(GLOBAL_MES_SUPERVISOR_USER_ID);
+
+  if (!operator || !operator2 || !opsAdmin || !supervisor) {
+    console.warn('Overtime admin demo: missing EmployeeDetails — skipping');
+    return;
+  }
+
+  // Ventana propuesta: 22:00–23:30 (90 min) sobre workDate del seed (misma convención CONN-04a).
+  const proposedStartTime = new Date(workDate.getTime() + 22 * 3600_000);
+  const proposedEndTime = new Date(proposedStartTime.getTime() + 90 * 60_000);
+  const proposedMinutes = 90;
+  const decidedAt = new Date();
+
+  const scenarios: Array<{
+    id: string;
+    employeeId: string;
+    status: OvertimeStatus;
+    reasonOptionId: string;
+    approvals: Array<{
+      id: string;
+      level: OvertimeApprovalLevel;
+      approverId?: string | null;
+      decision?: OvertimeApprovalDecision | null;
+      comment?: string | null;
+    }>;
+  }> = [
+    {
+      id: ADMIN_REQUEST_IDS.pendingOps,
+      employeeId: operator.id,
+      status: OvertimeStatus.PENDIENTE_GERENCIA_OPERACIONES,
+      reasonOptionId: reasonSemana.id,
+      approvals: [
+        {
+          id: 'ffffffff-0000-0000-0000-000000000311',
+          level: OvertimeApprovalLevel.GERENCIA_OPERACIONES,
+        },
+        {
+          id: 'ffffffff-0000-0000-0000-000000000312',
+          level: OvertimeApprovalLevel.GERENCIA_GENERAL,
+        },
+      ],
+    },
+    {
+      id: ADMIN_REQUEST_IDS.pendingGg,
+      employeeId: operator2.id,
+      status: OvertimeStatus.PENDIENTE_GERENCIA_GENERAL,
+      reasonOptionId: reasonMensual.id,
+      approvals: [
+        {
+          id: 'ffffffff-0000-0000-0000-000000000321',
+          level: OvertimeApprovalLevel.GERENCIA_OPERACIONES,
+          approverId: GLOBAL_MES_OPERATIONS_ADMIN_USER_ID,
+          decision: OvertimeApprovalDecision.APROBADO,
+          comment: 'OK ops (seed admin CONN-04b)',
+        },
+        {
+          id: 'ffffffff-0000-0000-0000-000000000322',
+          level: OvertimeApprovalLevel.GERENCIA_GENERAL,
+        },
+      ],
+    },
+    {
+      id: ADMIN_REQUEST_IDS.approved,
+      employeeId: opsAdmin.id,
+      status: OvertimeStatus.APROBADA,
+      reasonOptionId: reasonAseo.id,
+      approvals: [
+        {
+          id: 'ffffffff-0000-0000-0000-000000000331',
+          level: OvertimeApprovalLevel.GERENCIA_OPERACIONES,
+          approverId: GLOBAL_MES_OPERATIONS_ADMIN_USER_ID,
+          decision: OvertimeApprovalDecision.APROBADO,
+          comment: 'OK ops (seed admin CONN-04b)',
+        },
+        {
+          id: 'ffffffff-0000-0000-0000-000000000332',
+          level: OvertimeApprovalLevel.GERENCIA_GENERAL,
+          approverId: GLOBAL_OVERTIME_GG_USER_ID,
+          decision: OvertimeApprovalDecision.APROBADO,
+          comment: 'OK GG (seed admin CONN-04b)',
+        },
+      ],
+    },
+    {
+      id: ADMIN_REQUEST_IDS.objected,
+      employeeId: supervisor.id,
+      status: OvertimeStatus.OBJETADA,
+      reasonOptionId: reasonSemana.id,
+      approvals: [
+        {
+          id: 'ffffffff-0000-0000-0000-000000000341',
+          level: OvertimeApprovalLevel.GERENCIA_OPERACIONES,
+          approverId: GLOBAL_MES_OPERATIONS_ADMIN_USER_ID,
+          decision: OvertimeApprovalDecision.OBJETADO,
+          comment: 'No autorizado — demo objeción admin (seed)',
+        },
+        {
+          id: 'ffffffff-0000-0000-0000-000000000342',
+          level: OvertimeApprovalLevel.GERENCIA_GENERAL,
+        },
+      ],
+    },
+  ];
+
+  for (const scenario of scenarios) {
+    await prisma.overtimeRequest.upsert({
+      where: { id: scenario.id },
+      update: {
+        tenantId: TENANT_ID,
+        employeeId: scenario.employeeId,
+        locationId,
+        type: OvertimeRequestType.SOLICITUD_ADMINISTRATIVA,
+        status: scenario.status,
+        payrollPeriod,
+        workDate,
+        proposedStartTime,
+        proposedEndTime,
+        proposedMinutes,
+        reasonOptionId: scenario.reasonOptionId,
+        requestedByUserId: GLOBAL_MES_MANAGER_USER_ID,
+        batchId: ADMIN_DEMO_BATCH_ID,
+        shiftEndTime: null,
+        actualEndTime: null,
+        accumulatedMinutes: null,
+        deletedAt: null,
+      },
+      create: {
+        id: scenario.id,
+        tenantId: TENANT_ID,
+        employeeId: scenario.employeeId,
+        locationId,
+        type: OvertimeRequestType.SOLICITUD_ADMINISTRATIVA,
+        status: scenario.status,
+        payrollPeriod,
+        workDate,
+        proposedStartTime,
+        proposedEndTime,
+        proposedMinutes,
+        reasonOptionId: scenario.reasonOptionId,
+        requestedByUserId: GLOBAL_MES_MANAGER_USER_ID,
+        batchId: ADMIN_DEMO_BATCH_ID,
+        shiftEndTime: null,
+        actualEndTime: null,
+        accumulatedMinutes: null,
+      },
+    });
+
+    for (const approval of scenario.approvals) {
+      await upsertApprovalRow(prisma, approval.id, scenario.id, approval.level, {
+        approverId: approval.approverId ?? null,
+        decision: approval.decision ?? null,
+        decidedAt: approval.decision ? decidedAt : null,
+        comment: approval.comment ?? null,
+      });
+    }
+  }
+}
+
 async function seedOvertimeAttendanceLogs(
   prisma: PrismaClient,
   locationId: string,
@@ -501,6 +751,7 @@ async function seedOvertimeAttendanceLogs(
 
 /**
  * CONN-04a — fixtures de solicitudes de tiempo extra para bandeja, cascada y nómina.
+ * CONN-04b / OS-606 — motivos OVERTIME_REASON + lote demo SOLICITUD_ADMINISTRATIVA.
  * Idempotente: upsert por IDs fijos; recalcula período con la fecha actual en Bogotá.
  */
 export async function seedOvertimeDemo(prisma: PrismaClient): Promise<void> {
@@ -521,6 +772,7 @@ export async function seedOvertimeDemo(prisma: PrismaClient): Promise<void> {
 
   await configureOvertimeApprovers(prisma, location.id, passwordHash);
   await seedOvertimeRequests(prisma, location.id, payrollPeriod, workDate);
+  await seedAdministrativeOvertimeRequests(prisma, location.id, payrollPeriod, workDate);
   await seedOvertimeAttendanceLogs(prisma, location.id, workDate);
 
   console.log('✅ CONN-04a Overtime demo seed:');
@@ -533,10 +785,16 @@ export async function seedOvertimeDemo(prisma: PrismaClient): Promise<void> {
     '  Aprobar L2 (GERENCIA OPS):      operations.admin@palos-de-lena.dev / TestPass123!',
   );
   console.log('  Aprobar L3 (GERENTE GENERAL):   overtime-gg@palos-de-lena.dev / TestPass123!');
-  console.log('  Solicitudes sembradas:');
+  console.log('  Solicitudes sembradas (detección):');
   console.log('    • Operario de Planta        → PENDIENTE_ADMIN');
   console.log('    • Carlos Mendoza (operator2)→ PENDIENTE_GERENCIA_OPERACIONES');
   console.log('    • Operations admin          → PENDIENTE_GERENCIA_GENERAL');
   console.log('    • Diego Torres (manager)    → APROBADA');
   console.log('    • Sofía Ramírez (supervisor)→ OBJETADA');
+  console.log('  Solicitudes sembradas (admin CONN-04b, batch ' + ADMIN_DEMO_BATCH_ID + '):');
+  console.log('    • Operario                  → PENDIENTE_GERENCIA_OPERACIONES');
+  console.log('    • Operator2                 → PENDIENTE_GERENCIA_GENERAL');
+  console.log('    • Operations admin          → APROBADA (detection null; no liquida task-08/09)');
+  console.log('    • Supervisor                → OBJETADA');
+  console.log('  Crear admin: mes-manager@palos-de-lena.dev (MANAGER + pos-pdl-001)');
 }

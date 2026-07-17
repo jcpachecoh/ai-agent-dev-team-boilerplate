@@ -1,12 +1,26 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type UseMutationResult,
+  type UseQueryResult,
+} from '@tanstack/react-query';
 
 import {
   approveOvertimeRequest,
+  createAdministrativeOvertimeRequests,
   fetchOvertimePeriodSummary,
   fetchOvertimeRequests,
   objectOvertimeRequest,
 } from '../api/overtime.client';
-import type { OvertimeInboxFilters } from '../types/overtime.types';
+import type {
+  CreateAdministrativeOvertimeBatchResult,
+  CreateAdministrativeOvertimeRequestInput,
+  OvertimeInboxFilters,
+  OvertimeInboxResult,
+  OvertimePeriodSummary,
+  OvertimeRequestItem,
+} from '../types/overtime.types';
 
 export const overtimeKeys = {
   all: ['overtime'] as const,
@@ -14,7 +28,10 @@ export const overtimeKeys = {
   summary: (payrollPeriod: string) => ['overtime', 'summary', payrollPeriod] as const,
 };
 
-export function useOvertimeRequestsQuery(filters: OvertimeInboxFilters, enabled = true) {
+export function useOvertimeRequestsQuery(
+  filters: OvertimeInboxFilters,
+  enabled = true,
+): UseQueryResult<OvertimeInboxResult> {
   return useQuery({
     queryKey: overtimeKeys.inbox(filters),
     queryFn: () => fetchOvertimeRequests(filters),
@@ -22,7 +39,10 @@ export function useOvertimeRequestsQuery(filters: OvertimeInboxFilters, enabled 
   });
 }
 
-export function useOvertimePeriodSummaryQuery(payrollPeriod: string, enabled = true) {
+export function useOvertimePeriodSummaryQuery(
+  payrollPeriod: string,
+  enabled = true,
+): UseQueryResult<OvertimePeriodSummary> {
   return useQuery({
     queryKey: overtimeKeys.summary(payrollPeriod),
     queryFn: () => fetchOvertimePeriodSummary(payrollPeriod),
@@ -30,7 +50,11 @@ export function useOvertimePeriodSummaryQuery(payrollPeriod: string, enabled = t
   });
 }
 
-export function useApproveOvertimeMutation() {
+export function useApproveOvertimeMutation(): UseMutationResult<
+  OvertimeRequestItem,
+  Error,
+  { id: string; comment?: string }
+> {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, comment }: { id: string; comment?: string }) =>
@@ -41,11 +65,30 @@ export function useApproveOvertimeMutation() {
   });
 }
 
-export function useObjectOvertimeMutation() {
+export function useObjectOvertimeMutation(): UseMutationResult<
+  OvertimeRequestItem,
+  Error,
+  { id: string; comment: string }
+> {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, comment }: { id: string; comment: string }) =>
       objectOvertimeRequest(id, comment),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: overtimeKeys.all });
+    },
+  });
+}
+
+export function useCreateAdministrativeOvertimeMutation(): UseMutationResult<
+  CreateAdministrativeOvertimeBatchResult,
+  Error,
+  CreateAdministrativeOvertimeRequestInput
+> {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: CreateAdministrativeOvertimeRequestInput) =>
+      createAdministrativeOvertimeRequests(input),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: overtimeKeys.all });
     },

@@ -9,6 +9,8 @@ vi.mock('@/features/attendance', () => ({
   AttendanceMonitorScreen: () => <div>Monitor de asistencias</div>,
   AttendanceLocationDetailScreen: () => <div>Detalle sede</div>,
   AttendanceCardScreen: () => <div>Tarjeta colaborador</div>,
+  OvertimeInboxScreen: () => <div>Bandeja tiempo extra</div>,
+  AttendanceReportsScreen: () => <div>Reportes asistencia</div>,
   TurnosListScreen: () => <div>Detalle de turnos</div>,
   AsignacionTurnosScreen: () => <div>Asignación de turnos</div>,
 }));

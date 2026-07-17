@@ -1,5 +1,6 @@
 import {
   DatePicker,
+  EmpleadoActionButton,
   EmpleadoPage,
   EmpleadoPageHeader,
   EmpleadoPageSection,
@@ -15,18 +16,24 @@ import { getRoleCodeFromToken } from '@/lib/auth-token';
 import { useTheme } from '@/providers/ThemeProvider';
 import { useClientTablePagination } from '@/utils/useClientTablePagination';
 
+import styles from './OvertimeInboxScreen.module.scss';
+import { AttendanceApiError } from '../api/attendance.client';
+import { AdministrativeOvertimeRequestModal } from '../components/AdministrativeOvertimeRequestModal';
 import { OvertimeObjectModal } from '../components/OvertimeObjectModal';
 import { OvertimeTable } from '../components/OvertimeTable';
-import { usePayrollEmployeeQuery } from '../hooks/usePayrollEmployeeQuery';
 import {
   useApproveOvertimeMutation,
+  useCreateAdministrativeOvertimeMutation,
   useObjectOvertimeMutation,
   useOvertimePeriodSummaryQuery,
   useOvertimeRequestsQuery,
 } from '../hooks/useOvertimeRequests';
-import type { OvertimeRequestItem } from '../types/overtime.types';
-
-import styles from './OvertimeInboxScreen.module.scss';
+import { usePayrollEmployeeQuery } from '../hooks/usePayrollEmployeeQuery';
+import type {
+  CreateAdministrativeOvertimeRequestInput,
+  OvertimeRequestItem,
+} from '../types/overtime.types';
+import { canRequestAdministrativeOvertime } from '../utils/overtime-request-rbac';
 
 function currentPayrollPeriod(): string {
   const now = new Date();
@@ -42,14 +49,39 @@ function dateToPayrollPeriod(date: Date): string {
   return format(date, 'yyyy-MM');
 }
 
+function mapCreateError(error: unknown): string {
+  if (error instanceof AttendanceApiError) {
+    if (error.status === 403) {
+      return error.message || 'No tiene permiso o sede autorizada para crear la solicitud.';
+    }
+    if (error.status === 404) {
+      return error.message || 'Empleado o motivo no encontrado.';
+    }
+    if (error.status === 409) {
+      return error.message || 'Ya existe una solicitud solapada o duplicada.';
+    }
+    if (error.status === 400) {
+      return error.message || 'Revise los datos del formulario.';
+    }
+    return error.message;
+  }
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return 'No se pudo crear la solicitud.';
+}
+
 export function OvertimeInboxScreen(): React.JSX.Element {
   const { theme } = useTheme();
   const empleadoTheme = theme === 'light' ? 'light' : 'dark';
   const [payrollPeriod, setPayrollPeriod] = useState(currentPayrollPeriod());
   const [objectTarget, setObjectTarget] = useState<OvertimeRequestItem | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
 
   const meQuery = useMe();
   const roleCode = meQuery.data?.roleCode ?? getRoleCodeFromToken();
+  const canCreateAdminRequest = canRequestAdministrativeOvertime(roleCode);
   const employeeQuery = usePayrollEmployeeQuery(meQuery.data?.id ?? '');
   const positionId = employeeQuery.data?.positionId ?? null;
 
@@ -57,6 +89,7 @@ export function OvertimeInboxScreen(): React.JSX.Element {
   const summaryQuery = useOvertimePeriodSummaryQuery(payrollPeriod);
   const approveMutation = useApproveOvertimeMutation();
   const objectMutation = useObjectOvertimeMutation();
+  const createMutation = useCreateAdministrativeOvertimeMutation();
 
   const items = inboxQuery.data?.items ?? [];
   const pendingCount = summaryQuery.data?.pendingCount ?? 0;
@@ -67,12 +100,30 @@ export function OvertimeInboxScreen(): React.JSX.Element {
     [payrollPeriod, items.length],
   );
 
-  const handleApprove = async (item: OvertimeRequestItem) => {
+  const handleApprove = async (item: OvertimeRequestItem): Promise<void> => {
     try {
       await approveMutation.mutateAsync({ id: item.id });
       toast.success('Solicitud aprobada');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'No se pudo aprobar la solicitud');
+    }
+  };
+
+  const handleCreate = async (input: CreateAdministrativeOvertimeRequestInput): Promise<void> => {
+    if (createMutation.isPending) {
+      return;
+    }
+    setCreateError(null);
+    try {
+      const result = await createMutation.mutateAsync(input);
+      setCreateOpen(false);
+      toast.success(
+        result.createdCount === 1
+          ? 'Se creó 1 solicitud administrativa'
+          : `Se crearon ${result.createdCount} solicitudes administrativas`,
+      );
+    } catch (error) {
+      setCreateError(mapCreateError(error));
     }
   };
 
@@ -105,6 +156,19 @@ export function OvertimeInboxScreen(): React.JSX.Element {
           subtitle={subtitle}
           theme={empleadoTheme}
           size="md"
+          primaryAction={
+            canCreateAdminRequest ? (
+              <EmpleadoActionButton
+                theme={empleadoTheme}
+                size="md"
+                label="Solicitar extensión de jornada"
+                onClick={() => {
+                  setCreateError(null);
+                  setCreateOpen(true);
+                }}
+              />
+            ) : undefined
+          }
         />
       </EmpleadoPageSection>
 
@@ -128,7 +192,9 @@ export function OvertimeInboxScreen(): React.JSX.Element {
             <DatePicker
               value={payrollPeriodToDate(payrollPeriod)}
               onChange={(date) => {
-                if (!date) return;
+                if (!date) {
+                  return;
+                }
                 setPayrollPeriod(dateToPayrollPeriod(date));
               }}
               theme={empleadoTheme}
@@ -167,7 +233,9 @@ export function OvertimeInboxScreen(): React.JSX.Element {
         loading={objectMutation.isPending}
         onClose={() => setObjectTarget(null)}
         onSubmit={(comment) => {
-          if (!objectTarget) return;
+          if (!objectTarget) {
+            return;
+          }
           objectMutation.mutate(
             { id: objectTarget.id, comment },
             {
@@ -183,6 +251,21 @@ export function OvertimeInboxScreen(): React.JSX.Element {
             },
           );
         }}
+      />
+
+      <AdministrativeOvertimeRequestModal
+        open={createOpen}
+        loading={createMutation.isPending}
+        roleCode={roleCode}
+        errorMessage={createError}
+        onClose={() => {
+          if (createMutation.isPending) {
+            return;
+          }
+          setCreateOpen(false);
+          setCreateError(null);
+        }}
+        onSubmit={(input) => void handleCreate(input)}
       />
     </EmpleadoPage>
   );

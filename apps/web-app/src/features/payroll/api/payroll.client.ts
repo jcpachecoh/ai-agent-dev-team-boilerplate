@@ -300,9 +300,40 @@ export function removePayrollEmployee(userId: string): Promise<boolean> {
 
 export function listEmployeeCatalogOptions(
   type?: EmployeeCatalogType,
+  includeInactive = false,
 ): Promise<EmployeeCatalogOption[]> {
-  const query = toQueryString({ type });
+  const query = toQueryString({
+    type,
+    includeInactive: includeInactive ? true : undefined,
+  });
   return payrollFetch<EmployeeCatalogOption[]>(`/employee-catalogs${query}`);
+}
+
+export function createEmployeeCatalogOption(input: {
+  type: EmployeeCatalogType;
+  name: string;
+  pilaCode?: string | null;
+}): Promise<EmployeeCatalogOption> {
+  return payrollFetch<EmployeeCatalogOption>('/employee-catalogs', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export function updateEmployeeCatalogOption(
+  id: string,
+  input: { name?: string; isActive?: boolean; pilaCode?: string | null },
+): Promise<EmployeeCatalogOption> {
+  return payrollFetch<EmployeeCatalogOption>(`/employee-catalogs/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  });
+}
+
+export function deactivateEmployeeCatalogOption(id: string): Promise<EmployeeCatalogOption> {
+  return payrollFetch<EmployeeCatalogOption>(`/employee-catalogs/${id}/deactivate`, {
+    method: 'PATCH',
+  });
 }
 
 export function exportDotacionReport(period: string, locationId?: string): Promise<Blob> {

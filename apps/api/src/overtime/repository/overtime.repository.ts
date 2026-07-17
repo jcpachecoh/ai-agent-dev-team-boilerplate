@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import {
   AttendanceEventType,
   OvertimeApprovalLevel,
@@ -10,19 +10,25 @@ import {
 
 import { PrismaService } from '../../prisma/prisma.service';
 import type {
+  ApprovedAdministrativeOvertimeWindow,
+  CreateAdministrativeOvertimeRequestData,
   CreateOvertimeRequestData,
   EmployeeOvertimeApprovalStatus,
+  FindOverlappingAdministrativeWindowsInput,
   IOvertimeRepository,
   OvertimeActorContext,
   OvertimeApprovalRecord,
+  OvertimeEmployeeLocationCheck,
   OvertimeInboxFilters,
   OvertimeInboxPage,
   OvertimeRequestDetail,
   OvertimeRequestRecord,
   OvertimeRequestSummary,
+  OvertimeTransactionClient,
   UpdateOvertimeRequestData,
   UpsertOvertimeApprovalData,
 } from '../interfaces/overtime.interfaces';
+import { OVERTIME_ADMIN_OVERLAP_BLOCKING_STATUSES } from '../overtime-approval.constants';
 
 const REQUEST_INCLUDE = {
   employee: {
@@ -66,11 +72,18 @@ function mapRequest(row: {
   employeeId: string;
   locationId: string;
   type: OvertimeRequestType;
-  shiftEndTime: Date;
-  actualEndTime: Date;
-  accumulatedMinutes: number;
+  shiftEndTime: Date | null;
+  actualEndTime: Date | null;
+  accumulatedMinutes: number | null;
   status: OvertimeStatus;
   payrollPeriod: string | null;
+  workDate: Date | null;
+  proposedStartTime: Date | null;
+  proposedEndTime: Date | null;
+  proposedMinutes: number | null;
+  reasonOptionId: string | null;
+  requestedByUserId: string | null;
+  batchId: string | null;
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;
@@ -81,11 +94,19 @@ function mapRequest(row: {
     employeeId: row.employeeId,
     locationId: row.locationId,
     type: row.type,
+    // Pass-through nulls — do not coerce to epoch/0 (would hide invalid detection/admin rows).
     shiftEndTime: row.shiftEndTime,
     actualEndTime: row.actualEndTime,
     accumulatedMinutes: row.accumulatedMinutes,
     status: row.status,
     payrollPeriod: row.payrollPeriod,
+    workDate: row.workDate,
+    proposedStartTime: row.proposedStartTime,
+    proposedEndTime: row.proposedEndTime,
+    proposedMinutes: row.proposedMinutes,
+    reasonOptionId: row.reasonOptionId,
+    requestedByUserId: row.requestedByUserId,
+    batchId: row.batchId,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
     deletedAt: row.deletedAt,
@@ -98,6 +119,8 @@ function employeeDisplayName(email: string): string {
 
 @Injectable()
 export class OvertimeRepository implements IOvertimeRepository {
+  private readonly logger = new Logger(OvertimeRepository.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   async findById(tenantId: string, id: string): Promise<OvertimeRequestDetail | null> {
@@ -152,6 +175,140 @@ export class OvertimeRepository implements IOvertimeRepository {
       },
     });
     return mapRequest(row);
+  }
+
+  async createAdministrativeRequest(
+    tenantId: string,
+    data: CreateAdministrativeOvertimeRequestData,
+    tx?: OvertimeTransactionClient,
+  ): Promise<OvertimeRequestRecord> {
+    const client = tx ?? this.prisma;
+    const row = await client.overtimeRequest.create({
+      data: {
+        tenantId,
+        employeeId: data.employeeId,
+        locationId: data.locationId,
+        type: data.type,
+        status: data.status,
+        payrollPeriod: data.payrollPeriod,
+        workDate: data.workDate,
+        proposedStartTime: data.proposedStartTime,
+        proposedEndTime: data.proposedEndTime,
+        proposedMinutes: data.proposedMinutes,
+        reasonOptionId: data.reasonOptionId,
+        requestedByUserId: data.requestedByUserId,
+        batchId: data.batchId,
+        // Detection-only columns stay null for admin rows (schema nullable).
+        shiftEndTime: null,
+        actualEndTime: null,
+        accumulatedMinutes: null,
+      },
+    });
+    return mapRequest(row);
+  }
+
+  async createAdministrativeRequests(
+    tenantId: string,
+    rows: CreateAdministrativeOvertimeRequestData[],
+    tx: OvertimeTransactionClient,
+  ): Promise<OvertimeRequestRecord[]> {
+    const created: OvertimeRequestRecord[] = [];
+    for (const data of rows) {
+      created.push(await this.createAdministrativeRequest(tenantId, data, tx));
+    }
+    return created;
+  }
+
+  async findAdministrativeByEmployeeWorkDate(
+    tenantId: string,
+    employeeId: string,
+    locationId: string,
+    workDate: Date,
+  ): Promise<OvertimeRequestRecord[]> {
+    const rows = await this.prisma.overtimeRequest.findMany({
+      where: {
+        tenantId,
+        employeeId,
+        locationId,
+        workDate,
+        type: OvertimeRequestType.SOLICITUD_ADMINISTRATIVA,
+        deletedAt: null,
+      },
+      orderBy: [{ proposedStartTime: 'asc' }, { id: 'asc' }],
+    });
+    return rows.map(mapRequest);
+  }
+
+  async findOverlappingAdministrativeWindows(
+    tenantId: string,
+    input: FindOverlappingAdministrativeWindowsInput,
+    tx?: OvertimeTransactionClient,
+  ): Promise<OvertimeRequestRecord[]> {
+    const client = tx ?? this.prisma;
+    const rows = await client.overtimeRequest.findMany({
+      where: {
+        tenantId,
+        employeeId: input.employeeId,
+        locationId: input.locationId,
+        type: OvertimeRequestType.SOLICITUD_ADMINISTRATIVA,
+        deletedAt: null,
+        status: { in: [...OVERTIME_ADMIN_OVERLAP_BLOCKING_STATUSES] },
+        // Interval overlap: start < otherEnd AND end > otherStart (contiguous end===start OK).
+        proposedStartTime: { lt: input.proposedEndTime },
+        proposedEndTime: { gt: input.proposedStartTime },
+        ...(input.excludeRequestId ? { id: { not: input.excludeRequestId } } : {}),
+      },
+      orderBy: [{ proposedStartTime: 'asc' }, { id: 'asc' }],
+    });
+    return rows.map(mapRequest);
+  }
+
+  async findByBatchId(tenantId: string, batchId: string): Promise<OvertimeRequestRecord[]> {
+    const rows = await this.prisma.overtimeRequest.findMany({
+      where: {
+        tenantId,
+        batchId,
+        deletedAt: null,
+      },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+    });
+    return rows.map(mapRequest);
+  }
+
+  async findActiveLocationById(
+    tenantId: string,
+    locationId: string,
+  ): Promise<{ id: string } | null> {
+    return this.prisma.location.findFirst({
+      where: {
+        id: locationId,
+        tenantId,
+        isActive: true,
+        deletedAt: null,
+      },
+      select: { id: true },
+    });
+  }
+
+  async findActiveEmployeesByIds(
+    tenantId: string,
+    employeeIds: string[],
+  ): Promise<OvertimeEmployeeLocationCheck[]> {
+    if (employeeIds.length === 0) {
+      return [];
+    }
+    return this.prisma.employeeDetails.findMany({
+      where: {
+        tenantId,
+        id: { in: employeeIds },
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        locationId: true,
+        isActive: true,
+      },
+    });
   }
 
   async updateRequest(
@@ -401,5 +558,59 @@ export class OvertimeRepository implements IOvertimeRepository {
       status: row.status,
       accumulatedMinutes: row.accumulatedMinutes,
     }));
+  }
+
+  async findApprovedAdministrativeWindowsByEmployeeIdsForPeriod(
+    tenantId: string,
+    employeeIds: string[],
+    payrollPeriod: string,
+  ): Promise<ApprovedAdministrativeOvertimeWindow[]> {
+    if (employeeIds.length === 0) {
+      return [];
+    }
+
+    const rows = await this.prisma.overtimeRequest.findMany({
+      where: {
+        tenantId,
+        employeeId: { in: employeeIds },
+        payrollPeriod,
+        type: OvertimeRequestType.SOLICITUD_ADMINISTRATIVA,
+        status: OvertimeStatus.APROBADA,
+        deletedAt: null,
+      },
+      select: {
+        employeeId: true,
+        locationId: true,
+        workDate: true,
+        proposedStartTime: true,
+        proposedEndTime: true,
+        proposedMinutes: true,
+      },
+    });
+
+    const windows: ApprovedAdministrativeOvertimeWindow[] = [];
+    for (const row of rows) {
+      if (!row.workDate || !row.proposedStartTime || !row.proposedEndTime) {
+        this.logger.warn(
+          `Ignoring incomplete approved admin overtime window for employee=${row.employeeId} period=${payrollPeriod}`,
+        );
+        continue;
+      }
+      if (row.proposedEndTime.getTime() <= row.proposedStartTime.getTime()) {
+        this.logger.warn(
+          `Ignoring non-positive approved admin overtime window for employee=${row.employeeId} period=${payrollPeriod}`,
+        );
+        continue;
+      }
+      windows.push({
+        employeeId: row.employeeId,
+        locationId: row.locationId,
+        workDate: row.workDate,
+        proposedStartTime: row.proposedStartTime,
+        proposedEndTime: row.proposedEndTime,
+        proposedMinutes: row.proposedMinutes,
+      });
+    }
+    return windows;
   }
 }

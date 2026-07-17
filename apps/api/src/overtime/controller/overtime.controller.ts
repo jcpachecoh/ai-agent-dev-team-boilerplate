@@ -10,21 +10,30 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiCreatedResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { OvertimeStatus } from '@prisma/client';
 
+import { workDateFromIso } from '../../attendance/utils/period-range.util';
 import type { JwtPayload } from '../../auth/interfaces/auth.interfaces';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { RequirePermission } from '../../common/decorators/require-permission.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { PermissionsGuard } from '../../common/guards/permissions.guard';
 import type {
   OvertimeRequestDetail,
+  OvertimeRequestRecord,
   OvertimeRequestSummary,
 } from '../interfaces/overtime.interfaces';
+import { OVERTIME_REQUEST_PERMISSION } from '../overtime.constants';
 import { OvertimeService } from '../service/overtime.service';
 import {
+  AdministrativeOvertimeCreatedItemDto,
   ApproveOvertimeRequestDto,
+  CreateAdministrativeOvertimeBatchResponseDto,
+  CreateAdministrativeOvertimeRequestDto,
   ListOvertimeRequestsQueryDto,
   ObjectOvertimeRequestDto,
+  OvertimeApprovalResponseDto,
   OvertimeInboxResponseDto,
   OvertimePeriodSummaryQueryDto,
   OvertimePeriodSummaryResponseDto,
@@ -47,11 +56,19 @@ function mapSummary(row: OvertimeRequestSummary): OvertimeRequestResponseDto {
     employeeName: row.employeeName,
     locationId: row.locationId,
     locationName: row.locationName,
+    type: row.type,
     accumulatedMinutes: row.accumulatedMinutes,
     shiftEndTime: row.shiftEndTime,
     actualEndTime: row.actualEndTime,
     status: row.status,
     payrollPeriod: row.payrollPeriod,
+    workDate: row.workDate,
+    proposedStartTime: row.proposedStartTime,
+    proposedEndTime: row.proposedEndTime,
+    proposedMinutes: row.proposedMinutes,
+    reasonOptionId: row.reasonOptionId,
+    requestedByUserId: row.requestedByUserId,
+    batchId: row.batchId,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
@@ -60,19 +77,44 @@ function mapSummary(row: OvertimeRequestSummary): OvertimeRequestResponseDto {
 function mapDetail(row: OvertimeRequestDetail): OvertimeRequestDetailResponseDto {
   return {
     ...mapSummary(row),
-    approvals: row.approvals.map((approval) => ({
-      id: approval.id,
-      level: approval.level,
-      approverId: approval.approverId,
-      decision: approval.decision,
-      decidedAt: approval.decidedAt,
-      comment: approval.comment,
-    })),
+    approvals: row.approvals.map(
+      (approval): OvertimeApprovalResponseDto => ({
+        id: approval.id,
+        level: approval.level,
+        approverId: approval.approverId,
+        decision: approval.decision,
+        decidedAt: approval.decidedAt,
+        comment: approval.comment,
+      }),
+    ),
+  };
+}
+
+function mapCreatedItem(row: OvertimeRequestRecord): AdministrativeOvertimeCreatedItemDto {
+  return {
+    id: row.id,
+    employeeId: row.employeeId,
+    locationId: row.locationId,
+    type: row.type,
+    status: row.status,
+    workDate: row.workDate,
+    proposedStartTime: row.proposedStartTime,
+    proposedEndTime: row.proposedEndTime,
+    proposedMinutes: row.proposedMinutes,
+    reasonOptionId: row.reasonOptionId,
+    requestedByUserId: row.requestedByUserId,
+    batchId: row.batchId,
+    payrollPeriod: row.payrollPeriod,
+    accumulatedMinutes: row.accumulatedMinutes,
+    shiftEndTime: row.shiftEndTime,
+    actualEndTime: row.actualEndTime,
   };
 }
 
 function parseStatusFilter(status?: OvertimeStatus[]): OvertimeStatus[] | undefined {
-  if (!status?.length) return undefined;
+  if (!status?.length) {
+    return undefined;
+  }
   return status;
 }
 
@@ -90,6 +132,36 @@ export class OvertimeController {
     @Query() query: OvertimePeriodSummaryQueryDto,
   ): Promise<OvertimePeriodSummaryResponseDto> {
     return this.overtimeService.getPeriodSummary(user.tenantId, query.payrollPeriod);
+  }
+
+  @Post('administrative')
+  @HttpCode(HttpStatus.CREATED)
+  @UseGuards(PermissionsGuard)
+  @RequirePermission(OVERTIME_REQUEST_PERMISSION)
+  @ApiOperation({
+    summary: 'Crear solicitudes administrativas de extensión de jornada (OS-606 / CONN-04b)',
+  })
+  @ApiCreatedResponse({ type: CreateAdministrativeOvertimeBatchResponseDto })
+  async createAdministrative(
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: CreateAdministrativeOvertimeRequestDto,
+  ): Promise<CreateAdministrativeOvertimeBatchResponseDto> {
+    assertNotKioskMarkingToken(user);
+
+    const result = await this.overtimeService.createAdministrativeBatch(user.tenantId, user.sub, {
+      employeeIds: dto.employeeIds,
+      locationId: dto.locationId,
+      workDate: workDateFromIso(dto.workDate),
+      proposedStartTime: new Date(dto.proposedStartTime),
+      proposedEndTime: new Date(dto.proposedEndTime),
+      reasonOptionId: dto.reasonOptionId,
+    });
+
+    return {
+      batchId: result.batchId,
+      createdCount: result.items.length,
+      items: result.items.map(mapCreatedItem),
+    };
   }
 
   @Get()

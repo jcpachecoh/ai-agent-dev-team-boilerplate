@@ -1,3 +1,7 @@
+import {
+  calculateProposedMinutes,
+  isProposedStartOnWorkDate,
+} from '../utils/admin-overtime-window.util';
 import { computeExcessMinutes, computeShiftEndDateTime } from '../utils/shift-end.util';
 import {
   formatPayrollPeriod,
@@ -31,5 +35,17 @@ describe('overtime utils', () => {
 
   it('payrollPeriodFromYearMonth formatea con cero', () => {
     expect(payrollPeriodFromYearMonth(2026, 3)).toBe('2026-03');
+  });
+
+  it('calculateProposedMinutes usa floor de diferencia absoluta', () => {
+    const start = new Date('2026-07-20T22:00:00.000-05:00');
+    const end = new Date('2026-07-21T01:00:00.000-05:00');
+    expect(calculateProposedMinutes(start, end)).toBe(180);
+  });
+
+  it('isProposedStartOnWorkDate valida día Bogotá vs workDate UTC', () => {
+    const workDate = new Date('2026-07-20T00:00:00.000Z');
+    const start = new Date('2026-07-20T22:00:00.000-05:00');
+    expect(isProposedStartOnWorkDate(workDate, start)).toBe(true);
   });
 });

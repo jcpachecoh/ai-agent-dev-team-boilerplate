@@ -61,6 +61,10 @@ import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { syncEmployeeCompensationHistory } from './seeds/employee-compensation-history.seed-util';
 import { seedWeeklyShiftPlansDemo } from './seeds/conn12-weekly-shift-plans.seed';
+import {
+  OS606_OVERTIME_REQUEST_CODES,
+  OS606_OVERTIME_REQUEST_PERMISSION_SEED,
+} from './seeds/os606-overtime-request-permission';
 
 const prisma = new PrismaClient();
 
@@ -604,6 +608,10 @@ const PERMISSION_SEEDS = [
     resource: 'overtime',
     action: 'read',
   },
+  // OS-606 / CONN-04b — create admin overtime (sede Admin = ROLE MANAGER + cargo pos-pdl-001).
+  // No NOMINA/SUPERVISOR (P4 cerrado: NOMINA no crea). OWNER/SUPER_ADMIN vía ALL_PERMISSION_CODES;
+  // el service sigue exigiendo cargo Administrador de sede + UserLocation.
+  OS606_OVERTIME_REQUEST_PERMISSION_SEED,
   // OS-585 / NOM-06 — Parámetros legales con vigencia (SuperAdmin/Owner only, ver ROLE_PERMISSION_MATRIX).
   // IDs 064/065: 027/028 ya estaban ocupados en envs existentes por nomina.roles.*.
   {
@@ -781,6 +789,8 @@ const OPERATIONS_ADMIN_PERMISSION_CODES = ['plant.orders.read', 'plant.committee
 const MOBILE_ATTENDANCE_CREATE_CODES = ['attendance.mobile.create'] as const;
 const MOBILE_ATTENDANCE_READ_CODES = ['attendance.mobile.read'] as const;
 const OVERTIME_READ_CODES = ['attendance.overtime.read'] as const;
+/** OS-606 — solo Administrador de sede (MANAGER). attendance.overtime.read no autoriza create. */
+const OVERTIME_REQUEST_CODES = OS606_OVERTIME_REQUEST_CODES;
 
 // OS-560 — todos los roles de nómina gestionan perfiles sociales
 const SOCIAL_PROFILE_PERMISSION_CODES = [
@@ -865,6 +875,7 @@ const ROLE_PERMISSION_MATRIX: Record<string, readonly string[]> = {
     ...SUPPLIER_DOCUMENT_READ_CODES,
     ...SUPPLIER_DOCUMENT_WRITE_CODES,
     ...OVERTIME_READ_CODES,
+    ...OVERTIME_REQUEST_CODES,
     ...DAILY_COST_CENTER_READ_CODES,
     ...DAILY_COST_CENTER_WRITE_CODES,
     ...SETTLEMENT_READ_CODES,
@@ -2865,6 +2876,8 @@ async function main() {
   // ── NOM-01: Seed EmployeeDetails ─────────────────────────────────────────
   const { seedEmployeeCatalogOptions } = await import('./seeds/employee-catalog.seed');
   await seedEmployeeCatalogOptions(prisma, OPERATIONAL_TENANT_ID);
+  const { seedOvertimeReasonOptions } = await import('./seeds/overtime-reason.seed');
+  await seedOvertimeReasonOptions(prisma, OPERATIONAL_TENANT_ID);
   const { seedTenantPilaConfig } = await import('./seeds/tenant-pila-config.seed');
   await seedTenantPilaConfig(prisma, OPERATIONAL_TENANT_ID);
   await seedEmployeePositions(OPERATIONAL_TENANT_ID);

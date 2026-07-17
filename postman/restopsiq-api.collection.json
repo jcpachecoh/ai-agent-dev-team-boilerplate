@@ -538,6 +538,60 @@
       "description": "CONN-04a — período nómina YYYY-MM para inbox/summary"
     },
     {
+      "key": "os606WorkDate",
+      "value": "2026-07-30",
+      "type": "string",
+      "description": "OS-606 — workDate YYYY-MM-DD (ventana create; evitar choque con seed demo)"
+    },
+    {
+      "key": "os606ProposedStart",
+      "value": "2026-07-30T22:00:00.000-05:00",
+      "type": "string",
+      "description": "OS-606 — proposedStartTime ISO"
+    },
+    {
+      "key": "os606ProposedEnd",
+      "value": "2026-07-30T23:30:00.000-05:00",
+      "type": "string",
+      "description": "OS-606 — proposedEndTime ISO"
+    },
+    {
+      "key": "os606ReasonOptionId",
+      "value": "",
+      "type": "string",
+      "description": "OS-606 — capturado de GET employee-catalogs?type=OVERTIME_REASON"
+    },
+    {
+      "key": "os606BatchId",
+      "value": "",
+      "type": "string",
+      "description": "OS-606 — batchId del create administrativo"
+    },
+    {
+      "key": "os606RequestId",
+      "value": "",
+      "type": "string",
+      "description": "OS-606 — primera solicitud del batch (flujo approve)"
+    },
+    {
+      "key": "os606ObjectRequestId",
+      "value": "",
+      "type": "string",
+      "description": "OS-606 — segunda solicitud del batch (flujo object)"
+    },
+    {
+      "key": "os606ForbiddenLocationId",
+      "value": "cmro31m4n00d1l5i16z2sce7r",
+      "type": "string",
+      "description": "OS-606 — locationId sin UserLocation del manager (403 sede)"
+    },
+    {
+      "key": "attendanceEmployeeId2",
+      "value": "",
+      "type": "string",
+      "description": "OS-606 — segundo EmployeeDetails.id para create multi-empleado"
+    },
+    {
       "key": "dataConsentPolicyVersion",
       "value": "2026.07.1",
       "type": "string",
@@ -19032,6 +19086,782 @@
                 "exec": [
                   "pm.test('object L3: status 200', () => pm.response.to.have.status(200));",
                   "pm.expect(pm.response.json().status).to.eql('OBJETADA');"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "OS-606 / CONN-04b — Solicitud administrativa de extensión",
+      "description": "OS-606 CONN-04b — solicitud administrativa multi-empleado, cascada Ops→GG (sin nivel Admin), catálogo OVERTIME_REASON, Tarjeta OS-551 y NOM-07.\n\nPrerrequisitos:\n1. Migración OS-606 + `pnpm db:seed` (permiso attendance.overtime.request, motivos OVERTIME_REASON)\n2. Login mes-manager → {{accessTokenManager}}\n3. Tokens Ops/GG: {{accessTokenOvertimeOps}}, {{accessTokenOvertimeGG}}\n4. Variables: attendanceLocationId, attendanceEmployeeId, attendanceEmployeeId2, os606WorkDate, os606ReasonOptionId\n5. Create usa ventana distinta a demo seed (evitar 409)\n\nOrden: Login → Motivos → Create → Inbox → Approve Ops → Approve GG. Object Ops = {{os606ObjectRequestId}}.",
+      "item": [
+        {
+          "name": "Login mes-manager (create admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation Login($input: GlobalLoginInput!) { login(input: $input) { accessToken refreshToken } }\", \"variables\": {\"input\": {\"email\": \"mes-manager@palos-de-lena.dev\", \"password\": \"{{password}}\"}}}"
+            },
+            "url": "{{graphqlUrl}}",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const login = pm.response.json().data?.login;",
+                  "if (login?.accessToken) pm.collectionVariables.set('accessTokenManager', login.accessToken);",
+                  "if (login?.accessToken) pm.environment.set('accessTokenManager', login.accessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Ops (approve L2)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation Login($input: GlobalLoginInput!) { login(input: $input) { accessToken refreshToken } }\", \"variables\": {\"input\": {\"email\": \"operations.admin@palos-de-lena.dev\", \"password\": \"{{password}}\"}}}"
+            },
+            "url": "{{graphqlUrl}}",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const login = pm.response.json().data?.login;",
+                  "if (login?.accessToken) pm.collectionVariables.set('accessTokenOvertimeOps', login.accessToken);",
+                  "if (login?.accessToken) pm.environment.set('accessTokenOvertimeOps', login.accessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login GG (approve L3)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation Login($input: GlobalLoginInput!) { login(input: $input) { accessToken refreshToken } }\", \"variables\": {\"input\": {\"email\": \"overtime-gg@palos-de-lena.dev\", \"password\": \"{{password}}\"}}}"
+            },
+            "url": "{{graphqlUrl}}",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const login = pm.response.json().data?.login;",
+                  "if (login?.accessToken) pm.collectionVariables.set('accessTokenOvertimeGG', login.accessToken);",
+                  "if (login?.accessToken) pm.environment.set('accessTokenOvertimeGG', login.accessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login NOMINA (expect create 403)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation Login($input: GlobalLoginInput!) { login(input: $input) { accessToken refreshToken } }\", \"variables\": {\"input\": {\"email\": \"nomina@palos-de-lena.dev\", \"password\": \"{{password}}\"}}}"
+            },
+            "url": "{{graphqlUrl}}",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const login = pm.response.json().data?.login;",
+                  "if (login?.accessToken) pm.collectionVariables.set('accessTokenNomina', login.accessToken);",
+                  "if (login?.accessToken) pm.environment.set('accessTokenNomina', login.accessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login OWNER (expect create 403 sin cargo Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation Login($input: GlobalLoginInput!) { login(input: $input) { accessToken refreshToken } }\", \"variables\": {\"input\": {\"email\": \"mes-owner@palos-de-lena.dev\", \"password\": \"{{password}}\"}}}"
+            },
+            "url": "{{graphqlUrl}}",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const login = pm.response.json().data?.login;",
+                  "if (login?.accessToken) pm.collectionVariables.set('accessToken', login.accessToken);",
+                  "if (login?.accessToken) pm.environment.set('accessToken', login.accessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET motivos OVERTIME_REASON activos",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenManager}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/employee-catalogs?type=OVERTIME_REASON",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessTokenManager}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('motivos: status 200', () => pm.response.to.have.status(200));",
+                  "const rows = pm.response.json();",
+                  "pm.test('motivos: array', () => pm.expect(rows).to.be.an('array'));",
+                  "const active = (rows || []).filter((r) => r.isActive !== false);",
+                  "pm.test('motivos: al menos 1 activo', () => pm.expect(active.length).to.be.above(0));",
+                  "if (active[0]?.id) pm.collectionVariables.set('os606ReasonOptionId', active[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST create administrative (multi-empleado)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenManager}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/attendance/overtime-requests/administrative",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeIds\": [\"{{attendanceEmployeeId}}\", \"{{attendanceEmployeeId2}}\"],\n  \"locationId\": \"{{attendanceLocationId}}\",\n  \"workDate\": \"{{os606WorkDate}}\",\n  \"proposedStartTime\": \"{{os606ProposedStart}}\",\n  \"proposedEndTime\": \"{{os606ProposedEnd}}\",\n  \"reasonOptionId\": \"{{os606ReasonOptionId}}\"\n}"
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessTokenManager}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('create admin: status 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('create: 2 filas', () => pm.expect(body.createdCount).to.eql(2));",
+                  "pm.test('create: batchId', () => pm.expect(body.batchId).to.be.a('string').and.not.empty);",
+                  "pm.collectionVariables.set('os606BatchId', body.batchId);",
+                  "const items = body.items || [];",
+                  "pm.test('create: type admin', () => { items.forEach((it) => pm.expect(it.type).to.eql('SOLICITUD_ADMINISTRATIVA')); });",
+                  "pm.test('create: estado Ops', () => { items.forEach((it) => pm.expect(it.status).to.eql('PENDIENTE_GERENCIA_OPERACIONES')); });",
+                  "if (items[0]?.id) { pm.collectionVariables.set('os606RequestId', items[0].id); pm.collectionVariables.set('overtimeRequestId', items[0].id); }",
+                  "if (items[1]?.id) pm.collectionVariables.set('os606ObjectRequestId', items[1].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET inbox — solicitudes del período",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenNomina}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/attendance/overtime-requests?payrollPeriod={{overtimePayrollPeriod}}&take=50",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessTokenNomina}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('inbox: status 200', () => pm.response.to.have.status(200));",
+                  "const items = pm.response.json().items || [];",
+                  "const admin = items.filter((it) => it.type === 'SOLICITUD_ADMINISTRATIVA');",
+                  "pm.test('inbox: hay admin (vista NOMINA)', () => pm.expect(admin.length).to.be.above(0));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Approve Ops (request 1)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenOvertimeOps}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/attendance/overtime-requests/{{os606RequestId}}/approve",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"comment\": \"Aprobado Ops — OS-606 admin\"\n}"
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessTokenOvertimeOps}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('approve Ops: status 200', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().status).to.eql('PENDIENTE_GERENCIA_GENERAL');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Approve GG (request 1)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenOvertimeGG}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/attendance/overtime-requests/{{os606RequestId}}/approve",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"comment\": \"Aprobado GG — OS-606 admin\"\n}"
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessTokenOvertimeGG}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('approve GG: status 200', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().status).to.eql('APROBADA');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Object Ops (request 2 del batch)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenOvertimeOps}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/attendance/overtime-requests/{{os606ObjectRequestId}}/object",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"comment\": \"Objeción Ops — demo OS-606 (solo esta fila del batch)\"\n}"
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessTokenOvertimeOps}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('object Ops: status 200', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().status).to.eql('OBJETADA');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Tarjeta OS-551 (origen/estado HE)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenManager}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/attendance/employees/{{attendanceUserId}}/card?dateFrom={{os606WorkDate}}&dateTo={{os606WorkDate}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessTokenManager}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('card: status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('card: shape', () => pm.expect(pm.response.json()).to.be.an('object'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET NOM-07 payroll report (integración minutos)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenNomina}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/reports/payroll?period={{overtimePayrollPeriod}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessTokenNomina}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('payroll report: status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('payroll: body', () => pm.expect(pm.response.json()).to.exist);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET detail APROBADA (trazabilidad)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenNomina}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/attendance/overtime-requests/{{os606RequestId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessTokenNomina}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('detail: status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('detail: type admin', () => pm.expect(body.type).to.eql('SOLICITUD_ADMINISTRATIVA'));",
+                  "pm.test('detail: APROBADA', () => pm.expect(body.status).to.eql('APROBADA'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST create 403 — sede no autorizada (MANAGER)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenManager}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/attendance/overtime-requests/administrative",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeIds\": [\"{{attendanceEmployeeId}}\"],\n  \"locationId\": \"{{os606ForbiddenLocationId}}\",\n  \"workDate\": \"{{os606WorkDate}}\",\n  \"proposedStartTime\": \"{{os606ProposedStart}}\",\n  \"proposedEndTime\": \"{{os606ProposedEnd}}\",\n  \"reasonOptionId\": \"{{os606ReasonOptionId}}\"\n}"
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessTokenManager}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('status 403', () => pm.response.to.have.status(403));"]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST create 403 — NOMINA",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenNomina}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/attendance/overtime-requests/administrative",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeIds\": [\"{{attendanceEmployeeId}}\"],\n  \"locationId\": \"{{attendanceLocationId}}\",\n  \"workDate\": \"{{os606WorkDate}}\",\n  \"proposedStartTime\": \"{{os606ProposedStart}}\",\n  \"proposedEndTime\": \"{{os606ProposedEnd}}\",\n  \"reasonOptionId\": \"{{os606ReasonOptionId}}\"\n}"
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessTokenNomina}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('status 403', () => pm.response.to.have.status(403));"]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST create 403 — OWNER sin cargo Administrador",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/attendance/overtime-requests/administrative",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeIds\": [\"{{attendanceEmployeeId}}\"],\n  \"locationId\": \"{{attendanceLocationId}}\",\n  \"workDate\": \"{{os606WorkDate}}\",\n  \"proposedStartTime\": \"{{os606ProposedStart}}\",\n  \"proposedEndTime\": \"{{os606ProposedEnd}}\",\n  \"reasonOptionId\": \"{{os606ReasonOptionId}}\"\n}"
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('status 403', () => pm.response.to.have.status(403));"]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST re-solicitud tras OBJETADA (misma ventana, request 2)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenManager}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/attendance/overtime-requests/administrative",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeIds\": [\"{{attendanceEmployeeId2}}\"],\n  \"locationId\": \"{{attendanceLocationId}}\",\n  \"workDate\": \"{{os606WorkDate}}\",\n  \"proposedStartTime\": \"{{os606ProposedStart}}\",\n  \"proposedEndTime\": \"{{os606ProposedEnd}}\",\n  \"reasonOptionId\": \"{{os606ReasonOptionId}}\"\n}"
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessTokenManager}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('re-request: status 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('re-request: created', () => pm.expect(body.createdCount).to.eql(1));",
+                  "pm.test('re-request: Ops', () => pm.expect(body.items[0].status).to.eql('PENDIENTE_GERENCIA_OPERACIONES'));"
                 ]
               }
             }

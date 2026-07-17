@@ -3,9 +3,9 @@ import type { EmpleadoColumnDef } from '@restopsiq/ui';
 export const OVERTIME_TABLE_COLUMNS: EmpleadoColumnDef[] = [
   { key: 'employee', label: 'Empleado', width: 'minmax(200px, 1.4fr)' },
   { key: 'location', label: 'Sede', width: 'minmax(140px, 0.9fr)' },
+  { key: 'origin', label: 'Origen', width: 'minmax(150px, 1fr)' },
   { key: 'minutes', label: 'Minutos', width: 'minmax(88px, max-content)', align: 'center' },
-  { key: 'shiftEnd', label: 'Fin turno', width: 'minmax(160px, 1fr)' },
-  { key: 'actualEnd', label: 'Última salida', width: 'minmax(160px, 1fr)' },
+  { key: 'window', label: 'Ventana / turno', width: 'minmax(180px, 1.2fr)' },
   { key: 'status', label: 'Estado', width: 'minmax(180px, max-content)', align: 'center' },
   { key: 'actions', label: 'Acciones', width: 'minmax(120px, 0.8fr)', align: 'center' },
 ];

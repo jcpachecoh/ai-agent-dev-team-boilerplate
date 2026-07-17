@@ -1,7 +1,41 @@
-import { Prisma } from '@prisma/client';
+import {
+  AttendanceEventType,
+  AttendanceMarkingScope,
+  OvertimeRequestType,
+  Prisma,
+  type LaborLegalParameter,
+} from '@prisma/client';
 
+import type { LaborLegalParametersService } from '../../labor-legal-parameters/service/labor-legal-parameters.service';
+import { LegalParameterSnapshot } from '../../labor-legal-parameters/service/legal-parameter-snapshot';
 import type { PrismaService } from '../../prisma/prisma.service';
 import { PendingSalaryService } from '../service/pending-salary.service';
+
+function legalParam(key: string, value: number): LaborLegalParameter {
+  return {
+    id: `param-${key}`,
+    tenantId: null,
+    tenantScope: 'GLOBAL',
+    key,
+    value: new Prisma.Decimal(value),
+    validFrom: new Date('2020-01-01'),
+    validTo: null,
+    source: 'test',
+    deletedAt: null,
+    createdAt: new Date('2020-01-01'),
+    updatedAt: new Date('2020-01-01'),
+  } as LaborLegalParameter;
+}
+
+const LEGAL_SNAPSHOT = new LegalParameterSnapshot(
+  [
+    legalParam('HORARIO_NOCTURNO_INICIO', 21),
+    legalParam('RECARGO_DOMINICAL_FESTIVO', 0.75),
+    legalParam('RECARGO_HORA_EXTRA_DIURNA', 0.25),
+    legalParam('RECARGO_HORA_EXTRA_NOCTURNA', 0.75),
+  ],
+  null,
+);
 
 function salaryRecord(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
@@ -25,6 +59,8 @@ describe('PendingSalaryService', (): void => {
   let findManyOvertime: jest.Mock;
   let findManyNovedad: jest.Mock;
   let findManyMedicalLeave: jest.Mock;
+  let findManyAttendance: jest.Mock;
+  let preloadLegal: jest.Mock;
 
   beforeEach((): void => {
     findFirstSalary = jest.fn().mockResolvedValue(salaryRecord());
@@ -32,15 +68,20 @@ describe('PendingSalaryService', (): void => {
     findManyOvertime = jest.fn().mockResolvedValue([]);
     findManyNovedad = jest.fn().mockResolvedValue([]);
     findManyMedicalLeave = jest.fn().mockResolvedValue([]);
+    findManyAttendance = jest.fn().mockResolvedValue([]);
+    preloadLegal = jest.fn().mockResolvedValue(LEGAL_SNAPSHOT);
 
     const prisma = {
       employeeSalaryHistory: { findFirst: findFirstSalary },
       overtimeRequest: { findFirst: findFirstOvertime, findMany: findManyOvertime },
       payrollNovedad: { findMany: findManyNovedad },
       medicalLeave: { findMany: findManyMedicalLeave },
+      attendanceLog: { findMany: findManyAttendance },
     } as unknown as PrismaService;
 
-    service = new PendingSalaryService(prisma);
+    const legalParamsService = { preload: preloadLegal } as unknown as LaborLegalParametersService;
+
+    service = new PendingSalaryService(prisma, legalParamsService);
   });
 
   // ── Período completo / parcial ──────────────────────────────────────────
@@ -228,9 +269,20 @@ describe('PendingSalaryService', (): void => {
 
   // ── Horas extra pendientes (parte de "novedades que afectan el salario") ──
   describe('horas extra aprobadas pendientes en el tramo', (): void => {
-    it('suma el valor de horas extra aprobadas dentro del tramo y advierte sobre la tasa estimada', async (): Promise<void> => {
+    it('suma detección automática legacy (sin pares OVERTIME) con clasificación legal diurna', async (): Promise<void> => {
       findManyOvertime.mockResolvedValue([
-        { id: 'ot-1', accumulatedMinutes: 120, type: 'DETECCION_AUTOMATICA' },
+        {
+          id: 'ot-1',
+          type: OvertimeRequestType.DETECCION_AUTOMATICA,
+          payrollPeriod: '2026-06',
+          accumulatedMinutes: 120,
+          shiftEndTime: new Date('2026-06-10T19:00:00.000Z'),
+          actualEndTime: new Date('2026-06-10T21:00:00.000Z'),
+          workDate: null,
+          proposedStartTime: null,
+          proposedEndTime: null,
+          proposedMinutes: null,
+        },
       ]);
 
       const result = await service.calculate(
@@ -245,8 +297,93 @@ describe('PendingSalaryService', (): void => {
       expect(result.totalPendingSalary).toBe('1531250.00');
       expect(result.sources).toContain('OvertimeRequest:ot-1');
       expect(
-        result.warnings.some((w): boolean => w.startsWith('pending_salary_overtime_approximation')),
+        result.warnings.some((w): boolean => w.startsWith('pending_salary_overtime_nom07')),
       ).toBe(true);
+    });
+
+    it('OS-606: admin APROBADA sin marcación → 0 pendiente (no 75% ni proposedMinutes)', async (): Promise<void> => {
+      findManyOvertime.mockResolvedValue([
+        {
+          id: 'admin-1',
+          type: OvertimeRequestType.SOLICITUD_ADMINISTRATIVA,
+          payrollPeriod: '2026-06',
+          accumulatedMinutes: null,
+          shiftEndTime: null,
+          actualEndTime: null,
+          workDate: new Date('2026-06-10T00:00:00.000Z'),
+          proposedStartTime: new Date('2026-06-11T03:00:00.000Z'),
+          proposedEndTime: new Date('2026-06-11T04:30:00.000Z'),
+          proposedMinutes: 90,
+        },
+      ]);
+
+      const result = await service.calculate(
+        TENANT,
+        EMPLOYEE,
+        new Date(2026, 5, 15),
+        new Date(2020, 0, 1),
+      );
+
+      expect(result.pendingOvertimeAmount).toBe('0.00');
+      expect(result.totalPendingSalary).toBe('1500000.00');
+      expect(result.sources.some((s): boolean => s.startsWith('OvertimeRequest:'))).toBe(false);
+      expect(
+        result.warnings.some((w): boolean => w.startsWith('pending_salary_overtime_no_liquidable')),
+      ).toBe(true);
+    });
+
+    it('OS-606: admin APROBADA + marcación nocturna → clasifica por horario, no por type', async (): Promise<void> => {
+      findManyOvertime.mockResolvedValue([
+        {
+          id: 'admin-1',
+          type: OvertimeRequestType.SOLICITUD_ADMINISTRATIVA,
+          payrollPeriod: '2026-06',
+          accumulatedMinutes: null,
+          shiftEndTime: null,
+          actualEndTime: null,
+          workDate: new Date('2026-06-10T00:00:00.000Z'),
+          proposedStartTime: new Date('2026-06-11T03:00:00.000Z'),
+          proposedEndTime: new Date('2026-06-11T04:00:00.000Z'),
+          proposedMinutes: 60,
+        },
+      ]);
+      findManyAttendance.mockResolvedValue([
+        {
+          eventType: AttendanceEventType.ENTRY,
+          markingScope: AttendanceMarkingScope.OVERTIME,
+          timestamp: new Date('2026-06-11T03:00:00.000Z'),
+          isActive: true,
+        },
+        {
+          eventType: AttendanceEventType.EXIT,
+          markingScope: AttendanceMarkingScope.OVERTIME,
+          timestamp: new Date('2026-06-11T04:00:00.000Z'),
+          isActive: true,
+        },
+      ]);
+
+      const result = await service.calculate(
+        TENANT,
+        EMPLOYEE,
+        new Date(2026, 5, 15),
+        new Date(2020, 0, 1),
+      );
+
+      // 12500 * 1.75 * 1h = 21875
+      expect(result.pendingOvertimeAmount).toBe('21875.00');
+    });
+
+    it('OS-606: no consulta solicitudes no APROBADA (pendiente/objetada quedan fuera)', async (): Promise<void> => {
+      await service.calculate(TENANT, EMPLOYEE, new Date(2026, 5, 15), new Date(2020, 0, 1));
+
+      expect(findManyOvertime).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            status: 'APROBADA',
+            deletedAt: null,
+          }),
+        }),
+      );
     });
   });
 
@@ -293,7 +430,7 @@ describe('PendingSalaryService', (): void => {
 
   // ── Aislamiento multi-tenant ──────────────────────────────────────────────
   describe('aislamiento multi-tenant', (): void => {
-    it('incluye tenantId en cada consulta (salario, overtime, novedades, incapacidades)', async (): Promise<void> => {
+    it('incluye tenantId en cada consulta (salario, overtime, novedades, incapacidades, marcaciones)', async (): Promise<void> => {
       await service.calculate(TENANT, EMPLOYEE, new Date(2026, 5, 15), new Date(2020, 0, 1));
 
       for (const mockFn of [
@@ -302,6 +439,7 @@ describe('PendingSalaryService', (): void => {
         findManyOvertime,
         findManyNovedad,
         findManyMedicalLeave,
+        findManyAttendance,
       ]) {
         expect(mockFn).toHaveBeenCalledWith(
           expect.objectContaining({ where: expect.objectContaining({ tenantId: TENANT }) }),

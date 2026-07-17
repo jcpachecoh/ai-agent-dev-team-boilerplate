@@ -135,6 +135,7 @@ import { VariableAverageService } from './service/variable-average.service';
     PayrollRepository,
     PayrollCalculationService,
     EmployeeCatalogService,
+    EmployeeCatalogRepository,
     TenantPilaConfigService,
     EmployeePositionsService,
     EmployeeAssetsService,

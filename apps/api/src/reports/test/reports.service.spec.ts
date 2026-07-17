@@ -266,7 +266,11 @@ describe('ReportsService', () => {
     Pick<MedicalLeavesRepository, 'findOverlappingForPayrollPeriodByEmployeeIds'>
   >;
   let overtimeRepository: jest.Mocked<
-    Pick<OvertimeRepository, 'findApprovalStatusByEmployeeIdsForPeriod'>
+    Pick<
+      OvertimeRepository,
+      | 'findApprovalStatusByEmployeeIdsForPeriod'
+      | 'findApprovedAdministrativeWindowsByEmployeeIdsForPeriod'
+    >
   >;
   let rotanteProrationService: jest.Mocked<Pick<RotanteProrationService, 'prorate'>>;
 
@@ -325,6 +329,7 @@ describe('ReportsService', () => {
           provide: OvertimeRepository,
           useValue: {
             findApprovalStatusByEmployeeIdsForPeriod: jest.fn(),
+            findApprovedAdministrativeWindowsByEmployeeIdsForPeriod: jest.fn(),
           },
         },
         {
@@ -352,6 +357,9 @@ describe('ReportsService', () => {
           status: OvertimeStatus.APROBADA,
           accumulatedMinutes: 60,
         })),
+    );
+    overtimeRepository.findApprovedAdministrativeWindowsByEmployeeIdsForPeriod.mockResolvedValue(
+      [],
     );
   });
 
@@ -818,6 +826,82 @@ describe('ReportsService', () => {
 
       const result = await service.getPayrollReport(TENANT_ID, query, OWNER_ACTOR);
       expect(result.employees[0].overtimePay).toBe(0);
+    });
+
+    it('OS-606: admin APROBADA + marcación OVERTIME parcial liquida solo intersección', async () => {
+      repository.findActiveEmployees.mockResolvedValue([mockEmployee]);
+      overtimeRepository.findApprovalStatusByEmployeeIdsForPeriod.mockResolvedValue([]);
+      overtimeRepository.findApprovedAdministrativeWindowsByEmployeeIdsForPeriod.mockResolvedValue([
+        {
+          employeeId: 'emp-1',
+          locationId: 'loc-1',
+          workDate: workDate('2025-06-03'),
+          proposedStartTime: new Date('2025-06-03T22:00:00.000-05:00'),
+          proposedEndTime: new Date('2025-06-04T01:00:00.000-05:00'),
+          proposedMinutes: 180,
+        },
+      ]);
+      repository.findAttendanceLogsByDateRange.mockResolvedValue([
+        {
+          id: 'ot-entry',
+          tenantId: TENANT_ID,
+          employeeId: 'emp-1',
+          locationId: 'loc-1',
+          eventType: AttendanceEventType.ENTRY,
+          timestamp: new Date('2025-06-03T22:00:00.000-05:00'),
+          workDate: workDate('2025-06-03'),
+          shift: null,
+          notes: null,
+          isActive: true,
+          markingScope: 'OVERTIME',
+          createdAt: new Date('2025-06-03T22:00:00.000-05:00'),
+          updatedAt: new Date('2025-06-03T22:00:00.000-05:00'),
+        },
+        {
+          id: 'ot-exit',
+          tenantId: TENANT_ID,
+          employeeId: 'emp-1',
+          locationId: 'loc-1',
+          eventType: AttendanceEventType.EXIT,
+          timestamp: new Date('2025-06-03T23:00:00.000-05:00'),
+          workDate: workDate('2025-06-03'),
+          shift: null,
+          notes: null,
+          isActive: true,
+          markingScope: 'OVERTIME',
+          createdAt: new Date('2025-06-03T23:00:00.000-05:00'),
+          updatedAt: new Date('2025-06-03T23:00:00.000-05:00'),
+        },
+      ] as any);
+
+      const result = await service.getPayrollReport(TENANT_ID, query, OWNER_ACTOR);
+      // 60 min intersection (not full proposed 180)
+      expect(result.employees[0].overtimePay).toBeGreaterThan(0);
+      const totalOtMinutes = result.employees[0].overtimeBreakdown.reduce(
+        (sum, row) => sum + row.minutes,
+        0,
+      );
+      expect(totalOtMinutes).toBe(60);
+    });
+
+    it('OS-606: admin APROBADA sin marcación OVERTIME → 0', async () => {
+      repository.findActiveEmployees.mockResolvedValue([mockEmployee]);
+      repository.findAttendanceLogsByDateRange.mockResolvedValue([]);
+      overtimeRepository.findApprovalStatusByEmployeeIdsForPeriod.mockResolvedValue([]);
+      overtimeRepository.findApprovedAdministrativeWindowsByEmployeeIdsForPeriod.mockResolvedValue([
+        {
+          employeeId: 'emp-1',
+          locationId: 'loc-1',
+          workDate: workDate('2025-06-03'),
+          proposedStartTime: new Date('2025-06-03T22:00:00.000-05:00'),
+          proposedEndTime: new Date('2025-06-04T01:00:00.000-05:00'),
+          proposedMinutes: 180,
+        },
+      ]);
+
+      const result = await service.getPayrollReport(TENANT_ID, query, OWNER_ACTOR);
+      expect(result.employees[0].overtimePay).toBe(0);
+      expect(result.employees[0].overtimeBreakdown).toHaveLength(0);
     });
 
     it('applies medical leave adjustments for a COMUN incapacity in the payroll period', async () => {
