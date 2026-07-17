@@ -4,8 +4,8 @@ import { employeeCatalogOptionClient } from './employee-catalog-prisma';
 import {
   PILA_ADMIN_CODES_SOURCE,
   PILA_CATALOG_SEED_ROWS,
-} from '../../src/payroll/constants/pila-admin-codes';
-import { catalogSeedPilaCodeUpdate } from '../../src/payroll/utils/pila-master-data.util';
+} from '../../src/shared/pila/pila-admin-codes';
+import { catalogSeedPilaCodeUpdate } from '../../src/shared/pila/pila-master-data.util';
 
 function catalogOptionId(tenantId: string, type: EmployeeCatalogType, name: string): string {
   const slug = name

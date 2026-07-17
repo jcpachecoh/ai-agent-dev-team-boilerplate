@@ -1,9 +1,16 @@
-import type { EmployeeCatalogType, Prisma, SalaryType } from '@prisma/client';
+import type { Prisma, SalaryType } from '@prisma/client';
 
-/** OS-588 — subconjunto de EmployeeCatalogType válido para EmployeeFundHistory.fundType. */
-export type EmployeeFundHistoryType =
-  | typeof EmployeeCatalogType.CESANTIAS_FUND
-  | typeof EmployeeCatalogType.PENSION_FUND;
+import type {
+  EmployeeFundHistoryType,
+  SyncFundHistoryData,
+  SyncSalaryHistoryData,
+} from '../../shared/employee-history/sync-employee-history';
+
+export type {
+  EmployeeFundHistoryType,
+  SyncFundHistoryData,
+  SyncSalaryHistoryData,
+} from '../../shared/employee-history/sync-employee-history';
 
 // `type`, no `interface` — son formas de datos planas (no las implementa ninguna clase,
 // no usan herencia), y la regla naming-convention del proyecto solo exige prefijo `I` en
@@ -31,24 +38,6 @@ export type EmployeeFundHistoryRecord = {
   effectiveTo: Date | null;
   changedBy: string | null;
   createdAt: Date;
-};
-
-export type SyncSalaryHistoryData = {
-  tenantId: string;
-  employeeDetailsId: string;
-  salaryType: SalaryType;
-  salaryAmount: Prisma.Decimal | number;
-  effectiveFrom: Date;
-  changedBy?: string;
-};
-
-export type SyncFundHistoryData = {
-  tenantId: string;
-  employeeDetailsId: string;
-  fundType: EmployeeFundHistoryType;
-  fundName: string;
-  effectiveFrom: Date;
-  changedBy?: string;
 };
 
 export interface IEmployeeHistoryRepository {

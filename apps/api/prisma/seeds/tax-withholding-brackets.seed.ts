@@ -1,10 +1,10 @@
 import { PrismaClient } from '@prisma/client';
 
-import { GLOBAL_TENANT_SCOPE } from '../../src/labor-legal-parameters/labor-legal-parameters.constants';
+import { GLOBAL_TENANT_SCOPE } from '../../src/shared/labor-legal/tenant-scope';
 import {
   OFFICIAL_TAX_WITHHOLDING_BRACKETS_LEY_2277,
   PROVISIONAL_TAX_WITHHOLDING_VALID_FROM,
-} from '../../src/tax-withholding-brackets/tax-withholding-brackets.constants';
+} from '../../src/shared/tax-withholding/tax-withholding-brackets.constants';
 
 type BracketVigenciaSeed = {
   validFrom: string;

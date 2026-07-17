@@ -21,6 +21,8 @@ export type SettlementLineRecord = {
   name: string;
   type: SettlementLineType;
   origin: SettlementLineOrigin;
+  /** OS-612 — FK al concepto GLOBAL; null en histórico/manual sin match. */
+  conceptId: string | null;
   sourceReference: string | null;
   baseAmount: string | null;
   quantity: string | null;
@@ -220,6 +222,8 @@ export type SettlementLineInput = {
   name: string;
   type: SettlementLineType;
   origin: SettlementLineOrigin;
+  /** OS-612 — id GLOBAL del catálogo para líneas nuevas (automáticas / AJUSTE_MANUAL). */
+  conceptId?: string | null;
   sourceReference?: string | null;
   baseAmount?: Prisma.Decimal | null;
   quantity?: Prisma.Decimal | null;

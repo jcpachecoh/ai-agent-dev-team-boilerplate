@@ -23,6 +23,7 @@ import { LegalFormulaValidationRepository } from '../repository/legal-formula-va
 import { PendingSalaryReconciliationRepository } from '../repository/pending-salary-reconciliation.repository';
 import { FinalSettlementAggregatorService } from '../service/final-settlement-aggregator.service';
 import { FinalSettlementService } from '../service/final-settlement.service';
+import { PayrollConceptsService } from '../service/payroll-concepts.service';
 
 const TENANT_ID = 'tenant-001';
 const EMPLOYEE_ID = 'emp-001';
@@ -154,6 +155,7 @@ describe('FinalSettlementService', (): void => {
   let mockFindActiveLegalValidation: jest.Mock;
   let mockFindPendingSalaryReconciliation: jest.Mock;
   let mockAuditLog: jest.Mock;
+  let mockResolveEffective: jest.Mock;
 
   function mockLegalValidation(
     overrides: Partial<IndemnificationFormulaValidationRecord> = {},
@@ -208,6 +210,14 @@ describe('FinalSettlementService', (): void => {
     mockFindActiveLegalValidation = jest.fn().mockResolvedValue(null);
     mockFindPendingSalaryReconciliation = jest.fn().mockResolvedValue(null);
     mockAuditLog = jest.fn().mockResolvedValue(undefined);
+    mockResolveEffective = jest.fn().mockResolvedValue({
+      id: 'global-AJUSTE_MANUAL',
+      code: 'AJUSTE_MANUAL',
+      displayName: 'Ajuste manual',
+      lineNature: 'DEVENGO',
+      isTenantOverride: false,
+      overrideId: null,
+    });
 
     // Simula el comportamiento transaccional real de `FinalSettlementRepository.approve`:
     // invoca el `sideEffect` recibido (que a su vez llama a
@@ -268,6 +278,10 @@ describe('FinalSettlementService', (): void => {
       log: mockAuditLog,
     } as unknown as jest.Mocked<AuditService>;
 
+    const payrollConcepts = {
+      resolveEffective: mockResolveEffective,
+    } as unknown as jest.Mocked<PayrollConceptsService>;
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         FinalSettlementService,
@@ -280,6 +294,7 @@ describe('FinalSettlementService', (): void => {
           useValue: pendingSalaryReconciliationRepository,
         },
         { provide: AuditService, useValue: auditService },
+        { provide: PayrollConceptsService, useValue: payrollConcepts },
       ],
     }).compile();
 
@@ -571,6 +586,56 @@ describe('FinalSettlementService', (): void => {
       expect(result).toBeDefined();
     });
 
+    it('fuerza AJUSTE_MANUAL + conceptId y conserva name como descripción (OS-612)', async (): Promise<void> => {
+      mockCreate.mockResolvedValue(mockSettlement({ mode: FinalSettlementMode.MANUAL }));
+
+      await service.createManual({
+        ...manualInput,
+        lines: [
+          {
+            code: 'AJUSTE_MANUAL',
+            name: 'Bonificación por acuerdo extrajudicial',
+            type: 'DEVENGO',
+            amount: new Prisma.Decimal('500000'),
+            manualJustification: 'Acta firmada',
+          },
+        ],
+      });
+
+      expect(mockResolveEffective).toHaveBeenCalledWith(TENANT_ID, 'AJUSTE_MANUAL');
+      expect(mockCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          lines: [
+            expect.objectContaining({
+              code: 'AJUSTE_MANUAL',
+              name: 'Bonificación por acuerdo extrajudicial',
+              conceptId: 'global-AJUSTE_MANUAL',
+              type: 'DEVENGO',
+              origin: 'MANUAL',
+            }),
+          ],
+        }),
+      );
+    });
+
+    it('rechaza codes inventados en líneas manuales (OS-612)', async (): Promise<void> => {
+      await expect(
+        service.createManual({
+          ...manualInput,
+          lines: [
+            {
+              code: 'BONO_LIBRE_123',
+              name: 'Bono',
+              type: 'DEVENGO',
+              amount: new Prisma.Decimal('100'),
+              manualJustification: 'x',
+            },
+          ],
+        }),
+      ).rejects.toThrow(BadRequestException);
+      expect(mockCreate).not.toHaveBeenCalled();
+    });
+
     it('lanza BadRequestException si falta manualJustification', async (): Promise<void> => {
       // Act & Assert
       await expect(
@@ -616,6 +681,7 @@ describe('FinalSettlementService', (): void => {
       name: 'Indemnización',
       type: 'DEVENGO' as const,
       origin: 'AUTOMATIC' as const,
+      conceptId: null,
       sourceReference: null,
       baseAmount: null,
       quantity: null,

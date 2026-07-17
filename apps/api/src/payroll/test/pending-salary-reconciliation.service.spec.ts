@@ -28,6 +28,7 @@ function mockLine(code: string): FinalSettlementRecord['lines'][number] {
     name: code,
     type: 'DEVENGO',
     origin: 'AUTOMATIC',
+    conceptId: null,
     sourceReference: null,
     baseAmount: null,
     quantity: null,

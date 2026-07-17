@@ -2970,6 +2970,9 @@ async function main() {
   const { seedTaxWithholdingBrackets } = await import('./seeds/tax-withholding-brackets.seed');
   await seedTaxWithholdingBrackets(prisma);
 
+  const { seedPayrollConcepts } = await import('./seeds/payroll-concepts.seed');
+  await seedPayrollConcepts(prisma);
+
   const { seedNovedadTypeConfigs } = await import('./seeds/novedad-type-config.seed');
   await seedNovedadTypeConfigs(prisma, OPERATIONAL_TENANT_ID);
 

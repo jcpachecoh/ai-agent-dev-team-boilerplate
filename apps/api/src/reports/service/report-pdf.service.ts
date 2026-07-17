@@ -1,10 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import PDFDocument from 'pdfkit';
 import type PDFKit from 'pdfkit';
-import { PayrollReportResponseDto } from '../controller/dto/payroll-report-response.dto';
-import { EmployeeListReportResponseDto } from '../controller/dto/employee-list-report-response.dto';
+
+import { resolvePayrollExportConceptHeaders } from '../../payroll/adapters/os380-payroll-concept.adapter';
 import { AttendanceReportResponseDto } from '../controller/dto/attendance-report-response.dto';
 import { EmployeeListReportType } from '../controller/dto/employee-list-export-query.dto';
+import { EmployeeListReportResponseDto } from '../controller/dto/employee-list-report-response.dto';
+import { PayrollReportResponseDto } from '../controller/dto/payroll-report-response.dto';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -44,20 +46,24 @@ interface ColDef {
   key: string;
 }
 
-const COLUMNS: ColDef[] = [
-  { header: 'Nombre', width: 132, align: 'left', key: 'name' },
-  { header: 'Cédula', width: 68, align: 'center', key: 'cedula' },
-  { header: 'Sede', width: 72, align: 'left', key: 'location' },
-  { header: 'Sal. Base', width: 64, align: 'right', key: 'salary' },
-  { header: 'Aux. Transp.', width: 58, align: 'right', key: 'transport' },
-  { header: 'HH. Extra', width: 58, align: 'right', key: 'overtime' },
-  { header: 'Deducciones', width: 66, align: 'right', key: 'deductions' },
-  { header: 'Neto', width: 68, align: 'right', key: 'net' },
-  { header: 'Aportes Emp.', width: 68, align: 'right', key: 'contributions' },
-  { header: 'Costo Total', width: 68, align: 'right', key: 'cost' },
-];
+/** Concept labels via OS-612 adapter; aggregates remain contractual headers. */
+function buildPayrollColumns(): ColDef[] {
+  const conceptHeaders = resolvePayrollExportConceptHeaders();
+  return [
+    { header: 'Nombre', width: 120, align: 'left', key: 'name' },
+    { header: 'Cédula', width: 64, align: 'center', key: 'cedula' },
+    { header: 'Sede', width: 64, align: 'left', key: 'location' },
+    { header: conceptHeaders.salaryBase, width: 72, align: 'right', key: 'salary' },
+    { header: conceptHeaders.transportSubsidy, width: 78, align: 'right', key: 'transport' },
+    { header: conceptHeaders.overtimePay, width: 64, align: 'right', key: 'overtime' },
+    { header: 'Deducciones', width: 66, align: 'right', key: 'deductions' },
+    { header: 'Neto', width: 64, align: 'right', key: 'net' },
+    { header: 'Aportes Emp.', width: 66, align: 'right', key: 'contributions' },
+    { header: 'Costo Total', width: 66, align: 'right', key: 'cost' },
+  ];
+}
 
-const TABLE_WIDTH = COLUMNS.reduce((s, c) => s + c.width, 0); // 782
+const TABLE_WIDTH = buildPayrollColumns().reduce((s, c) => s + c.width, 0);
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -75,13 +81,14 @@ function trunc(s: string, maxLen: number): string {
 }
 
 function drawTableHeader(doc: PDFKit.PDFDocument, y: number): void {
+  const columns = buildPayrollColumns();
   doc.rect(MARGIN, y, TABLE_WIDTH, HEADER_ROW_HEIGHT).fill(DARK_BLUE);
 
   let x = MARGIN;
-  doc.font('Helvetica-Bold').fontSize(7.5).fillColor('#ffffff');
-  for (const col of COLUMNS) {
-    doc.text(col.header, x + 3, y + 6, {
-      width: col.width - 6,
+  doc.font('Helvetica-Bold').fontSize(6.5).fillColor('#ffffff');
+  for (const col of columns) {
+    doc.text(col.header, x + 2, y + 6, {
+      width: col.width - 4,
       align: col.align,
       lineBreak: false,
     });
@@ -91,6 +98,7 @@ function drawTableHeader(doc: PDFKit.PDFDocument, y: number): void {
 }
 
 function drawBorderLines(doc: PDFKit.PDFDocument, y: number, rowHeight: number): void {
+  const columns = buildPayrollColumns();
   // bottom border
   doc
     .moveTo(MARGIN, y + rowHeight)
@@ -99,7 +107,7 @@ function drawBorderLines(doc: PDFKit.PDFDocument, y: number, rowHeight: number):
     .stroke();
   // column separators
   let x = MARGIN;
-  for (const col of COLUMNS) {
+  for (const col of columns) {
     x += col.width;
     doc
       .moveTo(x, y)
@@ -123,18 +131,19 @@ function drawDataRow(
   isEven: boolean,
   isTotals = false,
 ): void {
+  const columns = buildPayrollColumns();
   const bg = isTotals ? TOTALS_ROW : isEven ? ALT_ROW : '#ffffff';
   doc.rect(MARGIN, y, TABLE_WIDTH, BODY_ROW_HEIGHT).fill(bg);
 
   let x = MARGIN;
   doc
     .font(isTotals ? 'Helvetica-Bold' : 'Helvetica')
-    .fontSize(8)
+    .fontSize(7.5)
     .fillColor('#000000');
-  for (let i = 0; i < COLUMNS.length; i++) {
-    const col = COLUMNS[i];
-    doc.text(values[i] ?? '', x + 3, y + 4, {
-      width: col.width - 6,
+  for (let i = 0; i < columns.length; i++) {
+    const col = columns[i];
+    doc.text(values[i] ?? '', x + 2, y + 4, {
+      width: col.width - 4,
       align: col.align,
       lineBreak: false,
     });

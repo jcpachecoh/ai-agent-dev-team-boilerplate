@@ -41,6 +41,9 @@ ENV NODE_ENV=production
 
 COPY --from=installer /app/apps/api/dist ./dist
 COPY --from=installer /app/apps/api/prisma ./prisma
+# Pure modules shared by Nest (compiled to dist) and tsx seeds (source needed at runtime).
+# Do NOT copy all of src — only this tree (see OS-612 seed runtime fix).
+COPY --from=installer /app/apps/api/src/shared ./src/shared
 COPY --from=installer /app/apps/api/package.json ./package.json
 COPY --from=installer /app/node_modules ./node_modules
 COPY --from=installer /app/apps/api/node_modules ./apps/api/node_modules

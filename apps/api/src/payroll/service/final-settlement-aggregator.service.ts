@@ -4,6 +4,7 @@ import { Prisma } from '@prisma/client';
 import { CesantiasService } from './cesantias.service';
 import { IndemnificationCalculationService } from './indemnification-calculation.service';
 import { PendingSalaryService } from './pending-salary.service';
+import { PayrollConceptsService } from './payroll-concepts.service';
 import { PrimaService } from './prima.service';
 import { VariableAverageService } from './variable-average.service';
 import { LaborLegalParametersService } from '../../labor-legal-parameters/service/labor-legal-parameters.service';
@@ -15,6 +16,7 @@ import {
   SettlementAggregateResult,
   SettlementLineInput,
 } from '../interfaces/final-settlement.interfaces';
+import type { PayrollConceptCode } from '../payroll-concepts.constants';
 import { EmployeeContractRepository } from '../repository/employee-contract.repository';
 import { EmployeeHistoryRepository } from '../repository/employee-history.repository';
 
@@ -48,7 +50,24 @@ export class FinalSettlementAggregatorService {
     private readonly indemnificationService: IndemnificationCalculationService,
     private readonly pendingSalaryService: PendingSalaryService,
     private readonly variableAverageService: VariableAverageService,
+    private readonly payrollConcepts: PayrollConceptsService,
   ) {}
+
+  /**
+   * OS-612 — snapshot de línea automática: code + displayName efectivo + conceptId GLOBAL.
+   * No altera cálculos ni SettlementLine.type.
+   */
+  private async resolveAutomaticLineLabel(
+    tenantId: string,
+    code: PayrollConceptCode,
+  ): Promise<{ code: string; name: string; conceptId: string }> {
+    const effective = await this.payrollConcepts.resolveEffective(tenantId, code);
+    return {
+      code: effective.code,
+      name: effective.displayName,
+      conceptId: effective.id,
+    };
+  }
 
   async aggregate(
     input: PreviewSettlementInput & {
@@ -174,9 +193,11 @@ export class FinalSettlementAggregatorService {
 
     const pendingSalaryAmount = new Prisma.Decimal(pendingSalary.totalPendingSalary);
     if (pendingSalaryAmount.greaterThan(0)) {
+      const label = await this.resolveAutomaticLineLabel(tenantId, 'SAL_PENDIENTE');
       lines.push({
-        code: 'SAL_PENDIENTE',
-        name: 'Salario pendiente',
+        code: label.code,
+        name: label.name,
+        conceptId: label.conceptId,
         type: 'DEVENGO',
         origin: 'AUTOMATIC',
         sourceReference: null,
@@ -214,9 +235,11 @@ export class FinalSettlementAggregatorService {
       const pendingInterest = new Prisma.Decimal(cesantiasBalance.pendingInterest);
 
       if (pendingCesantias.greaterThan(0)) {
+        const label = await this.resolveAutomaticLineLabel(tenantId, 'CESANTIAS');
         lines.push({
-          code: 'CESANTIAS',
-          name: 'Cesantías (saldo pendiente)',
+          code: label.code,
+          name: label.name,
+          conceptId: label.conceptId,
           type: 'DEVENGO',
           origin: 'AUTOMATIC',
           sourceReference:
@@ -237,9 +260,11 @@ export class FinalSettlementAggregatorService {
       }
 
       if (pendingInterest.greaterThan(0)) {
+        const label = await this.resolveAutomaticLineLabel(tenantId, 'INTERESES_CESANTIAS');
         lines.push({
-          code: 'INTERESES_CESANTIAS',
-          name: 'Intereses sobre cesantías (saldo pendiente)',
+          code: label.code,
+          name: label.name,
+          conceptId: label.conceptId,
           type: 'DEVENGO',
           origin: 'AUTOMATIC',
           sourceReference: null,
@@ -270,9 +295,11 @@ export class FinalSettlementAggregatorService {
     if (primaBalance) {
       const pendingPrima = new Prisma.Decimal(primaBalance.pendingAmount);
       if (pendingPrima.greaterThan(0)) {
+        const label = await this.resolveAutomaticLineLabel(tenantId, 'PRIMA');
         lines.push({
-          code: 'PRIMA',
-          name: 'Prima de servicios (saldo pendiente)',
+          code: label.code,
+          name: label.name,
+          conceptId: label.conceptId,
           type: 'DEVENGO',
           origin: 'AUTOMATIC',
           sourceReference:
@@ -315,9 +342,11 @@ export class FinalSettlementAggregatorService {
           .times(dailySalary)
           .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
 
+        const label = await this.resolveAutomaticLineLabel(tenantId, 'VACACIONES');
         lines.push({
-          code: 'VACACIONES',
-          name: 'Vacaciones pendientes',
+          code: label.code,
+          name: label.name,
+          conceptId: label.conceptId,
           type: 'DEVENGO',
           origin: 'AUTOMATIC',
           sourceReference: null,
@@ -354,9 +383,11 @@ export class FinalSettlementAggregatorService {
 
       const indemnAmount = new Prisma.Decimal(indemnResult.amount);
       if (indemnAmount.greaterThan(0)) {
+        const label = await this.resolveAutomaticLineLabel(tenantId, 'INDEMNIZACION');
         lines.push({
-          code: 'INDEMNIZACION',
-          name: 'Indemnización por terminación sin justa causa',
+          code: label.code,
+          name: label.name,
+          conceptId: label.conceptId,
           type: 'DEVENGO',
           origin: 'AUTOMATIC',
           sourceReference: null,

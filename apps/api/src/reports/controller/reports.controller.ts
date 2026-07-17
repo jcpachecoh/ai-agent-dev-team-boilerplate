@@ -26,6 +26,7 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
+import { PayrollConceptsUsageService } from '../../payroll/service/payroll-concepts-usage.service';
 import { SenaQuotaService } from '../../payroll/service/sena-quota.service';
 import {
   buildAttendanceFiltersSummary,
@@ -41,6 +42,7 @@ import {
   EmployeeListReportType,
 } from './dto/employee-list-export-query.dto';
 import { ExportFormat, ExportPayrollReportDto } from './dto/export-payroll-report.dto';
+import { PayrollConceptsUsageResponseDto } from './dto/payroll-concepts-usage-response.dto';
 import { PayrollReportResponseDto } from './dto/payroll-report-response.dto';
 import { AttendanceQueryDto, PeriodQueryDto } from './dto/report-query.dto';
 import { SenaQuotaQueryDto } from './dto/sena-quota-query.dto';
@@ -59,7 +61,33 @@ export class ReportsController {
     private readonly reportPdfService: ReportPdfService,
     private readonly reportExcelService: ReportExcelService,
     private readonly senaQuotaService: SenaQuotaService,
+    private readonly payrollConceptsUsageService: PayrollConceptsUsageService,
   ) {}
+
+  @ApiOperation({
+    summary: 'OS-612 — Usados vs catalogados (SettlementLine + cobertura OS-380)',
+    description:
+      'Read-only. Fuente persistida: distinct SettlementLine.code/name del tenant. ' +
+      'Estados: CATALOGED | UNCATALOGED | INACTIVE | NAME_MISMATCH. ' +
+      'Incluye cobertura estática de campos OS-380 vía adapter (sin ledger mensual). ' +
+      'Mismos roles de lectura de reportes de nómina (PAYROLL_MODULE_ROLES). Sin CRUD.',
+  })
+  @ApiOkResponse({ type: PayrollConceptsUsageResponseDto })
+  @Get('payroll-concepts/usage')
+  async getPayrollConceptsUsage(
+    @CurrentUser() user: JwtPayload,
+    @Headers('x-tenant-id') headerTenantId: string,
+  ): Promise<PayrollConceptsUsageResponseDto> {
+    const tenantId = this.resolveTenantId(user, headerTenantId);
+    const report = await this.payrollConceptsUsageService.getUsageReport(tenantId);
+    return {
+      ...report,
+      os380FieldCoverage: {
+        ...report.os380FieldCoverage,
+        fields: [...report.os380FieldCoverage.fields],
+      },
+    };
+  }
 
   @ApiOperation({ summary: 'Monthly payroll report for the tenant' })
   @ApiOkResponse({ type: PayrollReportResponseDto })

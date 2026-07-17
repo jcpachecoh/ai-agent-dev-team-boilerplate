@@ -2644,6 +2644,38 @@ model TaxWithholdingBracket {
   @@map("tax_withholding_brackets")
 }
 
+// ── OS-612 / NOM-22 — Catálogo normalizado de conceptos de nómina ─────────────
+// Identidad: `code` inmutable. Etiqueta: `displayName` (mutable).
+// Scope: mismo patrón OS-585 — tenantId null = GLOBAL; tenantScope = tenantId ?? 'GLOBAL'
+// (Postgres no garantiza unique con NULL). Override tenant solo personaliza displayName.
+// Sin vigencias ni flags de bases en v1. FK opcional desde SettlementLine.conceptId.
+
+enum PayrollConceptLineNature {
+  DEVENGO
+  DEDUCCION
+  APORTE_PATRONAL
+  INFORMATIVO
+}
+
+model PayrollConcept {
+  id          String                   @id @default(cuid())
+  tenantId    String? // null = GLOBAL; valor = override de etiqueta del tenant
+  tenantScope String                   @default("GLOBAL") // = tenantId ?? 'GLOBAL'
+  code        String // IMMUTABLE — identidad funcional
+  displayName String // etiqueta mutable (nunca clave)
+  lineNature  PayrollConceptLineNature
+  deletedAt   DateTime?
+  createdAt   DateTime                 @default(now())
+  updatedAt   DateTime                 @updatedAt
+
+  settlementLines SettlementLine[]
+
+  @@unique([tenantScope, code])
+  @@index([tenantScope, code, deletedAt])
+  @@index([deletedAt])
+  @@map("payroll_concepts")
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // INCAPACIDADES MÉDICAS — comunes y laborales (NOM-13)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -3313,6 +3345,10 @@ model SettlementLine {
   // AUTOMATIC = calculado por el motor; MANUAL = ingresado manualmente por un actor.
   origin SettlementLineOrigin @default(AUTOMATIC)
 
+  // OS-612 — FK opcional al catálogo GLOBAL. code/name siguen siendo snapshots obligatorios.
+  // Histórico y manuales pueden quedar null. onDelete SetNull: no reescribe snapshots.
+  conceptId String?
+
   sourceReference String?
 
   baseAmount Decimal? @db.Decimal(14, 2)
@@ -3329,7 +3365,9 @@ model SettlementLine {
   createdAt DateTime @default(now())
 
   settlement FinalSettlement @relation(fields: [settlementId], references: [id], onDelete: Cascade)
+  concept    PayrollConcept? @relation(fields: [conceptId], references: [id], onDelete: SetNull)
 
   @@index([tenantId, settlementId])
+  @@index([conceptId])
   @@map("settlement_lines")
 }

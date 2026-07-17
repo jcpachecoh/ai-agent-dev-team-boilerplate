@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 
-import { GLOBAL_TENANT_SCOPE } from '../../src/labor-legal-parameters/labor-legal-parameters.constants';
+import { GLOBAL_TENANT_SCOPE } from '../../src/shared/labor-legal/tenant-scope';
 
 type LegalParameterSeed = {
   key: string;

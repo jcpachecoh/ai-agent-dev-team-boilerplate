@@ -10,6 +10,7 @@ import { ROLES_KEY } from '../../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import type { SenaQuotaResult } from '../../payroll/interfaces/sena-quota.interfaces';
+import { PayrollConceptsUsageService } from '../../payroll/service/payroll-concepts-usage.service';
 import { SenaQuotaService } from '../../payroll/service/sena-quota.service';
 import { ExportFormat, ExportPayrollReportDto } from '../controller/dto/export-payroll-report.dto';
 import { AttendanceQueryDto, PeriodQueryDto } from '../controller/dto/report-query.dto';
@@ -73,9 +74,11 @@ describe('ReportsController', () => {
   let pdfService: jest.Mocked<ReportPdfService>;
   let excelService: jest.Mocked<ReportExcelService>;
   let senaQuotaService: { calculateForTenant: jest.Mock };
+  let payrollConceptsUsageService: { getUsageReport: jest.Mock };
 
   beforeEach(async () => {
     senaQuotaService = { calculateForTenant: jest.fn() };
+    payrollConceptsUsageService = { getUsageReport: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [ReportsController],
@@ -110,6 +113,10 @@ describe('ReportsController', () => {
           provide: SenaQuotaService,
           useValue: senaQuotaService,
         },
+        {
+          provide: PayrollConceptsUsageService,
+          useValue: payrollConceptsUsageService,
+        },
       ],
     }).compile();
 
@@ -123,6 +130,34 @@ describe('ReportsController', () => {
 
   it('should be defined', () => {
     expect(controller).toBeDefined();
+  });
+
+  describe('getPayrollConceptsUsage (OS-612)', () => {
+    it('delega al usage service con tenant del JWT', async () => {
+      const report = {
+        tenantId: TENANT_ID,
+        generatedAt: '2026-07-16T00:00:00.000Z',
+        settlementLineUsages: [],
+        summary: {
+          distinctPairs: 0,
+          cataloged: 0,
+          uncataloged: 0,
+          inactive: 0,
+          nameMismatch: 0,
+        },
+        os380FieldCoverage: {
+          note: 'static',
+          fields: [],
+          mappedFieldCount: 15,
+        },
+      };
+      payrollConceptsUsageService.getUsageReport.mockResolvedValue(report);
+
+      const result = await controller.getPayrollConceptsUsage(mockUser, '');
+
+      expect(payrollConceptsUsageService.getUsageReport).toHaveBeenCalledWith(TENANT_ID);
+      expect(result).toEqual(report);
+    });
   });
 
   // ── getPayrollReport ───────────────────────────────────────────────────────

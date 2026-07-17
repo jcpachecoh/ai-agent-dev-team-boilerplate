@@ -9,10 +9,12 @@ import type { EmploymentContractRecord } from '../interfaces/employee-contract.i
 import type { PrimaBalanceAsOf } from '../interfaces/prima-service.interfaces';
 import { EmployeeContractRepository } from '../repository/employee-contract.repository';
 import { EmployeeHistoryRepository } from '../repository/employee-history.repository';
+import { getPayrollConceptDefinition } from '../payroll-concepts.constants';
 import { CesantiasService } from '../service/cesantias.service';
 import { FinalSettlementAggregatorService } from '../service/final-settlement-aggregator.service';
 import { IndemnificationCalculationService } from '../service/indemnification-calculation.service';
 import { PendingSalaryService } from '../service/pending-salary.service';
+import { PayrollConceptsService } from '../service/payroll-concepts.service';
 import { PrimaService } from '../service/prima.service';
 import { VariableAverageService } from '../service/variable-average.service';
 
@@ -49,6 +51,7 @@ describe('FinalSettlementAggregatorService', (): void => {
   let vacationsService: jest.Mocked<VacationsService>;
   let pendingSalaryService: jest.Mocked<PendingSalaryService>;
   let variableAverageService: jest.Mocked<VariableAverageService>;
+  let payrollConcepts: jest.Mocked<PayrollConceptsService>;
   let prisma: jest.Mocked<PrismaService>;
 
   // Named mock functions — avoids unbound-method rule
@@ -60,6 +63,7 @@ describe('FinalSettlementAggregatorService', (): void => {
   let mockCalculateVacBalance: jest.Mock;
   let mockPendingSalaryCalc: jest.Mock;
   let mockVariableAvgCalc: jest.Mock;
+  let mockResolveEffective: jest.Mock;
 
   beforeEach(async (): Promise<void> => {
     mockGetValueAt = jest.fn().mockImplementation((key: string): Promise<number> => {
@@ -156,6 +160,33 @@ describe('FinalSettlementAggregatorService', (): void => {
       warnings: [],
     });
 
+    mockResolveEffective = jest.fn().mockImplementation(
+      async (
+        _tenantId: string,
+        code: string,
+      ): Promise<{
+        id: string;
+        code: string;
+        displayName: string;
+        lineNature: string;
+        isTenantOverride: boolean;
+        overrideId: null;
+      }> => {
+        const def = getPayrollConceptDefinition(code);
+        if (!def) {
+          throw new Error(`Unknown concept ${code}`);
+        }
+        return {
+          id: `global-${code}`,
+          code: def.code,
+          displayName: def.displayName,
+          lineNature: def.lineNature,
+          isTenantOverride: false,
+          overrideId: null,
+        };
+      },
+    );
+
     legalParams = {
       getValueAt: mockGetValueAt,
     } as unknown as jest.Mocked<LaborLegalParametersService>;
@@ -178,6 +209,9 @@ describe('FinalSettlementAggregatorService', (): void => {
     variableAverageService = {
       calculate: mockVariableAvgCalc,
     } as unknown as jest.Mocked<VariableAverageService>;
+    payrollConcepts = {
+      resolveEffective: mockResolveEffective,
+    } as unknown as jest.Mocked<PayrollConceptsService>;
     prisma = {
       employeeSalaryHistory: { findFirst: mockSalaryFindFirst },
     } as unknown as jest.Mocked<PrismaService>;
@@ -197,6 +231,7 @@ describe('FinalSettlementAggregatorService', (): void => {
         },
         { provide: PendingSalaryService, useValue: pendingSalaryService },
         { provide: VariableAverageService, useValue: variableAverageService },
+        { provide: PayrollConceptsService, useValue: payrollConcepts },
         { provide: PrismaService, useValue: prisma },
       ],
     }).compile();
@@ -241,6 +276,38 @@ describe('FinalSettlementAggregatorService', (): void => {
     const codes = result.lines.map((l): string => l.code);
     const uniqueCodes = new Set(codes);
     expect(codes.length).toBe(uniqueCodes.size);
+  });
+
+  it('nombres de líneas automáticas vienen del catálogo efectivo (OS-612)', async (): Promise<void> => {
+    mockResolveEffective.mockImplementation(
+      async (
+        _tenantId: string,
+        code: string,
+      ): Promise<{
+        id: string;
+        code: string;
+        displayName: string;
+        lineNature: string;
+        isTenantOverride: boolean;
+        overrideId: null;
+      }> => ({
+        id: `global-${code}`,
+        code,
+        displayName: `LABEL-${code}`,
+        lineNature: 'DEVENGO',
+        isTenantOverride: false,
+        overrideId: null,
+      }),
+    );
+
+    const result = await service.aggregate(baseInput());
+
+    for (const line of result.lines) {
+      expect(line.origin).toBe('AUTOMATIC');
+      expect(line.name).toBe(`LABEL-${line.code}`);
+      expect(line.conceptId).toBe(`global-${line.code}`);
+      expect(mockResolveEffective).toHaveBeenCalledWith(TENANT_ID, line.code);
+    }
   });
 
   // ── cálculo de totales ──────────────────────────────────────────────────

@@ -1,9 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import * as ExcelJS from 'exceljs';
-import { PayrollReportResponseDto } from '../controller/dto/payroll-report-response.dto';
-import { EmployeeListReportResponseDto } from '../controller/dto/employee-list-report-response.dto';
+
+import { resolvePayrollExportConceptHeaders } from '../../payroll/adapters/os380-payroll-concept.adapter';
 import { AttendanceReportResponseDto } from '../controller/dto/attendance-report-response.dto';
 import { EmployeeListReportType } from '../controller/dto/employee-list-export-query.dto';
+import { EmployeeListReportResponseDto } from '../controller/dto/employee-list-report-response.dto';
+import { PayrollReportResponseDto } from '../controller/dto/payroll-report-response.dto';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -35,19 +37,23 @@ const SOLID = (fgColor: { argb: string }): ExcelJS.Fill => ({
 
 const MONEY_FMT = '#,##0';
 
-// Column definitions: [header label, width, isMoneyColumn]
-const COLUMNS: [string, number, boolean][] = [
-  ['Empleado', 32, false],
-  ['Cédula', 15, false],
-  ['Sede', 18, false],
-  ['Sal. Base', 16, true],
-  ['Aux. Transp.', 16, true],
-  ['HH. Extra', 14, true],
-  ['Deducciones', 16, true],
-  ['Neto', 16, true],
-  ['Aportes Emp.', 16, true],
-  ['Costo Total', 16, true],
-];
+/** Column definitions: [header label, width, isMoneyColumn]. Concept labels via OS-612 adapter. */
+function buildPayrollColumns(): Array<[string, number, boolean]> {
+  const conceptHeaders = resolvePayrollExportConceptHeaders();
+  return [
+    ['Empleado', 32, false],
+    ['Cédula', 15, false],
+    ['Sede', 18, false],
+    [conceptHeaders.salaryBase, 18, true],
+    [conceptHeaders.transportSubsidy, 20, true],
+    [conceptHeaders.overtimePay, 14, true],
+    // Agregados contractuales — no son conceptos de catálogo
+    ['Deducciones', 16, true],
+    ['Neto', 16, true],
+    ['Aportes Emp.', 16, true],
+    ['Costo Total', 16, true],
+  ];
+}
 
 // ── Service ────────────────────────────────────────────────────────────────────
 
@@ -65,8 +71,10 @@ export class ReportExcelService {
       pageSetup: { orientation: 'landscape', fitToPage: true, fitToWidth: 1 },
     });
 
+    const columns = buildPayrollColumns();
+
     // ── Column widths ────────────────────────────────────────────────────────
-    sheet.columns = COLUMNS.map(([, width]) => ({ width }));
+    sheet.columns = columns.map(([, width]) => ({ width }));
 
     // ── Metadata rows (1-4) ──────────────────────────────────────────────────
     const { period, tenantId, employees, tenantTotals } = report;
@@ -93,7 +101,7 @@ export class ReportExcelService {
     sheet.addRow([]); // separator before header
 
     // ── Header row ───────────────────────────────────────────────────────────
-    const headerRow = sheet.addRow(COLUMNS.map(([label]) => label));
+    const headerRow = sheet.addRow(columns.map(([label]) => label));
     headerRow.font = { bold: true, color: WHITE };
     headerRow.fill = SOLID(DARK_BLUE);
     headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
@@ -255,7 +263,7 @@ export class ReportExcelService {
   }
 
   private applyMoneyFormat(row: ExcelJS.Row): void {
-    COLUMNS.forEach(([, , isMoney], idx) => {
+    buildPayrollColumns().forEach(([, , isMoney], idx) => {
       if (isMoney) {
         row.getCell(idx + 1).numFmt = MONEY_FMT;
       }

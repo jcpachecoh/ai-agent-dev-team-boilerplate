@@ -1,6 +1,6 @@
 import { ContractTerminationReason, EmployeeContractType, PrismaClient } from '@prisma/client';
 
-import { resolveInitialEffectiveDate } from '../../src/payroll/utils/employee-history-effective-date.util';
+import { resolveInitialEffectiveDate } from '../../src/shared/employee-history/effective-date.util';
 
 /**
  * OS-591 (fase 1) — mismo espíritu que `syncEmployeeCompensationHistory`

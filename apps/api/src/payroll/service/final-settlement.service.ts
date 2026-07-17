@@ -7,6 +7,7 @@ import {
 import { AuditAction, FinalSettlementStatus, Prisma } from '@prisma/client';
 
 import { FinalSettlementAggregatorService } from './final-settlement-aggregator.service';
+import { PayrollConceptsService } from './payroll-concepts.service';
 import { AuditService } from '../../audit/service/audit.service';
 import {
   CalculateAndSaveInput,
@@ -70,6 +71,7 @@ export class FinalSettlementService implements IFinalSettlementService {
     private readonly legalFormulaValidationRepository: LegalFormulaValidationRepository,
     private readonly pendingSalaryReconciliationRepository: PendingSalaryReconciliationRepository,
     private readonly auditService: AuditService,
+    private readonly payrollConcepts: PayrollConceptsService,
   ) {}
 
   /**
@@ -521,12 +523,28 @@ export class FinalSettlementService implements IFinalSettlementService {
           `La línea ${l.code} (${l.name}) no tiene manualJustification. Todas las líneas de una liquidación manual son obligatoriamente auditables.`,
         );
       }
+      if (!l.name?.trim()) {
+        throw new BadRequestException(
+          'Cada línea manual requiere name (descripción snapshot del ajuste).',
+        );
+      }
+      // OS-612 — no códigos dinámicos desde texto; solo AJUSTE_MANUAL (o vacío → se fuerza).
+      if (l.code?.trim() && l.code.trim() !== 'AJUSTE_MANUAL') {
+        throw new BadRequestException(
+          `Las líneas manuales deben usar code AJUSTE_MANUAL; recibido "${l.code}". ` +
+            'La descripción del usuario va en name; type discrimina DEVENGO/DEDUCCION.',
+        );
+      }
     }
+
+    // Catálogo: code + conceptId GLOBAL; name = descripción del usuario (snapshot).
+    const ajuste = await this.payrollConcepts.resolveEffective(tenantId, 'AJUSTE_MANUAL');
 
     const settlementLines: SettlementLineInput[] = inputLines.map(
       (l, idx): SettlementLineInput => ({
-        code: l.code,
-        name: l.name,
+        code: ajuste.code,
+        name: l.name.trim(),
+        conceptId: ajuste.id,
         type: l.type,
         origin: 'MANUAL' as const,
         sourceReference: null,

@@ -104,6 +104,29 @@ describe('ReportExcelService', () => {
     expect(result).toBeInstanceOf(Buffer);
   });
 
+  it('usa labels del adapter OS-612 para columnas de concepto (regresión)', async () => {
+    const result = await service.generatePayrollXlsx(EMPTY_REPORT);
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(result as unknown as ExcelJS.Buffer);
+    const sheet = workbook.getWorksheet('Nómina');
+    expect(sheet).toBeDefined();
+
+    let headerRow: ExcelJS.Row | undefined;
+    sheet!.eachRow((row) => {
+      const first = String(row.getCell(1).value ?? '');
+      if (first === 'Empleado') {
+        headerRow = row;
+      }
+    });
+    expect(headerRow).toBeDefined();
+    const headers = [1, 2, 3, 4, 5, 6, 7].map((i) => String(headerRow!.getCell(i).value ?? ''));
+    expect(headers[0]).toBe('Empleado');
+    expect(headers[3]).toBe('Salario base');
+    expect(headers[4]).toBe('Auxilio de transporte');
+    expect(headers[5]).toBe('Horas extra');
+    expect(headers[6]).toBe('Deducciones'); // agregado, no concepto
+  });
+
   it('returns a valid XLSX (ZIP) buffer — magic bytes PK\\x03\\x04', async () => {
     const result = await service.generatePayrollXlsx(EMPTY_REPORT);
     expect(isXlsxBuffer(result)).toBe(true);

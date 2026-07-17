@@ -52,9 +52,5 @@ export function isLaborLegalParameterKey(value: string): value is LaborLegalPara
   return (LABOR_LEGAL_PARAMETER_KEYS as readonly string[]).includes(value);
 }
 
-/** tenantScope value used for global (tenantId = null) parameters — see schema.prisma comment on LaborLegalParameter. */
-export const GLOBAL_TENANT_SCOPE = 'GLOBAL';
-
-export function toTenantScope(tenantId: string | null | undefined): string {
-  return tenantId ?? GLOBAL_TENANT_SCOPE;
-}
+/** Re-export — fuente canónica en `src/shared/labor-legal/tenant-scope`. */
+export { GLOBAL_TENANT_SCOPE, toTenantScope } from '../shared/labor-legal/tenant-scope';

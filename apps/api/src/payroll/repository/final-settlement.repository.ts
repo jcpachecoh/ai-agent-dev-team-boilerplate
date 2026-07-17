@@ -350,12 +350,13 @@ export class FinalSettlementRepository implements IFinalSettlementRepository {
     lines: SettlementLineInput[],
   ): Prisma.SettlementLineCreateWithoutSettlementInput[] {
     return lines.map(
-      (l): Prisma.SettlementLineCreateWithoutSettlementInput => ({
+      (l): Prisma.SettlementLineUncheckedCreateWithoutSettlementInput => ({
         tenantId,
         code: l.code,
         name: l.name,
         type: l.type,
         origin: l.origin,
+        conceptId: l.conceptId ?? null,
         sourceReference: l.sourceReference ?? null,
         baseAmount: l.baseAmount ?? null,
         quantity: l.quantity ?? null,
@@ -426,6 +427,7 @@ export class FinalSettlementRepository implements IFinalSettlementRepository {
       name: l.name,
       type: l.type,
       origin: l.origin,
+      conceptId: l.conceptId ?? null,
       sourceReference: l.sourceReference,
       baseAmount: l.baseAmount?.toFixed(2) ?? null,
       quantity: l.quantity?.toFixed(4) ?? null,

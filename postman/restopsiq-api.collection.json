@@ -9996,6 +9996,47 @@
           ]
         },
         {
+          "name": "GET /api/reports/payroll-concepts/usage (OS-612)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/payroll-concepts/usage",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "payroll-concepts", "usage"]
+            },
+            "description": "OS-612 — Usados vs catalogados (read-only). Fuente: distinct SettlementLine.code/name. Estados: CATALOGED|UNCATALOGED|INACTIVE|NAME_MISMATCH. os380FieldCoverage estática (15 campos; sin ledger mensual). Roles: PAYROLL_MODULE_ROLES. Sin CRUD."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('payroll-concepts/usage: status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('payroll-concepts/usage: contrato OS-612', () => {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.tenantId).to.be.a('string');",
+                  "    pm.expect(body.settlementLineUsages).to.be.an('array');",
+                  "    pm.expect(body.summary).to.be.an('object');",
+                  "    pm.expect(body.os380FieldCoverage.mappedFieldCount).to.eql(15);",
+                  "    pm.expect(body.os380FieldCoverage.note).to.include('no persiste');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "GET /api/reports/payroll (filtros opcionales)",
           "request": {
             "method": "GET",

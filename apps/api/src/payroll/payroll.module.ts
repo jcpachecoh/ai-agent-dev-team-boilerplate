@@ -30,6 +30,7 @@ import { FinalSettlementRepository } from './repository/final-settlement.reposit
 import { LegalFormulaValidationRepository } from './repository/legal-formula-validation.repository';
 import { PayrollRepository } from './repository/payroll.repository';
 import { PendingSalaryReconciliationRepository } from './repository/pending-salary-reconciliation.repository';
+import { PayrollConceptsRepository } from './repository/payroll-concepts.repository';
 import { PrimaRepository } from './repository/prima.repository';
 import { TenantPilaConfigRepository } from './repository/tenant-pila-config.repository';
 import { DotacionesResolver } from './resolver/dotaciones.resolver';
@@ -53,6 +54,8 @@ import { FinalSettlementService } from './service/final-settlement.service';
 import { IndemnificationCalculationService } from './service/indemnification-calculation.service';
 import { LegalFormulaValidationService } from './service/legal-formula-validation.service';
 import { PayrollCalculationService } from './service/payroll-calculation.service';
+import { PayrollConceptsService } from './service/payroll-concepts.service';
+import { PayrollConceptsUsageService } from './service/payroll-concepts-usage.service';
 import { PayrollService } from './service/payroll.service';
 import { PendingSalaryReconciliationService } from './service/pending-salary-reconciliation.service';
 import { PendingSalaryService } from './service/pending-salary.service';
@@ -88,6 +91,9 @@ import { VariableAverageService } from './service/variable-average.service';
   providers: [
     PayrollService,
     PayrollRepository,
+    PayrollConceptsService,
+    PayrollConceptsUsageService,
+    PayrollConceptsRepository,
     EmployeeCatalogService,
     EmployeeCatalogRepository,
     TenantPilaConfigService,
@@ -133,6 +139,8 @@ import { VariableAverageService } from './service/variable-average.service';
   exports: [
     PayrollService,
     PayrollRepository,
+    PayrollConceptsService,
+    PayrollConceptsUsageService,
     PayrollCalculationService,
     EmployeeCatalogService,
     EmployeeCatalogRepository,
