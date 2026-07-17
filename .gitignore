@@ -72,3 +72,7 @@ apps/api/docs/*.csv
 
 # Artefactos locales de validación operativa PILA (OS-595)
 apps/api/tmp/
+
+# next-sitemap generated output
+apps/web/public/sitemap*.xml
+apps/web/public/robots.txt
