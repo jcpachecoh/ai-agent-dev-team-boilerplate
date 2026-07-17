@@ -124,6 +124,21 @@ const ROLE_SEEDS = [
   { id: ROLE_SUPER_ADMIN_ID, code: 'SUPER_ADMIN', name: 'Super Admin' },
 ] as const;
 
+/**
+ * Global permission catalog — preferred deterministic ids `cccccccc-…000N`.
+ *
+ * Policy (legacy / production):
+ * - Stable identity is `code` (@@unique), never the UUID.
+ * - Never UPDATE `permissions.id` in prod (breaks `role_permissions` FKs).
+ * - `seedPermissions()` matches by code; if a preferred id is already owned by
+ *   another code it creates with a cuid and logs the conflict.
+ * - Historical remap: `nomina.settlement.*` once used 064–071; those slots are
+ *   now `configuracion.legal.*` (064–065) + `attendance.daily-cost-center.*`
+ *   (066–067); settlement prefers 072–079. Legacy DBs may still hold settlement
+ *   at 064–071 — that is OK as long as role links resolve by code.
+ *
+ * Audit (read-only SQL): `prisma/seeds/audit-permission-ids.sql`
+ */
 const PERMISSION_SEEDS = [
   {
     id: 'cccccccc-0000-0000-0000-000000000001',
@@ -2857,6 +2872,8 @@ async function main() {
   await seedEmployeeOrgChart(prisma);
   await seedEmployeeDetails(ownerGlobalUser.id, operatorGlobalUser.id, firstLocationId);
   await seedVacationDemoBalances(ownerGlobalUser.id, operatorGlobalUser.id);
+  const { seedVacationRequestsDemo } = await import('./seeds/vacation-requests-demo.seed');
+  await seedVacationRequestsDemo(prisma);
   const { seedOs591Fixtures, seedOs591Phase2Fixtures, seedOs591Phase3Fixtures } =
     await import('./seeds/os591-final-settlement.seed');
   await seedOs591Fixtures(prisma, {
