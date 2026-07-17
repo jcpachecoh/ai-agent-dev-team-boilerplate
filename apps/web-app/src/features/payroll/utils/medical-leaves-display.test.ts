@@ -40,6 +40,12 @@ describe('medical-leaves-display', () => {
     expect(canRadicateMedicalLeave('REGISTRADA', true)).toBe(true);
     expect(canRadicateMedicalLeave('REGISTRADA', false)).toBe(false);
     expect(canMarkRecovered('RADICADA_EPS')).toBe(true);
+  });
+
+  it('solo permite rechazar incapacidades en estado REGISTRADA (NOM-13)', () => {
+    expect(canRejectMedicalLeave('REGISTRADA')).toBe(true);
+    expect(canRejectMedicalLeave('RADICADA_EPS')).toBe(false);
     expect(canRejectMedicalLeave('RECOBRADA')).toBe(false);
+    expect(canRejectMedicalLeave('RECHAZADA')).toBe(false);
   });
 });

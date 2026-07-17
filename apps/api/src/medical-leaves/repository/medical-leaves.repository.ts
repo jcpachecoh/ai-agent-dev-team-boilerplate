@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { LeaveStatus, Prisma } from '@prisma/client';
+import { AuditAction, LeaveStatus, Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../prisma/prisma.service';
 import type {
@@ -8,6 +8,7 @@ import type {
   ListMedicalLeavesOptions,
   MedicalLeavePayrollPeriodRange,
   MedicalLeaveRecord,
+  MedicalLeaveRejectionAudit,
   MedicalLeaveSummary,
   UpdateMedicalLeaveData,
 } from '../interfaces/medical-leaves.interfaces';
@@ -95,6 +96,46 @@ export class MedicalLeavesRepository implements IMedicalLeavesRepository {
     }
 
     return this.mapLeave(row);
+  }
+
+  /**
+   * Cambia el estado a RECHAZADA y registra la acción en AuditLog dentro de la
+   * misma transacción (NOM-13 / OS-324): quién, cuándo y motivo del rechazo.
+   */
+  async updateWithRejectionAudit(
+    tenantId: string,
+    id: string,
+    data: UpdateMedicalLeaveData,
+    audit: MedicalLeaveRejectionAudit,
+  ): Promise<MedicalLeaveRecord> {
+    return this.prisma.$transaction(async (tx) => {
+      const row = await tx.medicalLeave.update({
+        where: { id },
+        data: {
+          ...(data.status !== undefined ? { status: data.status } : {}),
+          ...(data.rejectedAt !== undefined ? { rejectedAt: data.rejectedAt } : {}),
+          ...(data.rejectionReason !== undefined ? { rejectionReason: data.rejectionReason } : {}),
+        },
+      });
+
+      if (row.tenantId !== tenantId) {
+        throw new Error(`MedicalLeave ${id} does not belong to tenant ${tenantId}`);
+      }
+
+      await tx.auditLog.create({
+        data: {
+          tenantId,
+          action: AuditAction.REJECT,
+          entityType: 'MedicalLeave',
+          entityId: row.id,
+          actorUserId: audit.actorUserId,
+          oldValue: audit.oldValue as Prisma.InputJsonValue,
+          newValue: audit.newValue as Prisma.InputJsonValue,
+        },
+      });
+
+      return this.mapLeave(row);
+    });
   }
 
   async softDelete(tenantId: string, id: string): Promise<MedicalLeaveRecord> {

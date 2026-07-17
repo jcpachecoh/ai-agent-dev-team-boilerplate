@@ -59,6 +59,7 @@ describe('MedicalLeavesService', () => {
       | 'create'
       | 'findById'
       | 'update'
+      | 'updateWithRejectionAudit'
       | 'listSummaries'
       | 'sumActiveDaysInCalendarYear'
       | 'softDelete'
@@ -73,6 +74,7 @@ describe('MedicalLeavesService', () => {
       create: jest.fn(),
       findById: jest.fn(),
       update: jest.fn(),
+      updateWithRejectionAudit: jest.fn(),
       listSummaries: jest.fn(),
       sumActiveDaysInCalendarYear: jest.fn(),
       softDelete: jest.fn(),
@@ -216,6 +218,36 @@ describe('MedicalLeavesService', () => {
       ).rejects.toThrow(BadRequestException);
     });
 
+    it('allows a new registration with same dates when the previous leave was RECHAZADA, keeping both records', async () => {
+      // Arrange: existe una incapacidad rechazada con las mismas fechas exactas
+      repository.listSummaries.mockResolvedValue([
+        {
+          ...mockLeave,
+          status: LeaveStatus.RECHAZADA,
+          rejectedAt: new Date('2026-03-06'),
+          rejectionReason: 'Documento incorrecto o ilegible',
+          employeeName: 'Empleado',
+          locationId: null,
+          locationName: null,
+        },
+      ]);
+      repository.create.mockResolvedValue({ ...mockLeave, id: 'leave-2' });
+
+      // Act
+      const result = await service.register(TENANT, ACTOR_USER_ID, {
+        employeeId: EMPLOYEE_ID,
+        origin: LeaveOrigin.COMUN,
+        startDate: new Date('2026-03-01'),
+        endDate: new Date('2026-03-05'),
+      });
+
+      // Assert: se crea un registro nuevo y el rechazado no se modifica ni elimina
+      expect(result.id).toBe('leave-2');
+      expect(repository.create).toHaveBeenCalledTimes(1);
+      expect(repository.update).not.toHaveBeenCalled();
+      expect(repository.softDelete).not.toHaveBeenCalled();
+    });
+
     it('throws ConflictException for exact duplicate active leave', async () => {
       repository.listSummaries.mockResolvedValue([
         {
@@ -347,28 +379,42 @@ describe('MedicalLeavesService', () => {
       jest.useRealTimers();
     });
 
-    it('transitions to RECHAZADA with rejection reason and rejectedAt', async () => {
+    it('transitions to RECHAZADA with rejection reason, rejectedAt and audit entry', async () => {
       const rejectedAt = new Date('2026-03-07');
       jest.useFakeTimers();
       jest.setSystemTime(rejectedAt);
-      repository.update.mockResolvedValue({
+      repository.updateWithRejectionAudit.mockResolvedValue({
         ...mockLeave,
         status: LeaveStatus.RECHAZADA,
         rejectedAt,
-        rejectionReason: 'Documentación incompleta',
+        rejectionReason: 'Documento incorrecto o ilegible',
       });
 
       const result = await service.updateStatus(TENANT, ACTOR_USER_ID, LEAVE_ID, {
         status: LeaveStatus.RECHAZADA,
-        rejectionReason: 'Documentación incompleta',
+        rejectionReason: 'Documento incorrecto o ilegible',
       });
 
-      expect(repository.update).toHaveBeenCalledWith(TENANT, LEAVE_ID, {
-        status: LeaveStatus.RECHAZADA,
-        rejectedAt,
-        rejectionReason: 'Documentación incompleta',
-      });
-      expect(result.rejectionReason).toBe('Documentación incompleta');
+      expect(repository.updateWithRejectionAudit).toHaveBeenCalledWith(
+        TENANT,
+        LEAVE_ID,
+        {
+          status: LeaveStatus.RECHAZADA,
+          rejectedAt,
+          rejectionReason: 'Documento incorrecto o ilegible',
+        },
+        {
+          actorUserId: ACTOR_USER_ID,
+          oldValue: { status: LeaveStatus.REGISTRADA },
+          newValue: {
+            status: LeaveStatus.RECHAZADA,
+            rejectionReason: 'Documento incorrecto o ilegible',
+            rejectedAt: rejectedAt.toISOString(),
+          },
+        },
+      );
+      expect(repository.update).not.toHaveBeenCalled();
+      expect(result.rejectionReason).toBe('Documento incorrecto o ilegible');
       jest.useRealTimers();
     });
 
@@ -378,6 +424,40 @@ describe('MedicalLeavesService', () => {
           status: LeaveStatus.RECHAZADA,
         }),
       ).rejects.toThrow(BadRequestException);
+    });
+
+    it('blocks rejection when leave is already RADICADA_EPS and asks for manual handling', async () => {
+      repository.findById.mockResolvedValue({
+        ...mockLeave,
+        status: LeaveStatus.RADICADA_EPS,
+        supportStorageObjectId: 'storage-1',
+      });
+
+      await expect(
+        service.updateStatus(TENANT, ACTOR_USER_ID, LEAVE_ID, {
+          status: LeaveStatus.RECHAZADA,
+          rejectionReason: 'Documento incorrecto o ilegible',
+        }),
+      ).rejects.toThrow(
+        'No se puede rechazar una incapacidad ya radicada ante EPS/ARL. Este caso debe gestionarse manualmente por RRHH.',
+      );
+      expect(repository.updateWithRejectionAudit).not.toHaveBeenCalled();
+      expect(repository.update).not.toHaveBeenCalled();
+    });
+
+    it('blocks rejection when leave is RECOBRADA', async () => {
+      repository.findById.mockResolvedValue({
+        ...mockLeave,
+        status: LeaveStatus.RECOBRADA,
+      });
+
+      await expect(
+        service.updateStatus(TENANT, ACTOR_USER_ID, LEAVE_ID, {
+          status: LeaveStatus.RECHAZADA,
+          rejectionReason: 'Documento incorrecto o ilegible',
+        }),
+      ).rejects.toThrow(BadRequestException);
+      expect(repository.updateWithRejectionAudit).not.toHaveBeenCalled();
     });
 
     it('throws BadRequestException for invalid transition', async () => {

@@ -1,4 +1,4 @@
-import { Button, Modal, RolTextarea, toast } from '@restopsiq/ui';
+import { Button, Modal, RecetaFilterSelect, RolTextarea, toast } from '@restopsiq/ui';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -9,11 +9,42 @@ import { useTheme } from '@/providers/ThemeProvider';
 import type { LeaveStatus } from '../types/medical-leaves.types';
 import styles from './MedicalLeaveRejectModal.module.scss';
 
-const schema = z.object({
-  rejectionReason: z.string().trim().min(3, 'Indica el motivo del rechazo'),
-});
+/** Catálogo de causales sugeridas de rechazo (NOM-13). */
+export const MEDICAL_LEAVE_REJECTION_REASONS = [
+  'Documento incorrecto o ilegible',
+  'El documento no corresponde al empleado',
+  'Las fechas no coinciden con el soporte',
+  'Soporte duplicado',
+] as const;
+
+const OTHER_REASON = 'OTRO';
+
+const REASON_OPTIONS = [
+  ...MEDICAL_LEAVE_REJECTION_REASONS.map((reason) => ({ value: reason, label: reason })),
+  { value: OTHER_REASON, label: 'Otro motivo' },
+];
+
+const schema = z
+  .object({
+    reasonCode: z.string().min(1, 'Selecciona una causal de rechazo'),
+    detail: z.string().trim(),
+  })
+  .superRefine((values, ctx) => {
+    if (values.reasonCode === OTHER_REASON && values.detail.length < 3) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['detail'],
+        message: 'Describe el motivo del rechazo',
+      });
+    }
+  });
 
 type FormValues = z.infer<typeof schema>;
+
+function composeRejectionReason(values: FormValues): string {
+  if (values.reasonCode === OTHER_REASON) return values.detail;
+  return values.detail ? `${values.reasonCode}: ${values.detail}` : values.reasonCode;
+}
 
 interface Props {
   leaveId: string;
@@ -40,13 +71,13 @@ export function MedicalLeaveRejectModal({
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { rejectionReason: '' },
+    defaultValues: { reasonCode: '', detail: '' },
   });
 
   const onSubmit = async (values: FormValues) => {
     try {
       setSubmitting(true);
-      await onConfirm(values.rejectionReason);
+      await onConfirm(composeRejectionReason(values));
       toast.success('Estado actualizado');
       onClose();
     } catch (error) {
@@ -75,27 +106,48 @@ export function MedicalLeaveRejectModal({
     >
       <form className={styles.form} onSubmit={(event) => void handleSubmit(onSubmit)(event)}>
         <div className={styles.field}>
-          <span className={styles.label}>Motivo del rechazo</span>
+          <span className={styles.label}>Causal de rechazo *</span>
           <Controller
-            name="rejectionReason"
+            name="reasonCode"
+            control={control}
+            render={({ field }) => (
+              <RecetaFilterSelect
+                aria-label="Causal de rechazo"
+                options={REASON_OPTIONS}
+                value={field.value}
+                placeholder="Seleccionar causal"
+                onChange={field.onChange}
+                disabled={pending}
+                theme={modalTheme}
+                size="md"
+              />
+            )}
+          />
+          {errors.reasonCode ? (
+            <span className={styles.error}>{errors.reasonCode.message}</span>
+          ) : null}
+        </div>
+
+        <div className={styles.field}>
+          <span className={styles.label}>Detalle del motivo</span>
+          <Controller
+            name="detail"
             control={control}
             render={({ field }) => (
               <RolTextarea
                 theme={modalTheme}
                 size="md"
                 rows={4}
-                placeholder="Describe el motivo del rechazo"
+                placeholder="Agrega detalles adicionales del rechazo (obligatorio si eliges Otro motivo)"
                 value={field.value}
                 onChange={field.onChange}
                 onBlur={field.onBlur}
                 disabled={pending}
-                aria-label="Motivo del rechazo"
+                aria-label="Detalle del motivo"
               />
             )}
           />
-          {errors.rejectionReason ? (
-            <span className={styles.error}>{errors.rejectionReason.message}</span>
-          ) : null}
+          {errors.detail ? <span className={styles.error}>{errors.detail.message}</span> : null}
         </div>
 
         <div className={styles.actions}>
