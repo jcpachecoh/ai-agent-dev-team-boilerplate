@@ -76,6 +76,6 @@ $mobile-breakpoint: 768px;
 
 .actions {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  justify-content: flex-end;
+  overflow: visible;
 }

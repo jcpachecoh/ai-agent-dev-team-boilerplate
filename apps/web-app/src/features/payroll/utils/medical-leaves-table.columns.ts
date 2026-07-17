@@ -8,7 +8,7 @@ export const MEDICAL_LEAVE_TABLE_COLUMNS: EmpleadoColumnDef[] = [
   { key: 'employerAmount', label: 'Empleador', width: 'minmax(108px, 0.7fr)', align: 'center' },
   { key: 'epsAmount', label: 'EPS/ARL', width: 'minmax(108px, 0.7fr)', align: 'center' },
   { key: 'status', label: 'Estado', width: 'minmax(160px, 0.9fr)', align: 'center' },
-  { key: 'actions', label: 'Acciones', width: 'minmax(200px, 1fr)', align: 'center' },
+  { key: 'actions', label: 'Acciones', width: 'minmax(88px, 0.55fr)', align: 'center' },
 ];
 
 export function getMedicalLeaveTableColumns(showActions: boolean): EmpleadoColumnDef[] {

@@ -1,22 +1,18 @@
 import {
   EmpleadoAvatar,
-  EmpleadoRowActionButton,
   resolveEmpleadoAvatarTone,
   resolveEmpleadoInitials,
   type EmpleadoTheme,
 } from '@restopsiq/ui';
-import { Check, DollarSign, Download, X } from 'lucide-react';
 import type { CSSProperties } from 'react';
 
 import type { MedicalLeaveSummary } from '../types/medical-leaves.types';
 import {
   LEAVE_ORIGIN_LABELS,
-  canMarkRecovered,
-  canRadicateMedicalLeave,
-  canRejectMedicalLeave,
   formatMedicalLeaveCurrency,
   formatMedicalLeaveDate,
 } from '../utils/medical-leaves-display';
+import { MedicalLeaveRowActions } from './MedicalLeaveRowActions';
 import { MedicalLeaveStatusBadge } from './MedicalLeaveStatusBadge';
 import styles from './MedicalLeaveTableRow.module.scss';
 
@@ -47,8 +43,6 @@ export function MedicalLeaveTableRow({
   onRecovered,
   onReject,
 }: Props): React.JSX.Element {
-  const showActions = canWrite;
-
   return (
     <div
       className={styles.row}
@@ -89,62 +83,20 @@ export function MedicalLeaveTableRow({
       <div className={styles.statusCell} role="cell">
         <MedicalLeaveStatusBadge status={leave.status} />
       </div>
-      {showActions ? (
+      {canWrite ? (
         <div className={styles.actionsCell} role="cell">
-          <EmpleadoRowActionButton
-            variant="view"
+          <MedicalLeaveRowActions
+            leave={leave}
             theme={theme}
-            onClick={onView}
-            title="Ver"
-            aria-label="Ver detalle de incapacidad"
+            canWrite={canWrite}
+            downloading={downloading}
+            statusBusy={statusBusy}
+            onView={onView}
+            onDownload={onDownload}
+            onRadicate={onRadicate}
+            onRecovered={onRecovered}
+            onReject={onReject}
           />
-          {leave.supportStorageObjectId ? (
-            <EmpleadoRowActionButton
-              variant="history"
-              theme={theme}
-              onClick={onDownload}
-              disabled={downloading}
-              title="Descargar"
-              aria-label="Descargar soporte médico"
-              icon={<Download aria-hidden />}
-            />
-          ) : null}
-          {canRadicateMedicalLeave(leave.status, !!leave.supportStorageObjectId) ? (
-            <EmpleadoRowActionButton
-              variant="toggle"
-              active
-              theme={theme}
-              icon={<Check aria-hidden />}
-              onClick={onRadicate}
-              disabled={statusBusy}
-              title="Radicar"
-              aria-label="Radicar incapacidad"
-            />
-          ) : null}
-          {canMarkRecovered(leave.status) ? (
-            <EmpleadoRowActionButton
-              variant="toggle"
-              active
-              theme={theme}
-              icon={<DollarSign aria-hidden />}
-              onClick={onRecovered}
-              disabled={statusBusy}
-              title="Recobrar"
-              aria-label="Marcar incapacidad como recobrada"
-              className={styles.recoverAction}
-            />
-          ) : null}
-          {canRejectMedicalLeave(leave.status) ? (
-            <EmpleadoRowActionButton
-              variant="view"
-              theme={theme}
-              icon={<X aria-hidden />}
-              onClick={onReject}
-              title="Rechazar"
-              aria-label="Rechazar incapacidad"
-              className={styles.rejectAction}
-            />
-          ) : null}
         </div>
       ) : null}
     </div>

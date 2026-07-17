@@ -84,29 +84,5 @@
   align-items: center;
   justify-content: center;
   justify-self: center;
-  flex-wrap: wrap;
-  gap: 8px;
   min-width: 0;
-}
-
-.recoverAction {
-  background: rgb(46 196 160 / 10%);
-  border-color: rgb(46 196 160 / 30%);
-  color: var(--empleado-teal);
-}
-
-.recoverAction:hover:not(:disabled) {
-  background: rgb(46 196 160 / 16%);
-  color: var(--empleado-teal);
-}
-
-.rejectAction {
-  background: rgb(239 68 68 / 12%);
-  border-color: rgb(239 68 68 / 35%);
-  color: #ef4444;
-}
-
-.rejectAction:hover:not(:disabled) {
-  background: rgb(239 68 68 / 18%);
-  color: #dc2626;
 }
