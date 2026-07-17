@@ -23,6 +23,9 @@ export async function applyPayrollEmployeeCreatePersonalData(
     | 'direccionPlaca1'
     | 'direccionPlaca2'
     | 'direccionComplemento'
+    | 'contactoEmergenciaNombre'
+    | 'contactoEmergenciaParentesco'
+    | 'contactoEmergenciaTelefono'
   >,
 ): Promise<void> {
   await updateEmployeePersonalData(userId, {
@@ -37,5 +40,8 @@ export async function applyPayrollEmployeeCreatePersonalData(
     barrio: values.barrio.trim() || undefined,
     localidad: values.localidad.trim() || undefined,
     direccion: composeDireccion(values) || undefined,
+    contactoEmergenciaNombre: values.contactoEmergenciaNombre.trim(),
+    contactoEmergenciaParentesco: values.contactoEmergenciaParentesco.trim(),
+    contactoEmergenciaTelefono: values.contactoEmergenciaTelefono.trim(),
   });
 }

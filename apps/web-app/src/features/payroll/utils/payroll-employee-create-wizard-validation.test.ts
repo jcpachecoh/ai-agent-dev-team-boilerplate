@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
+import { PAYROLL_EMPLOYEE_FORM_EMPTY_VALUES } from '../components/PayrollEmployeeForm';
 import type { PayrollEmployeeCreateBankDraft } from '../types/payroll-employee-create-wizard.types';
+import type { PayrollEmployeeFormValues } from '../types/payroll.types';
 import {
   resolveBankDraftPayload,
   validatePayrollEmployeeBankStep,
+  validatePayrollEmployeePersonalStep,
 } from './payroll-employee-create-wizard-validation';
 
 const LOADED_DRAFT: PayrollEmployeeCreateBankDraft = {
@@ -13,6 +16,28 @@ const LOADED_DRAFT: PayrollEmployeeCreateBankDraft = {
   accountNumber: '',
   maskedAccountNumber: '**** **** 1234',
 };
+
+function validPersonalStepValues(
+  overrides: Partial<PayrollEmployeeFormValues> = {},
+): PayrollEmployeeFormValues {
+  return {
+    ...PAYROLL_EMPLOYEE_FORM_EMPTY_VALUES,
+    primerNombre: 'CARLOS',
+    primerApellido: 'PEREZ',
+    email: 'carlos@test.com',
+    cedula: '1234567890',
+    costCenter: 'OPERACIONES',
+    locationId: 'loc-1',
+    laborClassification: 'ADMINISTRATIVO',
+    positionId: 'pos-1',
+    salaryAmount: '2000000',
+    department: 'Cocina',
+    contactoEmergenciaNombre: 'MARIA PEREZ',
+    contactoEmergenciaParentesco: 'Madre',
+    contactoEmergenciaTelefono: '3001234567',
+    ...overrides,
+  };
+}
 
 describe('validatePayrollEmployeeBankStep', () => {
   it('no exige número de cuenta al editar una cuenta existente sin tocarla', () => {
@@ -33,6 +58,28 @@ describe('validatePayrollEmployeeBankStep', () => {
   it('valida el nuevo número si el usuario decide reemplazarlo', () => {
     const result = validatePayrollEmployeeBankStep({ ...LOADED_DRAFT, accountNumber: '123' });
     expect(result.message).toBeTruthy();
+  });
+});
+
+describe('validatePayrollEmployeePersonalStep', () => {
+  it('exige contacto de emergencia al crear empleado', () => {
+    const message = validatePayrollEmployeePersonalStep(
+      validPersonalStepValues({
+        contactoEmergenciaNombre: '',
+        contactoEmergenciaParentesco: '',
+        contactoEmergenciaTelefono: '',
+      }),
+      { hasActivePositions: true, selectedPositionArea: 'Cocina' },
+    );
+    expect(message).toMatch(/contacto de emergencia/i);
+  });
+
+  it('acepta el paso personal con contacto de emergencia completo', () => {
+    const message = validatePayrollEmployeePersonalStep(validPersonalStepValues(), {
+      hasActivePositions: true,
+      selectedPositionArea: 'Cocina',
+    });
+    expect(message).toBeNull();
   });
 });
 

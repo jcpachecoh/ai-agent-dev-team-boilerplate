@@ -167,27 +167,43 @@ describe('AdminUsersService', () => {
       expect(callArg.operationalUser).toBeUndefined();
     });
 
-    it('lanza Error cuando OPERATOR no tiene locationId', async () => {
-      // Arrange
+    it('usa la sede del empleado cuando OPERATOR no envía locationId', async () => {
+      // Arrange — la sede se asigna en el registro del empleado, no en el de usuario.
       process.env.OPERATOR_TEMP_PASSWORD = '1234';
-      mockRepo.findByEmail.mockResolvedValue(null);
-      mockRepo.findByCedula.mockResolvedValue(null);
+      mockRepo.findByEmail.mockResolvedValue({ id: 'emp-user-1' });
+      mockRepo.findByCedula.mockResolvedValue({ id: 'emp-user-1' });
+      mockRepo.findEmployeeProvisioningContext.mockResolvedValue({
+        id: 'emp-user-1',
+        email: 'op@test.com',
+        cedula: '12345678',
+        createdBy: null,
+        employeeDetailsId: 'emp-1',
+        employeeLocationId: 'sede-from-employee',
+        hasOperationalProfile: false,
+      });
       mockRepo.findRoleCode.mockResolvedValue('OPERATOR');
+      mockRepo.completeEmployeeUserProvisioning.mockResolvedValue(baseUser);
 
-      // Act & Assert
-      await expect(
-        service.createUser(
-          'tenant-1',
-          {
-            name: 'Test',
-            cedula: '12345678',
-            documentType: DocumentType.CC,
-            email: 'op@test.com',
-            roleId: 'role-op',
-          },
-          'req',
-        ),
-      ).rejects.toThrow('locationId is required for OPERATOR users');
+      // Act
+      await service.createUser(
+        'tenant-1',
+        {
+          name: 'Test',
+          cedula: '12345678',
+          documentType: DocumentType.CC,
+          email: 'op@test.com',
+          roleId: 'role-op',
+          password: '272808',
+        },
+        'req',
+      );
+
+      // Assert
+      expect(mockRepo.completeEmployeeUserProvisioning).toHaveBeenCalledWith(
+        'tenant-1',
+        'emp-user-1',
+        expect.objectContaining({ locationId: 'sede-from-employee' }),
+      );
     });
 
     it('lanza BadRequestException cuando el PIN del operador no es válido', async () => {

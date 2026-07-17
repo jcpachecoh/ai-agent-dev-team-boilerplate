@@ -223,5 +223,8 @@ export interface PayrollEmployeeFormValues {
   costCenter: CostCenter;
   laborClassification: LaborClassification;
   nonSalaryAmount: string;
+  contactoEmergenciaNombre: string;
+  contactoEmergenciaParentesco: string;
+  contactoEmergenciaTelefono: string;
   beneficiaries: BeneficiaryFormRow[];
 }

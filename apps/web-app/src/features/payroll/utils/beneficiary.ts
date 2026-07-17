@@ -1,8 +1,8 @@
 import type { BeneficiaryFormRow } from '../types/payroll.types';
 
 export const BENEFICIARY_TYPE_OPTIONS = [
-  { value: 'FATHER', label: 'Padre' },
-  { value: 'MOTHER', label: 'Madre' },
+  { value: 'FATHER', label: 'Padres — Padre' },
+  { value: 'MOTHER', label: 'Padres — Madre' },
   { value: 'SPOUSE', label: 'Cónyuge' },
   { value: 'CHILD', label: 'Hijo/Hija' },
   { value: 'MINOR_IN_CHARGE', label: 'Menor a Cargo' },

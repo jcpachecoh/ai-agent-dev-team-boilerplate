@@ -5,6 +5,7 @@ import type {
 import type { PayrollEmployeeFormValues } from '../types/payroll.types';
 import { validateAccountNumberForBank } from './bank-account-validation';
 import { validateBeneficiaryForm } from './beneficiary';
+import { validateEmergencyContact } from './emergency-contact';
 import { parseWithholdingRatePercent } from './financial-profile-display';
 
 const REQUIRED_CATALOG_FIELDS: Array<{
@@ -78,6 +79,12 @@ export function validatePayrollEmployeePersonalStep(
 
   if (!values.department.trim()) {
     return 'Área es obligatoria.';
+  }
+
+  const emergencyErrors = validateEmergencyContact(values, { required: true });
+  const firstEmergencyError = Object.values(emergencyErrors)[0];
+  if (firstEmergencyError) {
+    return firstEmergencyError;
   }
 
   for (let index = 0; index < values.beneficiaries.length; index += 1) {

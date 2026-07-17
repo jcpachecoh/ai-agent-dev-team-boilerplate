@@ -31,6 +31,7 @@ import type {
   UpdateEmployeePersonalDataInput,
 } from '../types/personal-data.types';
 import type { PayrollEmployeeFormValues } from '../types/payroll.types';
+import { normalizeNameText } from '../utils/employee-name';
 import {
   TIPO_VIA_OPTIONS,
   composeDireccion,
@@ -38,6 +39,11 @@ import {
   parseDireccion,
 } from '../utils/direccion';
 import { buildNombres, splitNombresForForm } from '../utils/employee-name';
+import {
+  EMERGENCY_CONTACT_PENDING_MESSAGE,
+  hasCompleteEmergencyContact,
+  validateEmergencyContact,
+} from '../utils/emergency-contact';
 import {
   buildEmploymentDetailFields,
   formatBeneficiaryType,
@@ -137,9 +143,8 @@ function validateForm(values: PersonalFormState): Partial<Record<string, string>
   if (values.telefono && !/^\d{7,15}$/.test(values.telefono)) {
     errors.telefono = 'Entre 7 y 15 dígitos';
   }
-  if (values.contactoEmergenciaTelefono && !/^\d{7,15}$/.test(values.contactoEmergenciaTelefono)) {
-    errors.contactoEmergenciaTelefono = 'Entre 7 y 15 dígitos';
-  }
+  // Al editar datos personales, el contacto de emergencia es obligatorio (nuevos y legacy).
+  Object.assign(errors, validateEmergencyContact(values, { required: true }));
   if (values.fechaNacimiento) {
     const birth = new Date(`${values.fechaNacimiento}T00:00:00`);
     const now = new Date();
@@ -429,7 +434,9 @@ export function PayrollEmployeePersonalDataTab({
                 theme={uiTheme}
                 className={styles.controlMd}
                 value={values.primerNombre}
-                onChange={(event) => updateField('primerNombre', event.target.value)}
+                onChange={(event) =>
+                  updateField('primerNombre', normalizeNameText(event.target.value))
+                }
               />
             ) : (
               <Readonly value={displayValue(values.primerNombre)} />
@@ -441,7 +448,9 @@ export function PayrollEmployeePersonalDataTab({
                 theme={uiTheme}
                 className={styles.controlMd}
                 value={values.segundoNombre}
-                onChange={(event) => updateField('segundoNombre', event.target.value)}
+                onChange={(event) =>
+                  updateField('segundoNombre', normalizeNameText(event.target.value))
+                }
               />
             ) : (
               <Readonly value={displayValue(values.segundoNombre)} />
@@ -453,7 +462,9 @@ export function PayrollEmployeePersonalDataTab({
                 theme={uiTheme}
                 className={styles.controlMd}
                 value={values.primerApellido ?? ''}
-                onChange={(event) => updateField('primerApellido', event.target.value)}
+                onChange={(event) =>
+                  updateField('primerApellido', normalizeNameText(event.target.value))
+                }
               />
             ) : (
               <Readonly value={displayValue(values.primerApellido)} />
@@ -465,7 +476,9 @@ export function PayrollEmployeePersonalDataTab({
                 theme={uiTheme}
                 className={styles.controlMd}
                 value={values.segundoApellido ?? ''}
-                onChange={(event) => updateField('segundoApellido', event.target.value)}
+                onChange={(event) =>
+                  updateField('segundoApellido', normalizeNameText(event.target.value))
+                }
               />
             ) : (
               <Readonly value={displayValue(values.segundoApellido)} />
@@ -747,8 +760,13 @@ export function PayrollEmployeePersonalDataTab({
         </div>
 
         <p className={styles.sectionTitle}>Contacto de emergencia</p>
+        {!editingPersonal && values && !hasCompleteEmergencyContact(values) ? (
+          <p className={styles.pendingBanner} role="status">
+            {EMERGENCY_CONTACT_PENDING_MESSAGE}
+          </p>
+        ) : null}
         <div className={styles.grid}>
-          <Field label="Nombre">
+          <Field label="Nombre *" error={errors.contactoEmergenciaNombre}>
             {canEdit('contactoEmergenciaNombre') ? (
               <RecetaTextInput
                 theme={uiTheme}
@@ -760,7 +778,7 @@ export function PayrollEmployeePersonalDataTab({
               <Readonly value={displayValue(values.contactoEmergenciaNombre)} />
             )}
           </Field>
-          <Field label="Parentesco">
+          <Field label="Parentesco *" error={errors.contactoEmergenciaParentesco}>
             {canEdit('contactoEmergenciaParentesco') ? (
               <RecetaTextInput
                 theme={uiTheme}
@@ -774,7 +792,7 @@ export function PayrollEmployeePersonalDataTab({
               <Readonly value={displayValue(values.contactoEmergenciaParentesco)} />
             )}
           </Field>
-          <Field label="Teléfono" error={errors.contactoEmergenciaTelefono}>
+          <Field label="Teléfono *" error={errors.contactoEmergenciaTelefono}>
             {canEdit('contactoEmergenciaTelefono') ? (
               <RecetaTextInput
                 theme={uiTheme}

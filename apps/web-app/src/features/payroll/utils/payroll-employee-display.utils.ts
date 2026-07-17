@@ -36,8 +36,8 @@ const LABOR_CLASSIFICATION_LABELS: Record<LaborClassification, string> = {
 };
 
 const BENEFICIARY_LABELS: Record<BeneficiaryRelationshipType, string> = {
-  FATHER: 'Padre',
-  MOTHER: 'Madre',
+  FATHER: 'Padres — Padre',
+  MOTHER: 'Padres — Madre',
   SPOUSE: 'Cónyuge',
   CHILD: 'Hijo/Hija',
   MINOR_IN_CHARGE: 'Menor a Cargo',

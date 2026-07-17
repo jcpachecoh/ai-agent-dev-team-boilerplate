@@ -2,6 +2,7 @@ import { Button, Modal, RecetaFilterSelect } from '@restopsiq/ui';
 import { useEffect, useState } from 'react';
 
 import type { BeneficiaryFormRow } from '../types/payroll.types';
+import { normalizeNameText } from '../utils/employee-name';
 import {
   BENEFICIARY_DOCUMENT_TYPE_OPTIONS,
   BENEFICIARY_TYPE_OPTIONS,
@@ -124,7 +125,10 @@ export function PayrollBeneficiaryFormModal({
               className={styles.input}
               value={values.primerNombre}
               onChange={(event) => {
-                setValues((current) => ({ ...current, primerNombre: event.target.value }));
+                setValues((current) => ({
+                  ...current,
+                  primerNombre: normalizeNameText(event.target.value),
+                }));
                 setErrors((current) => ({ ...current, primerNombre: undefined }));
               }}
             />
@@ -136,7 +140,10 @@ export function PayrollBeneficiaryFormModal({
               className={styles.input}
               value={values.segundoNombre}
               onChange={(event) =>
-                setValues((current) => ({ ...current, segundoNombre: event.target.value }))
+                setValues((current) => ({
+                  ...current,
+                  segundoNombre: normalizeNameText(event.target.value),
+                }))
               }
             />
           </label>
@@ -149,7 +156,10 @@ export function PayrollBeneficiaryFormModal({
               className={styles.input}
               value={values.primerApellido}
               onChange={(event) => {
-                setValues((current) => ({ ...current, primerApellido: event.target.value }));
+                setValues((current) => ({
+                  ...current,
+                  primerApellido: normalizeNameText(event.target.value),
+                }));
                 setErrors((current) => ({ ...current, primerApellido: undefined }));
               }}
             />
@@ -161,7 +171,10 @@ export function PayrollBeneficiaryFormModal({
               className={styles.input}
               value={values.segundoApellido}
               onChange={(event) =>
-                setValues((current) => ({ ...current, segundoApellido: event.target.value }))
+                setValues((current) => ({
+                  ...current,
+                  segundoApellido: normalizeNameText(event.target.value),
+                }))
               }
             />
           </label>

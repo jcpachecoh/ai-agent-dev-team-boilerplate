@@ -66,6 +66,9 @@ export function payrollEmployeeToFormValues(employee: PayrollEmployee): PayrollE
       (employee.laborClassification as PayrollEmployeeFormValues['laborClassification']) ??
       'ADMINISTRATIVO',
     nonSalaryAmount: employee.nonSalaryAmount ?? '',
+    contactoEmergenciaNombre: '',
+    contactoEmergenciaParentesco: '',
+    contactoEmergenciaTelefono: '',
     beneficiaries: (employee.beneficiaries ?? []).map((beneficiary) => ({
       documentType: beneficiary.documentType ?? '',
       documentNumber: beneficiary.documentNumber ?? '',
@@ -112,6 +115,12 @@ export function mergePersonalDataIntoFormValues(
     ciudad: personalData.ciudad?.trim() || values.ciudad,
     barrio: personalData.barrio?.trim() || values.barrio,
     localidad: personalData.localidad?.trim() || values.localidad,
+    contactoEmergenciaNombre:
+      personalData.contactoEmergenciaNombre?.trim() || values.contactoEmergenciaNombre,
+    contactoEmergenciaParentesco:
+      personalData.contactoEmergenciaParentesco?.trim() || values.contactoEmergenciaParentesco,
+    contactoEmergenciaTelefono:
+      personalData.contactoEmergenciaTelefono?.trim() || values.contactoEmergenciaTelefono,
     ...(direccionParts ?? {}),
   };
 }

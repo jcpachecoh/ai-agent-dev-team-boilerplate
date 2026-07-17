@@ -27,7 +27,6 @@ import {
   useAdminUpdateUser,
 } from '../hooks/useAdminUserMutations';
 import { useAdminUsers, useAdminRolesForSelect } from '../hooks/useAdminUsers';
-import { useLocations } from '../../sedes/hooks/useLocations';
 import type { AdminUserApi, UserUpdateFormValues } from '../types';
 
 const ADMIN_ROLE_CODES = new Set(['OWNER', 'SUPERVISOR']);
@@ -39,7 +38,6 @@ export default function UsersListView(): JSX.Element {
 
   const usersQuery = useAdminUsers();
   const rolesQuery = useAdminRolesForSelect();
-  const locationsQuery = useLocations();
   const createMutation = useAdminCreateUser();
   const updateMutation = useAdminUpdateUser();
   const deactivateMutation = useAdminDeactivateUser();
@@ -58,9 +56,6 @@ export default function UsersListView(): JSX.Element {
 
   const users = usersQuery.data ?? [];
   const roles = rolesQuery.data ?? [];
-  const locationOptions = (locationsQuery.data ?? [])
-    .filter((l) => l.isActive)
-    .map((l) => ({ id: l.id, name: l.name }));
 
   const handleSortColumn = useCallback((column: UsuarioSortColumnKey) => {
     setUserSort((current) => {
@@ -242,7 +237,6 @@ export default function UsersListView(): JSX.Element {
           open={formOpen}
           mode="create"
           roles={roles}
-          locations={locationOptions}
           saving={isSaving}
           onClose={() => setFormOpen(false)}
           onSave={(values) => void handleCreate(values)}

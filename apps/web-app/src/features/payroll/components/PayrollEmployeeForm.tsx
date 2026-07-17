@@ -27,13 +27,14 @@ import { getColombiaCities, getColombiaDepartments } from '../api/personal-data.
 import { getBarriosForLocalidad, getLocalidadesForCiudad } from '../constants/colombia-geo';
 import { TIPO_VIA_OPTIONS, composeDireccion, normalizeDireccionText } from '../utils/direccion';
 import { splitEmployeeNameForForm } from '../utils/employee-name';
+import { normalizeNameText } from '../utils/employee-name';
 import {
   BENEFICIARY_TYPE_OPTIONS,
-  DISABILITY_OPTIONS,
   buildBeneficiaryFullName,
   calculateAge,
   validateBeneficiaryForm,
 } from '../utils/beneficiary';
+import { validateEmergencyContact } from '../utils/emergency-contact';
 import { PayrollBeneficiaryFormModal } from './PayrollBeneficiaryFormModal';
 import defaultStyles from '../payroll.module.scss';
 import wizardStyles from './PayrollEmployeeFormWizard.module.scss';
@@ -93,6 +94,9 @@ export const PAYROLL_EMPLOYEE_FORM_EMPTY_VALUES: PayrollEmployeeFormValues = {
   costCenter: 'OPERACIONES',
   laborClassification: 'ADMINISTRATIVO',
   nonSalaryAmount: '',
+  contactoEmergenciaNombre: '',
+  contactoEmergenciaParentesco: '',
+  contactoEmergenciaTelefono: '',
   beneficiaries: [],
 };
 
@@ -161,6 +165,9 @@ function employeeToFormValues(employee: PayrollEmployee): PayrollEmployeeFormVal
     costCenter: (employee.costCenter as CostCenter) ?? 'OPERACIONES',
     laborClassification: (employee.laborClassification as LaborClassification) ?? 'ADMINISTRATIVO',
     nonSalaryAmount: employee.nonSalaryAmount ?? '',
+    contactoEmergenciaNombre: '',
+    contactoEmergenciaParentesco: '',
+    contactoEmergenciaTelefono: '',
     beneficiaries: (employee.beneficiaries ?? []).map((b) => ({
       documentType: b.documentType ?? '',
       documentNumber: b.documentNumber ?? '',
@@ -541,12 +548,21 @@ export function PayrollEmployeeForm({
       return;
     }
 
-    for (let i = 0; i < values.beneficiaries.length; i++) {
-      const beneficiaryErrors = validateBeneficiaryForm(values.beneficiaries[i]);
-      const firstError = Object.values(beneficiaryErrors)[0];
-      if (firstError) {
-        setError(`Beneficiario ${i + 1}: ${firstError}`);
+    if (sectionScope !== 'employment-only') {
+      const emergencyErrors = validateEmergencyContact(values, { required: true });
+      const firstEmergencyError = Object.values(emergencyErrors)[0];
+      if (firstEmergencyError) {
+        setError(firstEmergencyError);
         return;
+      }
+
+      for (let i = 0; i < values.beneficiaries.length; i++) {
+        const beneficiaryErrors = validateBeneficiaryForm(values.beneficiaries[i]);
+        const firstError = Object.values(beneficiaryErrors)[0];
+        if (firstError) {
+          setError(`Beneficiario ${i + 1}: ${firstError}`);
+          return;
+        }
       }
     }
 
@@ -614,7 +630,9 @@ export function PayrollEmployeeForm({
                       aria-label="Primer nombre"
                       className={formStyles.input}
                       value={values.primerNombre}
-                      onChange={(event) => update({ primerNombre: event.target.value })}
+                      onChange={(event) =>
+                        update({ primerNombre: normalizeNameText(event.target.value) })
+                      }
                     />
                   </label>
                   <label className={formStyles.field}>
@@ -623,7 +641,9 @@ export function PayrollEmployeeForm({
                       aria-label="Segundo nombre"
                       className={formStyles.input}
                       value={values.segundoNombre}
-                      onChange={(event) => update({ segundoNombre: event.target.value })}
+                      onChange={(event) =>
+                        update({ segundoNombre: normalizeNameText(event.target.value) })
+                      }
                     />
                   </label>
                   <label className={formStyles.field}>
@@ -632,7 +652,9 @@ export function PayrollEmployeeForm({
                       aria-label="Primer apellido"
                       className={formStyles.input}
                       value={values.primerApellido}
-                      onChange={(event) => update({ primerApellido: event.target.value })}
+                      onChange={(event) =>
+                        update({ primerApellido: normalizeNameText(event.target.value) })
+                      }
                     />
                   </label>
                   <label className={formStyles.field}>
@@ -641,7 +663,9 @@ export function PayrollEmployeeForm({
                       aria-label="Segundo apellido"
                       className={formStyles.input}
                       value={values.segundoApellido}
-                      onChange={(event) => update({ segundoApellido: event.target.value })}
+                      onChange={(event) =>
+                        update({ segundoApellido: normalizeNameText(event.target.value) })
+                      }
                     />
                   </label>
                   <label className={formStyles.field}>
@@ -1141,7 +1165,49 @@ export function PayrollEmployeeForm({
           ) : null}
         </div>
 
-        {showPersonalFields ? (
+        {showPersonalIdentityFields ? (
+          <section className={formStyles.beneficiariesSection}>
+            <div className={formStyles.beneficiariesHeader}>
+              <span className={formStyles.beneficiariesTitle}>Contacto de emergencia *</span>
+            </div>
+            <div className={formStyles.formGrid}>
+              <label className={formStyles.field}>
+                <span className={formStyles.fieldLabel}>Nombre *</span>
+                <input
+                  aria-label="Nombre del contacto de emergencia"
+                  className={formStyles.input}
+                  value={values.contactoEmergenciaNombre}
+                  onChange={(event) => update({ contactoEmergenciaNombre: event.target.value })}
+                />
+              </label>
+              <label className={formStyles.field}>
+                <span className={formStyles.fieldLabel}>Parentesco *</span>
+                <input
+                  aria-label="Parentesco del contacto de emergencia"
+                  className={formStyles.input}
+                  value={values.contactoEmergenciaParentesco}
+                  onChange={(event) => update({ contactoEmergenciaParentesco: event.target.value })}
+                />
+              </label>
+              <label className={formStyles.field}>
+                <span className={formStyles.fieldLabel}>Teléfono *</span>
+                <input
+                  aria-label="Teléfono del contacto de emergencia"
+                  className={formStyles.input}
+                  inputMode="numeric"
+                  value={values.contactoEmergenciaTelefono}
+                  onChange={(event) =>
+                    update({
+                      contactoEmergenciaTelefono: event.target.value.replace(/\D/g, ''),
+                    })
+                  }
+                />
+              </label>
+            </div>
+          </section>
+        ) : null}
+
+        {showPersonalIdentityFields ? (
           <section className={formStyles.beneficiariesSection}>
             <div className={formStyles.beneficiariesHeader}>
               <span className={formStyles.beneficiariesTitle}>Beneficiarios</span>
@@ -1158,10 +1224,7 @@ export function PayrollEmployeeForm({
                 <div className={formStyles.beneficiaryList}>
                   <div className={formStyles.beneficiaryHeader}>
                     <span>Tipo</span>
-                    <span>Nombre completo</span>
-                    <span>Documento</span>
-                    <span>Fecha de nacimiento</span>
-                    <span>Discapacidad</span>
+                    <span>Nombre</span>
                     <span>Edad</span>
                     <span />
                   </div>
@@ -1172,14 +1235,8 @@ export function PayrollEmployeeForm({
                           (option) => option.value === b.relationshipType,
                         )?.label ?? b.relationshipType}
                       </span>
-                      <span>{buildBeneficiaryFullName(b) || '—'}</span>
-                      <span>
-                        {b.documentType ? `${b.documentType} ${b.documentNumber}`.trim() : '—'}
-                      </span>
-                      <span>{b.fechaNacimiento || '—'}</span>
-                      <span>
-                        {DISABILITY_OPTIONS.find((option) => option.value === b.disability)
-                          ?.label ?? b.disability}
+                      <span title={buildBeneficiaryFullName(b) || undefined}>
+                        {buildBeneficiaryFullName(b) || '—'}
                       </span>
                       <span>{calculateAge(b.fechaNacimiento) ?? '—'}</span>
                       <div className={formStyles.beneficiaryActionsCell}>

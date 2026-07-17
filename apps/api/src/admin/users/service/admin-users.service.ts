@@ -71,10 +71,7 @@ export class AdminUsersService implements IAdminUsersService {
     const existingUserId = byEmail?.id ?? byCedula?.id;
     const roleCode = await this.repo.findRoleCode(data.roleId);
 
-    if (roleCode === 'OPERATOR' && !data.locationId?.trim()) {
-      throw new Error('locationId is required for OPERATOR users');
-    }
-
+    // La sede del operador se toma del empleado (registro en Nómina), no del formulario de usuario.
     const temporaryPassword = this.resolveTemporaryPassword(roleCode, data.password);
     const passwordHash = await bcrypt.hash(temporaryPassword, SALT_ROUNDS);
 
@@ -117,11 +114,10 @@ export class AdminUsersService implements IAdminUsersService {
         );
       }
 
-      user = await this.repo.completeEmployeeUserProvisioning(
-        tenantId,
-        existingUserId,
-        provisioningPayload,
-      );
+      user = await this.repo.completeEmployeeUserProvisioning(tenantId, existingUserId, {
+        ...provisioningPayload,
+        locationId: provisioningPayload.locationId || context.employeeLocationId || undefined,
+      });
     } else {
       user = await this.repo.createWithEmployeeDetails(tenantId, provisioningPayload);
     }

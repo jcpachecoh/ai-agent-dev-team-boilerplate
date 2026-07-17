@@ -131,7 +131,7 @@
 }
 
 .beneficiaryListScroll {
-  overflow-x: auto;
+  overflow-x: visible;
 }
 
 .beneficiaryList {
@@ -139,16 +139,23 @@
   border-radius: 4px;
   overflow: hidden;
   font-size: 0.875rem;
-  min-width: 840px;
+  min-width: 0;
 }
 
 .beneficiaryHeader,
 .beneficiaryRow {
   display: grid;
-  grid-template-columns: 110px minmax(160px, 1fr) 120px 120px 130px 64px 72px;
+  grid-template-columns: minmax(100px, 0.9fr) minmax(0, 1.6fr) 56px 72px;
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 0.75rem;
+
+  span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }
 
 .beneficiaryHeader {

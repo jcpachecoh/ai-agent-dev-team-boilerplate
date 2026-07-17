@@ -122,13 +122,19 @@ describe('PayrollEmployeeForm', () => {
     await user.click(screen.getByRole('option', { name: 'Sura' }));
     await user.click(screen.getByRole('button', { name: 'Caja de compensación' }));
     await user.click(screen.getByRole('option', { name: 'Comfama' }));
+    await user.type(screen.getByLabelText('Nombre del contacto de emergencia'), 'Maria Perez');
+    await user.type(screen.getByLabelText('Parentesco del contacto de emergencia'), 'Madre');
+    await user.type(screen.getByLabelText('Teléfono del contacto de emergencia'), '3001234567');
     await user.click(screen.getByRole('button', { name: 'Crear empleado' }));
 
     expect(onSubmit).toHaveBeenCalledTimes(1);
-    expect(onSubmit.mock.calls[0][0].primerNombre).toBe('Carlos');
-    expect(onSubmit.mock.calls[0][0].primerApellido).toBe('Perez');
+    // Los nombres/apellidos se estandarizan a mayúsculas al escribir.
+    expect(onSubmit.mock.calls[0][0].primerNombre).toBe('CARLOS');
+    expect(onSubmit.mock.calls[0][0].primerApellido).toBe('PEREZ');
     expect(onSubmit.mock.calls[0][0].positionId).toBe('pos-1');
     expect(onSubmit.mock.calls[0][0].area).toBe('Administración');
+    expect(onSubmit.mock.calls[0][0].contactoEmergenciaNombre).toBe('Maria Perez');
+    expect(onSubmit.mock.calls[0][0].contactoEmergenciaTelefono).toBe('3001234567');
   });
 
   it('CONN-06: al seleccionar Rotante bloquea y limpia Áreas; al volver a otro centro, Áreas vuelve a ser editable', async () => {
@@ -183,6 +189,9 @@ describe('PayrollEmployeeForm', () => {
     await user.click(screen.getByRole('option', { name: 'Sura' }));
     await user.click(screen.getByRole('button', { name: 'Caja de compensación' }));
     await user.click(screen.getByRole('option', { name: 'Comfama' }));
+    await user.type(screen.getByLabelText('Nombre del contacto de emergencia'), 'Luis Rotante');
+    await user.type(screen.getByLabelText('Parentesco del contacto de emergencia'), 'Hermano');
+    await user.type(screen.getByLabelText('Teléfono del contacto de emergencia'), '3119876543');
     await user.click(screen.getByRole('button', { name: 'Crear empleado' }));
 
     expect(onSubmit).toHaveBeenCalledTimes(1);

@@ -18,11 +18,6 @@ import type {
 } from '../../types';
 import { generatePasswordForRole } from '../../utils/generate-password';
 
-export interface LocationOption {
-  id: string;
-  name: string;
-}
-
 const DOCUMENT_TYPES: { value: DocumentType; label: string }[] = [
   { value: 'CC', label: 'Cédula de Ciudadanía' },
   { value: 'CE', label: 'Cédula de Extranjería' },
@@ -50,7 +45,6 @@ type ModeProps = CreateProps | EditProps;
 type UserFormModalProps = ModeProps & {
   open: boolean;
   roles: AdminRoleOptionApi[];
-  locations?: LocationOption[];
   saving?: boolean;
   onClose: () => void;
 };
@@ -69,7 +63,6 @@ export function UserFormModal({
   mode,
   initialValues,
   roles,
-  locations = [],
   saving = false,
   onClose,
   onSave,
@@ -82,7 +75,6 @@ export function UserFormModal({
   const [email, setEmail] = useState('');
   const [roleId, setRoleId] = useState('');
   const [password, setPassword] = useState('');
-  const [locationId, setLocationId] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [lookupHint, setLookupHint] = useState<string | null>(null);
   const [lookingUpEmployee, setLookingUpEmployee] = useState(false);
@@ -90,7 +82,6 @@ export function UserFormModal({
   const isEdit = mode === 'edit';
 
   const selectedRole = roles.find((r) => r.id === roleId);
-  const isOperator = selectedRole?.code === 'OPERATOR';
 
   const regeneratePassword = useCallback(() => {
     setPassword(generatePasswordForRole(selectedRole?.code));
@@ -115,7 +106,6 @@ export function UserFormModal({
       setEmail(emptyCreate.email);
       setRoleId(roles[0]?.id ?? '');
       setPassword(generatePasswordForRole(roles[0]?.code));
-      setLocationId('');
       resetEmployeeDocumentLookupCache();
     }
   }, [open, isEdit, initialValues, roles]);
@@ -177,10 +167,6 @@ export function UserFormModal({
     () => DOCUMENT_TYPES.map((item) => ({ value: item.value, label: item.label })),
     [],
   );
-  const locationOptions = useMemo(
-    () => locations.map((loc) => ({ value: loc.id, label: loc.name })),
-    [locations],
-  );
 
   if (!open) {
     return null;
@@ -206,10 +192,6 @@ export function UserFormModal({
         setError('La cédula es obligatoria.');
         return;
       }
-      if (isOperator && !locationId) {
-        setError('Selecciona una sede para el operador de planta.');
-        return;
-      }
       if (!password.trim()) {
         setError('Genera una contraseña temporal antes de continuar.');
         return;
@@ -226,7 +208,6 @@ export function UserFormModal({
         email: email.trim(),
         roleId,
         password: password.trim(),
-        ...(isOperator && locationId ? { locationId } : {}),
       });
     }
   };
@@ -385,7 +366,6 @@ export function UserFormModal({
               onChange={(value) => {
                 const nextRole = roles.find((role) => role.id === value);
                 setRoleId(value);
-                setLocationId('');
                 setPassword(generatePasswordForRole(nextRole?.code));
               }}
               placeholder="-- Seleccionar rol --"
@@ -393,22 +373,6 @@ export function UserFormModal({
               size="md"
             />
           </label>
-
-          {!isEdit && isOperator ? (
-            <label className={styles.field}>
-              <span className={styles.fieldLabel}>Sede de planta *</span>
-              <RecetaFilterSelect
-                id="locationId"
-                aria-label="Sede de planta"
-                options={locationOptions}
-                value={locationId}
-                onChange={setLocationId}
-                placeholder="-- Seleccionar sede --"
-                theme={theme}
-                size="md"
-              />
-            </label>
-          ) : null}
 
           {error ? <p className={styles.errorText}>{error}</p> : null}
         </div>

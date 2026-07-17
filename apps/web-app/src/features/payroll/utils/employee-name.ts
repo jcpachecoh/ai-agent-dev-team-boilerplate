@@ -1,5 +1,13 @@
 import type { DocumentType } from '../types/payroll.types';
 
+/**
+ * Estandariza nombres/apellidos a mayúsculas sin importar cómo escriba el
+ * usuario. `toUpperCase` preserva tildes (Á, É, Í, Ó, Ú) y la Ñ.
+ */
+export function normalizeNameText(value: string): string {
+  return value.toUpperCase();
+}
+
 export function buildEmployeeFullName(parts: {
   primerNombre: string;
   segundoNombre?: string;
