@@ -2,7 +2,7 @@
   "installCommand": "cd ../.. && pnpm install --frozen-lockfile",
   "buildCommand": "cd ../.. && pnpm --filter @restopsiq/web-app run build",
   "outputDirectory": "dist",
-  "ignoreCommand": "[ \"$VERCEL_GIT_COMMIT_REF\" != \"main\" ] && exit 0 || exit 1",
+  "ignoreCommand": "if [ \"$VERCEL_GIT_COMMIT_REF\" = \"main\" ] || [ \"$VERCEL_GIT_COMMIT_REF\" = \"develop\" ]; then exit 1; else exit 0; fi",
   "rewrites": [
     { "source": "/((?!assets|favicon\\.ico|robots\\.txt).*)", "destination": "/index.html" }
   ]
