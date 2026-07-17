@@ -944,6 +944,8 @@ model EmployeePersonalData {
   tenantId                     String
   employeeDetailsId            String         @unique
   nombres                      String?
+  primerNombre                 String?
+  segundoNombre                String?
   primerApellido               String?
   segundoApellido              String?
   fechaNacimiento              DateTime?      @db.Date

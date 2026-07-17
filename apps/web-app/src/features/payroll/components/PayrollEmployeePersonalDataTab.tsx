@@ -101,14 +101,15 @@ interface PersonalFormState extends UpdateEmployeePersonalDataInput {
 }
 
 function toFormState(data: EmployeePersonalData): PersonalFormState {
+  // Registros previos al backfill no tienen los campos divididos: se derivan de `nombres`.
   const nombresParts = splitNombresForForm(data.nombres ?? '');
   const direccionParts = parseDireccion(data.direccion);
   return {
     tipoDocumento: data.tipoDocumento ?? '',
     numeroDocumento: data.numeroDocumento ?? '',
     nombres: data.nombres ?? '',
-    primerNombre: nombresParts.primerNombre,
-    segundoNombre: nombresParts.segundoNombre,
+    primerNombre: data.primerNombre ?? nombresParts.primerNombre,
+    segundoNombre: data.segundoNombre ?? nombresParts.segundoNombre,
     primerApellido: data.primerApellido ?? '',
     segundoApellido: data.segundoApellido ?? '',
     fechaNacimiento: data.fechaNacimiento ?? '',
@@ -287,6 +288,8 @@ export function PayrollEmployeePersonalDataTab({
         tipoDocumento: values.tipoDocumento,
         numeroDocumento: values.numeroDocumento,
         nombres: buildNombres(values),
+        primerNombre: values.primerNombre.trim(),
+        segundoNombre: values.segundoNombre.trim(),
         primerApellido: values.primerApellido,
         segundoApellido: values.segundoApellido,
         fechaNacimiento: values.fechaNacimiento,

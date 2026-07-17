@@ -132,6 +132,16 @@ export class EmployeePersonalDataService implements IEmployeePersonalDataService
         : null;
     }
 
+    // Mantiene `nombres` sincronizado con los campos divididos: consumidores
+    // legados (PILA, cesantías, asistencia) siguen leyendo el campo combinado.
+    if (input.primerNombre !== undefined || input.segundoNombre !== undefined) {
+      const primer = (input.primerNombre ?? before.primerNombre ?? '').trim();
+      const segundo = (input.segundoNombre ?? before.segundoNombre ?? '').trim();
+      personalPatch.primerNombre = primer || null;
+      personalPatch.segundoNombre = segundo || null;
+      personalPatch.nombres = [primer, segundo].filter(Boolean).join(' ') || null;
+    }
+
     if (Object.keys(personalPatch).length > 0) {
       await this.repository.upsertPersonalData(tenantId, employee.id, personalPatch);
     }
@@ -237,6 +247,8 @@ export class EmployeePersonalDataService implements IEmployeePersonalDataService
         'tipoDocumento',
         'numeroDocumento',
         'nombres',
+        'primerNombre',
+        'segundoNombre',
         'primerApellido',
         'segundoApellido',
         'fechaNacimiento',
@@ -337,12 +349,19 @@ export class EmployeePersonalDataService implements IEmployeePersonalDataService
       this.resolveEditableFields(actorRoleCode, actorUserId, targetUserId),
     );
 
+    // Fallback para registros previos al backfill: divide el campo combinado
+    // `nombres` (solo contiene nombres de pila) en primer y segundo nombre.
+    const nombresValue = personal?.nombres ?? split.nombres;
+    const nombresParts = (nombresValue ?? '').trim().split(/\s+/).filter(Boolean);
+
     return {
       employeeDetailsId: employee.id,
       userId: employee.userId,
       tipoDocumento: employee.user.documentType,
       numeroDocumento: employee.user.cedula,
-      nombres: personal?.nombres ?? split.nombres,
+      nombres: nombresValue,
+      primerNombre: personal?.primerNombre ?? nombresParts[0] ?? null,
+      segundoNombre: personal?.segundoNombre ?? (nombresParts.slice(1).join(' ') || null),
       primerApellido: personal?.primerApellido ?? split.primerApellido,
       segundoApellido: personal?.segundoApellido ?? split.segundoApellido,
       fechaNacimiento: personal?.fechaNacimiento

@@ -87,6 +87,63 @@ describe('EmployeePersonalDataService', () => {
     storage = module.get(StorageService);
   });
 
+  it('guarda primerNombre/segundoNombre y sincroniza el campo combinado nombres', async () => {
+    repo.findEmployeeByUserId.mockResolvedValue(employee as never);
+    repo.upsertPersonalData.mockResolvedValue(employee.personalData as never);
+
+    await service.updateByUserId('tenant-1', 'user-1', 'hr-1', 'NOMINA', {
+      primerNombre: 'CARLOS',
+      segundoNombre: 'ANDRÉS',
+    });
+
+    expect(repo.upsertPersonalData).toHaveBeenCalledWith(
+      'tenant-1',
+      'emp-1',
+      expect.objectContaining({
+        primerNombre: 'CARLOS',
+        segundoNombre: 'ANDRÉS',
+        nombres: 'CARLOS ANDRÉS',
+      }),
+    );
+  });
+
+  it('limpia segundoNombre con string vacío y compone nombres solo con el primero', async () => {
+    repo.findEmployeeByUserId.mockResolvedValue(employee as never);
+    repo.upsertPersonalData.mockResolvedValue(employee.personalData as never);
+
+    await service.updateByUserId('tenant-1', 'user-1', 'hr-1', 'NOMINA', {
+      primerNombre: 'CARLOS',
+      segundoNombre: '',
+    });
+
+    expect(repo.upsertPersonalData).toHaveBeenCalledWith(
+      'tenant-1',
+      'emp-1',
+      expect.objectContaining({
+        primerNombre: 'CARLOS',
+        segundoNombre: null,
+        nombres: 'CARLOS',
+      }),
+    );
+  });
+
+  it('deriva primerNombre/segundoNombre desde nombres cuando los campos divididos son null (legado)', async () => {
+    repo.findEmployeeByUserId.mockResolvedValue({
+      ...employee,
+      personalData: {
+        ...employee.personalData,
+        nombres: 'Ana María',
+        primerNombre: null,
+        segundoNombre: null,
+      },
+    } as never);
+
+    const view = await service.getByUserId('tenant-1', 'user-1', 'user-1', 'NOMINA');
+
+    expect(view.primerNombre).toBe('Ana');
+    expect(view.segundoNombre).toBe('María');
+  });
+
   it('rechaza actualización de campos HR cuando el actor es el mismo empleado', async () => {
     repo.findEmployeeByUserId.mockResolvedValue(employee as never);
 

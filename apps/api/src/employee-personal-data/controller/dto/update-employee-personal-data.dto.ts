@@ -24,6 +24,18 @@ export class UpdateEmployeePersonalDataDto {
   @IsOptional()
   @IsString()
   @MaxLength(50)
+  primerNombre?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  segundoNombre?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
   primerApellido?: string;
 
   @ApiPropertyOptional()

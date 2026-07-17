@@ -30,6 +30,8 @@ export async function applyPayrollEmployeeCreatePersonalData(
 ): Promise<void> {
   await updateEmployeePersonalData(userId, {
     nombres: buildNombres(values),
+    primerNombre: values.primerNombre.trim(),
+    segundoNombre: values.segundoNombre.trim() || undefined,
     primerApellido: values.primerApellido.trim(),
     segundoApellido: values.segundoApellido.trim() || undefined,
     tipoDocumento: mapDocumentTypeToPersonalData(values.documentType),

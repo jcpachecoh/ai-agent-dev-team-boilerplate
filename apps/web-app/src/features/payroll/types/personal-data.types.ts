@@ -6,6 +6,8 @@ export type PersonalDataFieldKey =
   | 'tipoDocumento'
   | 'numeroDocumento'
   | 'nombres'
+  | 'primerNombre'
+  | 'segundoNombre'
   | 'primerApellido'
   | 'segundoApellido'
   | 'fechaNacimiento'
@@ -29,6 +31,8 @@ export interface EmployeePersonalData {
   tipoDocumento: string | null;
   numeroDocumento: string | null;
   nombres: string | null;
+  primerNombre: string | null;
+  segundoNombre: string | null;
   primerApellido: string | null;
   segundoApellido: string | null;
   fechaNacimiento: string | null;
@@ -53,6 +57,8 @@ export interface UpdateEmployeePersonalDataInput {
   tipoDocumento?: string;
   numeroDocumento?: string;
   nombres?: string;
+  primerNombre?: string;
+  segundoNombre?: string;
   primerApellido?: string;
   segundoApellido?: string;
   fechaNacimiento?: string;

@@ -103,11 +103,18 @@ export function mergePersonalDataIntoFormValues(
       ? mapPersonalDataDocumentType(personalData.tipoDocumento)
       : values.documentType,
     cedula: personalData.numeroDocumento?.trim() || values.cedula,
-    primerNombre: nombresFromPersonalData?.primerNombre || values.primerNombre,
+    // Prefiere los campos divididos; registros previos al backfill caen al split de `nombres`.
+    primerNombre:
+      personalData.primerNombre?.trim() ||
+      nombresFromPersonalData?.primerNombre ||
+      values.primerNombre,
     // Los datos personales son la fuente de verdad del segundo nombre (puede ser vacío).
-    segundoNombre: nombresFromPersonalData
-      ? nombresFromPersonalData.segundoNombre
-      : values.segundoNombre,
+    segundoNombre:
+      personalData.primerNombre != null
+        ? (personalData.segundoNombre ?? '')
+        : nombresFromPersonalData
+          ? nombresFromPersonalData.segundoNombre
+          : values.segundoNombre,
     primerApellido: personalData.primerApellido?.trim() || values.primerApellido,
     segundoApellido: personalData.segundoApellido?.trim() || values.segundoApellido,
     email: personalData.correo?.trim() || values.email,
