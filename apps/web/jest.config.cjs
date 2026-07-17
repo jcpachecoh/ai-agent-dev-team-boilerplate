@@ -26,6 +26,11 @@ module.exports = {
     // Handle CSS/SCSS modules
     '\\.module\\.(css|scss|sass)$': '<rootDir>/__mocks__/styleMock.js',
     '\\.(css|scss|sass)$': '<rootDir>/__mocks__/styleMock.js',
+    '^next/navigation$': '<rootDir>/__mocks__/next-navigation.js',
+    '^@vercel/analytics/react$': '<rootDir>/__mocks__/vercel-analytics-react.js',
+    '^geist/font/sans$': '<rootDir>/__mocks__/geist-font.js',
+    '^geist/font/mono$': '<rootDir>/__mocks__/geist-font.js',
+    '^@/(.*)$': '<rootDir>/$1',
     // Workspace packages
     '^@restopsiq/ui(.*)$': '<rootDir>/../../packages/ui/src$1',
     '^@restopsiq/types(.*)$': '<rootDir>/../../packages/types/src$1',
@@ -45,7 +50,7 @@ module.exports = {
   },
 
   // ── Setup files ───────────────────────────────────────────────────────────
-  setupFilesAfterFramework: ['<rootDir>/setupTests.ts'],
+  setupFilesAfterEnv: ['<rootDir>/setupTests.ts'],
   clearMocks: true,
   restoreMocks: true,
 };
