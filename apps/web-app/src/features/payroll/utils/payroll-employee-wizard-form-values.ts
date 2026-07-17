@@ -11,6 +11,7 @@ import type {
   PayrollEmployeeCreateTaxDraft,
 } from '../types/payroll-employee-create-wizard.types';
 import { formatMaskedAccountNumber, selectPrimaryBankAccount } from './bank-account-validation';
+import { DIRECCION_EMPTY_PARTS, parseDireccion } from './direccion';
 import { splitEmployeeNameForForm, splitNombresForForm } from './employee-name';
 import { formatWithholdingRate } from './financial-profile-display';
 
@@ -59,6 +60,7 @@ export function payrollEmployeeToFormValues(employee: PayrollEmployee): PayrollE
     ciudad: '',
     barrio: employee.barrio ?? '',
     localidad: employee.localidad ?? '',
+    ...DIRECCION_EMPTY_PARTS,
     costCenter: (employee.costCenter as PayrollEmployeeFormValues['costCenter']) ?? 'OPERACIONES',
     laborClassification:
       (employee.laborClassification as PayrollEmployeeFormValues['laborClassification']) ??
@@ -88,6 +90,10 @@ export function mergePersonalDataIntoFormValues(
     ? splitNombresForForm(personalData.nombres)
     : null;
 
+  const direccionParts = personalData.direccion?.trim()
+    ? parseDireccion(personalData.direccion)
+    : null;
+
   return {
     ...values,
     documentType: personalData.tipoDocumento
@@ -106,6 +112,7 @@ export function mergePersonalDataIntoFormValues(
     ciudad: personalData.ciudad?.trim() || values.ciudad,
     barrio: personalData.barrio?.trim() || values.barrio,
     localidad: personalData.localidad?.trim() || values.localidad,
+    ...(direccionParts ?? {}),
   };
 }
 

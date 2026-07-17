@@ -1,5 +1,6 @@
 import { updateEmployeePersonalData } from '../api/personal-data.client';
 import type { PayrollEmployeeFormValues } from '../types/payroll.types';
+import { composeDireccion } from './direccion';
 import { buildNombres, mapDocumentTypeToPersonalData } from './employee-name';
 
 export async function applyPayrollEmployeeCreatePersonalData(
@@ -17,6 +18,11 @@ export async function applyPayrollEmployeeCreatePersonalData(
     | 'ciudad'
     | 'barrio'
     | 'localidad'
+    | 'direccionTipoVia'
+    | 'direccionNumeroVia'
+    | 'direccionPlaca1'
+    | 'direccionPlaca2'
+    | 'direccionComplemento'
   >,
 ): Promise<void> {
   await updateEmployeePersonalData(userId, {
@@ -30,5 +36,6 @@ export async function applyPayrollEmployeeCreatePersonalData(
     ciudad: values.ciudad.trim() || undefined,
     barrio: values.barrio.trim() || undefined,
     localidad: values.localidad.trim() || undefined,
+    direccion: composeDireccion(values) || undefined,
   });
 }

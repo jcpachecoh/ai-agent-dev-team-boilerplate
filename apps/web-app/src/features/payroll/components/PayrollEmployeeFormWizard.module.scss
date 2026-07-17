@@ -53,6 +53,31 @@
   --control-width: 100%;
 }
 
+.fieldFull {
+  grid-column: 1 / -1;
+}
+
+.placaRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.placaSeparator {
+  color: var(--receta-muted);
+  font-weight: 700;
+}
+
+.inputReadonly {
+  background: var(--receta-surface-raised);
+  color: var(--receta-muted);
+  cursor: default;
+
+  &:focus-visible {
+    outline: none;
+  }
+}
+
 .fieldHint,
 .formHint {
   margin: 0;

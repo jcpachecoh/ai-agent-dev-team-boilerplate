@@ -96,6 +96,29 @@
   font-size: 0.875rem;
 }
 
+// El Combobox limita su ancho a 320px por defecto; aquí debe ocupar la columna.
+.combobox {
+  width: 100%;
+  --control-width: 100%;
+}
+
+.placaRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  > * {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+}
+
+.placaSeparator {
+  flex: 0 0 auto;
+  color: var(--empleado-muted);
+  font-weight: 700;
+}
+
 .error {
   margin: 0;
   color: #e05a44;

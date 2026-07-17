@@ -1,4 +1,5 @@
 import {
+  Combobox,
   EmpleadoAvatar,
   RecetaFilterSelect,
   RecetaFormButton,
@@ -20,6 +21,7 @@ import {
   updateEmployeePersonalData,
 } from '../api/personal-data.client';
 import { PayrollApiError } from '../api/payroll.client';
+import { getBarriosForLocalidad, getLocalidadesForCiudad } from '../constants/colombia-geo';
 import { useEmployeePersonalDataQuery } from '../hooks/useEmployeePersonalDataQuery';
 import { useUpdatePayrollEmployeeMutation } from '../hooks/usePayrollEmployeeMutations';
 import { usePayrollEmployeeQuery } from '../hooks/usePayrollEmployeeQuery';
@@ -29,6 +31,13 @@ import type {
   UpdateEmployeePersonalDataInput,
 } from '../types/personal-data.types';
 import type { PayrollEmployeeFormValues } from '../types/payroll.types';
+import {
+  TIPO_VIA_OPTIONS,
+  composeDireccion,
+  normalizeDireccionText,
+  parseDireccion,
+} from '../utils/direccion';
+import { buildNombres, splitNombresForForm } from '../utils/employee-name';
 import {
   buildEmploymentDetailFields,
   formatBeneficiaryType,
@@ -66,11 +75,34 @@ function displayValue(value: string | null | undefined): string {
   return value;
 }
 
-function toFormState(data: EmployeePersonalData): UpdateEmployeePersonalDataInput {
+function optionLabel(
+  options: Array<{ value: string; label: string }>,
+  value: string | null | undefined,
+): string {
+  if (!value) return '—';
+  return options.find((option) => option.value === value)?.label ?? value;
+}
+
+/** Estado del formulario: datos personales + nombres divididos + dirección estructurada. */
+interface PersonalFormState extends UpdateEmployeePersonalDataInput {
+  primerNombre: string;
+  segundoNombre: string;
+  direccionTipoVia: string;
+  direccionNumeroVia: string;
+  direccionPlaca1: string;
+  direccionPlaca2: string;
+  direccionComplemento: string;
+}
+
+function toFormState(data: EmployeePersonalData): PersonalFormState {
+  const nombresParts = splitNombresForForm(data.nombres ?? '');
+  const direccionParts = parseDireccion(data.direccion);
   return {
     tipoDocumento: data.tipoDocumento ?? '',
     numeroDocumento: data.numeroDocumento ?? '',
     nombres: data.nombres ?? '',
+    primerNombre: nombresParts.primerNombre,
+    segundoNombre: nombresParts.segundoNombre,
     primerApellido: data.primerApellido ?? '',
     segundoApellido: data.segundoApellido ?? '',
     fechaNacimiento: data.fechaNacimiento ?? '',
@@ -81,6 +113,7 @@ function toFormState(data: EmployeePersonalData): UpdateEmployeePersonalDataInpu
     localidad: data.localidad ?? '',
     barrio: data.barrio ?? '',
     direccion: data.direccion ?? '',
+    ...direccionParts,
     telefono: data.telefono ?? '',
     correo: data.correo ?? '',
     contactoEmergenciaNombre: data.contactoEmergenciaNombre ?? '',
@@ -90,13 +123,13 @@ function toFormState(data: EmployeePersonalData): UpdateEmployeePersonalDataInpu
   };
 }
 
-function validateForm(values: UpdateEmployeePersonalDataInput): Partial<Record<string, string>> {
+function validateForm(values: PersonalFormState): Partial<Record<string, string>> {
   const errors: Partial<Record<string, string>> = {};
   if (!values.tipoDocumento) errors.tipoDocumento = 'Requerido';
   if (!values.numeroDocumento || !/^\d{1,15}$/.test(values.numeroDocumento)) {
     errors.numeroDocumento = 'Solo números, máx. 15 dígitos';
   }
-  if (!values.nombres?.trim()) errors.nombres = 'Requerido';
+  if (!values.primerNombre.trim()) errors.primerNombre = 'Requerido';
   if (!values.primerApellido?.trim()) errors.primerApellido = 'Requerido';
   if (!values.correo || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.correo)) {
     errors.correo = 'Correo inválido';
@@ -139,11 +172,12 @@ export function PayrollEmployeePersonalDataTab({
   const rolesQuery = useAdminRolesForSelect();
   const updateEmploymentMutation = useUpdatePayrollEmployeeMutation();
 
-  const [values, setValues] = useState<UpdateEmployeePersonalDataInput | null>(null);
+  const [values, setValues] = useState<PersonalFormState | null>(null);
   const [errors, setErrors] = useState<Partial<Record<string, string>>>({});
   const [departments, setDepartments] = useState<Array<{ value: string; label: string }>>([]);
   const [cities, setCities] = useState<Array<{ value: string; label: string }>>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [editingPersonal, setEditingPersonal] = useState(false);
   const [editingEmployment, setEditingEmployment] = useState(false);
   const [submittingEmployment, setSubmittingEmployment] = useState(false);
 
@@ -186,21 +220,54 @@ export function PayrollEmployeePersonalDataTab({
     [query.data?.editableFields],
   );
 
-  const canEdit = (field: PersonalDataFieldKey) => editable.has(field);
+  const hasEditableFields = editable.size > 0;
+
+  const canEdit = (field: PersonalDataFieldKey) => editingPersonal && editable.has(field);
 
   const fullName = [values?.nombres, values?.primerApellido, values?.segundoApellido]
     .filter(Boolean)
     .join(' ');
 
-  const updateField = <K extends keyof UpdateEmployeePersonalDataInput>(
-    key: K,
-    value: UpdateEmployeePersonalDataInput[K],
-  ) => {
+  const updateField = <K extends keyof PersonalFormState>(key: K, value: PersonalFormState[K]) => {
     setValues((current) => (current ? { ...current, [key]: value } : current));
     setErrors((current) => ({ ...current, [key]: undefined }));
-    if (key === 'departamento') {
-      setValues((current) => (current ? { ...current, ciudad: '' } : current));
+  };
+
+  // Ciudades sin catálogo de localidades/barrios caen a texto libre.
+  const hasLocalidadCatalog = getLocalidadesForCiudad(values?.ciudad ?? '').length > 0;
+  const hasBarrioCatalog =
+    getBarriosForLocalidad(values?.ciudad ?? '', values?.localidad ?? '').length > 0;
+
+  const localidadOptions = useMemo(() => {
+    const options = getLocalidadesForCiudad(values?.ciudad ?? '').map((localidad) => ({
+      value: localidad,
+      label: localidad,
+    }));
+    // Valores guardados que no están en el catálogo siguen siendo seleccionables.
+    if (values?.localidad && !options.some((option) => option.value === values.localidad)) {
+      options.unshift({ value: values.localidad, label: values.localidad });
     }
+    return options;
+  }, [values?.ciudad, values?.localidad]);
+
+  const barrioOptions = useMemo(() => {
+    const options = getBarriosForLocalidad(values?.ciudad ?? '', values?.localidad ?? '').map(
+      (barrio) => ({ value: barrio, label: barrio }),
+    );
+    if (values?.barrio && !options.some((option) => option.value === values.barrio)) {
+      options.unshift({ value: values.barrio, label: values.barrio });
+    }
+    return options;
+  }, [values?.ciudad, values?.localidad, values?.barrio]);
+
+  const direccionPreview = values ? composeDireccion(values) : '';
+
+  const handleCancelPersonal = () => {
+    if (query.data) {
+      setValues(toFormState(query.data));
+    }
+    setErrors({});
+    setEditingPersonal(false);
   };
 
   const handleSubmit = async () => {
@@ -212,15 +279,30 @@ export function PayrollEmployeePersonalDataTab({
     setSubmitting(true);
     try {
       const payload: UpdateEmployeePersonalDataInput = {
-        ...values,
+        tipoDocumento: values.tipoDocumento,
+        numeroDocumento: values.numeroDocumento,
+        nombres: buildNombres(values),
+        primerApellido: values.primerApellido,
+        segundoApellido: values.segundoApellido,
+        fechaNacimiento: values.fechaNacimiento,
         estadoCivil: values.estadoCivil || undefined,
         sexo: values.sexo || undefined,
+        departamento: values.departamento,
+        ciudad: values.ciudad,
+        localidad: values.localidad,
+        barrio: values.barrio,
+        direccion: composeDireccion(values),
         telefono: values.telefono?.trim() || undefined,
+        correo: values.correo,
+        contactoEmergenciaNombre: values.contactoEmergenciaNombre,
         contactoEmergenciaTelefono: values.contactoEmergenciaTelefono?.trim() || undefined,
+        contactoEmergenciaParentesco: values.contactoEmergenciaParentesco,
+        profilePhotoStorageObjectId: values.profilePhotoStorageObjectId,
       };
 
       await updateEmployeePersonalData(userId, payload);
       toast.success('Datos personales guardados');
+      setEditingPersonal(false);
       await query.refetch();
     } catch (error) {
       const message =
@@ -280,8 +362,21 @@ export function PayrollEmployeePersonalDataTab({
           void handleSubmit();
         }}
       >
+        <div className={styles.employmentHeader}>
+          <p className={styles.sectionTitle}>Datos personales</p>
+          {hasEditableFields && !editingPersonal ? (
+            <RecetaFormButton
+              type="button"
+              theme={theme}
+              variant="add"
+              label="Editar"
+              onClick={() => setEditingPersonal(true)}
+            />
+          ) : null}
+        </div>
+
         <div className={styles.photoRow}>
-          {employee && canEdit('profilePhotoStorageObjectId') ? (
+          {employee && editingPersonal && editable.has('profilePhotoStorageObjectId') ? (
             <EmployeePhotoUploader
               employee={employee}
               onPhotoUpdated={() => {
@@ -328,16 +423,28 @@ export function PayrollEmployeePersonalDataTab({
               <Readonly value={displayValue(values.numeroDocumento)} />
             )}
           </Field>
-          <Field label="Nombres" error={errors.nombres}>
+          <Field label="Primer nombre" error={errors.primerNombre}>
             {canEdit('nombres') ? (
               <RecetaTextInput
                 theme={uiTheme}
                 className={styles.controlMd}
-                value={values.nombres ?? ''}
-                onChange={(event) => updateField('nombres', event.target.value)}
+                value={values.primerNombre}
+                onChange={(event) => updateField('primerNombre', event.target.value)}
               />
             ) : (
-              <Readonly value={displayValue(values.nombres)} />
+              <Readonly value={displayValue(values.primerNombre)} />
+            )}
+          </Field>
+          <Field label="Segundo nombre">
+            {canEdit('nombres') ? (
+              <RecetaTextInput
+                theme={uiTheme}
+                className={styles.controlMd}
+                value={values.segundoNombre}
+                onChange={(event) => updateField('segundoNombre', event.target.value)}
+              />
+            ) : (
+              <Readonly value={displayValue(values.segundoNombre)} />
             )}
           </Field>
           <Field label="Primer apellido" error={errors.primerApellido}>
@@ -385,14 +492,11 @@ export function PayrollEmployeePersonalDataTab({
                 value={values.estadoCivil ?? ''}
                 options={MARITAL_OPTIONS}
                 onChange={(value) =>
-                  updateField(
-                    'estadoCivil',
-                    value as UpdateEmployeePersonalDataInput['estadoCivil'],
-                  )
+                  updateField('estadoCivil', value as PersonalFormState['estadoCivil'])
                 }
               />
             ) : (
-              <Readonly value={displayValue(values.estadoCivil)} />
+              <Readonly value={optionLabel(MARITAL_OPTIONS, values.estadoCivil)} />
             )}
           </Field>
           <Field label="Sexo">
@@ -402,12 +506,10 @@ export function PayrollEmployeePersonalDataTab({
                 size="md"
                 value={values.sexo ?? ''}
                 options={GENDER_OPTIONS}
-                onChange={(value) =>
-                  updateField('sexo', value as UpdateEmployeePersonalDataInput['sexo'])
-                }
+                onChange={(value) => updateField('sexo', value as PersonalFormState['sexo'])}
               />
             ) : (
-              <Readonly value={displayValue(values.sexo)} />
+              <Readonly value={optionLabel(GENDER_OPTIONS, values.sexo)} />
             )}
           </Field>
         </div>
@@ -416,26 +518,63 @@ export function PayrollEmployeePersonalDataTab({
         <div className={styles.grid}>
           <Field label="Departamento">
             {canEdit('departamento') ? (
-              <RecetaFilterSelect
+              <Combobox
+                options={departments}
+                value={values.departamento ?? ''}
+                placeholder="Seleccionar departamento"
+                searchPlaceholder="Buscar departamento…"
+                className={styles.combobox}
+                onChange={(value) => {
+                  if (typeof value !== 'string') return;
+                  setValues((current) =>
+                    current
+                      ? {
+                          ...current,
+                          departamento: value,
+                          // Al cambiar el departamento, los niveles inferiores dejan de ser válidos.
+                          ciudad: value === current.departamento ? current.ciudad : '',
+                          localidad: value === current.departamento ? current.localidad : '',
+                          barrio: value === current.departamento ? current.barrio : '',
+                        }
+                      : current,
+                  );
+                }}
                 theme={uiTheme}
                 size="md"
-                value={values.departamento ?? ''}
-                options={departments}
-                onChange={(value) => updateField('departamento', value)}
               />
             ) : (
-              <Readonly value={displayValue(values.departamento)} />
+              <Readonly value={optionLabel(departments, values.departamento)} />
             )}
           </Field>
           <Field label="Ciudad">
             {canEdit('ciudad') ? (
-              <RecetaFilterSelect
+              <Combobox
+                options={cities}
+                value={values.ciudad ?? ''}
+                placeholder={
+                  values.departamento ? 'Seleccionar ciudad' : 'Selecciona un departamento'
+                }
+                searchPlaceholder="Buscar ciudad…"
+                className={styles.combobox}
+                emptyMessage={
+                  values.departamento ? 'Sin resultados.' : 'Selecciona un departamento primero.'
+                }
+                onChange={(value) => {
+                  if (typeof value !== 'string') return;
+                  setValues((current) =>
+                    current
+                      ? {
+                          ...current,
+                          ciudad: value,
+                          // Al cambiar la ciudad, localidad y barrio dejan de ser válidos.
+                          localidad: value === current.ciudad ? current.localidad : '',
+                          barrio: value === current.ciudad ? current.barrio : '',
+                        }
+                      : current,
+                  );
+                }}
                 theme={uiTheme}
                 size="md"
-                value={values.ciudad ?? ''}
-                options={cities}
-                onChange={(value) => updateField('ciudad', value)}
-                disabled={!values.departamento}
               />
             ) : (
               <Readonly value={displayValue(values.ciudad)} />
@@ -443,40 +582,143 @@ export function PayrollEmployeePersonalDataTab({
           </Field>
           <Field label="Localidad">
             {canEdit('localidad') ? (
-              <RecetaTextInput
-                theme={uiTheme}
-                className={styles.controlMd}
-                value={values.localidad ?? ''}
-                onChange={(event) => updateField('localidad', event.target.value)}
-              />
+              hasLocalidadCatalog ? (
+                <Combobox
+                  options={localidadOptions}
+                  value={values.localidad ?? ''}
+                  placeholder="Seleccionar localidad"
+                  searchPlaceholder="Buscar localidad…"
+                  className={styles.combobox}
+                  onChange={(value) => {
+                    if (typeof value !== 'string') return;
+                    setValues((current) =>
+                      current
+                        ? {
+                            ...current,
+                            localidad: value,
+                            // Al cambiar la localidad el barrio deja de ser válido.
+                            barrio: value === current.localidad ? current.barrio : '',
+                          }
+                        : current,
+                    );
+                  }}
+                  theme={uiTheme}
+                  size="md"
+                />
+              ) : (
+                <RecetaTextInput
+                  theme={uiTheme}
+                  className={styles.controlMd}
+                  placeholder={values.ciudad ? '' : 'Selecciona una ciudad primero'}
+                  disabled={!values.ciudad}
+                  value={values.localidad ?? ''}
+                  onChange={(event) => updateField('localidad', event.target.value)}
+                />
+              )
             ) : (
               <Readonly value={displayValue(values.localidad)} />
             )}
           </Field>
           <Field label="Barrio">
             {canEdit('barrio') ? (
-              <RecetaTextInput
-                theme={uiTheme}
-                className={styles.controlMd}
-                value={values.barrio ?? ''}
-                onChange={(event) => updateField('barrio', event.target.value)}
-              />
+              hasBarrioCatalog ? (
+                <Combobox
+                  options={barrioOptions}
+                  value={values.barrio ?? ''}
+                  placeholder="Seleccionar barrio"
+                  searchPlaceholder="Buscar barrio…"
+                  className={styles.combobox}
+                  onChange={(value) => {
+                    if (typeof value !== 'string') return;
+                    updateField('barrio', value);
+                  }}
+                  theme={uiTheme}
+                  size="md"
+                />
+              ) : (
+                <RecetaTextInput
+                  theme={uiTheme}
+                  className={styles.controlMd}
+                  placeholder={values.ciudad ? '' : 'Selecciona una ciudad primero'}
+                  disabled={!values.ciudad}
+                  value={values.barrio ?? ''}
+                  onChange={(event) => updateField('barrio', event.target.value)}
+                />
+              )
             ) : (
               <Readonly value={displayValue(values.barrio)} />
             )}
           </Field>
-          <Field label="Dirección" className={styles.fieldFull}>
-            {canEdit('direccion') ? (
-              <RecetaTextInput
-                theme={uiTheme}
-                className={styles.controlMd}
-                value={values.direccion ?? ''}
-                onChange={(event) => updateField('direccion', event.target.value)}
-              />
-            ) : (
+          {canEdit('direccion') ? (
+            <>
+              <Field label="Tipo de vía">
+                <RecetaFilterSelect
+                  theme={uiTheme}
+                  size="md"
+                  value={values.direccionTipoVia}
+                  options={TIPO_VIA_OPTIONS}
+                  placeholder="Seleccionar tipo de vía"
+                  onChange={(value) => updateField('direccionTipoVia', value)}
+                />
+              </Field>
+              <Field label="Número de vía">
+                <RecetaTextInput
+                  theme={uiTheme}
+                  className={styles.controlMd}
+                  placeholder="Ej. 45A"
+                  value={values.direccionNumeroVia}
+                  onChange={(event) =>
+                    updateField('direccionNumeroVia', normalizeDireccionText(event.target.value))
+                  }
+                />
+              </Field>
+              <Field label="Número de placa">
+                <div className={styles.placaRow}>
+                  <RecetaTextInput
+                    theme={uiTheme}
+                    className={styles.controlMd}
+                    aria-label="Número de placa (primera parte)"
+                    placeholder="Ej. 12"
+                    value={values.direccionPlaca1}
+                    onChange={(event) =>
+                      updateField('direccionPlaca1', normalizeDireccionText(event.target.value))
+                    }
+                  />
+                  <span className={styles.placaSeparator} aria-hidden="true">
+                    -
+                  </span>
+                  <RecetaTextInput
+                    theme={uiTheme}
+                    className={styles.controlMd}
+                    aria-label="Número de placa (segunda parte)"
+                    placeholder="Ej. 34"
+                    value={values.direccionPlaca2}
+                    onChange={(event) =>
+                      updateField('direccionPlaca2', normalizeDireccionText(event.target.value))
+                    }
+                  />
+                </div>
+              </Field>
+              <Field label="Complemento">
+                <RecetaTextInput
+                  theme={uiTheme}
+                  className={styles.controlMd}
+                  placeholder="Apto, torre, interior, oficina…"
+                  value={values.direccionComplemento}
+                  onChange={(event) =>
+                    updateField('direccionComplemento', normalizeDireccionText(event.target.value))
+                  }
+                />
+              </Field>
+              <Field label="Vista previa de dirección" className={styles.fieldFull}>
+                <Readonly value={direccionPreview || '—'} />
+              </Field>
+            </>
+          ) : (
+            <Field label="Dirección" className={styles.fieldFull}>
               <Readonly value={displayValue(values.direccion)} />
-            )}
-          </Field>
+            </Field>
+          )}
           <Field label="Teléfono" error={errors.telefono}>
             {canEdit('telefono') ? (
               <RecetaTextInput
@@ -548,14 +790,24 @@ export function PayrollEmployeePersonalDataTab({
           </Field>
         </div>
 
-        <div className={styles.actions}>
-          <RecetaFormButton
-            type="submit"
-            theme={uiTheme}
-            label="Guardar cambios"
-            disabled={submitting}
-          />
-        </div>
+        {editingPersonal ? (
+          <div className={styles.actions}>
+            <RecetaFormButton
+              type="button"
+              theme={uiTheme}
+              variant="cancel"
+              label="Cancelar"
+              disabled={submitting}
+              onClick={handleCancelPersonal}
+            />
+            <RecetaFormButton
+              type="submit"
+              theme={uiTheme}
+              label="Guardar cambios"
+              disabled={submitting}
+            />
+          </div>
+        ) : null}
       </form>
 
       {showEmploymentSection ? (

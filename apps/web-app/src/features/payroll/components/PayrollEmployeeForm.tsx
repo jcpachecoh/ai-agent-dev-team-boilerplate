@@ -25,6 +25,7 @@ import {
 import { useEmployeePositions } from '../hooks/useEmployeePositions';
 import { getColombiaCities, getColombiaDepartments } from '../api/personal-data.client';
 import { getBarriosForLocalidad, getLocalidadesForCiudad } from '../constants/colombia-geo';
+import { TIPO_VIA_OPTIONS, composeDireccion, normalizeDireccionText } from '../utils/direccion';
 import { splitEmployeeNameForForm } from '../utils/employee-name';
 import {
   BENEFICIARY_TYPE_OPTIONS,
@@ -84,6 +85,11 @@ export const PAYROLL_EMPLOYEE_FORM_EMPTY_VALUES: PayrollEmployeeFormValues = {
   ciudad: '',
   barrio: '',
   localidad: '',
+  direccionTipoVia: '',
+  direccionNumeroVia: '',
+  direccionPlaca1: '',
+  direccionPlaca2: '',
+  direccionComplemento: '',
   costCenter: 'OPERACIONES',
   laborClassification: 'ADMINISTRATIVO',
   nonSalaryAmount: '',
@@ -147,6 +153,11 @@ function employeeToFormValues(employee: PayrollEmployee): PayrollEmployeeFormVal
     ciudad: '',
     barrio: employee.barrio ?? '',
     localidad: employee.localidad ?? '',
+    direccionTipoVia: '',
+    direccionNumeroVia: '',
+    direccionPlaca1: '',
+    direccionPlaca2: '',
+    direccionComplemento: '',
     costCenter: (employee.costCenter as CostCenter) ?? 'OPERACIONES',
     laborClassification: (employee.laborClassification as LaborClassification) ?? 'ADMINISTRATIVO',
     nonSalaryAmount: employee.nonSalaryAmount ?? '',
@@ -754,6 +765,84 @@ export function PayrollEmployeeForm({
                       />
                     )}
                   </div>
+                  {/* ── Dirección ─────────────────────────────────────────────────── */}
+                  <div className={formStyles.field}>
+                    <span className={formStyles.fieldLabel}>Tipo de vía</span>
+                    <RecetaFilterSelect
+                      aria-label="Tipo de vía"
+                      options={TIPO_VIA_OPTIONS}
+                      value={values.direccionTipoVia}
+                      placeholder="Seleccionar tipo de vía"
+                      onChange={(value) => update({ direccionTipoVia: value })}
+                      theme={theme}
+                      size="md"
+                    />
+                  </div>
+                  <label className={formStyles.field}>
+                    <span className={formStyles.fieldLabel}>Número de vía</span>
+                    <input
+                      aria-label="Número de vía"
+                      className={formStyles.input}
+                      maxLength={20}
+                      placeholder="Ej. 45A"
+                      value={values.direccionNumeroVia}
+                      onChange={(event) =>
+                        update({ direccionNumeroVia: normalizeDireccionText(event.target.value) })
+                      }
+                    />
+                  </label>
+                  <div className={formStyles.field}>
+                    <span className={formStyles.fieldLabel}>Número de placa</span>
+                    <div className={formStyles.placaRow}>
+                      <input
+                        aria-label="Número de placa (primera parte)"
+                        className={formStyles.input}
+                        maxLength={20}
+                        placeholder="Ej. 12"
+                        value={values.direccionPlaca1}
+                        onChange={(event) =>
+                          update({ direccionPlaca1: normalizeDireccionText(event.target.value) })
+                        }
+                      />
+                      <span className={formStyles.placaSeparator} aria-hidden="true">
+                        -
+                      </span>
+                      <input
+                        aria-label="Número de placa (segunda parte)"
+                        className={formStyles.input}
+                        maxLength={20}
+                        placeholder="Ej. 34"
+                        value={values.direccionPlaca2}
+                        onChange={(event) =>
+                          update({ direccionPlaca2: normalizeDireccionText(event.target.value) })
+                        }
+                      />
+                    </div>
+                  </div>
+                  <label className={formStyles.field}>
+                    <span className={formStyles.fieldLabel}>Complemento</span>
+                    <input
+                      aria-label="Complemento"
+                      className={formStyles.input}
+                      maxLength={100}
+                      placeholder="Apto, torre, interior, oficina…"
+                      value={values.direccionComplemento}
+                      onChange={(event) =>
+                        update({ direccionComplemento: normalizeDireccionText(event.target.value) })
+                      }
+                    />
+                  </label>
+                  <label className={`${formStyles.field} ${formStyles.fieldFull}`}>
+                    <span className={formStyles.fieldLabel}>Vista previa de dirección</span>
+                    <input
+                      aria-label="Vista previa de dirección"
+                      className={`${formStyles.input} ${formStyles.inputReadonly}`}
+                      value={composeDireccion(values)}
+                      placeholder="Se genera automáticamente"
+                      readOnly
+                      tabIndex={-1}
+                    />
+                  </label>
                 </>
               ) : null}
 

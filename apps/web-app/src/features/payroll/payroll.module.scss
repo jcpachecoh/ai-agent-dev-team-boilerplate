@@ -215,6 +215,27 @@
   --control-width: 100%;
 }
 
+.fieldFull {
+  grid-column: 1 / -1;
+}
+
+.placaRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.placaSeparator {
+  color: var(--color-text-secondary);
+  font-weight: 700;
+}
+
+.inputReadonly {
+  background: var(--color-bg-surface);
+  color: var(--color-text-secondary);
+  cursor: default;
+}
+
 .fieldLabel {
   font-size: t.$font-size-xs;
   color: var(--color-text-secondary);

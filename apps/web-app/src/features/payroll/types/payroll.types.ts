@@ -215,6 +215,11 @@ export interface PayrollEmployeeFormValues {
   ciudad: string;
   barrio: string;
   localidad: string;
+  direccionTipoVia: string;
+  direccionNumeroVia: string;
+  direccionPlaca1: string;
+  direccionPlaca2: string;
+  direccionComplemento: string;
   costCenter: CostCenter;
   laborClassification: LaborClassification;
   nonSalaryAmount: string;
