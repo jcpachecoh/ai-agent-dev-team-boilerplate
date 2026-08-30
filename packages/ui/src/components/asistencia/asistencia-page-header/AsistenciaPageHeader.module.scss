@@ -1,0 +1,63 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../../../styles/abstracts/page-header-title' as ph;
+@use '../shared/asistencia-theme' as asis;
+
+.header {
+  @include asis.asistencia-theme-classes;
+  @include ph.page-header-shell;
+}
+
+.leading {
+  @include ph.page-header-titles-stack;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.iconWrap {
+  display: none;
+}
+
+.title {
+  @include ph.page-header-title;
+  color: var(--asistencia-text);
+}
+
+.subtitle {
+  @include ph.page-header-subtitle;
+  color: var(--asistencia-subtle);
+}
+
+.action {
+  flex-shrink: 0;
+}
+
+@media (max-width: 767px) {
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .titleRow {
+    flex-wrap: wrap;
+    row-gap: 6px;
+  }
+
+  .title {
+    font-size: 1.0625rem;
+    line-height: 1.2;
+  }
+
+  .subtitle {
+    font-size: 0.6875rem;
+    line-height: 1.45;
+  }
+
+  .action {
+    align-self: flex-start;
+  }
+}

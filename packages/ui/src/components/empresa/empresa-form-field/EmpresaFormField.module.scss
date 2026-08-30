@@ -1,0 +1,73 @@
+@use '../../sede/shared/sede-theme' as sede;
+
+$mobile-breakpoint: 768px;
+
+.field {
+  @include sede.sede-theme-classes;
+
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.labelRow {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.labelIcon {
+  display: inline-flex;
+  color: var(--sede-subtle);
+}
+
+.label {
+  font-family: var(--sede-font-mono, ui-monospace, monospace);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--sede-subtle);
+}
+
+.required {
+  color: #f87171;
+}
+
+.input {
+  width: 100%;
+  min-height: 40px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--sede-border);
+  background: var(--sede-input);
+  color: var(--sede-text);
+  font-size: 14px;
+  line-height: 1.4;
+  box-sizing: border-box;
+}
+
+.input:read-only,
+.input:disabled {
+  opacity: 0.95;
+  cursor: default;
+}
+
+.input:focus {
+  outline: none;
+  border-color: rgba(129, 140, 248, 0.55);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  min-width: 0;
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .row {
+    grid-template-columns: 1fr;
+  }
+}

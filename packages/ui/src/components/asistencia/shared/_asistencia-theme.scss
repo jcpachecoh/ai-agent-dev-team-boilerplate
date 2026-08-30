@@ -1,0 +1,105 @@
+@use 'sass:color';
+@use '../../../styles/abstracts/variables' as *;
+
+$asistencia-accent: #0ea5e9;
+$asistencia-teal: #2ec4a0;
+$asistencia-purple: #818cf8;
+$asistencia-amber: #f0c040;
+$asistencia-coral: #e05a44;
+$asistencia-blue: #3b82f6;
+$asistencia-sand: #c8a96e;
+$asistencia-violet: #8b5cf6;
+
+$asistencia-dark-page: #0a0a0a;
+$asistencia-dark-surface: #111111;
+$asistencia-dark-surface-raised: #141414;
+$asistencia-dark-input: #0d0d0d;
+$asistencia-dark-border: #2e2e2e;
+$asistencia-dark-border-subtle: #1a1a1a;
+$asistencia-dark-text: #f5f5f0;
+$asistencia-dark-muted: #888888;
+
+@mixin asistencia-theme-dark {
+  --asistencia-page: #{$asistencia-dark-page};
+  --asistencia-surface: #{$asistencia-dark-surface};
+  --asistencia-surface-raised: #{$asistencia-dark-surface-raised};
+  --asistencia-input: #{$asistencia-dark-input};
+  --asistencia-border: #{$asistencia-dark-border};
+  --asistencia-border-subtle: #{$asistencia-dark-border-subtle};
+  --asistencia-text: #{$asistencia-dark-text};
+  --asistencia-text-secondary: #bbbbbb;
+  --asistencia-muted: #{$asistencia-dark-muted};
+  --asistencia-subtle: #666666;
+  --asistencia-faint: #555555;
+  --asistencia-dim: #444444;
+  --asistencia-placeholder: #{rgba($asistencia-dark-text, 0.5)};
+  --asistencia-hover: #{rgba($color-white, 0.06)};
+  --asistencia-accent: #{$asistencia-accent};
+  --asistencia-accent-soft: #{rgba($asistencia-accent, 0.12)};
+  --asistencia-accent-border: #{rgba($asistencia-accent, 0.4)};
+  --asistencia-teal: #{$asistencia-teal};
+  --asistencia-teal-soft: #{rgba($asistencia-teal, 0.1)};
+  --asistencia-teal-border: #{rgba($asistencia-teal, 0.31)};
+  --asistencia-amber: #{$asistencia-amber};
+  --asistencia-amber-soft: #{rgba($asistencia-amber, 0.08)};
+  --asistencia-amber-border: #{rgba($asistencia-amber, 0.35)};
+  --asistencia-coral: #{$asistencia-coral};
+  --asistencia-coral-soft: #{rgba($asistencia-coral, 0.1)};
+  --asistencia-coral-border: #{rgba($asistencia-coral, 0.19)};
+  --asistencia-progress-track: #1c1c1c;
+  --asistencia-rest-soft: #{rgba($asistencia-teal, 0.2)};
+  --asistencia-absence-soft: #{rgba($asistencia-coral, 0.18)};
+  --asistencia-festive-soft: #{rgba($asistencia-amber, 0.16)};
+  --asistencia-table-header: #9a9a9a;
+  --asistencia-table-muted: #c8c8c8;
+}
+
+@mixin asistencia-theme-light {
+  --asistencia-page: #f6f4ef;
+  --asistencia-surface: #ffffff;
+  --asistencia-surface-raised: #fbfaf6;
+  --asistencia-input: #fbfaf6;
+  --asistencia-border: #{rgba($color-black, 0.12)};
+  --asistencia-border-subtle: #{rgba($color-black, 0.08)};
+  --asistencia-text: #{$color-gray-900};
+  --asistencia-text-secondary: #{$color-gray-700};
+  --asistencia-muted: #{$color-gray-700};
+  --asistencia-subtle: #{$color-gray-600};
+  --asistencia-faint: #{$color-gray-600};
+  --asistencia-dim: #{$color-gray-400};
+  --asistencia-placeholder: #{rgba($color-black, 0.45)};
+  --asistencia-hover: #{rgba($color-black, 0.04)};
+  --asistencia-accent: #{$asistencia-accent};
+  --asistencia-accent-soft: #{rgba($asistencia-accent, 0.1)};
+  --asistencia-accent-border: #{rgba($asistencia-accent, 0.35)};
+  --asistencia-teal: #{$asistencia-teal};
+  --asistencia-teal-soft: #{rgba($asistencia-teal, 0.1)};
+  --asistencia-teal-border: #{rgba($asistencia-teal, 0.35)};
+  --asistencia-amber: #{$asistencia-amber};
+  --asistencia-amber-soft: #{rgba($asistencia-amber, 0.12)};
+  --asistencia-amber-border: #{rgba($asistencia-amber, 0.35)};
+  --asistencia-coral: #{$asistencia-coral};
+  --asistencia-coral-soft: #{rgba($asistencia-coral, 0.1)};
+  --asistencia-coral-border: #{rgba($asistencia-coral, 0.25)};
+  --asistencia-progress-track: #{rgba($color-black, 0.08)};
+  --asistencia-rest-soft: #{rgba($asistencia-teal, 0.12)};
+  --asistencia-absence-soft: #{rgba($asistencia-coral, 0.1)};
+  --asistencia-festive-soft: #{rgba($asistencia-amber, 0.12)};
+  --asistencia-table-header: #{$color-gray-600};
+  --asistencia-table-muted: #{$color-gray-700};
+}
+
+@mixin asistencia-focus-ring {
+  outline: 2px solid rgba($asistencia-accent, 0.65);
+  outline-offset: 2px;
+}
+
+@mixin asistencia-theme-classes {
+  &.theme--dark {
+    @include asistencia-theme-dark;
+  }
+
+  &.theme--light {
+    @include asistencia-theme-light;
+  }
+}

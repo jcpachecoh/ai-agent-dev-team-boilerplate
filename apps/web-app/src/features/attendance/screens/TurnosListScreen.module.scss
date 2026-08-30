@@ -1,0 +1,134 @@
+.screen {
+  min-height: 100%;
+  min-width: 0;
+}
+
+.createButtonWrap button {
+  background: #c9920a;
+  border-color: #a67808;
+  color: #1a1408;
+
+  &:hover:not(:disabled) {
+    background: #b8860b;
+    border-color: #8f6c07;
+  }
+}
+
+.filterBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem 1rem;
+  width: 100%;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 11rem;
+  flex: 1 1 11rem;
+  max-width: 16rem;
+}
+
+.fieldLabel {
+  color: var(--color-text-secondary, #64748b);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.exportActions {
+  display: flex;
+  align-items: flex-end;
+  flex: 0 0 auto;
+  margin-left: auto;
+
+  > * {
+    width: auto;
+    --control-width: auto;
+    justify-content: flex-start;
+  }
+}
+
+.filterButton {
+  flex: 0 0 auto;
+  --control-width: auto;
+}
+
+.state {
+  border: 1px solid var(--cargo-border, #2e2e2e);
+  border-radius: 4px;
+  background: var(--cargo-surface, #111);
+  color: var(--cargo-subtle, #666);
+  padding: 1rem;
+  text-align: center;
+}
+
+.feedbackState {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 220px;
+  padding: 24px 16px;
+  border: 1px solid var(--cargo-border, #2e2e2e);
+  border-radius: 4px;
+  background: var(--cargo-surface, #111);
+}
+
+.readOnlyBanner {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border: 1px solid rgba(240, 192, 64, 0.35);
+  border-radius: 4px;
+  background: rgba(240, 192, 64, 0.08);
+  color: inherit;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+}
+
+.skeletonRows {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.skeletonRow {
+  height: 44px;
+  border-radius: 4px;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.04) 25%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(255, 255, 255, 0.04) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.2s infinite;
+}
+
+.loadingLabel {
+  font-size: 0.8125rem;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@media (max-width: 900px) {
+  .exportActions {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .filterButton {
+    width: 100%;
+    --control-width: 100%;
+  }
+}

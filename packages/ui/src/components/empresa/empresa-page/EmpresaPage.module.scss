@@ -1,0 +1,25 @@
+@use '../../sede/shared/sede-theme' as sede;
+
+$page-max-width: 900px;
+$mobile-breakpoint: 768px;
+
+.page {
+  @include sede.sede-theme-classes;
+
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: $page-max-width;
+  min-width: 0;
+  margin: 0 auto;
+  padding: 20px 28px 40px;
+  box-sizing: border-box;
+  background: var(--sede-page);
+  color: var(--sede-text);
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .page {
+    padding: 16px 16px 28px;
+  }
+}

@@ -1,0 +1,42 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/field-ops-theme' as fo;
+
+.bar {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  border-bottom: 1px solid var(--fo-border);
+  overflow-x: auto;
+
+  > * {
+    flex: 1 1 0;
+    min-width: max-content;
+    border-right: 1px solid var(--fo-border);
+
+    &:last-child {
+      border-right: none;
+    }
+  }
+}
+
+.theme--dark {
+  @include fo.field-ops-theme-dark;
+  background: #111111;
+}
+
+.theme--light {
+  @include fo.field-ops-theme-light;
+  background: var(--fo-surface-elevated);
+}
+
+.size--sm {
+  min-height: 56px;
+}
+
+.size--md {
+  min-height: 72px;
+}
+
+.size--xl {
+  min-height: 80px;
+}

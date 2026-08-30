@@ -1,0 +1,58 @@
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.hint {
+  margin: 0 0 0.25rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--receta-muted);
+}
+
+.label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--receta-muted);
+}
+
+.input {
+  min-height: 40px;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--receta-border);
+  border-radius: 4px;
+  background: var(--receta-input);
+  color: var(--receta-text);
+  font-size: 0.875rem;
+  box-sizing: border-box;
+
+  &:focus-visible {
+    outline: 2px solid rgba(46, 196, 160, 0.65);
+    outline-offset: 2px;
+  }
+}
+
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--receta-text);
+  font-size: 0.875rem;
+}
+
+.error {
+  margin: 0;
+  color: #e85d4a;
+  font-size: 0.75rem;
+}

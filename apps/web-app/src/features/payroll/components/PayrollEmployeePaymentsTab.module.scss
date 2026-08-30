@@ -1,0 +1,105 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px 24px 24px;
+}
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.title {
+  margin: 0;
+  color: var(--empleado-text);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.subtitle {
+  margin: 6px 0 0;
+  color: var(--empleado-subtle);
+  font-size: 0.875rem;
+}
+
+.emptyState {
+  border: 1px dashed var(--empleado-border);
+  border-radius: 6px;
+  background: var(--empleado-surface-raised);
+}
+
+.tableWrap {
+  overflow-x: auto;
+  border: 1px solid var(--empleado-border);
+  border-radius: 6px;
+  background: var(--empleado-surface-raised);
+}
+
+.table {
+  width: 100%;
+  min-width: 920px;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--empleado-border-subtle, var(--empleado-border));
+  text-align: left;
+  vertical-align: middle;
+}
+
+.table th {
+  color: var(--empleado-muted);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: var(--empleado-surface);
+}
+
+.table td {
+  color: var(--empleado-text);
+  font-size: 0.8125rem;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.netAmount {
+  font-weight: 700;
+}
+
+.reference {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--empleado-subtle);
+}
+
+.loadMore {
+  display: flex;
+  justify-content: center;
+}
+
+.state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 280px;
+  padding: 2rem 1rem;
+  color: var(--empleado-subtle);
+  text-align: center;
+}
+
+.hint {
+  margin: 0;
+  font-size: 0.8125rem;
+}

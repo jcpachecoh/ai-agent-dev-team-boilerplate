@@ -1,0 +1,40 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/sede-theme' as sede;
+
+.card {
+  @include sede.sede-theme-classes;
+
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  border: $border-width solid var(--sede-border);
+  border-radius: 4px;
+  background: var(--sede-surface);
+  overflow: hidden;
+}
+
+.cardHeader {
+  padding: 12px 16px 13px;
+  border-bottom: $border-width solid var(--sede-border-subtle);
+  background: var(--sede-input);
+}
+
+.cardTitle {
+  @include sede.sede-mono-label;
+
+  margin: 0;
+  font-size: 0.625rem;
+  letter-spacing: 0.14em;
+}
+
+.cardBody {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 18px 16px;
+}
+
+.size--xl .cardBody {
+  padding: 20px 18px;
+}

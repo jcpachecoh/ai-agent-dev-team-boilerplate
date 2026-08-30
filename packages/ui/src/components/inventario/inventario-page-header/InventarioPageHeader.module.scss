@@ -1,0 +1,33 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../../../styles/abstracts/page-header-title' as ph;
+@use '../shared/inventario-theme' as inventario;
+
+.header {
+  @include inventario.inventario-theme-classes;
+  @include inventario.inventario-size-vars;
+
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: min(100%, var(--control-width));
+  color: var(--inventario-text);
+}
+
+.size--sm {
+  --header-title-size: 1.125rem;
+}
+
+.size--md,
+.size--xl {
+  --control-width: 100%;
+}
+
+.title {
+  @include ph.page-header-title;
+  color: var(--inventario-text);
+}
+
+.subtitle {
+  @include ph.page-header-subtitle;
+  color: var(--inventario-muted);
+}

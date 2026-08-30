@@ -1,0 +1,72 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/proveedor-theme' as proveedor;
+
+.row {
+  @include proveedor.proveedor-theme-classes;
+
+  display: grid;
+  grid-template-columns: var(--proveedor-columns);
+  align-items: center;
+  width: min(100%, var(--row-width));
+  min-height: var(--row-height);
+  padding: 0 var(--row-padding-x);
+  border-bottom: $border-width solid var(--proveedor-border);
+  background: var(--proveedor-surface);
+  color: var(--proveedor-text);
+  box-sizing: border-box;
+}
+
+.size--sm {
+  --row-width: 680px;
+  --row-height: 52px;
+  --row-padding-x: #{$spacing-sm};
+}
+
+.size--md {
+  --row-width: 900px;
+  --row-height: 58px;
+  --row-padding-x: #{$spacing-md};
+}
+
+.size--xl {
+  --row-width: 100%;
+  --row-height: 58px;
+  --row-padding-x: 16px;
+}
+
+.name {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+}
+
+.muted {
+  font-family: $font-family-mono;
+  font-size: $font-size-sm;
+  color: var(--proveedor-text-secondary);
+}
+
+.price {
+  font-family: $font-family-mono;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+}
+
+.priceUp {
+  color: proveedor.$proveedor-teal;
+}
+
+.priceDown {
+  color: proveedor.$proveedor-danger;
+}
+
+.status {
+  justify-self: center;
+}
+
+.actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+  justify-self: end;
+}

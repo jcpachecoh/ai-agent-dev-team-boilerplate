@@ -1,0 +1,82 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/receta-theme' as receta;
+
+.chip {
+  @include receta.receta-theme-classes;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: $font-family-base;
+  font-size: 0.75rem;
+  font-weight: $font-weight-medium;
+  line-height: 1.5;
+}
+
+.tone--entrada {
+  .dot,
+  .label {
+    color: receta.$receta-teal;
+  }
+
+  .dot {
+    background: receta.$receta-teal;
+  }
+}
+
+.tone--plato-fuerte {
+  .dot,
+  .label {
+    color: receta.$receta-orange;
+  }
+
+  .dot {
+    background: receta.$receta-orange;
+  }
+}
+
+.tone--postre {
+  .dot,
+  .label {
+    color: #d46b9a;
+  }
+
+  .dot {
+    background: #d46b9a;
+  }
+}
+
+.tone--bebida {
+  .dot,
+  .label {
+    color: #6b94d4;
+  }
+
+  .dot {
+    background: #6b94d4;
+  }
+}
+
+.tone--default {
+  .dot {
+    background: var(--receta-muted);
+  }
+
+  .label {
+    color: var(--receta-muted);
+  }
+}

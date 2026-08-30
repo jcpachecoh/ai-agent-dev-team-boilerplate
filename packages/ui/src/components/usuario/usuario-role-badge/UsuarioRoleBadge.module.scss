@@ -1,0 +1,49 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/usuario-theme' as usr;
+
+.badge {
+  @include usr.usuario-theme-classes;
+
+  display: inline-block;
+  vertical-align: middle;
+  border-radius: 3px;
+  border: 1px solid transparent;
+  font-family: 'IBM Plex Mono', $font-family-mono, monospace;
+  font-weight: $font-weight-bold;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.size--sm {
+  min-height: 19.5px;
+  padding: 2px 7px;
+  font-size: 0.6875rem;
+}
+
+.size--md {
+  min-height: 22px;
+  padding: 3px 8px;
+  font-size: 0.75rem;
+}
+
+.variant--owner,
+.variant--supervisor {
+  color: var(--usuario-purple);
+  background: var(--usuario-purple-soft);
+  border-color: var(--usuario-purple-border);
+}
+
+.variant--manager {
+  color: var(--usuario-accent-secondary);
+  background: var(--usuario-accent-soft);
+  border-color: var(--usuario-accent-border);
+}
+
+.variant--default {
+  color: var(--usuario-text-secondary);
+  background: var(--usuario-hover);
+  border-color: var(--usuario-border);
+}

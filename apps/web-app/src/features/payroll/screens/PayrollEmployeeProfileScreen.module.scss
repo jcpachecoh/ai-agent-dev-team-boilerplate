@@ -1,0 +1,78 @@
+.screen {
+  min-height: 100%;
+  min-width: 0;
+}
+
+.headerBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.backButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--empleado-subtle);
+  font: inherit;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  cursor: pointer;
+  transition: color 160ms ease;
+
+  &:hover {
+    color: var(--empleado-text);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--empleado-accent-border);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+}
+
+.profilePanel {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--empleado-border);
+  border-radius: 4px;
+  background: var(--empleado-surface);
+  overflow: hidden;
+}
+
+.profileBody {
+  min-height: 280px;
+}
+
+.state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 280px;
+  padding: 2rem 1rem;
+  color: var(--empleado-subtle);
+  text-align: center;
+
+  button {
+    border: 1px solid var(--empleado-border);
+    border-radius: 4px;
+    background: var(--empleado-surface-raised);
+    color: var(--empleado-text);
+    padding: 8px 12px;
+    font: inherit;
+    font-size: 0.8125rem;
+    cursor: pointer;
+
+    &:hover {
+      background: var(--empleado-hover);
+    }
+  }
+}

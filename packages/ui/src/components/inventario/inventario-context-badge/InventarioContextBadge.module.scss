@@ -1,0 +1,82 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/inventario-theme' as inventario;
+
+.badge {
+  @include inventario.inventario-theme-classes;
+  @include inventario.inventario-size-vars;
+
+  display: inline-flex;
+  align-items: center;
+  gap: var(--badge-gap);
+  width: fit-content;
+  min-height: var(--badge-height);
+  padding: var(--badge-padding-y) var(--badge-padding-x);
+  border: $border-width solid var(--inventario-border);
+  border-radius: var(--control-radius);
+  background: var(--inventario-surface);
+  color: var(--inventario-text);
+  box-sizing: border-box;
+}
+
+.size--sm {
+  --badge-height: 28px;
+  --badge-padding-x: 10px;
+  --badge-padding-y: 5px;
+  --badge-gap: 6px;
+  --badge-label-size: 10px;
+  --badge-dot-size: 6px;
+}
+
+.size--md {
+  --badge-height: 32px;
+  --badge-padding-x: 13px;
+  --badge-padding-y: 7px;
+  --badge-gap: 8px;
+  --badge-label-size: 11px;
+  --badge-dot-size: 8px;
+}
+
+.size--xl {
+  --badge-height: 36px;
+  --badge-padding-x: 14px;
+  --badge-padding-y: 8px;
+  --badge-gap: 8px;
+  --badge-label-size: 12px;
+  --badge-dot-size: 8px;
+}
+
+.statusDot {
+  width: var(--badge-dot-size);
+  height: var(--badge-dot-size);
+  border-radius: var(--control-radius);
+  background: #{inventario.$inventario-teal};
+  box-shadow: 0 0 0 0 rgba(46, 196, 160, 0.2);
+  flex-shrink: 0;
+}
+
+.icon {
+  display: inline-flex;
+  color: var(--inventario-muted);
+
+  svg {
+    width: var(--control-icon-size);
+    height: var(--control-icon-size);
+  }
+}
+
+.label {
+  font-family: $font-family-mono;
+  font-size: var(--badge-label-size);
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.variant--status .label {
+  font-weight: $font-weight-bold;
+  color: var(--inventario-text);
+}
+
+.variant--shift .label {
+  font-weight: $font-weight-regular;
+  color: var(--inventario-muted);
+}

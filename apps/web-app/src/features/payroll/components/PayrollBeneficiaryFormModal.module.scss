@@ -1,0 +1,61 @@
+@use '@/styles/tokens' as t;
+
+// Modal.tsx hardcodes its own dark/light surface colors; override them here so this
+// modal matches the `--color-bg-surface` tokens used by the rest of the payroll forms.
+.modalContent {
+  background-color: var(--color-bg-surface) !important;
+  color: var(--color-text-primary) !important;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.label {
+  color: var(--color-text-secondary);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.input {
+  min-height: 40px;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: t.$border-radius-base;
+  background: var(--color-bg-surface-raised);
+  color: var(--color-text-primary);
+  font-size: t.$font-size-sm;
+
+  &::placeholder {
+    color: var(--color-text-secondary);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 1px;
+  }
+}
+
+.error {
+  margin: 0;
+  color: var(--color-danger);
+  font-size: t.$font-size-xs;
+}

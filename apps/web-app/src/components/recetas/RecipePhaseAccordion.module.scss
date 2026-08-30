@@ -1,0 +1,98 @@
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.card {
+  border: 1px solid var(--receta-border, rgb(0 0 0 / 12%));
+  border-radius: 10px;
+  background: var(--receta-surface-raised, #fbfaf6);
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--receta-border, rgb(0 0 0 / 12%));
+  background: var(--receta-surface, #f6f4ef);
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--receta-text, #171717);
+  text-align: left;
+  cursor: pointer;
+  padding: 0;
+}
+
+.index {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--receta-muted, #525252);
+}
+
+.summary {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.8125rem;
+}
+
+.chevron {
+  flex-shrink: 0;
+  color: var(--receta-muted, #737373);
+  transition: transform 0.15s ease;
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.iconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--receta-border, rgb(0 0 0 / 12%));
+  border-radius: 8px;
+  background: var(--receta-input, #fff);
+  color: var(--receta-text-secondary, #404040);
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+}
+
+.iconButtonDanger:hover:not(:disabled) {
+  border-color: rgb(220 38 38 / 35%);
+  color: #dc2626;
+  background: rgb(220 38 38 / 6%);
+}
+
+.body {
+  padding: 14px;
+}

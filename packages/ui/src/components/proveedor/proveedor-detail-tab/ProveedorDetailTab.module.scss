@@ -1,0 +1,79 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/proveedor-theme' as proveedor;
+
+.tab {
+  @include proveedor.proveedor-theme-classes;
+  @include proveedor.proveedor-size-vars;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--tab-gap);
+  width: 100%;
+  min-height: var(--tab-height);
+  padding: 0 var(--tab-padding-x);
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--proveedor-muted);
+  font-family: $font-family-mono;
+  font-size: var(--tab-font-size);
+  font-weight: $font-weight-bold;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    color 160ms ease,
+    border-color 160ms ease,
+    background-color 160ms ease;
+
+  &:hover {
+    color: var(--proveedor-text);
+    background: var(--proveedor-hover);
+  }
+
+  &:focus-visible {
+    @include proveedor.proveedor-focus-ring;
+  }
+}
+
+.icon svg {
+  width: var(--control-icon-size);
+  height: var(--control-icon-size);
+}
+
+.active {
+  color: proveedor.$proveedor-enterprise;
+  border-bottom-color: proveedor.$proveedor-enterprise;
+  background: rgba(proveedor.$proveedor-enterprise, 0.08);
+}
+
+.size--sm {
+  --tab-height: 40px;
+  --tab-padding-x: 8px;
+  --tab-gap: 6px;
+  --tab-font-size: 0.625rem;
+}
+
+.size--md {
+  --tab-height: 47px;
+  --tab-padding-x: 12px;
+  --tab-gap: 8px;
+  --tab-font-size: 0.6875rem;
+}
+
+.size--xl {
+  --tab-height: 47px;
+  --tab-padding-x: 16px;
+  --tab-gap: 8px;
+  --tab-font-size: 0.6875rem;
+}
+
+@media (max-width: 639px) {
+  .tab {
+    flex: 0 0 auto;
+    width: auto;
+    min-width: max-content;
+    white-space: nowrap;
+  }
+}

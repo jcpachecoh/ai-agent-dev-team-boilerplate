@@ -1,0 +1,61 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/cargo-theme' as cargo;
+
+.row {
+  @include cargo.cargo-theme-classes;
+
+  display: grid;
+  grid-template-columns: var(--cargo-columns);
+  column-gap: 20px;
+  align-items: center;
+  min-height: 52px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--cargo-border-subtle);
+}
+
+.titleCell {
+  font-size: 0.8125rem;
+  font-weight: $font-weight-semibold;
+  color: var(--cargo-text);
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.areaCell {
+  font-size: 0.75rem;
+  color: var(--cargo-text-secondary);
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.salaryCell {
+  justify-self: end;
+  text-align: right;
+  font-family: 'IBM Plex Mono', $font-family-mono, monospace;
+  font-size: 0.6875rem;
+  color: var(--cargo-secondary);
+  min-width: 0;
+}
+
+.statusCell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: center;
+  width: fit-content;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.actionsCell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  justify-self: end;
+  gap: 8px;
+  min-width: 0;
+}

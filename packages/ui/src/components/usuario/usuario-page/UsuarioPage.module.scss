@@ -1,0 +1,12 @@
+@use '../shared/usuario-theme' as usr;
+
+.page {
+  @include usr.usuario-theme-classes;
+
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 100%;
+  background: var(--usuario-page);
+  color: var(--usuario-text);
+}

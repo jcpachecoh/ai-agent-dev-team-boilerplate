@@ -1,0 +1,146 @@
+.row {
+  display: grid;
+  grid-template-columns: var(--inventario-columns);
+  align-items: center;
+  width: 100%;
+  min-height: 54px;
+  padding: 0 1rem;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg-surface);
+  box-sizing: border-box;
+}
+
+.cell {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+.cellCenter {
+  justify-content: center;
+}
+
+.cellRight {
+  justify-content: flex-end;
+}
+
+.card {
+  background: var(--color-bg-surface);
+}
+
+.titleGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.skuLink {
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #3b82f6;
+  cursor: pointer;
+  text-align: left;
+}
+
+.name {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  word-break: break-word;
+}
+
+.muted {
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.price {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  color: var(--color-text-primary);
+}
+
+.number {
+  justify-content: flex-end;
+  text-align: right;
+  padding-right: 1.5rem;
+}
+
+.quantity {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.stock {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.125rem 0.5rem;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  min-width: 2.5rem;
+  display: inline-flex;
+  justify-content: center;
+}
+
+.stock--neutral {
+  color: var(--color-text-secondary);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.stock--success {
+  color: #22c55e;
+  background: rgba(34, 197, 94, 0.1);
+}
+
+.stock--warning {
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.stock--danger {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.warningIcon {
+  width: 0.9rem;
+  height: 0.9rem;
+  color: #f59e0b;
+  flex-shrink: 0;
+}
+
+.actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.35rem;
+  width: 100%;
+}
+
+.rowClickable {
+  cursor: pointer;
+
+  &:hover {
+    background: var(--color-bg-surface-hover);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-success);
+    outline-offset: -2px;
+    z-index: 1;
+  }
+}

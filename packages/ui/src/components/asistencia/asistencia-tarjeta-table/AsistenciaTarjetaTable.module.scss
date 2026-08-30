@@ -1,0 +1,360 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/asistencia-theme' as asis;
+
+.wrap {
+  @include asis.asistencia-theme-classes;
+
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.note {
+  margin: 0;
+  align-self: flex-end;
+  font-size: 0.6875rem;
+  color: var(--asistencia-subtle);
+}
+
+.tableScroll {
+  overflow: auto;
+  border: 1px solid var(--asistencia-border);
+  border-radius: 6px;
+  background: var(--asistencia-surface);
+}
+
+.table {
+  width: 100%;
+  min-width: 1180px;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--asistencia-border-subtle);
+  font-size: 0.75rem;
+  text-align: left;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.table td {
+  color: var(--asistencia-text);
+}
+
+.table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--asistencia-surface-raised);
+  font-family: $font-family-mono;
+  font-size: 0.5625rem;
+  font-weight: $font-weight-bold;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--asistencia-table-header, var(--asistencia-faint));
+}
+
+.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.sortIndicator {
+  margin-left: 0.25rem;
+}
+
+.expandCol {
+  width: 28px;
+  padding-left: 8px;
+  padding-right: 0;
+}
+
+.expandIcon {
+  width: 14px;
+  height: 14px;
+  color: var(--asistencia-table-muted, var(--asistencia-muted));
+}
+
+.row {
+  background: var(--asistencia-surface);
+  color: var(--asistencia-text);
+
+  &:last-child td {
+    border-bottom: none;
+  }
+}
+
+.row--rest,
+.card.row--rest {
+  background: var(--asistencia-rest-soft);
+
+  td,
+  .mono,
+  .timeCell,
+  .shiftName,
+  .cardShift,
+  .cardDate,
+  .cardDayShort {
+    color: var(--asistencia-text);
+  }
+}
+
+.row--absence,
+.card.row--absence {
+  background: var(--asistencia-absence-soft);
+
+  td,
+  .mono,
+  .timeCell,
+  .shiftName,
+  .cardShift,
+  .cardDate,
+  .cardDayShort {
+    color: var(--asistencia-text);
+  }
+}
+
+.row--festive,
+.card.row--festive {
+  background: var(--asistencia-festive-soft);
+
+  td,
+  .mono,
+  .timeCell,
+  .shiftName,
+  .cardShift,
+  .cardDate,
+  .cardDayShort {
+    color: var(--asistencia-text);
+  }
+}
+
+.shiftName {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mono {
+  font-family: $font-family-mono;
+  font-size: 0.6875rem;
+  color: var(--asistencia-table-muted, var(--asistencia-text-secondary));
+}
+
+.placeholder {
+  color: var(--asistencia-table-muted, var(--asistencia-subtle));
+  font-family: $font-family-mono;
+}
+
+.timeCell {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: $font-family-mono;
+  font-size: 0.6875rem;
+  color: var(--asistencia-table-muted, var(--asistencia-text-secondary));
+}
+
+.deviceIcon {
+  width: 11px;
+  height: 11px;
+  color: var(--asistencia-amber);
+  flex-shrink: 0;
+}
+
+.manualMark {
+  color: var(--asistencia-amber);
+  font-size: 0.625rem;
+}
+
+.menuWrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.observationMark {
+  color: var(--asistencia-amber);
+}
+
+.observationButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.menuButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--asistencia-border);
+  border-radius: 4px;
+  background: var(--asistencia-surface);
+  color: var(--asistencia-muted);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--asistencia-hover);
+    color: var(--asistencia-text);
+  }
+}
+
+.menuPanel {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 5;
+  min-width: 196px;
+  padding: 0.35rem;
+  border: 1px solid var(--asistencia-border);
+  border-radius: 6px;
+  background: var(--asistencia-surface);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+}
+
+.menuItem {
+  display: block;
+  width: 100%;
+  padding: 0.5rem 0.65rem;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--asistencia-text);
+  font-size: 0.8125rem;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--asistencia-hover);
+  }
+}
+
+.cardList {
+  display: none;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--asistencia-border);
+  border-radius: 6px;
+  background: var(--asistencia-surface);
+}
+
+.cardHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.cardHeading {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.cardDayRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cardDayShort {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  background: var(--asistencia-hover);
+  font-family: $font-family-mono;
+  font-size: 0.625rem;
+  font-weight: $font-weight-bold;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--asistencia-text);
+}
+
+.cardDate {
+  font-size: 0.8125rem;
+  font-weight: $font-weight-semibold;
+  color: var(--asistencia-text);
+}
+
+.cardShift {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.5rem;
+  margin: 0;
+  font-size: 0.6875rem;
+  color: var(--asistencia-text-secondary);
+}
+
+.cardShiftName {
+  font-weight: $font-weight-semibold;
+}
+
+.cardShiftRange {
+  font-family: $font-family-mono;
+}
+
+.cardDetails {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 12px;
+  margin: 0;
+}
+
+.cardDetailRow {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+
+  dt {
+    margin: 0;
+    font-family: $font-family-mono;
+    font-size: 0.56rem;
+    font-weight: $font-weight-bold;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--asistencia-table-header, var(--asistencia-faint));
+  }
+
+  dd {
+    margin: 0;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .note {
+    align-self: stretch;
+    text-align: center;
+  }
+
+  .tableScroll {
+    display: none;
+  }
+
+  .cardList {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+}

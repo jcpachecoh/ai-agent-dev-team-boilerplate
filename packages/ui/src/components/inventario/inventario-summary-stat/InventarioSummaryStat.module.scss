@@ -1,0 +1,67 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/inventario-theme' as inventario;
+
+.stat {
+  @include inventario.inventario-theme-classes;
+  @include inventario.inventario-size-vars;
+
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px;
+  border: $border-width solid var(--inventario-border);
+  border-radius: $border-radius-md;
+  background: var(--inventario-bg);
+  min-width: 160px;
+}
+
+.label {
+  margin: 0;
+  font-family: $font-family-mono;
+  font-size: 0.625rem;
+  font-weight: $font-weight-bold;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--inventario-muted);
+}
+
+.value {
+  margin: 0;
+  font-family: $font-family-mono;
+  font-size: 1.25rem;
+  font-weight: $font-weight-bold;
+  color: var(--inventario-accent, var(--inventario-text));
+  font-variant-numeric: tabular-nums;
+}
+
+.accent--success {
+  --inventario-accent: #{inventario.$inventario-success};
+}
+
+.accent--info {
+  --inventario-accent: #{inventario.$inventario-info};
+}
+
+.accent--warning {
+  --inventario-accent: #{inventario.$inventario-warning};
+}
+
+.accent--danger {
+  --inventario-accent: #{inventario.$inventario-danger};
+}
+
+.accent--purple {
+  --inventario-accent: #{inventario.$inventario-purple};
+}
+
+.accent--enterprise {
+  --inventario-accent: #{inventario.$inventario-enterprise};
+}
+
+.size--sm .value {
+  font-size: 1rem;
+}
+
+.size--xl .value {
+  font-size: 1.5rem;
+}

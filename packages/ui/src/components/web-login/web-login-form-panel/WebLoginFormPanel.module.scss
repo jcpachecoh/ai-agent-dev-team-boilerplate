@@ -1,0 +1,95 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/web-login-theme' as login;
+
+.panel {
+  @include login.web-login-root;
+  @include login.web-login-theme-classes;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--web-login-gap);
+  width: 100%;
+  max-width: var(--web-login-panel-max-width);
+  padding: var(--web-login-padding-y) var(--web-login-padding-x);
+  background: var(--web-login-bg);
+  color: var(--web-login-text);
+}
+
+.intro {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $spacing-lg;
+  text-align: center;
+}
+
+.badge {
+  align-self: flex-start;
+  padding: 4px 10px;
+  font-size: 0.625rem;
+  font-weight: $font-weight-bold;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--web-login-badge-text);
+  background: var(--web-login-badge-bg);
+  border-radius: 6px;
+}
+
+.title {
+  margin: 0;
+  font-size: var(--web-login-title-size);
+  font-weight: $font-weight-bold;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.subtitle {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--web-login-muted);
+}
+
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-xs;
+  margin-top: $spacing-md;
+  padding: 0;
+  font-size: 0.875rem;
+  color: var(--web-login-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  transition: color 0.15s ease;
+
+  &:hover {
+    color: var(--web-login-text);
+  }
+}
+
+.footer {
+  margin: $spacing-md 0 0;
+  font-size: 0.875rem;
+  text-align: center;
+  color: var(--web-login-muted);
+}
+
+.footerLink {
+  color: var(--web-login-accent);
+  text-decoration: none;
+  transition: opacity 0.15s ease;
+
+  &:hover {
+    opacity: 0.85;
+    text-decoration: underline;
+  }
+}
+
+@media (max-width: 900px) {
+  .panel {
+    max-width: none;
+  }
+}

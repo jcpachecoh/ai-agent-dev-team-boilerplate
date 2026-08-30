@@ -1,0 +1,104 @@
+@use '@/styles/tokens' as t;
+
+.menu {
+  position: relative;
+}
+
+.trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: t.$space-2;
+  padding: t.$space-1;
+  border: 1px solid var(--color-brand-gold-border);
+  border-radius: t.$border-radius-sm;
+  background: var(--color-brand-gold-subtle);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition: background t.$layout-transition;
+
+  &:hover {
+    background: var(--color-brand-gold-hover);
+  }
+}
+
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: t.$border-radius-sm;
+  background: var(--color-bg-surface);
+  color: t.$color-brand-gold;
+}
+
+.name {
+  display: none;
+  font-size: t.$font-size-sm;
+  font-weight: t.$font-weight-medium;
+  padding-right: t.$space-2;
+}
+
+.dropdown {
+  position: absolute;
+  top: calc(100% + t.$space-2);
+  right: 0;
+  min-width: 12rem;
+  padding: t.$space-2;
+  border: 1px solid var(--color-border);
+  border-radius: t.$border-radius-sm;
+  background: var(--color-bg-surface);
+  box-shadow: 0 8px 24px var(--color-dropdown-shadow);
+  z-index: 20;
+}
+
+.userInfo {
+  padding: t.$space-2 t.$space-3 t.$space-3;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.userName {
+  display: block;
+  font-size: t.$font-size-md;
+  font-weight: t.$font-weight-semibold;
+  color: var(--color-text-primary);
+}
+
+.userRole {
+  display: block;
+  margin-top: t.$space-1;
+  font-size: t.$font-size-sm;
+  color: var(--color-text-secondary);
+}
+
+.userEmail {
+  display: block;
+  margin-top: t.$space-1;
+  font-size: t.$font-size-xs;
+  color: var(--color-text-muted);
+  word-break: break-all;
+}
+
+.logoutButton {
+  width: 100%;
+  margin-top: t.$space-2;
+  padding: t.$space-2 t.$space-3;
+  border: 1px solid var(--color-border);
+  border-radius: t.$border-radius-sm;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: t.$font-size-sm;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover {
+    color: var(--color-text-primary);
+    background: var(--color-nav-hover);
+  }
+}
+
+@media (min-width: 768px) {
+  .name {
+    display: inline;
+  }
+}

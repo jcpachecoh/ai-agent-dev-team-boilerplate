@@ -1,0 +1,92 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/proveedor-theme' as proveedor;
+
+.actions {
+  @include proveedor.proveedor-theme-classes;
+  @include proveedor.proveedor-size-vars;
+
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--actions-gap);
+  width: min(100%, var(--control-width));
+}
+
+.cancel,
+.draft,
+.save {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: var(--actions-height);
+  padding: 0 var(--actions-padding-x);
+  border-radius: $border-radius-sm;
+  border: $border-width solid transparent;
+  font-size: var(--actions-font-size);
+  font-weight: $font-weight-medium;
+  cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease;
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  &:focus-visible {
+    @include proveedor.proveedor-focus-ring;
+  }
+}
+
+.size--sm {
+  --actions-height: 32px;
+  --actions-padding-x: 14px;
+  --actions-font-size: 0.75rem;
+  --actions-gap: 10px;
+}
+
+.size--md {
+  --actions-height: 37px;
+  --actions-padding-x: 17px;
+  --actions-font-size: 0.8125rem;
+  --actions-gap: 12px;
+}
+
+.size--xl {
+  --control-width: 100%;
+  --actions-height: 40px;
+  --actions-padding-x: 20px;
+  --actions-font-size: 0.875rem;
+  --actions-gap: 14px;
+}
+
+.actionsFullWidth {
+  width: 100%;
+  --control-width: 100%;
+}
+
+.cancel {
+  background: transparent;
+  color: var(--proveedor-muted);
+  border-color: var(--proveedor-border);
+}
+
+.draft {
+  background: transparent;
+  color: var(--proveedor-text);
+  border-color: var(--proveedor-border);
+}
+
+.save {
+  background: proveedor.$proveedor-enterprise;
+  color: $color-black;
+  border-color: proveedor.$proveedor-enterprise;
+  font-weight: $font-weight-semibold;
+}
+
+.saveIcon {
+  width: 14px;
+  height: 14px;
+}

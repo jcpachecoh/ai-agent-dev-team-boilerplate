@@ -1,0 +1,20 @@
+@use '../shared/empleado-theme' as emp;
+
+.toolbar {
+  @include emp.empleado-theme-classes;
+
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.toolbar > :first-child {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.toolbar > :last-child {
+  flex: 0 0 auto;
+}

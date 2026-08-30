@@ -1,0 +1,134 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/produccion-theme' as produccion;
+.shell {
+  @include produccion.produccion-theme-classes;
+  @include produccion.produccion-size-vars;
+  width: min(100%, var(--control-width));
+  background: var(--produccion-bg);
+  color: var(--produccion-text);
+  overflow: hidden;
+}
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 45px;
+  padding: 0 21px;
+  background: var(--produccion-topbar);
+  border-bottom: $border-width solid var(--produccion-border);
+}
+.left,
+.right,
+.brand,
+.context,
+.alarm {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+.back {
+  padding: 5px 10px;
+  background: transparent;
+  border: $border-width solid var(--produccion-border);
+  border-radius: $border-radius-sm;
+  font-family: $font-family-mono;
+  font-size: 0.625rem;
+  font-weight: $font-weight-medium;
+  color: var(--produccion-subtle);
+  cursor: pointer;
+  letter-spacing: 0.08em;
+}
+.back:focus-visible {
+  @include produccion.produccion-focus-ring;
+}
+.divider {
+  width: 1px;
+  height: 24px;
+  background: var(--produccion-border);
+}
+.brand strong {
+  font-family: $font-family-mono;
+  font-size: 0.8125rem;
+  color: produccion.$produccion-gold;
+  letter-spacing: 0.08em;
+}
+.brand span,
+.context span,
+.date {
+  color: var(--produccion-muted);
+}
+.brand svg,
+.context svg {
+  width: 16px;
+  height: 16px;
+  color: produccion.$produccion-gold;
+}
+.context strong {
+  font-size: 0.875rem;
+}
+.context em {
+  padding: 3px 8px;
+  background: rgba(produccion.$produccion-gold, 0.08);
+  border: $border-width solid rgba(produccion.$produccion-gold, 0.25);
+  border-radius: $border-radius-sm;
+  font-family: $font-family-mono;
+  font-size: 0.625rem;
+  color: produccion.$produccion-gold;
+  font-style: normal;
+}
+.alarm {
+  padding: 5px 10px;
+  background: rgba(produccion.$produccion-danger, 0.12);
+  border: $border-width solid rgba(produccion.$produccion-danger, 0.5);
+  border-radius: $border-radius-sm;
+  font-family: $font-family-mono;
+  font-size: 0.6875rem;
+  color: produccion.$produccion-danger;
+}
+.alarm svg {
+  width: 13px;
+  height: 13px;
+}
+.alarm span {
+  padding: 1px 6px;
+  background: produccion.$produccion-danger;
+  border-radius: $border-radius-sm;
+  font-size: 0.625rem;
+  color: $color-white;
+}
+.liveDot {
+  width: 7px;
+  height: 7px;
+  background: produccion.$produccion-teal;
+  border-radius: 999px;
+}
+.live {
+  font-family: $font-family-mono;
+  font-size: 0.625rem;
+  color: produccion.$produccion-teal;
+  letter-spacing: 0.12em;
+}
+.time {
+  font-family: $font-family-mono;
+  font-size: 0.875rem;
+}
+.clock {
+  display: none;
+}
+.size--xl {
+  --control-width: 100%;
+}
+
+@media (width <= 900px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 12px 16px;
+  }
+  .left,
+  .right {
+    flex-wrap: wrap;
+  }
+}

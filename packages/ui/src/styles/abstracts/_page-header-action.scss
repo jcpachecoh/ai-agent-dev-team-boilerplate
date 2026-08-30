@@ -1,0 +1,24 @@
+@use 'variables' as *;
+
+$page-header-action-height: 40px;
+$page-header-action-padding-x: 16px;
+$page-header-action-font-size: 13px;
+$page-header-action-icon-size: 16px;
+$page-header-action-gap: 8px;
+
+@mixin page-header-action-size-md {
+  width: auto;
+  min-width: 0;
+  max-width: 100%;
+  min-height: $page-header-action-height;
+  padding: 0 $page-header-action-padding-x;
+  gap: $page-header-action-gap;
+  font-size: $page-header-action-font-size;
+}
+
+@mixin page-header-action-icon-md {
+  svg {
+    width: $page-header-action-icon-size;
+    height: $page-header-action-icon-size;
+  }
+}

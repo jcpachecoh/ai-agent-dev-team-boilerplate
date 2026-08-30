@@ -18,8 +18,22 @@ Your job is to implement server-side logic, APIs, and database schemas based on 
 
 - Follow RESTful API conventions.
 - Use the ORM and database engine specified in `docs/ARCHITECTURE.md`.
-- Organize code by feature module (controllers, services, repositories).
-- Validate all inputs; return structured error responses.
+- Every feature module **must** follow this structure (see `docs/MODULE-STRUCTURE.md`):
+
+```
+{feature}/
+├── {feature}.module.ts
+├── interfaces/            ← I{Feature}Repository + I{Feature}Service (no runtime code)
+├── repository/            ← {Feature}Repository implements I{Feature}Repository
+│                             injects PrismaService, returns null (never throws)
+├── service/               ← {Feature}Service implements I{Feature}Service
+│                             injects repository, throws domain exceptions
+├── controller/            ← {Feature}Controller injects service only
+│   └── dto/               ← request DTOs with class-validator decorators
+└── test/                  ← {feature}.controller.spec.ts + {feature}.service.spec.ts
+```
+
+- Validate all inputs using class-validator DTOs; return structured error responses.
 - Document new API endpoints with comments or OpenAPI annotations.
 
 ## Output Checklist

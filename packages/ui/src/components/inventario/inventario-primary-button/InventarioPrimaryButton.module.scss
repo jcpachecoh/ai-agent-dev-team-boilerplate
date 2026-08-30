@@ -1,0 +1,89 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../../../styles/abstracts/page-header-action' as pha;
+@use '../shared/inventario-theme' as inventario;
+
+.button {
+  @include inventario.inventario-theme-classes;
+  @include inventario.inventario-size-vars;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-sm;
+  width: auto;
+  min-width: 0;
+  border: $border-width solid transparent;
+  border-radius: var(--control-radius);
+  font-family: $font-family-base;
+  font-weight: $font-weight-semibold;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  white-space: nowrap;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.size--md {
+  @include pha.page-header-action-size-md;
+}
+
+.size--sm {
+  min-height: var(--control-min-height);
+  padding: var(--control-padding-y) var(--control-padding-x);
+  gap: var(--control-gap);
+  font-size: var(--control-font-size);
+}
+
+.size--xl {
+  min-height: var(--control-min-height);
+  padding: var(--control-padding-y) var(--control-padding-x);
+  gap: var(--control-gap);
+  font-size: var(--control-font-size);
+}
+
+.variant--primary {
+  background: inventario.$inventario-info;
+  color: $color-white;
+}
+
+.variant--success {
+  background: inventario.$inventario-success;
+  color: $color-white;
+}
+
+.variant--danger {
+  background: inventario.$inventario-danger;
+  color: $color-white;
+}
+
+.variant--ghost {
+  background: var(--inventario-surface);
+  border-color: var(--inventario-border-strong, var(--inventario-border));
+  color: var(--inventario-text);
+
+  &:hover:not(:disabled) {
+    filter: brightness(1.12);
+  }
+}
+
+.variant--orange {
+  background: #e8943a;
+  color: $color-white;
+  border-color: #e8943a;
+
+  &:hover:not(:disabled) {
+    filter: brightness(1.06);
+  }
+}
+
+.icon svg {
+  width: var(--control-icon-size);
+  height: var(--control-icon-size);
+}
+
+.size--md .icon svg {
+  @include pha.page-header-action-icon-md;
+}

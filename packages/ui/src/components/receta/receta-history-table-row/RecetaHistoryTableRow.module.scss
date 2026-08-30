@@ -1,0 +1,132 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/receta-theme' as receta;
+
+.row {
+  @include receta.receta-theme-classes;
+
+  display: grid;
+  grid-template-columns: 120px minmax(240px, 1.4fr) 140px 110px 140px 140px 160px 40px;
+  align-items: center;
+  width: min(100%, var(--row-width));
+  min-height: var(--row-height);
+  padding: 0 var(--row-padding-x);
+  border-bottom: $border-width solid var(--receta-border);
+  background: var(--receta-surface);
+  color: var(--receta-text);
+  box-sizing: border-box;
+  overflow-x: auto;
+}
+
+.size--sm {
+  --row-width: 920px;
+  --row-height: 64px;
+  --row-padding-x: #{$spacing-sm};
+}
+
+.size--md {
+  --row-width: 1120px;
+  --row-height: 76px;
+  --row-padding-x: #{$spacing-md};
+}
+
+.size--xl {
+  --row-width: 100%;
+  --row-height: 84px;
+  --row-padding-x: #{$spacing-lg};
+}
+
+.code,
+.date,
+.progress,
+.validation,
+.duration {
+  font-family: $font-family-mono;
+  font-size: $font-size-xs;
+  font-variant-numeric: tabular-nums;
+}
+
+.code {
+  font-weight: $font-weight-bold;
+  color: receta.$receta-purple;
+}
+
+.recipe {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+.recipeName {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+  color: var(--receta-text);
+}
+
+.operator {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-xs;
+  font-size: $font-size-xs;
+  color: var(--receta-muted);
+
+  svg {
+    width: 12px;
+    height: 12px;
+  }
+}
+
+.date {
+  color: var(--receta-muted);
+  white-space: normal;
+}
+
+.progress {
+  color: var(--receta-text);
+}
+
+.validation,
+.duration {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.smallLabel {
+  font-family: $font-family-base;
+  font-size: 0.6875rem;
+  color: var(--receta-subtle);
+}
+
+.validation strong {
+  color: receta.$receta-teal;
+  font-weight: $font-weight-regular;
+}
+
+.validation em {
+  color: var(--receta-text);
+  font-style: normal;
+}
+
+.validation b {
+  color: var(--receta-subtle);
+  font-weight: $font-weight-regular;
+}
+
+.duration span:last-child {
+  color: receta.$receta-warning;
+}
+
+.result {
+  justify-self: stretch;
+}
+
+.details {
+  display: inline-flex;
+  justify-content: center;
+  color: var(--receta-muted);
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+}

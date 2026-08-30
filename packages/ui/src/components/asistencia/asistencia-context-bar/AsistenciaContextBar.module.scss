@@ -1,0 +1,89 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/asistencia-theme' as asis;
+
+.bar {
+  @include asis.asistencia-theme-classes;
+
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  padding: 0;
+}
+
+.leading {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--asistencia-faint);
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.icon {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+}
+
+.summary {
+  margin: 0;
+  font-family: $font-family-mono;
+  font-size: 0.625rem;
+  font-weight: $font-weight-bold;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.trailing {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 12px;
+  margin-left: auto;
+}
+
+.actions {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+@media (max-width: 767px) {
+  .bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .leading {
+    width: 100%;
+  }
+
+  .summary {
+    font-size: 0.5625rem;
+    letter-spacing: 0.12em;
+    line-height: 1.4;
+    white-space: normal;
+  }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 10px;
+    width: 100%;
+  }
+
+  .trailing {
+    margin-left: 0;
+    width: 100%;
+    justify-content: space-between;
+  }
+}

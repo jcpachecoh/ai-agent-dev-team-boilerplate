@@ -1,0 +1,112 @@
+@use '../../../styles/abstracts/variables' as *;
+
+$produccion-gold: #c8a96e;
+$produccion-teal: #2ec4a0;
+$produccion-danger: #e05a44;
+$produccion-warning: #f0c040;
+$produccion-info: #3b82f6;
+$produccion-purple: #a855f7;
+$produccion-orange: #f59e0b;
+$produccion-red: #ef4444;
+$produccion-green: #22c55e;
+
+@mixin produccion-theme-dark {
+  --produccion-bg: #0a0a0a;
+  --produccion-topbar: #111;
+  --produccion-surface: #111;
+  --produccion-surface-raised: #181818;
+  --produccion-row: #0d0d0d;
+  --produccion-row-selected: #{rgba($produccion-gold, 0.08)};
+  --produccion-border: #2e2e2e;
+  --produccion-border-muted: #1c1c1c;
+  --produccion-text: #f5f5f0;
+  --produccion-muted: #888;
+  --produccion-subtle: #555;
+  --produccion-faint: #333;
+  --produccion-gold: #{$produccion-gold};
+  --produccion-teal: #{$produccion-teal};
+  --produccion-danger: #{$produccion-danger};
+  --produccion-warning: #{$produccion-warning};
+}
+
+@mixin produccion-theme-light {
+  --produccion-bg: #f6f4ef;
+  --produccion-topbar: #fff;
+  --produccion-surface: #fff;
+  --produccion-surface-raised: #fbfaf6;
+  --produccion-row: #fff;
+  --produccion-row-selected: #{rgba($produccion-gold, 0.14)};
+  --produccion-border: #{rgba($color-black, 0.14)};
+  --produccion-border-muted: #{rgba($color-black, 0.08)};
+  --produccion-text: #{$color-black};
+  --produccion-muted: #{$color-gray-700};
+  --produccion-subtle: #{$color-gray-600};
+  --produccion-faint: #{$color-gray-500};
+  --produccion-gold: #{$produccion-gold};
+  --produccion-teal: #{$produccion-teal};
+  --produccion-danger: #{$produccion-danger};
+  --produccion-warning: #{$produccion-warning};
+}
+
+@mixin produccion-theme-classes {
+  &.theme--dark {
+    @include produccion-theme-dark;
+  }
+  &.theme--light {
+    @include produccion-theme-light;
+  }
+}
+
+@mixin produccion-size-vars {
+  &.size--sm {
+    --control-width: 220px;
+    --control-min-height: 32px;
+    --control-padding-x: #{$spacing-sm};
+    --control-padding-y: 0.35rem;
+    --control-gap: #{$spacing-xs};
+    --control-radius: #{$border-radius-sm};
+    --control-font-size: #{$font-size-xs};
+    --control-icon-size: 14px;
+  }
+
+  &.size--md {
+    --control-width: 320px;
+    --control-min-height: 44px;
+    --control-padding-x: #{$spacing-md};
+    --control-padding-y: #{$spacing-sm};
+    --control-gap: #{$spacing-sm};
+    --control-radius: #{$border-radius-sm};
+    --control-font-size: #{$font-size-sm};
+    --control-icon-size: 16px;
+  }
+
+  &.size--xl {
+    --control-width: 100%;
+    --control-min-height: 52px;
+    --control-padding-x: #{$spacing-lg};
+    --control-padding-y: #{$spacing-md};
+    --control-gap: #{$spacing-md};
+    --control-radius: #{$border-radius-md};
+    --control-font-size: #{$font-size-base};
+    --control-icon-size: 18px;
+  }
+}
+
+@mixin produccion-focus-ring {
+  outline: 2px solid rgba($produccion-gold, 0.72);
+  outline-offset: 2px;
+}
+
+@mixin mono-label {
+  font-family: $font-family-mono;
+  font-weight: $font-weight-bold;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+@mixin row-grid($columns) {
+  display: grid;
+  grid-template-columns: $columns;
+  align-items: center;
+  min-width: 900px;
+}

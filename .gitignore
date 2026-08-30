@@ -1,0 +1,63 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+dist/
+build/
+uploads/
+.next/
+out/
+.turbo/
+storybook-static/
+
+# Expo
+.expo/
+ios/
+android/
+
+# Environment
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+*.swp
+*.swo
+.cursor/*
+!.cursor/rules/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+coverage/
+
+# Misc
+*.tsbuildinfo
+
+.pnpm-store/
+
+# E2E
+apps/app/e2e/.auth/
+apps/app/.env.test
+apps/app/playwright-report/
+apps/app/test-results/
+apps/web-app/e2e/.auth/
+apps/web-app/.env.test
+apps/web-app/playwright-report/
+apps/web-app/test-results/
+.claude/worktrees/

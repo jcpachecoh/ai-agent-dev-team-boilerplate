@@ -1,0 +1,52 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/inventario-theme' as inventario;
+
+.panel {
+  @include inventario.inventario-theme-classes;
+  @include inventario.inventario-size-vars;
+
+  display: flex;
+  flex-direction: column;
+  gap: var(--panel-gap);
+  width: min(100%, var(--control-width));
+  padding: var(--panel-padding);
+  border: $border-width solid var(--inventario-border);
+  border-radius: var(--control-radius);
+  background: var(--inventario-surface);
+  box-sizing: border-box;
+}
+
+.size--sm {
+  --panel-padding: 14px;
+  --panel-gap: 12px;
+  --panel-title-size: #{$font-size-xs};
+}
+
+.size--md {
+  --panel-padding: 21px;
+  --panel-gap: 16px;
+  --panel-title-size: #{$font-size-sm};
+}
+
+.size--xl {
+  --control-width: 100%;
+  --panel-padding: 21px;
+  --panel-gap: 16px;
+  --panel-title-size: #{$font-size-sm};
+}
+
+.title {
+  margin: 0;
+  font-family: $font-family-base;
+  font-size: var(--panel-title-size);
+  font-weight: $font-weight-bold;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--inventario-text);
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}

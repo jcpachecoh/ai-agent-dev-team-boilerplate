@@ -1,0 +1,53 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../../../styles/abstracts/mixins' as *;
+@use '../shared/produccion-theme' as produccion;
+.header {
+  @include produccion.produccion-theme-classes;
+  @include module-table-header-theme-colors;
+  @include produccion.produccion-size-vars;
+  overflow-x: auto;
+  width: min(100%, var(--control-width));
+  background: var(--produccion-row);
+  border-bottom: $border-width solid var(--produccion-border-muted);
+}
+.row {
+  @include produccion.row-grid(78px minmax(210px, 1.4fr) 172px 122px 60px 112px 70px 128px);
+  align-items: center;
+  min-height: 32px;
+  padding: 0 18px;
+  font-family: $font-family-mono;
+  font-size: 0.5625rem;
+  font-weight: $font-weight-bold;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  @include module-table-header-text-color;
+}
+
+.cell {
+  white-space: nowrap;
+}
+
+.alignLeft {
+  justify-self: start;
+  text-align: left;
+}
+
+.alignCenter {
+  justify-self: center;
+  text-align: center;
+}
+
+.alignRight {
+  justify-self: end;
+  text-align: right;
+}
+
+.size--xl {
+  --control-width: 100%;
+}
+
+@media (width <= 720px) {
+  .header {
+    display: none;
+  }
+}

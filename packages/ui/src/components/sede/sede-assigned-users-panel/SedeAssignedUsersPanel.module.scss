@@ -1,0 +1,104 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/sede-theme' as sede;
+
+.description {
+  @include sede.sede-theme-classes;
+
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--sede-subtle);
+}
+
+.assignBlock {
+  @include sede.sede-theme-classes;
+
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.assignLabel {
+  @include sede.sede-mono-label;
+
+  font-size: 0.5625rem;
+}
+
+.assignRow {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+}
+
+.assignSelectWrap,
+.assignButtonWrap {
+  width: 100%;
+  min-width: 0;
+}
+
+.assignSelect {
+  width: 100%;
+  min-width: 0;
+}
+
+.assignButton {
+  display: inline-flex;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.search {
+  @include sede.sede-theme-classes;
+
+  input {
+    width: 100%;
+    min-height: 39.5px;
+    padding: 10px 13px;
+    border: $border-width solid var(--sede-border);
+    border-radius: 4px;
+    background: var(--sede-input);
+    color: var(--sede-text);
+    font-size: 0.8125rem;
+    box-sizing: border-box;
+
+    &::placeholder {
+      color: var(--sede-placeholder);
+    }
+
+    &:focus {
+      outline: none;
+      border-color: var(--sede-primary-border);
+    }
+  }
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.emptyList {
+  @include sede.sede-theme-classes;
+
+  margin: 0;
+  padding: 12px;
+  border: $border-width dashed var(--sede-border-subtle);
+  border-radius: 4px;
+  font-size: 0.75rem;
+  text-align: center;
+  color: var(--sede-faint);
+}
+
+.footer {
+  @include sede.sede-theme-classes;
+
+  margin: 0;
+  padding-top: 4px;
+  font-family: $font-family-mono;
+  font-size: 0.625rem;
+  color: var(--sede-faint);
+}

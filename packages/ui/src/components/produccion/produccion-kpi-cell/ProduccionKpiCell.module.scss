@@ -1,0 +1,90 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/produccion-theme' as produccion;
+
+.cell {
+  @include produccion.produccion-theme-classes;
+  @include produccion.produccion-size-vars;
+  width: min(100%, var(--kpi-width));
+  min-height: var(--kpi-height);
+  padding: var(--kpi-padding-y) var(--kpi-padding-x);
+  border-right: $border-width solid var(--produccion-border-muted);
+  background: var(--produccion-surface);
+  color: var(--produccion-text);
+}
+.labelRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-family: $font-family-mono;
+  font-size: var(--kpi-label-size);
+  color: var(--produccion-muted);
+}
+.valueRow {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  margin-top: 2px;
+  font-family: $font-family-mono;
+  color: var(--produccion-text);
+}
+.valueRow strong {
+  font-size: var(--kpi-value-size);
+  line-height: 1;
+}
+.valueRow span {
+  font-size: var(--kpi-unit-size);
+  color: var(--produccion-muted);
+}
+.delta {
+  margin: 4px 0 0;
+  font-size: var(--kpi-label-size);
+  color: var(--kpi-accent);
+}
+.icon {
+  color: var(--kpi-accent);
+}
+.accent--gold {
+  --kpi-accent: #{produccion.$produccion-gold};
+}
+.accent--teal {
+  --kpi-accent: #{produccion.$produccion-teal};
+}
+.accent--warning {
+  --kpi-accent: #{produccion.$produccion-warning};
+}
+.accent--danger {
+  --kpi-accent: #{produccion.$produccion-danger};
+}
+.accent--info {
+  --kpi-accent: #{produccion.$produccion-info};
+}
+.accent--muted {
+  --kpi-accent: var(--produccion-muted);
+}
+.size--sm {
+  --kpi-width: 126px;
+  --kpi-height: 54px;
+  --kpi-padding-x: 12px;
+  --kpi-padding-y: 8px;
+  --kpi-label-size: 0.625rem;
+  --kpi-value-size: 1rem;
+  --kpi-unit-size: 0.6875rem;
+}
+.size--md {
+  --kpi-width: 148px;
+  --kpi-height: 62px;
+  --kpi-padding-x: 16px;
+  --kpi-padding-y: 9px;
+  --kpi-label-size: 0.6875rem;
+  --kpi-value-size: 1.25rem;
+  --kpi-unit-size: 0.75rem;
+}
+.size--xl {
+  --kpi-width: 100%;
+  --kpi-height: 68px;
+  --kpi-padding-x: 18px;
+  --kpi-padding-y: 10px;
+  --kpi-label-size: 0.75rem;
+  --kpi-value-size: 1.4rem;
+  --kpi-unit-size: 0.8125rem;
+}

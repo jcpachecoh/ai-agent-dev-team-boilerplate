@@ -1,0 +1,81 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/nomina-theme' as nomina;
+
+.card {
+  @include nomina.nomina-theme-classes;
+
+  padding: 14px;
+  border: 1px solid var(--asistencia-border);
+  border-radius: 4px;
+  background: var(--asistencia-surface);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 1px;
+  flex-shrink: 0;
+}
+
+.name {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: $font-weight-semibold;
+  color: var(--asistencia-text);
+}
+
+.city {
+  margin: 2px 0 0;
+  font-size: 0.6875rem;
+  color: var(--asistencia-faint);
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 12px 0;
+  padding: 0;
+
+  div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  dt {
+    margin: 0;
+    font-family: $font-family-mono;
+    font-size: 0.5rem;
+    font-weight: $font-weight-bold;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--asistencia-faint);
+  }
+
+  dd {
+    margin: 0;
+    font-family: $font-family-mono;
+    font-size: 0.75rem;
+    font-weight: $font-weight-bold;
+    color: var(--asistencia-text);
+  }
+}
+
+.progressTrack {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--asistencia-border-subtle);
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  border-radius: inherit;
+}

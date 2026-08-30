@@ -1,0 +1,64 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/inventario-theme' as inventario;
+
+.screen {
+  @include inventario.inventario-theme-classes;
+
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 1232px);
+  min-height: 100%;
+  background: var(--inventario-bg);
+  color: var(--inventario-text);
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 24px;
+}
+
+.dataSection {
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr);
+  gap: 24px;
+  align-items: stretch;
+}
+
+.dataTable {
+  min-height: 337px;
+}
+
+.visualPanel {
+  --control-width: 100%;
+  min-height: 337px;
+}
+
+.distributionList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.statsRow {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+@media (max-width: 1024px) {
+  .dataSection {
+    grid-template-columns: 1fr;
+  }
+
+  .statsRow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .statsRow {
+    grid-template-columns: 1fr;
+  }
+}

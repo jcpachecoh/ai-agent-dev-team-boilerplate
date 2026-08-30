@@ -1,0 +1,44 @@
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.label {
+  color: var(--empleado-muted);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.input {
+  min-height: 40px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--empleado-border);
+  border-radius: 4px;
+  background: var(--empleado-input);
+  color: var(--empleado-text);
+  font-size: 0.875rem;
+}
+
+.error {
+  margin: 0;
+  color: #e05a44;
+  font-size: 0.75rem;
+}
+
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--empleado-text);
+  font-size: 0.875rem;
+}

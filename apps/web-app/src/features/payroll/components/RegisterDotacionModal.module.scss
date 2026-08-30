@@ -1,0 +1,123 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.label {
+  color: var(--receta-muted);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.input {
+  min-height: 40px;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--receta-border);
+  border-radius: 4px;
+  background: var(--receta-input);
+  color: var(--receta-text);
+  font-size: 0.875rem;
+  box-sizing: border-box;
+
+  &::placeholder {
+    color: var(--receta-muted);
+  }
+
+  &:focus-visible {
+    outline: 2px solid rgba(245, 158, 11, 0.65);
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.error {
+  font-size: 0.75rem;
+  color: #f87171;
+  margin-top: 2px;
+}
+
+.stockHint {
+  font-size: 0.6875rem;
+  font-family: 'IBM Plex Mono', monospace;
+  color: var(--receta-muted);
+  margin-top: 3px;
+}
+
+.stockLow {
+  color: #f59e0b;
+}
+
+.uploadZone {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px dashed var(--receta-border);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+
+  &:hover {
+    border-color: rgba(245, 158, 11, 0.5);
+  }
+}
+
+.uploadZoneActive {
+  border-color: rgba(245, 158, 11, 0.7);
+  background: rgba(245, 158, 11, 0.04);
+}
+
+.uploadLabel {
+  font-size: 0.8125rem;
+  color: var(--receta-muted);
+  flex: 1;
+}
+
+.uploadFile {
+  font-size: 0.75rem;
+  color: var(--receta-text);
+  font-weight: 500;
+}
+
+.uploading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: var(--receta-muted);
+}
+
+.employeeInfo {
+  padding: 8px 10px;
+  border: 1px solid var(--receta-border);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.02);
+  font-size: 0.8125rem;
+  color: var(--receta-muted);
+}
+
+.employeeName {
+  font-weight: 500;
+  color: var(--receta-text);
+}

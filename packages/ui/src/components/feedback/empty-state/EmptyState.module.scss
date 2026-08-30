@@ -1,0 +1,87 @@
+@use '../../../styles/abstracts/variables' as *;
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-3xl $spacing-xl;
+  text-align: center;
+  font-family: $font-family-base;
+  background-color: transparent;
+  border: none;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.iconContainer {
+  margin-bottom: $spacing-lg;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.8;
+}
+
+.iconLight {
+  color: $color-gray-400;
+}
+
+.iconDark {
+  color: rgba($color-white, 0.42);
+}
+
+.title {
+  font-size: $font-size-xl;
+  font-weight: $font-weight-semibold;
+  margin: 0 0 $spacing-sm;
+}
+
+.titleLight {
+  color: $color-text-primary;
+}
+
+.titleDark {
+  color: rgba($color-white, 0.92);
+}
+
+.description {
+  font-size: $font-size-base;
+  margin: 0 0 $spacing-xl;
+  max-width: 400px;
+  line-height: $line-height-base;
+}
+
+.descriptionLight {
+  color: $color-text-secondary;
+}
+
+.descriptionDark {
+  color: rgba($color-white, 0.58);
+}
+
+.action {
+  display: flex;
+  gap: $spacing-md;
+}
+
+// Variants
+.error {
+  .iconContainer {
+    color: $color-danger;
+  }
+}
+
+.create {
+  .iconContainer {
+    color: $color-primary;
+  }
+}
+
+.emptyState[data-theme='dark'].error .iconContainer {
+  color: $color-danger;
+}
+
+.emptyState[data-theme='dark'].create .iconContainer {
+  color: $color-primary-light;
+}

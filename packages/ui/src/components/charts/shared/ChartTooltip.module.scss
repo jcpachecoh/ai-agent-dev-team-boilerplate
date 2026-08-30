@@ -1,0 +1,29 @@
+@use '../../../styles/abstracts/variables' as *;
+
+.tooltip {
+  padding: $spacing-xs $spacing-sm;
+  border-radius: $border-radius-md;
+  border: $border-width solid transparent;
+  box-shadow: $shadow-md;
+  font-size: var(--chart-font-size, #{$font-size-sm});
+  line-height: $line-height-tight;
+}
+
+.label {
+  margin: 0 0 4px;
+  font-weight: $font-weight-semibold;
+}
+
+.item {
+  margin: 2px 0;
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+}
+
+.swatch {
+  width: 8px;
+  height: 8px;
+  border-radius: $border-radius-full;
+  flex-shrink: 0;
+}

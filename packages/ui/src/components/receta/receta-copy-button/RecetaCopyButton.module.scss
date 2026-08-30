@@ -1,0 +1,45 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/receta-theme' as receta;
+
+.button {
+  @include receta.receta-theme-classes;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: $border-width solid var(--receta-border);
+  border-radius: 4px;
+  background: rgba($color-white, 0.06);
+  color: var(--receta-muted);
+  cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease;
+
+  &:hover:not(:disabled) {
+    color: var(--receta-text);
+    background: var(--receta-hover);
+  }
+
+  &:focus-visible {
+    @include receta.receta-focus-ring;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.icon {
+  width: 12px;
+  height: 12px;
+}
+
+.theme--light {
+  background: rgba($color-black, 0.04);
+}

@@ -1,0 +1,59 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/nomina-theme' as nomina;
+
+.panel {
+  @include nomina.nomina-theme-classes;
+  @include nomina.nomina-panel;
+}
+
+.header {
+  @include nomina.nomina-panel-header;
+}
+
+.eyebrow {
+  @include nomina.nomina-eyebrow;
+}
+
+.title {
+  margin: 4px 0 0;
+  font-size: 0.8125rem;
+  font-weight: $font-weight-semibold;
+  color: var(--asistencia-text);
+}
+
+.tableHead {
+  display: grid;
+  grid-template-columns: minmax(140px, 1.4fr) 1fr 0.8fr 1.2fr;
+  gap: 12px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--asistencia-border-subtle);
+  background: var(--asistencia-input);
+  font-family: $font-family-mono;
+  font-size: 0.5rem;
+  font-weight: $font-weight-bold;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--asistencia-faint);
+}
+
+.desktopRows {
+  display: block;
+}
+
+.mobileCards {
+  display: none;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+}
+
+@media (max-width: 768px) {
+  .tableHead,
+  .desktopRows {
+    display: none;
+  }
+
+  .mobileCards {
+    display: flex;
+  }
+}

@@ -1,0 +1,62 @@
+@use '@/styles/tokens' as *;
+
+.screen {
+  min-height: 100vh;
+  background: #000000;
+  color: $color-operator-text;
+  display: flex;
+  flex-direction: column;
+}
+
+.body {
+  flex: 1;
+  padding: 28px 40px 40px;
+}
+
+.bodyTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.kicker {
+  margin: 0 0 6px;
+  font-family: $font-family-mono;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba($color-operator-text, 0.45);
+}
+
+.title {
+  margin: 0;
+  font-size: clamp(1.25rem, 2vw, 1.75rem);
+  line-height: 1.2;
+}
+
+.operator {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  color: rgba($color-operator-text, 0.8);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: minmax(320px, 480px);
+  gap: 20px;
+  align-items: stretch;
+}
+
+@media (max-width: 900px) {
+  .body {
+    padding: 20px 16px 28px;
+  }
+
+  .bodyTop {
+    flex-direction: column;
+  }
+}

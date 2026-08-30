@@ -1,0 +1,45 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/inventario-theme' as inventario;
+
+.dashboard {
+  @include inventario.inventario-theme-classes;
+
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 1232px);
+  min-height: 100%;
+  background: var(--inventario-bg);
+  color: var(--inventario-text);
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 24px;
+}
+
+.metricsRow {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.panelsRow {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+}
+
+.barList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+@media (max-width: 1024px) {
+  .metricsRow,
+  .panelsRow {
+    grid-template-columns: 1fr;
+  }
+}

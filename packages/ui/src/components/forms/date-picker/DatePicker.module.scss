@@ -1,0 +1,341 @@
+@use '../../../styles/abstracts/variables' as *;
+
+.container {
+  --control-width: 320px;
+
+  width: min(100%, var(--control-width));
+}
+
+.size--sm {
+  --control-width: 220px;
+}
+.size--md {
+  --control-width: 320px;
+}
+.size--xl {
+  --control-width: 480px;
+}
+
+.size--sm .inputWrapper {
+  height: 32px;
+}
+.size--md .inputWrapper {
+  height: 40px;
+}
+.size--xl .inputWrapper {
+  height: 52px;
+  padding: 0 $spacing-md;
+}
+
+.size--sm .input {
+  font-size: $font-size-xs;
+}
+.size--xl .input {
+  font-size: $font-size-base;
+}
+
+.inputWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 40px;
+  border-radius: $border-radius-md;
+  padding: 0 $spacing-sm;
+  background-color: transparent;
+  border: $border-width solid rgba($color-black, 0.16);
+  transition: all $transition-fast;
+}
+
+.input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  font-family: $font-family-base;
+  font-size: $font-size-sm;
+  color: inherit;
+  outline: none;
+
+  &::placeholder {
+    color: $color-text-secondary;
+    opacity: 0.6;
+  }
+}
+
+.trigger {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: $spacing-xs;
+  color: $color-text-secondary;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover:not(:disabled) {
+    color: $color-primary;
+  }
+}
+
+.popoverContent {
+  /* Mismo ancho visible que antes (5 × 2rem); ahora repartido en 7 días */
+  --calendar-visible-width: 10rem;
+  --calendar-grid-width: var(--calendar-visible-width);
+  --calendar-popover-padding: 0.5rem;
+
+  z-index: 1000;
+  box-sizing: border-box;
+  width: calc(var(--calendar-visible-width) + 2 * var(--calendar-popover-padding));
+  min-width: calc(var(--calendar-visible-width) + 2 * var(--calendar-popover-padding));
+  max-width: calc(var(--calendar-visible-width) + 2 * var(--calendar-popover-padding));
+  border-radius: $border-radius-md;
+  border: $border-width solid $color-border;
+  box-shadow: $shadow-lg;
+  padding: var(--calendar-popover-padding);
+  animation: slideDownAndFade 0.2s ease-out;
+  overflow: hidden;
+
+  :global(.rdp-root) {
+    /* Sobrescribir defaults de react-day-picker (44px) en el propio root */
+    --rdp-day-width: calc(var(--calendar-visible-width) / 7);
+    --rdp-day-height: calc(var(--calendar-visible-width) / 7);
+    --rdp-day_button-width: calc(var(--calendar-visible-width) / 7 - 0.125rem);
+    --rdp-day_button-height: calc(var(--calendar-visible-width) / 7 - 0.125rem);
+    --rdp-day_button-border: none;
+    --rdp-day_button-border-radius: #{$border-radius-sm};
+    --rdp-nav_button-width: 1.75rem;
+    --rdp-nav_button-height: 1.75rem;
+    --rdp-nav-height: 2rem;
+    --rdp-months-gap: 0;
+    --rdp-weekday-padding: 0;
+    --rdp-weekday-opacity: 1;
+
+    width: var(--calendar-grid-width);
+    max-width: var(--calendar-grid-width);
+    margin: 0;
+    font-size: 0.8125rem;
+  }
+
+  :global(.rdp-months) {
+    max-width: none;
+  }
+
+  :global(.rdp-month) {
+    width: var(--calendar-grid-width);
+  }
+
+  :global(.rdp-month_grid) {
+    table-layout: fixed;
+    width: var(--calendar-grid-width);
+    border-collapse: collapse;
+    border: none;
+  }
+
+  :global(.rdp-weekday),
+  :global(.rdp-day) {
+    width: var(--rdp-day-width);
+    max-width: var(--rdp-day-width);
+    padding: 0;
+    box-sizing: border-box;
+    border: none;
+    vertical-align: middle;
+  }
+
+  :global(.rdp-week),
+  :global(.rdp-weekdays) {
+    border: none;
+    background: transparent;
+  }
+
+  :global(.rdp-month_grid thead),
+  :global(.rdp-month_grid th) {
+    background: transparent;
+    border: none;
+    position: static;
+    font-family: inherit;
+    white-space: normal;
+  }
+
+  :global(.rdp-weekday) {
+    font-size: 0.625rem;
+    font-weight: $font-weight-semibold;
+    letter-spacing: 0.04em;
+    text-transform: lowercase;
+    height: var(--rdp-day-height);
+  }
+
+  :global(.rdp-day_button) {
+    border: none;
+    font-size: 0.75rem;
+    box-shadow: none;
+    margin: 0 auto;
+  }
+
+  :global(.rdp-caption_label) {
+    font-size: 0.8125rem;
+    font-weight: $font-weight-semibold;
+  }
+}
+
+.popoverContentLight {
+  background-color: $color-white;
+  color: $color-text-primary;
+
+  --rdp-accent-color: #{$color-primary};
+  --rdp-accent-background-color: #{rgba($color-primary, 0.12)};
+  --rdp-today-color: #{$color-primary};
+  --rdp-selected-color: #{$color-white};
+
+  :global(.rdp-weekday) {
+    background: transparent;
+    color: $color-text-secondary;
+    opacity: 1;
+  }
+
+  :global(.rdp-day_button) {
+    color: $color-text-primary;
+  }
+
+  :global(.rdp-selected .rdp-day_button) {
+    border: none;
+  }
+
+  :global(.rdp-button_previous),
+  :global(.rdp-button_next) {
+    color: $color-text-primary;
+    border-color: rgba($color-black, 0.12);
+  }
+}
+
+.popoverContentDark {
+  background-color: #141414;
+  border-color: rgba($color-white, 0.12);
+  color: $color-text-inverse;
+
+  --rdp-accent-color: #0ea5e9;
+  --rdp-accent-background-color: rgba(14, 165, 233, 0.18);
+  --rdp-today-color: #0ea5e9;
+  --rdp-selected-color: #041018;
+
+  :global(.rdp-weekday) {
+    background: transparent;
+    color: rgba($color-white, 0.78);
+    opacity: 1;
+  }
+
+  :global(.rdp-caption_label) {
+    color: $color-text-inverse;
+  }
+
+  :global(.rdp-day_button) {
+    color: $color-text-inverse;
+
+    &:hover:not(:disabled) {
+      background-color: rgba($color-white, 0.08);
+    }
+  }
+
+  :global(.rdp-button_previous),
+  :global(.rdp-button_next) {
+    color: $color-text-inverse;
+    border-color: rgba($color-white, 0.14);
+    background: transparent;
+
+    &:hover:not(:disabled) {
+      background-color: rgba($color-white, 0.08);
+    }
+  }
+
+  :global(.rdp-selected .rdp-day_button) {
+    background-color: #0ea5e9;
+    color: #041018;
+    border: none;
+  }
+
+  :global(.rdp-day.rdp-today:not(.rdp-selected) .rdp-day_button) {
+    color: #0ea5e9;
+    font-weight: $font-weight-bold;
+  }
+}
+
+@keyframes slideDownAndFade {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.embedded .inputWrapper {
+  height: 100%;
+  min-height: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+
+  &:focus-within {
+    border: none;
+    box-shadow: none;
+  }
+}
+
+.theme--dark {
+  .inputWrapper {
+    background-color: rgba($color-white, 0.05);
+    border-color: rgba($color-white, 0.1);
+    color: $color-text-inverse;
+
+    &:focus-within {
+      border-color: #0ea5e9;
+    }
+  }
+
+  .trigger {
+    color: rgba($color-white, 0.55);
+
+    &:hover:not(:disabled) {
+      color: #0ea5e9;
+    }
+  }
+}
+
+.theme--light {
+  .inputWrapper {
+    background-color: $color-white;
+    border-color: rgba($color-black, 0.16);
+    color: $color-text-primary;
+
+    &:focus-within {
+      border-color: #0ea5e9;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .popoverContent {
+    --calendar-visible-width: 8.75rem;
+    --calendar-popover-padding: 0.4rem;
+
+    width: calc(var(--calendar-visible-width) + 2 * var(--calendar-popover-padding));
+    min-width: calc(var(--calendar-visible-width) + 2 * var(--calendar-popover-padding));
+    max-width: calc(var(--calendar-visible-width) + 2 * var(--calendar-popover-padding));
+
+    :global(.rdp-root) {
+      font-size: 0.75rem;
+    }
+
+    :global(.rdp-weekday) {
+      font-size: 0.5rem;
+    }
+
+    :global(.rdp-day_button) {
+      font-size: 0.6875rem;
+    }
+
+    :global(.rdp-caption_label) {
+      font-size: 0.75rem;
+    }
+  }
+}

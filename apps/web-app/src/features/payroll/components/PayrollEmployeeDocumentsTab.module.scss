@@ -1,0 +1,314 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px 24px 24px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--empleado-muted);
+}
+
+.headerTitle {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--empleado-text);
+}
+
+.count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: var(--empleado-surface-raised, rgba(255, 255, 255, 0.08));
+  color: var(--empleado-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.addButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 7px 14px;
+  border: 1px solid var(--empleado-border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--empleado-text);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+  white-space: nowrap;
+
+  &:hover:not(:disabled) {
+    background: var(--empleado-hover, rgba(255, 255, 255, 0.05));
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
+.errorState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 32px;
+  color: var(--empleado-muted);
+  font-size: 0.875rem;
+  text-align: center;
+
+  button {
+    padding: 6px 12px;
+    border: 1px solid var(--empleado-border);
+    border-radius: 4px;
+    background: transparent;
+    color: var(--empleado-text);
+    font-size: 0.8125rem;
+    cursor: pointer;
+  }
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.groupHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--empleado-border);
+}
+
+.groupLabel {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--empleado-muted);
+}
+
+.groupCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--empleado-surface-raised, rgba(255, 255, 255, 0.06));
+  color: var(--empleado-muted);
+  font-size: 0.6875rem;
+  font-weight: 600;
+}
+
+.docList {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.docRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--empleado-border);
+  border-radius: 6px;
+  background: var(--empleado-surface, transparent);
+  transition: background 0.12s;
+
+  &:hover {
+    background: var(--empleado-hover, rgba(255, 255, 255, 0.02));
+  }
+}
+
+/* ── Thumbnail ─────────────────────────────────────────────────────── */
+
+.thumbnail {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 5px;
+  overflow: hidden;
+  border: 1px solid var(--empleado-border);
+  background: var(--empleado-surface-raised, rgba(255, 255, 255, 0.04));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.thumbnailImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.thumbnailSkeleton {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    var(--empleado-surface-raised, rgba(255, 255, 255, 0.04)) 25%,
+    var(--empleado-hover, rgba(255, 255, 255, 0.07)) 50%,
+    var(--empleado-surface-raised, rgba(255, 255, 255, 0.04)) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.thumbnailPdf {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  color: #e85d4a;
+}
+
+.thumbnailPdfLabel {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.5rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #e85d4a;
+  line-height: 1;
+}
+
+.docInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.docTitle {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--empleado-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.docMeta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.docDate {
+  font-size: 0.75rem;
+  color: var(--empleado-muted);
+  white-space: nowrap;
+}
+
+.expiryBadge {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.expiryOk {
+  background: rgba(46, 196, 160, 0.12);
+  color: #2ec4a0;
+}
+
+.expiryWarn {
+  background: rgba(250, 176, 5, 0.15);
+  color: #fab005;
+}
+
+.expiryExpired {
+  background: rgba(232, 93, 74, 0.15);
+  color: #e85d4a;
+}
+
+.docNotes {
+  font-size: 0.75rem;
+  color: var(--empleado-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.docActions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.actionButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--empleado-border);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--empleado-muted);
+  cursor: pointer;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
+
+  &:hover:not(:disabled) {
+    color: var(--empleado-text);
+    border-color: var(--empleado-border-strong, var(--empleado-border));
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
+.deleteButton {
+  @extend .actionButton;
+
+  &:hover:not(:disabled) {
+    color: #e85d4a;
+    border-color: rgba(232, 93, 74, 0.4);
+  }
+}

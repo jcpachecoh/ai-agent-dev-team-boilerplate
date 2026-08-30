@@ -1,0 +1,58 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/produccion-theme' as produccion;
+.row {
+  @include produccion.produccion-theme-classes;
+  @include produccion.produccion-size-vars;
+  display: grid;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+  padding: 8px 10px;
+  color: var(--produccion-text);
+  grid-template-columns: 86px 1fr auto auto;
+  border-bottom: $border-width solid var(--produccion-border-muted);
+}
+strong {
+  font-family: $font-family-mono;
+  font-size: 0.75rem;
+  color: produccion.$produccion-gold;
+}
+div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+span {
+  font-size: 0.75rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+small {
+  font-size: 0.625rem;
+  color: var(--produccion-muted);
+}
+em {
+  font-family: $font-family-mono;
+  font-size: 0.6875rem;
+  color: produccion.$produccion-warning;
+  font-style: normal;
+}
+b {
+  font-family: $font-family-mono;
+  font-size: 0.5625rem;
+  color: produccion.$produccion-teal;
+  letter-spacing: 0.08em;
+}
+
+@media (width <= 560px) {
+  .row {
+    grid-template-columns: 1fr;
+    gap: 6px;
+    padding: 12px 0;
+  }
+
+  span {
+    white-space: normal;
+  }
+}

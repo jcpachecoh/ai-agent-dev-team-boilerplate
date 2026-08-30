@@ -1,0 +1,41 @@
+@use '../../sede/shared/sede-theme' as sede;
+
+.card {
+  @include sede.sede-theme-classes;
+
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 18px;
+  border-radius: 12px;
+  background: var(--sede-surface);
+  border: 1px solid var(--sede-border);
+}
+
+.item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.label {
+  font-family: var(--sede-font-mono, ui-monospace, monospace);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--sede-muted);
+}
+
+.value {
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--sede-text);
+  word-break: break-word;
+}
+
+.divider {
+  height: 1px;
+  background: var(--sede-border);
+}

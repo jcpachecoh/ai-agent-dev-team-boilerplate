@@ -1,0 +1,103 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/asistencia-theme' as asis;
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.modal {
+  @include asis.asistencia-theme-classes;
+
+  width: min(100%, 480px);
+  padding: 16px;
+  border: 1px solid var(--asistencia-border);
+  border-radius: 8px;
+  background: var(--asistencia-surface);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.18);
+}
+
+.title {
+  margin: 0 0 12px;
+  font-size: 1rem;
+  font-weight: $font-weight-bold;
+  color: var(--asistencia-text);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.secondary,
+.primary {
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-weight: $font-weight-semibold;
+  cursor: pointer;
+}
+
+.secondary {
+  border: 1px solid var(--asistencia-border);
+  background: var(--asistencia-surface);
+  color: var(--asistencia-muted);
+}
+
+.primary {
+  border: none;
+  background: var(--asistencia-accent);
+  color: #fff;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.field .input,
+.field .select,
+.field .textarea {
+  @include asis.asistencia-theme-classes;
+}
+
+.label {
+  font-size: 0.75rem;
+  font-weight: $font-weight-semibold;
+  color: var(--asistencia-muted);
+}
+
+.input,
+.select,
+.textarea {
+  width: 100%;
+  min-height: 40px;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--asistencia-border);
+  border-radius: 6px;
+  background: var(--asistencia-input);
+  color: var(--asistencia-text);
+  font-size: 0.8125rem;
+  box-sizing: border-box;
+}
+
+.textarea {
+  min-height: 120px;
+  resize: vertical;
+}

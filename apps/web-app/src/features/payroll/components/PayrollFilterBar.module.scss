@@ -1,0 +1,18 @@
+.filtersRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(140px, 100%), 1fr));
+  gap: 12px;
+  width: 100%;
+  align-items: end;
+
+  > * {
+    min-width: 0;
+    width: 100%;
+  }
+}
+
+@media (max-width: 767px) {
+  .filtersRow {
+    gap: 10px;
+  }
+}

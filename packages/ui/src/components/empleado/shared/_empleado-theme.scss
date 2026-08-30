@@ -1,0 +1,87 @@
+@use '../../../styles/abstracts/variables' as *;
+
+$empleado-accent: #0ea5e9;
+$empleado-teal: #2ec4a0;
+$empleado-purple: #818cf8;
+$empleado-amber: #f0c040;
+$empleado-cyan: #14b8a6;
+$empleado-coral: #e05a44;
+$empleado-blue: #38bdf8;
+
+$empleado-dark-page: #0a0a0a;
+$empleado-dark-surface: #111111;
+$empleado-dark-surface-raised: #141414;
+$empleado-dark-input: #0d0d0d;
+$empleado-dark-border: #2e2e2e;
+$empleado-dark-border-subtle: #1a1a1a;
+$empleado-dark-text: #f5f5f0;
+$empleado-dark-muted: #888888;
+
+@mixin empleado-theme-dark {
+  --empleado-page: #{$empleado-dark-page};
+  --empleado-surface: #{$empleado-dark-surface};
+  --empleado-surface-raised: #{$empleado-dark-surface-raised};
+  --empleado-input: #{$empleado-dark-input};
+  --empleado-border: #{$empleado-dark-border};
+  --empleado-border-subtle: #{$empleado-dark-border-subtle};
+  --empleado-text: #{$empleado-dark-text};
+  --empleado-text-secondary: #bbbbbb;
+  --empleado-muted: #{$empleado-dark-muted};
+  --empleado-subtle: #666666;
+  --empleado-faint: #555555;
+  --empleado-dim: #444444;
+  --empleado-placeholder: #{rgba($empleado-dark-text, 0.5)};
+  --empleado-hover: #{rgba($color-white, 0.06)};
+  --empleado-overlay: #{rgba($color-black, 0.72)};
+  --empleado-accent: #{$empleado-accent};
+  --empleado-accent-soft: #{rgba($empleado-accent, 0.12)};
+  --empleado-accent-border: #{rgba($empleado-accent, 0.4)};
+  --empleado-teal: #{$empleado-teal};
+  --empleado-teal-soft: #{rgba($empleado-teal, 0.1)};
+  --empleado-teal-border: #{rgba($empleado-teal, 0.31)};
+  --empleado-purple: #{$empleado-purple};
+  --empleado-purple-soft: #{rgba($empleado-purple, 0.06)};
+  --empleado-purple-border: #{rgba($empleado-purple, 0.19)};
+}
+
+@mixin empleado-theme-light {
+  --empleado-page: #f6f4ef;
+  --empleado-surface: #ffffff;
+  --empleado-surface-raised: #fbfaf6;
+  --empleado-input: #fbfaf6;
+  --empleado-border: #{rgba($color-black, 0.12)};
+  --empleado-border-subtle: #{rgba($color-black, 0.08)};
+  --empleado-text: #{$color-gray-900};
+  --empleado-text-secondary: #{$color-gray-700};
+  --empleado-muted: #{$color-gray-600};
+  --empleado-subtle: #{$color-gray-500};
+  --empleado-faint: #{$color-gray-500};
+  --empleado-dim: #{$color-gray-400};
+  --empleado-placeholder: #{rgba($color-black, 0.45)};
+  --empleado-hover: #{rgba($color-black, 0.04)};
+  --empleado-overlay: #{rgba($color-black, 0.45)};
+  --empleado-accent: #{$empleado-accent};
+  --empleado-accent-soft: #{rgba($empleado-accent, 0.1)};
+  --empleado-accent-border: #{rgba($empleado-accent, 0.35)};
+  --empleado-teal: #{$empleado-teal};
+  --empleado-teal-soft: #{rgba($empleado-teal, 0.1)};
+  --empleado-teal-border: #{rgba($empleado-teal, 0.35)};
+  --empleado-purple: #{$empleado-purple};
+  --empleado-purple-soft: #{rgba($empleado-purple, 0.08)};
+  --empleado-purple-border: #{rgba($empleado-purple, 0.25)};
+}
+
+@mixin empleado-focus-ring {
+  outline: 2px solid rgba($empleado-accent, 0.65);
+  outline-offset: 2px;
+}
+
+@mixin empleado-theme-classes {
+  &.theme--dark {
+    @include empleado-theme-dark;
+  }
+
+  &.theme--light {
+    @include empleado-theme-light;
+  }
+}

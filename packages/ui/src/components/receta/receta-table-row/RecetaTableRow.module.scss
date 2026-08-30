@@ -1,0 +1,136 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/receta-theme' as receta;
+
+.row {
+  @include receta.receta-theme-classes;
+
+  display: grid;
+  grid-template-columns: var(
+    --receta-columns,
+    110px minmax(180px, 1.5fr) minmax(130px, 0.8fr) 120px 100px 120px 110px
+  );
+  align-items: center;
+  width: min(100%, var(--row-width));
+  min-height: var(--row-height);
+  padding: 0 var(--row-padding-x);
+  border-bottom: $border-width solid var(--receta-border);
+  background: var(--receta-surface);
+  color: var(--receta-text);
+  box-sizing: border-box;
+  font-family: $font-family-base;
+  overflow-x: auto;
+}
+
+.size--sm {
+  --row-width: 720px;
+  --row-height: 48px;
+  --row-padding-x: #{$spacing-sm};
+}
+
+.size--md {
+  --row-width: 960px;
+  --row-height: 60px;
+  --row-padding-x: #{$spacing-md};
+}
+
+.size--xl {
+  --row-width: 100%;
+  --row-height: 72px;
+  --row-padding-x: #{$spacing-lg};
+  width: 100%;
+}
+
+.code,
+.category,
+.duration,
+.portions,
+.updated {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: $font-family-mono;
+  font-size: $font-size-xs;
+  color: var(--receta-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.code {
+  font-weight: $font-weight-bold;
+  color: receta.$receta-purple;
+}
+
+.name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: $font-family-base;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+  color: var(--receta-text);
+}
+
+.category {
+  color: var(--receta-muted);
+}
+
+.portions,
+.status,
+.actions {
+  justify-self: center;
+}
+
+.actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  justify-self: end;
+}
+
+.updated {
+  display: none;
+}
+
+.densityCompact {
+  --row-height: 44px;
+  --row-padding-x: 1rem;
+  width: 100%;
+  height: var(--row-height);
+  max-height: var(--row-height);
+
+  .code {
+    font-size: 0.6875rem;
+  }
+
+  .name {
+    font-size: 0.75rem;
+  }
+
+  .category,
+  .duration,
+  .portions {
+    font-size: 0.75rem;
+  }
+
+  .status,
+  .actions {
+    display: flex;
+    align-items: center;
+  }
+
+  .status {
+    justify-content: center;
+  }
+
+  .actions {
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 760px) {
+  .row {
+    grid-template-columns: 90px minmax(160px, 1fr) 110px 96px 84px 100px 92px;
+  }
+}

@@ -1,0 +1,63 @@
+@use '../../../styles/abstracts/variables' as *;
+
+.rangePopover {
+  max-width: none !important;
+  width: auto !important;
+  min-width: 464px;
+}
+
+.container {
+  display: flex;
+  gap: $spacing-md;
+}
+
+.shortcuts {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+  padding-right: $spacing-md;
+  border-right: 1px solid $color-border;
+  min-width: 120px;
+
+  :global(.dark) & {
+    border-color: rgba($color-white, 0.1);
+  }
+}
+
+.shortcutButton {
+  text-align: left;
+  padding: $spacing-xs $spacing-sm;
+  font-size: $font-size-xs;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  border-radius: $border-radius-sm;
+  color: $color-text-secondary;
+  transition: all $transition-fast;
+
+  &:hover {
+    background-color: $color-gray-100;
+    color: $color-text-primary;
+  }
+
+  :global(.dark) &:hover {
+    background-color: rgba($color-white, 0.1);
+    color: $color-text-inverse;
+  }
+}
+
+.dayRangeMiddle {
+  background-color: rgba(#d4a017, 0.12) !important;
+  color: #8a610e !important;
+  border-radius: 0 !important;
+}
+
+.dayRangeStart {
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+}
+
+.dayRangeEnd {
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+}

@@ -1,0 +1,71 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/proveedor-theme' as proveedor;
+
+.button {
+  @include proveedor.proveedor-theme-classes;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: var(--row-action-min-width);
+  min-height: var(--row-action-height);
+  padding: 0 12px;
+  border: $border-width solid var(--proveedor-border-strong);
+  border-radius: $border-radius-sm;
+  background: transparent;
+  color: var(--proveedor-text-secondary);
+  font-family: $font-family-mono;
+  font-size: var(--row-action-font-size);
+  font-weight: $font-weight-bold;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    color 160ms ease;
+
+  &:hover:not(:disabled) {
+    border-color: proveedor.$proveedor-enterprise;
+    color: proveedor.$proveedor-enterprise;
+  }
+
+  &:focus-visible {
+    @include proveedor.proveedor-focus-ring;
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+}
+
+.icon {
+  display: inline-flex;
+
+  svg {
+    width: var(--row-action-icon-size);
+    height: var(--row-action-icon-size);
+  }
+}
+
+.size--sm {
+  --row-action-height: 29px;
+  --row-action-min-width: 72px;
+  --row-action-font-size: 0.625rem;
+  --row-action-icon-size: 12px;
+}
+
+.size--md {
+  --row-action-height: 32px;
+  --row-action-min-width: 80px;
+  --row-action-font-size: 0.6875rem;
+  --row-action-icon-size: 12px;
+}
+
+.size--xl {
+  --row-action-height: 36px;
+  --row-action-min-width: 88px;
+  --row-action-font-size: 0.75rem;
+  --row-action-icon-size: 14px;
+}

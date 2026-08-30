@@ -1,0 +1,25 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/nomina-theme' as nomina;
+
+.item {
+  @include nomina.nomina-theme-classes;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 1px;
+  flex-shrink: 0;
+}
+
+.label {
+  font-family: $font-family-mono;
+  font-size: 0.5625rem;
+  font-weight: $font-weight-medium;
+  letter-spacing: 0.04em;
+  color: var(--asistencia-muted);
+}

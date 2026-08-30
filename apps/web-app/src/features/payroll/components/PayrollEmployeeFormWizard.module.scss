@@ -1,0 +1,185 @@
+.form {
+  margin: 0;
+}
+
+.modalBody {
+  padding: 0;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  min-width: 0;
+}
+
+.fieldLabel {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--receta-muted);
+}
+
+.input {
+  min-height: 40px;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--receta-border);
+  border-radius: 4px;
+  background: var(--receta-input);
+  color: var(--receta-text);
+  font-size: 0.875rem;
+  box-sizing: border-box;
+
+  &:focus-visible {
+    outline: 2px solid rgba(46, 196, 160, 0.65);
+    outline-offset: 2px;
+  }
+}
+
+.fieldHint,
+.formHint {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--receta-muted);
+}
+
+.error {
+  margin: 0.75rem 0 0;
+  font-size: 0.8125rem;
+  color: #e85d4a;
+}
+
+.beneficiariesSection {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--receta-border);
+}
+
+.beneficiariesHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.beneficiariesTitle {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--receta-text);
+}
+
+.buttonSecondary {
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--receta-border);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--receta-text);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--receta-hover);
+  }
+}
+
+.beneficiaryListScroll {
+  overflow-x: auto;
+}
+
+.beneficiaryList {
+  border: 1px solid var(--receta-border);
+  border-radius: 4px;
+  overflow: hidden;
+  font-size: 0.875rem;
+  min-width: 840px;
+}
+
+.beneficiaryHeader,
+.beneficiaryRow {
+  display: grid;
+  grid-template-columns: 110px minmax(160px, 1fr) 120px 120px 130px 64px 72px;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+}
+
+.beneficiaryHeader {
+  border-bottom: 1px solid var(--receta-border);
+  background: var(--receta-surface-raised);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--receta-muted);
+}
+
+.beneficiaryRow {
+  border-bottom: 1px solid var(--receta-border);
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.beneficiaryRemoveCell,
+.beneficiaryActionsCell {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.btnRemove,
+.btnEdit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.btnRemove {
+  border: 1px solid rgba(232, 93, 74, 0.45);
+  background: rgba(232, 93, 74, 0.1);
+  color: #e85d4a;
+}
+
+.btnEdit {
+  border: 1px solid rgba(99, 102, 241, 0.45);
+  background: rgba(99, 102, 241, 0.1);
+  color: #6366f1;
+}
+
+.modalFooter {
+  display: none;
+}
+
+@media (width <= 720px) {
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .beneficiaryHeader,
+  .beneficiaryRow {
+    grid-template-columns: 1fr;
+  }
+}

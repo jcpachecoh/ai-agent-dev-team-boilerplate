@@ -1,0 +1,100 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/receta-theme' as receta;
+
+.progress {
+  @include receta.receta-theme-classes;
+
+  display: flex;
+  align-items: center;
+  gap: var(--progress-gap);
+  width: min(100%, var(--progress-width));
+  min-height: var(--progress-height);
+  color: var(--progress-color);
+  box-sizing: border-box;
+}
+
+.size--sm {
+  --progress-width: 96px;
+  --progress-track-width: 58px;
+  --progress-height: 18px;
+  --progress-bar-height: 5px;
+  --progress-gap: #{$spacing-xs};
+  --progress-label-width: 34px;
+  --progress-label-size: 0.6875rem;
+}
+
+.size--md {
+  --progress-width: 132px;
+  --progress-track-width: 84px;
+  --progress-height: 20px;
+  --progress-bar-height: 6px;
+  --progress-gap: #{$spacing-sm};
+  --progress-label-width: 40px;
+  --progress-label-size: #{$font-size-xs};
+}
+
+.size--xl {
+  --progress-width: 100%;
+  --progress-track-width: 100%;
+  --progress-height: 24px;
+  --progress-bar-height: 8px;
+  --progress-gap: #{$spacing-sm};
+  --progress-label-width: 48px;
+  --progress-label-size: #{$font-size-sm};
+}
+
+.track {
+  flex: 1 1 var(--progress-track-width);
+  min-width: 1px;
+  height: var(--progress-bar-height);
+  border-radius: 3px;
+  background: var(--progress-track);
+  overflow: hidden;
+}
+
+.fill {
+  display: block;
+  width: var(--receta-progress-value);
+  height: 100%;
+  border-radius: inherit;
+  background: var(--progress-color);
+}
+
+.label {
+  width: var(--progress-label-width);
+  font-family: $font-family-mono;
+  font-size: var(--progress-label-size);
+  font-weight: $font-weight-bold;
+  line-height: 1.5;
+  color: var(--progress-color);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.noLabel {
+  --progress-width: 82px;
+
+  .track {
+    flex-basis: var(--progress-width);
+  }
+}
+
+.theme--dark {
+  --progress-track: #0d0d0d;
+}
+
+.theme--light {
+  --progress-track: #{rgba($color-black, 0.1)};
+}
+
+.variant--success {
+  --progress-color: #{receta.$receta-teal};
+}
+
+.variant--warning {
+  --progress-color: #{receta.$receta-warning};
+}
+
+.variant--danger {
+  --progress-color: #{receta.$receta-failed};
+}

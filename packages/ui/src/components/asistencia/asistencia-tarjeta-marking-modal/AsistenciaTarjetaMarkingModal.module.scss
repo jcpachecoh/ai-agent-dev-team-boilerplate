@@ -1,0 +1,390 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/asistencia-theme' as asis;
+@use '../../receta/shared/receta-theme' as receta;
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.dialog {
+  @include asis.asistencia-theme-classes;
+
+  --marking-brand: #{receta.$receta-gold};
+  --marking-brand-strong: #b88912;
+  --marking-brand-soft: #{rgba(receta.$receta-gold, 0.12)};
+  --marking-brand-border: #{rgba(receta.$receta-gold, 0.38)};
+  --marking-brand-on: #{$color-black};
+
+  width: min(100%, 640px);
+  overflow: hidden;
+  border: 1px solid var(--asistencia-border);
+  border-radius: 8px;
+  background: var(--asistencia-surface);
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.22);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, var(--marking-brand) 0%, #f0c040 100%);
+  color: var(--marking-brand-on);
+}
+
+.title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: $font-weight-bold;
+}
+
+.closeButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--marking-brand-on);
+  cursor: pointer;
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.1);
+  }
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+}
+
+.alert {
+  display: flex;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--marking-brand-border);
+  border-radius: 6px;
+  background: var(--marking-brand-soft);
+}
+
+.alertIcon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--marking-brand-strong);
+}
+
+.alertText {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.alertPrimary,
+.alertSecondary {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+}
+
+.alertPrimary {
+  font-weight: $font-weight-semibold;
+  color: var(--asistencia-text);
+}
+
+.alertSecondary {
+  color: var(--asistencia-muted);
+}
+
+.existingMarks {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  background: var(--asistencia-surface);
+  border: 1px solid var(--asistencia-border);
+  border-radius: 6px;
+}
+
+.existingMarksTitle {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: $font-weight-semibold;
+  color: var(--asistencia-text);
+}
+
+.existingMarksList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.existingMarksItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.75rem;
+}
+
+.existingMarksInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.existingMarksType {
+  font-weight: $font-weight-semibold;
+  color: var(--asistencia-text);
+}
+
+.existingMarksReason,
+.existingMarksAuthor {
+  color: var(--asistencia-muted);
+}
+
+.existingMarksDeleteButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: none;
+  border: 1px solid var(--asistencia-border);
+  border-radius: 4px;
+  color: var(--asistencia-coral);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--asistencia-coral-soft);
+  }
+}
+
+.existingMarksLocked {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  color: var(--asistencia-subtle);
+}
+
+.markTable {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.markHeader {
+  display: grid;
+  grid-template-columns: 1fr 1fr 40px;
+  gap: 10px;
+  padding: 0 2px;
+  font-size: 0.75rem;
+  font-weight: $font-weight-semibold;
+  color: var(--asistencia-muted);
+}
+
+.markHeaderAction {
+  width: 40px;
+}
+
+.markRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr 40px;
+  gap: 10px;
+  align-items: center;
+}
+
+.markCell {
+  min-width: 0;
+}
+
+.datetimeInput {
+  width: 100%;
+  min-height: 40px;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--asistencia-border);
+  border-radius: 6px;
+  background: var(--asistencia-input);
+  color: var(--asistencia-text);
+  font-family: $font-family-mono;
+  font-size: 0.75rem;
+  box-sizing: border-box;
+}
+
+.useColumnButton {
+  width: 100%;
+  min-height: 40px;
+  padding: 0 8px;
+  border: 1px dashed var(--asistencia-border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--asistencia-subtle);
+  font-size: 0.6875rem;
+  cursor: pointer;
+
+  &:hover {
+    border-color: var(--marking-brand-border);
+    color: var(--marking-brand);
+  }
+}
+
+.deleteButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid var(--asistencia-border);
+  border-radius: 6px;
+  background: var(--asistencia-surface);
+  color: var(--asistencia-coral);
+  cursor: pointer;
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  &:hover {
+    background: var(--asistencia-coral-soft);
+  }
+}
+
+.emptyMarks {
+  margin: 0;
+  padding: 8px 2px;
+  font-size: 0.8125rem;
+  color: var(--asistencia-subtle);
+}
+
+.addMarkButton {
+  align-self: flex-start;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--marking-brand);
+  font-size: 0.8125rem;
+  font-weight: $font-weight-semibold;
+  cursor: pointer;
+
+  &:hover {
+    color: var(--marking-brand-strong);
+    text-decoration: underline;
+  }
+}
+
+.reasonField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.reasonLabel {
+  font-size: 0.8125rem;
+  font-weight: $font-weight-semibold;
+  color: var(--asistencia-text);
+}
+
+.reasonSelect {
+  width: 100%;
+  min-height: 40px;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--asistencia-border);
+  border-radius: 6px;
+  background: var(--asistencia-input);
+  color: var(--asistencia-text);
+  font-size: 0.8125rem;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-top: 1px solid var(--asistencia-border);
+  background: var(--asistencia-surface-raised);
+}
+
+.footerRight {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cancelButton,
+.resetButton,
+.saveButton {
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-weight: $font-weight-semibold;
+  cursor: pointer;
+}
+
+.cancelButton {
+  border: 1px solid var(--asistencia-border);
+  background: var(--asistencia-surface);
+  color: var(--asistencia-muted);
+}
+
+.resetButton {
+  border: none;
+  background: transparent;
+  color: var(--marking-brand);
+
+  &:hover {
+    color: var(--marking-brand-strong);
+  }
+}
+
+.saveButton {
+  border: none;
+  background: var(--marking-brand);
+  color: var(--marking-brand-on);
+
+  &:hover {
+    background: var(--marking-brand-strong);
+  }
+}
+
+@media (max-width: 640px) {
+  .markHeader,
+  .markRow {
+    grid-template-columns: 1fr;
+  }
+
+  .markHeaderAction,
+  .deleteButton {
+    justify-self: end;
+  }
+}

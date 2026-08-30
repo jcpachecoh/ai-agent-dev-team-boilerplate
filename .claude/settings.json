@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx jest *)",
+      "Bash(pnpm --filter api test -- --testPathPattern=\"admin-users\" --no-coverage)",
+      "Bash(npx eslint *)",
+      "Bash(pnpm --filter api lint)",
+      "Bash(pnpm --filter api test -- --testPathPattern=\"admin\" --no-coverage)",
+      "Bash(pnpm --filter api typecheck)",
+      "Bash(pnpm --filter web-app exec tsc --noEmit)",
+      "Bash(pnpm --filter api prisma migrate dev --name add_name_to_employee_details)"
+    ]
+  }
+}

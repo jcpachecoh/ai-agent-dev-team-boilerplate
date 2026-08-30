@@ -1,0 +1,12 @@
+@use '../shared/rol-theme' as rol;
+
+.cell {
+  @include rol.rol-theme-classes;
+
+  font-size: 0.8rem;
+  color: var(--rol-muted);
+}
+
+.size--md {
+  font-size: 0.85rem;
+}

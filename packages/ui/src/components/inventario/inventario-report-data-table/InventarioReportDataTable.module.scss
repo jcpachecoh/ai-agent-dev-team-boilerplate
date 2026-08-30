@@ -1,0 +1,88 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/inventario-theme' as inventario;
+
+.table {
+  @include inventario.inventario-theme-classes;
+  @include inventario.inventario-size-vars;
+
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  border: $border-width solid var(--inventario-border);
+  border-radius: var(--control-radius);
+  background: var(--inventario-surface);
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 20px;
+  border-bottom: $border-width solid var(--inventario-border);
+  background: var(--inventario-topbar);
+}
+
+.headerIcon {
+  width: 18px;
+  height: 18px;
+  color: var(--inventario-muted);
+}
+
+.title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: $font-weight-bold;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--inventario-text);
+}
+
+.body {
+  flex: 1;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: var(--inventario-columns);
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 20px;
+  border-bottom: $border-width solid var(--inventario-border);
+  font-size: 13px;
+}
+
+.headerRow {
+  min-height: 40px;
+  font-family: $font-family-mono;
+  font-size: 10px;
+  font-weight: $font-weight-bold;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--inventario-muted);
+  background: var(--inventario-topbar);
+
+  span:nth-child(2),
+  span:nth-child(3) {
+    text-align: right;
+  }
+}
+
+.category {
+  font-weight: $font-weight-medium;
+  color: var(--inventario-text);
+}
+
+.quantity {
+  text-align: right;
+  font-family: $font-family-mono;
+  font-weight: $font-weight-bold;
+  color: inventario.$inventario-success;
+}
+
+.percent {
+  text-align: right;
+  font-family: $font-family-mono;
+  color: var(--inventario-muted);
+}

@@ -1,0 +1,168 @@
+@use '../shared/plant-modal-shell' as shell;
+
+.overlay {
+  @include shell.overlay;
+}
+
+.theme--dark {
+  @include shell.theme-dark;
+}
+
+.theme--light {
+  @include shell.theme-light;
+}
+
+.size--sm {
+  @include shell.size-sm;
+}
+
+.size--md {
+  @include shell.size-md;
+}
+
+.size--xl {
+  @include shell.size-xl;
+}
+
+.dialog {
+  @include shell.dialog(#4dabf7);
+}
+
+.header {
+  @include shell.header;
+}
+
+.eyebrow {
+  @include shell.eyebrow;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.eyebrowIcon {
+  color: #4dabf7;
+}
+
+.title {
+  @include shell.title;
+}
+
+.subtitle {
+  @include shell.subtitle;
+}
+
+.closeBtn {
+  @include shell.close-btn;
+}
+
+.body {
+  @include shell.body;
+}
+
+.hint {
+  @include shell.hint;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.scanBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  @include shell.primary-btn(77, 171, 247);
+}
+
+.ghostBtn {
+  @include shell.ghost-btn;
+}
+
+.ghostBtn:disabled,
+.scanBtn:disabled,
+.connectBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+@keyframes ble-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.pulse {
+  animation: ble-pulse 1.2s ease-in-out infinite;
+}
+
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.listItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--pd-border-strong);
+  border-left: 3px solid #4dabf7;
+  border-radius: 3px;
+  background: rgb(77 171 247 / 4%);
+}
+
+.deviceInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.deviceInfo strong {
+  font-size: 0.88rem;
+  color: var(--pd-title);
+}
+
+.deviceId {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.58rem;
+  letter-spacing: 0.04em;
+  color: var(--pd-muted);
+  word-break: break-all;
+}
+
+.rssi {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: #4dabf7;
+}
+
+.connectBtn {
+  @include shell.primary-btn(77, 171, 247);
+  flex-shrink: 0;
+}
+
+.connectedBtn {
+  @include shell.ghost-btn;
+  flex-shrink: 0;
+  border-color: rgb(46 196 160 / 45%);
+  color: #2ec4a0;
+}
+
+.error {
+  @include shell.error-banner;
+}
