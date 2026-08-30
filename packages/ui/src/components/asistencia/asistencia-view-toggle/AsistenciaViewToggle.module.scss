@@ -1,0 +1,62 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/asistencia-theme' as asis;
+
+.toggle {
+  @include asis.asistencia-theme-classes;
+
+  display: inline-flex;
+  align-items: stretch;
+  border: $border-width solid var(--asistencia-border);
+  border-radius: 4px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  min-height: 31px;
+  padding: 0 10px;
+  border: none;
+  background: transparent;
+  color: var(--asistencia-subtle);
+  cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease;
+
+  svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  &:hover {
+    color: var(--asistencia-text);
+    background: var(--asistencia-hover);
+  }
+
+  &:focus-visible {
+    @include asis.asistencia-focus-ring;
+  }
+}
+
+.withDivider {
+  border-left: $border-width solid var(--asistencia-border);
+}
+
+.active {
+  background: var(--asistencia-accent-soft);
+  color: var(--asistencia-accent);
+}
+
+.size--sm .button {
+  min-width: 32px;
+  min-height: 28px;
+
+  svg {
+    width: 13px;
+    height: 13px;
+  }
+}

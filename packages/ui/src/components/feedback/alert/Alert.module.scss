@@ -1,0 +1,137 @@
+@use 'sass:color';
+@use '../../../styles/abstracts/variables' as *;
+
+.alert {
+  display: flex;
+  gap: $spacing-md;
+  padding: $spacing-md;
+  border-radius: $border-radius-md;
+  border: $border-width solid transparent;
+  font-family: $font-family-base;
+  position: relative;
+  transition: all $transition-base;
+
+  &.inline {
+    width: 100%;
+  }
+
+  &.banner {
+    width: 100%;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+}
+
+.iconContainer {
+  display: flex;
+  align-items: flex-start;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.content {
+  flex: 1;
+}
+
+.title {
+  font-weight: $font-weight-semibold;
+  font-size: $font-size-base;
+  margin-bottom: $spacing-xs;
+}
+
+.message {
+  font-size: $font-size-sm;
+  line-height: $line-height-base;
+}
+
+.actions {
+  display: flex;
+  align-items: flex-start;
+  gap: $spacing-sm;
+  margin-left: $spacing-md;
+}
+
+.dismissButton {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: $spacing-xs;
+  border-radius: $border-radius-sm;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: inherit;
+  opacity: 0.6;
+  transition: opacity $transition-fast;
+
+  &:hover {
+    opacity: 1;
+    background-color: rgba($color-black, 0.05);
+  }
+}
+
+// Variants
+.success {
+  background-color: rgba($color-success, 0.1);
+  border-color: rgba($color-success, 0.2);
+  color: color.adjust($color-success, $lightness: -15%);
+  .iconContainer {
+    color: $color-success;
+  }
+}
+
+.error {
+  background-color: rgba($color-danger, 0.1);
+  border-color: rgba($color-danger, 0.2);
+  color: color.adjust($color-danger, $lightness: -15%);
+  .iconContainer {
+    color: $color-danger;
+  }
+}
+
+.warning {
+  background-color: rgba($color-warning, 0.1);
+  border-color: rgba($color-warning, 0.2);
+  color: color.adjust($color-warning, $lightness: -25%);
+  .iconContainer {
+    color: color.adjust($color-warning, $lightness: -10%);
+  }
+}
+
+.info {
+  background-color: rgba($color-info, 0.1);
+  border-color: rgba($color-info, 0.2);
+  color: color.adjust($color-info, $lightness: -15%);
+  .iconContainer {
+    color: $color-info;
+  }
+}
+
+// Dark Mode
+:global(.dark) {
+  .success {
+    background-color: rgba($color-success, 0.15);
+    color: color.adjust($color-success, $lightness: 10%);
+    border-color: rgba($color-success, 0.3);
+  }
+  .error {
+    background-color: rgba($color-danger, 0.15);
+    color: color.adjust($color-danger, $lightness: 10%);
+    border-color: rgba($color-danger, 0.3);
+  }
+  .warning {
+    background-color: rgba($color-warning, 0.15);
+    color: color.adjust($color-warning, $lightness: 10%);
+    border-color: rgba($color-warning, 0.3);
+  }
+  .info {
+    background-color: rgba($color-info, 0.15);
+    color: color.adjust($color-info, $lightness: 10%);
+    border-color: rgba($color-info, 0.3);
+  }
+
+  .dismissButton:hover {
+    background-color: rgba($color-white, 0.1);
+  }
+}

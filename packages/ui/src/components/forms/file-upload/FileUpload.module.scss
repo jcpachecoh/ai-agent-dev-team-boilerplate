@@ -1,0 +1,240 @@
+@use '../../../styles/abstracts/variables' as *;
+
+.container {
+  --control-width: 520px;
+
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  width: min(100%, var(--control-width));
+}
+
+.size--sm {
+  --control-width: 360px;
+}
+.size--md {
+  --control-width: 520px;
+}
+.size--xl {
+  --control-width: 720px;
+}
+
+.size--sm .dropZone {
+  min-height: 120px;
+  padding: $spacing-lg;
+}
+.size--md .dropZone {
+  min-height: 176px;
+  padding: $spacing-2xl;
+}
+.size--xl .dropZone {
+  min-height: 240px;
+  padding: $spacing-3xl;
+}
+
+.size--sm .iconContainer {
+  width: 36px;
+  height: 36px;
+  margin-bottom: $spacing-sm;
+}
+.size--xl .iconContainer {
+  width: 56px;
+  height: 56px;
+}
+
+.size--sm .label {
+  font-size: $font-size-xs;
+}
+.size--xl .label {
+  font-size: $font-size-base;
+}
+
+.dropZone {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-2xl;
+  border: 2px dashed rgba($color-gray-400, 0.4);
+  border-radius: $border-radius-lg;
+  background-color: transparent;
+  cursor: pointer;
+  transition: all $transition-base;
+
+  &:hover {
+    border-color: #d4a017;
+    background-color: rgba(#d4a017, 0.04);
+  }
+
+  &.dragActive {
+    border-color: #d4a017;
+    background-color: rgba(#d4a017, 0.08);
+    transform: scale(1.01);
+  }
+}
+
+.hiddenInput {
+  display: none;
+}
+
+.dropZoneContent {
+  text-align: center;
+}
+
+.iconContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: $border-radius-full;
+  background-color: rgba($color-gray-400, 0.1);
+  color: $color-text-secondary;
+  margin: 0 auto $spacing-md;
+}
+
+.label {
+  font-family: $font-family-base;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+  margin-bottom: $spacing-xs;
+}
+
+.description {
+  font-size: $font-size-xs;
+  color: $color-text-secondary;
+}
+
+.progressContainer {
+  width: 100%;
+}
+
+.fileList {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.fileItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: $spacing-sm;
+  border-radius: $border-radius-md;
+  border: $border-width solid $color-border;
+  background-color: $color-bg-secondary;
+}
+
+.fileInfo {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.previewThumbnail {
+  width: 40px;
+  height: 40px;
+  border-radius: $border-radius-sm;
+  overflow: hidden;
+  border: $border-width solid $color-border;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.fileIcon {
+  color: $color-text-secondary;
+}
+
+.fileDetails {
+  display: flex;
+  flex-direction: column;
+}
+
+.fileName {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  color: $color-text-primary;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fileSize {
+  font-size: $font-size-xs;
+  color: $color-text-secondary;
+}
+
+.removeButton {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: $spacing-xs;
+  border-radius: $border-radius-sm;
+  color: $color-text-secondary;
+  transition: all $transition-fast;
+
+  &:hover {
+    background-color: rgba($color-danger, 0.1);
+    color: $color-danger;
+  }
+}
+
+// Themes
+.theme--dark {
+  .dropZone {
+    border-color: rgba($color-white, 0.1);
+    &:hover {
+      background-color: rgba($color-white, 0.02);
+    }
+  }
+  .label {
+    color: $color-text-inverse;
+  }
+  .description {
+    color: rgba($color-white, 0.5);
+  }
+  .iconContainer {
+    background-color: rgba($color-white, 0.05);
+  }
+  .fileItem {
+    background-color: rgba($color-white, 0.03);
+    border-color: rgba($color-white, 0.1);
+  }
+  .fileName {
+    color: $color-text-inverse;
+  }
+}
+
+.theme--light {
+  .dropZone {
+    background-color: $color-white;
+    border-color: rgba($color-black, 0.16);
+    &:hover {
+      background-color: rgba(#d4a017, 0.04);
+    }
+  }
+  .label {
+    color: $color-text-primary;
+  }
+  .description {
+    color: $color-gray-600;
+  }
+  .dropZoneContent,
+  .iconContainer {
+    color: $color-gray-700;
+  }
+  .iconContainer {
+    background-color: rgba($color-black, 0.03);
+  }
+  .fileItem {
+    background-color: $color-white;
+    border-color: rgba($color-black, 0.1);
+  }
+}

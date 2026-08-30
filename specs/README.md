@@ -19,20 +19,25 @@ Each spec should follow this template:
 # Spec: <Feature Name>
 
 ## Goal
+
 One sentence describing what this feature does.
 
 ## User Stories
+
 - As a <user>, I want to <action> so that <benefit>.
 
 ## Requirements
+
 - Requirement 1
 - Requirement 2
 
 ## Acceptance Criteria
+
 - [ ] Criterion 1
 - [ ] Criterion 2
 
 ## Out of Scope
+
 - What this feature does NOT include.
 ```
 

@@ -1,0 +1,62 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/asistencia-theme' as asis;
+
+.avatar {
+  @include asis.asistencia-theme-classes;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  font-family: $font-family-mono;
+  font-weight: $font-weight-bold;
+  flex-shrink: 0;
+}
+
+.tone--sand {
+  border: 1.5px solid rgba(200, 169, 110, 0.31);
+  background: rgba(200, 169, 110, 0.1);
+  color: #c8a96e;
+}
+
+.tone--teal {
+  border: 1.5px solid var(--asistencia-teal-border);
+  background: var(--asistencia-teal-soft);
+  color: var(--asistencia-teal);
+}
+
+.tone--blue {
+  border: 1.5px solid rgba(59, 130, 246, 0.31);
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+}
+
+.tone--purple {
+  border: 1.5px solid rgba(139, 92, 246, 0.31);
+  background: rgba(139, 92, 246, 0.1);
+  color: #8b5cf6;
+}
+
+.tone--coral {
+  border: 1.5px solid var(--asistencia-coral-border);
+  background: var(--asistencia-coral-soft);
+  color: var(--asistencia-coral);
+}
+
+.tone--gold {
+  border: 1.5px solid var(--asistencia-amber-border);
+  background: var(--asistencia-amber-soft);
+  color: var(--asistencia-amber);
+}
+
+.size--sm {
+  width: 34px;
+  height: 34px;
+  font-size: 0.6875rem;
+}
+
+.size--md {
+  width: 40px;
+  height: 40px;
+  font-size: 0.75rem;
+}

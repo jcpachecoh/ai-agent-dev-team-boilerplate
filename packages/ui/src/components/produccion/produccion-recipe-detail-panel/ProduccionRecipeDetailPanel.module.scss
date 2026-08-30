@@ -1,0 +1,126 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/produccion-theme' as produccion;
+.panel {
+  @include produccion.produccion-theme-classes;
+  @include produccion.produccion-size-vars;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: min(100%, var(--panel-width));
+  min-height: 100%;
+  padding: 16px;
+  border-left: $border-width solid var(--produccion-border);
+  background: var(--produccion-surface);
+  color: var(--produccion-text);
+}
+.header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.eyebrow {
+  margin: 0 0 3px;
+  font-family: $font-family-mono;
+  font-size: 0.625rem;
+  color: produccion.$produccion-gold;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--produccion-text);
+}
+.subtle {
+  color: var(--produccion-muted);
+}
+.close {
+  background: transparent;
+  border: 0;
+  color: var(--produccion-subtle);
+  cursor: pointer;
+}
+.close svg {
+  width: 16px;
+  height: 16px;
+}
+.sectionTitle {
+  margin: 0 0 8px;
+  font-family: $font-family-mono;
+  font-size: 0.625rem;
+  color: var(--produccion-subtle);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.card {
+  padding: 12px;
+  background: var(--produccion-surface-raised);
+  border: $border-width solid var(--produccion-border);
+  border-radius: $border-radius-sm;
+}
+.empty {
+  font-size: 0.75rem;
+  color: var(--produccion-muted);
+}
+.size--sm {
+  --panel-width: 280px;
+}
+.size--md {
+  --panel-width: 320px;
+}
+.size--xl {
+  --panel-width: 360px;
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+.metrics div {
+  padding: 10px;
+  background: var(--produccion-surface-raised);
+  border: $border-width solid var(--produccion-border);
+  text-align: center;
+}
+.metrics span {
+  display: block;
+  font-family: $font-family-mono;
+  font-size: 0.5625rem;
+  color: var(--produccion-subtle);
+  text-transform: uppercase;
+}
+.metrics strong {
+  font-family: $font-family-mono;
+  font-size: 0.8125rem;
+  color: produccion.$produccion-warning;
+}
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.actions button {
+  min-height: 32px;
+  background: transparent;
+  border: $border-width solid var(--produccion-border);
+  border-radius: $border-radius-sm;
+  font-family: $font-family-mono;
+  font-weight: $font-weight-bold;
+  color: var(--produccion-subtle);
+  cursor: pointer;
+  letter-spacing: 0.1em;
+}
+.actions button:first-child {
+  border-color: rgba(produccion.$produccion-gold, 0.45);
+  background: rgba(produccion.$produccion-gold, 0.08);
+  color: produccion.$produccion-gold;
+}
+.actions svg {
+  width: 12px;
+  height: 12px;
+}
+.phases {
+  display: grid;
+  gap: 8px;
+}

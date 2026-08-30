@@ -1,0 +1,443 @@
+@use '../../../../styles/abstracts/variables' as *;
+@use '../shared/plant-dashboard-theme' as pd;
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--pd-bg);
+  border: 1px solid color-mix(in srgb, var(--status-accent, #f0c040) 35%, transparent);
+  border-top-width: 3px;
+  border-top-color: var(--status-accent, #f0c040);
+  box-sizing: border-box;
+  font-family: 'IBM Plex Sans', $font-family-base, sans-serif;
+}
+
+.theme--dark {
+  @include pd.plant-dashboard-theme-dark;
+}
+
+.theme--light {
+  @include pd.plant-dashboard-theme-light;
+}
+
+.status--in_progress {
+  --status-accent: #2ec4a0;
+}
+
+.status--paused {
+  --status-accent: #f0c040;
+}
+
+.status--pending {
+  --status-accent: #3b82f6;
+}
+
+.status--incident {
+  --status-accent: #e05a44;
+}
+
+.status--completed {
+  --status-accent: #6b7280;
+}
+
+.density--full {
+  --title-size: 1.2rem;
+  --phase-size: 0.9rem;
+  --timer-size: 3.15rem;
+  --action-height: 3.9rem;
+  --card-padding-x: 0.85rem;
+}
+
+.density--compact {
+  --title-size: 1rem;
+  --phase-size: 0.8rem;
+  --timer-size: 2.3rem;
+  --action-height: 3.15rem;
+  --card-padding-x: 0.72rem;
+}
+
+.topBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.55rem var(--card-padding-x) 0.35rem;
+  background: linear-gradient(180deg, rgba(240, 192, 64, 0.06), transparent);
+}
+
+.topActions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.opRow {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.statusDot {
+  width: 0.48rem;
+  height: 0.48rem;
+  border-radius: 2px;
+  background: var(--status-accent);
+  flex-shrink: 0;
+}
+
+.opId {
+  font-family: 'IBM Plex Mono', $font-family-mono, monospace;
+  font-size: 0.73rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--status-accent);
+}
+
+.recipeBtn,
+.changeBtn {
+  padding: 0.18rem 0.55rem;
+  border: 1px solid rgba(200, 169, 110, 0.3);
+  border-radius: 2px;
+  background: rgba(200, 169, 110, 0.08);
+  color: #c8a96e;
+  font-family: 'IBM Plex Mono', $font-family-mono, monospace;
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.changeBtn {
+  border-color: rgba(170, 170, 170, 0.28);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--pd-text);
+
+  &:hover {
+    border-color: rgba(200, 169, 110, 0.35);
+    background: rgba(200, 169, 110, 0.08);
+    color: #c8a96e;
+  }
+}
+
+.statusBadge {
+  padding: 0.35rem 0.5rem;
+  border: 1px solid rgba(var(--status-accent-rgb, 240, 192, 64), 0.35);
+  border-radius: 2px;
+  background: rgba(var(--status-accent-rgb, 240, 192, 64), 0.06);
+  color: var(--status-accent);
+  font-family: 'IBM Plex Mono', $font-family-mono, monospace;
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  white-space: nowrap;
+}
+
+.productTitle {
+  margin: 0;
+  padding: 0 var(--card-padding-x) 0.35rem;
+  font-size: var(--title-size);
+  font-weight: 700;
+  color: var(--pd-title);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tabs {
+  display: flex;
+  border-bottom: 1px solid var(--pd-border);
+  margin: 0 var(--card-padding-x);
+}
+
+.tab {
+  flex: 1;
+  padding: 0.45rem 0.35rem;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--pd-dim);
+  font-family: 'IBM Plex Mono', $font-family-mono, monospace;
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+}
+
+.tabActive {
+  color: #c8a96e;
+  border-bottom-color: #c8a96e;
+}
+
+.phaseHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.45rem var(--card-padding-x);
+}
+
+.recipeName {
+  margin: 0;
+  font-family: 'IBM Plex Mono', $font-family-mono, monospace;
+  font-size: 0.55rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--pd-faint);
+}
+
+.phaseName {
+  margin: 0.15rem 0 0;
+  font-size: var(--phase-size);
+  font-weight: 600;
+  color: #c8a96e;
+}
+
+.phaseCounter {
+  margin: 0;
+  font-family: 'IBM Plex Mono', $font-family-mono, monospace;
+  font-weight: 700;
+  color: #c8a96e;
+  font-size: 1.1rem;
+}
+
+.phaseTotal {
+  color: var(--pd-timer-muted);
+  font-size: 0.75rem;
+}
+
+.ingredientList {
+  list-style: none;
+  margin: 0;
+  padding: 0 var(--card-padding-x);
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.ingredientItem {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.28rem 0;
+  border-bottom: 1px solid var(--pd-row-border);
+  font-size: 0.8rem;
+  color: var(--pd-text);
+}
+
+.ingredientBullet {
+  width: 0.24rem;
+  height: 0.24rem;
+  border-radius: 1px;
+  background: var(--pd-dim);
+  flex-shrink: 0;
+}
+
+.ingredientName {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ingredientQty {
+  font-family: 'IBM Plex Mono', $font-family-mono, monospace;
+  font-size: 0.65rem;
+  color: var(--pd-muted);
+}
+
+.moreRow {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.35rem 0;
+  color: var(--pd-faint);
+  font-family: 'IBM Plex Mono', $font-family-mono, monospace;
+  font-size: 0.65rem;
+}
+
+.timerRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.7rem;
+  padding: 0.35rem var(--card-padding-x);
+}
+
+.timer {
+  font-family: 'IBM Plex Mono', $font-family-mono, monospace;
+  font-size: var(--timer-size);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #f0c040;
+}
+
+.timerMuted {
+  color: var(--pd-timer-muted);
+}
+
+.timerMeta {
+  font-family: 'IBM Plex Mono', $font-family-mono, monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  color: var(--pd-muted);
+}
+
+.theme--light {
+  .tabs {
+    border-bottom-color: transparent;
+  }
+
+  .ingredientItem {
+    border-bottom-color: transparent;
+  }
+}
+
+.operatorRow {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0 var(--card-padding-x) 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #2ec4a0;
+}
+
+.operatorDot {
+  width: 0.36rem;
+  height: 0.36rem;
+  border-radius: 2px;
+  background: #2ec4a0;
+}
+
+.incidentsPlaceholder {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-lg;
+  color: var(--pd-faint);
+  font-size: 0.85rem;
+}
+
+.actions {
+  display: flex;
+  gap: 0.45rem;
+  padding: 0.45rem var(--card-padding-x) 0.55rem;
+  margin-top: auto;
+}
+
+.actionStart,
+.actionPause,
+.actionResume,
+.actionNext,
+.actionFinish,
+.actionAlert {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-height: var(--action-height);
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+
+.actionStart {
+  flex: 1;
+  border: 1px solid rgba(46, 196, 160, 0.5);
+  background: rgba(46, 196, 160, 0.14);
+  color: #2ec4a0;
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+}
+
+.actionPause {
+  flex: 1;
+  border: 1px solid rgba(240, 192, 64, 0.5);
+  background: rgba(240, 192, 64, 0.12);
+  color: #f0c040;
+}
+
+.actionResume {
+  flex: 1;
+  border: 1px solid rgba(59, 130, 246, 0.5);
+  background: rgba(59, 130, 246, 0.14);
+  color: #3b82f6;
+}
+
+.actionNext {
+  flex: 1;
+  border: 1px solid var(--pd-border-strong);
+  background: var(--pd-finish-bg);
+  color: var(--pd-text);
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+}
+
+.actionFinish {
+  flex: 1;
+  border: 1px solid var(--pd-border-strong);
+  background: var(--pd-finish-bg);
+  color: var(--pd-muted);
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+}
+
+.actionAlert {
+  width: 2.65rem;
+  flex-shrink: 0;
+  border: 1px solid rgba(224, 90, 68, 0.5);
+  background: rgba(224, 90, 68, 0.12);
+  color: #e05a44;
+}
+
+.actionCompleted {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--action-height);
+  border: 1px solid rgba(107, 114, 128, 0.45);
+  border-radius: 4px;
+  background: rgba(107, 114, 128, 0.12);
+  color: #9ca3af;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.urgentTag {
+  position: absolute;
+  top: 2.6rem;
+  right: 0.55rem;
+  font-family: 'IBM Plex Mono', $font-family-mono, monospace;
+  font-size: 0.48rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #e05a44;
+}

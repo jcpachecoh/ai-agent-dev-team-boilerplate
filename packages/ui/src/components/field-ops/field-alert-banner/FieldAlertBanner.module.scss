@@ -1,0 +1,101 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../../../styles/abstracts/mixins' as *;
+@use '../shared/field-ops-theme' as fo;
+
+.banner {
+  @include fo.field-ops-control-sizes;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--control-gap);
+  width: min(100%, var(--control-width));
+  min-height: var(--control-min-height);
+  padding: var(--control-padding-y) var(--control-padding-x);
+  border-radius: $border-radius-md;
+  border: $border-width solid var(--fo-border);
+  box-sizing: border-box;
+  font-family: $font-family-base;
+}
+
+.iconWrap {
+  flex-shrink: 0;
+  display: inline-flex;
+  margin-top: 2px;
+}
+
+.content {
+  flex: 1;
+  min-width: 0;
+}
+
+.title {
+  font-size: var(--control-font-size);
+  font-weight: $font-weight-bold;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 4px;
+}
+
+.message {
+  font-size: $font-size-sm;
+  line-height: $line-height-relaxed;
+  color: var(--fo-text-primary);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  flex-shrink: 0;
+}
+
+.dismiss {
+  @include flex-center;
+  padding: $spacing-xs;
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  border-radius: $border-radius-sm;
+  opacity: 0.8;
+
+  &:hover {
+    opacity: 1;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--fo-focus-ring);
+    outline-offset: 2px;
+  }
+}
+
+.variant--success {
+  border-color: rgba($color-success, 0.4);
+  background-color: rgba($color-success, 0.08);
+  color: $color-success;
+}
+
+.variant--warning {
+  border-color: rgba(fo.$field-ops-gold, 0.5);
+  background-color: rgba(fo.$field-ops-gold, 0.08);
+  color: fo.$field-ops-gold;
+}
+
+.variant--danger {
+  border-color: rgba($color-danger, 0.45);
+  background-color: rgba($color-danger, 0.08);
+  color: $color-danger;
+}
+
+.variant--info {
+  border-color: rgba($color-info, 0.4);
+  background-color: rgba($color-info, 0.08);
+  color: $color-info;
+}
+
+.theme--dark {
+  @include fo.field-ops-theme-dark;
+}
+
+.theme--light {
+  @include fo.field-ops-theme-light;
+}

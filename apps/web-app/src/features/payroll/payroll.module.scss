@@ -1,0 +1,253 @@
+@use '@/styles/tokens' as t;
+
+.screen {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  min-height: 100%;
+  padding: 1rem 1.25rem;
+  color: var(--color-text-primary);
+}
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.title {
+  margin: 0;
+  font-size: t.$font-size-2xl;
+}
+
+.subtitle {
+  margin: 0.25rem 0 0;
+  color: var(--color-text-secondary);
+  font-size: t.$font-size-sm;
+}
+
+.toolbar {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr auto;
+  gap: 0.75rem;
+  padding: 0.85rem;
+  border: 1px solid var(--color-border);
+  border-radius: t.$border-radius-base;
+  background: var(--color-bg-surface);
+}
+
+.input,
+.select {
+  min-height: 40px;
+  width: 100%;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--color-border);
+  border-radius: t.$border-radius-base;
+  background: var(--color-bg-surface-raised);
+  color: var(--color-text-primary);
+}
+
+.checkboxRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: t.$font-size-sm;
+  color: var(--color-text-secondary);
+}
+
+.tableWrap {
+  overflow: auto;
+  border: 1px solid var(--color-border);
+  border-radius: t.$border-radius-base;
+  background: var(--color-bg-surface);
+}
+
+.table {
+  width: 100%;
+  min-width: 980px;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  padding: 0.65rem 0.75rem;
+  border-bottom: 1px solid var(--color-border);
+  text-align: left;
+  font-size: t.$font-size-sm;
+}
+
+.table th {
+  color: t.$table-header-text-color-dark;
+  font-weight: 600;
+  background: var(--color-bg-surface-raised);
+}
+
+:global([data-theme='light']) .table th {
+  color: t.$table-header-text-color-light;
+}
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 90px;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: t.$font-size-xs;
+  font-weight: 700;
+}
+
+.statusActive {
+  background: color-mix(in srgb, var(--color-success) 22%, transparent);
+  color: var(--color-success);
+}
+
+.statusInactive {
+  background: color-mix(in srgb, var(--color-danger) 20%, transparent);
+  color: var(--color-danger);
+}
+
+.actions {
+  display: flex;
+  gap: 0.45rem;
+}
+
+.button,
+.buttonSecondary,
+.buttonDanger {
+  min-height: 40px;
+  padding: 0 0.8rem;
+  border: 1px solid transparent;
+  border-radius: t.$border-radius-base;
+  font-size: t.$font-size-sm;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.button {
+  background: var(--color-primary);
+  color: var(--color-text-on-primary);
+}
+
+.buttonSecondary {
+  border-color: var(--color-border);
+  background: var(--color-bg-surface-raised);
+  color: var(--color-text-primary);
+}
+
+.buttonDanger {
+  border-color: color-mix(in srgb, var(--color-danger) 40%, var(--color-border));
+  background: color-mix(in srgb, var(--color-danger) 10%, transparent);
+  color: var(--color-danger);
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.empty {
+  padding: 1.5rem;
+  border: 1px dashed var(--color-border);
+  border-radius: t.$border-radius-base;
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+.error {
+  color: var(--color-danger);
+  font-size: t.$font-size-sm;
+}
+
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: color-mix(in srgb, var(--color-bg-primary) 60%, transparent);
+}
+
+.modal {
+  width: min(980px, 100%);
+  max-height: 90vh;
+  overflow: auto;
+  border: 1px solid var(--color-border);
+  border-radius: t.$border-radius-lg;
+  background: var(--color-bg-surface);
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.9rem 1rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.modalBody {
+  padding: 1rem;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.fieldLabel {
+  font-size: t.$font-size-xs;
+  color: var(--color-text-secondary);
+  font-weight: 600;
+}
+
+.formHint {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: t.$font-size-xs;
+}
+
+.modalFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  padding: 0.85rem 1rem;
+  border-top: 1px solid var(--color-border);
+}
+
+@media (max-width: 960px) {
+  .toolbar {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .screen {
+    padding: 0.75rem;
+  }
+
+  .toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .title {
+    font-size: t.$font-size-xl;
+  }
+}

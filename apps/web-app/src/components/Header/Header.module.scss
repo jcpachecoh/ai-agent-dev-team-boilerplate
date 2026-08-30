@@ -1,0 +1,203 @@
+@use '@/styles/tokens' as t;
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: t.$space-4;
+  height: t.$header-height;
+  padding: 0 t.$space-6;
+  background: var(--color-bg-header);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.left {
+  display: flex;
+  align-items: center;
+  gap: t.$space-4;
+  min-width: 0;
+}
+
+.menuButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid var(--color-border);
+  border-radius: t.$border-radius-sm;
+  background: var(--color-bg-surface);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+
+  &:hover {
+    color: var(--color-text-primary);
+  }
+}
+
+.statusGroup {
+  display: none;
+  align-items: center;
+  gap: t.$space-6;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: t.$space-2;
+  max-width: min(100%, 14rem);
+  padding: t.$space-2 t.$space-3;
+  border: 1px solid var(--color-border);
+  border-radius: t.$border-radius-sm;
+  background: var(--color-bg-surface);
+  font-family: var(--font-body, inherit);
+  font-size: t.$font-size-sm;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+
+  span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &:hover {
+    color: var(--color-text-primary);
+  }
+}
+
+.pillActive {
+  color: var(--color-text-primary);
+}
+
+.statusDot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: t.$border-radius-sm;
+  background: t.$color-success;
+  box-shadow: 0 0 0 0 rgba(46, 196, 160, 0.2);
+}
+
+.center {
+  flex: 1;
+  display: none;
+  justify-content: center;
+  max-width: 25rem;
+}
+
+.search {
+  position: relative;
+  width: 100%;
+}
+
+.searchIcon {
+  position: absolute;
+  left: t.$space-3;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-text-muted);
+  pointer-events: none;
+}
+
+.searchInput {
+  width: 100%;
+  height: 2.25rem;
+  padding: t.$space-2 t.$space-3 t.$space-2 2.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: t.$border-radius-sm;
+  background: var(--color-bg-surface);
+  color: var(--color-text-primary);
+  font-size: t.$font-size-md;
+
+  &::placeholder {
+    color: var(--color-input-placeholder);
+  }
+
+  &:focus {
+    outline: 1px solid t.$color-accent;
+    outline-offset: 0;
+  }
+}
+
+.right {
+  display: flex;
+  align-items: center;
+  gap: t.$space-4;
+}
+
+.clock {
+  display: none;
+  align-items: center;
+  gap: t.$space-2;
+  font-family: var(--font-body, inherit);
+  font-size: t.$font-size-md;
+  color: var(--color-text-muted);
+}
+
+.clockTime {
+  color: var(--color-text-primary);
+  font-family: var(--font-mono, inherit);
+  font-weight: t.$font-weight-semibold;
+  font-variant-numeric: tabular-nums;
+}
+
+.clockDivider {
+  width: 1px;
+  height: 0.75rem;
+  background: var(--color-border);
+}
+
+.notificationButton {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid var(--color-border);
+  border-radius: t.$border-radius-sm;
+  background: var(--color-bg-surface);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+
+  &:hover {
+    color: var(--color-text-primary);
+  }
+}
+
+.notificationDot {
+  position: absolute;
+  top: 0.375rem;
+  right: 0.375rem;
+  width: 0.5rem;
+  height: 0.5rem;
+  border: 1px solid var(--color-bg-header);
+  border-radius: t.$border-radius-sm;
+  background: t.$color-danger;
+}
+
+@media (min-width: 768px) {
+  .statusGroup {
+    display: flex;
+  }
+
+  .clock {
+    display: flex;
+  }
+}
+
+@media (min-width: 1024px) {
+  .menuButton {
+    display: none;
+  }
+
+  .center {
+    display: flex;
+  }
+}
+
+@media (max-width: 1023px) {
+  .header {
+    padding: 0 t.$space-4;
+  }
+}

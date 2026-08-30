@@ -1,0 +1,76 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/asistencia-theme' as asis;
+
+.layout {
+  @include asis.asistencia-theme-classes;
+
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+  max-width: 100%;
+  padding: 16px 20px 24px;
+}
+
+.topBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.backButton {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--asistencia-muted);
+  font-size: 0.8125rem;
+  font-weight: $font-weight-semibold;
+  cursor: pointer;
+
+  &:hover {
+    color: var(--asistencia-text);
+  }
+}
+
+.stateMessage,
+.stateMessageError {
+  margin: 0;
+  font-size: 0.8125rem;
+}
+
+.stateMessage {
+  color: var(--asistencia-muted);
+}
+
+.stateMessageError {
+  color: var(--asistencia-coral);
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.pageButton {
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--asistencia-border);
+  border-radius: 6px;
+  background: var(--asistencia-surface);
+  color: var(--asistencia-text);
+  font-size: 0.8125rem;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.pageSummary {
+  font-size: 0.8125rem;
+  color: var(--asistencia-muted);
+}

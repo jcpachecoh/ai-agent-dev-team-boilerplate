@@ -1,0 +1,23 @@
+.screen {
+  /* RolPage handles layout; keep hook for tests/overrides */
+}
+
+.tableWrap {
+  margin: 1.25rem;
+}
+
+.loadingState,
+.emptyState {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1.5rem;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+@media (width <= 640px) {
+  .tableWrap {
+    margin: 1rem;
+  }
+}

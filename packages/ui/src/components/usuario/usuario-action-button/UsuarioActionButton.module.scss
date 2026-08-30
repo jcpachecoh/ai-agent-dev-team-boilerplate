@@ -1,0 +1,66 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../../../styles/abstracts/page-header-action' as pha;
+@use '../shared/usuario-theme' as usr;
+
+.button {
+  @include usr.usuario-theme-classes;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 4px;
+  border: 1px solid var(--usuario-accent-border);
+  background: var(--usuario-accent-soft);
+  color: var(--usuario-accent);
+  font-family: 'IBM Plex Mono', $font-family-mono, monospace;
+  font-weight: $font-weight-bold;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease;
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  &:hover:not(:disabled) {
+    background: rgba(usr.$usuario-accent, 0.18);
+    border-color: rgba(usr.$usuario-accent, 0.55);
+  }
+
+  &:focus-visible {
+    @include usr.usuario-focus-ring;
+  }
+}
+
+.size--sm {
+  min-height: 32px;
+  padding: 8px 14px;
+  font-size: 0.625rem;
+}
+
+.size--md {
+  @include pha.page-header-action-size-md;
+}
+
+.size--md .icon svg {
+  @include pha.page-header-action-icon-md;
+}
+
+.icon {
+  display: inline-flex;
+
+  svg {
+    width: 13px;
+    height: 13px;
+  }
+}
+
+.label {
+  white-space: nowrap;
+}

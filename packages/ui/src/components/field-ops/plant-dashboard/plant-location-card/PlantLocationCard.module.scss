@@ -1,0 +1,108 @@
+@use '../../../../styles/abstracts/variables' as *;
+@use '../shared/plant-dashboard-theme' as pd;
+
+.card {
+  @include pd.plant-dashboard-theme-dark;
+
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  width: 100%;
+  min-height: 9.85rem;
+  padding: 1.35rem 1.45rem;
+  border: 2px solid var(--pd-border);
+  border-radius: 6px;
+  background: var(--pd-bg-elevated);
+  color: var(--pd-text);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+
+  &:not(:disabled):hover {
+    border-color: var(--pd-border-strong);
+  }
+}
+
+.theme--dark {
+  @include pd.plant-dashboard-theme-dark;
+}
+
+.theme--light {
+  @include pd.plant-dashboard-theme-light;
+}
+
+.selected {
+  border-color: var(--pd-recipe-gold);
+  box-shadow: 0 0 0 1px rgba(200, 169, 110, 0.25);
+}
+
+.topRow {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.iconWrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.45rem;
+  height: 2.45rem;
+  border: 1px solid var(--pd-border-strong);
+  border-radius: 4px;
+  background: var(--pd-bg-muted);
+  color: var(--pd-muted);
+}
+
+.code {
+  font-family: 'IBM Plex Mono', $font-family-mono, monospace;
+  font-size: 0.61rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  color: var(--pd-faint);
+  text-transform: uppercase;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.name {
+  margin: 0;
+  font-family: 'IBM Plex Sans', $font-family-base, sans-serif;
+  font-size: 1.03rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: #bbb;
+}
+
+.cityRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin: 0;
+  font-family: 'IBM Plex Sans', $font-family-base, sans-serif;
+  font-size: 0.73rem;
+  font-weight: 500;
+  color: var(--pd-muted);
+}
+
+.address {
+  margin: 0;
+  font-family: 'IBM Plex Sans', $font-family-base, sans-serif;
+  font-size: 0.67rem;
+  font-style: italic;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--pd-dim);
+}

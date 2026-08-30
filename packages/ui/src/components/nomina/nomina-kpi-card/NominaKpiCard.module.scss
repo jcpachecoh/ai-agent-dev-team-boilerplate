@@ -1,0 +1,79 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/nomina-theme' as nomina;
+
+.card {
+  @include nomina.nomina-theme-classes;
+
+  display: flex;
+  flex-direction: column;
+  min-height: 118px;
+  padding: 19px;
+  border: 1px solid var(--asistencia-border);
+  border-top-width: 3px;
+  border-radius: 0 0 4px 4px;
+  background: var(--asistencia-surface);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+}
+
+.title {
+  margin: 0;
+  font-family: $font-family-mono;
+  font-size: 0.5625rem;
+  font-weight: $font-weight-bold;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--asistencia-faint);
+}
+
+.icon {
+  display: inline-flex;
+  color: var(--kpi-accent);
+
+  svg {
+    width: 15px;
+    height: 15px;
+  }
+}
+
+.value {
+  margin: 12px 0 0;
+  font-family: $font-family-mono;
+  font-size: 1.625rem;
+  font-weight: $font-weight-bold;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--kpi-accent);
+}
+
+.description {
+  margin: 6px 0 0;
+  font-size: 0.6875rem;
+  line-height: 1.5;
+  color: var(--asistencia-muted);
+}
+
+.tone--accent {
+  --kpi-accent: var(--asistencia-accent);
+}
+
+.tone--amber {
+  --kpi-accent: var(--asistencia-amber);
+}
+
+.tone--teal {
+  --kpi-accent: var(--asistencia-teal);
+}
+
+.tone--muted {
+  --kpi-accent: var(--asistencia-muted);
+}
+
+.theme--light.tone--muted {
+  --kpi-accent: var(--asistencia-subtle);
+}

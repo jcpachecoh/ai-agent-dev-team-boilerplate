@@ -1,0 +1,15 @@
+$mobile-breakpoint: 768px;
+
+.desktop {
+  @media (max-width: $mobile-breakpoint) {
+    display: none !important;
+  }
+}
+
+.mobile {
+  display: none;
+
+  @media (max-width: $mobile-breakpoint) {
+    display: flex;
+  }
+}

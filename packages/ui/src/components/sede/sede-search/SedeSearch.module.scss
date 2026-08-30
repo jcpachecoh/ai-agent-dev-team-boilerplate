@@ -1,0 +1,56 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/sede-theme' as sede;
+
+.search {
+  @include sede.sede-theme-classes;
+
+  position: relative;
+  width: min(100%, 320px);
+
+  @media (max-width: 768px) {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 13px;
+  height: 13px;
+  color: var(--sede-faint);
+  pointer-events: none;
+}
+
+.input {
+  width: 100%;
+  min-height: 36px;
+  padding: 9px 13px 9px 33px;
+  border: $border-width solid var(--sede-border);
+  border-radius: 4px;
+  background: var(--sede-surface);
+  color: var(--sede-text);
+  font-family: $font-family-base;
+  font-size: 0.75rem;
+  box-sizing: border-box;
+
+  &::placeholder {
+    color: var(--sede-placeholder);
+  }
+
+  &:focus {
+    outline: none;
+    border-color: var(--sede-primary-border);
+  }
+
+  &:focus-visible {
+    @include sede.sede-focus-ring;
+  }
+}
+
+.size--xl {
+  width: 100%;
+  max-width: none;
+}

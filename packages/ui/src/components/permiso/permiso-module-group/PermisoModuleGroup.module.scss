@@ -1,0 +1,59 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/permiso-theme' as perm;
+
+.group {
+  @include perm.permiso-theme-classes;
+
+  padding-bottom: 0.5rem;
+}
+
+.label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.25rem;
+  padding: 0.4rem 1.25rem;
+  border-bottom: 1px solid var(--permiso-border);
+  background: var(--permiso-surface-raised);
+  font-family: 'IBM Plex Mono', $font-family-mono, monospace;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--permiso-muted);
+  overflow: hidden; /* prevent header row from expanding panel */
+}
+
+.moduleName {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.count {
+  font-size: 0.65rem;
+  opacity: 0.7;
+}
+
+.toggleAllBtn {
+  margin-left: auto;
+  padding: 0 0.35rem;
+  border: 1px solid var(--permiso-border);
+  border-radius: 3px;
+  background: transparent;
+  font-family: inherit;
+  font-size: 0.55rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--permiso-muted);
+  cursor: pointer;
+  line-height: 1.6;
+
+  &:hover {
+    background: var(--permiso-surface-raised);
+    color: var(--permiso-text);
+  }
+}

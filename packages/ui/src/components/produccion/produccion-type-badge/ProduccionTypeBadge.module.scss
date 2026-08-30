@@ -1,0 +1,65 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/produccion-theme' as produccion;
+
+.badge {
+  @include produccion.produccion-theme-classes;
+  @include produccion.produccion-size-vars;
+
+  display: inline-flex;
+  align-items: center;
+  width: max-content;
+  min-height: var(--type-height);
+  padding: 0 var(--type-padding-x);
+  border-radius: $border-radius-sm;
+  font-family: $font-family-mono;
+  font-size: var(--type-font-size);
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+.size--sm {
+  --type-height: 18px;
+  --type-padding-x: 6px;
+  --type-font-size: 0.5625rem;
+}
+.size--md {
+  --type-height: 20px;
+  --type-padding-x: 8px;
+  --type-font-size: 0.625rem;
+}
+.size--xl {
+  --type-height: 24px;
+  --type-padding-x: 10px;
+  --type-font-size: 0.6875rem;
+}
+.tone--preparation {
+  background: rgba(produccion.$produccion-info, 0.12);
+  color: produccion.$produccion-info;
+}
+.tone--processing {
+  background: rgba(produccion.$produccion-purple, 0.12);
+  color: produccion.$produccion-purple;
+}
+.tone--cooking {
+  background: rgba(produccion.$produccion-orange, 0.12);
+  color: produccion.$produccion-orange;
+}
+.tone--cooling {
+  background: rgba(produccion.$produccion-teal, 0.12);
+  color: produccion.$produccion-teal;
+}
+.tone--packing {
+  background: rgba(produccion.$produccion-gold, 0.12);
+  color: produccion.$produccion-gold;
+}
+.tone--maturation {
+  background: rgba(produccion.$produccion-red, 0.12);
+  color: produccion.$produccion-red;
+}
+.tone--sanitation {
+  background: rgba(produccion.$produccion-green, 0.12);
+  color: produccion.$produccion-green;
+}
+.tone--neutral {
+  background: rgba($color-white, 0.06);
+  color: var(--produccion-muted);
+}

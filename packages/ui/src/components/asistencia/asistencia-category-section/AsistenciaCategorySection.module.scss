@@ -1,0 +1,59 @@
+@use '../shared/asistencia-theme' as asistencia;
+
+.section {
+  @include asistencia.asistencia-theme-classes;
+
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--asistencia-text);
+}
+
+.count {
+  font-size: 0.75rem;
+  color: var(--asistencia-subtle);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+  gap: 10px;
+}
+
+.empty {
+  margin: 0;
+  padding: 12px;
+  border: 1px dashed var(--asistencia-border-subtle);
+  border-radius: 4px;
+  color: var(--asistencia-subtle);
+  font-size: 0.75rem;
+  text-align: center;
+}

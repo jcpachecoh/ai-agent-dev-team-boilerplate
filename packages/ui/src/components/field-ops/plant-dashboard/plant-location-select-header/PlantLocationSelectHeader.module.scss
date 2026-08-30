@@ -1,0 +1,91 @@
+@use '../../../../styles/abstracts/variables' as *;
+@use '../shared/plant-dashboard-theme' as pd;
+
+.header {
+  @include pd.plant-dashboard-theme-dark;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-md;
+  padding: 1.7rem 2.9rem 0;
+}
+
+.theme--dark {
+  @include pd.plant-dashboard-theme-dark;
+}
+
+.theme--light {
+  @include pd.plant-dashboard-theme-light;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.brandLogo {
+  width: auto !important;
+  justify-content: flex-start !important;
+
+  img {
+    width: auto !important;
+    max-width: 118px;
+    max-height: 28px;
+    object-fit: contain;
+  }
+}
+
+.brandSecondary {
+  font-family: 'IBM Plex Mono', $font-family-mono, monospace;
+  font-size: 0.67rem;
+  letter-spacing: 0.1em;
+  color: var(--pd-border-strong);
+}
+
+.operatorPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.8rem 0.35rem 0.45rem;
+  border: 1px solid var(--pd-border-strong);
+  border-radius: 999px;
+  background: var(--pd-bg-muted);
+}
+
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border: 1px solid rgba(200, 169, 110, 0.3);
+  border-radius: 999px;
+  background: rgba(200, 169, 110, 0.15);
+  color: var(--pd-recipe-gold);
+  font-family: 'IBM Plex Mono', $font-family-mono, monospace;
+  font-size: 0.67rem;
+  font-weight: 700;
+}
+
+.operatorMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.operatorName {
+  font-family: 'IBM Plex Sans', $font-family-base, sans-serif;
+  font-size: 0.79rem;
+  font-weight: 600;
+  color: var(--pd-title);
+}
+
+.operatorRole {
+  font-family: 'IBM Plex Mono', $font-family-mono, monospace;
+  font-size: 0.55rem;
+  letter-spacing: 0.09em;
+  color: var(--pd-muted);
+  text-transform: uppercase;
+}

@@ -1,0 +1,29 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/inventario-theme' as inventario;
+
+.screen {
+  @include inventario.inventario-theme-classes;
+
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 1232px);
+  min-height: 100%;
+  background: var(--inventario-bg);
+  color: var(--inventario-text);
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 24px;
+}
+
+.table {
+  display: flex;
+  flex-direction: column;
+  border: $border-width solid var(--inventario-border);
+  border-radius: $border-radius-md;
+  overflow: hidden;
+  background: var(--inventario-surface);
+}

@@ -1,0 +1,37 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/nomina-theme' as nomina;
+
+.panel {
+  @include nomina.nomina-theme-classes;
+  @include nomina.nomina-panel;
+}
+
+.header {
+  @include nomina.nomina-panel-header;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-md;
+  flex-wrap: wrap;
+}
+
+.title {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: $font-weight-semibold;
+  color: var(--asistencia-text);
+}
+
+.chart {
+  height: 260px;
+  padding: 12px 8px 4px;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 16px;
+  padding: 10px 16px 14px;
+  border-top: 1px solid var(--asistencia-border-subtle);
+}

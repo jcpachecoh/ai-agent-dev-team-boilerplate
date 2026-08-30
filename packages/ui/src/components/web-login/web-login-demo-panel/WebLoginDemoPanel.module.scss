@@ -1,0 +1,73 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/web-login-theme' as login;
+
+.panel {
+  @include login.web-login-root;
+  @include login.web-login-theme-classes;
+
+  display: flex;
+  flex-direction: column;
+  gap: var(--web-login-gap);
+  padding: var(--web-login-padding-y) var(--web-login-padding-x);
+  width: min(100%, var(--web-login-panel-max-width));
+  background: var(--web-login-surface);
+  border: 1px solid var(--web-login-border);
+  border-radius: 12px;
+  color: var(--web-login-text);
+}
+
+.title {
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: $font-weight-bold;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--web-login-accent);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  margin: 0;
+}
+
+.row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: $spacing-md;
+
+  dt {
+    margin: 0;
+    font-size: 0.8125rem;
+    color: var(--web-login-muted);
+  }
+
+  dd {
+    margin: 0;
+    font-family: $font-family-mono;
+    font-size: 0.875rem;
+    color: var(--web-login-text);
+  }
+}
+
+.useDemo {
+  align-self: flex-start;
+  padding: $spacing-sm $spacing-md;
+  font-size: 0.8125rem;
+  font-weight: $font-weight-medium;
+  color: var(--web-login-text);
+  background: transparent;
+  border: 1px solid var(--web-login-border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+
+  &:hover {
+    border-color: var(--web-login-accent);
+    background: var(--web-login-accent-muted);
+  }
+}

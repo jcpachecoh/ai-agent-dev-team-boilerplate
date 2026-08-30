@@ -1,0 +1,11 @@
+dist
+node_modules
+.DS_Store
+.env
+.env.local
+
+# Capacitor native projects (regenerate with cap add / cap sync)
+android/
+ios/
+
+coverage

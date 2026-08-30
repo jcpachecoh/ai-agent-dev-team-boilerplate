@@ -1,0 +1,87 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/usuario-theme' as usr;
+
+.card {
+  @include usr.usuario-theme-classes;
+
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--usuario-border);
+  border-radius: 4px;
+  background: var(--usuario-surface);
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.leading {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.name {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: $font-weight-semibold;
+  color: var(--usuario-text);
+  word-break: break-word;
+}
+
+.email {
+  margin: 2px 0 0;
+  font-size: 0.75rem;
+  font-weight: $font-weight-regular;
+  color: var(--usuario-muted);
+  word-break: break-word;
+}
+
+.cedula {
+  margin: 2px 0 0;
+  font-family: 'IBM Plex Mono', $font-family-mono, monospace;
+  font-size: 0.625rem;
+  color: var(--usuario-faint);
+}
+
+.details {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.detailRow {
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  gap: 8px;
+  align-items: start;
+
+  dt {
+    margin: 0;
+    font-family: 'IBM Plex Mono', $font-family-mono, monospace;
+    font-size: 0.56rem;
+    font-weight: $font-weight-bold;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--usuario-dim);
+  }
+
+  dd {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    font-size: 0.75rem;
+    color: var(--usuario-text-secondary);
+  }
+}
+
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 5px;
+}

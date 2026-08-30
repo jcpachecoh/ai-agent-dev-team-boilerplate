@@ -1,0 +1,48 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/produccion-theme' as produccion;
+
+.group {
+  @include produccion.produccion-theme-classes;
+  @include produccion.produccion-size-vars;
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip {
+  min-height: var(--chip-height);
+  padding: 0 var(--chip-padding-x);
+  background: transparent;
+  border: $border-width solid var(--produccion-border);
+  border-radius: $border-radius-sm;
+  font-family: $font-family-mono;
+  font-size: var(--chip-font-size);
+  font-weight: $font-weight-bold;
+  color: var(--produccion-subtle);
+  cursor: pointer;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  &:focus-visible {
+    @include produccion.produccion-focus-ring;
+  }
+}
+.active {
+  border-color: produccion.$produccion-gold;
+  background: rgba(produccion.$produccion-gold, 0.1);
+  color: produccion.$produccion-gold;
+}
+.size--sm {
+  --chip-height: 20px;
+  --chip-padding-x: 8px;
+  --chip-font-size: 0.5625rem;
+}
+.size--md {
+  --chip-height: 24px;
+  --chip-padding-x: 10px;
+  --chip-font-size: 0.625rem;
+}
+.size--xl {
+  --chip-height: 28px;
+  --chip-padding-x: 12px;
+  --chip-font-size: 0.6875rem;
+}

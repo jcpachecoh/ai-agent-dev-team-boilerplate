@@ -1,0 +1,62 @@
+@use '../../../styles/abstracts/page-header-title' as ph;
+@use '../../sede/shared/sede-theme' as sede;
+
+$mobile-breakpoint: 768px;
+
+.header {
+  @include sede.sede-theme-classes;
+  @include ph.page-header-shell;
+  margin-bottom: 16px;
+}
+
+.leading {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+}
+
+.iconWrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  background: var(--sede-surface-raised);
+  border: 1px solid var(--sede-border);
+  color: var(--sede-subtle);
+}
+
+.text {
+  @include ph.page-header-titles-stack;
+}
+
+.title {
+  @include ph.page-header-title;
+  color: var(--sede-text);
+}
+
+.subtitle {
+  @include ph.page-header-subtitle;
+  color: var(--sede-muted);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .actions {
+    width: 100%;
+  }
+}

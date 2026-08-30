@@ -1,0 +1,49 @@
+$mobile-breakpoint: 768px;
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 520px);
+  gap: 24px;
+  padding: 0 28px 28px;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.withSide {
+  grid-template-columns: minmax(0, 520px) minmax(0, 1fr);
+}
+
+.main,
+.side {
+  min-width: 0;
+}
+
+.main {
+  align-self: start;
+}
+
+.side {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.size--xl.layout {
+  grid-template-columns: 1fr;
+}
+
+.size--xl.withSide {
+  grid-template-columns: 1fr;
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .layout,
+  .withSide,
+  .size--xl.layout,
+  .size--xl.withSide {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    padding: 0 0 8px;
+  }
+}

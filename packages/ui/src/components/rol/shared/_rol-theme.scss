@@ -1,0 +1,79 @@
+@use '../../../styles/abstracts/variables' as *;
+
+$rol-accent: #2ec4a0;
+$rol-accent-secondary: #14b8a6;
+$rol-amber: #f59e0b;
+$rol-amber-text: #d97706;
+$rol-coral: #e05a44;
+$rol-green: #22c55e;
+$rol-red: #ef4444;
+
+$rol-dark-page: #0a0a0a;
+$rol-dark-surface: #111111;
+$rol-dark-surface-raised: #141414;
+$rol-dark-border: #2e2e2e;
+$rol-dark-text: #f5f5f0;
+$rol-dark-muted: #888888;
+
+@mixin rol-theme-dark {
+  --rol-page: #{$rol-dark-page};
+  --rol-surface: #{$rol-dark-surface};
+  --rol-surface-raised: #{$rol-dark-surface-raised};
+  --rol-border: #{$rol-dark-border};
+  --rol-border-subtle: #1a1a1a;
+  --rol-text: #{$rol-dark-text};
+  --rol-text-secondary: #bbbbbb;
+  --rol-muted: #{$rol-dark-muted};
+  --rol-faint: #666666;
+  --rol-hover: #{rgba($color-white, 0.06)};
+  --rol-accent: #{$rol-accent};
+  --rol-accent-soft: #{rgba($rol-accent, 0.12)};
+  --rol-accent-border: #{rgba($rol-accent, 0.4)};
+  --rol-row-selected: #{rgba($rol-accent, 0.1)};
+  --rol-row-selected-hover: #{rgba($rol-accent, 0.14)};
+  --rol-dirty-badge-bg: #{rgba($rol-amber, 0.2)};
+  --rol-dirty-badge-text: #{$rol-amber-text};
+  --rol-green-soft: #{rgba($rol-green, 0.15)};
+  --rol-green-text: #16a34a;
+  --rol-red-soft: #{rgba($rol-red, 0.15)};
+  --rol-red-text: #dc2626;
+}
+
+@mixin rol-theme-light {
+  --rol-page: #f6f4ef;
+  --rol-surface: #ffffff;
+  --rol-surface-raised: #fbfaf6;
+  --rol-border: #{rgba($color-black, 0.12)};
+  --rol-border-subtle: #{rgba($color-black, 0.08)};
+  --rol-text: #{$color-gray-900};
+  --rol-text-secondary: #{$color-gray-700};
+  --rol-muted: #{$color-gray-600};
+  --rol-faint: #{$color-gray-500};
+  --rol-hover: #{rgba($color-black, 0.04)};
+  --rol-accent: #{$rol-accent};
+  --rol-accent-soft: #{rgba($rol-accent, 0.1)};
+  --rol-accent-border: #{rgba($rol-accent, 0.35)};
+  --rol-row-selected: #{rgba($rol-accent, 0.08)};
+  --rol-row-selected-hover: #{rgba($rol-accent, 0.12)};
+  --rol-dirty-badge-bg: #{rgba($rol-amber, 0.2)};
+  --rol-dirty-badge-text: #{$rol-amber-text};
+  --rol-green-soft: #{rgba($rol-green, 0.12)};
+  --rol-green-text: #16a34a;
+  --rol-red-soft: #{rgba($rol-red, 0.12)};
+  --rol-red-text: #dc2626;
+}
+
+@mixin rol-focus-ring {
+  outline: 2px solid rgba($rol-accent, 0.65);
+  outline-offset: 2px;
+}
+
+@mixin rol-theme-classes {
+  &.theme--dark {
+    @include rol-theme-dark;
+  }
+
+  &.theme--light {
+    @include rol-theme-light;
+  }
+}

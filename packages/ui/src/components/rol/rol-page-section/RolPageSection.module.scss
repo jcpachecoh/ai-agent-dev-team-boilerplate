@@ -1,0 +1,38 @@
+@use '../shared/rol-theme' as rol;
+
+.section {
+  @include rol.rol-theme-classes;
+
+  width: 100%;
+}
+
+.variant--header,
+.variant--toolbar {
+  padding: 1.1rem 1.25rem 1rem;
+}
+
+.variant--default {
+  padding: 0;
+}
+
+.variant--body {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.sticky {
+  flex-shrink: 0;
+  z-index: 2;
+  background: var(--rol-page);
+}
+
+.divider {
+  border-bottom: 1px solid var(--rol-border);
+}
+
+.variant--toolbar {
+  padding-top: 0.85rem;
+  padding-bottom: 0.85rem;
+  background: var(--rol-surface);
+}

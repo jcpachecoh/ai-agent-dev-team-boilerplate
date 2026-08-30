@@ -1,0 +1,63 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/proveedor-theme' as proveedor;
+
+.header {
+  @include proveedor.proveedor-theme-classes;
+  @include proveedor.proveedor-size-vars;
+
+  display: flex;
+  align-items: center;
+  gap: var(--header-gap);
+  width: min(100%, var(--control-width));
+}
+
+.back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--back-size);
+  height: var(--back-size);
+  border: $border-width solid var(--proveedor-border);
+  border-radius: $border-radius-sm;
+  background: var(--proveedor-surface-raised);
+  color: var(--proveedor-text);
+  cursor: pointer;
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  &:focus-visible {
+    @include proveedor.proveedor-focus-ring;
+  }
+}
+
+.title {
+  margin: 0;
+  font-family: $font-family-mono;
+  font-size: var(--title-size);
+  font-weight: $font-weight-bold;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--proveedor-text);
+}
+
+.size--sm {
+  --back-size: 28px;
+  --title-size: 0.75rem;
+  --header-gap: 10px;
+}
+
+.size--md {
+  --back-size: 32px;
+  --title-size: 0.875rem;
+  --header-gap: 16px;
+}
+
+.size--xl {
+  --control-width: 100%;
+  --back-size: 32px;
+  --title-size: 1rem;
+  --header-gap: 16px;
+}

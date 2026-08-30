@@ -1,0 +1,31 @@
+@use '../shared/rol-theme' as rol;
+
+.badge {
+  @include rol.rol-theme-classes;
+
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.size--sm {
+  padding: 0.2rem 0.55rem;
+}
+
+.size--md {
+  padding: 0.25rem 0.6rem;
+}
+
+.active {
+  color: var(--rol-green-text);
+  background: var(--rol-green-soft);
+}
+
+.inactive {
+  color: var(--rol-red-text);
+  background: var(--rol-red-soft);
+}

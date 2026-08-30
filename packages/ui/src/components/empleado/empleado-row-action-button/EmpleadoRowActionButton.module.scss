@@ -1,0 +1,65 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/empleado-theme' as emp;
+
+.button {
+  @include emp.empleado-theme-classes;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  &:focus-visible {
+    @include emp.empleado-focus-ring;
+  }
+}
+
+.size--sm {
+  width: 26px;
+  height: 26px;
+}
+
+.size--md {
+  width: 30px;
+  height: 30px;
+}
+
+.icon {
+  display: inline-flex;
+
+  svg {
+    width: 12px;
+    height: 12px;
+  }
+}
+
+.variant--edit {
+  background: var(--empleado-purple-soft);
+  border-color: var(--empleado-purple-border);
+  color: var(--empleado-purple);
+}
+
+.variant--toggle {
+  background: var(--empleado-hover);
+  border-color: var(--empleado-border);
+  color: var(--empleado-faint);
+}
+
+.toggleActive {
+  background: rgba(emp.$empleado-teal, 0.06);
+  border-color: rgba(emp.$empleado-teal, 0.19);
+  color: var(--empleado-teal);
+}

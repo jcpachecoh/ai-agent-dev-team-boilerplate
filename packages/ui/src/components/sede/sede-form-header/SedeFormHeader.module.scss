@@ -1,0 +1,134 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/sede-theme' as sede;
+
+$mobile-breakpoint: 768px;
+
+.header {
+  @include sede.sede-theme-classes;
+
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  width: 100%;
+  min-width: 0;
+  padding: 20px 28px;
+  box-sizing: border-box;
+}
+
+.backButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 13px;
+  border: $border-width solid var(--sede-border);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--sede-subtle);
+  font-size: 0.75rem;
+  font-weight: $font-weight-medium;
+  cursor: pointer;
+
+  svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  &:hover {
+    color: var(--sede-text);
+  }
+
+  &:focus-visible {
+    @include sede.sede-focus-ring;
+  }
+}
+
+.divider {
+  color: var(--sede-border);
+  font-size: 1rem;
+}
+
+.titleWrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.titleRow {
+  display: contents;
+}
+
+.icon {
+  display: inline-flex;
+  color: var(--sede-primary);
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.title {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: $font-weight-bold;
+  letter-spacing: -0.01em;
+  color: var(--sede-text);
+}
+
+.idBadge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 21px;
+  padding: 2px 8px;
+  border: $border-width solid var(--sede-border);
+  border-radius: 2px;
+  background: var(--sede-surface-raised);
+  font-family: $font-family-mono;
+  font-size: 0.625rem;
+  letter-spacing: 0.08em;
+  color: var(--sede-faint);
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding: 0 0 16px;
+  }
+
+  .divider {
+    display: none;
+  }
+
+  .backButton {
+    align-self: flex-start;
+  }
+
+  .titleRow {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .titleWrap {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .title {
+    font-size: 1rem;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+  }
+
+  .idBadge {
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+}

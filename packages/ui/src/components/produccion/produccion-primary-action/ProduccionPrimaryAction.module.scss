@@ -1,0 +1,55 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../../../styles/abstracts/page-header-action' as pha;
+@use '../shared/produccion-theme' as produccion;
+
+.button {
+  @include produccion.produccion-theme-classes;
+  @include produccion.produccion-size-vars;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: var(--control-min-height);
+  padding: 0 var(--control-padding-x);
+  background: rgba(produccion.$produccion-gold, 0.12);
+  border: $border-width solid rgba(produccion.$produccion-gold, 0.45);
+  border-radius: var(--control-radius);
+  font-family: $font-family-mono;
+  font-size: var(--control-font-size);
+  font-weight: $font-weight-bold;
+  color: produccion.$produccion-gold;
+  cursor: pointer;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+
+  &:hover:not(:disabled) {
+    background: rgba(produccion.$produccion-gold, 0.2);
+    border-color: rgba(produccion.$produccion-gold, 0.7);
+  }
+
+  &:focus-visible {
+    @include produccion.produccion-focus-ring;
+  }
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+}
+
+.size--md {
+  @include pha.page-header-action-size-md;
+}
+
+.size--md .icon svg {
+  @include pha.page-header-action-icon-md;
+}
+
+.icon {
+  display: inline-flex;
+}
+.icon svg {
+  width: var(--control-icon-size);
+  height: var(--control-icon-size);
+}

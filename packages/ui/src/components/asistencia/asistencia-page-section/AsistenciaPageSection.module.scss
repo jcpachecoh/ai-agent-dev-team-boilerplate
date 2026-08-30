@@ -1,0 +1,35 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/asistencia-theme' as asis;
+
+.section {
+  @include asis.asistencia-theme-classes;
+
+  padding-left: 24px;
+  padding-right: 24px;
+}
+
+.divider {
+  border-bottom: 1px solid var(--asistencia-border-subtle);
+}
+
+.variant--header {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 16px;
+  padding-bottom: 10px;
+}
+
+.variant--body {
+  display: flex;
+  flex-direction: column;
+  padding-top: 14px;
+  padding-bottom: 20px;
+}
+
+@media (max-width: 767px) {
+  .section {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}

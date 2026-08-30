@@ -1,0 +1,121 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/receta-theme' as receta;
+
+.stepper {
+  width: 100%;
+}
+
+.themeLight {
+  @include receta.receta-theme-light;
+}
+
+.themeDark {
+  @include receta.receta-theme-dark;
+}
+
+.list {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  min-width: 0;
+}
+
+.stepButton {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: $spacing-sm;
+  border: none;
+  background: transparent;
+  color: var(--receta-muted);
+  cursor: pointer;
+  padding: 0;
+  font-family: $font-family-base;
+  font-size: $font-size-sm;
+  line-height: 1.4;
+  text-align: left;
+
+  &:focus-visible {
+    @include receta.receta-focus-ring;
+
+    border-radius: $border-radius-sm;
+  }
+}
+
+.stepButtonStatic {
+  cursor: default;
+}
+
+.marker {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--receta-border-strong);
+  border-radius: 50%;
+  font-family: $font-family-mono;
+  font-size: 0.75rem;
+  font-weight: $font-weight-semibold;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease;
+}
+
+.label {
+  min-width: 0;
+  font-weight: $font-weight-medium;
+  white-space: nowrap;
+}
+
+.connector {
+  flex: 1;
+  height: 1px;
+  margin: 0 $spacing-md;
+  background: var(--receta-border);
+}
+
+.status--pending .marker {
+  color: var(--receta-subtle);
+}
+
+.status--active {
+  color: var(--receta-text);
+
+  .marker {
+    background: rgba(receta.$receta-purple, 0.16);
+    color: receta.$receta-purple;
+    border-color: receta.$receta-purple;
+  }
+}
+
+.status--completed {
+  color: var(--receta-text-secondary);
+
+  .marker {
+    background: receta.$receta-teal;
+    color: $color-white;
+    border-color: receta.$receta-teal;
+  }
+}
+
+@media (width <= 720px) {
+  .label {
+    display: none;
+  }
+
+  .connector {
+    margin: 0 $spacing-sm;
+  }
+}

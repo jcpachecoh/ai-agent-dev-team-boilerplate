@@ -1,0 +1,222 @@
+---
+description: Arquitectura y convenciones SCSS para Palos de Leños KDS. Aplicar cuando se creen o modifiquen estilos, variables, mixins, o archivos .scss.
+globs:
+  - "src/**/*.scss"
+  - "src/**/*.module.scss"
+  - "src/styles/**"
+alwaysApply: false
+---
+
+# SCSS — Palos de Leños KDS
+
+## Arquitectura de archivos
+
+```
+src/styles/
+├── _variables.scss      # Tokens de diseño (colores, spacing, tipografía)
+├── _mixins.scss         # Mixins reutilizables
+├── _animations.scss     # Keyframes globales
+├── _reset.scss          # CSS reset
+└── global.scss          # Importa todo lo anterior (sin estilos propios)
+
+src/components/<name>/
+└── <Name>.module.scss   # CSS Modules por componente
+```
+
+## Variables — Design Tokens
+
+```scss
+// _variables.scss
+
+// ─── Paleta KDS ──────────────────────────────────────────
+$color-bg-dark:        #0d0d0d;
+$color-bg-surface:     #1a1a1a;
+$color-bg-elevated:    #252525;
+$color-border:         #333333;
+
+$color-primary:        #ff6b00;   // naranja Palos de Leños
+$color-primary-hover:  #ff8533;
+$color-success:        #22c55e;
+$color-warning:        #f59e0b;
+$color-danger:         #ef4444;
+$color-info:           #3b82f6;
+
+$color-text-primary:   #f5f5f5;
+$color-text-secondary: #a3a3a3;
+$color-text-muted:     #666666;
+
+// ─── Tipografía ───────────────────────────────────────────
+$font-family-base:  'Inter', -apple-system, sans-serif;
+$font-family-mono:  'JetBrains Mono', monospace;
+
+$font-size-xs:   0.75rem;   // 12px
+$font-size-sm:   0.875rem;  // 14px
+$font-size-base: 1rem;      // 16px
+$font-size-lg:   1.125rem;  // 18px
+$font-size-xl:   1.25rem;   // 20px
+$font-size-2xl:  1.5rem;    // 24px
+$font-size-3xl:  2rem;      // 32px
+
+$font-weight-regular: 400;
+$font-weight-medium:  500;
+$font-weight-bold:    700;
+
+// ─── Spacing (escala 4px) ─────────────────────────────────
+$space-1:  0.25rem;   // 4px
+$space-2:  0.5rem;    // 8px
+$space-3:  0.75rem;   // 12px
+$space-4:  1rem;      // 16px
+$space-5:  1.25rem;   // 20px
+$space-6:  1.5rem;    // 24px
+$space-8:  2rem;      // 32px
+$space-10: 2.5rem;    // 40px
+$space-12: 3rem;      // 48px
+
+// ─── Bordes y radios ──────────────────────────────────────
+$radius-sm: 4px;
+$radius-md: 8px;
+$radius-lg: 12px;
+$radius-xl: 16px;
+
+// ─── Sombras ──────────────────────────────────────────────
+$shadow-sm:  0 1px 3px rgba(0, 0, 0, 0.4);
+$shadow-md:  0 4px 12px rgba(0, 0, 0, 0.5);
+$shadow-lg:  0 8px 24px rgba(0, 0, 0, 0.6);
+$shadow-glow-primary: 0 0 16px rgba(255, 107, 0, 0.3);
+
+// ─── Transiciones ─────────────────────────────────────────
+$transition-fast:   150ms ease;
+$transition-base:   250ms ease;
+$transition-slow:   400ms ease;
+
+// ─── Breakpoints ─────────────────────────────────────────
+$bp-sm:   480px;
+$bp-md:   768px;
+$bp-lg:  1024px;
+$bp-xl:  1280px;
+$bp-2xl: 1536px;
+
+// ─── KDS específico ───────────────────────────────────────
+$kds-card-min-width:  280px;
+$kds-card-max-width:  360px;
+$kds-header-height:   64px;
+$kds-sidebar-width:   240px;
+```
+
+## Mixins
+
+```scss
+// _mixins.scss
+
+// Responsive
+@mixin respond-to($breakpoint) {
+  @if $breakpoint == sm  { @media (min-width: $bp-sm)  { @content; } }
+  @if $breakpoint == md  { @media (min-width: $bp-md)  { @content; } }
+  @if $breakpoint == lg  { @media (min-width: $bp-lg)  { @content; } }
+  @if $breakpoint == xl  { @media (min-width: $bp-xl)  { @content; } }
+  @if $breakpoint == 2xl { @media (min-width: $bp-2xl) { @content; } }
+}
+
+// Truncar texto
+@mixin text-truncate($lines: 1) {
+  @if $lines == 1 {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  } @else {
+    display: -webkit-box;
+    -webkit-line-clamp: $lines;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
+
+// Flex shortcuts
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@mixin flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+// Card base KDS
+@mixin kds-card {
+  background: $color-bg-surface;
+  border: 1px solid $color-border;
+  border-radius: $radius-lg;
+  padding: $space-4;
+  transition: border-color $transition-base;
+
+  &:hover {
+    border-color: rgba($color-primary, 0.4);
+  }
+}
+
+// Estado urgente (orden tardía)
+@mixin urgent-pulse {
+  animation: urgentPulse 1.5s ease-in-out infinite;
+  border-color: $color-danger !important;
+  box-shadow: 0 0 12px rgba($color-danger, 0.4);
+}
+```
+
+## CSS Modules — convenciones
+
+- Un archivo `.module.scss` por componente.
+- BEM adaptado para modules: `.card`, `.card__header`, `.card--urgent` (las variantes como clases separadas, no `&--`).
+- Usar `composes` para reutilizar clases base.
+
+```scss
+// OrderCard.module.scss
+@use '../styles/variables' as *;
+@use '../styles/mixins' as *;
+
+.card {
+  @include kds-card;
+  min-width: $kds-card-min-width;
+  max-width: $kds-card-max-width;
+  display: flex;
+  flex-direction: column;
+  gap: $space-3;
+}
+
+.urgent {
+  @include urgent-pulse;
+}
+
+.header {
+  @include flex-between;
+}
+
+.tableNumber {
+  font-size: $font-size-xl;
+  font-weight: $font-weight-bold;
+  color: $color-text-primary;
+}
+
+.timer {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+  font-family: $font-family-mono;
+}
+```
+
+```tsx
+// Uso en componente
+import styles from './OrderCard.module.scss';
+
+<div className={`${styles.card} ${isUrgent ? styles.urgent : ''}`}>
+```
+
+## Anti-patrones prohibidos
+
+- ❌ Estilos inline en JSX (salvo valores dinámicos imposibles de pre-calcular)
+- ❌ `!important` salvo en la clase `.urgent` y overrides de librerías externas
+- ❌ Valores hardcoded de colores/spacing — usar variables siempre
+- ❌ Selectores globales en archivos `.module.scss`
+- ❌ `@import` (deprecated) — usar `@use` con alias

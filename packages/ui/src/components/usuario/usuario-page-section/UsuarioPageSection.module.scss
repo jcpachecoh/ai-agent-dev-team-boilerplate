@@ -1,0 +1,28 @@
+@use '../shared/usuario-theme' as usr;
+
+.section {
+  @include usr.usuario-theme-classes;
+
+  width: 100%;
+}
+
+.variant--header,
+.variant--toolbar,
+.variant--body,
+.variant--default {
+  padding: 18px 24px;
+}
+
+.divider {
+  border-bottom: 1px solid var(--usuario-border-subtle);
+}
+
+@media (max-width: 767px) {
+  .variant--header,
+  .variant--toolbar,
+  .variant--body,
+  .variant--default {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}

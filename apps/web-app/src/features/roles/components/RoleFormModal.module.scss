@@ -1,0 +1,31 @@
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.errorText {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--color-error, #ef4444);
+}
+
+.infoText {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--color-text-secondary, #6b7280);
+  padding: 0.5rem 0.75rem;
+  background: var(--color-surface-secondary, #f3f4f6);
+  border-radius: 6px;
+  border-left: 3px solid var(--color-border, #d1d5db);
+}
+
+.warnText {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--color-warning-text, #92400e);
+  padding: 0.5rem 0.75rem;
+  background: var(--color-warning-bg, #fef3c7);
+  border-radius: 6px;
+  border-left: 3px solid var(--color-warning, #f59e0b);
+}

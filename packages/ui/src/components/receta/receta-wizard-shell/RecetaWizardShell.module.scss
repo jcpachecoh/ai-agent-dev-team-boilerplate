@@ -1,0 +1,178 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/receta-theme' as receta;
+
+.shell {
+  @include receta.receta-theme-dark;
+
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 0;
+  color: var(--receta-text);
+}
+
+.themeLight {
+  @include receta.receta-theme-light;
+}
+
+.themeDark {
+  @include receta.receta-theme-dark;
+}
+
+.header {
+  display: flex;
+  flex-shrink: 0;
+  justify-content: space-between;
+  align-items: center;
+  gap: $spacing-md;
+  padding: $spacing-md $spacing-lg;
+  border-bottom: 1px solid var(--receta-border);
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  min-width: 0;
+}
+
+.headerTitles {
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: $font-weight-semibold;
+  line-height: 1.2;
+  color: var(--receta-text);
+}
+
+.subtitle {
+  margin: 0.15rem 0 0;
+  font-size: 0.75rem;
+  color: var(--receta-muted);
+}
+
+.headerActions {
+  display: flex;
+  flex-shrink: 0;
+  gap: $spacing-sm;
+}
+
+.stepperWrap {
+  flex-shrink: 0;
+  padding: $spacing-md $spacing-lg;
+  border-bottom: 1px solid var(--receta-border);
+  background: var(--receta-surface-raised);
+}
+
+.error,
+.loading {
+  flex-shrink: 0;
+  margin: 0;
+  padding: $spacing-sm $spacing-lg 0;
+  font-size: $font-size-sm;
+}
+
+.error {
+  color: receta.$receta-failed;
+}
+
+.loading {
+  color: var(--receta-muted);
+}
+
+.body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+.footer {
+  display: flex;
+  flex-shrink: 0;
+  justify-content: flex-end;
+  gap: $spacing-sm;
+  padding: $spacing-md $spacing-lg;
+  border-top: 1px solid var(--receta-border);
+  background: var(--receta-surface-raised);
+}
+
+.shellModal {
+  height: 100%;
+  min-height: 0;
+
+  .header {
+    align-items: flex-start;
+    padding: 16px 20px;
+  }
+
+  .title {
+    font-size: 1.125rem;
+    line-height: 1.4;
+  }
+
+  .subtitle {
+    font-size: $font-size-xs;
+  }
+
+  .stepperWrap {
+    padding: 12px 20px;
+  }
+
+  .error,
+  .loading {
+    padding: $spacing-sm $spacing-md 0;
+  }
+
+  .footer {
+    padding: 14px 20px;
+  }
+}
+
+.closeButton {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: $border-width solid var(--receta-border);
+  border-radius: $border-radius-sm;
+  background: transparent;
+  color: var(--receta-muted);
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    color 160ms ease,
+    background-color 160ms ease;
+
+  &:hover {
+    color: var(--receta-text);
+    background: var(--receta-hover);
+  }
+
+  &:focus-visible {
+    @include receta.receta-focus-ring;
+  }
+}
+
+@media (width <= 720px) {
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .headerLeft {
+    flex-wrap: wrap;
+  }
+
+  .headerActions {
+    justify-content: flex-end;
+  }
+
+  .title {
+    font-size: 1.35rem;
+  }
+}

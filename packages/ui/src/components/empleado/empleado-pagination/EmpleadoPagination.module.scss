@@ -1,0 +1,53 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../shared/empleado-theme' as emp;
+
+.pagination {
+  @include emp.empleado-theme-classes;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-md;
+  padding: 12px 14px;
+  border-top: 1px solid var(--empleado-border);
+  background: var(--empleado-surface);
+}
+
+.summary,
+.pageLabel {
+  font-size: 0.6875rem;
+  color: var(--empleado-subtle);
+}
+
+.controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.navButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--empleado-border);
+  border-radius: 4px;
+  background: var(--empleado-input);
+  color: var(--empleado-muted);
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  &:focus-visible {
+    @include emp.empleado-focus-ring;
+  }
+
+  svg {
+    width: 14px;
+    height: 14px;
+  }
+}
